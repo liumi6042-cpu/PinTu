@@ -44,14 +44,14 @@ export function moveGroup(state:PuzzleState,id:number,dx:number,dy:number) {
   const group=state.groups.find(g=>g.id===id); if(!group||group.locked||!Number.isFinite(dx)||!Number.isFinite(dy))return false;
   group.dx=dx;group.dy=dy;return true;
 }
-export function dropGroup(state:PuzzleState,id:number,tolerance:number) {
+export function dropGroup(state:PuzzleState,id:number,tolerance:number,blocked=new Set<number>()) {
   let active=state.groups.find(g=>g.id===id);if(!active||active.locked)return {snapped:false,joined:0,placed:0};
   const before=placedCount(state);let joined=0,snapped=false;
   if(Math.hypot(active.dx,active.dy)<=tolerance) {active.dx=0;active.dy=0;active.locked=true;snapped=true;}
   let again=true;
   while(again){again=false;
     for(const target of state.groups) {
-      if(target===active||Math.hypot(target.dx-active.dx,target.dy-active.dy)>tolerance)continue;
+      if(target===active||blocked.has(target.id)||Math.hypot(target.dx-active.dx,target.dy-active.dy)>tolerance)continue;
       if(!active.pieces.some(a=>target.pieces.some(b=>adjacent(a,b,state.cols))))continue;
       // An already anchored group must never be moved away from the board.
       const anchor=active.locked?active:target;

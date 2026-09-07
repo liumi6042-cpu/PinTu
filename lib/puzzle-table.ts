@@ -1,9 +1,12 @@
 import { BOARD, WORLD, piecesFor, pathFor, moveGroup, dropGroup, raiseGroup, placedCount, visibleGroup, shuffleLoose, type PuzzleState, type Group } from './puzzle-engine';
 type Notice = (message:string)=>void;
+export type TableNetwork={acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
   edges=false; ghost=false; sound=false; paused=false; selected:number|null=null; hintId:number|null=null;
+  network:TableNetwork|null=null; networkReady=true; private claimSerial=0;
+  private remoteOwners:Record<string,{name:string;color:string}>={};
   private drag:{id:number;x:number;y:number;dx:number;dy:number}|null=null;
   private pan:{x:number;y:number;cx:number;cy:number}|null=null;
   private pointers=new Map<number,{x:number;y:number}>(); private pinch:{distance:number;z:number;wx:number;wy:number}|null=null;
@@ -24,7 +27,7 @@ export class PuzzleTable {
     canvas.addEventListener('keydown',this.keydown,opts);canvas.addEventListener('keyup',e=>{if(e.code==='Space'){this.space=false;this.canvas.style.cursor='grab';}},opts);
     canvas.addEventListener('blur',()=>{this.space=false;this.release();},opts);
     document.addEventListener('visibilitychange',()=>{if(document.hidden)this.release();},opts);
-    this.timer=setInterval(()=>{if(!this.paused&&!document.hidden&&placedCount(state)<this.pieces.length){state.elapsed++;this.update();}},1000);
+    this.timer=setInterval(()=>{if(!this.network&&!this.paused&&!document.hidden&&placedCount(state)<this.pieces.length){state.elapsed++;this.update();}},1000);
   }
   private resizeCanvas(){const r=this.canvas.getBoundingClientRect(),oldW=this.width,oldH=this.height;this.width=r.width;this.height=r.height;const dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);if(!oldW)this.fit();else{this.camera.x+=(this.width-oldW)/2;this.camera.y+=(this.height-oldH)/2;}this.draw();}
   private point(e:{clientX:number;clientY:number}){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
@@ -36,24 +39,34 @@ export class PuzzleTable {
     }
   }
   private down=(e:PointerEvent)=>{
-    if(this.paused||e.button>2)return;e.preventDefault();this.canvas.focus({preventScroll:true});this.canvas.setPointerCapture(e.pointerId);const p=this.point(e);this.pointers.set(e.pointerId,p);
+    if(this.paused||!this.networkReady||e.button>2)return;e.preventDefault();this.canvas.focus({preventScroll:true});this.canvas.setPointerCapture(e.pointerId);const p=this.point(e);this.pointers.set(e.pointerId,p);
     if(this.pointers.size===2){this.release();const [a,b]=[...this.pointers.values()],center={x:(a.x+b.x)/2,y:(a.y+b.y)/2},world=this.world(center);this.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),z:this.camera.z,wx:world.x,wy:world.y};this.pan=null;return;}
     if(this.pointers.size>2)return;
     const wp=this.world(p),g=this.groupAt(wp.x,wp.y);
-    if(g&&!this.space&&e.button===0){this.selected=g.id;raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';}
+    if(g&&!this.space&&e.button===0){
+      if(this.network){if(this.remoteOwners[g.id]){this.notice(`${this.remoteOwners[g.id].name} 正在移动这组拼块`);return;}
+        const serial=++this.claimSerial;this.selected=g.id;this.canvas.style.cursor='progress';void this.network.acquire(g.id).then(ok=>{
+          if(!ok)return;if(serial!==this.claimSerial||!this.pointers.has(e.pointerId)||this.paused){this.network?.release(g.id);return;}
+          const fresh=this.state.groups.find(group=>group.id===g.id);if(!fresh||fresh.locked){this.network?.release(g.id);return;}
+          raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:fresh.dx,dy:fresh.dy};this.canvas.style.cursor='grabbing';this.draw();
+        });
+      }else{this.selected=g.id;raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';}
+    }
     else{this.pan={x:p.x,y:p.y,cx:this.camera.x,cy:this.camera.y};this.canvas.style.cursor='grabbing';}
     this.draw();
   };
   private move=(e:PointerEvent)=>{
     const p=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,p);
     if(this.pinch&&this.pointers.size>=2){const [a,b]=[...this.pointers.values()],z=this.clamp(this.pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,this.pinch.distance));this.camera={x:(a.x+b.x)/2-this.pinch.wx*z,y:(a.y+b.y)/2-this.pinch.wy*z,z};this.draw();return;}
-    if(this.drag){const wp=this.world(p);moveGroup(this.state,this.drag.id,this.drag.dx+wp.x-this.drag.x,this.drag.dy+wp.y-this.drag.y);this.draw();}
+    if(this.drag){const wp=this.world(p);const dx=this.drag.dx+wp.x-this.drag.x,dy=this.drag.dy+wp.y-this.drag.y;moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);this.draw();}
     else if(this.pan){this.camera.x=this.pan.cx+p.x-this.pan.x;this.camera.y=this.pan.cy+p.y-this.pan.y;this.draw();}
     else if(!this.paused){const wp=this.world(p);this.canvas.style.cursor=this.groupAt(wp.x,wp.y)?'grab':this.space?'grabbing':'default';}
   };
   private up=(e:PointerEvent)=>{this.pointers.delete(e.pointerId);if(this.pinch){this.pinch=null;this.pan=null;}else this.release();if(this.canvas.hasPointerCapture(e.pointerId))this.canvas.releasePointerCapture(e.pointerId);};
   private cancel=(e:PointerEvent)=>{this.pointers.delete(e.pointerId);this.release();this.pinch=null;};
   private release(){
+    this.claimSerial++;
+    if(this.drag&&this.network){const id=this.drag.id;this.keepOnTable(id);const group=this.state.groups.find(g=>g.id===id);this.drag=null;if(group)void this.network.drop(id,group.dx,group.dy);}
     if(this.drag){this.keepOnTable(this.drag.id);const result=dropGroup(this.state,this.drag.id,Math.min(800/this.state.cols,600/this.state.rows)*.18);
       if(result.snapped){this.playTone();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':result.placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
       this.drag=null;this.update();}
@@ -66,13 +79,14 @@ export class PuzzleTable {
   }
   private wheel=(e:WheelEvent)=>{e.preventDefault();if(this.drag||this.paused)return;this.zoom(Math.exp(-e.deltaY*.0014),this.point(e));};
   private keydown=(e:KeyboardEvent)=>{
-    if(this.paused)return;
+    if(this.paused||!this.networkReady)return;
     if(e.code==='Space'){e.preventDefault();this.space=true;this.canvas.style.cursor='grabbing';return;}
     if(e.key==='+'||e.key==='='){e.preventDefault();this.zoom(1.2);return;}if(e.key==='-'){e.preventDefault();this.zoom(1/1.2);return;}
     if(e.key==='0'){e.preventDefault();this.fit();return;}
     if(e.key==='Tab'){return;}
     if(e.key.toLowerCase()==='n') {e.preventDefault();const visible=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),idx=visible.findIndex(g=>g.id===this.selected);if(visible.length){this.selected=visible[(idx+1)%visible.length].id;this.draw();this.notice('已选中下一块。方向键移动，回车吸附。');}return;}
     if(this.selected===null)return;const g=this.state.groups.find(g=>g.id===this.selected);if(!g||g.locked)return;
+    if(this.network&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter'].includes(e.key)){e.preventDefault();this.notice('多人模式请拖动拼块，方向键移动暂用于单人模式');return;}
     const delta:Record<string,number[]>={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
     if(delta[e.key]){e.preventDefault();const step=e.shiftKey?2:12;g.dx+=delta[e.key][0]*step;g.dy+=delta[e.key][1]*step;this.keepOnTable(g.id);raiseGroup(this.state,g.id);this.draw();this.update();}
     if(e.key==='Enter'){e.preventDefault();const r=dropGroup(this.state,g.id,Math.min(800/this.state.cols,600/this.state.rows)*.18);if(r.snapped)this.playTone();this.update();this.draw();}
@@ -83,7 +97,9 @@ export class PuzzleTable {
   setEdges(v:boolean){this.release();this.edges=v;this.draw();}
   setGhost(v:boolean){this.ghost=v;this.draw();}
   setPaused(v:boolean){this.release();this.paused=v;}
-  shuffle(){this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}
+  shuffle(){if(this.network){this.notice('多人模式保留大家正在整理的桌面，请直接拖动散片');return;}this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}
+  syncRemote(next:PuzzleState,owners:Record<string,{name:string;color:string}>,protectId:number|null){const before=placedCount(this.state),protectedGroup=protectId===null?null:this.state.groups.find(g=>g.id===protectId);this.state.groups=structuredClone(next.groups);if(protectedGroup){const group=this.state.groups.find(g=>g.id===protectId);if(group&&!group.locked){group.dx=protectedGroup.dx;group.dy=protectedGroup.dy;raiseGroup(this.state,group.id);}}this.state.elapsed=next.elapsed;this.remoteOwners=owners;this.update();if(placedCount(this.state)>before){this.playTone();this.notice(`一起拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`);}this.draw();}
+  cancelNetworkDrag(){this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';this.draw();}
   hint(){const groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges));if(!groups.length){this.notice(this.edges?'边缘已经拼完了，关闭「只看边缘」继续吧':'这幅拼图已经完成了');return;}
     const selected=groups.find(g=>g.id===this.selected)||groups[0];this.selected=selected.id;this.hintId=selected.pieces[0];raiseGroup(this.state,selected.id);this.draw();this.notice('发光拼块对应桌面上的绿色轮廓，试着把它拖过去');
     if(this.hintTimer)clearTimeout(this.hintTimer);this.hintTimer=setTimeout(()=>{this.hintId=null;this.draw();},6500);
@@ -105,12 +121,14 @@ export class PuzzleTable {
       for(const id of g.pieces){const p=this.pieces[id],path=this.paths[id];c.save();c.translate(BOARD.x+p.col*w+g.dx,BOARD.y+p.row*h+g.dy);
         if(!g.locked){c.shadowColor='#0009';c.shadowBlur=this.drag?.id===g.id?14:7;c.shadowOffsetY=this.drag?.id===g.id?7:3;c.fillStyle='#d8d2c2';c.fill(path);c.shadowColor='transparent';}
         c.save();c.clip(path);c.drawImage(this.picture,-p.col*w,-p.row*h);c.restore();
-        c.strokeStyle=g.locked?'#17201966':g.id===this.selected?'#d6e8b4':'#fffbebbb';c.lineWidth=g.id===this.selected&&!g.locked?2/z:.85/z;c.stroke(path);
+        const owner=this.remoteOwners[g.id];c.strokeStyle=g.locked?'#17201966':owner?owner.color:g.id===this.selected?'#d6e8b4':'#fffbebbb';c.lineWidth=(owner||g.id===this.selected)&&!g.locked?2/z:.85/z;c.stroke(path);
         if(id===this.hintId&&!g.locked){c.strokeStyle='#d6e8b4';c.lineWidth=4/z;c.shadowColor='#d6e8b4';c.shadowBlur=18;c.stroke(path);}c.restore();
       }
+      const owner=this.remoteOwners[g.id];if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=owner.color;c.fillText(owner.name,BOARD.x+p.col*w+g.dx,BOARD.y+p.row*h+g.dy-12/z);c.restore();}
     }
     if(this.hintId!==null){const p=this.pieces[this.hintId];c.save();c.translate(BOARD.x+p.col*w,BOARD.y+p.row*h);c.fillStyle='#d6e8b42a';c.strokeStyle='#d6e8b4';c.lineWidth=3/z;c.fill(this.paths[p.id]);c.stroke(this.paths[p.id]);c.restore();}
     c.restore();
   }
   destroy(){this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);cancelAnimationFrame(this.raf);void this.audio?.close();}
 }
+
