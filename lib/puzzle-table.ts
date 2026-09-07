@@ -1,6 +1,6 @@
 import { BOARD, WORLD, piecesFor, pathFor, moveGroup, dropGroup, raiseGroup, placedCount, visibleGroup, shuffleLoose, type PuzzleState, type Group } from './puzzle-engine';
 type Notice = (message:string)=>void;
-export type TableNetwork={acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
+export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
@@ -45,10 +45,12 @@ export class PuzzleTable {
     const wp=this.world(p),g=this.groupAt(wp.x,wp.y);
     if(g&&!this.space&&e.button===0){
       if(this.network){if(this.remoteOwners[g.id]){this.notice(`${this.remoteOwners[g.id].name} 正在移动这组拼块`);return;}
-        const serial=++this.claimSerial;this.selected=g.id;this.canvas.style.cursor='progress';void this.network.acquire(g.id).then(ok=>{
-          if(!ok)return;if(serial!==this.claimSerial||!this.pointers.has(e.pointerId)||this.paused){this.network?.release(g.id);return;}
-          const fresh=this.state.groups.find(group=>group.id===g.id);if(!fresh||fresh.locked){this.network?.release(g.id);return;}
-          raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:fresh.dx,dy:fresh.dy};this.canvas.style.cursor='grabbing';this.draw();
+        if(this.network.canAcquire?.(g.id)===false){this.notice('这组拼块还在确认位置，可以先移动其他拼块');return;}
+        const serial=++this.claimSerial;this.selected=g.id;raiseGroup(this.state,g.id);
+        this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';
+        void this.network.acquire(g.id).then(ok=>{
+          // Local pointer motion begins immediately. Only a denied claim cancels it.
+          if(!ok&&serial===this.claimSerial){this.drag=null;this.canvas.style.cursor='grab';this.draw();}
         });
       }else{this.selected=g.id;raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';}
     }
@@ -98,8 +100,22 @@ export class PuzzleTable {
   setGhost(v:boolean){this.ghost=v;this.draw();}
   setPaused(v:boolean){this.release();this.paused=v;}
   shuffle(){if(this.network){this.notice('多人模式保留大家正在整理的桌面，请直接拖动散片');return;}this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}
-  syncRemote(next:PuzzleState,owners:Record<string,{name:string;color:string}>,protectId:number|null){const before=placedCount(this.state),protectedGroup=protectId===null?null:this.state.groups.find(g=>g.id===protectId);this.state.groups=structuredClone(next.groups);if(protectedGroup){const group=this.state.groups.find(g=>g.id===protectId);if(group&&!group.locked){group.dx=protectedGroup.dx;group.dy=protectedGroup.dy;raiseGroup(this.state,group.id);}}this.state.elapsed=next.elapsed;this.remoteOwners=owners;this.update();if(placedCount(this.state)>before){this.playTone();this.notice(`一起拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`);}this.draw();}
-  cancelNetworkDrag(){this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';this.draw();}
+  syncRemote(next:PuzzleState,owners:Record<string,{name:string;color:string}>,protectIds:ReadonlySet<number>){
+    const before=placedCount(this.state),elapsedChanged=this.state.elapsed!==next.elapsed,previous=new Map(this.state.groups.map(g=>[g.id,g])),order=this.state.groups.map(g=>g.id);let changed=previous.size!==next.groups.length;
+    this.state.groups=next.groups.map(incoming=>{
+      const old=previous.get(incoming.id),same=old&&old.locked===incoming.locked&&old.pieces.length===incoming.pieces.length&&old.pieces.every((id,i)=>id===incoming.pieces[i]);
+      if(same){if(!protectIds.has(old.id)&&(old.dx!==incoming.dx||old.dy!==incoming.dy)){old.dx=incoming.dx;old.dy=incoming.dy;changed=true;}return old;}
+      changed=true;return {...incoming,pieces:[...incoming.pieces]};
+    });
+    for(const id of protectIds)raiseGroup(this.state,id);
+    if(this.state.groups.some((g,i)=>g.id!==order[i]))changed=true;
+    if(JSON.stringify(this.remoteOwners)!==JSON.stringify(owners))changed=true;
+    this.state.elapsed=next.elapsed;this.remoteOwners=owners;const after=placedCount(this.state);
+    if(elapsedChanged||before!==after)this.update();
+    if(after>before){this.playTone();this.notice(`一起拼对了！已归位 ${after} / ${this.pieces.length} 片`);}
+    if(changed)this.draw();
+  }
+  cancelNetworkDrag(id?:number){if(id!==undefined&&this.drag?.id!==id)return;this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';this.draw();}
   hint(){const groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges));if(!groups.length){this.notice(this.edges?'边缘已经拼完了，关闭「只看边缘」继续吧':'这幅拼图已经完成了');return;}
     const selected=groups.find(g=>g.id===this.selected)||groups[0];this.selected=selected.id;this.hintId=selected.pieces[0];raiseGroup(this.state,selected.id);this.draw();this.notice('发光拼块对应桌面上的绿色轮廓，试着把它拖过去');
     if(this.hintTimer)clearTimeout(this.hintTimer);this.hintTimer=setTimeout(()=>{this.hintId=null;this.draw();},6500);

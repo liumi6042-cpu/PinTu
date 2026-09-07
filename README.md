@@ -34,9 +34,10 @@ WebMCP 通过特性检测注册 `read_puzzle_session` / `start_puzzle_session`�
 
 - 从选图页「和朋友一起拼」创建房间，输入昵称后进入；游玩中的单人桌面底栏也有同一入口。
 - 使用本项目 D1 绑定 PUZZLE_DB；版本条件更新防止并发覆盖；拖动租约 10 秒，移动及持有心跳续期，未持有的连接心跳不会延长失去的租约。
-- 客户端约每 300 ms 拉取共享状态，移动每 140 ms 合并发送，保留本人的即时拖动位置。此版用于测试合作流程；网络延迟会影响其他玩家看到移动的速度。
+- 拿起即开始本地拖动，服务器后台确认占用；移动只保留最新位置，同一时刻最多一个移动请求，发送间隔至少 60 ms。放下优先于尚未发送的移动，等待确认时可先拖其他组；服务器拒绝占用时恢复共享位置。
+- 客户端在上次请求完成约 300 ms 后拉取共享状态，持有心跳独立续期；只在状态变化时重绘或更新工具栏。网络延迟仍会影响其他玩家看到移动的速度。
 - 各玩家持有独立的房间令牌，服务器只存摘要；邀请地址含随机房间 ID，已知邀请地址可申请加入；房间快照不含令牌或摘要。
 - 局部工具（原图、筛选、提示、缩放、暂停）各自独立；多人暂停只暂停自己的操作。多人桌面不提供整体重新整理或重开，避免覆盖其他玩家的工作。
-- `node --import ./tests/ts-register.mjs --test tests/*.test.mjs` 包含引擎、真实 HTTP 双客户端、实际轮询客户端测试。HTTP 测试默认使用 localhost:3001，可通过 PUZZLE_TEST_URL 指定测试入口。
+- `node --import ./tests/ts-register.mjs --test tests/*.test.mjs` 包含引擎、真实 HTTP 双客户端、实际轮询客户端，以及模拟 500 ms 网络延迟、立即拖动与连续拖放测试。HTTP 测试默认使用 localhost:3001，可通过 PUZZLE_TEST_URL 指定测试入口。
 - 本地数据库初始化：`node node_modules/wrangler/bin/wrangler.js d1 execute PUZZLE_DB --local --config wrangler.local.json --file drizzle/0000_puzzle_rooms.sql`。正式部署由 Sites 应用归档中的迁移。
 - 网站整体访问权限仍由 Sites 控制；网站私有时，同账号两个窗口可测试，多账号朋友需先获得网站访问权限。
