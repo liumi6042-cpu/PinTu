@@ -102,7 +102,7 @@ export class PuzzleTable {
   };
   private clamp(z:number){const max=Math.max(3,Math.min(16,96/Math.min(800/this.state.cols,600/this.state.rows)));return Math.max(.15,Math.min(max,z));}
   zoom(factor:number,point={x:this.width/2,y:this.height/2}){const w=this.world(point),z=this.clamp(this.camera.z*factor);this.camera={x:point.x-w.x*z,y:point.y-w.y*z,z};this.draw();this.update();}
-  fit(){const z=Math.min(this.width/WORLD.width,this.height/WORLD.height)*.94;this.camera={x:(this.width-WORLD.width*z)/2,y:(this.height-WORLD.height*z)/2,z};this.draw();this.update();}
+  fit(completed=false){const bounds=completed?BOARD:{x:0,y:0,...WORLD},z=Math.min(this.width/bounds.width,this.height/bounds.height)*(completed?.76:.94);this.camera={x:(this.width-bounds.width*z)/2-bounds.x*z,y:(this.height-bounds.height*z)/2-bounds.y*z,z};this.draw();this.update();}
   setEdges(v:boolean){this.release();this.edges=v;this.draw();}
   setPaused(v:boolean){this.release();this.paused=v;}
   shuffle(){if(this.network){this.notice('多人模式保留大家正在整理的桌面，请直接拖动散片');return;}this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}
