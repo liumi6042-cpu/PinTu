@@ -3,7 +3,21 @@ export type Group = { id: number; pieces: number[]; dx: number; dy: number; lock
 export type PuzzleState = { version: 1; imageId: string; cols: number; rows: number; seed: number; groups: Group[]; elapsed: number };
 export const BOARD = { x: 360, y: 260, width: 800, height: 600 };
 export const WORLD = { width: 1520, height: 1120 };
-export const LEVELS = [{ count:12, cols:4, rows:3, label:'轻松体验' }, { count:48, cols:8, rows:6, label:'慢慢享受' }, { count:108, cols:12, rows:9, label:'认真挑战' }];
+export const LEVELS = [
+  { count:12, cols:4, rows:3, label:'轻松体验' }, { count:48, cols:8, rows:6, label:'慢慢享受' },
+  { count:108, cols:12, rows:9, label:'认真挑战' }, { count:300, cols:20, rows:15, label:'渐入佳境' },
+  { count:500, cols:25, rows:20, label:'沉浸时光' }, { count:1000, cols:40, rows:25, label:'千片挑战' },
+  { count:1500, cols:50, rows:30, label:'耐心之旅' }, { count:2000, cols:50, rows:40, label:'一起攻克' },
+  { count:3000, cols:60, rows:50, label:'长线挑战' }, { count:4000, cols:80, rows:50, label:'进阶收藏' },
+  { count:5000, cols:100, rows:50, label:'五千片大作' },
+];
+export function snapTolerance(state:Pick<PuzzleState,'cols'|'rows'>) { return Math.min(BOARD.width/state.cols,BOARD.height/state.rows)*.26; }
+export function neighbors(id:number,cols:number,rows:number) {
+  const result:number[]=[];
+  if(id%cols>0)result.push(id-1);if(id%cols<cols-1)result.push(id+1);
+  if(id>=cols)result.push(id-cols);if(id<cols*(rows-1))result.push(id+cols);
+  return result;
+}
 export function random(seed:number) { let s=seed>>>0; return ()=>{s+=0x6D2B79F5;let t=Math.imul(s^(s>>>15),1|s);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;}; }
 export function piecesFor(cols:number,rows:number,seed:number):Piece[] {
   const rand=random(seed), pieces:Piece[]=[];
@@ -45,20 +59,27 @@ export function moveGroup(state:PuzzleState,id:number,dx:number,dy:number) {
   group.dx=dx;group.dy=dy;return true;
 }
 export function dropGroup(state:PuzzleState,id:number,tolerance:number,blocked=new Set<number>()) {
-  let active=state.groups.find(g=>g.id===id);if(!active||active.locked)return {snapped:false,joined:0,placed:0};
+  const active=state.groups.find(g=>g.id===id);if(!active||active.locked)return {snapped:false,joined:0,placed:0};
   const before=placedCount(state);let joined=0,snapped=false;
   if(Math.hypot(active.dx,active.dy)<=tolerance) {active.dx=0;active.dy=0;active.locked=true;snapped=true;}
-  let again=true;
-  while(again){again=false;
-    for(const target of state.groups) {
-      if(target===active||blocked.has(target.id)||Math.hypot(target.dx-active.dx,target.dy-active.dy)>tolerance)continue;
-      if(!active.pieces.some(a=>target.pieces.some(b=>adjacent(a,b,state.cols))))continue;
-      // An already anchored group must never be moved away from the board.
-      const anchor=active.locked?active:target;
-      active.dx=anchor.dx;active.dy=anchor.dy;active.locked=active.locked||target.locked;
-      active.pieces.push(...target.pieces);state.groups.splice(state.groups.indexOf(target),1);joined++;snapped=true;again=true;break;
-    }
+  const owner:Group[]=new Array(state.cols*state.rows),candidates=new Set<Group>(),merged=new Set<Group>();
+  for(const group of state.groups)for(const piece of group.pieces)owner[piece]=group;
+  const expand=(pieces:number[])=>{for(const piece of pieces)for(const neighbor of neighbors(piece,state.cols,state.rows)){
+    const target=owner[neighbor];if(target!==active&&!merged.has(target)&&!blocked.has(target.id))candidates.add(target);
+  }};
+  expand(active.pieces);
+  while(candidates.size){
+    let target:Group|undefined,nearest=tolerance;
+    for(const candidate of candidates){const distance=Math.hypot(candidate.dx-active.dx,candidate.dy-active.dy);if(distance<=nearest){target=candidate;nearest=distance;}}
+    if(!target)break;
+    // Only true neighbors can join; a board anchor never moves away from zero.
+    const anchor=active.locked?active:target;
+    active.dx=anchor.dx;active.dy=anchor.dy;active.locked=active.locked||target.locked;
+    candidates.delete(target);merged.add(target);
+    for(const piece of target.pieces)owner[piece]=active;
+    active.pieces.push(...target.pieces);expand(target.pieces);joined++;snapped=true;
   }
+  if(merged.size)state.groups=state.groups.filter(group=>!merged.has(group));
   if(active.locked){active.dx=0;active.dy=0;}
   return {snapped,joined,placed:placedCount(state)-before};
 }
@@ -79,9 +100,9 @@ export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {
       groups.add(g.id);
       for(const id of g.pieces){if(!Number.isInteger(id)||id<0||id>=v.cols*v.rows||ids.has(id))return null;ids.add(id);}
       // Saved movable groups must consist of connected neighboring pieces.
-      const connected=new Set([g.pieces[0]]);let grew=true;
-      while(grew){grew=false;for(const id of g.pieces)if(!connected.has(id)&&[...connected].some(a=>adjacent(a,id,v.cols))){connected.add(id);grew=true;}}
-      if(connected.size!==g.pieces.length)return null;
+      const pending=new Set(g.pieces),queue=[g.pieces[0]];pending.delete(queue[0]);
+      for(let i=0;i<queue.length;i++)for(const neighbor of neighbors(queue[i],v.cols,v.rows))if(pending.delete(neighbor))queue.push(neighbor);
+      if(pending.size)return null;
     }
     return ids.size===v.cols*v.rows?v:null;
   }catch{return null;}

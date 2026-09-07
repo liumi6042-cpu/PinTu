@@ -1,4 +1,4 @@
-import { createPuzzle, dropGroup, LEVELS, placedCount, BOARD, WORLD, type PuzzleState } from './puzzle-engine';
+import { createPuzzle, dropGroup, LEVELS, placedCount, BOARD, WORLD, snapTolerance, type PuzzleState } from './puzzle-engine';
 export const ROOM_LIFETIME=24*60*60*1000, LEASE_MS=10000, ONLINE_MS=22000;
 export const PHOTO_IDS=['seaside','skate','gold','red'];
 export const COLORS=['#d6e8b4','#99caf4','#eeafcf','#ffcb8e','#b6acf7','#8cddd1','#f3e192','#dda990'];
@@ -42,7 +42,7 @@ export function applyAction(room:Room,member:Member,action:RoomAction,now:number
  const offset=boundedOffset(room,groupId,action.dx!,action.dy!);group.dx=offset.dx;group.dy=offset.dy;
  if(action.type==='drop'){
   const blocked=new Set(Object.entries(room.leases).filter(([,l])=>l.playerId!==member.id).map(([id])=>Number(id)));
-  dropGroup(room.puzzle,groupId,Math.min(800/room.puzzle.cols,600/room.puzzle.rows)*.18,blocked);delete room.leases[groupId];
+  dropGroup(room.puzzle,groupId,snapTolerance(room.puzzle),blocked);delete room.leases[groupId];
   if(placedCount(room.puzzle)===room.puzzle.cols*room.puzzle.rows&&room.completedAt===null)room.completedAt=now;
  }
 }

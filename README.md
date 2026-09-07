@@ -4,9 +4,12 @@
 
 ## 已实现
 
-- 四张图片、搜索与分类，12 / 48 / 108 片。
+- 四张图片、搜索与分类，12 / 48 / 108 / 300 / 500 / 1000 / 1500 / 2000 / 3000 / 4000 / 5000 片；单人和多人使用相同档位。
 - 不规则拼块；互补边形；桌面外相邻拼块吸附成组；整组拖动与归位。
-- 桌面缩放/平移、双指缩放、原图、边缘组筛选、淡底图、位置提示、整理散片。
+- 桌面缩放/平移、双指缩放、原图、边缘组筛选、位置提示、整理散片。
+- 底图已锁定，点击入口只显示说明。后续广告规则为「完整观看一次广告，解锁 30 秒底图，到期收起」；当前未接广告，也没有临时解锁入口。
+- 吸附距离统一为拼块短边的 26%（原 18%），单人鼠标、键盘和多人一致；只吸附真正相邻的拼块，保留抢块保护。
+- 300 片以上预先裁切纹理、只绘制可见拼块，并缓存拖动时的静止桌面；5000 片可放大至 1200%。相邻拼块查找及存档连通性验证使用四邻域索引。
 - 暂停计时、可选吸附音效、完成反馈。每张图每种片数分别保存在本浏览器，刷新续玩。
 - 键盘：桌面获得焦点后 N 选下一块，方向键移动，Shift 微调，Enter 吸附，0 适应桌面。
 
@@ -30,7 +33,7 @@
 
 `npm install`、`npm run dev`；部署构建为 `npm run build`。
 
-`node --experimental-strip-types --test tests/puzzle-engine.test.mjs` 验证互补边形、初始布局、正确/错误吸附、整组移动与归位、边缘显示、整理、存档校验，以及三种难度全部完成。
+`node --experimental-strip-types --test tests/puzzle-engine.test.mjs` 验证互补边形、初始布局、正确/错误吸附、整组移动与归位、边缘显示、整理、存档校验，以及全部档位（最高 5000 片）的完成和存档恢复。
 
 `node node_modules/typescript/bin/tsc --noEmit` 检查类型。
 
@@ -53,5 +56,6 @@ WebMCP 通过特性检测注册 `read_puzzle_session` / `start_puzzle_session`�
 - 各玩家持有独立的房间令牌，服务器只存摘要；邀请地址含随机房间 ID，已知邀请地址可申请加入；房间快照不含令牌或摘要。
 - 局部工具（原图、筛选、提示、缩放、暂停）各自独立；多人暂停只暂停自己的操作。多人桌面不提供整体重新整理或重开，避免覆盖其他玩家的工作。
 - `node --import ./tests/ts-register.mjs --test tests/*.test.mjs` 包含引擎、真实 HTTP 双客户端、实际轮询客户端，以及模拟 500 ms 网络延迟、立即拖动与连续拖放测试。HTTP 测试默认使用 localhost:3001，可通过 PUZZLE_TEST_URL 指定测试入口。
+- 在本地服务器上设置 `PUZZLE_TEST_URL=http://localhost:3000`、`PUZZLE_TEST_LOCAL=1`、`PUZZLE_TEST_LARGE=1` 后运行全套测试，可同时验证本机与局域网邀请，以及真实 5000 片双人房间。`large-puzzle.test.mjs` 另验证绘制缓存、画面裁剪、放大上限及更宽松的吸附。
 - 本地数据库初始化：`node node_modules/wrangler/bin/wrangler.js d1 execute PUZZLE_DB --local --config wrangler.local.json --file drizzle/0000_puzzle_rooms.sql`。正式部署由 Sites 应用归档中的迁移。
 - 网站整体访问权限仍由 Sites 控制；网站私有时，同账号两个窗口可测试，多账号朋友需先获得网站访问权限。
