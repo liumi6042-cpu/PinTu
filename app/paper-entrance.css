@@ -28,8 +28,6 @@
 .paper-theme .entrance-header .home-navigation a:hover { color: #925437; background: transparent; }
 .entrance-header .home-navigation svg { display: none; }
 .entrance-copy { position: relative; z-index: 5; width: max-content; max-width: 47%; padding: 7px 0 0; margin: 0 0 340px 5.6%; }
-.entrance-edition { color: #887861; font-size: 15px; letter-spacing: 1px; margin: 0 0 clamp(36px, 5.5vh, 65px); }
-.entrance-edition::after { content: ''; display: block; width: 39px; height: 1px; background: #a29177; margin-top: 12px; }
 .entrance-copy h1 { font-size: clamp(36px, 3.8vw, 61px); font-weight: 400; line-height: 1.47; letter-spacing: 1px; margin: 0 0 19px; white-space: nowrap; }
 .entrance-subtitle { font-size: clamp(16px, 1.45vw, 21px); letter-spacing: 2px; line-height: 1.8; margin: 0 0 28px; }
 .entrance-enter { display: inline-flex; align-items: center; justify-content: center; gap: 22px; padding: 12px 35px; min-width: 204px; min-height: 48px; border: 0; border-radius: 32px; color: #fff; background: #ac6246; font-size: 20px; letter-spacing: 3px; box-shadow: 0 5px 18px #8d583313; transition: background .2s, transform .2s; }
@@ -85,7 +83,6 @@
   .paper-entrance { --entrance-slot-x: 64%; --entrance-slot-size: 116px; --entrance-piece-size: 158px; min-height: 0; padding-bottom: 0; }
   .entrance-header { padding: 22px 5.6%; }
   .entrance-copy { margin: 10px 5.6% 0; max-width: none; padding: 0; }
-  .entrance-edition { margin-bottom: 27px; }
   .entrance-copy h1 { font-size: 43px; }
   .entrance-subtitle { font-size: 17px; margin-bottom: 22px; }
   .entrance-stage { position: relative; width: 100%; height: min(77vw, 620px); margin-top: -30px; }
@@ -104,7 +101,6 @@
   .paper-theme .entrance-header .home-navigation { width: 100%; gap: 13px; font-size: 13px; }
   .paper-theme .entrance-header .home-navigation a { padding: 8px 5px; }
   .entrance-copy { margin: 15px 22px 0; width: auto; text-align: center; }
-  .entrance-edition { display: none; }
   .entrance-copy h1 { font-size: clamp(27px, 7.4vw, 39px); line-height: 1.48; letter-spacing: 0; margin-bottom: 15px; }
   .entrance-subtitle { font-size: 15px; letter-spacing: .5px; margin-bottom: 20px; }
   .entrance-enter { font-size: 18px; padding: 11px 28px; gap: 20px; }

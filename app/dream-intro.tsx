@@ -115,7 +115,6 @@ export default function DreamIntro({ onEnter }: {
     </header>
 
     <section className="entrance-copy">
-      <p className="entrance-edition">{t("01 首屏")}</p>
       <h1>{t("把时光，")}<br />{t("拼成喜欢的样子。")}</h1>
       <p className="entrance-subtitle">{t("从一片开始，收集生活里的美好")}</p>
       <button className="entrance-enter" onClick={() => enter()} disabled={phase !== 'idle'}>
