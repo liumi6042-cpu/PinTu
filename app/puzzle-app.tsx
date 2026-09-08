@@ -1,16 +1,14 @@
 'use client';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Puzzle, ArrowRight, ArrowLeft, Search, ChevronLeft, ChevronRight, Play, Pause, Image as ImageIcon, Lightbulb, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, Volume2, VolumeX, RotateCcw, Check, X, Clock3, Expand, Minimize } from 'lucide-react';
+import { Puzzle, ArrowRight, ArrowLeft, Search, ChevronLeft, ChevronRight, Play, Pause, Image as ImageIcon, Images, Lightbulb, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, Volume2, VolumeX, RotateCcw, Check, X, Clock3, Expand, Minimize, LockKeyhole, PartyPopper } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LockKeyhole, PartyPopper } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import LanguageSwitch from './language-switch';
-import { createPuzzle, LEVELS, placedCount, restorePuzzle, type PuzzleState } from '@/lib/puzzle-engine';
+import { createPuzzle, restartPuzzle, LEVELS, SAVED_LEVELS, placedCount, restorePuzzle, type PuzzleState } from '@/lib/puzzle-engine';
 import { CompletionGate } from '@/lib/celebration-engine';
 import { CelebrationOverlay, CelebrationPreview } from './celebration';
 import { PuzzleTable } from '@/lib/puzzle-table';
@@ -22,116 +20,62 @@ import { saveTicket, type RoomTicket } from '@/lib/room-client';
 import RoomToolbar from './room-toolbar';
 import HomeNavigation from './home-navigation';
 import PaperReel from './paper-reel';
-import PaperSurprise from './paper-surprise';
-import PaperLaunch, { type PaperLaunchState } from './paper-launch';
-import { paperPause, reducedPaperMotion } from '@/lib/paper-interactions';
 import type { RoomClient } from '@/lib/room-client';
-import { PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
+import { PHOTOS, FEATURED_PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
 export { PHOTOS } from '@/lib/puzzle-catalog';
+
 type Photo = typeof PHOTOS[number];
 const ids = PHOTOS.map(p => p.id), activeKey = 'together-puzzle:active:v1';
 const saveKey = (p: string, n: number) => `together-puzzle:v1:${p}:${n}`;
 const duration = (seconds: number) => { const s = Math.floor(seconds); return `${s >= 3600 ? `${Math.floor(s / 3600)}:` : ''}${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
-function Brand() { useLanguage(); return <span className="brand"><Puzzle size={26}/><span>{t("一起拼图")}<small>THE PUZZLE COLLECTION</small></span></span>; }
-function Difficulty({ count, setCount, disabled = false }: {
-    count: number;
-    setCount: (n: number) => void;
-    disabled?: boolean;
-}) { useLanguage(); const items = LEVELS.map(l => ({ value: l.count, label: t(`${l.count.toLocaleString()} 片 · ${l.label}`) })); return <div className="difficulty-picker"><label htmlFor="piece-count">{t("拼图片数")}</label><Select disabled={disabled} items={items} value={count} onValueChange={value => { if (value !== null)
-    setCount(value); }}><SelectTrigger id="piece-count" className="difficulty-trigger" aria-describedby="piece-count-note"><SelectValue /></SelectTrigger><SelectContent className="difficulty-menu" align="start" alignItemWithTrigger={false} sideOffset={9}>{t(items.map(item => <SelectItem key={item.value} value={item.value}>{t(item.label)}</SelectItem>))}</SelectContent></Select><p id="piece-count-note">{t(count === 3000 ? '3,000 片采用 60×50 排列，原图等比裁切。' : count >= 1000 ? '滚轮放大细拼，试试先从「边缘」开始。' : '从 12 片到 3,000 片，选择你喜欢的节奏。')}</p></div>; }
-export default function PuzzleApp({ entryMode = 'solo', guestPlay = false }: {
-    entryMode?: 'solo' | 'create';
-    guestPlay?: boolean;
-}) {
-    const language=useLanguage();
-    const [creating, setCreating] = useState(false), [entryError, setEntryError] = useState(''), [visibility, setVisibility] = useState<'private' | 'public'>('private');
-    const [preview, setPreview] = useState(false), [launch, setLaunch] = useState<PaperLaunchState | null>(null);
-    const launchLock = useRef(false), launchAbort = useRef<AbortController | null>(null), mounted = useRef(true);
-    useEffect(() => { mounted.current = true; return () => { mounted.current = false; launchAbort.current?.abort(); }; }, []);
-    const [session, setSession] = useState<PuzzleState | null>(null), [query, setQuery] = useState(''), [category, setCategory] = useState('全部'), [index, setIndex] = useState(0), [count, setCount] = useState(12), [saved, setSaved] = useState<Record<string, PuzzleState>>({}), [ready, setReady] = useState(false), [saveError, setSaveError] = useState(false);
-    useEffect(() => { const map: Record<string, PuzzleState> = {}; try {
-        for (const p of PHOTOS)
-            for (const l of LEVELS) {
-                const k = saveKey(p.id, l.count), raw = localStorage.getItem(k);
-                if (raw) {
-                    const value = restorePuzzle(raw, ids);
-                    if (value)
-                        map[k] = value;
-                }
-            }
-    }
-    catch {
-        setSaveError(true);
-    } setSaved(map); setReady(true); }, []);
-    const photos = useMemo(() => PHOTOS.filter(p => (category === '全部' || p.category === category) && [p.title,p.category,p.subtitle,t(p.title),t(p.category),t(p.subtitle)].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())), [category, query,language]);
-    const photo = photos.length ? photos[((index % photos.length) + photos.length) % photos.length] : null;
-    const persist = useCallback((state: PuzzleState) => { try {
-        localStorage.setItem(saveKey(state.imageId, state.cols * state.rows), JSON.stringify(state));
-        localStorage.setItem(activeKey, saveKey(state.imageId, state.cols * state.rows));
-        setSaveError(false);
-    }
-    catch {
-        setSaveError(true);
-    } }, []);
-    const start = useCallback((chosen: Photo, pieces: number) => { const level = LEVELS.find(l => l.count === pieces)!; const previous = saved[saveKey(chosen.id, pieces)]; const state = previous && placedCount(previous) < pieces ? structuredClone(previous) : createPuzzle(chosen.id, level.cols, level.rows); persist(state); setSession(state); }, [saved, persist]);
-    const beginPuzzle = useCallback(async (chosen: Photo, pieces: number) => {
-        if (launchLock.current)
-            throw new Error('拼图正在打开，请稍候');
-        launchLock.current = true;
-        const abort = new AbortController();
-        launchAbort.current = abort;
-        const roomVisibility = entryMode === 'solo' ? 'solo' : visibility, level = LEVELS.find(l => l.count === pieces)!;
-        setCreating(true);
-        setPreview(false);
-        setEntryError('');
-        setLaunch({ photo: chosen, pieces, aspectRatio: level.cols / level.rows, phase: 'extracting' });
-        try {
-            await paperPause(reducedPaperMotion() ? 0 : 680, abort.signal);
-            setLaunch({ photo: chosen, pieces, aspectRatio: level.cols / level.rows, phase: 'starting' });
-            await paperPause(reducedPaperMotion() ? 32 : 650, abort.signal);
-            if (guestPlay) {
-                start(chosen, pieces);
-                setLaunch(null);
-                setCreating(false);
-                return;
-            }
-            const ticket = await apiJson<RoomTicket>('/api/rooms', { imageId: chosen.id, pieces, visibility: roomVisibility });
-            if (!mounted.current)
-                return;
-            saveTicket(ticket);
-            window.location.assign('/room/' + ticket.room.id);
-        }
-        catch (error) {
-            launchLock.current = false;
-            if (!mounted.current)
-                return;
-            setEntryError(error instanceof Error ? error.message : '暂时无法开始');
-            setLaunch(null);
-            setCreating(false);
-            throw error;
-        }
-    }, [entryMode, visibility, guestPlay, start]);
-    const leave = () => { launchLock.current = false; setLaunch(null); setCreating(false); if (session) {
-        persist(session);
-        setSaved(s => ({ ...s, [saveKey(session.imageId, session.cols * session.rows)]: structuredClone(session) }));
-    } try {
-        localStorage.removeItem(activeKey);
-    }
-    catch { } setSession(null); };
-    const stateRef = useRef({ session, photo, count });
-    stateRef.current = { session, photo, count };
-    useEffect(() => registerPuzzleTools({ read: () => ({ screen: stateRef.current.session ? 'playing' : 'collection', puzzles: PHOTOS.map(({ id, title }) => ({ id, title })), pieceCounts: LEVELS.map(l => l.count), current: stateRef.current.session ? { imageId: stateRef.current.session.imageId, pieces: stateRef.current.session.cols * stateRef.current.session.rows, placed: placedCount(stateRef.current.session), elapsed: stateRef.current.session.elapsed } : null }), start: async (imageId, pieces) => { const p = PHOTOS.find(p => p.id === imageId); if (!p || !LEVELS.some(l => l.count === pieces))
-            throw new Error('请选择列表内的图片和片数'); if (stateRef.current.session)
-            throw new Error('请先从当前拼图返回选图页'); await beginPuzzle(p, pieces); return { screen: guestPlay ? 'playing' : 'room', imageId, pieces }; } }), [beginPuzzle, guestPlay]);
-    if (session)
-        return <Game key={`${session.imageId}-${session.cols}-${session.seed}`} state={session} photo={PHOTOS.find(p => p.id === session.imageId)!} persist={persist} leave={leave} saveError={saveError} restart={() => { const s = createPuzzle(session.imageId, session.cols, session.rows); persist(s); setSession(s); }}/>;
-    const previous = photo ? saved[saveKey(photo.id, count)] : null, canResume = previous && placedCount(previous) < count, level = LEVELS.find(l => l.count === count)!;
-    return <main className="collection"><header className="site-header"><Brand />{t(guestPlay ? <HomeNavigation /> : <a className="back-button" href="/personal"><ArrowLeft size={18}/>{t("返回个人空间")}</a>)}{!guestPlay&&<LanguageSwitch/>}</header><section className="collection-intro"><p className="eyebrow">A LITTLE PIECE OF CALM</p><h1>{t(entryMode === 'solo' ? '挑一张喜欢的，慢慢拼。' : '选一幅画，准备一起拼。')}</h1><p className="muted">{t(guestPlay ? '滚动胶片，选一张就能玩，无需登录。' : '滚动胶片，开启一段属于你的安静时光。')}</p><div className="search-box"><Search size={18}/><input disabled={creating} value={query} onChange={e => { setQuery(e.target.value); setIndex(0); }} placeholder={t("搜索拼图、风景、艺术\u2026")} aria-label={t("搜索拼图")}/>{t(query && <button disabled={creating} className="clear-search" aria-label={t("清空搜索")} onClick={() => { setQuery(''); setIndex(0); }}><X size={16}/></button>)}</div></section>
- {t(photo ? <><PaperReel photos={photos} index={index} onIndex={setIndex} disabled={!ready || creating} pullLabel={entryMode === 'create' ? '拉一下，创建房间' : guestPlay && canResume ? '拉一下，继续拼' : '拉一下，开始拼'} onStart={() => { void beginPuzzle(photo, count).catch(() => { }); }}/><div className="reel-navigation"><button className="circle-button" aria-label={t("上一张拼图")} disabled={creating || photos.length < 2} onClick={() => setIndex(index - 1)}><ChevronLeft size={20}/></button><span>{t(String(((index % photos.length) + photos.length) % photos.length + 1).padStart(2, '0'))} <i>/</i> {t(String(photos.length).padStart(2, '0'))}</span><button className="circle-button" aria-label={t("下一张拼图")} disabled={creating || photos.length < 2} onClick={() => setIndex(index + 1)}><ChevronRight size={20}/></button></div></> : <div className="no-results"><Search size={30}/><p>{t("还没有找到这张拼图")}</p><button className="secondary" onClick={() => { setQuery(''); setCategory('全部'); setIndex(0); }}>{t("看看全部拼图")}</button></div>)}
- <div className="categories" aria-label={t("拼图分类")}>{t(CATEGORIES.map(c => <button key={c} disabled={creating} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => { setCategory(c); setIndex(0); }}>{t(c)}</button>))}</div><div className="paper-discovery"><PaperSurprise photos={photos} disabled={creating} onPick={chosen => setIndex(photos.findIndex(p => p.id === chosen.id))}/></div>
- {t(photo && <section className="collection-controls"><h2>{t(photo.title)}</h2><p className="muted photo-subtitle">{t(photo.subtitle)}</p><Difficulty count={count} setCount={setCount} disabled={creating}/>{t(entryMode === 'create' && <div className="visibility-choice" role="group" aria-label={t("房间可见范围")}><button disabled={creating} aria-pressed={visibility === 'private'} onClick={() => setVisibility('private')}><LockKeyhole size={17}/>{t("仅邀请朋友")}<span>{t("通过链接加入")}</span></button><button disabled={creating} aria-pressed={visibility === 'public'} onClick={() => setVisibility('public')}><Puzzle size={17}/>{t("公开到大厅")}<span>{t("大家都能入座")}</span></button></div>)}<button className="primary start-button" disabled={!ready || creating} onClick={() => { void beginPuzzle(photo, count).catch(() => { }); }}>{t(creating ? '正在铺开桌面…' : guestPlay && canResume ? '继续拼图' : entryMode === 'solo' ? '开始单人拼图' : '创建这桌拼图')}<ArrowRight size={18}/></button>{t(canResume && entryMode === 'solo' && !guestPlay && <div><button disabled={creating} className="text-button" onClick={() => start(photo, count)}>{t("继续本机进度（不计用时榜）")}</button></div>)}{t(entryError && <p className="form-error" role="alert">{t(entryError)}</p>)}<div><button disabled={creating} className="celebration-preview-button" onClick={() => setPreview(true)}><PartyPopper size={17}/>{t("预览庆祝")}</button></div><p className="local-note">{t(saveError ? '当前浏览器无法保存进度，仍可直接试玩' : canResume ? `已拼 ${placedCount(previous!)} / ${count} 片 · ${duration(previous!.elapsed)}` : guestPlay ? '进度保存在当前浏览器 · 不计用时榜' : '本地服务器保存进度 · 完成后自动记录用时')}</p>{t(guestPlay && canResume && <p className="local-note">{t("进度保存在当前浏览器 \u00B7 不计用时榜")}</p>)}<CelebrationPreview photo={photo} open={preview} onOpenChange={setPreview} aspectRatio={level.cols / level.rows}/></section>)}
- {t(launch && <PaperLaunch launch={launch}/>)}<footer className="collection-footer"><span>{t("小小一片，刚刚好的片刻。")}</span><span>{t("鼠标滚轮 / 拖动胶片切换")}</span></footer></main>;
+function Brand() { useLanguage(); return <span className="brand"><Puzzle size={26}/><span>{t('一起拼图')}<small>THE PUZZLE COLLECTION</small></span></span>; }
+function Difficulty({count,setCount,disabled=false}:{count:number;setCount:(n:number)=>void;disabled?:boolean}) {
+ useLanguage(); const items=LEVELS.map(l=>({value:l.count,label:t(`${l.count.toLocaleString()} 片 · ${l.label}`)}));
+ return <div className="difficulty-picker"><label htmlFor="piece-count">{t('拼图片数')}</label><Select disabled={disabled} items={items} value={count} onValueChange={value=>{if(value!==null)setCount(value);}}><SelectTrigger id="piece-count" className="difficulty-trigger" aria-describedby="piece-count-note"><SelectValue/></SelectTrigger><SelectContent className="difficulty-menu" align="start" alignItemWithTrigger={false} sideOffset={9}>{items.map(item=><SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select><p id="piece-count-note">{t('108–2,000 片，选好片数，点击图片就能玩。')}</p></div>;
 }
+export default function PuzzleApp({entryMode='solo',guestPlay=false,gallery=false}:{entryMode?:'solo'|'create';guestPlay?:boolean;gallery?:boolean}) {
+ const language=useLanguage();
+ const [creating,setCreating]=useState(false),[entryError,setEntryError]=useState(''),[visibility,setVisibility]=useState<'private'|'public'>('private');
+ const launchLock=useRef(false),mounted=useRef(true);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ const [session,setSession]=useState<PuzzleState|null>(null),[query,setQuery]=useState(''),[category,setCategory]=useState('全部'),[index,setIndex]=useState(0),[count,setCount]=useState(108),[saved,setSaved]=useState<Record<string,PuzzleState>>({}),[ready,setReady]=useState(false),[saveError,setSaveError]=useState(false);
+ useEffect(()=>{const map:Record<string,PuzzleState>={};try{for(const p of PHOTOS)for(const l of SAVED_LEVELS){const key=saveKey(p.id,l.count),raw=localStorage.getItem(key);if(raw){const value=restorePuzzle(raw,ids);if(value)map[key]=value;}}}catch{setSaveError(true);}setSaved(map);setReady(true);},[]);
+ const photos=useMemo(()=>gallery?PHOTOS.filter(p=>(category==='全部'||p.category===category)&&[p.title,p.category,p.subtitle,t(p.title),t(p.category),t(p.subtitle)].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())):FEATURED_PHOTOS,[gallery,category,query,language]);
+ const photo=photos.length?photos[((index%photos.length)+photos.length)%photos.length]:null;
+ const persist=useCallback((state:PuzzleState)=>{try{localStorage.setItem(saveKey(state.imageId,state.cols*state.rows),JSON.stringify(state));localStorage.setItem(activeKey,saveKey(state.imageId,state.cols*state.rows));setSaveError(false);}catch{setSaveError(true);}},[]);
+ const start=useCallback((chosen:Photo,pieces:number)=>{const level=LEVELS.find(l=>l.count===pieces);if(!level)throw new Error('请选择列表内的图片和片数');const previous=saved[saveKey(chosen.id,pieces)],state=previous&&placedCount(previous)<pieces?structuredClone(previous):createPuzzle(chosen.id,level.cols,level.rows);persist(state);setSession(state);},[saved,persist]);
+ const beginPuzzle=useCallback(async(chosen:Photo,pieces:number)=>{
+  if(launchLock.current)throw new Error('拼图正在打开，请稍候');
+  if(!LEVELS.some(level=>level.count===pieces))throw new Error('请选择列表内的图片和片数');
+  launchLock.current=true;const roomVisibility=entryMode==='solo'?'solo':visibility;setCreating(true);setEntryError('');
+  try{if(guestPlay){start(chosen,pieces);setCreating(false);return;}const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:chosen.id,pieces,visibility:roomVisibility});if(!mounted.current)return;saveTicket(ticket);window.location.assign('/room/'+ticket.room.id);}
+  catch(error){launchLock.current=false;if(!mounted.current)return;setEntryError(error instanceof Error?error.message:'暂时无法开始');setCreating(false);throw error;}
+ },[entryMode,visibility,guestPlay,start]);
+ const leave=()=>{launchLock.current=false;setCreating(false);if(session){persist(session);setSaved(s=>({...s,[saveKey(session.imageId,session.cols*session.rows)]:structuredClone(session)}));}try{localStorage.removeItem(activeKey);}catch{}setSession(null);};
+ const stateRef=useRef({session,photo,count});stateRef.current={session,photo,count};
+ useEffect(()=>registerPuzzleTools({read:()=>({screen:stateRef.current.session?'playing':gallery?'gallery':'collection',puzzles:PHOTOS.map(({id,title})=>({id,title})),pieceCounts:LEVELS.map(l=>l.count),current:stateRef.current.session?{imageId:stateRef.current.session.imageId,pieces:stateRef.current.session.cols*stateRef.current.session.rows,placed:placedCount(stateRef.current.session),elapsed:stateRef.current.session.elapsed}:null}),start:async(imageId,pieces)=>{const p=PHOTOS.find(p=>p.id===imageId);if(!p||!LEVELS.some(l=>l.count===pieces))throw new Error('请选择列表内的图片和片数');if(stateRef.current.session)throw new Error('请先从当前拼图返回选图页');await beginPuzzle(p,pieces);return{screen:guestPlay?'playing':'room',imageId,pieces};}}),[beginPuzzle,guestPlay,gallery]);
+ if(session)return <Game key={`${session.imageId}-${session.cols}-${session.seed}`} state={session} photo={PHOTOS.find(p=>p.id===session.imageId)!} persist={persist} leave={leave} saveError={saveError} restart={()=>{const state=restartPuzzle(session);persist(state);setSession(state);}}/>;
+ const previous=photo?saved[saveKey(photo.id,count)]:null,canResume=!!previous&&placedCount(previous)<count;
+ const oldSaves=Object.values(saved).filter(s=>!LEVELS.some(l=>l.count===s.cols*s.rows)&&placedCount(s)<s.cols*s.rows);
+ const launchPhoto=(chosen:Photo)=>{void beginPuzzle(chosen,count).catch(()=>{});};
+ const roomOptions=entryMode==='create'&&<div className="visibility-choice" role="group" aria-label={t('房间可见范围')}><button disabled={creating} aria-pressed={visibility==='private'} onClick={()=>setVisibility('private')}><LockKeyhole size={17}/>{t('仅邀请朋友')}<span>{t('通过链接加入')}</span></button><button disabled={creating} aria-pressed={visibility==='public'} onClick={()=>setVisibility('public')}><Puzzle size={17}/>{t('公开到大厅')}<span>{t('大家都能入座')}</span></button></div>;
+ return <main className={'collection collection-simple'+(gallery?' gallery-collection':'')}>
+  <header className="site-header"><a href="/" className="collection-brand-link"><Brand/></a><HomeNavigation galleryHref={guestPlay?'/gallery':'/gallery?mode='+entryMode}/></header>
+  <section className="collection-intro"><p className="eyebrow">{gallery?'THE PICTURE LIBRARY':'EIGHT LITTLE ESCAPES'}</p><h1>{t(gallery?'把喜欢的画面，慢慢拼起来。':entryMode==='solo'?'挑一张喜欢的，慢慢拼。':'选一幅画，准备一起拼。')}</h1><p className="muted">{t(gallery?'所有画面都在这里，选好片数，点图开拼。':'8 张精选，点击图片即可开始。')}</p>
+   {gallery?<div className="gallery-filters"><div className="search-box"><Search size={18}/><input disabled={creating} value={query} onChange={e=>{setQuery(e.target.value);setIndex(0);}} placeholder={t('搜索拼图、风景、艺术…')} aria-label={t('搜索拼图')}/>{query&&<button disabled={creating} className="clear-search" aria-label={t('清空搜索')} onClick={()=>{setQuery('');setIndex(0);}}><X size={16}/></button>}</div><div className="categories" aria-label={t('拼图分类')}>{CATEGORIES.map(c=><button key={c} disabled={creating} aria-pressed={category===c} className={category===c?'active':''} onClick={()=>{setCategory(c);setIndex(0);}}>{t(c)}</button>)}</div></div>:<a className="gallery-entry" href={guestPlay?'/gallery':'/gallery?mode='+entryMode}><Images size={18}/>{t('去图库挑选更多')}<ArrowRight size={17}/></a>}
+  </section>
+  <div className="collection-settings"><Difficulty count={count} setCount={setCount} disabled={creating}/>{roomOptions}</div>
+  {entryError&&<p className="form-error collection-error" role="alert">{t(entryError)}</p>}
+  {gallery?<section className="gallery-content" aria-busy={creating}><div className="gallery-results"><span>{t('全部画面')} <strong>{photos.length}</strong></span><span>{t(creating?'正在铺开桌面…':'点击图片，开始拼图')}</span></div>{photos.length?<div className="gallery-grid">{photos.map((p,i)=>{const progress=saved[saveKey(p.id,count)],resume=guestPlay&&progress&&placedCount(progress)<count;return <button className="gallery-card" key={p.id} disabled={!ready||creating} onClick={()=>launchPhoto(p)} aria-label={t(p.title)+' · '+t(resume?'继续拼图':'开始拼图')}><div className="gallery-picture"><img src={p.src} alt={t(p.title)} loading={i<4?'eager':'lazy'} decoding="async"/><span className="gallery-card-action"><Play size={17}/>{t(resume?'继续拼图':'开始拼图')}</span></div><div className="gallery-card-copy"><div><h2>{t(p.title)}</h2><span>{t(p.category)}</span></div><p>{t(p.subtitle)}</p>{resume&&<small>{placedCount(progress)} / {count} {t('片')}</small>}</div></button>;})}</div>:<div className="no-results"><Search size={30}/><p>{t('还没有找到这张拼图')}</p><button className="secondary" onClick={()=>{setQuery('');setCategory('全部');}}>{t('看看全部拼图')}</button></div>}</section>:photo&&<>
+   <PaperReel photos={photos} index={index} onIndex={setIndex} disabled={!ready||creating} onStart={launchPhoto}/>
+   <div className="reel-navigation"><button className="circle-button" aria-label={t('上一张拼图')} disabled={creating} onClick={()=>setIndex(index-1)}><ChevronLeft size={20}/></button><span>{String(((index%photos.length)+photos.length)%photos.length+1).padStart(2,'0')} <i>/</i> {String(photos.length).padStart(2,'0')}</span><button className="circle-button" aria-label={t('下一张拼图')} disabled={creating} onClick={()=>setIndex(index+1)}><ChevronRight size={20}/></button></div>
+   <section className="collection-controls"><h2>{t(photo.title)}</h2><p className="muted photo-subtitle">{t(photo.subtitle)}</p><button className="primary start-button" disabled={!ready||creating} onClick={()=>launchPhoto(photo)}>{t(creating?'正在铺开桌面…':guestPlay&&canResume?'继续拼图':entryMode==='solo'?'开始拼图':'创建这桌拼图')}<ArrowRight size={18}/></button><p className="local-note">{t(saveError?'当前浏览器无法保存进度，仍可直接试玩':guestPlay&&canResume?`已拼 ${placedCount(previous!)} / ${count} 片 · ${duration(previous!.elapsed)}`:guestPlay?'进度保存在当前浏览器 · 不计用时榜':'本地服务器保存进度 · 完成后自动记录用时')}</p></section>
+  </>}
+  {guestPlay&&oldSaves.length>0&&<details className="legacy-progress"><summary>{t('继续以前的拼图')} ({oldSaves.length})</summary><div>{oldSaves.map(state=><button className="secondary" key={saveKey(state.imageId,state.cols*state.rows)} disabled={creating} onClick={()=>{persist(state);setSession(structuredClone(state));}}>{t(PHOTOS.find(p=>p.id===state.imageId)!.title)} · {state.cols*state.rows} {t('片')}<Play size={15}/></button>)}</div></details>}
+  <footer className="collection-footer"><span>{t('小小一片，刚刚好的片刻。')}</span><span>{t(gallery?'点击图片，开始拼图':'鼠标滚轮 / 拖动胶片切换')}</span></footer>
+ </main>;
+}
+
 export function Game({ state, photo, persist, leave, restart, saveError, collaboration }: {
     state: PuzzleState;
     photo: Photo;

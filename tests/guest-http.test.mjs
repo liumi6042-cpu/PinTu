@@ -49,7 +49,7 @@ test('guests can play immediately, keep ownership after optional login, and appe
     assert.ok(response.cookies[0].startsWith('puzzle_guest=' + secret + ';'));
   }
   async function create(who, visibility) {
-    const response = await who('/api/rooms', { visibility, imageId: 'blossom-canal', pieces: 12 });
+    const response = await who('/api/rooms', { visibility, imageId: 'blossom-canal', pieces:108 });
     assert.equal(response.status, 201, JSON.stringify(response.data));
     rooms.push(response.data.room.id);
     return response.data;
@@ -92,7 +92,7 @@ test('guests can play immediately, keep ownership after optional login, and appe
     assert.ok(view.completedAt); return view.completedAt - view.startedAt;
   }
   const elapsed = await finish(publicRoom, again.data);
-  const board = await anonymous('/api/leaderboard?mode=team&imageId=blossom-canal&pieces=12&players=2');
+  const board = await anonymous('/api/leaderboard?mode=team&imageId=blossom-canal&pieces=108&players=2');
   const result = board.data.entries.find(row => row.roomId === publicRoom.room.id);
   assert.equal(result.elapsedMs, elapsed); assert.equal(result.playerCount, 2);
   assert.equal(result.names.length, 2); assert.ok(result.names.every(name => /^游客 [A-F0-9]{4}$/.test(name)));
@@ -109,7 +109,7 @@ test('guests can play immediately, keep ownership after optional login, and appe
   assert.equal((await b('/api/rooms/' + accountSolo.room.id + '/join', {})).status, 403);
   assert.equal((await b('/api/rooms/' + accountSolo.room.id, undefined, accountSolo.token)).status, 401);
   await finish(privateRoom);
-  const privateBoard = await anonymous('/api/leaderboard?mode=team&imageId=blossom-canal&pieces=12&players=1');
+  const privateBoard = await anonymous('/api/leaderboard?mode=team&imageId=blossom-canal&pieces=108&players=1');
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(privateRoom.room.id));
   const resultId = 'result:' + [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
   assert.ok(privateBoard.data.entries.some(row => row.roomId === resultId));

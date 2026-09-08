@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkImageLibrary } from '../scripts/check-image-library.mjs';
-import { PHOTOS, PHOTO_IDS, RETIRED_PHOTO_IDS } from '../lib/puzzle-catalog.ts';
+import { PHOTOS, PHOTO_IDS, FEATURED_PHOTOS, RETIRED_PHOTO_IDS } from '../lib/puzzle-catalog.ts';
 import { makeRoom } from '../lib/room-engine.ts';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
@@ -29,9 +29,11 @@ async function fixture(t){
 
 test('all playable assets have matching original files, provenance and review records',async()=>{
   assert.deepEqual(await checkImageLibrary(root),{published:PHOTOS.length});
-  assert.ok(PHOTOS.length>=4);
-  for(const id of PHOTO_IDS)assert.equal(makeRoom('catalog-test',id,12,100000).puzzle.imageId,id);
-  for(const id of RETIRED_PHOTO_IDS)assert.throws(()=>makeRoom('retired-test',id,12,100000));
+  assert.equal(PHOTOS.length,20);
+  assert.equal(FEATURED_PHOTOS.length,8);assert.equal(new Set(FEATURED_PHOTOS.map(photo=>photo.id)).size,8);
+  assert.ok(FEATURED_PHOTOS.every(photo=>PHOTO_IDS.includes(photo.id)));
+  for(const id of PHOTO_IDS)assert.equal(makeRoom('catalog-test',id,108,100000).puzzle.imageId,id);
+  for(const id of RETIRED_PHOTO_IDS)assert.throws(()=>makeRoom('retired-test',id,108,100000));
 });
 
 test('an external-source catalog entry blocks publication',async t=>{

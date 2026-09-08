@@ -1,8 +1,9 @@
+import { makeFixtureRoom as makeRoom } from './legacy-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RoomClient } from '../lib/room-client.ts';
 import { PuzzleTable } from '../lib/puzzle-table.ts';
-import { makeRoom, addMember, applyAction, snapshot } from '../lib/room-engine.ts';
+import { addMember, applyAction, snapshot } from '../lib/room-engine.ts';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 function fakeTable(client){return {state:client.state,network:null,networkReady:true,cancelNetworkDrag(){},syncRemote(next,owners,protect){const ids=protect instanceof Set?protect:new Set(protect===null?[]:[protect]);const previous=new Map(this.state.groups.map(g=>[g.id,g]));this.state.groups=structuredClone(next.groups);for(const g of this.state.groups){const held=previous.get(g.id);if(ids.has(g.id)&&held&&!g.locked){g.dx=held.dx;g.dy=held.dy;}}this.state.elapsed=next.elapsed;}};}

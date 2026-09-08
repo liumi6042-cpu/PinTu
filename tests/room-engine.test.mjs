@@ -1,6 +1,7 @@
+import { makeFixtureRoom as makeRoom } from './legacy-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeRoom, addMember, applyAction, authenticate, snapshot, LEASE_MS, ROOM_LIFETIME } from '../lib/room-engine.ts';
+import { addMember, applyAction, authenticate, snapshot, LEASE_MS, ROOM_LIFETIME } from '../lib/room-engine.ts';
 import { placedCount } from '../lib/puzzle-engine.ts';
 function setup(){const r=makeRoom('test','seaside',12,100000),a=addMember(r,'a','甲','digest-a',100000),b=addMember(r,'b','乙','digest-b',100000);r.puzzle.groups.forEach((g,i)=>{g.dx=2000+i*300;g.dy=3000+i*200;});return {r,a,b};}
 test('two participants receive identical puzzle state without authentication secrets',()=>{const {r}=setup(),s=snapshot(r,100300);assert.equal(s.members.length,2);assert.equal(s.puzzle.groups.length,12);assert.ok(!JSON.stringify(s).includes('digest'));});

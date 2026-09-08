@@ -1,6 +1,7 @@
+import { makeFixtureRoom as makeRoom } from './legacy-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {makeRoom,addMember,applyAction,authenticate,snapshot,ONLINE_MS} from '../lib/room-engine.ts';
+import { addMember, applyAction, authenticate, snapshot, ONLINE_MS } from '../lib/room-engine.ts';
 function room(visibility='public',ownerId){return Object.assign(makeRoom('guest-test','seaside',12,1000),{visibility,ownerId,startedAt:null,participants:{}});}
 test('guest identity survives reconnect/pruning and guest/account participants are counted once',()=>{
  const r=room(),a=addMember(r,'a','游客 A123','secret-a',2000,undefined,'guest:one');

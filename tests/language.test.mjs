@@ -4,7 +4,7 @@ import {getLanguage,setLanguage,subscribeLanguage,t,playerName} from '../lib/i18
 import {PHOTOS,CATEGORIES} from '../lib/puzzle-catalog.ts';
 import {LEVELS,createPuzzle} from '../lib/puzzle-engine.ts';
 test('switching language translates content and dynamic labels without changing puzzle state or identifiers',()=>{
- const state=createPuzzle('seaside',60,50,7),before=JSON.stringify(state);let updates=0;
+ const state=createPuzzle('seaside',50,40,7),before=JSON.stringify(state);let updates=0;
  const unsubscribe=subscribeLanguage(()=>updates++);
  try{
   setLanguage('en');assert.equal(getLanguage(),'en');

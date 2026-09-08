@@ -1,6 +1,7 @@
+import { createFixturePuzzle as createPuzzle } from './legacy-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPuzzle, piecesFor, dropGroup, moveGroup, raiseGroup, placedCount, shuffleLoose, restorePuzzle, visibleGroup, pathFor, LEVELS, boardFor, WORLD } from '../lib/puzzle-engine.ts';
+import { piecesFor, dropGroup, moveGroup, raiseGroup, placedCount, shuffleLoose, restorePuzzle, visibleGroup, pathFor, LEVELS, boardFor, WORLD } from '../lib/puzzle-engine.ts';
 const fresh=()=>createPuzzle('seaside',4,3,137);
 const park=s=>s.groups.forEach((g,i)=>{g.dx=2500+i*200;g.dy=2200+i*300;});
 const allIds=s=>s.groups.flatMap(g=>g.pieces).sort((a,b)=>a-b);

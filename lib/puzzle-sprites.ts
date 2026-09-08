@@ -15,6 +15,7 @@ export class PuzzleSprites {
     this.canvas=document.createElement('canvas');
     this.canvas.width=this.columns*this.tileWidth;this.canvas.height=Math.ceil(pieces.length/this.columns)*this.tileHeight;
     const c=this.canvas.getContext('2d')!;
+    c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
     for(const piece of pieces){
       c.save();c.translate((piece.id%this.columns)*this.tileWidth,Math.floor(piece.id/this.columns)*this.tileHeight);
       c.scale(this.tileWidth/this.width,this.tileHeight/this.height);c.translate(this.padding,this.padding);

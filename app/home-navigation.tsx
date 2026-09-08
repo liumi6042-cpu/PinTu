@@ -3,11 +3,11 @@ import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 
 import { useEffect, useState } from 'react';
-import { Users, Trophy, UserRound } from 'lucide-react';
+import { Users, Trophy, UserRound, Images } from 'lucide-react';
 import type { Account } from '@/lib/account-crypto';
 import { apiJson } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
-export default function HomeNavigation() {
+export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:string}) {
     useLanguage();
     const [account, setAccount] = useState<Account | null>(null);
     useEffect(() => {
@@ -20,6 +20,7 @@ export default function HomeNavigation() {
     }, []);
     return <nav className="home-navigation" aria-label={t("主要导航")}>
   <a href="/lobby"><Users size={17}/>{t("公开大厅")}</a>
+  <a href={galleryHref}><Images size={17}/>{t('图库')}</a>
   <a href="/leaderboard"><Trophy size={17}/>{t("用时榜")}</a>
   <a href="/personal"><UserRound size={17}/>{t("个人空间")}</a>
   <a className="home-account-link" href="/account">{account ? account.name : t('登录（可选）')}</a>

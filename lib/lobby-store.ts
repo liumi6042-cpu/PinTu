@@ -1,8 +1,8 @@
 import { localDb } from './local-db';
 import { tokenHash } from './account-crypto';
 import { makeRoom, roomElapsedMs, RoomError, ONLINE_MS, type Room, type RoomVisibility } from './room-engine';
-import { PHOTOS } from './puzzle-catalog';
-import { LEVELS, placedCount } from './puzzle-engine';
+import { PHOTOS, FEATURED_PHOTOS } from './puzzle-catalog';
+import { SAVED_LEVELS, placedCount } from './puzzle-engine';
 import type { RoomCard,RankingRow } from './lobby-types';
 export function newPlayableRoom(id:string,imageId:string,pieces:number,visibility:RoomVisibility,ownerId?:string,now=Date.now()){
  const room=makeRoom(id,imageId,pieces,now);room.visibility=visibility;room.ownerId=ownerId;room.startedAt=null;room.participants={};return room;
@@ -24,11 +24,11 @@ export async function saveCompletion(room:Room){
  await database.batch(commands);
 }
 async function ensurePublicTables(){
- const counts=[48,108,300,500],now=Date.now();
- for(let i=0;i<PHOTOS.length;i++){
-  const slot='daily-'+PHOTOS[i].id,existing=await localDb().prepare('SELECT room_id FROM puzzle_room_directory WHERE slot=? AND expires_at>? AND completed_at IS NULL').bind(slot,now).first();
+ const counts=[108,300,500,1000],now=Date.now();
+ for(let i=0;i<FEATURED_PHOTOS.length;i++){
+  const slot='daily-'+FEATURED_PHOTOS[i].id,existing=await localDb().prepare('SELECT room_id FROM puzzle_room_directory WHERE slot=? AND expires_at>? AND completed_at IS NULL').bind(slot,now).first();
   if(existing)continue;
-  const room=newPlayableRoom(crypto.randomUUID().replaceAll('-',''),PHOTOS[i].id,counts[i%counts.length],'public',undefined,now);
+  const room=newPlayableRoom(crypto.randomUUID().replaceAll('-',''),FEATURED_PHOTOS[i].id,counts[i%counts.length],'public',undefined,now);
   try{await insertPlayableRoom(room,slot);}catch(error){if(!String(error).includes('UNIQUE'))throw error;}
  }
 }
@@ -44,8 +44,8 @@ export async function roomCards(ownerId?:string){
  return result.results.filter(row=>PHOTOS.some(p=>p.id===row.imageId)).map(row=>({id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
 }
 export async function rankings(url:URL){
- const mode=url.searchParams.get('mode')||'team',imageId=url.searchParams.get('imageId')||PHOTOS[0].id,pieces=Number(url.searchParams.get('pieces')||48),players=Number(url.searchParams.get('players')||1);
- if(!['solo','team'].includes(mode)||!PHOTOS.some(p=>p.id===imageId)||!LEVELS.some(l=>l.count===pieces)||!Number.isInteger(players)||players<1||players>32)throw new RoomError('请选择有效的榜单条件');
+ const mode=url.searchParams.get('mode')||'team',imageId=url.searchParams.get('imageId')||PHOTOS[0].id,pieces=Number(url.searchParams.get('pieces')||108),players=Number(url.searchParams.get('players')||1);
+ if(!['solo','team'].includes(mode)||!PHOTOS.some(p=>p.id===imageId)||!SAVED_LEVELS.some(l=>l.count===pieces)||!Number.isInteger(players)||players<1||players>32)throw new RoomError('请选择有效的榜单条件');
  const count=mode==='solo'?1:players;
  const data=await localDb().prepare('SELECT r.room_id,r.elapsed_ms,r.completed_at,r.player_count,r.players_json,d.visibility FROM puzzle_results r LEFT JOIN puzzle_room_directory d ON d.room_id=r.room_id WHERE r.mode=? AND r.image_id=? AND r.piece_count=? AND r.player_count=? ORDER BY r.elapsed_ms ASC,r.completed_at ASC,r.room_id ASC LIMIT 50').bind(mode,imageId,pieces,count).all<{room_id:string;elapsed_ms:number;completed_at:number;player_count:number;players_json:string;visibility:string|null}>();
  // Public results must not disclose an invitation link to a private room.

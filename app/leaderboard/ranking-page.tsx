@@ -5,7 +5,7 @@ import { useLanguage } from '@/app/language-switch';
 import { useEffect, useState } from 'react';
 import { Trophy, Clock3, Users } from 'lucide-react';
 import { PHOTOS } from '@/lib/puzzle-catalog';
-import { LEVELS } from '@/lib/puzzle-engine';
+import { SAVED_LEVELS as LEVELS } from '@/lib/puzzle-engine';
 import { apiJson, clockLabel } from '@/lib/community-client';
 import type { RankingRow } from '@/lib/lobby-types';
 import CommunityShell from '../community-shell';
@@ -22,7 +22,7 @@ function Filter({ label, value, onChange, items }: {
     onChange(v); }}><SelectTrigger className="difficulty-trigger"><SelectValue /></SelectTrigger><SelectContent className="difficulty-menu" alignItemWithTrigger={false}>{t(items.map(item => <SelectItem key={item.value} value={item.value}>{t(item.label)}</SelectItem>))}</SelectContent></Select></label>; }
 export default function RankingPage() {
     useLanguage();
-    const [mode, setMode] = useState('team'), [imageId, setImageId] = useState(PHOTOS[0].id), [pieces, setPieces] = useState('48'), [players, setPlayers] = useState('1'), [entries, setEntries] = useState<RankingRow[]>([]), [loading, setLoading] = useState(true), [error, setError] = useState('');
+    const [mode, setMode] = useState('team'), [imageId, setImageId] = useState(PHOTOS[0].id), [pieces, setPieces] = useState('108'), [players, setPlayers] = useState('1'), [entries, setEntries] = useState<RankingRow[]>([]), [loading, setLoading] = useState(true), [error, setError] = useState('');
     useEffect(() => { const p = new URLSearchParams(window.location.search), mode = p.get('mode'), image = p.get('imageId'), pieces = p.get('pieces'), players = p.get('players'); if (mode === 'solo' || mode === 'team')
         setMode(mode); if (image && PHOTOS.some(v => v.id === image))
         setImageId(image); if (pieces && LEVELS.some(v => v.count === Number(pieces)))

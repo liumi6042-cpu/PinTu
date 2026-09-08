@@ -1,7 +1,8 @@
+import { makeFixtureRoom as makeRoom } from './legacy-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { makeRoom,addMember,applyAction,snapshot,roomElapsedMs } from '../lib/room-engine.ts';
+import { addMember, applyAction, snapshot, roomElapsedMs } from '../lib/room-engine.ts';
 import { passwordHash,equalHash,registration,sessionToken,sessionCookie,randomSecret } from '../lib/account-crypto.ts';
 import { ADS_AVAILABLE,ASSISTANCE_POLICY } from '../lib/assistance-policy.ts';
 function room(visibility='public'){const r=makeRoom('room','seaside',12,1000);Object.assign(r,{visibility,startedAt:null,ownerId:'owner',participants:{}});return r;}

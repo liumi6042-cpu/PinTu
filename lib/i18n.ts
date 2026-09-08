@@ -11,6 +11,13 @@ export function setLanguage(value:Language){
   if(language===value)return;language=value;for(const listener of listeners)listener();
 }
 const extras:Record<string,string>={
+ '图库':'Gallery','去图库挑选更多':'Explore the full gallery','把喜欢的画面，慢慢拼起来。':'Find a picture. Make it yours.',
+ '所有画面都在这里，选好片数，点图开拼。':'Choose a piece count, then click any picture to play.',
+ '8 张精选，点击图片即可开始。':'Eight favorites. Click a picture to start.',
+ '108–2,000 片，选好片数，点击图片就能玩。':'108–2,000 pieces. Choose a count, then click a picture.',
+ '全部画面':'Pictures','点击图片，开始拼图':'Click a picture to play','开始拼图':'Start puzzle',
+ '继续以前的拼图':'Continue an earlier puzzle','历史拼图':'Earlier puzzle',
+
   '登录（可选）':'Sign in (optional)', '游客游玩':'Playing as a guest',
   '注册为可选操作，游客也可以直接游玩。':'Registration is optional. You can play as a guest.',
   '公开拼图和个人游玩均无需登录。账号入口为后续会员服务保留，当前没有付费项目。':'Public and solo puzzles are free to play without signing in. Accounts are optional; paid membership is not available yet.',

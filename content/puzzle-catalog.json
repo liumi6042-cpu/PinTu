@@ -70,5 +70,113 @@
     "src": "/puzzles/vermilion-garden.png",
     "origin": "project-ai-generated",
     "status": "published"
+  },
+  {
+    "id": "lantern-market",
+    "title": "灯火夜市",
+    "subtitle": "灯火顺着石板路，把夜晚照得暖暖的。",
+    "category": "街景",
+    "src": "/puzzles/lantern-market.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "tulip-windmill",
+    "title": "郁金香风车",
+    "subtitle": "花田绕过小溪，风车转动春天的颜色。",
+    "category": "风景",
+    "src": "/puzzles/tulip-windmill.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "autumn-teahouse",
+    "title": "秋庭茶舍",
+    "subtitle": "枫叶落在水面，茶香留在秋日庭院。",
+    "category": "风景",
+    "src": "/puzzles/autumn-teahouse.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "bakery-morning",
+    "title": "晨光面包房",
+    "subtitle": "晨光照进面包坊，酥香铺满整张桌。",
+    "category": "生活",
+    "src": "/puzzles/bakery-morning.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "tropical-aviary",
+    "title": "雨林百鸟",
+    "subtitle": "在兰花与瀑布之间，寻找彩色的羽毛。",
+    "category": "动物",
+    "src": "/puzzles/tropical-aviary.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "woodland-friends",
+    "title": "林溪伙伴",
+    "subtitle": "狐狸和小鹿，沿着林间溪水相遇。",
+    "category": "动物",
+    "src": "/puzzles/woodland-friends.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "ceramic-studio",
+    "title": "釉彩工坊",
+    "subtitle": "一抹釉色，一束阳光，慢慢做成喜欢的器物。",
+    "category": "艺术",
+    "src": "/puzzles/ceramic-studio.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "star-observatory",
+    "title": "星辉观测台",
+    "subtitle": "转动星盘，让目光越过群山与银河。",
+    "category": "幻想",
+    "src": "/puzzles/star-observatory.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "floating-islands",
+    "title": "浮岛飞瀑",
+    "subtitle": "乘着风穿过浮岛，去瀑布上方旅行。",
+    "category": "幻想",
+    "src": "/puzzles/floating-islands.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "harbor-houses",
+    "title": "彩屋港湾",
+    "subtitle": "小船停在彩色屋前，海风翻动温柔的一页。",
+    "category": "街景",
+    "src": "/puzzles/harbor-houses.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "garden-table",
+    "title": "花园野餐",
+    "subtitle": "把水果、鲜花和好天气，摆成一桌小小庆祝。",
+    "category": "生活",
+    "src": "/puzzles/garden-table.png",
+    "origin": "project-ai-generated",
+    "status": "published"
+  },
+  {
+    "id": "winter-village",
+    "title": "雪国灯火",
+    "subtitle": "雪花落在屋顶，灯光点亮回家的小路。",
+    "category": "风景",
+    "src": "/puzzles/winter-village.png",
+    "origin": "project-ai-generated",
+    "status": "published"
   }
 ]

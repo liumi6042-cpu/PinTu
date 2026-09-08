@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir,writeFile } from 'node:fs/promises';
-const base=process.env.PUZZLE_TEST_URL||'http://localhost:3000';
+const base=process.env.PUZZLE_TEST_URL||'http://localhost:2000';
 async function call(path,body,cookie='',token='',origin){
  const response=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{}),...(origin?{Origin:origin}:{})},body:body===undefined?undefined:JSON.stringify(body)});
  const raw=await response.text();assert.ok(response.headers.get('content-type')?.includes('application/json'),path+' '+response.status+' '+raw.slice(0,300));
@@ -20,7 +20,7 @@ test('local accounts, public directory, private/solo isolation and official rank
  });
  const suffix=crypto.randomUUID().replaceAll('-','').slice(0,10),username='test_'+suffix,password='test-pass-'+suffix;
  assert.equal((await call('/api/lobby')).status,200);
- assert.equal((await call('/api/rooms',{visibility:'invalid',imageId:'seaside',pieces:12})).status,400);
+ assert.equal((await call('/api/rooms',{visibility:'invalid',imageId:'seaside',pieces:108})).status,400);
  assert.equal((await call('/api/auth/register',{username,name:'甲',password},'','','https://untrusted.test')).status,403);
  const registered=await call('/api/auth/register',{username,name:'测试甲',password});assert.equal(registered.status,201);ids.push(registered.data.account.id);
  assert.match(registered.cookie,/HttpOnly/);assert.match(registered.cookie,/SameSite=Strict/);assert.ok(!JSON.stringify(registered.data).includes(password));
@@ -30,11 +30,11 @@ test('local accounts, public directory, private/solo isolation and official rank
  const loggedIn=await call('/api/auth/login',{username:username.toUpperCase(),password});assert.equal(loggedIn.status,200);cookieA=loggedIn.cookie.split(';')[0];
  assert.equal((await call('/api/auth/me',undefined,cookieA)).data.account.id,ids[0]);
  const b=await call('/api/auth/register',{username:'other_'+suffix,name:'测试乙',password});assert.equal(b.status,201);ids.push(b.data.account.id);const cookieB=b.cookie.split(';')[0];
- async function create(visibility,pieces=12){const result=await call('/api/rooms',{visibility,imageId:'seaside',pieces},cookieA);assert.equal(result.status,201,JSON.stringify(result.data));roomIds.push(result.data.room.id);return result.data;}
+ async function create(visibility,pieces=108){const result=await call('/api/rooms',{visibility,imageId:'seaside',pieces},cookieA);assert.equal(result.status,201,JSON.stringify(result.data));roomIds.push(result.data.room.id);return result.data;}
  const publicRoom=await create('public'),privateRoom=await create('private'),soloRoom=await create('solo');
  assert.equal((await call('/api/rooms/'+soloRoom.room.id,{type:'shuffle'},cookieA,soloRoom.token)).status,200);
  assert.equal((await call('/api/rooms/'+publicRoom.room.id,{type:'shuffle'},cookieA,publicRoom.token)).status,403);
- const large=await create('public',3000),largeJoin=await call('/api/rooms/'+large.room.id+'/join',{},cookieB);assert.equal(largeJoin.status,200);assert.equal(largeJoin.data.room.puzzle.groups.length,3000);
+ const large=await create('public',2000),largeJoin=await call('/api/rooms/'+large.room.id+'/join',{},cookieB);assert.equal(largeJoin.status,200);assert.equal(largeJoin.data.room.puzzle.groups.length,2000);
  assert.equal((await call('/api/rooms/'+large.room.id,{type:'claim',groupId:0},cookieA,large.token)).status,200);
  const largeDrop=await call('/api/rooms/'+large.room.id,{type:'drop',groupId:0,dx:1.76,dy:0,seq:1},cookieA,large.token);assert.equal(largeDrop.status,200);assert.ok(largeDrop.data.puzzle.groups.some(g=>g.locked&&g.pieces.includes(0)));
  const directory=await call('/api/lobby',undefined,cookieB);assert.equal(directory.status,200);assert.ok(directory.data.rooms.some(r=>r.id===publicRoom.room.id));assert.ok(!directory.data.rooms.some(r=>[privateRoom.room.id,soloRoom.room.id].includes(r.id)));assert.ok(directory.data.rooms.length>=5);
@@ -59,8 +59,8 @@ test('local accounts, public directory, private/solo isolation and official rank
   return elapsed;
  }
  const teamTime=await finish(publicRoom,joined.data),soloTime=await finish(soloRoom);
- const teamBoard=await call('/api/leaderboard?mode=team&imageId=seaside&pieces=12&players=2',undefined,cookieA);assert.equal(teamBoard.status,200);const teamRows=teamBoard.data.entries.filter(r=>r.roomId===publicRoom.room.id);assert.equal(teamRows.length,1);assert.equal(teamRows[0].elapsedMs,teamTime);assert.deepEqual(new Set(teamRows[0].names),new Set(['测试甲','测试乙']));
- const soloBoard=await call('/api/leaderboard?mode=solo&imageId=seaside&pieces=12',undefined,cookieA);assert.equal(soloBoard.status,200);assert.equal(soloBoard.data.entries.find(r=>r.roomId===soloRoom.room.id).elapsedMs,soloTime);
+ const teamBoard=await call('/api/leaderboard?mode=team&imageId=seaside&pieces=108&players=2',undefined,cookieA);assert.equal(teamBoard.status,200);const teamRows=teamBoard.data.entries.filter(r=>r.roomId===publicRoom.room.id);assert.equal(teamRows.length,1);assert.equal(teamRows[0].elapsedMs,teamTime);assert.deepEqual(new Set(teamRows[0].names),new Set(['测试甲','测试乙']));
+ const soloBoard=await call('/api/leaderboard?mode=solo&imageId=seaside&pieces=108',undefined,cookieA);assert.equal(soloBoard.status,200);assert.equal(soloBoard.data.entries.find(r=>r.roomId===soloRoom.room.id).elapsedMs,soloTime);
  assert.ok(!(await call('/api/lobby',undefined,cookieA)).data.rooms.some(r=>r.id===publicRoom.room.id));
  assert.equal((await call('/api/leaderboard?pieces=17',undefined,cookieA)).status,400);
  assert.equal((await call('/api/auth/logout',{},cookieA)).status,200);assert.equal((await call('/api/auth/me',undefined,cookieA)).data.account,null);

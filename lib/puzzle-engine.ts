@@ -15,14 +15,13 @@ export function normalizePuzzle(state:PuzzleState) {
   state.layout='square';return state;
 }
 export const LEVELS = [
-  { count:12, cols:4, rows:3, label:'轻松体验' }, { count:48, cols:8, rows:6, label:'慢慢享受' },
   { count:108, cols:12, rows:9, label:'认真挑战' }, { count:300, cols:20, rows:15, label:'渐入佳境' },
   { count:500, cols:25, rows:20, label:'沉浸时光' }, { count:1000, cols:40, rows:25, label:'千片挑战' },
   { count:1500, cols:50, rows:30, label:'耐心之旅' }, { count:2000, cols:50, rows:40, label:'一起攻克' },
-  { count:3000, cols:60, rows:50, label:'长线挑战' },
 ];
 // Retired grids remain valid only for existing progress, never for new games.
-const savedGrids = [...LEVELS, { cols:80, rows:50 }, { cols:100, rows:50 }];
+export const SAVED_LEVELS = [...LEVELS, { count:12, cols:4, rows:3, label:'轻松体验' }, { count:48, cols:8, rows:6, label:'慢慢享受' }, { count:3000, cols:60, rows:50, label:'长线挑战' }, { count:4000, cols:80, rows:50, label:'历史拼图' }, { count:5000, cols:100, rows:50, label:'历史拼图' }];
+const savedGrids = SAVED_LEVELS;
 export function snapTolerance(state:Pick<PuzzleState,'cols'|'rows'>) { const board=boardFor(state.cols,state.rows);return Math.min(board.width/state.cols,board.height/state.rows)*.26; }
 export function neighbors(id:number,cols:number,rows:number) {
   const result:number[]=[];
@@ -66,6 +65,10 @@ function scatteredGroups(cols:number,rows:number,seed:number):Group[] {
 export function createPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0):PuzzleState {
   if(!LEVELS.some(l=>l.cols===cols&&l.rows===rows)) throw new Error('不支持的拼图片数');
   return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed)};
+}
+export function restartPuzzle(state:PuzzleState,seed=Date.now()>>>0):PuzzleState {
+  if(!savedGrids.some(l=>l.cols===state.cols&&l.rows===state.rows))throw new Error('不支持的拼图片数');
+  return {version:1,layout:'square',imageId:state.imageId,cols:state.cols,rows:state.rows,seed,elapsed:0,groups:scatteredGroups(state.cols,state.rows,seed)};
 }
 export function adjacent(a:number,b:number,cols:number) {return Math.abs(a-b)===cols || (Math.floor(a/cols)===Math.floor(b/cols)&&Math.abs(a-b)===1);}
 export function raiseGroup(state:PuzzleState,id:number) {const i=state.groups.findIndex(g=>g.id===id);if(i<0||state.groups[i].locked)return;state.groups.push(...state.groups.splice(i,1));}
