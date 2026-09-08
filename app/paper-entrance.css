@@ -1,0 +1,101 @@
+/* A standalone illustrated set, with live typography and accessible controls. */
+.paper-entrance {
+  --entrance-x: 0;
+  --entrance-y: 0;
+  position: relative;
+  isolation: isolate;
+  min-height: max(720px, 100svh);
+  overflow: hidden;
+  background: #f2e8d6;
+  color: #332c23;
+  font-family: 'Songti SC', 'SimSun', Georgia, serif;
+}
+.entrance-header {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 5.6%;
+}
+.entrance-brand { font-size: 27px; letter-spacing: 2px; white-space: nowrap; }
+.paper-theme .entrance-header .home-navigation { gap: 17px; font-size: 14px; }
+.paper-theme .entrance-header .home-navigation a { color: #41382a; padding: 10px 8px; border: 0; border-radius: 0; }
+.paper-theme .entrance-header .home-navigation a:hover { color: #925437; background: transparent; }
+.entrance-header .home-navigation svg { display: none; }
+.entrance-copy { position: relative; z-index: 5; width: max-content; max-width: 47%; padding: 7px 0 0; margin: 0 0 230px 5.6%; }
+.entrance-edition { color: #887861; font-size: 15px; letter-spacing: 1px; margin: 0 0 clamp(36px, 5.5vh, 65px); }
+.entrance-edition::after { content: ''; display: block; width: 39px; height: 1px; background: #a29177; margin-top: 12px; }
+.entrance-copy h1 { font-size: clamp(36px, 3.8vw, 61px); font-weight: 400; line-height: 1.47; letter-spacing: 1px; margin: 0 0 19px; white-space: nowrap; }
+.entrance-subtitle { font-size: clamp(16px, 1.45vw, 21px); letter-spacing: 2px; line-height: 1.8; margin: 0 0 28px; }
+.entrance-enter { display: inline-flex; align-items: center; justify-content: center; gap: 22px; padding: 12px 35px; min-width: 204px; min-height: 48px; border: 0; border-radius: 32px; color: #fff; background: #ac6246; font-size: 20px; letter-spacing: 3px; box-shadow: 0 5px 18px #8d583313; transition: background .2s, transform .2s; }
+.entrance-enter:hover { background: #a76240; transform: translateY(-2px); }
+.entrance-enter:disabled { opacity: 1; cursor: default; transform: none; }
+.entrance-note { margin: 13px 0 0; font-size: 14px; letter-spacing: 1px; color: #7f6c55; }
+.entrance-stage { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.entrance-camera { position: absolute; inset: 0; transform-origin: 67% 51%; transition: transform 1.32s cubic-bezier(.63,.08,.48,1); }
+.entrance-scenery { display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: center; transform: translate(calc(var(--entrance-x) * -9px), calc(var(--entrance-y) * -6px)) scale(1.025); transition: transform .35s ease-out; }
+.entrance-slot { position: absolute; left: calc(67% - 32px); top: calc(52% - 32px); width: 64px; height: 64px; opacity: 0; transform: scale(.85); transition: opacity .2s, transform .2s; filter: drop-shadow(1px 3px 3px #543c2560); }
+.entrance-slot svg { width: 100%; height: 100%; fill: #f5e8cb; stroke: #a27b4f; stroke-width: 1px; }
+.entrance-dragging .entrance-slot, .entrance-snapping .entrance-slot { opacity: 1; transform: scale(1); }
+.entrance-slot.is-near svg { fill: #c5a377; }
+.entrance-piece { pointer-events: auto; position: absolute; z-index: 7; left: 1%; bottom: 5%; width: clamp(112px, 12vw, 185px); height: clamp(112px, 12vw, 185px); padding: 0; border: 0; background: transparent; touch-action: none; transform: translate(calc(var(--entrance-x) * -25px), calc(var(--entrance-y) * -16px)) rotate(-18deg); transition: transform .24s ease-out, opacity .3s; filter: drop-shadow(4px 5px 0 #965e3d) drop-shadow(9px 17px 9px #734a2c36); }
+.entrance-piece svg { display: block; width: 100%; height: 100%; fill: #bd815b; stroke: #d4a17b; stroke-width: 1.5px; }
+.entrance-piece.is-dragging { transition: none; cursor: grabbing; }
+.entrance-piece:disabled { opacity: 1; }
+.entrance-piece-label { position: absolute; left: 5%; right: 0; top: 100%; color: #775235; font-size: 13px; white-space: nowrap; opacity: 0; transform: rotate(18deg); transition: opacity .2s; filter: none; }
+.entrance-piece:hover .entrance-piece-label, .entrance-piece:focus-visible .entrance-piece-label { opacity: 1; }
+.entrance-footer { position: absolute; z-index: 8; left: 23%; right: 5.6%; bottom: 25px; display: flex; align-items: center; justify-content: space-between; gap: 20px; color: #756049; font-size: 13px; }
+.entrance-footer button { border: 0; background: transparent; padding: 10px 0 10px 12px; white-space: nowrap; min-height: 44px; }
+.entrance-footer button:hover { color: #925437; }
+.entrance-footer [role='status']:not(:empty) { background: #f9f0dfd9; padding: 6px 12px; border-radius: 4px; }
+.entrance-wash { position: absolute; z-index: 12; inset: 0; background: var(--paper); opacity: 0; pointer-events: none; }
+.entrance-opening .entrance-camera { transform: scale(3.6); }
+.entrance-opening .entrance-copy, .entrance-opening .entrance-header, .entrance-opening .entrance-footer, .entrance-opening .entrance-piece, .entrance-opening .entrance-slot { opacity: 0; pointer-events: none; transition: opacity .35s; }
+.entrance-opening .entrance-wash { animation: entrance-light 1.32s ease-in both; }
+.entrance-enter:focus-visible, .entrance-piece:focus-visible, .entrance-footer button:focus-visible, .entrance-header a:focus-visible { outline: 2px solid #905538; outline-offset: 6px; }
+@keyframes entrance-light { 0%, 42% { opacity: 0; } 100% { opacity: 1; } }
+
+@media (min-aspect-ratio: 18/9) and (min-width: 1041px) {
+  .paper-entrance { min-height: max(760px, 100svh); }
+  .entrance-copy { padding-top: 20px; }
+}
+@media (max-width: 1040px) {
+  .paper-entrance { min-height: 0; padding-bottom: 0; }
+  .entrance-header { padding: 22px 5.6%; }
+  .entrance-copy { margin: 10px 5.6% 0; max-width: none; padding: 0; }
+  .entrance-edition { margin-bottom: 27px; }
+  .entrance-copy h1 { font-size: 43px; }
+  .entrance-subtitle { font-size: 17px; margin-bottom: 22px; }
+  .entrance-stage { position: relative; width: 100%; height: min(77vw, 620px); margin-top: -30px; }
+  .entrance-stage::after { content: ''; position: absolute; inset: 0 0 auto; height: 22%; background: linear-gradient(#f2e8d6, transparent); pointer-events: none; }
+  .entrance-camera { transform-origin: 64% 51%; }
+  .entrance-scenery { object-position: 80% center; }
+  .entrance-slot { left: calc(64% - 32px); }
+  .entrance-piece { width: 130px; height: 130px; bottom: 7%; }
+  .entrance-footer { left: 25%; bottom: 8px; }
+}
+@media (max-width: 620px) {
+  .entrance-header { flex-wrap: wrap; justify-content: center; gap: 9px; padding: 19px 20px 10px; }
+  .entrance-brand { font-size: 24px; }
+  .paper-theme .entrance-header .home-navigation { width: 100%; gap: 13px; font-size: 13px; }
+  .paper-theme .entrance-header .home-navigation a { padding: 8px 5px; }
+  .entrance-copy { margin: 15px 22px 0; width: auto; text-align: center; }
+  .entrance-edition { display: none; }
+  .entrance-copy h1 { font-size: clamp(27px, 7.4vw, 39px); line-height: 1.48; letter-spacing: 0; margin-bottom: 15px; }
+  .entrance-subtitle { font-size: 15px; letter-spacing: .5px; margin-bottom: 20px; }
+  .entrance-enter { font-size: 18px; padding: 11px 28px; gap: 20px; }
+  .entrance-note { font-size: 13px; margin-top: 11px; }
+  .entrance-stage { height: 96vw; min-height: 325px; max-height: 540px; margin-top: -9px; }
+  .entrance-piece { width: 108px; height: 108px; bottom: 9%; }
+  .entrance-footer { left: 30%; right: 20px; bottom: 3px; justify-content: flex-end; font-size: 12px; }
+  .entrance-footer [role='status'] { position: absolute; bottom: 44px; right: 0; max-width: 240px; }
+  .entrance-slot { left: calc(61% - 28px); width: 56px; height: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entrance-camera, .entrance-scenery, .entrance-piece, .entrance-slot { transition: none; }
+  .entrance-scenery { transform: none; }
+  .entrance-piece { transform: rotate(-18deg); }
+  .entrance-wash { display: none; }
+}
