@@ -1,4 +1,5 @@
 import { localDb } from './local-db';
+import { tokenHash } from './account-crypto';
 import { makeRoom, roomElapsedMs, RoomError, ONLINE_MS, type Room, type RoomVisibility } from './room-engine';
 import { PHOTOS } from './puzzle-catalog';
 import { LEVELS, placedCount } from './puzzle-engine';
@@ -40,12 +41,13 @@ export async function roomCards(ownerId?:string){
  const now=Date.now(),where=ownerId?'d.owner_id=?':'d.visibility=\'public\' AND d.completed_at IS NULL';
  const query=localDb().prepare('SELECT '+summaryColumns+' FROM puzzle_room_directory d JOIN puzzle_rooms r ON r.id=d.room_id WHERE '+where+' AND d.expires_at>? ORDER BY d.created_at DESC LIMIT 24');
  const result=await (ownerId?query.bind(now-ONLINE_MS,ownerId,now):query.bind(now-ONLINE_MS,now)).all<CardRow>();
- return result.results.filter(row=>PHOTOS.some(p=>p.id===row.imageId)).map(row=>({id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
+ return result.results.filter(row=>PHOTOS.some(p=>p.id===row.imageId)).map(row=>({id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
 }
 export async function rankings(url:URL){
  const mode=url.searchParams.get('mode')||'team',imageId=url.searchParams.get('imageId')||PHOTOS[0].id,pieces=Number(url.searchParams.get('pieces')||48),players=Number(url.searchParams.get('players')||1);
  if(!['solo','team'].includes(mode)||!PHOTOS.some(p=>p.id===imageId)||!LEVELS.some(l=>l.count===pieces)||!Number.isInteger(players)||players<1||players>32)throw new RoomError('请选择有效的榜单条件');
  const count=mode==='solo'?1:players;
- const data=await localDb().prepare('SELECT room_id,elapsed_ms,completed_at,player_count,players_json FROM puzzle_results WHERE mode=? AND image_id=? AND piece_count=? AND player_count=? ORDER BY elapsed_ms ASC,completed_at ASC,room_id ASC LIMIT 50').bind(mode,imageId,pieces,count).all<{room_id:string;elapsed_ms:number;completed_at:number;player_count:number;players_json:string}>();
- return data.results.map(r=>({roomId:r.room_id,elapsedMs:r.elapsed_ms,completedAt:r.completed_at,playerCount:r.player_count,names:JSON.parse(r.players_json) as string[]})) satisfies RankingRow[];
+ const data=await localDb().prepare('SELECT r.room_id,r.elapsed_ms,r.completed_at,r.player_count,r.players_json,d.visibility FROM puzzle_results r LEFT JOIN puzzle_room_directory d ON d.room_id=r.room_id WHERE r.mode=? AND r.image_id=? AND r.piece_count=? AND r.player_count=? ORDER BY r.elapsed_ms ASC,r.completed_at ASC,r.room_id ASC LIMIT 50').bind(mode,imageId,pieces,count).all<{room_id:string;elapsed_ms:number;completed_at:number;player_count:number;players_json:string;visibility:string|null}>();
+ // Public results must not disclose an invitation link to a private room.
+ return await Promise.all(data.results.map(async r=>({roomId:r.visibility==='private'?'result:'+await tokenHash(r.room_id):r.room_id,elapsedMs:r.elapsed_ms,completedAt:r.completed_at,playerCount:r.player_count,names:JSON.parse(r.players_json) as string[]}))) satisfies RankingRow[];
 }

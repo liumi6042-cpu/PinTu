@@ -47,6 +47,6 @@ test('solo organization preserves connected pieces and never rearranges a public
 test('ad assistance remains locked and an unfinished game cannot preview the whole picture',async()=>{
  assert.equal(ADS_AVAILABLE,false);assert.equal(ASSISTANCE_POLICY.hint.maxPerGame,3);assert.equal(ASSISTANCE_POLICY.reference.maxPerGame,null);assert.equal(ASSISTANCE_POLICY.reference.durationSeconds,30);
  const source=await readFile(new URL('../app/puzzle-app.tsx',import.meta.url),'utf8'),game=source.slice(source.indexOf('export function Game'));
- assert.ok(!game.includes('.hint('));assert.ok(!game.includes('reference-card'));assert.match(game,/metrics.placed===total&&<button className="text-button preview-game-button"/);
+ assert.ok(!game.includes('.hint('));assert.ok(!game.includes('reference-card'));assert.match(game,/metrics\.placed\s*===\s*total\s*&&\s*<button className="text-button preview-game-button"/);
  for(const tool of ['hint','reference','underlay'])assert.ok(game.includes("setAssistance('"+tool+"')"));
 });

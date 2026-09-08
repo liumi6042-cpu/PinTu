@@ -19,8 +19,8 @@ test('local accounts, public directory, private/solo isolation and official rank
   await mkdir(new URL('../work/',import.meta.url),{recursive:true});await writeFile(new URL('../work/community-test-cleanup.sql',import.meta.url),statements.join('\n'));
  });
  const suffix=crypto.randomUUID().replaceAll('-','').slice(0,10),username='test_'+suffix,password='test-pass-'+suffix;
- assert.equal((await call('/api/lobby')).status,401);
- assert.equal((await call('/api/rooms',{visibility:'solo',imageId:'seaside',pieces:12})).status,401);
+ assert.equal((await call('/api/lobby')).status,200);
+ assert.equal((await call('/api/rooms',{visibility:'invalid',imageId:'seaside',pieces:12})).status,400);
  assert.equal((await call('/api/auth/register',{username,name:'甲',password},'','','https://untrusted.test')).status,403);
  const registered=await call('/api/auth/register',{username,name:'测试甲',password});assert.equal(registered.status,201);ids.push(registered.data.account.id);
  assert.match(registered.cookie,/HttpOnly/);assert.match(registered.cookie,/SameSite=Strict/);assert.ok(!JSON.stringify(registered.data).includes(password));
@@ -44,7 +44,7 @@ test('local accounts, public directory, private/solo isolation and official rank
  const own=await call('/api/my-rooms',undefined,cookieA);assert.equal(own.status,200);assert.ok(own.data.rooms.some(r=>r.id===soloRoom.room.id));
  const joined=await call('/api/rooms/'+publicRoom.room.id+'/join',{},cookieB);assert.equal(joined.status,200);assert.equal(joined.data.room.members.length,2);
  const privateJoin=await call('/api/rooms/'+privateRoom.room.id+'/join',{},cookieB);assert.equal(privateJoin.status,200);
- assert.equal((await call('/api/rooms/'+publicRoom.room.id+'/join',{})).status,401);
+ assert.equal((await call('/api/rooms/'+publicRoom.room.id+'/join',{})).status,200);
  async function finish(ticket,second){
   const path='/api/rooms/'+ticket.room.id;
   let view=(await call(path,undefined,cookieA,ticket.token)).data;assert.equal(view.startedAt,null);assert.equal(view.puzzle.elapsed,0);
@@ -65,7 +65,7 @@ test('local accounts, public directory, private/solo isolation and official rank
  assert.equal((await call('/api/leaderboard?pieces=17',undefined,cookieA)).status,400);
  assert.equal((await call('/api/auth/logout',{},cookieA)).status,200);assert.equal((await call('/api/auth/me',undefined,cookieA)).data.account,null);
  assert.equal((await call('/api/rooms/'+privateRoom.room.id,undefined,cookieA,privateRoom.token)).status,401);
- assert.equal((await call('/api/lobby',undefined,cookieA)).status,401);
+ assert.equal((await call('/api/lobby',undefined,cookieA)).status,200);
  for(let i=0;i<8;i++)assert.equal((await call('/api/auth/login',{username,password:'bad-password'})).status,401);
  assert.equal((await call('/api/auth/login',{username,password})).status,429);
 });

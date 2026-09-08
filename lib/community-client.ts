@@ -1,14 +1,17 @@
 import { saveTicket, type RoomTicket,roomSessionKey } from './room-client';
+import { ensureGuestSession } from './guest-client';
 export async function apiJson<T>(path:string,body?:unknown):Promise<T>{
+ if(body!==undefined&&path==='/api/rooms')await ensureGuestSession();
  const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
  const data=await response.json() as {error?:string};
- if(!response.ok){if(response.status===401&&typeof window!=='undefined'&&!path.startsWith('/api/auth/'))window.dispatchEvent(new Event('puzzle:session-expired'));throw new Error(data.error||'暂时无法连接，请重试');}return data as T;
+ if(!response.ok){throw new Error(data.error||'暂时无法连接，请重试');}return data as T;
 }
 export async function joinPuzzle(roomId:string,name?:string){
+ await ensureGuestSession();
  // Reuse a valid tab ticket before joining again, so returning does not abandon a held lease.
  let ticket:RoomTicket|null=null;
  const candidates=new Set<string>();try{const raw=sessionStorage.getItem(roomSessionKey(roomId));if(raw)candidates.add(raw);}catch{}try{const raw=localStorage.getItem(roomSessionKey(roomId)+':account');if(raw)candidates.add(raw);}catch{}
- for(const raw of candidates){try{const saved=JSON.parse(raw),response=await fetch('/api/rooms/'+roomId,{headers:{Authorization:'Bearer '+saved.token},cache:'no-store'});if(response.ok){ticket={token:saved.token,playerId:saved.playerId,room:await response.json()};break;}}catch{}}
+ for(const raw of candidates){try{const saved=JSON.parse(raw),response=await fetch('/api/rooms/'+roomId,{method:'POST',headers:{Authorization:'Bearer '+saved.token,'Content-Type':'application/json'},body:JSON.stringify({type:'heartbeat'}),cache:'no-store',signal:AbortSignal.timeout(6500)});if(response.ok){ticket={token:saved.token,playerId:saved.playerId,room:await response.json()};break;}}catch{}}
  if(!ticket)ticket=await apiJson<RoomTicket>('/api/rooms/'+roomId+'/join',{name});
  saveTicket(ticket);return ticket;
 }

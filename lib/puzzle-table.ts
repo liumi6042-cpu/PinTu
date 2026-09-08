@@ -1,6 +1,7 @@
 import { boardFor, normalizePuzzle, WORLD, piecesFor, pathFor, moveGroup, dropGroup, raiseGroup, placedCount, visibleGroup, shuffleLoose, snapTolerance, type PuzzleState, type Group } from './puzzle-engine';
 import { PuzzleSprites } from './puzzle-sprites';
 import { pictureCrop, drawPiecePicture } from './puzzle-picture';
+import { t,subscribeLanguage } from './i18n';
 type Notice = (message:string)=>void;
 export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
@@ -18,6 +19,7 @@ export class PuzzleTable {
   private space=false; private raf=0; private timer:ReturnType<typeof setInterval>; private hintTimer:ReturnType<typeof setTimeout>|null=null;
   private resize:ResizeObserver; private abort=new AbortController(); private audio:AudioContext|null=null;
   private update:()=>void; private notice:Notice;
+  private stopLanguage:()=>void;
   constructor(canvas:HTMLCanvasElement,state:PuzzleState,image:HTMLImageElement,update:()=>void,notice:Notice) {
     this.canvas=canvas;this.state=normalizePuzzle(state);this.board=boardFor(state.cols,state.rows);this.image=image;this.update=update;this.notice=notice;
     this.ctx=canvas.getContext('2d')!;this.hit=document.createElement('canvas').getContext('2d')!;
@@ -35,6 +37,7 @@ export class PuzzleTable {
     canvas.addEventListener('blur',()=>{this.space=false;this.release();},opts);
     document.addEventListener('visibilitychange',()=>{if(document.hidden)this.release();},opts);
     this.timer=setInterval(()=>{if(!this.network&&!this.paused&&!document.hidden&&placedCount(state)<this.pieces.length){state.elapsed++;this.update();}},1000);
+    this.stopLanguage=subscribeLanguage(()=>this.draw());
   }
   private resizeCanvas(){const r=this.canvas.getBoundingClientRect(),oldW=this.width,oldH=this.height;this.width=r.width;this.height=r.height;const dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);if(!oldW)this.fit();else{this.camera.x+=(this.width-oldW)/2;this.camera.y+=(this.height-oldH)/2;}this.draw();}
   private point(e:{clientX:number;clientY:number}){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
@@ -148,7 +151,7 @@ export class PuzzleTable {
     c.save();c.setLineDash([4/z,7/z]);c.strokeStyle='#94836d44';c.lineWidth=.6/z;
     for(let i=1;i<this.state.cols;i++){c.beginPath();c.moveTo(this.board.x+i*w,this.board.y);c.lineTo(this.board.x+i*w,this.board.y+this.board.height);c.stroke();}
     for(let i=1;i<this.state.rows;i++){c.beginPath();c.moveTo(this.board.x,this.board.y+i*h);c.lineTo(this.board.x+this.board.width,this.board.y+i*h);c.stroke();}c.restore();
-    if(!placedCount(this.state)){c.fillStyle='#756754b0';c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText('把喜欢的画面，一片片拼回来',760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText('从四个角开始，也许会更轻松',760,582);}
+    if(!placedCount(this.state)){c.fillStyle='#756754b0';c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
     c.fillStyle='#756754';c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
     const groups=[...this.state.groups.filter(g=>g.locked),...this.state.groups.filter(g=>!g.locked)];
     for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g);
@@ -176,6 +179,6 @@ export class PuzzleTable {
     }
     if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle='#453e34';c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
   }
-  destroy(){this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;void this.audio?.close();}
+  destroy(){this.stopLanguage();this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;void this.audio?.close();}
 }
 
