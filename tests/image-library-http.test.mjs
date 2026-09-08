@@ -18,7 +18,7 @@ test('local server serves only catalogued originals and creates rooms for replac
     const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:id,pieces:12,name:'旧图校验'})});
     assert.equal(response.status,400);
   }
-  const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:'skate-garden',pieces:5000,name:'生成图校验'})});
+  const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:'skate-garden',pieces:3000,name:'生成图校验'})});
   assert.equal(response.status,201);
   const created=await response.json(),path=base+'/api/rooms/'+created.room.id;
   try{
@@ -26,7 +26,7 @@ test('local server serves only catalogued originals and creates rooms for replac
     assert.equal(saved.status,200);
     const room=await saved.json();
     assert.equal(room.puzzle.imageId,'skate-garden');
-    assert.equal(room.puzzle.cols*room.puzzle.rows,5000);
+    assert.equal(room.puzzle.cols*room.puzzle.rows,3000);
   }finally{
     await fetch(path,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+created.token},body:JSON.stringify({type:'leave'})});
   }

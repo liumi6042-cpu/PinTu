@@ -3,19 +3,19 @@ import assert from 'node:assert/strict';
 import { boardFor, LEVELS, BOARD, createPuzzle, restorePuzzle, normalizePuzzle, placedCount, piecesFor } from '../lib/puzzle-engine.ts';
 import { pictureCrop, drawPiecePicture } from '../lib/puzzle-picture.ts';
 
-test('every level has square piece bodies, with exactly 5000 pieces in a 2:1 frame',()=>{
+test('every level has square piece bodies, with exactly 3000 pieces in a 6:5 frame',()=>{
   for(const {count,cols,rows} of LEVELS){
     const board=boardFor(cols,rows);
     assert.equal(cols*rows,count);assert.ok(Math.abs(board.width/cols-board.height/rows)<1e-10);
     assert.ok(board.width<=BOARD.width&&board.height<=BOARD.height);
     assert.equal(board.x+board.width/2,760);assert.equal(board.y+board.height/2,560);
   }
-  const level=LEVELS.find(l=>l.count===5000),board=boardFor(level.cols,level.rows);
-  assert.equal(level.cols*level.rows,5000);assert.equal(board.width/board.height,2);
+  const level=LEVELS.find(l=>l.count===3000),board=boardFor(level.cols,level.rows);
+  assert.equal(level.cols*level.rows,3000);assert.equal(board.width/board.height,6/5);
 });
 
 test('legacy progress migrates once without losing group membership, locks or time',()=>{
-  const legacy=createPuzzle('seaside',100,50,91);delete legacy.layout;legacy.elapsed=173;
+  const legacy={version:1,imageId:'seaside',cols:100,rows:50,seed:91,elapsed:173,groups:Array.from({length:5000},(_,id)=>({id,pieces:[id],dx:100,dy:150,locked:false}))};
   legacy.groups[0].locked=true;legacy.groups[0].dx=0;legacy.groups[0].dy=0;
   legacy.groups[1].pieces.push(2);legacy.groups.splice(2,1);legacy.groups[1].dx=150;legacy.groups[1].dy=225;
   const restored=restorePuzzle(JSON.stringify(legacy),['seaside']);assert.ok(restored);

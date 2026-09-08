@@ -19,9 +19,10 @@ export const LEVELS = [
   { count:108, cols:12, rows:9, label:'认真挑战' }, { count:300, cols:20, rows:15, label:'渐入佳境' },
   { count:500, cols:25, rows:20, label:'沉浸时光' }, { count:1000, cols:40, rows:25, label:'千片挑战' },
   { count:1500, cols:50, rows:30, label:'耐心之旅' }, { count:2000, cols:50, rows:40, label:'一起攻克' },
-  { count:3000, cols:60, rows:50, label:'长线挑战' }, { count:4000, cols:80, rows:50, label:'进阶收藏' },
-  { count:5000, cols:100, rows:50, label:'五千片大作' },
+  { count:3000, cols:60, rows:50, label:'长线挑战' },
 ];
+// Retired grids remain valid only for existing progress, never for new games.
+const savedGrids = [...LEVELS, { cols:80, rows:50 }, { cols:100, rows:50 }];
 export function snapTolerance(state:Pick<PuzzleState,'cols'|'rows'>) { const board=boardFor(state.cols,state.rows);return Math.min(board.width/state.cols,board.height/state.rows)*.26; }
 export function neighbors(id:number,cols:number,rows:number) {
   const result:number[]=[];
@@ -55,13 +56,16 @@ function slots(cols:number,rows:number,seed:number) {
   for(let i=result.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
   return result;
 }
-export function createPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0):PuzzleState {
-  if(!LEVELS.some(l=>l.cols===cols&&l.rows===rows)) throw new Error('不支持的拼图片数');
+function scatteredGroups(cols:number,rows:number,seed:number):Group[] {
   const board=boardFor(cols,rows),points=slots(cols,rows,seed),w=board.width/cols,h=board.height/rows;
   if(points.length<cols*rows)throw new Error('桌面没有足够的散片位置');
-  return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:Array.from({length:cols*rows},(_,id)=>{
+  return Array.from({length:cols*rows},(_,id)=>{
     const point=points[id%points.length];return {id,pieces:[id],dx:point.x-w/2-board.x-(id%cols)*w,dy:point.y-h/2-board.y-Math.floor(id/cols)*h,locked:false};
-  })};
+  });
+}
+export function createPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0):PuzzleState {
+  if(!LEVELS.some(l=>l.cols===cols&&l.rows===rows)) throw new Error('不支持的拼图片数');
+  return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed)};
 }
 export function adjacent(a:number,b:number,cols:number) {return Math.abs(a-b)===cols || (Math.floor(a/cols)===Math.floor(b/cols)&&Math.abs(a-b)===1);}
 export function raiseGroup(state:PuzzleState,id:number) {const i=state.groups.findIndex(g=>g.id===id);if(i<0||state.groups[i].locked)return;state.groups.push(...state.groups.splice(i,1));}
@@ -97,14 +101,15 @@ export function dropGroup(state:PuzzleState,id:number,tolerance:number,blocked=n
 export function placedCount(state:PuzzleState) {return state.groups.filter(g=>g.locked).reduce((n,g)=>n+g.pieces.length,0);}
 export function visibleGroup(group:Group,pieces:Piece[],edgesOnly:boolean) {return group.locked||!edgesOnly||group.pieces.some(id=>pieces[id].border);}
 export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0) {
-  const fresh=createPuzzle(state.imageId,state.cols,state.rows,seed);let changed=0;
-  for(const g of state.groups) if(!g.locked&&g.pieces.length===1) {const pos=fresh.groups[g.pieces[0]];g.dx=pos.dx;g.dy=pos.dy;changed++;}
+  if(!savedGrids.some(l=>l.cols===state.cols&&l.rows===state.rows))throw new Error('不支持的拼图片数');
+  const fresh=scatteredGroups(state.cols,state.rows,seed);let changed=0;
+  for(const g of state.groups) if(!g.locked&&g.pieces.length===1) {const pos=fresh[g.pieces[0]];g.dx=pos.dx;g.dy=pos.dy;changed++;}
   return changed;
 }
 export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {
   try {
     const v=JSON.parse(raw) as PuzzleState;
-    if(v.version!==1||(v.layout!==undefined&&v.layout!=='square')||!imageIds.includes(v.imageId)||!LEVELS.some(l=>l.cols===v.cols&&l.rows===v.rows)||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
+    if(v.version!==1||(v.layout!==undefined&&v.layout!=='square')||!imageIds.includes(v.imageId)||!savedGrids.some(l=>l.cols===v.cols&&l.rows===v.rows)||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
     const ids=new Set<number>(),groups=new Set<number>();
     for(const g of v.groups) {
       if(!Number.isInteger(g.id)||groups.has(g.id)||!Array.isArray(g.pieces)||!g.pieces.length||!Number.isFinite(g.dx)||!Number.isFinite(g.dy)||Math.abs(g.dx)>20000||Math.abs(g.dy)>20000||typeof g.locked!=='boolean'||g.locked&&(g.dx!==0||g.dy!==0))return null;

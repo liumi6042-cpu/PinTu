@@ -34,7 +34,7 @@ test('local accounts, public directory, private/solo isolation and official rank
  const publicRoom=await create('public'),privateRoom=await create('private'),soloRoom=await create('solo');
  assert.equal((await call('/api/rooms/'+soloRoom.room.id,{type:'shuffle'},cookieA,soloRoom.token)).status,200);
  assert.equal((await call('/api/rooms/'+publicRoom.room.id,{type:'shuffle'},cookieA,publicRoom.token)).status,403);
- const large=await create('public',5000),largeJoin=await call('/api/rooms/'+large.room.id+'/join',{},cookieB);assert.equal(largeJoin.status,200);assert.equal(largeJoin.data.room.puzzle.groups.length,5000);
+ const large=await create('public',3000),largeJoin=await call('/api/rooms/'+large.room.id+'/join',{},cookieB);assert.equal(largeJoin.status,200);assert.equal(largeJoin.data.room.puzzle.groups.length,3000);
  assert.equal((await call('/api/rooms/'+large.room.id,{type:'claim',groupId:0},cookieA,large.token)).status,200);
  const largeDrop=await call('/api/rooms/'+large.room.id,{type:'drop',groupId:0,dx:1.76,dy:0,seq:1},cookieA,large.token);assert.equal(largeDrop.status,200);assert.ok(largeDrop.data.puzzle.groups.some(g=>g.locked&&g.pieces.includes(0)));
  const directory=await call('/api/lobby',undefined,cookieB);assert.equal(directory.status,200);assert.ok(directory.data.rooms.some(r=>r.id===publicRoom.room.id));assert.ok(!directory.data.rooms.some(r=>[privateRoom.room.id,soloRoom.room.id].includes(r.id)));assert.ok(directory.data.rooms.length>=5);
