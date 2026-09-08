@@ -54,6 +54,13 @@ test('5000 piece dragging reuses the stationary scene, culls offscreen pieces an
     canvas.stats.images=[];moveGroup(state,group.id,1,1);table.render();
     assert.equal(table.background.stats.images.length,backgroundDraws,'a pointer move repainted all stationary pieces');
     assert.equal(canvas.stats.images.length,2,'a drag frame should draw the cached scene and the held tile');
+    globalThis.devicePixelRatio=2;table.drag=null;
+    table.camera={x:-board.x*2,y:-board.y*2,z:2};canvas.stats.images=[];table.render();
+    assert.ok(canvas.stats.images.length>0);
+    assert.ok(canvas.stats.images.every(image=>image===table.picture),'a high-density display must sample native pixels as soon as the atlas would be enlarged');
+    globalThis.devicePixelRatio=1;table.camera={x:-board.x,y:-board.y,z:1};canvas.stats.images=[];table.render();
+    assert.ok(canvas.stats.images.length>0);
+    assert.ok(canvas.stats.images.every(image=>image===table.sprites.canvas),'ordinary zoom should retain the fast atlas renderer');
     table.drag=null;table.camera={x:-board.x*12,y:-board.y*12,z:12};canvas.stats.images=[];table.render();
     assert.ok(canvas.stats.images.length<200,'zoomed rendering still drew thousands of invisible tiles');
     assert.ok(canvas.stats.images.length>0);assert.ok(canvas.stats.images.every(image=>image===table.picture),'zoomed pieces must sample native pixels instead of magnifying the atlas');

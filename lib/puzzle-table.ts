@@ -158,7 +158,7 @@ export class PuzzleTable {
   private renderGroup(c:CanvasRenderingContext2D,g:Group){
     if(!visibleGroup(g,this.pieces,this.edges))return;
     const {x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
-    const useSprites=!!this.sprites&&(z<2.5||z*Math.min(devicePixelRatio||1,2)<=this.sprites.scale);
+    const useSprites=!!this.sprites&&z*Math.min(devicePixelRatio||1,2)<=this.sprites.scale;
     const left=-x/z,right=(this.width-x)/z,top=-y/z,bottom=(this.height-y)/z,owner=this.remoteOwners[g.id];
     for(const id of g.pieces){
       const p=this.pieces[id],path=this.paths[id],px=this.board.x+p.col*w+g.dx,py=this.board.y+p.row*h+g.dy;
