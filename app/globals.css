@@ -79,8 +79,14 @@ button { transition:background .18s,color .18s,border-color .18s; } .clear-searc
 /* A calm full-screen puzzle table */
 .difficulty-picker { display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:0 auto 22px;width:calc(100% - 36px);max-width:440px; }
 .difficulty-picker>label { color:#b4c2d2;font-size:14px; }
-.difficulty-picker [data-slot='native-select-wrapper'] { width:min(270px,100%); }
-.difficulty-picker select { height:45px;border:1px solid #64785a;background:#152338;border-radius:12px;color:#dce7cb;padding-left:15px;font-size:15px; }
+.difficulty-trigger { width:min(270px,100%);min-height:46px;border:1px solid #d6e8b44d;background:linear-gradient(135deg,#dcecff13,#15233880);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-radius:13px;color:#e5edd9;padding:10px 14px;font-size:15px;box-shadow:inset 0 1px 0 #ffffff16,0 8px 22px #0002; }
+.difficulty-trigger:hover,.difficulty-trigger[data-popup-open] { border-color:#d6e8b48c;background-color:#d6e8b40c; }
+.difficulty-menu { max-height:min(390px,var(--available-height));padding:7px;border:1px solid #e3edff40;border-radius:16px;background:linear-gradient(145deg,#536b8138,#101d2be0);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);color:#edf2e8;box-shadow:0 22px 60px #0007,inset 0 1px 0 #ffffff26;scrollbar-width:thin;scrollbar-color:#b7c9a74d transparent; }
+.difficulty-menu [data-slot='select-item'] { min-height:40px;padding:10px 30px 10px 12px;border-radius:9px;font-size:14px;color:#e4ebf1;text-shadow:0 1px 5px #0008;cursor:pointer; }
+.difficulty-menu [data-slot='select-item'][data-highlighted] { background:#e3efff19;color:#fff; }
+.difficulty-menu [data-slot='select-item'][data-selected] { background:#d6e8b41c;color:#e3f2c9; }
+.difficulty-menu [data-slot='select-scroll-up-button'],.difficulty-menu [data-slot='select-scroll-down-button'] { background:#162638cc;color:#dce7cf;border-radius:7px; }
+@supports not (backdrop-filter:blur(1px)) { .difficulty-menu { background:#172638f2; } }
 .difficulty-picker>p { flex-basis:100%;margin:0;font-size:12px;color:#98abc1; }
 .tool.locked-tool { color:#8c9bb1; }
 .tool.locked-tool span { font-size:10px;white-space:nowrap; }

@@ -1,4 +1,4 @@
-import { createPuzzle, dropGroup, LEVELS, placedCount, BOARD, WORLD, snapTolerance, type PuzzleState } from './puzzle-engine';
+import { createPuzzle, dropGroup, LEVELS, placedCount, boardFor, WORLD, snapTolerance, type PuzzleState } from './puzzle-engine';
 export const ROOM_LIFETIME=24*60*60*1000, LEASE_MS=10000, ONLINE_MS=22000;
 export const PHOTO_IDS=['seaside','skate','gold','red'];
 export const COLORS=['#d6e8b4','#99caf4','#eeafcf','#ffcb8e','#b6acf7','#8cddd1','#f3e192','#dda990'];
@@ -19,7 +19,7 @@ export function addMember(room:Room,id:string,name:string,digest:string,now:numb
 }
 export function authenticate(room:Room,digest:string,now:number){ensureOpen(room,now);const member=room.members.find(m=>m.digest===digest);if(!member)throw new RoomError('请重新加入房间',401);return member;}
 export function snapshot(room:Room,now:number):RoomSnapshot {const puzzle=structuredClone(room.puzzle);puzzle.elapsed=Math.floor(((room.completedAt??now)-room.createdAt)/1000);return {id:room.id,puzzle,revision:room.revision,serverTime:now,expiresAt:room.expiresAt,members:room.members.filter(m=>now-m.lastSeen<ONLINE_MS).map(({id,name,color,lastSeen})=>({id,name,color,lastSeen})),leases:Object.fromEntries(Object.entries(room.leases).filter(([,l])=>l.expires>now))};}
-function boundedOffset(room:Room,groupId:number,dx:number,dy:number){const group=room.puzzle.groups.find(g=>g.id===groupId)!;const w=800/room.puzzle.cols,h=600/room.puzzle.rows;const xs=group.pieces.map(id=>BOARD.x+(id%room.puzzle.cols)*w),ys=group.pieces.map(id=>BOARD.y+Math.floor(id/room.puzzle.cols)*h);return {dx:Math.max(18-Math.min(...xs),Math.min(WORLD.width-18-Math.max(...xs)-w,dx)),dy:Math.max(18-Math.min(...ys),Math.min(WORLD.height-18-Math.max(...ys)-h,dy))};}
+function boundedOffset(room:Room,groupId:number,dx:number,dy:number){const group=room.puzzle.groups.find(g=>g.id===groupId)!,board=boardFor(room.puzzle.cols,room.puzzle.rows),w=board.width/room.puzzle.cols,h=board.height/room.puzzle.rows;const xs=group.pieces.map(id=>board.x+(id%room.puzzle.cols)*w),ys=group.pieces.map(id=>board.y+Math.floor(id/room.puzzle.cols)*h);return {dx:Math.max(18-Math.min(...xs),Math.min(WORLD.width-18-Math.max(...xs)-w,dx)),dy:Math.max(18-Math.min(...ys),Math.min(WORLD.height-18-Math.max(...ys)-h,dy))};}
 export function applyAction(room:Room,member:Member,action:RoomAction,now:number){
  ensureOpen(room,now);pruneLeases(room,now);
  if(action.type!=='leave'&&now-member.lastSeen>=ONLINE_MS&&room.members.filter(m=>m.id!==member.id&&now-m.lastSeen<ONLINE_MS).length>=8)throw new RoomError('房间已有 8 位玩家，请稍后再连接',409);

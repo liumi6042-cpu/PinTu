@@ -1,9 +1,11 @@
-import { BOARD, WORLD, piecesFor, pathFor, moveGroup, dropGroup, raiseGroup, placedCount, visibleGroup, shuffleLoose, snapTolerance, type PuzzleState, type Group } from './puzzle-engine';
+import { boardFor, normalizePuzzle, WORLD, piecesFor, pathFor, moveGroup, dropGroup, raiseGroup, placedCount, visibleGroup, shuffleLoose, snapTolerance, type PuzzleState, type Group } from './puzzle-engine';
 import { PuzzleSprites } from './puzzle-sprites';
+import { pictureCrop, drawPiecePicture } from './puzzle-picture';
 type Notice = (message:string)=>void;
 export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
+  board:ReturnType<typeof boardFor>;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
   edges=false; sound=false; paused=false; selected:number|null=null; hintId:number|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
@@ -17,13 +19,12 @@ export class PuzzleTable {
   private resize:ResizeObserver; private abort=new AbortController(); private audio:AudioContext|null=null;
   private update:()=>void; private notice:Notice;
   constructor(canvas:HTMLCanvasElement,state:PuzzleState,image:HTMLImageElement,update:()=>void,notice:Notice) {
-    this.canvas=canvas;this.state=state;this.image=image;this.update=update;this.notice=notice;
+    this.canvas=canvas;this.state=normalizePuzzle(state);this.board=boardFor(state.cols,state.rows);this.image=image;this.update=update;this.notice=notice;
     this.ctx=canvas.getContext('2d')!;this.hit=document.createElement('canvas').getContext('2d')!;
     this.picture=document.createElement('canvas');this.background=document.createElement('canvas');
-    const resolution=Math.max(1,Math.min(3,image.naturalWidth/800,image.naturalHeight/600));
-    this.picture.width=Math.round(800*resolution);this.picture.height=Math.round(600*resolution);
-    const scale=Math.max(800/image.naturalWidth,600/image.naturalHeight),sw=800/scale,sh=600/scale;
-    this.picture.getContext('2d')!.drawImage(image,(image.naturalWidth-sw)/2,(image.naturalHeight-sh)/2,sw,sh,0,0,this.picture.width,this.picture.height);
+    const crop=pictureCrop(image.naturalWidth,image.naturalHeight,this.board.width,this.board.height);
+    this.picture.width=Math.round(crop.width);this.picture.height=Math.round(crop.height);
+    this.picture.getContext('2d')!.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,this.picture.width,this.picture.height);
     this.pieces=piecesFor(state.cols,state.rows,state.seed);this.paths=this.pieces.map(p=>new Path2D(pathFor(p,state.cols,state.rows)));
     if(this.pieces.length>=300)this.sprites=new PuzzleSprites(this.picture,this.pieces,this.paths,state.cols,state.rows);
     this.resize=new ResizeObserver(()=>this.resizeCanvas());this.resize.observe(canvas);
@@ -39,9 +40,9 @@ export class PuzzleTable {
   private point(e:{clientX:number;clientY:number}){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
   private world(p:{x:number;y:number}){return {x:(p.x-this.camera.x)/this.camera.z,y:(p.y-this.camera.y)/this.camera.z};}
   private groupAt(x:number,y:number):Group|undefined {
-    const w=800/this.state.cols,h=600/this.state.rows;
+    const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     for(let i=this.state.groups.length-1;i>=0;i--){const g=this.state.groups[i];if(g.locked||!visibleGroup(g,this.pieces,this.edges))continue;
-      for(const id of g.pieces){const p=this.pieces[id],lx=x-BOARD.x-p.col*w-g.dx,ly=y-BOARD.y-p.row*h-g.dy,pad=Math.min(w,h)*.24;
+      for(const id of g.pieces){const p=this.pieces[id],lx=x-this.board.x-p.col*w-g.dx,ly=y-this.board.y-p.row*h-g.dy,pad=Math.min(w,h)*.24;
         if(lx>=-pad&&lx<=w+pad&&ly>=-pad&&ly<=h+pad&&this.hit.isPointInPath(this.paths[id],lx,ly))return g;}
     }
   }
@@ -81,9 +82,9 @@ export class PuzzleTable {
       this.drag=null;this.update();}
     this.pan=null;this.canvas.style.cursor='grab';this.draw();
   }
-  private keepOnTable(id:number){const g=this.state.groups.find(g=>g.id===id);if(!g||g.locked)return;const w=800/this.state.cols,h=600/this.state.rows;
-    const minX=Math.min(...g.pieces.map(id=>BOARD.x+this.pieces[id].col*w)),maxX=Math.max(...g.pieces.map(id=>BOARD.x+(this.pieces[id].col+1)*w));
-    const minY=Math.min(...g.pieces.map(id=>BOARD.y+this.pieces[id].row*h)),maxY=Math.max(...g.pieces.map(id=>BOARD.y+(this.pieces[id].row+1)*h));
+  private keepOnTable(id:number){const g=this.state.groups.find(g=>g.id===id);if(!g||g.locked)return;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    const minX=Math.min(...g.pieces.map(id=>this.board.x+this.pieces[id].col*w)),maxX=Math.max(...g.pieces.map(id=>this.board.x+(this.pieces[id].col+1)*w));
+    const minY=Math.min(...g.pieces.map(id=>this.board.y+this.pieces[id].row*h)),maxY=Math.max(...g.pieces.map(id=>this.board.y+(this.pieces[id].row+1)*h));
     g.dx=Math.max(18-minX,Math.min(WORLD.width-18-maxX,g.dx));g.dy=Math.max(18-minY,Math.min(WORLD.height-18-maxY,g.dy));
   }
   private wheel=(e:WheelEvent)=>{e.preventDefault();if(this.drag||this.paused)return;this.zoom(Math.exp(-e.deltaY*.0014),this.point(e));};
@@ -100,9 +101,9 @@ export class PuzzleTable {
     if(delta[e.key]){e.preventDefault();const step=e.shiftKey?2:12;g.dx+=delta[e.key][0]*step;g.dy+=delta[e.key][1]*step;this.keepOnTable(g.id);raiseGroup(this.state,g.id);this.draw();this.update();}
     if(e.key==='Enter'){e.preventDefault();const r=dropGroup(this.state,g.id,snapTolerance(this.state));if(r.snapped)this.playTone();this.update();this.draw();}
   };
-  private clamp(z:number){const max=Math.max(3,Math.min(16,96/Math.min(800/this.state.cols,600/this.state.rows)));return Math.max(.15,Math.min(max,z));}
+  private clamp(z:number){const max=Math.max(3,Math.min(16,96/Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)));return Math.max(.15,Math.min(max,z));}
   zoom(factor:number,point={x:this.width/2,y:this.height/2}){const w=this.world(point),z=this.clamp(this.camera.z*factor);this.camera={x:point.x-w.x*z,y:point.y-w.y*z,z};this.draw();this.update();}
-  fit(completed=false){const bounds=completed?BOARD:{x:0,y:0,...WORLD},z=Math.min(this.width/bounds.width,this.height/bounds.height)*(completed?.76:.94);this.camera={x:(this.width-bounds.width*z)/2-bounds.x*z,y:(this.height-bounds.height*z)/2-bounds.y*z,z};this.draw();this.update();}
+  fit(completed=false){const bounds=completed?this.board:{x:0,y:0,...WORLD},z=Math.min(this.width/bounds.width,this.height/bounds.height)*(completed?.76:.94);this.camera={x:(this.width-bounds.width*z)/2-bounds.x*z,y:(this.height-bounds.height*z)/2-bounds.y*z,z};this.draw();this.update();}
   setEdges(v:boolean){this.release();this.edges=v;this.draw();}
   setPaused(v:boolean){this.release();this.paused=v;}
   shuffle(){if(this.network){this.notice('多人模式保留大家正在整理的桌面，请直接拖动散片');return;}this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}
@@ -141,39 +142,40 @@ export class PuzzleTable {
     }else{this.renderScene(this.ctx);this.backgroundDirty=true;}
   }
   private renderScene(c:CanvasRenderingContext2D,exclude?:number){
-    const dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera,w=800/this.state.cols,h=600/this.state.rows;
+    const dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,this.width,this.height);c.save();c.translate(x,y);c.scale(z,z);
-    c.fillStyle='#121f30';c.strokeStyle='#516077';c.lineWidth=1/z;c.beginPath();c.roundRect(BOARD.x-9,BOARD.y-9,818,618,8);c.fill();c.stroke();
+    c.fillStyle='#121f30';c.strokeStyle='#516077';c.lineWidth=1/z;c.beginPath();c.roundRect(this.board.x-9,this.board.y-9,this.board.width+18,this.board.height+18,8);c.fill();c.stroke();
     c.save();c.setLineDash([4/z,7/z]);c.strokeStyle='#51607755';c.lineWidth=.6/z;
-    for(let i=1;i<this.state.cols;i++){c.beginPath();c.moveTo(BOARD.x+i*w,BOARD.y);c.lineTo(BOARD.x+i*w,BOARD.y+600);c.stroke();}
-    for(let i=1;i<this.state.rows;i++){c.beginPath();c.moveTo(BOARD.x,BOARD.y+i*h);c.lineTo(BOARD.x+800,BOARD.y+i*h);c.stroke();}c.restore();
+    for(let i=1;i<this.state.cols;i++){c.beginPath();c.moveTo(this.board.x+i*w,this.board.y);c.lineTo(this.board.x+i*w,this.board.y+this.board.height);c.stroke();}
+    for(let i=1;i<this.state.rows;i++){c.beginPath();c.moveTo(this.board.x,this.board.y+i*h);c.lineTo(this.board.x+this.board.width,this.board.y+i*h);c.stroke();}c.restore();
     if(!placedCount(this.state)){c.fillStyle='#8291a788';c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText('把喜欢的画面，一片片拼回来',760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText('从四个角开始，也许会更轻松',760,582);}
-    c.fillStyle='#93a1b9';c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,BOARD.x,BOARD.y-26);
+    c.fillStyle='#93a1b9';c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
     const groups=[...this.state.groups.filter(g=>g.locked),...this.state.groups.filter(g=>!g.locked)];
     for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g);
-    if(this.hintId!==null){const p=this.pieces[this.hintId];c.save();c.translate(BOARD.x+p.col*w,BOARD.y+p.row*h);c.fillStyle='#d6e8b42a';c.strokeStyle='#d6e8b4';c.lineWidth=3/z;c.fill(this.paths[p.id]);c.stroke(this.paths[p.id]);c.restore();}
+    if(this.hintId!==null){const p=this.pieces[this.hintId];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);c.fillStyle='#d6e8b42a';c.strokeStyle='#d6e8b4';c.lineWidth=3/z;c.fill(this.paths[p.id]);c.stroke(this.paths[p.id]);c.restore();}
     c.restore();
   }
   private renderGroup(c:CanvasRenderingContext2D,g:Group){
     if(!visibleGroup(g,this.pieces,this.edges))return;
-    const {x,y,z}=this.camera,w=800/this.state.cols,h=600/this.state.rows,pad=Math.min(w,h)*.26+10/z;
+    const {x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
+    const useSprites=!!this.sprites&&(z<2.5||z*Math.min(devicePixelRatio||1,2)<=this.sprites.scale);
     const left=-x/z,right=(this.width-x)/z,top=-y/z,bottom=(this.height-y)/z,owner=this.remoteOwners[g.id];
     for(const id of g.pieces){
-      const p=this.pieces[id],path=this.paths[id],px=BOARD.x+p.col*w+g.dx,py=BOARD.y+p.row*h+g.dy;
+      const p=this.pieces[id],path=this.paths[id],px=this.board.x+p.col*w+g.dx,py=this.board.y+p.row*h+g.dy;
       if(px+w+pad<left||px-pad>right||py+h+pad<top||py-pad>bottom)continue;
-      if(this.sprites)this.sprites.draw(c,id,px,py);
+      if(useSprites)this.sprites!.draw(c,id,px,py);
       c.save();c.translate(px,py);
-      if(!this.sprites){
-        if(!g.locked){c.shadowColor='#0009';c.shadowBlur=this.drag?.id===g.id?14:7;c.shadowOffsetY=this.drag?.id===g.id?7:3;c.fillStyle='#d8d2c2';c.fill(path);c.shadowColor='transparent';}
-        c.save();c.clip(path);c.drawImage(this.picture,0,0,this.picture.width,this.picture.height,-p.col*w,-p.row*h,BOARD.width,BOARD.height);c.restore();
+      if(!useSprites){
+        if(!this.sprites&&!g.locked){c.shadowColor='#0009';c.shadowBlur=this.drag?.id===g.id?14:7;c.shadowOffsetY=this.drag?.id===g.id?7:3;c.fillStyle='#d8d2c2';c.fill(path);c.shadowColor='transparent';}
+        c.save();c.clip(path);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';drawPiecePicture(c,this.picture,p,this.state.cols,this.state.rows,this.board.width,this.board.height);c.restore();
       }
-      if(!this.sprites||((owner||g.id===this.selected)&&!g.locked)){
+      if(!useSprites||((owner||g.id===this.selected)&&!g.locked)){
         c.strokeStyle=g.locked?'#17201966':owner?owner.color:g.id===this.selected?'#d6e8b4':'#fffbebbb';c.lineWidth=(owner||g.id===this.selected)&&!g.locked?2/z:.85/z;c.stroke(path);
       }
       if(id===this.hintId&&!g.locked){c.strokeStyle='#d6e8b4';c.lineWidth=4/z;c.shadowColor='#d6e8b4';c.shadowBlur=18;c.stroke(path);}c.restore();
     }
-    if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=owner.color;c.fillText(owner.name,BOARD.x+p.col*w+g.dx,BOARD.y+p.row*h+g.dy-12/z);c.restore();}
+    if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=owner.color;c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
   }
-  destroy(){this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.background.width=0;this.background.height=0;void this.audio?.close();}
+  destroy(){this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;void this.audio?.close();}
 }
 

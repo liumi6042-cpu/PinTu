@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { CELEBRATION_DURATION, celebrationParticles, celebrationFrame, CompletionGate } from '../lib/celebration-engine.ts';
 import { CelebrationRenderer } from '../lib/celebration-renderer.ts';
 import { PuzzleTable } from '../lib/puzzle-table.ts';
-import { BOARD } from '../lib/puzzle-engine.ts';
+import { boardFor } from '../lib/puzzle-engine.ts';
 
 const viewport={x:0,y:0,width:1440,height:900},board={x:340,y:130,width:760,height:570};
 
@@ -123,11 +123,11 @@ test('hiding the page ends the celebration instead of keeping a stalled frame lo
 });
 
 test('completion framing keeps the entire finished puzzle centered with room for confetti',()=>{
-  const table=Object.create(PuzzleTable.prototype);let draws=0,updates=0;
-  Object.assign(table,{width:1440,height:760,draw(){draws++;},update(){updates++;}});
+  const table=Object.create(PuzzleTable.prototype),board=boardFor(100,50);let draws=0,updates=0;
+  Object.assign(table,{board,width:1440,height:760,draw(){draws++;},update(){updates++;}});
   table.fit(true);
   const {x,y,z}=table.camera;
-  assert.equal(x+(BOARD.x+BOARD.width/2)*z,720);
-  assert.equal(y+(BOARD.y+BOARD.height/2)*z,380);
-  assert.ok(BOARD.width*z<1440&&BOARD.height*z<760);assert.equal(draws,1);assert.equal(updates,1);
+  assert.equal(x+(board.x+board.width/2)*z,720);
+  assert.equal(y+(board.y+board.height/2)*z,380);
+  assert.ok(board.width*z<1440&&board.height*z<760);assert.equal(draws,1);assert.equal(updates,1);
 });

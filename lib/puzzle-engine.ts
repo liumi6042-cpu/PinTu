@@ -1,8 +1,19 @@
 export type Piece = { id: number; row: number; col: number; edges: number[]; border: boolean };
 export type Group = { id: number; pieces: number[]; dx: number; dy: number; locked: boolean };
-export type PuzzleState = { version: 1; imageId: string; cols: number; rows: number; seed: number; groups: Group[]; elapsed: number };
+export type PuzzleState = { version: 1; layout?:'square'; imageId: string; cols: number; rows: number; seed: number; groups: Group[]; elapsed: number };
 export const BOARD = { x: 360, y: 260, width: 800, height: 600 };
 export const WORLD = { width: 1520, height: 1120 };
+export function boardFor(cols:number,rows:number) {
+  const unit=Math.min(BOARD.width/cols,BOARD.height/rows),width=cols*unit,height=rows*unit;
+  return {x:BOARD.x+(BOARD.width-width)/2,y:BOARD.y+(BOARD.height-height)/2,width,height};
+}
+// Preserve completed groups and relative arrangements when loading the old 4:3 layout.
+export function normalizePuzzle(state:PuzzleState) {
+  if(state.layout==='square')return state;
+  const board=boardFor(state.cols,state.rows);
+  for(const group of state.groups){group.dx*=board.width/BOARD.width;group.dy*=board.height/BOARD.height;}
+  state.layout='square';return state;
+}
 export const LEVELS = [
   { count:12, cols:4, rows:3, label:'轻松体验' }, { count:48, cols:8, rows:6, label:'慢慢享受' },
   { count:108, cols:12, rows:9, label:'认真挑战' }, { count:300, cols:20, rows:15, label:'渐入佳境' },
@@ -11,7 +22,7 @@ export const LEVELS = [
   { count:3000, cols:60, rows:50, label:'长线挑战' }, { count:4000, cols:80, rows:50, label:'进阶收藏' },
   { count:5000, cols:100, rows:50, label:'五千片大作' },
 ];
-export function snapTolerance(state:Pick<PuzzleState,'cols'|'rows'>) { return Math.min(BOARD.width/state.cols,BOARD.height/state.rows)*.26; }
+export function snapTolerance(state:Pick<PuzzleState,'cols'|'rows'>) { const board=boardFor(state.cols,state.rows);return Math.min(board.width/state.cols,board.height/state.rows)*.26; }
 export function neighbors(id:number,cols:number,rows:number) {
   const result:number[]=[];
   if(id%cols>0)result.push(id-1);if(id%cols<cols-1)result.push(id+1);
@@ -27,7 +38,7 @@ export function piecesFor(cols:number,rows:number,seed:number):Piece[] {
   } return pieces;
 }
 export function pathFor(piece:Piece,cols:number,rows:number):string {
-  const w=BOARD.width/cols,h=BOARD.height/rows,d=Math.min(w,h)*.23; let out='M 0 0';
+  const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows,d=Math.min(w,h)*.23; let out='M 0 0';
   const sides=[[0,0,w,0,0,-1],[w,0,0,h,1,0],[w,h,-w,0,0,1],[0,h,0,-h,-1,0]];
   sides.forEach(([x,y,tx,ty,nx,ny],i)=>{
     const sign=piece.edges[i], p=(t:number,v:number)=>`${x+tx*t+nx*d*v*sign} ${y+ty*t+ny*d*v*sign}`;
@@ -36,9 +47,9 @@ export function pathFor(piece:Piece,cols:number,rows:number):string {
   });return out+' Z';
 }
 function slots(cols:number,rows:number,seed:number) {
-  const w=BOARD.width/cols,h=BOARD.height/rows, rand=random(seed),result:{x:number;y:number}[]=[];
+  const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows, rand=random(seed),result:{x:number;y:number}[]=[];
   for(let y=h*.68;y<WORLD.height-h*.6;y+=h*1.20) for(let x=w*.68;x<WORLD.width-w*.6;x+=w*1.20) {
-    if(x>BOARD.x-w*.55&&x<BOARD.x+BOARD.width+w*.55&&y>BOARD.y-h*.55&&y<BOARD.y+BOARD.height+h*.55)continue;
+    if(x>board.x-w*.55&&x<board.x+board.width+w*.55&&y>board.y-h*.55&&y<board.y+board.height+h*.55)continue;
     result.push({x:x+(rand()-.5)*w*.05,y:y+(rand()-.5)*h*.05});
   }
   for(let i=result.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
@@ -46,10 +57,10 @@ function slots(cols:number,rows:number,seed:number) {
 }
 export function createPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0):PuzzleState {
   if(!LEVELS.some(l=>l.cols===cols&&l.rows===rows)) throw new Error('不支持的拼图片数');
-  const points=slots(cols,rows,seed),w=BOARD.width/cols,h=BOARD.height/rows;
+  const board=boardFor(cols,rows),points=slots(cols,rows,seed),w=board.width/cols,h=board.height/rows;
   if(points.length<cols*rows)throw new Error('桌面没有足够的散片位置');
-  return {version:1,imageId,cols,rows,seed,elapsed:0,groups:Array.from({length:cols*rows},(_,id)=>{
-    const point=points[id%points.length];return {id,pieces:[id],dx:point.x-w/2-BOARD.x-(id%cols)*w,dy:point.y-h/2-BOARD.y-Math.floor(id/cols)*h,locked:false};
+  return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:Array.from({length:cols*rows},(_,id)=>{
+    const point=points[id%points.length];return {id,pieces:[id],dx:point.x-w/2-board.x-(id%cols)*w,dy:point.y-h/2-board.y-Math.floor(id/cols)*h,locked:false};
   })};
 }
 export function adjacent(a:number,b:number,cols:number) {return Math.abs(a-b)===cols || (Math.floor(a/cols)===Math.floor(b/cols)&&Math.abs(a-b)===1);}
@@ -93,7 +104,7 @@ export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0) {
 export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {
   try {
     const v=JSON.parse(raw) as PuzzleState;
-    if(v.version!==1||!imageIds.includes(v.imageId)||!LEVELS.some(l=>l.cols===v.cols&&l.rows===v.rows)||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
+    if(v.version!==1||(v.layout!==undefined&&v.layout!=='square')||!imageIds.includes(v.imageId)||!LEVELS.some(l=>l.cols===v.cols&&l.rows===v.rows)||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
     const ids=new Set<number>(),groups=new Set<number>();
     for(const g of v.groups) {
       if(!Number.isInteger(g.id)||groups.has(g.id)||!Array.isArray(g.pieces)||!g.pieces.length||!Number.isFinite(g.dx)||!Number.isFinite(g.dy)||Math.abs(g.dx)>20000||Math.abs(g.dy)>20000||typeof g.locked!=='boolean'||g.locked&&(g.dx!==0||g.dy!==0))return null;
@@ -104,6 +115,6 @@ export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {
       for(let i=0;i<queue.length;i++)for(const neighbor of neighbors(queue[i],v.cols,v.rows))if(pending.delete(neighbor))queue.push(neighbor);
       if(pending.size)return null;
     }
-    return ids.size===v.cols*v.rows?v:null;
+    return ids.size===v.cols*v.rows?normalizePuzzle(v):null;
   }catch{return null;}
 }

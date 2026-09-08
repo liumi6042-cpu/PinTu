@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPuzzle, LEVELS, snapTolerance, moveGroup, dropGroup, restorePuzzle, BOARD } from '../lib/puzzle-engine.ts';
+import { createPuzzle, LEVELS, snapTolerance, moveGroup, dropGroup, restorePuzzle, boardFor } from '../lib/puzzle-engine.ts';
 import { makeRoom, addMember, applyAction } from '../lib/room-engine.ts';
 import { PuzzleTable } from '../lib/puzzle-table.ts';
 
@@ -44,8 +44,9 @@ test('5000 piece dragging reuses the stationary scene, culls offscreen pieces an
   globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.devicePixelRatio=1;globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};
   let table;
   try{
-    const state=createPuzzle('seaside',100,50,2),canvas=fakeCanvas();
-    table=new PuzzleTable(canvas,state,{naturalWidth:1600,naturalHeight:1200},()=>{},()=>{});
+    const state=createPuzzle('seaside',100,50,2),canvas=fakeCanvas(),board=boardFor(100,50);
+    table=new PuzzleTable(canvas,state,{naturalWidth:8000,naturalHeight:6000},()=>{},()=>{});
+    assert.equal(table.picture.width,8000);assert.equal(table.picture.height,4000,'native image detail must survive the 2:1 crop');
     table.width=1500;table.height=1100;table.camera={x:0,y:0,z:1};
     const group=state.groups[0];moveGroup(state,group.id,0,0);table.drag={id:group.id,x:0,y:0,dx:0,dy:0};
     assert.ok(table.sprites.canvas.width*table.sprites.canvas.height<8_300_000);
@@ -53,12 +54,13 @@ test('5000 piece dragging reuses the stationary scene, culls offscreen pieces an
     canvas.stats.images=[];moveGroup(state,group.id,1,1);table.render();
     assert.equal(table.background.stats.images.length,backgroundDraws,'a pointer move repainted all stationary pieces');
     assert.equal(canvas.stats.images.length,2,'a drag frame should draw the cached scene and the held tile');
-    table.drag=null;table.camera={x:-BOARD.x*12,y:-BOARD.y*12,z:12};canvas.stats.images=[];table.render();
+    table.drag=null;table.camera={x:-board.x*12,y:-board.y*12,z:12};canvas.stats.images=[];table.render();
     assert.ok(canvas.stats.images.length<200,'zoomed rendering still drew thousands of invisible tiles');
+    assert.ok(canvas.stats.images.length>0);assert.ok(canvas.stats.images.every(image=>image===table.picture),'zoomed pieces must sample native pixels instead of magnifying the atlas');
     assert.equal(table.groupAt(-10000,-10000),undefined);
     const hitContext=table.hit;let exactHits=0;hitContext.isPointInPath=()=>{exactHits++;return true;};
     table.groupAt(-10000,-10000);assert.equal(exactHits,0);
-    assert.ok(table.groupAt(BOARD.x+5,BOARD.y+5));assert.ok(exactHits<10);
+    assert.equal(table.groupAt(board.x+5,board.y+5)?.id,0);assert.ok(exactHits<10);
     table.zoom(100);assert.equal(table.camera.z,12);
   }finally{table?.destroy();Object.assign(globalThis,original);}
 });

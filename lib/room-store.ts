@@ -1,7 +1,8 @@
 import { env } from 'cloudflare:workers';
 import { RoomError, type Room } from './room-engine';
+import { normalizePuzzle } from './puzzle-engine';
 function db(){const database=(env as unknown as {PUZZLE_DB?:D1Database}).PUZZLE_DB;if(!database)throw new RoomError('多人房间正在准备，请稍后再试',503);return database.withSession('first-primary');}
-export async function readRoom(id:string){if(!/^[a-f0-9]{32}$/.test(id))throw new RoomError('邀请链接格式不正确',404);const row=await db().prepare('SELECT data, revision FROM puzzle_rooms WHERE id = ?').bind(id).first<{data:string;revision:number}>();if(!row)throw new RoomError('房间不存在，请检查邀请链接',404);const room=JSON.parse(row.data) as Room;room.revision=row.revision;return room;}
+export async function readRoom(id:string){if(!/^[a-f0-9]{32}$/.test(id))throw new RoomError('邀请链接格式不正确',404);const row=await db().prepare('SELECT data, revision FROM puzzle_rooms WHERE id = ?').bind(id).first<{data:string;revision:number}>();if(!row)throw new RoomError('房间不存在，请检查邀请链接',404);const room=JSON.parse(row.data) as Room;room.revision=row.revision;normalizePuzzle(room.puzzle);return room;}
 export async function insertRoom(room:Room){await db().prepare('INSERT INTO puzzle_rooms (id,revision,data,expires_at) VALUES (?,0,?,?)').bind(room.id,JSON.stringify(room),room.expiresAt).run();}
 export async function mutateRoom<T>(id:string,fn:(room:Room)=>T){for(let attempt=0;attempt<8;attempt++){const room=await readRoom(id),before=room.revision,result=fn(room);room.revision++;const updated=await db().prepare('UPDATE puzzle_rooms SET data = ?, revision = ? WHERE id = ? AND revision = ?').bind(JSON.stringify(room),room.revision,id,before).run();if(updated.meta.changes===1)return {room,result};}throw new RoomError('房间正在同步，请稍后重试',409);}
 export async function digestToken(token:string){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));return [...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('');}
