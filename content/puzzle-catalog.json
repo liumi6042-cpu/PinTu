@@ -1,0 +1,6 @@
+[
+  {"id":"seaside","title":"柠檬海岸","subtitle":"海风吹过，时间慢下来。","category":"风景","src":"/puzzles/seaside.png","origin":"project-ai-generated","status":"published"},
+  {"id":"skate-garden","title":"彩砖滑板公园","subtitle":"光落在彩砖上，街角也有小小花园。","category":"街景","src":"/puzzles/skate-garden.png","origin":"project-ai-generated","status":"published"},
+  {"id":"amber-cabinet","title":"琥珀收藏室","subtitle":"把叶脉、晶石和一束暖光慢慢拼合。","category":"艺术","src":"/puzzles/amber-cabinet.png","origin":"project-ai-generated","status":"published"},
+  {"id":"vermilion-garden","title":"朱砂花园","subtitle":"穿过红色庭院，发现一条自己的小径。","category":"艺术","src":"/puzzles/vermilion-garden.png","origin":"project-ai-generated","status":"published"}
+]

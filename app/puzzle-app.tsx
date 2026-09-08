@@ -14,13 +14,8 @@ import { registerPuzzleTools } from '@/lib/webmcp';
 import MultiplayerEntry from './multiplayer-entry';
 import RoomToolbar from './room-toolbar';
 import type { RoomClient } from '@/lib/room-client';
-
-export const PHOTOS = [
- {id:'seaside',title:'柠檬海岸',subtitle:'海风吹过，时间慢下来。',category:'风景',src:'/puzzles/seaside.png'},
- {id:'skate',title:'街边滑板',subtitle:'在街头，收集一点鲜活的颜色。',category:'街景',src:'/puzzles/skate.jpg'},
- {id:'gold',title:'金色切面',subtitle:'光与石，静默的平衡。',category:'艺术',src:'/puzzles/gold.jpg'},
- {id:'red',title:'朱砂之间',subtitle:'从一抹红色开始。',category:'艺术',src:'/puzzles/red.jpg'},
-];
+import { PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
+export { PHOTOS } from '@/lib/puzzle-catalog';
 type Photo=typeof PHOTOS[number];
 const ids=PHOTOS.map(p=>p.id),activeKey='together-puzzle:active:v1';
 const saveKey=(p:string,n:number)=>`together-puzzle:v1:${p}:${n}`;
@@ -57,7 +52,7 @@ export default function PuzzleApp(){
  const previous=photo?saved[saveKey(photo.id,count)]:null,canResume=previous&&placedCount(previous)<count,level=LEVELS.find(l=>l.count===count)!;
  return <main className="collection"><header className="site-header"><Brand/><span className="edition">单人试玩 · TAKE YOUR TIME</span></header><section className="collection-intro"><p className="eyebrow">A LITTLE PIECE OF CALM</p><h1>挑一张喜欢的，慢慢拼。</h1><p className="muted">滚动胶片，开启一段属于你的安静时光。</p><div className="search-box"><Search size={18}/><input value={query} onChange={e=>{setQuery(e.target.value);setIndex(0);}} placeholder="搜索拼图、风景、艺术…" aria-label="搜索拼图"/>{query&&<button className="clear-search" aria-label="清空搜索" onClick={()=>{setQuery('');setIndex(0);}}><X size={16}/></button>}</div></section>
  {photo?<><FilmReel photos={photos} index={index} onIndex={setIndex}/><div className="reel-navigation"><button className="circle-button" aria-label="上一张拼图" disabled={photos.length<2} onClick={()=>setIndex(index-1)}><ChevronLeft size={20}/></button><span>{String(((index%photos.length)+photos.length)%photos.length+1).padStart(2,'0')} <i>/</i> {String(photos.length).padStart(2,'0')}</span><button className="circle-button" aria-label="下一张拼图" disabled={photos.length<2} onClick={()=>setIndex(index+1)}><ChevronRight size={20}/></button></div></>:<div className="no-results"><Search size={30}/><p>还没有找到这张拼图</p><button className="secondary" onClick={()=>{setQuery('');setCategory('全部');setIndex(0);}}>看看全部拼图</button></div>}
- <div className="categories" aria-label="拼图分类">{['全部','风景','街景','艺术'].map(c=><button key={c} aria-pressed={category===c} className={category===c?'active':''} onClick={()=>{setCategory(c);setIndex(0);}}>{c}</button>)}</div>
+ <div className="categories" aria-label="拼图分类">{CATEGORIES.map(c=><button key={c} aria-pressed={category===c} className={category===c?'active':''} onClick={()=>{setCategory(c);setIndex(0);}}>{c}</button>)}</div>
  {photo&&<section className="collection-controls"><h2>{photo.title}</h2><p className="muted photo-subtitle">{photo.subtitle}</p><Difficulty count={count} setCount={setCount}/><button className="primary start-button" disabled={!ready} onClick={()=>start(photo,count)}>{canResume?'继续上次的拼图':'开始拼图'} <ArrowRight size={18}/></button><MultiplayerEntry imageId={photo.id} title={photo.title} count={count}/><div><button className="celebration-preview-button" onClick={()=>setPreview(true)}><PartyPopper size={17}/>预览庆祝</button></div><p className="local-note">{saveError?'当前浏览器无法保存进度，仍可直接试玩':canResume?`已拼 ${placedCount(previous!)} / ${count} 片 · ${duration(previous!.elapsed)}`:'无需登录 · 进度保存在当前浏览器'}</p><CelebrationPreview photo={photo} open={preview} onOpenChange={setPreview} aspectRatio={level.cols/level.rows}/></section>}
  <footer className="collection-footer"><span>小小一片，刚刚好的片刻。</span><span>鼠标滚轮 / 拖动胶片切换</span></footer></main>;
 }

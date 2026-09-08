@@ -9,6 +9,7 @@
     "dev": "vinext dev",
     "local": "node scripts/start-local.mjs",
     "build": "vinext build",
+    "check:images": "node scripts/check-image-library.mjs",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt"

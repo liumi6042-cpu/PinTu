@@ -1,6 +1,7 @@
 import { createPuzzle, dropGroup, LEVELS, placedCount, boardFor, WORLD, snapTolerance, type PuzzleState } from './puzzle-engine';
+import { PHOTO_IDS } from './puzzle-catalog';
+export { PHOTO_IDS } from './puzzle-catalog';
 export const ROOM_LIFETIME=24*60*60*1000, LEASE_MS=10000, ONLINE_MS=22000;
-export const PHOTO_IDS=['seaside','skate','gold','red'];
 export const COLORS=['#d6e8b4','#99caf4','#eeafcf','#ffcb8e','#b6acf7','#8cddd1','#f3e192','#dda990'];
 export type Member={id:string;name:string;color:string;digest:string;lastSeen:number;joinedAt:number};
 export type Lease={playerId:string;expires:number;seq:number};
