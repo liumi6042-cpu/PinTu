@@ -1,3 +1,2 @@
-import AccountGate from './account-gate';
-import PublicLobby from './public-lobby';
-export default function Home() { return <AccountGate intro><PublicLobby/></AccountGate>; }
+import PuzzleApp from './puzzle-app';
+export default function Home() { return <PuzzleApp guestPlay/>; }
