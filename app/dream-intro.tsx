@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Hand } from 'lucide-react';
 import { PAPER_PIECE_PATH, reducedPaperMotion } from '@/lib/paper-interactions';
 import HomeNavigation from './home-navigation';
 
@@ -68,7 +68,7 @@ export default function DreamIntro({ onEnter }: { onEnter: () => void }) {
     if (!cancelled && gesture.moved && target && Math.hypot(
       piece.left + piece.width / 2 - target.left - target.width / 2,
       piece.top + piece.height / 2 - target.top - target.height / 2,
-    ) < 76) enter(true);
+    ) < Math.max(86, target.width * .72)) enter(true);
     else {
       event.currentTarget.style.transform = '';
       setNear(false);
@@ -106,16 +106,23 @@ export default function DreamIntro({ onEnter }: { onEnter: () => void }) {
         {phase === 'idle' ? '进入选图' : '正在进入…'}<ArrowRight size={22} strokeWidth={1.3} />
       </button>
       <p className="entrance-note">无需登录，即刻开始</p>
+      <p className="entrance-play-note"><Hand size={17} strokeWidth={1.6} />也可以拖动下方拼块，亲手开启</p>
     </section>
 
     <div className="entrance-stage" ref={stage}>
       <div className="entrance-camera" aria-hidden="true">
         <img className="entrance-scenery" src="/intro/hero-paper-coast-v2.png" alt="" fetchPriority="high" draggable={false} />
       </div>
+      <svg className="entrance-drag-guide" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path className="entrance-guide-wide" d="M 21 79 C 38 85, 51 73, 62 57" />
+        <path className="entrance-guide-small" d="M 36 74 C 46 82, 53 71, 57 61" />
+      </svg>
       <div className={`entrance-slot${near ? ' is-near' : ''}`} ref={slot} aria-hidden="true">
         <svg viewBox="0 0 100 100"><path d={PAPER_PIECE_PATH} /></svg>
+        <span className="entrance-slot-number">2</span>
+        <span className="entrance-slot-label">{near ? '松手，开启拼图' : '把拼块放到这里'}</span>
       </div>
-      <button className="entrance-piece" ref={key} aria-label="拖动这块拼图到海岸画中的缺口，或点击进入选图" disabled={phase !== 'idle'}
+      <button className="entrance-piece" ref={key} aria-label="拖动这块拼图到海岸画中的缺口，或点击进入选图" aria-describedby="entrance-drag-instruction" disabled={phase !== 'idle'}
         onClick={event => { if (event.detail === 0 || !suppress.current) enter(); }}
         onPointerDown={event => {
           if (event.button !== 0 || phaseRef.current !== 'idle' || drag.current) return;
@@ -125,6 +132,7 @@ export default function DreamIntro({ onEnter }: { onEnter: () => void }) {
           event.currentTarget.setPointerCapture(event.pointerId);
           event.currentTarget.classList.add('is-dragging');
           setDragging(true);
+          setMessage('拖向右上方标记 2 的缺口，靠近后松手。');
         }}
         onPointerMove={event => {
           const gesture = drag.current;
@@ -133,12 +141,14 @@ export default function DreamIntro({ onEnter }: { onEnter: () => void }) {
           gesture.moved ||= Math.hypot(dx, dy) > 5;
           event.currentTarget.style.transform = `translate(${dx}px,${dy}px) rotate(-12deg)`;
           const piece = event.currentTarget.getBoundingClientRect(), target = slot.current?.getBoundingClientRect();
-          if (target) setNear(Math.hypot(piece.left + piece.width / 2 - target.left - target.width / 2, piece.top + piece.height / 2 - target.top - target.height / 2) < 76);
+          if (target) setNear(Math.hypot(piece.left + piece.width / 2 - target.left - target.width / 2, piece.top + piece.height / 2 - target.top - target.height / 2) < Math.max(86, target.width * .72));
         }}
         onPointerUp={event => release(event)} onPointerCancel={event => release(event, true)} onLostPointerCapture={event => release(event, true)}>
-        <svg viewBox="0 0 100 100" aria-hidden="true"><path d={PAPER_PIECE_PATH} /></svg>
-        <span className="entrance-piece-label">拿起这一片 ↗</span>
+        <svg className="entrance-piece-shape" viewBox="0 0 100 100" aria-hidden="true"><path d={PAPER_PIECE_PATH} /></svg>
+        <span className="entrance-piece-grip" aria-hidden="true"><Hand size={34} strokeWidth={1.4} /><span>拖动我</span></span>
+        <span className="entrance-piece-number" aria-hidden="true">1</span>
       </button>
+      <p className="entrance-piece-label" id="entrance-drag-instruction">拿起这一片 <ArrowRight size={17} strokeWidth={1.5} /><span>拼进缺口，开启旅程</span></p>
     </div>
 
     <footer className="entrance-footer">
