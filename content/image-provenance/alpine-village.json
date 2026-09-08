@@ -1,0 +1,46 @@
+{
+  "id": "alpine-village",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "原始内置 image_gen 调用记录",
+    "promptPath": "content/image-prompts/alpine-village.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a080fa-6610-7d90-b30d-90660058d2c0\\exec-4c6b9c57-24fe-4c84-9d75-e456194fc063.png",
+    "sourceMetadata": "../artwork/puzzle-four-samples-2026-09-08/alpine-village.metadata.json"
+  },
+  "crops": {
+    "sourceAspectRatio": "2:1",
+    "threeThousandPieces": "60×50 正方形主体，居中等比裁切为 6:5，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single 2:1 alpine lakeside panorama with wood chalets, geraniums, stone paving, piers, rowboats, conifers and crisp varied snowy mountain features.",
+      "Clear water contains ripples, reflections and visible near-shore stones; narrow upper sky.",
+      "No visible text, logo, watermark, border, grid or jigsaw seams observed."
+    ],
+    "minorDeviations": [
+      "Open lake occupies a larger continuous region than the other artworks, but remains patterned with reflections and anchored by boats and swans.",
+      "Generated scene adds a village church and swans."
+    ],
+    "scope": "已逐张查看原始生成结果；未发现明显品牌、水印或受保护角色。保留细节偏差记录，视觉筛查不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  }
+}
