@@ -21,9 +21,14 @@ test('completion waits for the ready board and is not repeated by multiplayer sn
 
 test('celebration has bounded, deterministic particle layers including large foreground pieces',()=>{
   const particles=celebrationParticles(1440,42);
-  assert.equal(particles.length,600);assert.equal(celebrationParticles(390,42).length,320);
+  const small=celebrationParticles(390,42);
+  assert.ok(particles.length<=3200);assert.ok(small.length<=1600);
+  assert.ok(particles.filter(p=>p.kind==='puzzle').length>=900,'puzzle confetti should be much denser than the original burst');
+  assert.ok(particles.filter(p=>p.kind==='dust').length>=1500);
+  assert.ok(small.filter(p=>p.kind==='puzzle').length>=450);assert.ok(small.filter(p=>p.kind==='dust').length>=800);
+  assert.ok(particles.filter(p=>p.kind==='puzzle'&&p.delay>640).length>=200,'later waves should keep the celebration full');
   assert.deepEqual(particles,celebrationParticles(1440,42));
-  assert.deepEqual(new Set(particles.map(p=>p.kind)),new Set(['puzzle','foil','ribbon']));
+  assert.deepEqual(new Set(particles.map(p=>p.kind)),new Set(['puzzle','foil','ribbon','dust']));
   assert.deepEqual(new Set(particles.map(p=>p.depth)),new Set([0,1,2]));
   assert.ok(particles.filter(p=>p.depth===2&&p.kind==='puzzle'&&p.size>=64).length>=14);
   assert.ok(particles.filter(p=>p.kind==='ribbon'&&p.metallic).length>=16);
@@ -52,8 +57,8 @@ function renderEnvironment(reduced=false){
   const frames=new Map(),timers=new Map(),canvases=[],documentListeners=new Map(),motionListeners=new Map();
   let id=0,disconnected=0;
   function canvas(){
-    const stats={draws:0,clears:0,transforms:[]};
-    const context=new Proxy({drawImage(){stats.draws++;},clearRect(){stats.clears++;},setTransform(...args){stats.transforms.push(args);},createLinearGradient(){return {addColorStop(){}};}},{get(target,key){return key in target?target[key]:()=>{};}});
+    const stats={draws:0,dustDraws:0,clears:0,transforms:[]};
+    const context=new Proxy({drawImage(image){stats.draws++;if(image.width===32&&this.globalCompositeOperation==='lighter')stats.dustDraws++;},clearRect(){stats.clears++;},setTransform(...args){stats.transforms.push(args);},createLinearGradient(){return {addColorStop(){}};},createRadialGradient(){return {addColorStop(){}};}},{get(target,key){return key in target?target[key]:()=>{};}});
     const value={width:0,height:0,stats,getContext:()=>context,getBoundingClientRect:()=>({width:1440,height:900})};
     canvases.push(value);return value;
   }
@@ -78,6 +83,7 @@ test('renderer completes once, reuses sprites, releases resources and can replay
     const canvas=env.canvas();renderer=new CelebrationRenderer(canvas,()=>board,()=>finished++,21);
     assert.equal(canvas.width,2160,'render scale should cap at 1.5 even on a 3x screen');
     env.advance(0);env.advance(1000);assert.ok(canvas.stats.draws>100);
+    assert.ok(canvas.stats.dustDraws>1000,'gold powder must actually render above the picture');
     const sprites=env.canvases.length;env.advance(1200);assert.equal(env.canvases.length,sprites,'a frame should reuse existing sprites');
     assert.equal(finished,0);env.advance(3500);assert.equal(finished,1);
     assert.equal(env.frames.size,0);assert.equal(env.documentListeners.size,0);assert.equal(env.motionListeners.size,0);

@@ -5,6 +5,7 @@ const PUZZLE_SHAPE='M -21 -21 H -7 C -5 -17 -11 -16 -11 -11 C -11 -2 4 -2 4 -11 
 export class CelebrationRenderer {
   private ctx:CanvasRenderingContext2D;
   private particles:CelebrationParticle[]=[];
+  private dustParticles:CelebrationParticle[]=[];
   private sprites=new Map<string,HTMLCanvasElement>();
   private raf=0;private started:number|null=null;private stopped=false;
   private width=0;private height=0;private board:CelebrationBounds={x:0,y:0,width:1,height:1};
@@ -15,7 +16,8 @@ export class CelebrationRenderer {
   constructor(canvas:HTMLCanvasElement,getBoard:()=>CelebrationBounds|null,finish:()=>void,seed=Date.now()){
     this.canvas=canvas;this.getBoard=getBoard;this.finish=finish;this.ctx=canvas.getContext('2d')!;
     this.motion=window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.resize();this.particles=celebrationParticles(this.width,seed);
+    this.resize();const particles=celebrationParticles(this.width,seed);
+    this.particles=particles.filter(p=>p.kind!=='dust');this.dustParticles=particles.filter(p=>p.kind==='dust');
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas);
     document.addEventListener('visibilitychange',this.visibility);
     this.motion.addEventListener('change',this.motionChanged);
@@ -30,6 +32,26 @@ export class CelebrationRenderer {
   }
   private visibility=()=>{if(document.hidden)this.end();};
   private motionChanged=()=>{if(this.motion.matches)this.end();};
+  private dustSprite(){
+    let canvas=this.sprites.get('gold-dust');if(canvas)return canvas;
+    canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;
+    const c=canvas.getContext('2d')!,glow=c.createRadialGradient(16,16,0,16,16,16);
+    glow.addColorStop(0,'#fff8d7');glow.addColorStop(.16,'#ffe9a0');glow.addColorStop(.3,'#f8c44ddd');
+    glow.addColorStop(.6,'#efa82b55');glow.addColorStop(1,'#e99c2000');
+    c.fillStyle=glow;c.fillRect(0,0,32,32);this.sprites.set('gold-dust',canvas);return canvas;
+  }
+  private dust(elapsed:number,viewport:CelebrationBounds){
+    const c=this.ctx,sprite=this.dustSprite();
+    // One cached halo and one blend-mode change for the entire powder layer.
+    c.save();c.globalCompositeOperation='lighter';
+    for(const p of this.dustParticles){
+      const frame=celebrationFrame(p,elapsed,viewport,this.board);if(!frame)continue;
+      const {x,y,size,alpha}=frame,radius=size*2;
+      if(x< -radius||x>this.width+radius||y< -radius||y>this.height+radius)continue;
+      c.globalAlpha=alpha;c.drawImage(sprite,x-radius,y-radius,radius*2,radius*2);
+    }
+    c.restore();
+  }
   private sprite(p:CelebrationParticle){
     const key=`${p.kind}-${p.metallic?'gold':p.color}-${p.depth===2?'soft':'sharp'}`;
     let canvas=this.sprites.get(key);if(canvas)return canvas;
@@ -65,6 +87,7 @@ export class CelebrationRenderer {
     if(elapsed>=CELEBRATION_DURATION){this.end();return;}
     const c=this.ctx;c.clearRect(0,0,this.width,this.height);
     const viewport={x:0,y:0,width:this.width,height:this.height};
+    this.dust(elapsed,viewport);
     for(const p of this.particles){
       const frame=celebrationFrame(p,elapsed,viewport,this.board);if(!frame)continue;
       const {x,y,size,rotation,flip,alpha,age}=frame;
@@ -86,6 +109,6 @@ export class CelebrationRenderer {
     if(this.reducedTimer)clearTimeout(this.reducedTimer);this.observer.disconnect();
     document.removeEventListener('visibilitychange',this.visibility);this.motion.removeEventListener('change',this.motionChanged);
     this.ctx.clearRect(0,0,this.width,this.height);
-    for(const sprite of this.sprites.values()){sprite.width=0;sprite.height=0;}this.sprites.clear();this.particles=[];
+    for(const sprite of this.sprites.values()){sprite.width=0;sprite.height=0;}this.sprites.clear();this.particles=[];this.dustParticles=[];
   }
 }
