@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+    "play": {
+      "src": "/puzzles/harbor-houses-play-d4c9611f3bf1.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "d4c9611f3bf122d078dc5b4b8ab19827f27dd18615823a84e5ec0f2ddd61edd0",
+      "bytes": 2696382,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/harbor-houses-thumbnail-bfeed0789495.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "bfeed0789495a022b20254511b8fc684be631a9729d723487c80a92dd5e8cecb",
+      "bytes": 74260,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

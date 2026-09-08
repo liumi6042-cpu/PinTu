@@ -1,0 +1,63 @@
+{
+  "id": "peach-breakfast",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "a73ceddd4c7d8110b535db21bf022deb71620aadadde7f80e7343aa09f95a5cd",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/peach-breakfast.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-e110-7e20-9200-852557b81ee0\\exec-8703cd1e-df85-4293-a1c5-73668f151be3.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-b.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: exactly two peaches on one cream plate, one white cup with amber tea and one plain lavender napkin; broad clear shapes and warm color contrast, simple brushed surfaces. No obvious text, logo, watermark, frame, puzzle seams or recognizable IP.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "a73ceddd4c7d8110b535db21bf022deb71620aadadde7f80e7343aa09f95a5cd",
+    "play": {
+      "src": "/puzzles/peach-breakfast-play-01afe93eeb77.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "01afe93eeb773a2da26258709eece8cb69dcf4f46f3cd6d5bb65f402f943ed5e",
+      "bytes": 1446424,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/peach-breakfast-thumbnail-56ee6654835c.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "56ee6654835c958df94b83db3a98c88fc6438bbe7eed604bd161da1d638ecb22",
+      "bytes": 15324,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

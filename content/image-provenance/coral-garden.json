@@ -41,5 +41,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+    "play": {
+      "src": "/puzzles/coral-garden-play-251886942d5b.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "251886942d5b136bea75d2ced75bedba3a6ca5897984ba61768b59f7d150b83f",
+      "bytes": 3051134,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/coral-garden-thumbnail-81c0426bec73.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "81c0426bec731cdbaedd73d6d158f62d65b3ec23633abc5a6ea4c9cb6d25dbdb",
+      "bytes": 59808,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

@@ -43,5 +43,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+    "play": {
+      "src": "/puzzles/cat-library-play-0807df1a38a1.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "0807df1a38a1b1aea8e3957a2a1970c4c88c2ba267976aec89e86593b8c5e91e",
+      "bytes": 2562108,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-library-thumbnail-d2661e89cd92.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "d2661e89cd92c740f992c9cb53ac05ed19d8f1517f3b0e7007b12f455bdd1af6",
+      "bytes": 46694,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

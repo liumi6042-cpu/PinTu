@@ -31,5 +31,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+    "play": {
+      "src": "/puzzles/vermilion-garden-play-b54e890e0a58.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "b54e890e0a58b5167d67a45c55c7a5710b9be64eec913ba496942f589fdb8c00",
+      "bytes": 2665484,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/vermilion-garden-thumbnail-a5c77e092a92.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "a5c77e092a9282ea85e9c700c1c894ac20801db7f178d8a97dced62aeb817f56",
+      "bytes": 72426,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

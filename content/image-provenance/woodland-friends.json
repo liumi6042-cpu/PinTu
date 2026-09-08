@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "1199446d03476b2090fcb6fc91a2875c0b76b20b0ba1ed8b009e03e1a84bbd2c",
+    "play": {
+      "src": "/puzzles/woodland-friends-play-a570b7a959af.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "a570b7a959af8c212cbdc2d92cd7ea25442313a5ce0ac1285d4d3a473a17b8cd",
+      "bytes": 2843314,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/woodland-friends-thumbnail-78c4420f01b2.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "78c4420f01b273f7e52b9fd5113234b951672e1e42eb610fa30b8c0a8f21bbe8",
+      "bytes": 82836,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

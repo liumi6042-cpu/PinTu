@@ -1,0 +1,63 @@
+{
+  "id": "hill-cottage",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "2f7958c757930a52bcbf199d07b9ef29f780e1e688a73b7964cd599e7b0d7570",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/hill-cottage.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-2215-7932-b966-9a5070e03827\\exec-3468c297-f9c6-4fd7-ab7a-26538411d2a0.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-a.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: one cream cottage with red roof and teal door, one large rounded tree and an S-shaped golden path through broad green hills. Simple windows, broad cloud and separated hill color bands give clear landmarks. No dense tiny detail. No visible text, logos, watermarks, frames or puzzle seams.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "2f7958c757930a52bcbf199d07b9ef29f780e1e688a73b7964cd599e7b0d7570",
+    "play": {
+      "src": "/puzzles/hill-cottage-play-a0a139866d7d.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "a0a139866d7d76c1a4886b23e5ffd6b6ffdb10ad24deb1a15ab8ce4ef6bf6137",
+      "bytes": 1675946,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/hill-cottage-thumbnail-179a213e140b.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "179a213e140bd9e0da71002bcf03761c5e1c91d0a0fbd4902bebb09811091120",
+      "bytes": 21554,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

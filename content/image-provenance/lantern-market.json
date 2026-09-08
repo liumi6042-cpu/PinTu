@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+    "play": {
+      "src": "/puzzles/lantern-market-play-a08e167238cb.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "a08e167238cba65879670b898968c70e6e92561aa063999d88fb254227d4f8be",
+      "bytes": 2705566,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/lantern-market-thumbnail-2493faf2382d.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "2493faf2382db2408d0275b9e807ba3845b62ca1ed135b671e3034a8510043c2",
+      "bytes": 72540,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

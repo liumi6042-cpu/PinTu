@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+    "play": {
+      "src": "/puzzles/floating-islands-play-cc2bf3f201d6.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "cc2bf3f201d643f8b9100780de595c6cda834dc65d6faa1321033e271188d97a",
+      "bytes": 2835106,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/floating-islands-thumbnail-837a5c15defc.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "837a5c15defc7527e727d602cdaad07f89963b0c0b9eac003e835e9db02db40d",
+      "bytes": 80190,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

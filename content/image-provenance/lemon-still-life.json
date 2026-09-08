@@ -1,0 +1,63 @@
+{
+  "id": "lemon-still-life",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/lemon-still-life.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-2215-7932-b966-9a5070e03827\\exec-022dd91d-4829-426a-a470-d3bff9ae4a51.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-a.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: exactly two large lemons beside a teal jug; yellow, teal, peach and cream regions are clearly separated. Broad cast and leaf shadows create puzzle clues. Restrained gouache texture, no dense objects. No visible text, logos, watermarks, frames or puzzle seams.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+    "play": {
+      "src": "/puzzles/lemon-still-life-play-351bb31dec03.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "351bb31dec037f250dd930a7a64ced1a36598c9d4bcb689050e63288fe7d56b4",
+      "bytes": 1604642,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/lemon-still-life-thumbnail-8c5a0448dd12.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "8c5a0448dd129dad9d748ee505ea65837a505e3767bc047bbd8e72520b2a1ff6",
+      "bytes": 15994,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+    "play": {
+      "src": "/puzzles/tulip-windmill-play-96d1fb95e025.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "96d1fb95e0256fa3f86b46d34dc622701b7859b7b815fd45fceca6cd0ed7afbe",
+      "bytes": 2723112,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/tulip-windmill-thumbnail-116adeb7c698.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "116adeb7c698e44394de3f1896bae5db7a668d91f8b294aefe15d4e3367bd3a1",
+      "bytes": 77360,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

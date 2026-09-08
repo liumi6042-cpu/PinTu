@@ -31,5 +31,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+    "play": {
+      "src": "/puzzles/skate-garden-play-884a5d26624c.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "884a5d26624c8db4079eccd2f3a093fb75ae9ad16edec6c8e9aeb20c423805b8",
+      "bytes": 2577748,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/skate-garden-thumbnail-a0176a1a6279.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "a0176a1a62799e3b463b18978a126d1d414bb48be9642bdfb847cbcf05491f87",
+      "bytes": 70648,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

@@ -41,5 +41,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+    "play": {
+      "src": "/puzzles/blossom-canal-play-1b1afc5db71a.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "1b1afc5db71ae844bdd1fc7e59ada2c5a07346ac120a772ab97dcb54e07362fd",
+      "bytes": 2931582,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/blossom-canal-thumbnail-ab2cc4687425.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "ab2cc46874254b9425c2b06bffb462adb55f7860276196be4bde9bdf1499b41a",
+      "bytes": 55738,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

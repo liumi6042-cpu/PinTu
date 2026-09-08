@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+    "play": {
+      "src": "/puzzles/star-observatory-play-adaaa23caa19.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "adaaa23caa195c318480d16a5c80af0a08332b9abfe9343c1e590aee558cc1ba",
+      "bytes": 2658516,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/star-observatory-thumbnail-2e6e5cb3ac62.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "2e6e5cb3ac62c1666ad8613b800ea51de6723da741795b767ed2bcc5134dafe1",
+      "bytes": 67128,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

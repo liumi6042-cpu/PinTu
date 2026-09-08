@@ -31,5 +31,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "6efa913d5ffa8c37d2df4d8d795f0dea98173429e5ae14ffd05eb23d4874f9c4",
+    "play": {
+      "src": "/puzzles/amber-cabinet-play-87071a7ec4d6.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "87071a7ec4d60d8d67a823c136b4617b51059923a723998089af679337052db0",
+      "bytes": 2255066,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/amber-cabinet-thumbnail-b5d538d458cd.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "b5d538d458cdb38faaf0f0fbb8292cc23735971f31ee0ee6e347095b8fd7d3f5",
+      "bytes": 59136,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

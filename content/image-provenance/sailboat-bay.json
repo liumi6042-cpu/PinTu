@@ -1,0 +1,63 @@
+{
+  "id": "sailboat-bay",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/sailboat-bay.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-2215-7932-b966-9a5070e03827\\exec-85928b4e-c0e8-4fec-84f4-4688f30c8197.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-a.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: one red sailboat with cream sails in turquoise bay; coast forms a broad sweeping curve, rounded hills and cloud provide clear upper landmarks. Water includes readable medium broad painted ripples; no busy tiny object clusters. Image is somewhat more naturalistic than flat editorial but clear and substantially simpler than dense prior scenes. No visible text, logos, watermarks, frames or puzzle seams.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+    "play": {
+      "src": "/puzzles/sailboat-bay-play-6a73f7ec1f43.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "6a73f7ec1f431844b85abeb9491ca616ad6267ea0c6fa1f60a7bd356cabdc432",
+      "bytes": 1751658,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/sailboat-bay-thumbnail-daacaea1f9fe.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "daacaea1f9fe320c76e3b2e8bee35e14b0560d76ff56d6fd22ff66538884fd10",
+      "bytes": 30632,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "id": "whale-moon",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/whale-moon.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-e110-7e20-9200-852557b81ee0\\exec-0a4631ad-36c8-4d2e-9dcc-311763848bcf.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-b.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: one friendly whale with a readable silhouette, broad layered blue waves and warm moon. Sparse coherent composition and broad tonal regions; natural gouache brush texture remains. No obvious text, logo, watermark, frame, puzzle seams or recognizable IP.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+    "play": {
+      "src": "/puzzles/whale-moon-play-1637afcdf018.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "1637afcdf018749bea7ccce21d5b595031e172ead52cf002a60a500d6ce74845",
+      "bytes": 1692920,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/whale-moon-thumbnail-462b3eb77a54.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "462b3eb77a540bd4ef9d93a455d108d7c835c47278c918cb82053a4f7be8632e",
+      "bytes": 21382,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

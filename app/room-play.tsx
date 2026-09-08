@@ -5,7 +5,7 @@ import { useLanguage } from '@/app/language-switch';
 import { useEffect, useState } from 'react';
 import { Puzzle, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Game } from './puzzle-app';
-import { PHOTOS } from '@/lib/puzzle-catalog';
+import { RESTORABLE_PHOTOS } from '@/lib/puzzle-catalog';
 import { RoomClient } from '@/lib/room-client';
 import { joinPuzzle } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
@@ -19,7 +19,7 @@ export default function RoomPlay({ roomId }: {
         setClient(new RoomClient(ticket)); }).catch(error => { if (!canceled)
         setError(error instanceof Error ? error.message : '暂时无法加入房间'); }); return () => { canceled = true; }; }, [roomId, attempt]);
     if (client) {
-        const photo = PHOTOS.find(p => p.id === client.state.imageId);
+        const photo = RESTORABLE_PHOTOS.find(p => p.id === client.state.imageId);
         if (photo)
             return <Game state={client.state} photo={photo} persist={noop} leave={() => { client.leave(); window.location.assign(client.snapshot.visibility === 'public' ? '/lobby' : '/personal'); }} restart={noop} saveError={false} collaboration={client}/>;
     }

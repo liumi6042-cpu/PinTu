@@ -31,5 +31,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+    "play": {
+      "src": "/puzzles/seaside-play-ca7174e77276.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "ca7174e7727683be785fd3b8da00fd8af76ec3617367e344cccbdc1b2c25fbca",
+      "bytes": 2547368,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/seaside-thumbnail-ed9549cc365d.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "ed9549cc365d77bb80874ca1f38e3d2f06ff4e0b04ecb41b38ab9ea613dcd09d",
+      "bytes": 71014,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

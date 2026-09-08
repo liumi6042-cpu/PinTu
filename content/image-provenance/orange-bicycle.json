@@ -1,0 +1,63 @@
+{
+  "id": "orange-bicycle",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/orange-bicycle.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-e110-7e20-9200-852557b81ee0\\exec-aae45c66-5821-4012-98b2-a0aa7c87479e.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-b.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: one large orange bicycle with coherent wheels and frame beside cream wall and a single potted plant; readable broad object and shadow regions, natural gouache wall texture. No obvious text, logo, watermark, frame, puzzle seams or recognizable IP.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+    "play": {
+      "src": "/puzzles/orange-bicycle-play-00a7ee5b7f98.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "00a7ee5b7f98acea9ae2269e71fa3a65014f05c54ecb4dea4f296430ce885ec0",
+      "bytes": 1678408,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/orange-bicycle-thumbnail-f6d0c4f92a73.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "f6d0c4f92a73151ee762448201ff98dff7116fe13f8898ea0a87b5a0284d823e",
+      "bytes": 28750,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

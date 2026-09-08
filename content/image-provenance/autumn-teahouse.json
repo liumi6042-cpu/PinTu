@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "4aae9d7de6c78cbf798b47ac7e6df4d91031ac7ca62c46de084e689c277c5578",
+    "play": {
+      "src": "/puzzles/autumn-teahouse-play-531755dd2723.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "531755dd272393907357abdc875e2f7b1e4e20c0cd4b44e720d631b7504c1194",
+      "bytes": 2833242,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/autumn-teahouse-thumbnail-5d53386d4009.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "5d53386d400952dd03396c8951022d56fae5fdf578a913bf4df5850ee509ffa3",
+      "bytes": 79058,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

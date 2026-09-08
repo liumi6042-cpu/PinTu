@@ -42,5 +42,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+    "play": {
+      "src": "/puzzles/alpine-village-play-ad7aa273c289.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "ad7aa273c2893e229e1a23546cdada1ff551d402d162a3dd419aaae27e6206e3",
+      "bytes": 2783134,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/alpine-village-thumbnail-f2ab8f7ecf6b.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "f2ab8f7ecf6b65d2d1b82e889d8bc4df44ce09253c3cb1c30ae90cd61532f6f2",
+      "bytes": 52542,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

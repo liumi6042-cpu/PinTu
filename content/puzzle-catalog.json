@@ -1,12 +1,124 @@
 [
   {
+    "id": "lemon-still-life",
+    "title": "柠檬小憩",
+    "subtitle": "两颗柠檬，一壶午后的暖光。",
+    "category": "生活",
+    "src": "/puzzles/lemon-still-life.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/lemon-still-life-play-351bb31dec03.webp",
+    "thumbSrc": "/puzzles/lemon-still-life-thumbnail-8c5a0448dd12.webp"
+  },
+  {
+    "id": "sleepy-cat",
+    "title": "午睡小猫",
+    "subtitle": "小猫睡着了，阳光还醒着。",
+    "category": "动物",
+    "src": "/puzzles/sleepy-cat.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/sleepy-cat-play-57213fc195a7.webp",
+    "thumbSrc": "/puzzles/sleepy-cat-thumbnail-c49d7e4d1010.webp"
+  },
+  {
+    "id": "sailboat-bay",
+    "title": "晴湾帆船",
+    "subtitle": "一叶小帆，慢慢驶过晴朗海湾。",
+    "category": "风景",
+    "src": "/puzzles/sailboat-bay.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/sailboat-bay-play-6a73f7ec1f43.webp",
+    "thumbSrc": "/puzzles/sailboat-bay-thumbnail-daacaea1f9fe.webp"
+  },
+  {
+    "id": "tulip-vase",
+    "title": "一瓶春天",
+    "subtitle": "把五朵春天，装进一只陶瓶。",
+    "category": "生活",
+    "src": "/puzzles/tulip-vase.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/tulip-vase-play-728aaedbe835.webp",
+    "thumbSrc": "/puzzles/tulip-vase-thumbnail-fcb40404fae3.webp"
+  },
+  {
+    "id": "hill-cottage",
+    "title": "山丘小屋",
+    "subtitle": "沿着弯弯小路，回到山丘上的家。",
+    "category": "风景",
+    "src": "/puzzles/hill-cottage.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/hill-cottage-play-a0a139866d7d.webp",
+    "thumbSrc": "/puzzles/hill-cottage-thumbnail-179a213e140b.webp"
+  },
+  {
+    "id": "whale-moon",
+    "title": "月下小鲸",
+    "subtitle": "小鲸跃过海浪，月亮轻轻照着。",
+    "category": "动物",
+    "src": "/puzzles/whale-moon.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/whale-moon-play-1637afcdf018.webp",
+    "thumbSrc": "/puzzles/whale-moon-thumbnail-462b3eb77a54.webp"
+  },
+  {
+    "id": "orange-bicycle",
+    "title": "橘色单车",
+    "subtitle": "单车靠着暖墙，等一阵慢悠悠的风。",
+    "category": "街景",
+    "src": "/puzzles/orange-bicycle.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/orange-bicycle-play-00a7ee5b7f98.webp",
+    "thumbSrc": "/puzzles/orange-bicycle-thumbnail-f6d0c4f92a73.webp"
+  },
+  {
+    "id": "peach-breakfast",
+    "title": "蜜桃早餐",
+    "subtitle": "蜜桃和热茶，让早晨简单一点。",
+    "category": "生活",
+    "src": "/puzzles/peach-breakfast.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/peach-breakfast-play-01afe93eeb77.webp",
+    "thumbSrc": "/puzzles/peach-breakfast-thumbnail-56ee6654835c.webp"
+  },
+  {
+    "id": "desert-sun",
+    "title": "沙丘落日",
+    "subtitle": "沙丘起伏，留住落日的颜色。",
+    "category": "风景",
+    "src": "/puzzles/desert-sun.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/desert-sun-play-81b806fe08e2.webp",
+    "thumbSrc": "/puzzles/desert-sun-thumbnail-93030157090c.webp"
+  },
+  {
+    "id": "floating-house",
+    "title": "云端小屋",
+    "subtitle": "住在一朵云上，做一个轻轻的梦。",
+    "category": "幻想",
+    "src": "/puzzles/floating-house.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/floating-house-play-0edf56ad945b.webp",
+    "thumbSrc": "/puzzles/floating-house-thumbnail-08f4d3d888e4.webp"
+  },
+  {
     "id": "blossom-canal",
     "title": "樱岸慢行",
     "subtitle": "沿着花影与水巷，拼一场温柔的春日。",
     "category": "街景",
     "src": "/puzzles/blossom-canal.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/blossom-canal-play-1b1afc5db71a.webp",
+    "thumbSrc": "/puzzles/blossom-canal-thumbnail-ab2cc4687425.webp"
   },
   {
     "id": "coral-garden",
@@ -15,7 +127,9 @@
     "category": "风景",
     "src": "/puzzles/coral-garden.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/coral-garden-play-251886942d5b.webp",
+    "thumbSrc": "/puzzles/coral-garden-thumbnail-81c0426bec73.webp"
   },
   {
     "id": "cat-library",
@@ -24,7 +138,9 @@
     "category": "艺术",
     "src": "/puzzles/cat-library.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/cat-library-play-0807df1a38a1.webp",
+    "thumbSrc": "/puzzles/cat-library-thumbnail-d2661e89cd92.webp"
   },
   {
     "id": "alpine-village",
@@ -33,7 +149,9 @@
     "category": "风景",
     "src": "/puzzles/alpine-village.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/alpine-village-play-ad7aa273c289.webp",
+    "thumbSrc": "/puzzles/alpine-village-thumbnail-f2ab8f7ecf6b.webp"
   },
   {
     "id": "seaside",
@@ -42,7 +160,9 @@
     "category": "风景",
     "src": "/puzzles/seaside.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/seaside-play-ca7174e77276.webp",
+    "thumbSrc": "/puzzles/seaside-thumbnail-ed9549cc365d.webp"
   },
   {
     "id": "skate-garden",
@@ -51,7 +171,9 @@
     "category": "街景",
     "src": "/puzzles/skate-garden.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/skate-garden-play-884a5d26624c.webp",
+    "thumbSrc": "/puzzles/skate-garden-thumbnail-a0176a1a6279.webp"
   },
   {
     "id": "amber-cabinet",
@@ -60,7 +182,9 @@
     "category": "艺术",
     "src": "/puzzles/amber-cabinet.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/amber-cabinet-play-87071a7ec4d6.webp",
+    "thumbSrc": "/puzzles/amber-cabinet-thumbnail-b5d538d458cd.webp"
   },
   {
     "id": "vermilion-garden",
@@ -69,7 +193,9 @@
     "category": "艺术",
     "src": "/puzzles/vermilion-garden.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/vermilion-garden-play-b54e890e0a58.webp",
+    "thumbSrc": "/puzzles/vermilion-garden-thumbnail-a5c77e092a92.webp"
   },
   {
     "id": "lantern-market",
@@ -78,7 +204,9 @@
     "category": "街景",
     "src": "/puzzles/lantern-market.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/lantern-market-play-a08e167238cb.webp",
+    "thumbSrc": "/puzzles/lantern-market-thumbnail-2493faf2382d.webp"
   },
   {
     "id": "tulip-windmill",
@@ -87,7 +215,9 @@
     "category": "风景",
     "src": "/puzzles/tulip-windmill.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/tulip-windmill-play-96d1fb95e025.webp",
+    "thumbSrc": "/puzzles/tulip-windmill-thumbnail-116adeb7c698.webp"
   },
   {
     "id": "autumn-teahouse",
@@ -96,7 +226,9 @@
     "category": "风景",
     "src": "/puzzles/autumn-teahouse.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/autumn-teahouse-play-531755dd2723.webp",
+    "thumbSrc": "/puzzles/autumn-teahouse-thumbnail-5d53386d4009.webp"
   },
   {
     "id": "bakery-morning",
@@ -105,7 +237,9 @@
     "category": "生活",
     "src": "/puzzles/bakery-morning.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/bakery-morning-play-1bc923303fe7.webp",
+    "thumbSrc": "/puzzles/bakery-morning-thumbnail-61e2e0f3b75c.webp"
   },
   {
     "id": "tropical-aviary",
@@ -114,7 +248,9 @@
     "category": "动物",
     "src": "/puzzles/tropical-aviary.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/tropical-aviary-play-6e1d568c1b1b.webp",
+    "thumbSrc": "/puzzles/tropical-aviary-thumbnail-b249d8aa9fdc.webp"
   },
   {
     "id": "woodland-friends",
@@ -123,7 +259,9 @@
     "category": "动物",
     "src": "/puzzles/woodland-friends.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/woodland-friends-play-a570b7a959af.webp",
+    "thumbSrc": "/puzzles/woodland-friends-thumbnail-78c4420f01b2.webp"
   },
   {
     "id": "ceramic-studio",
@@ -132,7 +270,9 @@
     "category": "艺术",
     "src": "/puzzles/ceramic-studio.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/ceramic-studio-play-151ce006e135.webp",
+    "thumbSrc": "/puzzles/ceramic-studio-thumbnail-ce44ab7fdb9e.webp"
   },
   {
     "id": "star-observatory",
@@ -141,7 +281,9 @@
     "category": "幻想",
     "src": "/puzzles/star-observatory.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/star-observatory-play-adaaa23caa19.webp",
+    "thumbSrc": "/puzzles/star-observatory-thumbnail-2e6e5cb3ac62.webp"
   },
   {
     "id": "floating-islands",
@@ -150,7 +292,9 @@
     "category": "幻想",
     "src": "/puzzles/floating-islands.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "archived",
+    "playSrc": "/puzzles/floating-islands-play-cc2bf3f201d6.webp",
+    "thumbSrc": "/puzzles/floating-islands-thumbnail-837a5c15defc.webp"
   },
   {
     "id": "harbor-houses",
@@ -159,7 +303,9 @@
     "category": "街景",
     "src": "/puzzles/harbor-houses.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/harbor-houses-play-d4c9611f3bf1.webp",
+    "thumbSrc": "/puzzles/harbor-houses-thumbnail-bfeed0789495.webp"
   },
   {
     "id": "garden-table",
@@ -168,7 +314,9 @@
     "category": "生活",
     "src": "/puzzles/garden-table.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/garden-table-play-00852b035590.webp",
+    "thumbSrc": "/puzzles/garden-table-thumbnail-86ce914461f9.webp"
   },
   {
     "id": "winter-village",
@@ -177,6 +325,8 @@
     "category": "风景",
     "src": "/puzzles/winter-village.png",
     "origin": "project-ai-generated",
-    "status": "published"
+    "status": "published",
+    "playSrc": "/puzzles/winter-village-play-fa909191d22a.webp",
+    "thumbSrc": "/puzzles/winter-village-thumbnail-bfea8c39bd6c.webp"
   }
 ]

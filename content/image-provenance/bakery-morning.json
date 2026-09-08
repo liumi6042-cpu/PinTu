@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "61e70be74e954036b975362a91cb43160269efd7ccc1fd733605d9e9585edf0d",
+    "play": {
+      "src": "/puzzles/bakery-morning-play-1bc923303fe7.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "1bc923303fe720f8ba938e9d877cc9dca195f57fe7f090b04189181eacd4da78",
+      "bytes": 2407118,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/bakery-morning-thumbnail-61e2e0f3b75c.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "61e2e0f3b75c03caab63580a9e5db2cff65bd8aaa9b011da6b974687be67cd13",
+      "bytes": 67818,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }

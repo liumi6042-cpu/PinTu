@@ -46,5 +46,30 @@
     "termsUrl": "https://openai.com/policies/row-terms-of-use/",
     "checkedOn": "2026-09-08",
     "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+    "play": {
+      "src": "/puzzles/winter-village-play-fa909191d22a.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "fa909191d22ace440d3a0dac024171bc960b64bc1cffcdfeef6638e6e98b1e09",
+      "bytes": 2600400,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/winter-village-thumbnail-bfea8c39bd6c.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "bfea8c39bd6c301fb66c845de56bca3437c5217859576c49932ef8887dd49e9a",
+      "bytes": 72274,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
   }
 }
