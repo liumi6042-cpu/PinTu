@@ -14,7 +14,7 @@ export default function DreamIntro({onEnter}:{onEnter:()=>void}){
    <img className="dream-crane" src="/intro/paper-crane.png" alt="" draggable={false}/>
   </div>
   <header className="dream-header"><span><Puzzle size={25}/>一起拼图</span><button onClick={finish} disabled={flying}>跳过开场</button></header>
-  <div className="dream-copy"><p>THE WORLD, PIECE BY PIECE</p><h1>走进<br/><em>另一片世界。</em></h1><button className="dream-enter" onClick={enter} disabled={flying}><span>{flying?'正在穿越…':'进入拼图世界'}</span><ArrowUpRight size={24}/></button><span className="dream-caption">一扇门，一场相遇，一起拼完整。</span></div>
+  <div className="dream-copy"><p>THE WORLD, PIECE BY PIECE</p><h1>走进<br/><em>另一片世界。</em></h1><button className="dream-enter" onClick={enter} disabled={flying}><span>{flying?'正在穿越…':'进入拼图世界'}</span><ArrowUpRight size={24}/></button><span className="dream-caption">选一张喜欢的拼图，无需登录。</span></div>
   <div className="dream-bottom"><span>01 / A NEW PERSPECTIVE</span><span>移动光标，看看世界的另一层</span></div>
   <div className="dream-flash" aria-hidden="true"/>
  </section>;
