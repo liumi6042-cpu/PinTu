@@ -198,6 +198,11 @@ export class RoomClient {
     for (const task of this.drags.values()) { task.canceled = true; task.grant(false); task.wake?.(); }
     this.active = null; this.table?.cancelNetworkDrag();
   }
+  async organize() {
+    if(this.snapshot.visibility!=='solo')throw new Error('只有单人局可以整理整个桌面');
+    if(this.drags.size)throw new Error('请先放下当前拼块');
+    const snapshot=await this.request({type:'shuffle'});this.receive(snapshot,true);this.table?.fit();
+  }
   leave() {
     this.stop();
     void fetch(`/api/rooms/${this.ticket.room.id}`, { method: 'POST', keepalive: true,
@@ -206,4 +211,4 @@ export class RoomClient {
   }
 }
 export function roomSessionKey(id: string) { return `together-puzzle:room:${id}`; }
-export function saveTicket(ticket: RoomTicket) { try { sessionStorage.setItem(roomSessionKey(ticket.room.id), JSON.stringify({ token: ticket.token, playerId: ticket.playerId })); } catch {} }
+export function saveTicket(ticket: RoomTicket) { const value=JSON.stringify({ token: ticket.token, playerId: ticket.playerId });try { sessionStorage.setItem(roomSessionKey(ticket.room.id),value); } catch {}if(ticket.room.visibility){try{localStorage.setItem(roomSessionKey(ticket.room.id)+':account',value);}catch{}} }

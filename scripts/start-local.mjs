@@ -39,6 +39,7 @@ async function main() {
   console.log('正在准备本地拼图，图片和房间数据都保存在这台电脑上…');
   if (!process.argv.includes('--skip-build')) await run([path.join(root,'node_modules/vinext/dist/cli.js'),'build']);
   await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0000_puzzle_rooms.sql']);
+  await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0001_lobby_accounts.sql']);
 
   const config = JSON.parse(await readFile(path.join(root,'dist/server/wrangler.json'),'utf8'));
   config.main = path.join(root,'dist/server/index.js');
