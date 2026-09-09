@@ -1,14 +1,16 @@
 /* The preference belongs to the playing surface, not the lobby or artwork. */
+.paper-theme .game{--table-surface:#e0d5bf;--table-dot:#9984651a;background:var(--table-surface);background-image:radial-gradient(var(--table-dot) .8px,transparent .8px);background-size:20px 20px;}
+/* Progress text and footer share the tabletop, without bars or separators. */
+.paper-theme .game[data-table-theme] :is(.game-progress,.game-footer,.table-area){background:transparent;border:0;}
+.paper-theme .game .game-progress>div:first-child{margin-bottom:0;}
 .paper-theme .background-toggle{border:1px solid #b9a38366;}
 .paper-theme .game[data-table-theme=dark]{
  --paper:#27292d;--paper-raised:#303237;--paper-ink:#f0e7da;--paper-muted:#bfb5a7;
  --paper-line:#525258;--paper-link:#e3b487;--paper-clay:#d3a073;--paper-sage:#9faf8f;
  --primary:#d3a073;--foreground:#f0e7da;
- background:#212327;color:var(--paper-ink);color-scheme:dark;
+ --table-surface:#212327;--table-dot:#c8b99c14;color:var(--paper-ink);color-scheme:dark;
 }
-.paper-theme .game[data-table-theme=dark] :is(.game-header,.game-footer,.room-toolbar){border-color:#494a50;}
-.paper-theme .game[data-table-theme=dark] .game-progress [data-slot=progress-track]{background:#46484d;}
-.paper-theme .game[data-table-theme=dark] .table-area{background-color:#212327;background-image:radial-gradient(#c8b99c14 .8px,transparent .8px);}
+.paper-theme .game[data-table-theme=dark] :is(.game-header,.room-toolbar){border-color:#494a50;}
 .paper-theme .game[data-table-theme=dark] :is(.table-tools,.zoom-controls,.reference-card){background:#2c2e33f5;border-color:#55555b;box-shadow:0 7px 22px #0003;}
 .paper-theme .game[data-table-theme=dark] :is(.tool,.tool.locked-tool,.icon-button,.text-button,.table-badge,.save-state,.zoom-controls>span:not(.vertical-divider),.reference-card p){color:#d1c7b9;}
 .paper-theme .game[data-table-theme=dark] :is(.icon-button:hover,.tool:hover){color:#f2d2ad;background:#eed2ac14;}
