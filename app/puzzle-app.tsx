@@ -2,7 +2,7 @@
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Puzzle, ArrowRight, ArrowLeft, Search, Play, Pause, Image as ImageIcon, Images, Lightbulb, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, Volume2, VolumeX, RotateCcw, Check, X, Clock3, Expand, Minimize, LockKeyhole, PartyPopper } from 'lucide-react';
+import { Puzzle, Moon, Sun, ArrowRight, ArrowLeft, Search, Play, Pause, Image as ImageIcon, Images, Lightbulb, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, Volume2, VolumeX, RotateCcw, Check, X, Clock3, Expand, Minimize, LockKeyhole, PartyPopper } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,6 +12,7 @@ import { createPuzzle, restartPuzzle, LEVELS, SAVED_LEVELS, placedCount, restore
 import { CompletionGate } from '@/lib/celebration-engine';
 import { CelebrationOverlay, CelebrationPreview } from './celebration';
 import { PuzzleTable } from '@/lib/puzzle-table';
+import { TABLE_THEME_KEY, parseTableTheme, type TableTheme } from '@/lib/table-theme';
 import { registerPuzzleTools } from '@/lib/webmcp';
 import AssistanceDialog from './assistance-dialog';
 import type { AssistanceKind } from '@/lib/assistance-policy';
@@ -90,10 +91,18 @@ export function Game({ state, photo, persist, leave, restart, saveError, collabo
     useLanguage();
     const [celebrating, setCelebrating] = useState(false), [preview, setPreview] = useState(false), completionGate = useRef(new CompletionGate());
     const canvas = useRef<HTMLCanvasElement>(null), table = useRef<PuzzleTable | null>(null), container = useRef<HTMLElement>(null), [metrics, setMetrics] = useState({ placed: placedCount(state), elapsed: state.elapsed, zoom: 1 }), [loading, setLoading] = useState(true), [imageError, setImageError] = useState(false), [attempt, setAttempt] = useState(0), [edges, setEdges] = useState(false), [assistance, setAssistance] = useState<AssistanceKind | null>(null), [paused, setPaused] = useState(false), [sound, setSound] = useState(false), [help, setHelp] = useState(false), [reset, setReset] = useState(false), [complete, setComplete] = useState(false), [fullscreen, setFullscreen] = useState(false), [message, setMessage] = useState('把拼块拖到相应位置。靠近时，它们会轻轻吸附。');
+    const [tableTheme,setTableTheme]=useState<TableTheme>('beige'),tableThemeRef=useRef<TableTheme>('beige');
+    const applyTableTheme=useCallback((value:TableTheme)=>{tableThemeRef.current=value;setTableTheme(value);table.current?.setTheme(value);},[]);
+    useEffect(()=>{
+        try{applyTableTheme(parseTableTheme(localStorage.getItem(TABLE_THEME_KEY)));}catch{/* The switch also works without storage. */}
+        const sync=(event:StorageEvent)=>{if(event.key===TABLE_THEME_KEY||event.key===null)applyTableTheme(parseTableTheme(event.newValue));};
+        window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync);
+    },[applyTableTheme]);
+    const switchTableTheme=()=>{const next=tableThemeRef.current==='beige'?'dark':'beige';applyTableTheme(next);try{localStorage.setItem(TABLE_THEME_KEY,next);}catch{/* Keep the selection for this visit. */}};
     const total = state.cols * state.rows, isMultiplayer = !!collaboration && collaboration.snapshot.visibility !== 'solo';
     useEffect(() => { let canceled = false; let detach: (() => void) | undefined; const img = new window.Image(); setLoading(true); setImageError(false); img.onload = () => { if (canceled || !canvas.current)
         return; const engine = new PuzzleTable(canvas.current, state, img, () => { if (canceled)
-        return; setMetrics({ placed: placedCount(state), elapsed: state.elapsed, zoom: table.current?.camera.z ?? 1 }); persist(state); }, setMessage); table.current = engine; if (collaboration)
+        return; setMetrics({ placed: placedCount(state), elapsed: state.elapsed, zoom: table.current?.camera.z ?? 1 }); persist(state); }, setMessage); table.current = engine; engine.setTheme(tableThemeRef.current); if (collaboration)
         detach = collaboration.attach(engine); setLoading(false); }; img.onerror = () => { if (!canceled) {
         setImageError(true);
         setLoading(false);
@@ -119,7 +128,7 @@ export function Game({ state, photo, persist, leave, restart, saveError, collabo
     catch {
         setMessage('当前环境暂不支持全屏，可以用缩放按钮调整视野');
     } };
-    return <main className="game" ref={container}><header className="game-header"><button className="back-button" onClick={leave}><ArrowLeft size={18}/><span>{t(collaboration?.snapshot.visibility === 'public' ? '返回大厅' : '返回选图')}</span></button><div className="game-title"><h1>{t(photo.title)}</h1><span>{t(total)}{t(" 片 ")}<i>·</i> {t(isMultiplayer ? '合作拼图' : '单人拼图')}</span></div><div className="game-stats"><LanguageSwitch /><div className="time"><Clock3 size={16}/>{t(duration(metrics.elapsed))}</div><button className="icon-button" aria-label={t(paused ? '继续拼图' : '暂停拼图')} title={t(paused ? '继续' : '暂停')} onClick={() => setPaused(!paused)}>{t(paused ? <Play size={18}/> : <Pause size={18}/>)}</button><button className="icon-button" aria-label={t("游玩帮助")} title={t("游玩帮助")} onClick={() => setHelp(true)}><HelpCircle size={18}/></button></div></header>
+    return <main className="game" data-table-theme={tableTheme} ref={container}><header className="game-header"><button className="back-button" onClick={leave}><ArrowLeft size={18}/><span>{t(collaboration?.snapshot.visibility === 'public' ? '返回大厅' : '返回选图')}</span></button><div className="game-title"><h1>{t(photo.title)}</h1><span>{t(total)}{t(" 片 ")}<i>·</i> {t(isMultiplayer ? '合作拼图' : '单人拼图')}</span></div><div className="game-stats"><LanguageSwitch /><div className="time"><Clock3 size={16}/>{t(duration(metrics.elapsed))}</div><button className="icon-button" aria-label={t(paused ? '继续拼图' : '暂停拼图')} title={t(paused ? '继续' : '暂停')} onClick={() => setPaused(!paused)}>{t(paused ? <Play size={18}/> : <Pause size={18}/>)}</button><button className="icon-button" aria-label={t("游玩帮助")} title={t("游玩帮助")} onClick={() => setHelp(true)}><HelpCircle size={18}/></button></div></header>
  {t(isMultiplayer && collaboration && <RoomToolbar client={collaboration}/>)}<div className="game-progress"><div><span><strong>{t(metrics.placed)}</strong> / {t(total)}{t(" 片已归位")}</span><span>{t(Math.round(metrics.placed / total * 100))}%</span></div><Progress value={metrics.placed / total * 100} aria-label={t("拼图完成进度")}/></div>
  <section className="table-area" aria-label={t("拼图游玩区")}><canvas ref={canvas} className="puzzle-canvas" tabIndex={0} aria-label={t(`${photo.title}拼图桌。拖动拼块拼合；滚轮缩放；空白处拖动桌面。键盘 N 选择下一块，方向键移动，Shift 加方向键微调，Enter 吸附。`)}/>
  <div className="table-topline"><span className="table-badge"><span /> {t(isMultiplayer ? '一起拼合' : '自由拼合')}</span><span className="save-state">{t(saveError ? <><X size={13}/>{t("未能保存")}</> : <><Check size={13}/>{t(collaboration ? '房间进度自动保存' : '进度自动保存')}</>)}</span></div>
@@ -128,7 +137,7 @@ export function Game({ state, photo, persist, leave, restart, saveError, collabo
     else
         table.current?.shuffle(); }}><Shuffle size={20}/><span>{t("整理")}</span></button></aside>
 
- <div className="zoom-controls"><button className="icon-button" aria-label={t("缩小")} onClick={() => table.current?.zoom(1 / 1.2)}><ZoomOut size={18}/></button><span>{t(Math.round(metrics.zoom * 100))}%</span><button className="icon-button" aria-label={t("放大")} onClick={() => table.current?.zoom(1.2)}><ZoomIn size={18}/></button><span className="vertical-divider"/><button className="icon-button" aria-label={t("查看整张拼图桌")} title={t("适应桌面")} onClick={() => table.current?.fit()}><Scan size={18}/></button><button className="icon-button fullscreen-button" aria-label={t(fullscreen ? '退出全屏' : '全屏')} onClick={fullscreenAction}>{t(fullscreen ? <Minimize size={18}/> : <Expand size={18}/>)}</button></div>
+ <div className="zoom-controls"><button className="icon-button" aria-label={t("缩小")} onClick={() => table.current?.zoom(1 / 1.2)}><ZoomOut size={18}/></button><span>{t(Math.round(metrics.zoom * 100))}%</span><button className="icon-button" aria-label={t("放大")} onClick={() => table.current?.zoom(1.2)}><ZoomIn size={18}/></button><span className="vertical-divider"/><button className="icon-button background-toggle" aria-label={t("暗色背景")} aria-pressed={tableTheme==='dark'} title={t(tableTheme==='beige'?'切换为暗色背景':'切换为米色背景')} onClick={switchTableTheme}>{tableTheme==='beige'?<Moon size={18}/>:<Sun size={18}/>}</button><button className="icon-button" aria-label={t("查看整张拼图桌")} title={t("适应桌面")} onClick={() => table.current?.fit()}><Scan size={18}/></button><button className="icon-button fullscreen-button" aria-label={t(fullscreen ? '退出全屏' : '全屏')} onClick={fullscreenAction}>{t(fullscreen ? <Minimize size={18}/> : <Expand size={18}/>)}</button></div>
  {t(loading && <div className="table-overlay"><Puzzle className="loading-icon" size={32}/><p>{t("正在铺开拼图\u2026")}</p></div>)}
  {t(imageError && <div className="table-overlay"><p>{t("这张图片暂时没有加载成功")}</p><button className="primary" onClick={() => setAttempt(n => n + 1)}>{t("重新加载")}</button><button className="secondary" onClick={leave}>{t("返回选图")}</button></div>)}
  {t(paused && !help && !reset && <div className="table-overlay pause-overlay"><span className="eyebrow">A MOMENT TO BREATHE</span><h2>{t("休息一下也很好。")}</h2><p>{t(collaboration ? '你可以休息一下，榜单计时会继续。' : '拼图会在这里等你。')}</p><button className="primary" onClick={() => setPaused(false)}><Play size={18}/>{t("继续拼图")}</button></div>)}

@@ -2,6 +2,7 @@ import { boardFor, normalizePuzzle, WORLD, piecesFor, pathFor, moveGroup, dropGr
 import { PuzzleSprites } from './puzzle-sprites';
 import { pictureCrop, drawPiecePicture } from './puzzle-picture';
 import { t,subscribeLanguage } from './i18n';
+import { TABLE_PALETTES, type TableTheme } from './table-theme';
 type Notice = (message:string)=>void;
 export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
@@ -11,6 +12,7 @@ export class PuzzleTable {
   edges=false; sound=false; paused=false; selected:number|null=null; hintId:number|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
   private backgroundDirty=true; private backgroundDrag:number|null=null;
+  private theme:TableTheme='beige';
   network:TableNetwork|null=null; networkReady=true; private claimSerial=0;
   private remoteOwners:Record<string,{name:string;color:string}>={};
   private drag:{id:number;x:number;y:number;dx:number;dy:number}|null=null;
@@ -131,6 +133,7 @@ export class PuzzleTable {
     if(this.hintTimer)clearTimeout(this.hintTimer);this.hintTimer=setTimeout(()=>{this.hintId=null;this.draw();},6500);
   }
   private playTone(){if(!this.sound)return;try{this.audio??=new AudioContext();void this.audio.resume();const osc=this.audio.createOscillator(),gain=this.audio.createGain(),t=this.audio.currentTime;osc.type='sine';osc.frequency.setValueAtTime(640,t);osc.frequency.exponentialRampToValueAtTime(900,t+.08);gain.gain.setValueAtTime(.045,t);gain.gain.exponentialRampToValueAtTime(.001,t+.16);osc.connect(gain);gain.connect(this.audio.destination);osc.start();osc.stop(t+.17);}catch{/* Sound is optional. */}}
+  setTheme(theme:TableTheme){if(this.theme===theme)return;this.theme=theme;this.draw();}
   draw(backgroundChanged=true){if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.render();});}
   private render(){
     if(this.sprites&&this.drag){
@@ -145,14 +148,15 @@ export class PuzzleTable {
     }else{this.renderScene(this.ctx);this.backgroundDirty=true;}
   }
   private renderScene(c:CanvasRenderingContext2D,exclude?:number){
+    const palette=TABLE_PALETTES[this.theme];
     const dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,this.width,this.height);c.save();c.translate(x,y);c.scale(z,z);
-    c.fillStyle='#cabc9f';c.strokeStyle='#94836d';c.lineWidth=1/z;c.beginPath();c.roundRect(this.board.x-9,this.board.y-9,this.board.width+18,this.board.height+18,8);c.fill();c.stroke();
-    c.save();c.setLineDash([4/z,7/z]);c.strokeStyle='#94836d44';c.lineWidth=.6/z;
+    c.fillStyle=palette.board;c.strokeStyle=palette.border;c.lineWidth=1/z;c.beginPath();c.roundRect(this.board.x-9,this.board.y-9,this.board.width+18,this.board.height+18,8);c.fill();c.stroke();
+    c.save();c.setLineDash([4/z,7/z]);c.strokeStyle=palette.grid;c.lineWidth=.6/z;
     for(let i=1;i<this.state.cols;i++){c.beginPath();c.moveTo(this.board.x+i*w,this.board.y);c.lineTo(this.board.x+i*w,this.board.y+this.board.height);c.stroke();}
     for(let i=1;i<this.state.rows;i++){c.beginPath();c.moveTo(this.board.x,this.board.y+i*h);c.lineTo(this.board.x+this.board.width,this.board.y+i*h);c.stroke();}c.restore();
-    if(!placedCount(this.state)){c.fillStyle='#756754b0';c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
-    c.fillStyle='#756754';c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
+    if(!placedCount(this.state)){c.fillStyle=palette.hint;c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
+    c.fillStyle=palette.caption;c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
     const groups=[...this.state.groups.filter(g=>g.locked),...this.state.groups.filter(g=>!g.locked)];
     for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g);
     if(this.hintId!==null){const p=this.pieces[this.hintId];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);c.fillStyle='#ac62462a';c.strokeStyle='#ac6246';c.lineWidth=3/z;c.fill(this.paths[p.id]);c.stroke(this.paths[p.id]);c.restore();}
@@ -177,7 +181,7 @@ export class PuzzleTable {
       }
       if(id===this.hintId&&!g.locked){c.strokeStyle='#ac6246';c.lineWidth=4/z;c.shadowColor='#ac6246';c.shadowBlur=18;c.stroke(path);}c.restore();
     }
-    if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle='#453e34';c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
+    if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=TABLE_PALETTES[this.theme].owner;c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
   }
   destroy(){this.stopLanguage();this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;void this.audio?.close();}
 }

@@ -1,0 +1,27 @@
+/* The preference belongs to the playing surface, not the lobby or artwork. */
+.paper-theme .background-toggle{border:1px solid #b9a38366;}
+.paper-theme .game[data-table-theme=dark]{
+ --paper:#27292d;--paper-raised:#303237;--paper-ink:#f0e7da;--paper-muted:#bfb5a7;
+ --paper-line:#525258;--paper-link:#e3b487;--paper-clay:#d3a073;--paper-sage:#9faf8f;
+ --primary:#d3a073;--foreground:#f0e7da;
+ background:#212327;color:var(--paper-ink);color-scheme:dark;
+}
+.paper-theme .game[data-table-theme=dark] :is(.game-header,.game-footer,.room-toolbar){border-color:#494a50;}
+.paper-theme .game[data-table-theme=dark] .game-progress [data-slot=progress-track]{background:#46484d;}
+.paper-theme .game[data-table-theme=dark] .table-area{background-color:#212327;background-image:radial-gradient(#c8b99c14 .8px,transparent .8px);}
+.paper-theme .game[data-table-theme=dark] :is(.table-tools,.zoom-controls,.reference-card){background:#2c2e33f5;border-color:#55555b;box-shadow:0 7px 22px #0003;}
+.paper-theme .game[data-table-theme=dark] :is(.tool,.tool.locked-tool,.icon-button,.text-button,.table-badge,.save-state,.zoom-controls>span:not(.vertical-divider),.reference-card p){color:#d1c7b9;}
+.paper-theme .game[data-table-theme=dark] :is(.icon-button:hover,.tool:hover){color:#f2d2ad;background:#eed2ac14;}
+.paper-theme .game[data-table-theme=dark] :is(.tool.active,.background-toggle[aria-pressed=true]){background:#d3a07324;color:#f1c898;border-color:#d3a07377;}
+.paper-theme .game[data-table-theme=dark] :is(.tool-divider,.vertical-divider){background:#55555b;}
+.paper-theme .game[data-table-theme=dark] .table-overlay{background:#24262af5;color:#f0e7da;}
+.paper-theme .game[data-table-theme=dark] .table-overlay .primary{background:#d3a073;color:#28221c;}
+.paper-theme .game[data-table-theme=dark] .table-overlay .secondary{background:#34363b;border-color:#626168;color:#f0e7da;}
+.paper-theme .game[data-table-theme=dark] .table-overlay .secondary:hover{background:#414249;border-color:#d3a073;}
+.paper-theme .game[data-table-theme=dark] .puzzle-canvas:focus-visible{outline-color:#e3b48799;}
+.paper-theme .game[data-table-theme=dark] .room-toolbar{background:#2a2c31;}
+.paper-theme .game[data-table-theme=dark] .member-chip{background:#35373b;color:#f0e7da!important;}
+.paper-theme .game[data-table-theme=dark] .connection.online{color:#b2c99d;}
+.paper-theme .game[data-table-theme=dark] :is(.connection.offline,.room-error){color:#ffc0a7;}
+.paper-theme .game[data-table-theme=dark] .language-switch{background:#363438;border-color:#635a50;color:#e6d8c3;}
+.paper-theme .game[data-table-theme=dark] .language-switch button[aria-pressed=true]{background:#b1845c;color:#fff9ee;}

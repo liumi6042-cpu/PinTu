@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createPuzzle, restartPuzzle, LEVELS, snapTolerance, moveGroup, dropGroup, restorePuzzle, boardFor, shuffleLoose } from '../lib/puzzle-engine.ts';
 import { makeRoom, addMember, applyAction } from '../lib/room-engine.ts';
 import { PuzzleTable } from '../lib/puzzle-table.ts';
+import { parseTableTheme } from '../lib/table-theme.ts';
 
 test('new grids range from 108 to exactly 2000 and the save fits in a local database row',()=>{
   assert.equal(Math.max(...LEVELS.map(l=>l.count)),2000);
@@ -54,8 +55,8 @@ test('the increased snap radius joins nearby correct neighbors and still rejects
 });
 
 function fakeCanvas(){
-  const stats={images:[],clips:0,hits:0};
-  const context=new Proxy({drawImage(image){stats.images.push(image);},clip(){stats.clips++;},isPointInPath(){stats.hits++;return true;}},{get(target,key){return key in target?target[key]:()=>{};}});
+  const stats={images:[],clips:0,hits:0,fills:[],texts:[]};
+  const context=new Proxy({fill(){stats.fills.push(this.fillStyle);},fillText(text){stats.texts.push({text,color:this.fillStyle});},drawImage(image){stats.images.push(image);},clip(){stats.clips++;},isPointInPath(){stats.hits++;return true;}},{get(target,key){return key in target?target[key]:()=>{};}});
   return {stats,context,width:1500,height:1100,style:{},getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){}};
 }
 test('2000 piece dragging reuses the stationary scene, culls offscreen pieces and limits exact hit tests',()=>{
@@ -90,4 +91,32 @@ test('2000 piece dragging reuses the stationary scene, culls offscreen pieces an
     assert.equal(table.groupAt(board.x+5,board.y+5)?.id,0);assert.ok(exactHits<10);
     table.zoom(100);assert.equal(table.camera.z,6.4);
   }finally{table?.destroy();Object.assign(globalThis,original);}
+});
+
+
+test('background switching preserves a live 2000-piece drag and refreshes its cached scene once',()=>{
+  const original={document:globalThis.document,Path2D:globalThis.Path2D,ResizeObserver:globalThis.ResizeObserver,devicePixelRatio:globalThis.devicePixelRatio,requestAnimationFrame:globalThis.requestAnimationFrame,cancelAnimationFrame:globalThis.cancelAnimationFrame};
+  globalThis.document={createElement:()=>fakeCanvas(),addEventListener(){}};globalThis.Path2D=class{};
+  globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.devicePixelRatio=1;globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};
+  let table,updates=0,networkCalls=0;
+  try{
+    const state=createPuzzle('seaside',50,40,2),canvas=fakeCanvas();
+    table=new PuzzleTable(canvas,state,{naturalWidth:1402,naturalHeight:1122},()=>updates++,()=>{});
+    table.width=1500;table.height=1100;table.camera={x:17,y:23,z:1};
+    table.selected=0;table.drag={id:0,x:0,y:0,dx:state.groups[0].dx,dy:state.groups[0].dy};
+    table.remoteOwners={1:{name:'同伴',color:'#56aabb'}};
+    table.network={acquire:async()=>{networkCalls++;return true;},move:()=>networkCalls++,drop:async()=>{networkCalls++;},release:()=>networkCalls++};
+    table.render();const before=JSON.stringify(state),camera=table.camera,drag=table.drag,sprites=table.sprites,picture=table.picture;
+    const firstCount=table.background.stats.images.length;
+    table.setTheme('dark');table.render();const darkCount=table.background.stats.images.length;
+    assert.ok(darkCount>firstCount,'theme must repaint the stationary scene during a drag');
+    assert.ok(table.background.stats.fills.includes('#303338'));
+    assert.ok(table.background.stats.texts.some(v=>v.text==='同伴'&&v.color==='#f2e8d8'));
+    table.render();assert.equal(table.background.stats.images.length,darkCount,'drag caching must resume after the theme change');
+    table.setTheme('dark');assert.equal(table.backgroundDirty,false,'same theme must not invalidate a clean cache');
+    table.setTheme('beige');table.background.stats.fills=[];table.render();assert.equal(table.background.stats.fills[0],'#cabc9f');
+    assert.equal(JSON.stringify(state),before);assert.equal(table.camera,camera);assert.equal(table.drag,drag);assert.equal(table.selected,0);assert.equal(table.sprites,sprites);assert.equal(table.picture,picture);
+    assert.equal(updates,0);assert.equal(networkCalls,0);
+    assert.equal(parseTableTheme('dark'),'dark');for(const value of [null,'beige','bad-value'])assert.equal(parseTableTheme(value),'beige');
+  }finally{if(table)table.drag=null;table?.destroy();Object.assign(globalThis,original);}
 });
