@@ -1,5 +1,60 @@
 [
   {
+    "id": "mountain-lake-reflection",
+    "title": "山湖倒影",
+    "subtitle": "雪峰映进湖面，把宁静拼成一幅画。",
+    "category": "风景",
+    "src": "/puzzles/mountain-lake-reflection.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/mountain-lake-reflection-play-955c5c497ba9.webp",
+    "thumbSrc": "/puzzles/mountain-lake-reflection-thumbnail-014103253f54.webp"
+  },
+  {
+    "id": "morning-meadow-tree",
+    "title": "晨光草坡",
+    "subtitle": "晨光越过草坡，一棵树静静站在风里。",
+    "category": "风景",
+    "src": "/puzzles/morning-meadow-tree.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/morning-meadow-tree-play-b1879002897a.webp",
+    "thumbSrc": "/puzzles/morning-meadow-tree-thumbnail-8750918ab6b2.webp"
+  },
+  {
+    "id": "clear-sand-bay",
+    "title": "清澈海湾",
+    "subtitle": "沿着弧形沙岸，走进层层浅蓝。",
+    "category": "风景",
+    "src": "/puzzles/clear-sand-bay.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/clear-sand-bay-play-60097e7b105d.webp",
+    "thumbSrc": "/puzzles/clear-sand-bay-thumbnail-971e9300045f.webp"
+  },
+  {
+    "id": "lone-pine-snow",
+    "title": "雪野孤松",
+    "subtitle": "松影落在雪上，冬日也有温柔的线条。",
+    "category": "风景",
+    "src": "/puzzles/lone-pine-snow.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/lone-pine-snow-play-1c7e911f9c54.webp",
+    "thumbSrc": "/puzzles/lone-pine-snow-thumbnail-4249c2e1f234.webp"
+  },
+  {
+    "id": "quiet-cliff-falls",
+    "title": "山间清瀑",
+    "subtitle": "一缕清瀑落进碧潭，山间只留下水声。",
+    "category": "风景",
+    "src": "/puzzles/quiet-cliff-falls.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/quiet-cliff-falls-play-58048feab040.webp",
+    "thumbSrc": "/puzzles/quiet-cliff-falls-thumbnail-925d563cffb2.webp"
+  },
+  {
     "id": "lemon-still-life",
     "title": "柠檬小憩",
     "subtitle": "两颗柠檬，一壶午后的暖光。",

@@ -29,7 +29,7 @@ async function fixture(t){
 
 test('all playable assets have matching original files, provenance and review records',async()=>{
   assert.deepEqual(await checkImageLibrary(root),{published:PHOTOS.length});
-  assert.equal(PHOTOS.length,20);
+  assert.equal(PHOTOS.length,25);
   assert.equal(FEATURED_PHOTOS.length,8);assert.equal(new Set(FEATURED_PHOTOS.map(photo=>photo.id)).size,8);
   assert.ok(FEATURED_PHOTOS.every(photo=>PHOTO_IDS.includes(photo.id)));
   for(const id of PHOTO_IDS)assert.equal(makeRoom('catalog-test',id,108,100000).puzzle.imageId,id);

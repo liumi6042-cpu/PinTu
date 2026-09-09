@@ -15,7 +15,7 @@ test('random draw can reach every published picture, including both ends',()=>{
 
 test('archived artwork restores progress but cannot create a new server room or enter random draws',()=>{
   const archived=RESTORABLE_PHOTOS.filter(p=>p.status==='archived');
-  assert.equal(PHOTOS.length,20);assert.equal(archived.length,10);
+  assert.equal(PHOTOS.length,25);assert.equal(archived.length,10);
   for(const photo of archived){
     assert.ok(!PHOTOS.some(p=>p.id===photo.id));
     const old=createPuzzle(photo.id,12,9);

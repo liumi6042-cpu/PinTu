@@ -1,0 +1,63 @@
+{
+  "id": "morning-meadow-tree",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "7cc1d79bc02f8a614cf755170b994ececf4126ed4866f339260202e88814cf01",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与批次记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/morning-meadow-tree.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a084d8-cb18-77c3-bed5-dd5cd77f9fdb\\exec-0e3b4e62-2786-436c-9ebb-8d5193e3e4d4.png",
+    "sourceMetadata": "../artwork/nature-gallery-20260909/manifest.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；未放大。写实摄影感自然风景，非真实地点实拍；高倍放大仍受原生像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "status: pass; review_method: Visual inspection of generated image; subject: One standalone foreground tree, broad rolling grassy hills and soft low morning sun; no flowers.; photorealism: Photographic warm directional light, natural grass texture and tree shadow.; composition: Strong tree silhouette, broad hill contours and shadow areas suitable for jigsaw recognition.; constraints: No visible people, buildings, boats, text, logos, watermark, frame, or puzzle seams.; notes: Distant groves are visible across the valleys; there is one standalone dominant tree.",
+      "主代理复核画面构图、自然光与可辨认轮廓，未发现明显人物、建筑、文字、水印或拼图缝线。"
+    ],
+    "scope": "视觉检查与生成记录不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "7cc1d79bc02f8a614cf755170b994ececf4126ed4866f339260202e88814cf01",
+    "play": {
+      "src": "/puzzles/morning-meadow-tree-play-b1879002897a.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "b1879002897ab573e5fdf5fde7d2d9299d1d98d19f1e12f3ae489e2747bc9d85",
+      "bytes": 2053588,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/morning-meadow-tree-thumbnail-8750918ab6b2.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "8750918ab6b25bf8919c986039c92335628fdda69b98a0e3245b7d61eb500778",
+      "bytes": 40784,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

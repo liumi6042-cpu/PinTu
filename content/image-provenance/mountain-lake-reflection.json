@@ -1,0 +1,63 @@
+{
+  "id": "mountain-lake-reflection",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "03b39a70fded56605f63ef3e4f6e0437c9b74706a72e70b0bdbd591f8ca67146",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与批次记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/mountain-lake-reflection.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a084d8-cb18-77c3-bed5-dd5cd77f9fdb\\exec-ad6e5983-6b22-4f9c-b915-aca7f1d28398.png",
+    "sourceMetadata": "../artwork/nature-gallery-20260909/manifest.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；未放大。写实摄影感自然风景，非真实地点实拍；高倍放大仍受原生像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "status: pass; review_method: Visual inspection of generated image; subject: One dominant snow peak, physically plausible lake reflection, and curved simple shore.; photorealism: Photographic natural light, realistic snow/rock/water texture and deep focus.; composition: Readable mountain and reflection shapes; foreground shore provides contour variation.; constraints: No visible people, buildings, boats, text, logos, watermark, frame, or puzzle seams.; notes: Natural shoreline conifers and distant vegetation are visible; no recognized landmark identified.",
+      "主代理复核画面构图、自然光与可辨认轮廓，未发现明显人物、建筑、文字、水印或拼图缝线。"
+    ],
+    "scope": "视觉检查与生成记录不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "03b39a70fded56605f63ef3e4f6e0437c9b74706a72e70b0bdbd591f8ca67146",
+    "play": {
+      "src": "/puzzles/mountain-lake-reflection-play-955c5c497ba9.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "955c5c497ba9cf133cf370b87c61356be75157f86582f0a6a81fa6c853a32b99",
+      "bytes": 2038326,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/mountain-lake-reflection-thumbnail-014103253f54.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "014103253f547eaad2453187a4dc73c3b42669d2bd8c940d359a540ec758a5ae",
+      "bytes": 45288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

@@ -21,14 +21,14 @@ test('local server serves verified cached game images and thumbnails and creates
     const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:id,pieces:108,name:'旧图校验'})});
     assert.equal(response.status,400);
   }
-  const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:'lemon-still-life',pieces:2000,name:'生成图校验'})});
+  const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:'mountain-lake-reflection',pieces:2000,name:'生成图校验'})});
   assert.equal(response.status,201);
   const created=await response.json(),path=base+'/api/rooms/'+created.room.id;
   try{
     const saved=await fetch(path,{headers:{Authorization:'Bearer '+created.token}});
     assert.equal(saved.status,200);
     const room=await saved.json();
-    assert.equal(room.puzzle.imageId,'lemon-still-life');
+    assert.equal(room.puzzle.imageId,'mountain-lake-reflection');
     assert.equal(room.puzzle.cols*room.puzzle.rows,2000);
   }finally{
     await fetch(path,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+created.token},body:JSON.stringify({type:'leave'})});
