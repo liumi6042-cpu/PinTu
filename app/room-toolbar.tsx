@@ -1,9 +1,9 @@
 'use client';
-import { t,playerName } from '@/lib/i18n';
+import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 
 import { useEffect, useRef, useState } from 'react';
-import { Users, Copy, ExternalLink, Check } from 'lucide-react';
+import { Users, Copy, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { RoomClient } from '@/lib/room-client';
 import { useRoomConnection } from '@/lib/use-room-connection';
@@ -25,5 +25,21 @@ export default function RoomToolbar({ client }: {
         setCopyError(true);
         requestAnimationFrame(() => { inviteInput.current?.focus(); inviteInput.current?.select(); });
     } }
-    return <section className="room-toolbar" aria-label={t("多人房间")}><div className="room-members"><span className="room-count"><Users size={17}/>{t(client.snapshot.members.length)} / 8</span>{t(client.snapshot.members.map(m => <span key={m.id} className="member-chip" style={{ borderColor: `${m.color}77` }}><i style={{ background: m.color }}/>{playerName(m.name)}{t(m.id === client.ticket.playerId ? '（你）' : '')}</span>))}</div><div className="room-actions"><span className={client.connected ? 'connection online' : 'connection offline'}>{t(client.connected ? (connection.local ? '局域网同步中' : '同步中') : client.message)}</span><button className="text-button" onClick={copy} disabled={!connection.ready}>{t(copied ? <Check size={15}/> : <Copy size={15}/>)}<span>{t(copied ? '已复制邀请' : connection.local ? '邀请局域网朋友' : '邀请朋友')}</span></button><a className="text-button" href={`/room/${client.snapshot.id}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/><span>{t("打开第二个窗口")}</span></a></div>{t((copyError || connection.local) && <label className="copy-fallback">{t(copyError ? '已选中链接，按 Ctrl+C 或长按复制' : connection.local ? '同一 Wi-Fi / 局域网的朋友，用浏览器打开这个链接' : '长按或选中复制邀请链接')}<Input ref={inviteInput} readOnly value={invite} onFocus={e => e.target.select()}/></label>)}{t(client.connected && client.message !== '房间已连接' && <p className="room-error" role="status">{t(client.message)}</p>)}</section>;
+    return <section className="room-toolbar" aria-label={t("多人房间")}>
+        <div className="room-members">
+            <span className="room-count"><Users size={17}/>{t(client.snapshot.members.length)} / 8</span>
+            {client.snapshot.acceptingNew === false && <span className="room-admission-note">{t("暂停接待新玩家")}</span>}
+        </div>
+        <div className="room-actions">
+            <button className="text-button" onClick={copy} disabled={!connection.ready}>
+                {copied ? <Check size={15}/> : <Copy size={15}/>}
+                <span>{t(copied ? '已复制邀请' : '邀请朋友')}</span>
+            </button>
+        </div>
+        {copyError && <label className="copy-fallback">
+            {t('已选中链接，按 Ctrl+C 或长按复制')}
+            <Input ref={inviteInput} readOnly value={invite} onFocus={e => e.target.select()}/>
+        </label>}
+        {(!client.connected || client.message !== '房间已连接') && <p className="room-error" role="status">{t(client.message)}</p>}
+    </section>;
 }

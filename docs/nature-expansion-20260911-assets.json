@@ -1,0 +1,72 @@
+[
+  {
+    "id": "emerald-river-valley",
+    "title": "碧水山谷",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-097ce025-cd84-4d9f-9cf1-5605971956de.png",
+    "savedPath": "D:\\chat\\拼图\\puzzle-play\\public\\puzzles\\emerald-river-valley.png",
+    "width": 1402,
+    "height": 1122,
+    "bytes": 3125276,
+    "sha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+    "promptPath": "content/image-prompts/emerald-river-valley.txt",
+    "promptSha256": "21ab2bcf0acc2155845d1da8a51ef94fa18b5c6922638463ff8bb88106782577",
+    "tool": "image_gen",
+    "review": "Clear turquoise S-shaped river with grassy valley slopes, mountain ridge and a few foreground rocks. Natural water texture and distinct depth layers. No visible people, buildings, text, logos, watermarks or puzzle seams."
+  },
+  {
+    "id": "sunlit-coastal-headland",
+    "title": "晴空海岬",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-242fe7f6-8fbc-4499-9bf2-60c4aab0b2ef.png",
+    "savedPath": "D:\\chat\\拼图\\puzzle-play\\public\\puzzles\\sunlit-coastal-headland.png",
+    "width": 1402,
+    "height": 1122,
+    "bytes": 2692635,
+    "sha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+    "promptPath": "content/image-prompts/sunlit-coastal-headland.txt",
+    "promptSha256": "c7e1190f9514b1614ce83035287aa4202b10615d6a24f625edfc5c8527c42ca3",
+    "tool": "image_gen",
+    "review": "One pale limestone headland, curved sandy cove, few large rocks and clear shallow/deep blue water bands. Natural daylight and plausible foam. No visible people, buildings, boats, text, logos, watermarks or puzzle seams."
+  },
+  {
+    "id": "golden-sand-dunes",
+    "title": "金色沙丘",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-8845a558-7040-42b2-b3c8-338a80abda18.png",
+    "savedPath": "D:\\chat\\拼图\\puzzle-play\\public\\puzzles\\golden-sand-dunes.png",
+    "width": 1402,
+    "height": 1122,
+    "bytes": 2183392,
+    "sha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+    "promptPath": "content/image-prompts/golden-sand-dunes.txt",
+    "promptSha256": "fba27dd97834ffc02048b842ecdfc39003548a14ddc7fc81b422e914064dd70a",
+    "tool": "image_gen",
+    "review": "Three dominant sweeping dune shapes with distinct sunlit and shadow planes and coherent wind ripples. Spacious uncluttered photographic composition; repeated sand textures make this more challenging. No visible people, objects, text, logos, watermarks or puzzle seams."
+  },
+  {
+    "id": "autumn-lakeshore",
+    "title": "秋日湖岸",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-0adc88df-41fe-4a4a-8f35-ebcfc0f834ed.png",
+    "savedPath": "D:\\chat\\拼图\\puzzle-play\\public\\puzzles\\autumn-lakeshore.png",
+    "width": 1402,
+    "height": 1122,
+    "bytes": 2691771,
+    "sha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+    "promptPath": "content/image-prompts/autumn-lakeshore.txt",
+    "promptSha256": "b18a573dc0b978c7d2fc211743355354229a6f654b13890fa0f54b98e5c369ef",
+    "tool": "image_gen",
+    "review": "A single dominant golden-leaved tree with a visible trunk, curved grassy bank and a physically plausible rippled reflection. Sparse distant hills and clear depth layers. No visible people, buildings, text, logos, watermarks or puzzle seams."
+  },
+  {
+    "id": "rainbow-grassland",
+    "title": "雨后草原",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-31302fe5-edbe-4011-a87c-2f8ee0e7c730.png",
+    "savedPath": "D:\\chat\\拼图\\puzzle-play\\public\\puzzles\\rainbow-grassland.png",
+    "width": 1402,
+    "height": 1122,
+    "bytes": 2761273,
+    "sha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+    "promptPath": "content/image-prompts/rainbow-grassland.txt",
+    "promptSha256": "91577f3690cd218bf12591897e3d8301e8b88f8a59db7c82dd032317b384e3de",
+    "tool": "image_gen",
+    "review": "One natural rainbow above two rolling grassy hills, receding rain clouds and a few foreground rocks. Clear light and shadow areas with gentle sky transitions. Crisp grass and stone texture; no visible people, buildings, text, logos, watermarks or puzzle seams."
+  }
+]

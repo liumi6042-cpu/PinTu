@@ -7,6 +7,12 @@ import './language.css';
 import './lobby-grid.css';
 import './gallery.css';
 import './table-theme.css';
+import './achievements.css';
+import './membership.css';
+import './ranking-records.css';
+import './service-pages.css';
+import './search-pages.css';
 import { LanguageProvider } from './language-switch';
-export const metadata: Metadata = { title: '一起拼图 · 和大家拼这一刻', description: '加入公开拼图桌面，或开启自己的拼图。一起完成，让这一刻留在用时榜上。' };
-export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="zh-CN" className="paper-theme"><body><LanguageProvider>{children}</LanguageProvider></body></html>; }
+import FeedbackWidget from './feedback-widget';
+export const metadata: Metadata = { applicationName: 'Jigsaw Nook', metadataBase: new URL('https://jigsawnook.online'), title: 'Jigsaw Nook — Online Jigsaw Puzzles', description: 'Play online jigsaw puzzles at your own pace, or share a public table with friends.', robots: { index: false, follow: false }, icons: { icon: '/favicon.svg' } };
+export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="en" className="paper-theme"><body><LanguageProvider>{children}<FeedbackWidget/></LanguageProvider></body></html>; }

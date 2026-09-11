@@ -1,0 +1,212 @@
+{
+  "mountain-lake-reflection": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "倒影与山体轮廓清楚，湖面需要留意细微变化。"
+  },
+  "morning-meadow-tree": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "草坡层次柔和，独树与树影可以作为起点。"
+  },
+  "clear-sand-bay": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "海水颜色相近，建议从弧形沙岸开始。"
+  },
+  "lone-pine-snow": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "大片雪地颜色接近，松树与蓝色树影是线索。"
+  },
+  "quiet-cliff-falls": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "瀑布与岩壁分区明确，石纹提供定位线索。"
+  },
+  "lemon-still-life": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "主体少、颜色分区明显，适合轻松开始。"
+  },
+  "sleepy-cat": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "猫咪轮廓清楚，可以先拼主体。"
+  },
+  "sailboat-bay": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "帆船是清楚的起点，天空与海面需要耐心。"
+  },
+  "tulip-vase": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "花朵与花瓶颜色分明，轮廓容易辨认。"
+  },
+  "hill-cottage": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "草坡色彩相近，先找小屋和坡线。"
+  },
+  "whale-moon": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "大面积背景颜色接近，适合先找月亮和鲸鱼。"
+  },
+  "orange-bicycle": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "橙色车身与背景对比清楚，适合从主体开始。"
+  },
+  "peach-breakfast": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "桌上物品分区清楚，颜色可帮助分类。"
+  },
+  "desert-sun": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "沙丘与天空色调接近，需要观察明暗渐变。"
+  },
+  "floating-house": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "房屋轮廓清楚，天空部分需要更多耐心。"
+  },
+  "blossom-canal": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "花枝与水面细节丰富，适合喜欢寻找线索的玩家。"
+  },
+  "alpine-village": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "山体与房屋分层明显，建筑细节提供线索。"
+  },
+  "seaside": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "海岸与房屋分区清楚，细节较丰富。"
+  },
+  "tulip-windmill": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "花田有重复纹理，风车轮廓可以作为起点。"
+  },
+  "autumn-teahouse": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "秋叶纹理较密，建议先分出房屋与水面。"
+  },
+  "bakery-morning": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "物品较多，先按器皿与食物颜色分类。"
+  },
+  "ceramic-studio": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "器皿边缘与陈列分区提供较多线索。"
+  },
+  "harbor-houses": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "房屋颜色和屋顶线条帮助定位。"
+  },
+  "garden-table": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "花叶和餐具细节较多，适合慢慢寻找对应。"
+  },
+  "winter-village": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "房屋与积雪有明暗对比，先找屋顶轮廓。"
+  },
+  "emerald-river-valley": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "从蜿蜒河岸与山脊开始，再留意水面和草坡的色差。"
+  },
+  "sunlit-coastal-headland": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "海岬轮廓与浪花较容易定位，蓝色海面需要多一点耐心。"
+  },
+  "golden-sand-dunes": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "先拼明暗交界的沙脊，沙纹颜色相近，推荐从少片数开始。"
+  },
+  "autumn-lakeshore": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "金色树冠与倒影分区清楚，可从树干和湖岸开始。"
+  },
+  "rainbow-grassland": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 108,
+    "reason": "从彩虹弧线与草坡明暗开始，云层的渐变适合慢慢分辨。"
+  }
+}

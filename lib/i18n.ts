@@ -1,16 +1,40 @@
 import english from '../content/locales/en.json' with { type:'json' };
+import { LANGUAGE_KEY, languagePreference, type LanguagePreference } from './language-detection';
 
 export type Language='zh'|'en';
-let language:Language='zh';
+let language:Language='en';
+let preference:LanguagePreference='auto';
+let preferenceRevision=0;
 const listeners=new Set<()=>void>();
 export const getLanguage=()=>language;
+export const getLanguagePreference=()=>preference;
+export const getLanguageRevision=()=>preferenceRevision;
 export const subscribeLanguage=(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener);};};
-export function setLanguage(value:Language){
-  if(typeof document!=='undefined'){document.documentElement.lang=value==='en'?'en':'zh-CN';document.title=value==='en'?'Together Puzzle · Play with everyone':'一起拼图 · 和大家拼这一刻';}
-  if(typeof localStorage!=='undefined')try{localStorage.setItem('puzzle:language',value);}catch{}
-  if(language===value)return;language=value;for(const listener of listeners)listener();
+function applyLanguage(value:Language){
+  if(typeof document!=='undefined'){document.documentElement.lang=value==='en'?'en':'zh-CN';}
+  language=value;
+}
+export function setLanguagePreference(value:LanguagePreference,persist=true){
+  if(persist&&typeof localStorage!=='undefined')try{localStorage.setItem(LANGUAGE_KEY,value);}catch{}
+  const changed=preference!==value||(value!=='auto'&&language!==value);
+  preference=value;if(changed)preferenceRevision++;
+  if(value!=='auto')applyLanguage(value);
+  if(changed)for(const listener of listeners)listener();
+}
+export function restoreLanguagePreference(){
+  let saved:string|null=null;
+  try{saved=localStorage.getItem(LANGUAGE_KEY);}catch{}
+  setLanguagePreference(languagePreference(saved),false);
+}
+export function setLanguage(value:Language){setLanguagePreference(value);}
+export function applyDetectedLanguage(value:Language,revision:number){
+  if(preference!=='auto'||revision!==preferenceRevision)return;
+  const changed=language!==value;applyLanguage(value);
+  if(changed)for(const listener of listeners)listener();
 }
 const extras:Record<string,string>={
+ '图片均为本项目原创生成':'Original artwork generated for this project',
+ '服务器保存进度 · 完成后自动记录用时':'Progress saved on this server · Completion time recorded automatically',
  '图库':'Gallery','去图库挑选更多':'Explore the full gallery','把喜欢的画面，慢慢拼起来。':'Find a picture. Make it yours.',
  '所有画面都在这里，选好片数，点图开拼。':'Choose a piece count, then click any picture to play.',
  '8 张精选，点击图片即可开始。':'Eight favorites. Click a picture to start.',

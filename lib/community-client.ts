@@ -3,7 +3,7 @@ import { ensureGuestSession } from './guest-client';
 export async function apiJson<T>(path:string,body?:unknown):Promise<T>{
  if(body!==undefined&&path==='/api/rooms')await ensureGuestSession();
  const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
- const data=await response.json() as {error?:string};
+ const data=await response.json().catch(()=>({error:'暂时无法连接，请重试'})) as {error?:string};
  if(!response.ok){throw new Error(data.error||'暂时无法连接，请重试');}return data as T;
 }
 export async function joinPuzzle(roomId:string,name?:string){

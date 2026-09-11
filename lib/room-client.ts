@@ -1,5 +1,7 @@
+import { applyRoomUpdate, roomPollDelay, type RoomUpdate } from './room-sync';
 import type { RoomSnapshot, RoomAction } from './room-engine';
 import type { PuzzleTable } from './puzzle-table';
+import { retryDelay } from './request-backoff';
 export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
 type Position = { dx: number; dy: number };
 type DragTask = {
@@ -21,37 +23,53 @@ export class RoomClient {
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private heartbeatAt = 0;
   private failures = 0;
+  private idlePolls = 0;
+  private retryAt = 0;
+  private receivedAt = Date.now();
   private drags = new Map<number, DragTask>();
   private active: DragTask | null = null;
   private previousDrag: Promise<void> = Promise.resolve();
+  private organizing = false;
 
   constructor(ticket: RoomTicket) {
     this.ticket = ticket; this.snapshot = ticket.room;
     this.state = structuredClone(ticket.room.puzzle);
   }
   subscribe(fn: () => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
+  elapsedNow(now = Date.now()) {
+    const s = this.snapshot;
+    if (s.completedAt != null || s.startedAt === null) return s.puzzle.elapsed;
+    const start = s.startedAt ?? s.serverTime - s.puzzle.elapsed * 1000;
+    return Math.floor(Math.max(0, s.serverTime + Math.max(0, now - this.receivedAt) - start) / 1000);
+  }
   private emit() {
     // Presence timestamps and piece positions do not change the toolbar.
-    const key = JSON.stringify([this.connected, this.message, this.snapshot.members.map(({ id, name, color }) => [id, name, color])]);
+    const key = JSON.stringify([this.connected, this.message, this.snapshot.title, this.snapshot.acceptingNew, this.snapshot.completedAt, this.snapshot.achievementDays, this.snapshot.members.map(({ id, name, color }) => [id, name, color])]);
     if (key === this.toolbarKey) return;
     this.toolbarKey = key;
     for (const fn of this.listeners) fn();
   }
   private async request(action?: RoomAction) {
-    const response = await fetch(`/api/rooms/${this.ticket.room.id}`, {
+    if (Date.now() < this.retryAt) { const error=Object.assign(new Error('服务器繁忙，正在等待重试'),{status:503}); throw error; }
+    const response = await fetch(`/api/rooms/${this.ticket.room.id}?since=${this.snapshot.revision}`, {
       method: action ? 'POST' : 'GET',
       headers: { Authorization: `Bearer ${this.ticket.token}`, ...(action ? { 'Content-Type': 'application/json' } : {}) },
       body: action ? JSON.stringify(action) : undefined, cache: 'no-store', signal: AbortSignal.timeout(6500),
     });
-    const data = await response.json() as RoomSnapshot & { error?: string };
-    if (!response.ok) { const error = new Error(data.error || '连接暂时中断') as Error & { status: number }; error.status = response.status; throw error; }
-    return data;
+    const data = await response.json().catch(()=>({error:'连接暂时中断'})) as RoomUpdate & { error?: string };
+    if (!response.ok) { if(response.status===429||response.status===503)this.retryAt=Date.now()+retryDelay(response.headers.get('Retry-After'));const error = new Error(data.error || '连接暂时中断') as Error & { status: number }; error.status = response.status; throw error; }
+    const merged = applyRoomUpdate(this.snapshot, data);
+    if (merged) return merged;
+    const recovery = await fetch(`/api/rooms/${this.ticket.room.id}`, { headers: { Authorization: `Bearer ${this.ticket.token}` }, cache: 'no-store', signal: AbortSignal.timeout(6500) });
+    const full = await recovery.json() as RoomSnapshot & { error?: string };
+    if (!recovery.ok) throw new Error(full.error || '连接暂时中断');
+    return full;
   }
   private receive(s: RoomSnapshot, force = false) {
     if (this.stopped || s.revision < this.revision || (s.revision === this.revision && s.serverTime < this.snapshot.serverTime)) return;
-    const changed = s.revision !== this.revision;
+    const changed = s.puzzle.groups !== this.snapshot.puzzle.groups;
     const elapsedChanged = s.puzzle.elapsed !== this.state.elapsed;
-    this.revision = s.revision; this.snapshot = s;
+    this.revision = s.revision; this.snapshot = s; this.receivedAt = Date.now();
     this.connected = true; this.failures = 0; this.message = '房间已连接';
     for (const task of this.drags.values()) {
       // An unconfirmed local drag is deliberately protected from older poll results.
@@ -69,9 +87,9 @@ export class RoomClient {
     const ownersKey = JSON.stringify(owners);
     if (this.table) {
       this.table.networkReady = true;
-      if (changed || elapsedChanged || force || ownersKey !== this.ownersKey) {
+      if (changed || force || ownersKey !== this.ownersKey) {
         this.table.syncRemote(s.puzzle, owners, new Set([...this.drags.values()].filter(t => !t.canceled).map(t => t.id)));
-      }
+      } else if (elapsedChanged) { this.state.elapsed = s.puzzle.elapsed; }
     } else { this.state.groups = structuredClone(s.puzzle.groups); this.state.elapsed = s.puzzle.elapsed; }
     this.ownersKey = ownersKey;
     this.emit();
@@ -91,7 +109,7 @@ export class RoomClient {
   attach(table: PuzzleTable) {
     this.table = table; this.stopped = false;
     table.network = {
-      canAcquire: id => this.connected && this.active === null && !this.drags.has(id) && this.drags.size < 8,
+      canAcquire: id => this.connected && !this.organizing && this.active === null && !this.drags.has(id) && this.drags.size < 8,
       acquire: id => this.acquire(id), move: (id, dx, dy) => this.move(id, dx, dy),
       drop: (id, dx, dy) => this.drop(id, dx, dy), release: id => this.release(id),
     };
@@ -108,12 +126,13 @@ export class RoomClient {
         // Heartbeats never wait in the movement queue.
         data = await this.request({ type: 'heartbeat', ...(holding ? { groupId: holding.id } : {}) });
       } else data = await this.request();
+      this.idlePolls = data.puzzle.groups === this.snapshot.puzzle.groups ? this.idlePolls + 1 : 0;
       this.receive(data);
     } catch (error) { this.fail(error); }
-    finally { if (!this.stopped) this.pollTimer = setTimeout(() => void this.poll(), this.connected ? 300 : Math.min(4000, 800 * this.failures)); }
+    finally { if (!this.stopped) this.pollTimer = setTimeout(() => void this.poll(), Math.max(this.retryAt-Date.now(),this.connected ? roomPollDelay(this.drags.size > 0 || Object.keys(this.snapshot.leases).length > 0, this.idlePolls, typeof document !== 'undefined' && document.hidden) : Math.min(4000, 800 * this.failures))); }
   }
   acquire(id: number): Promise<boolean> {
-    if (!this.connected || this.active || this.drags.has(id) || this.drags.size >= 8) return Promise.resolve(false);
+    if (!this.connected || this.organizing || this.active || this.drags.has(id) || this.drags.size >= 8) return Promise.resolve(false);
     let grant!: (ok: boolean) => void; let finish!: () => void;
     const granted = new Promise<boolean>(resolve => { grant = resolve; });
     const finished = new Promise<void>(resolve => { finish = resolve; });
@@ -199,9 +218,17 @@ export class RoomClient {
     this.active = null; this.table?.cancelNetworkDrag();
   }
   async organize() {
-    if(this.snapshot.visibility!=='solo')throw new Error('只有单人局可以整理整个桌面');
-    if(this.drags.size)throw new Error('请先放下当前拼块');
-    const snapshot=await this.request({type:'shuffle'});this.receive(snapshot,true);this.table?.fit();
+    if(this.organizing)throw new Error('正在整理，请稍候。');
+    const pending=[...this.drags.values()];
+    if(pending.some(task=>!task.ending&&!task.canceled))throw new Error('请先放下当前拼块');
+    this.organizing=true;
+    try{
+      // Pointer-up may still be saving its drop. Finish it before rearranging.
+      await Promise.all(pending.map(task=>task.finished));
+      if(!this.connected||this.stopped)throw new Error('正在重连，请连接恢复后再整理。');
+      const snapshot=await this.request({type:'shuffle'});this.receive(snapshot,true);
+      if(this.snapshot.visibility==='solo')this.table?.fit();
+    }finally{this.organizing=false;}
   }
   leave() {
     this.stop();

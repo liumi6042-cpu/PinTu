@@ -1,16 +1,82 @@
+import { maintainPublicRooms } from './public-room-maintenance';
+import { MEMBER_ROOM_LIMIT,MEMBERSHIP_REQUIRED,canCreateMemberRoom } from './membership-policy';
+import { membershipFor } from './membership-store';
+import { touchPublicRoom } from './public-room-retention';
+import { recordRoomChange } from './room-sync';
 import { localDb } from './local-db';
 import { saveCompletion } from './lobby-store';
 import { RoomError, type Room } from './room-engine';
 import { normalizePuzzle } from './puzzle-engine';
 import { RESTORABLE_PHOTO_IDS } from './puzzle-catalog';
+import { roomAchievementDays,saveAchievementActivity,saveAchievementCompletion } from './achievement-store';
+import { RoomReadCache } from './room-read-cache';
+import { RoomWriteQueue } from './room-write-queue';
 const db=localDb;
-export async function readRoom(id:string){if(!/^[a-f0-9]{32}$/.test(id))throw new RoomError('邀请链接格式不正确',404);const row=await db().prepare('SELECT data, revision FROM puzzle_rooms WHERE id = ?').bind(id).first<{data:string;revision:number}>();if(!row)throw new RoomError('房间不存在，请检查邀请链接',404);const room=JSON.parse(row.data) as Room;room.revision=row.revision;if(!RESTORABLE_PHOTO_IDS.includes(room.puzzle.imageId))throw new RoomError('这张早期试玩图片已下架，请重新选择本站生成的拼图',410);normalizePuzzle(room.puzzle);if(room.completedAt)await saveCompletion(room);return room;}
+const roomCache=new RoomReadCache();
+const writes=new RoomWriteQueue();
+export async function readRoom(id:string){
+ await maintainPublicRooms();
+ if(!/^[a-f0-9]{32}$/.test(id))throw new RoomError('邀请链接格式不正确',404);
+ const cached=roomCache.get(id),row=await db().prepare('SELECT r.revision,r.expires_at,m.closed,CASE WHEN r.revision=? AND r.expires_at=? THEN NULL ELSE r.data END AS data FROM puzzle_rooms r LEFT JOIN puzzle_room_moderation m ON m.room_id=r.id WHERE r.id=?').bind(cached?.revision??-1,cached?.expiresAt??-1,id).first<{data:string|null;revision:number;expires_at:number;closed:number|null}>();
+ if(!row){roomCache.remove(id);throw new RoomError('房间不存在，请检查邀请链接',404);}
+ if(row.closed)throw new RoomError('这张拼图桌已由管理员暂停，请选择其他桌',403);
+ if(row.data===null&&cached)return cached;
+ const room=JSON.parse(row.data!) as Room;room.revision=row.revision;room.expiresAt=row.expires_at;
+ if(!RESTORABLE_PHOTO_IDS.includes(room.puzzle.imageId)&&!(room.customImage?.id===room.puzzle.imageId&&/^custom-[a-f0-9]{32}$/.test(room.puzzle.imageId)&&['solo','private'].includes(room.visibility||'')))throw new RoomError('这张早期试玩图片已下架，请重新选择本站生成的拼图',410);
+ normalizePuzzle(room.puzzle);if(room.completedAt){await saveCompletion(room);await saveAchievementCompletion(room);}
+ return roomCache.put(room,row.data!.length*2);
+}
 export async function insertRoom(room:Room){await db().prepare('INSERT INTO puzzle_rooms (id,revision,data,expires_at) VALUES (?,0,?,?)').bind(room.id,JSON.stringify(room),room.expiresAt).run();}
-export async function mutateRoom<T>(id:string,fn:(room:Room)=>T){for(let attempt=0;attempt<8;attempt++){const room=await readRoom(id),before=room.revision,result=fn(room);room.revision++;const updated=await db().prepare('UPDATE puzzle_rooms SET data = ?, revision = ? WHERE id = ? AND revision = ?').bind(JSON.stringify(room),room.revision,id,before).run();if(updated.meta.changes===1){if(room.completedAt)await saveCompletion(room);return {room,result};}}throw new RoomError('房间正在同步，请稍后重试',409);}
+export async function mutateRoom<T>(id:string,fn:(room:Room)=>T){
+ return writes.run(id,()=>commitRoom(id,fn));
+}
+async function commitRoom<T>(id:string,fn:(room:Room)=>T){
+ for(let attempt=0;attempt<8;attempt++){
+  const base=await readRoom(id),room=structuredClone(base),before=room.revision,previousExpiry=room.expiresAt,previousTitle=room.title,previousVisibility=room.visibility,previousDays=roomAchievementDays(room),wasComplete=!!room.completedAt;
+  const previous=base.puzzle.groups;
+  const result=fn(room);room.revision++;recordRoomChange(room,previous);
+  const becomingPrivate=base.visibility==='public'&&room.visibility==='private',now=Date.now();
+  if(becomingPrivate){
+   if(!room.ownerId||!canCreateMemberRoom(await membershipFor(room.ownerId),now))throw new RoomError(MEMBERSHIP_REQUIRED,403);
+   room.expiresAt=Math.max(room.lastPlayedAt||room.createdAt,room.publicLastSeenAt||0)+30*86400000;
+  }else if(base.visibility!=='public'&&room.visibility==='public')touchPublicRoom(room,now);
+  const admission=becomingPrivate?` AND EXISTS(SELECT 1 FROM puzzle_memberships WHERE user_id=? AND plan='puzzle' AND status='active' AND starts_at<=? AND expires_at>?)
+    AND (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL)<?`:'';
+  const admissionValues=becomingPrivate?[room.ownerId!,now,now,room.ownerId!,now,MEMBER_ROOM_LIMIT]:[];
+  const serialized=JSON.stringify(room),database=db(),commands=[database.prepare('UPDATE puzzle_rooms SET data = ?, revision = ?, expires_at = ? WHERE id = ? AND revision = ?'+admission).bind(serialized,room.revision,room.expiresAt,id,before,...admissionValues)];
+  if(room.expiresAt!==previousExpiry||room.title!==previousTitle||room.visibility!==previousVisibility||!!room.completedAt!==wasComplete)
+   commands.push(database.prepare(`UPDATE puzzle_room_directory SET
+    expires_at=(SELECT expires_at FROM puzzle_rooms WHERE id=?),
+    title=COALESCE((SELECT json_extract(data,'$.title') FROM puzzle_rooms WHERE id=?),title),
+    visibility=COALESCE((SELECT json_extract(data,'$.visibility') FROM puzzle_rooms WHERE id=?),visibility),
+    completed_at=(SELECT json_extract(data,'$.completedAt') FROM puzzle_rooms WHERE id=?) WHERE room_id=?`).bind(id,id,id,id,id));
+  const [updated]=await database.batch(commands);
+  if(becomingPrivate&&updated.meta.changes!==1){
+   if(!canCreateMemberRoom(await membershipFor(room.ownerId!),Date.now()))throw new RoomError(MEMBERSHIP_REQUIRED,403);
+   throw new RoomError('已有 3 个进行中的私人房间，请先完成其中一局',409);
+  }
+  if(updated.meta.changes===1){
+   // Room state and directory metadata commit together, including privacy changes and quota release.
+   if(room.completedAt)await saveCompletion(room);
+   if(room.completedAt&&!wasComplete)await saveAchievementCompletion(room);
+   else await saveAchievementActivity(room,previousDays);
+   roomCache.put(room,serialized.length*2);
+   return {room,result};
+  }
+ }
+ throw new RoomError('房间正在同步，请稍后重试',409);
+}
 export async function digestToken(token:string){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));return [...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('');}
 export function newId(){return crypto.randomUUID().replaceAll('-','');}
 export async function getDigest(request:Request){const token=request.headers.get('Authorization')?.replace(/^Bearer /,'');if(!token||!/^[a-f0-9]{32}$/.test(token))throw new RoomError('请先加入房间',401);return digestToken(token);}
 export function json(value:unknown,status=200){return Response.json(value,{status,headers:{'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});}
-export async function body(request:Request){const raw=await request.text();const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)throw new RoomError('请从本网站加入房间',403);if(!request.headers.get('Content-Type')?.includes('application/json'))throw new RoomError('请求格式无效');if(raw.length>4096)throw new RoomError('请求内容过长',413);try{const parsed=JSON.parse(raw);if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error();return parsed;}catch{throw new RoomError('请求格式无效');}}
-export function failure(error:unknown){if(error instanceof RoomError)return json({error:error.message},error.status);console.error('Room request failed:',error instanceof Error?error.message:'unknown');return json({error:'房间连接暂时不可用，请稍后重试'},503);}
+export async function body(request:Request){
+ const reader=request.body?.getReader(),chunks:Uint8Array[]=[];let length=0;
+ if(reader){try{for(;;){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>4096){await reader.cancel();throw new RoomError('请求内容过长',413);}chunks.push(value);}}finally{reader.releaseLock();}}
+ const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}const raw=new TextDecoder().decode(bytes);
+ const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)throw new RoomError('请从本网站加入房间',403);
+ if(!request.headers.get('Content-Type')?.includes('application/json'))throw new RoomError('请求格式无效');
+ try{const parsed=JSON.parse(raw);if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error();return parsed;}catch{throw new RoomError('请求格式无效');}
+}
+export function failure(error:unknown){const response=error instanceof RoomError?json({error:error.message},error.status):json({error:'房间连接暂时不可用，请稍后重试'},503);if(response.status===429||response.status===503)response.headers.set('Retry-After','2');if(!(error instanceof RoomError))console.error('Room request failed');return response;}
 

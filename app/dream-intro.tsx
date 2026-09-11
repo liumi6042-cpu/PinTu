@@ -126,7 +126,7 @@ export default function DreamIntro({ onEnter }: {
 
     <div className="entrance-stage" ref={stage}>
       <div className="entrance-camera" aria-hidden="true">
-        <img className="entrance-scenery" src="/intro/hero-paper-coast-v2.png" alt="" fetchPriority="high" draggable={false}/>
+        <img className="entrance-scenery" src="/intro/hero-paper-coast-be03040892f1.webp" width={1672} height={941} alt="" fetchPriority="high" draggable={false}/>
       </div>
       <svg className="entrance-drag-guide" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <path className="entrance-guide-wide" d="M 21 79 C 38 85, 51 73, 62 57"/>

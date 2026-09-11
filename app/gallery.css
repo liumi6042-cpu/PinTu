@@ -57,3 +57,46 @@
 .random-start .local-note{margin-top:23px;}
 @media(max-width:480px){.random-play-title{font-size:22px;}.random-play-button{padding:28px 18px;}.random-start{margin-top:22px;}}
 @media(prefers-reduced-motion:reduce){.random-play-button{transition:none;}.random-play-button:hover:not(:disabled){transform:none;}}
+
+/* Quiet guidance and a shared way back to unfinished puzzles. */
+.picture-guidance{display:flex!important;flex-wrap:wrap;justify-content:flex-start!important;gap:7px 12px;align-items:center;margin:12px 0 8px;font-size:12px;color:#806d55;}
+.picture-guidance .difficulty-tag{padding:3px 9px;border-radius:12px;background:#e6d9c5;color:#5d4937;}
+.picture-advice,.detail-note{display:block;line-height:1.6;font-size:12px;color:#806d55;margin-top:5px;}
+.detail-note{color:#9c512f;}
+.progress-entry{display:flex;align-items:center;justify-content:center;gap:10px;width:fit-content;max-width:90%;margin:25px auto;color:#9a573a;font-size:14px;padding:12px 20px;border:1px solid #c9ae8a80;border-radius:24px;}
+.resume-highlight{margin:0 0 28px;}
+.community .unified-room{gap:18px;flex-wrap:wrap;background:#f8f1e4;border-color:#cbb89970;color:#463b2b;}
+.community .featured-resume{padding:22px;background:#eee2ce;border-color:#b98a6070;}
+.unified-room .resume-copy{min-width:160px;flex:1;}
+.community .unified-room p{color:#786449;flex-wrap:wrap;line-height:1.7;}
+.unified-room .resume-copy small{display:block;margin-top:7px;color:#887458;font-size:12px;line-height:1.7;}
+.resume-eyebrow{display:block;color:#a25d3c;letter-spacing:1px;font-size:12px;margin-bottom:8px;}
+.community .unified-room .recent-time{color:#786449;}
+.community .featured-resume>img{width:125px;height:94px;}
+.unified-room .primary{display:flex;align-items:center;gap:10px;white-space:nowrap;padding:12px 19px;}
+.retention-note{font-size:13px;color:#897355;line-height:1.8;margin:-6px 0 20px;}
+.recent-heading h2 small{font-family:inherit;font-size:15px;font-weight:400;color:#897355;}
+.completed-progress{margin-top:24px;}.completed-progress summary{cursor:pointer;padding:12px 0;color:#846b4c;font-size:14px;}.completed-progress .recent-rooms{margin-top:8px;}
+.record-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.record-delete{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 10px;background:transparent;border:1px solid #b3796155;border-radius:12px;color:#974b35;font-size:13px;}
+.record-delete:hover{background:#ae654012;border-color:#ac6956;}
+.record-undo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;margin:0 0 20px;background:#eee2ce;border:1px solid #cbb89970;border-radius:12px;font-size:14px;color:#67513d;}
+.record-undo .text-button{min-height:36px;color:#994d32;}
+.record-delete-confirm{background:#994d3b!important;color:#fff8ed!important;}
+@media(max-width:640px){.community .featured-resume{padding:16px;}.community .featured-resume>img{width:86px;height:68px;}.unified-room .recent-time{margin-left:0;}.unified-room button{margin-left:auto;}.unified-room .resume-copy{min-width:150px;}.retention-note{margin-top:0;}}
+
+.shared-cursors{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:4;}
+.shared-cursor{position:absolute;top:0;left:0;visibility:hidden;will-change:transform;pointer-events:none;filter:drop-shadow(0 2px 2px #00000025);}
+.shared-cursor>svg{display:block;}.shared-cursor>span{display:block;position:absolute;top:22px;left:16px;border:1px solid #45372a40;color:#292720;border-radius:5px;padding:3px 7px;font-size:12px;line-height:1.4;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;}
+.member-room-gate{max-width:660px;margin:65px auto 80px;padding:38px 30px;text-align:center;}
+.member-room-emblem{display:inline-grid;place-items:center;width:65px;height:65px;border:1px solid #b48b5470;border-radius:50%;color:#9b6a36;background:#e5d3b55c;}
+.member-eyebrow{color:#a57444;font-size:13px;letter-spacing:3px;margin:22px 0 12px;}
+.member-room-gate h1{font-size:clamp(28px,4vw,40px);font-weight:400;color:#4c3e2c;line-height:1.5;margin:0 0 18px;}
+.member-room-gate>p:not(.member-eyebrow){color:#827055;font-size:15px;line-height:1.9;}
+.membership-coming{width:fit-content;margin:28px auto 12px;padding:12px 30px;border:1px solid #c8af8766;border-radius:26px;color:#9a8467;background:#e7dcc759;}
+.member-room-gate>small{color:#978168;line-height:1.8;font-size:12px;}
+.member-free-options{display:flex;justify-content:center;gap:13px;flex-wrap:wrap;margin-top:30px;}
+.member-free-options a{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;text-decoration:none;}
+.member-room-gate .member-free-note{font-size:12px;margin-top:25px;}
+.personal-choice h2 svg{vertical-align:middle;}
+@media(max-width:600px){.member-room-gate{margin:30px auto;padding:25px 20px;}}

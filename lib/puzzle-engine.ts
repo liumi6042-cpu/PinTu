@@ -103,10 +103,10 @@ export function dropGroup(state:PuzzleState,id:number,tolerance:number,blocked=n
 }
 export function placedCount(state:PuzzleState) {return state.groups.filter(g=>g.locked).reduce((n,g)=>n+g.pieces.length,0);}
 export function visibleGroup(group:Group,pieces:Piece[],edgesOnly:boolean) {return group.locked||!edgesOnly||group.pieces.some(id=>pieces[id].border);}
-export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0) {
+export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0,blocked:ReadonlySet<number>=new Set()) {
   if(!savedGrids.some(l=>l.cols===state.cols&&l.rows===state.rows))throw new Error('不支持的拼图片数');
   const fresh=scatteredGroups(state.cols,state.rows,seed);let changed=0;
-  for(const g of state.groups) if(!g.locked&&g.pieces.length===1) {const pos=fresh[g.pieces[0]];g.dx=pos.dx;g.dy=pos.dy;changed++;}
+  for(const g of state.groups) if(!g.locked&&g.pieces.length===1&&!blocked.has(g.id)) {const pos=fresh[g.pieces[0]];g.dx=pos.dx;g.dy=pos.dy;changed++;}
   return changed;
 }
 export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {

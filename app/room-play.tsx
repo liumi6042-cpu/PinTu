@@ -5,10 +5,12 @@ import { useLanguage } from '@/app/language-switch';
 import { useEffect, useState } from 'react';
 import { Puzzle, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Game } from './puzzle-app';
+import { customPhoto } from '@/lib/custom-images';
 import { RESTORABLE_PHOTOS } from '@/lib/puzzle-catalog';
 import { RoomClient } from '@/lib/room-client';
 import { joinPuzzle } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
+import { accountLoginUrl, SOLO_LOGIN_REQUIRED } from '@/lib/account-return';
 const noop = () => { };
 export default function RoomPlay({ roomId }: {
     roomId: string;
@@ -17,9 +19,9 @@ export default function RoomPlay({ roomId }: {
     const [client, setClient] = useState<RoomClient | null>(null), [error, setError] = useState(''), [attempt, setAttempt] = useState(0);
     useEffect(() => { let canceled = false; setError(''); void joinPuzzle(roomId).then(ticket => { if (!canceled)
         setClient(new RoomClient(ticket)); }).catch(error => { if (!canceled)
-        setError(error instanceof Error ? error.message : '暂时无法加入房间'); }); return () => { canceled = true; }; }, [roomId, attempt]);
+        { if(error instanceof Error && error.message===SOLO_LOGIN_REQUIRED) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
     if (client) {
-        const photo = RESTORABLE_PHOTOS.find(p => p.id === client.state.imageId);
+        const photo = client.snapshot.customImage?customPhoto(client.snapshot.customImage,client.snapshot.id):RESTORABLE_PHOTOS.find(p => p.id === client.state.imageId);
         if (photo)
             return <Game state={client.state} photo={photo} persist={noop} leave={() => { client.leave(); window.location.assign(client.snapshot.visibility === 'public' ? '/lobby' : '/personal'); }} restart={noop} saveError={false} collaboration={client}/>;
     }

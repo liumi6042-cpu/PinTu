@@ -1,5 +1,60 @@
 [
   {
+    "id": "emerald-river-valley",
+    "title": "碧水山谷",
+    "subtitle": "一弯碧水穿过草坡，把远山与晴空连在一起。",
+    "category": "风景",
+    "src": "/puzzles/emerald-river-valley.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/emerald-river-valley-play-7949306eaa84.webp",
+    "thumbSrc": "/puzzles/emerald-river-valley-thumbnail-487330d2a587.webp"
+  },
+  {
+    "id": "sunlit-coastal-headland",
+    "title": "晴空海岬",
+    "subtitle": "白色海岬伸向蓝海，浪花沿着沙岸轻轻展开。",
+    "category": "风景",
+    "src": "/puzzles/sunlit-coastal-headland.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/sunlit-coastal-headland-play-23618550bd5e.webp",
+    "thumbSrc": "/puzzles/sunlit-coastal-headland-thumbnail-762e40c41598.webp"
+  },
+  {
+    "id": "golden-sand-dunes",
+    "title": "金色沙丘",
+    "subtitle": "晨光沿着沙脊铺开，在金色与阴影之间慢慢寻找。",
+    "category": "风景",
+    "src": "/puzzles/golden-sand-dunes.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/golden-sand-dunes-play-6033cc6f3ce7.webp",
+    "thumbSrc": "/puzzles/golden-sand-dunes-thumbnail-6f3d81c994f7.webp"
+  },
+  {
+    "id": "autumn-lakeshore",
+    "title": "秋日湖岸",
+    "subtitle": "金色树冠映入湖水，留住一个温暖的秋日下午。",
+    "category": "风景",
+    "src": "/puzzles/autumn-lakeshore.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/autumn-lakeshore-play-96797b6a80f6.webp",
+    "thumbSrc": "/puzzles/autumn-lakeshore-thumbnail-5bdf424a0a75.webp"
+  },
+  {
+    "id": "rainbow-grassland",
+    "title": "雨后草原",
+    "subtitle": "雨云渐渐散开，一道彩虹跨过明亮的草坡。",
+    "category": "风景",
+    "src": "/puzzles/rainbow-grassland.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/rainbow-grassland-play-75ba8c03a2c6.webp",
+    "thumbSrc": "/puzzles/rainbow-grassland-thumbnail-537ca8ee53bf.webp"
+  },
+  {
     "id": "mountain-lake-reflection",
     "title": "山湖倒影",
     "subtitle": "雪峰映进湖面，把宁静拼成一幅画。",

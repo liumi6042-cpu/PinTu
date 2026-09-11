@@ -1,3 +1,4 @@
+import { fixtureFetch as fetch } from './room-http-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isLocalHostname } from '../lib/room-invite.ts';

@@ -1,14 +1,18 @@
 {
-  "name": "sites-project",
+  "name": "jigsaw-nook",
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.16.0"
   },
   "scripts": {
     "dev": "vinext dev",
     "local": "node scripts/start-local.mjs",
     "build": "vinext build",
+    "build:server": "node scripts/build-server.mjs",
+    "release": "node scripts/package-release.mjs",
+    "release:upload": "node scripts/upload-release.mjs",
+    "test:release": "node --test tests/release-package.test.mjs",
     "check:images": "node scripts/check-image-library.mjs",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",

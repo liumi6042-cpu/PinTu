@@ -4,6 +4,7 @@ import vinext from 'vinext';
 import { defineConfig } from 'vite';
 import hostingConfig from './.openai/hosting.json';
 import { checkImageLibrary } from './scripts/check-image-library.mjs';
+import { fileURLToPath } from 'node:url';
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   '00000000-0000-4000-8000-000000000000';
@@ -37,6 +38,11 @@ const localBindingConfig = {
 
 export default defineConfig(async () => {
   await checkImageLibrary(process.cwd());
+  if (process.env.PUZZLE_TARGET === 'node') return {
+    css: { postcss: { plugins: [tailwindcss()] } },
+    resolve: { alias: { 'cloudflare:workers': fileURLToPath(new URL('./server/runtime.node.mjs', import.meta.url)) } },
+    plugins: [vinext()],
+  };
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= 'false';
@@ -47,6 +53,9 @@ export default defineConfig(async () => {
   const { cloudflare } = await import('@cloudflare/vite-plugin');
 
   return {
+    // Local previews share immutable public assets through filesystem links.
+    // Deployable builds still package complete, independent copies.
+    build: { copyPublicDir: process.env.PUZZLE_LOCAL_BUILD !== '1' },
     css: { postcss: { plugins: [tailwindcss()] } },
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }

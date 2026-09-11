@@ -7,6 +7,7 @@ import { ArrowRight, Puzzle, Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { registration, usernameOf, type Account } from '@/lib/account-crypto';
 import { apiJson } from '@/lib/community-client';
+import { accountReturnTo } from '@/lib/account-return';
 import DreamIntro from './dream-intro';
 import LanguageSwitch from './language-switch';
 type AccountContextValue = {
@@ -16,10 +17,11 @@ type AccountContextValue = {
 const AccountContext = createContext<AccountContextValue | null>(null);
 export function useAccount() { const context = useContext(AccountContext); if (!context)
     throw new Error('AccountGate is required'); return context; }
-export default function AccountGate({ children, intro = false, requireLogin = false }: {
+export default function AccountGate({ children, intro = false, requireLogin = false, solo = false }: {
     children: React.ReactNode;
     intro?: boolean;
     requireLogin?: boolean;
+    solo?: boolean;
 }) {
     useLanguage();
     const [account, setAccount] = useState<Account | null>(null), [ready, setReady] = useState(false), [showIntro, setShowIntro] = useState(intro), [error, setError] = useState('');
@@ -36,18 +38,20 @@ export default function AccountGate({ children, intro = false, requireLogin = fa
     } }).catch(e => { if (alive)
         setError(e.message); }).finally(() => { if (alive)
         setReady(true); }); const expired = () => setAccount(null); window.addEventListener('puzzle:session-expired', expired); return () => { alive = false; window.removeEventListener('puzzle:session-expired', expired); }; }, []);
+    useEffect(()=>{if(account&&requireLogin){const next=accountReturnTo(new URLSearchParams(window.location.search).get('returnTo'));if(next)window.location.replace(next);}},[account,requireLogin]);
     async function logout() { await apiJson('/api/auth/logout', {}); setAccount(null); }
     if (showIntro)
         return <DreamIntro onEnter={() => setShowIntro(false)}/>;
     if (!ready && requireLogin)
         return <div className="account-loading"><Puzzle size={32}/><p>{t("正在打开拼图世界\u2026")}</p></div>;
     if (!account && requireLogin)
-        return <AccountForm initialError={error} onSuccess={value => { setError(''); setAccount(value); }}/>;
+        return <AccountForm solo={solo} initialError={error} onSuccess={value => { setError(''); setAccount(value); }}/>;
     return <AccountContext.Provider value={{ account, logout }}>{t(children)}</AccountContext.Provider>;
 }
-function AccountForm({ onSuccess, initialError }: {
+function AccountForm({ onSuccess, initialError, solo }: {
     onSuccess: (account: Account) => void;
     initialError: string;
+    solo: boolean;
 }) {
     useLanguage();
     const [register, setRegister] = useState(false), [username, setUsername] = useState(''), [name, setName] = useState(''), [password, setPassword] = useState(''), [visible, setVisible] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(initialError);
@@ -72,7 +76,7 @@ function AccountForm({ onSuccess, initialError }: {
   <section className="account-card">
    <p className="section-kicker">YOUR NEXT LITTLE ADVENTURE</p>
    <h1>{t(register ? '把名字留在这里。' : '欢迎来到这一片。')}</h1>
-   <p className="muted">{t(register ? '注册为可选操作，游客也可以直接游玩。' : '公开拼图和个人游玩均无需登录。账号入口为后续会员服务保留，当前没有付费项目。')}</p>
+   <p className="muted">{t(solo ? '个人拼图需登录，普通账号即可免费游玩。' : register ? '注册普通账号即可免费独自拼图，公开大厅无需登录。' : '个人拼图需登录，公开大厅无需登录。会员可创建私人房间、上传自己的图片；订阅即将开放。')}</p>
    <div className="account-tabs"><button aria-pressed={!register} onClick={() => { setRegister(false); setError(''); }} disabled={busy}>{t("登录")}</button><button aria-pressed={register} onClick={() => { setRegister(true); setError(''); }} disabled={busy}>{t("注册账号")}</button></div>
    <form key={register ? 'register' : 'login'} onSubmit={submit}>
     <label>{t("账号")}<Input value={username} onChange={e => { e.currentTarget.setCustomValidity(t('')); setUsername(e.target.value); }} onBlur={e => setUsername(e.target.value.trim())} onInvalid={e => e.currentTarget.setCustomValidity(t('账号需为 3–24 个字符，只能使用英文字母、数字或下划线'))} required minLength={3} maxLength={24} pattern="[a-zA-Z0-9_]{3,24}" aria-describedby={register ? 'account-username-help' : undefined} placeholder={t("例如 puzzle_2026")} autoComplete="username" disabled={busy}/>
@@ -87,7 +91,8 @@ function AccountForm({ onSuccess, initialError }: {
     {t(error && <p className="form-error" role="alert">{t(error)}</p>)}
     <button className="primary" disabled={busy}>{t(busy ? '正在连接…' : register ? '注册并进入' : '登录并进入')}<ArrowRight size={18}/></button>
    </form>
-   <a className="guest-return-link" href="/">{t("先选图游玩，无需登录 ")}<ArrowRight size={16}/></a>
+   <a className="guest-return-link" href="/lobby">{t("先去公开大厅，无需登录")}<ArrowRight size={16}/></a>
+   <a className="guest-return-link" href="/account/recover">{t('忘记密码？使用恢复码')}</a>
    <p className="account-note">{t("本地账号 \u00B7 仅用于这台服务器的拼图世界")}</p>
   </section>
  </main>;

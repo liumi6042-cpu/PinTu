@@ -12,6 +12,7 @@ export class PuzzleTable {
   edges=false; sound=false; paused=false; selected:number|null=null; hintId:number|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
   private backgroundDirty=true; private backgroundDrag:number|null=null;
+  private previousDragRect:{x:number;y:number;width:number;height:number}|null=null;
   private theme:TableTheme='beige';
   network:TableNetwork|null=null; networkReady=true; private claimSerial=0;
   private remoteOwners:Record<string,{name:string;color:string}>={};
@@ -136,16 +137,38 @@ export class PuzzleTable {
   setTheme(theme:TableTheme){if(this.theme===theme)return;this.theme=theme;this.draw();}
   draw(backgroundChanged=true){if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.render();});}
   private render(){
-    if(this.sprites&&this.drag){
-      if(this.backgroundDirty||this.backgroundDrag!==this.drag.id||this.background.width!==this.canvas.width||this.background.height!==this.canvas.height){
-        this.background.width=this.canvas.width;this.background.height=this.canvas.height;
+    if(this.drag){
+      const rebuild=this.backgroundDirty||this.backgroundDrag!==this.drag.id||this.background.width!==this.canvas.width||this.background.height!==this.canvas.height;
+      if(rebuild){
+        if(this.background.width!==this.canvas.width)this.background.width=this.canvas.width;
+        if(this.background.height!==this.canvas.height)this.background.height=this.canvas.height;
         this.renderScene(this.background.getContext('2d')!,this.drag.id);this.backgroundDirty=false;this.backgroundDrag=this.drag.id;
       }
       const c=this.ctx,dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera;
-      c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,this.canvas.width,this.canvas.height);c.drawImage(this.background,0,0);
+      const group=this.state.groups.find(g=>g.id===this.drag!.id),rect=group?this.dragRect(group):null;
+      // Restore only the old/new piece footprint. A full viewport bitmap copy on
+      // every pointer frame is expensive on high-DPI phones, even with an atlas.
+      c.setTransform(1,0,0,1,0,0);
+      if(rebuild){c.clearRect(0,0,this.canvas.width,this.canvas.height);c.drawImage(this.background,0,0);}
+      else for(const area of [this.previousDragRect,rect])if(area){
+        c.clearRect(area.x,area.y,area.width,area.height);
+        c.drawImage(this.background,area.x,area.y,area.width,area.height,area.x,area.y,area.width,area.height);
+      }
       c.setTransform(dpr,0,0,dpr,0,0);c.save();c.translate(x,y);c.scale(z,z);
-      const group=this.state.groups.find(g=>g.id===this.drag!.id);if(group)this.renderGroup(c,group);c.restore();
-    }else{this.renderScene(this.ctx);this.backgroundDirty=true;}
+      if(group)this.renderGroup(c,group);c.restore();this.previousDragRect=rect;
+    }else{this.renderScene(this.ctx);this.backgroundDirty=true;this.previousDragRect=null;}
+  }
+  private dragRect(group:Group){
+    const {x,y,z}=this.camera,dpr=Math.min(devicePixelRatio||1,2),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+    for(const id of group.pieces){const p=this.pieces[id];left=Math.min(left,p.col*w);top=Math.min(top,p.row*h);right=Math.max(right,(p.col+1)*w);bottom=Math.max(bottom,(p.row+1)*h);}
+    // Include tabs, selected outlines, hints and the small-puzzle drop shadow.
+    const margin=Math.min(w,h)*.26*z+48;
+    const x1=Math.max(0,Math.floor((x+(this.board.x+group.dx+left)*z-margin)*dpr));
+    const y1=Math.max(0,Math.floor((y+(this.board.y+group.dy+top)*z-margin)*dpr));
+    const x2=Math.min(this.canvas.width,Math.ceil((x+(this.board.x+group.dx+right)*z+margin)*dpr));
+    const y2=Math.min(this.canvas.height,Math.ceil((y+(this.board.y+group.dy+bottom)*z+margin)*dpr));
+    return x2>x1&&y2>y1?{x:x1,y:y1,width:x2-x1,height:y2-y1}:null;
   }
   private renderScene(c:CanvasRenderingContext2D,exclude?:number){
     const palette=TABLE_PALETTES[this.theme];

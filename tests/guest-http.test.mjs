@@ -1,3 +1,4 @@
+import { fixtureFetch as fetch } from './room-http-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -54,7 +55,8 @@ test('guests can play immediately, keep ownership after optional login, and appe
     rooms.push(response.data.room.id);
     return response.data;
   }
-  const publicRoom = await create(a, 'public'), solo = await create(a, 'solo'), privateRoom = await create(a, 'private');
+  const publicRoom = await create(a, 'public'), privateRoom = await create(a, 'private');
+  assert.equal((await a('/api/rooms', {visibility:'solo',imageId:'blossom-canal',pieces:108})).status,401);
   const path = '/api/rooms/' + publicRoom.room.id;
   assert.equal(publicRoom.room.startedAt, null);
   const joined = await b(path + '/join', {});
@@ -69,9 +71,6 @@ test('guests can play immediately, keep ownership after optional login, and appe
   const card = (await anonymous('/api/lobby')).data.rooms.find(room => room.id === publicRoom.room.id);
   assert.equal(card.players, 2); assert.equal(card.startedAt, null); assert.equal(card.elapsed, 0);
   for (const secretName of ['guestId', 'accountId', 'digest', secret]) assert.ok(!JSON.stringify(again.data.room).includes(secretName));
-  assert.equal((await b('/api/rooms/' + solo.room.id + '/join', {})).status, 403);
-  assert.equal((await b('/api/rooms/' + solo.room.id, undefined, solo.token)).status, 401);
-  assert.equal((await a('/api/rooms/' + solo.room.id, { type: 'shuffle' }, solo.token)).status, 200);
   assert.equal((await spectator(path + '/join', {})).status, 200);
 
   async function finish(ticket, second) {
@@ -100,6 +99,10 @@ test('guests can play immediately, keep ownership after optional login, and appe
   const suffix = crypto.randomUUID().replaceAll('-', '').slice(0, 10);
   const registered = await a('/api/auth/register', { username: 'guest_' + suffix, name: '测试游客转账号', password: 'test-password-' + suffix });
   assert.equal(registered.status, 201); users.push(registered.data.account.id);
+  const solo = await create(a, 'solo');
+  assert.equal((await b('/api/rooms/' + solo.room.id + '/join', {})).status, 401);
+  assert.equal((await b('/api/rooms/' + solo.room.id, undefined, solo.token)).status, 401);
+  assert.equal((await a('/api/rooms/' + solo.room.id, { type: 'shuffle' }, solo.token)).status, 200);
   assert.equal((await a('/api/rooms/' + solo.room.id, undefined, solo.token)).status, 200);
   const soloAgain = await a('/api/rooms/' + solo.room.id + '/join', {});
   assert.equal(soloAgain.status, 200); assert.equal(soloAgain.data.playerId, solo.playerId);

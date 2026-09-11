@@ -1,14 +1,21 @@
-import { addMember, validName, snapshot } from '@/lib/room-engine';
+import { addMember, validName, snapshot,hasRoomAdmission } from '@/lib/room-engine';
 import { body, digestToken, newId, mutateRoom, json, failure,readRoom } from '@/lib/room-store';
 import { currentPlayer,currentGuest,withPlayerCookie } from '@/lib/player-identity';
+import { ensureBetaSeat } from '@/lib/beta-seats';
+import { requireSoloAccount } from '@/lib/solo-account';
 export async function POST(request:Request,context:{params:Promise<{id:string}>}){
  try{
   const {id}=await context.params,input=await body(request),existing=await readRoom(id);
+  if(existing.visibility==='solo')await requireSoloAccount(request);
   let player=existing.visibility?await currentPlayer(request,true):null;
   if(existing.visibility==='solo'&&existing.ownerId!==player?.id){const guest=await currentGuest(request);if(guest?.id===existing.ownerId)player=guest;}
-  const name=player?.name||validName(input.name??'游客');
+  const guest=player?.accountId?await currentGuest(request):null;
   const token=newId(),digest=await digestToken(token),now=Date.now();
-  const {room,result:member}=await mutateRoom(id,room=>addMember(room,newId(),name,digest,now,player?.accountId,player?.guestId));
+  if(existing.visibility!=='solo')await ensureBetaSeat(player?.id||digest,now);
+  const {room,result:member}=await mutateRoom(id,room=>{
+   if(room.acceptingNew===false&&guest&&!hasRoomAdmission(room,player?.id)&&hasRoomAdmission(room,guest.id))player=guest;
+   return addMember(room,newId(),player?.name||validName(input.name??'游客'),digest,now,player?.accountId,player?.guestId);
+  });
   const response=json({token,playerId:member.id,room:snapshot(room,now)});return player?withPlayerCookie(response,player):response;
  }catch(error){return failure(error);}
 }
