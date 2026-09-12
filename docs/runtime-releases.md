@@ -8,6 +8,7 @@
 2. 在构建机运行 `npm run release`，得到 `releases/latest.tar.gz`、`latest.json` 与 `latest.sha256`。命令自动在临时目录解压、启动并检查页面、全部图片与文件哈希，通过后才标记可上传。
 3. 使用 `npm run release:upload -- --host webhosting-main`，仅传送这个经过哈希及 Git 版本校验的最新运行包。可加 `--dry-run` 查看目标和体积，不连接服务器。
 4. 运维将包解压到新的独立运行目录、验证哈希及健康检查后切换服务。数据库和环境配置仍使用服务器现有共享位置；原有 systemd/nginx 配置不随普通页面发布重复上传。
+5. 本次若新增或修改公共搜索页面，在构建机使用 `npm run search:notify -- --submit <变更的正式网址...>` 通知 IndexNow；先完成上线验证，只提交变更页面，不在上传运行包或玩家操作时触发。见 [搜索引擎接入](search-engines.md)。
 
 上传命令只传文件，不自动部署、不删除服务器文件、不停止服务。2026-09-11 用户查看占用后另行授权服务器清理，已删除冗余资源和下载缓存，未上传新包或切换代码，详见 [清理记录](server-storage-cleanup-20260911.md)。服务器安装目录和当前版本每次先核对；不能继续依赖老 source/node_modules 或图片软链接。
 

@@ -1,5 +1,7 @@
 # 本项目图片库约定
 
+- 2026-09-12 搜索接入：根布局中的 Google 与 Bing 所有权验证标签、config/search-engines.json 指定的 IndexNow 根目录验证文件须随版本保留，后者列入运行资源白名单。构建机的 search:notify 默认预览，显式 --submit 才通知支持 IndexNow 的引擎；上线验证后仅提交有变化的规范公开页面，严禁发送房间、私人图片、账号、接口或查询参数。不得把提交接受、站点验证或地图发现数描述为已收录；不得为接入搜索安装广告或访客行为追踪。详见 docs/search-engines.md。
+
 - 2026-09-11 用户要求建立 Git 项目并减少上传：网站仓库为 puzzle-play，沿用已有 Git 历史；源码、迁移、图片原件与来源记录入库，密钥、数据库、备份、依赖和生成包忽略。用户在查看服务器占用后明确授权我们删除冗余文件，该授权覆盖本次服务器清理，已完成且没有部署或重启；朋友处理服务器的早先提醒不再阻止这次已授权操作。不能据此自动删除其他站点、玩家数据或备份。
 - 后续只在构建机完成构建，再通过 npm run release 生成 releases/latest.tar.gz；npm run release:upload 只上传这个最新运行包。禁止上传整个项目、source、完整开发 node_modules、原始 PNG、work、备份或历史 release；不得继续使用旧文档中的服务器源码复制/服务器构建流程。实际网页资源由 config/runtime-assets.json 和图库 playSrc/thumbSrc 白名单组成；归档图 WebP 必须保留以恢复旧局，原件仅留本地/Git。运行包不包含重复 public、nginx/systemd 配置或一次性部署脚本；基础设施更改单独处理。安装及旧版本保留以朋友整理后的服务器结构为准，不自动清理或依赖旧 source 软链接。完整流程见 docs/runtime-releases.md。
 - 2026-09-11 服务器清理后：current 仍为 releases/20260911-07/app，保留 20260911-06 回退版，两版已去掉重复 public、未使用的 PNG/图片原件和 source maps，shared/npm-cache 已删除；当前及回退版都只从 dist/client 提供网页资源。不得将这些删除项从旧目录复制回来。普通发布使用新的独立运行包，完成验证后保留当前与一个已验证的回退版本，不无限累积旧版本。共享数据库、玩家上传图片、备份和小型历史验收数据本次均未删除。服务器目录实测从 1,188,675,584 降至 304,390,144 字节，过程与验收见 docs/server-storage-cleanup-20260911.md。

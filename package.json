@@ -12,6 +12,7 @@
     "build:server": "node scripts/build-server.mjs",
     "release": "node scripts/package-release.mjs",
     "release:upload": "node scripts/upload-release.mjs",
+    "search:notify": "node scripts/notify-search-engines.mjs",
     "test:release": "node --test tests/release-package.test.mjs",
     "check:images": "node scripts/check-image-library.mjs",
     "start": "wrangler dev --config dist/server/wrangler.json",
