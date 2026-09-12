@@ -8,7 +8,7 @@ import { SqliteD1 } from '../server/sqlite.mjs';
 test('production SQLite applies actual migrations once and preserves data on restart', async () => {
   const folder=mkdtempSync(resolve(tmpdir(),'puzzle-node-')),file=resolve(folder,'test.sqlite');
   let db=new SqliteD1(file,resolve('drizzle'));
-  assert.equal(db.sql.prepare('SELECT count(*) AS count FROM app_migrations').get().count,10);
+  assert.equal(db.sql.prepare('SELECT count(*) AS count FROM app_migrations').get().count,11);
   db.sql.exec('CREATE TABLE fixture(id INTEGER PRIMARY KEY,value TEXT UNIQUE)');
   assert.equal(db.withSession('first-primary'),db);
   const inserted=await db.prepare('INSERT INTO fixture(value) VALUES(?) RETURNING id').bind('kept').run();

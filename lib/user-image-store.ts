@@ -1,12 +1,8 @@
 import { localDb } from './local-db';
 import { RoomError,type Room } from './room-engine';
-import { canCreateMemberRoom } from './membership-policy';
-import { membershipFor } from './membership-store';
 import { customPhoto,USER_IMAGE_LIMIT,isCustomImageId,type CustomImage,type UserImage } from './custom-images';
 
 const columns='id,title,width,height,byte_size AS bytes,created_at AS createdAt';
-export const UPLOAD_MEMBERSHIP_REQUIRED='上传自己的图片需要有效会员。';
-export async function requireUploadMember(owner:string){if(!canCreateMemberRoom(await membershipFor(owner)))throw new RoomError(UPLOAD_MEMBERSHIP_REQUIRED,403);}
 export async function userImages(owner:string):Promise<UserImage[]>{
  const rows=await localDb().prepare('SELECT '+columns+' FROM puzzle_user_images WHERE owner_id=? ORDER BY created_at DESC').bind(owner).all<CustomImage&{bytes:number;createdAt:number}>();
  return rows.results.map(row=>({...row,...customPhoto(row)}));
@@ -19,12 +15,12 @@ export async function ownedUserImage(owner:string,id:string){
 export async function storeUserImage(owner:string,title:string,image:{bytes:Uint8Array;width:number;height:number},preview:Uint8Array){
  const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',image.bytes as Uint8Array<ArrayBuffer>))].map(n=>n.toString(16).padStart(2,'0')).join(''),now=Date.now(),db=localDb();
  const old=await db.prepare('SELECT id FROM puzzle_user_images WHERE owner_id=? AND sha256=?').bind(owner,hash).first<{id:string}>();
- if(old){await requireUploadMember(owner);return ownedUserImage(owner,old.id);}
+ if(old)return ownedUserImage(owner,old.id);
  const id='custom-'+crypto.randomUUID().replaceAll('-','');
  const result=await db.prepare(`INSERT OR IGNORE INTO puzzle_user_images(id,owner_id,title,width,height,byte_size,sha256,created_at,data,preview)
- SELECT ?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM puzzle_memberships WHERE user_id=? AND plan='puzzle' AND status='active' AND starts_at<=? AND expires_at>?)
- AND (SELECT COUNT(*) FROM puzzle_user_images WHERE owner_id=?)<?`).bind(id,owner,title,image.width,image.height,image.bytes.byteLength+preview.byteLength,hash,now,image.bytes,preview,owner,now,now,owner,USER_IMAGE_LIMIT).run();
- if(result.meta.changes!==1){await requireUploadMember(owner);const duplicate=await db.prepare('SELECT id FROM puzzle_user_images WHERE owner_id=? AND sha256=?').bind(owner,hash).first<{id:string}>();if(duplicate)return ownedUserImage(owner,duplicate.id);throw new RoomError('已保存 10 张图片，请先删除不再使用的图片。',409);}
+ SELECT ?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM puzzle_users WHERE id=?)
+ AND (SELECT COUNT(*) FROM puzzle_user_images WHERE owner_id=?)<?`).bind(id,owner,title,image.width,image.height,image.bytes.byteLength+preview.byteLength,hash,now,image.bytes,preview,owner,owner,USER_IMAGE_LIMIT).run();
+ if(result.meta.changes!==1){const duplicate=await db.prepare('SELECT id FROM puzzle_user_images WHERE owner_id=? AND sha256=?').bind(owner,hash).first<{id:string}>();if(duplicate)return ownedUserImage(owner,duplicate.id);throw new RoomError('已保存 10 张图片，请先删除不再使用的图片。',409);}
  return ownedUserImage(owner,id);
 }
 export async function removeUserImage(owner:string,id:string){

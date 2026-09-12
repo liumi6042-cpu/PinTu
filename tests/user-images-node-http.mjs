@@ -15,7 +15,9 @@ async function create(owner,id,visibility='private'){const r=await call('/api/ro
 try{
  const owner=await account(true),free=await account(false),stranger=await account(true),ownerId=owner.data.account.id;
  assert.equal((await call('/api/user-images',form())).status,401);
- assert.equal((await call('/api/user-images',form(),free.cookie)).status,403);
+ const freeUpload=await call('/api/user-images',form(),free.cookie);assert.equal(freeUpload.status,201,'ordinary accounts can upload');
+ assert.equal((await create(free,freeUpload.data.image.id,'solo')).status,201,'ordinary accounts can play their own pictures');
+ assert.equal((await create(free,freeUpload.data.image.id,'private')).status,403,'private rooms still require membership');
  assert.equal((await call('/api/user-images',form(),owner.cookie,'','https://unrelated.example')).status,403);
  assert.equal((await call('/api/user-images',form(bytes,'no'),owner.cookie)).status,400);
  assert.equal((await call('/api/user-images',form(new TextEncoder().encode('<svg onload="bad">')),owner.cookie)).status,400);
@@ -23,7 +25,7 @@ try{
  assert.equal(image.width,480);assert.match(id,/^custom-[a-f0-9]{32}$/);
  assert.equal((await call('/api/user-images',form(),owner.cookie)).data.image.id,id,'retry/deduplication reuses the same image');
  assert.equal((await call('/api/user-images',undefined,owner.cookie)).data.images.length,1);
- assert.equal((await call('/api/user-images',undefined,free.cookie)).data.images.length,0);
+ assert.equal((await call('/api/user-images',undefined,free.cookie)).data.images.length,1);
  assert.equal((await raw(image.src)).status,404);assert.equal((await raw(image.src,undefined,stranger.cookie)).status,404);
  const ownBytes=await raw(image.src,undefined,owner.cookie);assert.equal(ownBytes.status,200);assert.equal(ownBytes.headers.get('Content-Type'),'image/webp');assert.match(ownBytes.headers.get('Cache-Control'),/private.*no-store/);assert.equal(ownBytes.headers.get('X-Content-Type-Options'),'nosniff');
  assert.equal((await create(owner,id,'public')).status,403);assert.equal((await create(stranger,id)).status,404);
@@ -48,16 +50,16 @@ try{
  db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=? WHERE id=?').run(JSON.stringify(completed),completed.revision,roomId);
  assert.equal((await call(path,undefined,owner.cookie,ticket.token)).status,200);assert.equal(db.sql.prepare('SELECT COUNT(*) AS n FROM puzzle_results WHERE room_id=?').get(roomId).n,0);
  db.sql.prepare('UPDATE puzzle_memberships SET expires_at=? WHERE user_id=?').run(Date.now()-1000,ownerId);
- assert.equal((await call('/api/user-images',form(otherBytes),owner.cookie)).status,403);assert.equal((await create(owner,id,'solo')).status,403);
+ assert.equal((await call('/api/user-images',form(otherBytes),owner.cookie)).status,201,'uploads stay free after membership expires');assert.equal((await create(owner,id,'solo')).status,201);assert.equal((await create(owner,id,'private')).status,403);
  assert.equal((await raw(privateUrl,undefined,friend.cookie)).status,200);assert.equal((await call(path+'/join',{},friend.cookie)).status,200);
  for(const room of rooms){db.sql.prepare('UPDATE puzzle_room_directory SET expires_at=? WHERE room_id=?').run(Date.now()-1000,room);db.sql.prepare('UPDATE puzzle_rooms SET expires_at=? WHERE id=?').run(Date.now()-1000,room);}
  assert.equal((await raw(privateUrl,undefined,friend.cookie)).status,404);assert.equal((await call('/api/user-images/'+id,{action:'delete'},owner.cookie)).status,200);assert.equal((await raw(image.src,undefined,owner.cookie)).status,404);
  db.sql.prepare('UPDATE puzzle_memberships SET expires_at=? WHERE user_id=?').run(Date.now()+3600000,ownerId);
- for(let i=0;i<9;i++)db.sql.prepare('INSERT INTO puzzle_user_images VALUES(?,?,?,?,?,?,?,?,?,?)').run('custom-'+crypto.randomUUID().replaceAll('-',''),ownerId,'Quota fixture',480,384,bytes.length*2,'fixture-'+i,Date.now(),bytes,bytes);
- const quota=await Promise.all([call('/api/user-images',form(),owner.cookie),call('/api/user-images',form(otherBytes),owner.cookie)]);assert.deepEqual(quota.map(r=>r.status).sort(),[201,409]);assert.equal((await call('/api/user-images',undefined,owner.cookie)).data.images.length,10);
+ for(let i=0;i<8;i++)db.sql.prepare('INSERT INTO puzzle_user_images VALUES(?,?,?,?,?,?,?,?,?,?)').run('custom-'+crypto.randomUUID().replaceAll('-',''),ownerId,'Quota fixture',480,384,bytes.length*2,'fixture-'+i,Date.now(),bytes,bytes);
+ const quota=await Promise.all([call('/api/user-images',form(),owner.cookie),call('/api/user-images',form(readFileSync('public'+catalog[2].thumbSrc)),owner.cookie)]);assert.deepEqual(quota.map(r=>r.status).sort(),[201,409]);assert.equal((await call('/api/user-images',undefined,owner.cookie)).data.images.length,10);
  console.log('Private upload HTTP checks passed: real upload/read, auth/CSRF, metadata, ownership, guest images, quota races, solo/private play, expiry, delete protection and no public scores.');
 }finally{
  for(const id of rooms){for(const table of ['puzzle_personal_hidden_rooms','puzzle_result_players','puzzle_achievement_settled','puzzle_achievement_facts','puzzle_room_cursors','puzzle_results','puzzle_room_directory'])db.sql.prepare(`DELETE FROM ${table} WHERE room_id=?`).run(id);db.sql.prepare('DELETE FROM puzzle_rooms WHERE id=?').run(id);}
- for(const id of users){for(const table of ['puzzle_achievement_profiles','puzzle_achievement_awards','puzzle_achievement_days'])db.sql.prepare(`DELETE FROM ${table} WHERE owner_id=?`).run(id);db.sql.prepare('DELETE FROM puzzle_beta_seats WHERE identity=?').run(id);for(const table of ['puzzle_membership_orders','puzzle_memberships','puzzle_sessions'])db.sql.prepare(`DELETE FROM ${table} WHERE user_id=?`).run(id);db.sql.prepare('DELETE FROM puzzle_users WHERE id=?').run(id);}
+ for(const id of users){for(const table of ['puzzle_achievement_profiles','puzzle_achievement_awards','puzzle_achievement_days'])db.sql.prepare(`DELETE FROM ${table} WHERE owner_id=?`).run(id);db.sql.prepare('DELETE FROM puzzle_beta_seats WHERE identity=?').run(id);db.sql.prepare('DELETE FROM puzzle_user_images WHERE owner_id=?').run(id);for(const table of ['puzzle_membership_orders','puzzle_memberships','puzzle_sessions'])db.sql.prepare(`DELETE FROM ${table} WHERE user_id=?`).run(id);db.sql.prepare('DELETE FROM puzzle_users WHERE id=?').run(id);}
  db.close();
 }

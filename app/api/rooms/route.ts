@@ -7,7 +7,7 @@ import { newPlayableRoom,insertPlayableRoom } from '@/lib/lobby-store';
 import { membershipFor,insertMemberRoom } from '@/lib/membership-store';
 import { roomTitle } from '@/lib/room-management';
 import { isCustomImageId } from '@/lib/custom-images';
-import { ownedUserImage,requireUploadMember } from '@/lib/user-image-store';
+import { ownedUserImage } from '@/lib/user-image-store';
 import { createPuzzle,LEVELS } from '@/lib/puzzle-engine';
 import type { Room } from '@/lib/room-engine';
 import { requireSoloAccount } from '@/lib/solo-account';
@@ -22,8 +22,7 @@ export async function POST(request:Request){
   if(memberRoom&&(!player?.accountId||!canCreateMemberRoom(await membershipFor(player.accountId),now)))throw new RoomError(MEMBERSHIP_REQUIRED,403);
   const name=player!.name;let room:Room;
   if(isCustomImageId(input.imageId)){
-    if(!player?.accountId)throw new RoomError('上传自己的图片需要有效会员。',403);
-    await requireUploadMember(player.accountId);
+    if(!player?.accountId)throw new RoomError('请先登录本地账号',401);
     if(!['solo','private'].includes(input.visibility))throw new RoomError('自上传图片仅供自己和邀请的朋友游玩，不能公开到大厅。',403);
     const image=await ownedUserImage(player.accountId,input.imageId),level=LEVELS.find(l=>l.count===input.pieces);if(!level)throw new RoomError('请选择有效图片与片数');
     room={id:newId(),customImage:{id:image.id,title:image.title,width:image.width,height:image.height},title:image.title.slice(0,40),ownerId:player.id,visibility:input.visibility,retentionVersion:2,lastPlayedAt:now,puzzle:createPuzzle(image.id,level.cols,level.rows),revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,members:[],leases:{},startedAt:null,participants:{}};

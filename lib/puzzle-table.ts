@@ -9,7 +9,9 @@ export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
   board:ReturnType<typeof boardFor>;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
-  edges=false; sound=false; paused=false; selected:number|null=null; hintId:number|null=null;
+  edges=false; sound=false; paused=false; selected:number|null=null;
+  private hintIds:number[]=[]; private hintUntil=0; private underlayUntil=0;
+  private underlayTimer:ReturnType<typeof setTimeout>|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
   private backgroundDirty=true; private backgroundDrag:number|null=null;
   private previousDragRect:{x:number;y:number;width:number;height:number}|null=null;
@@ -47,7 +49,7 @@ export class PuzzleTable {
   private world(p:{x:number;y:number}){return {x:(p.x-this.camera.x)/this.camera.z,y:(p.y-this.camera.y)/this.camera.z};}
   private groupAt(x:number,y:number):Group|undefined {
     const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
-    for(let i=this.state.groups.length-1;i>=0;i--){const g=this.state.groups[i];if(g.locked||!visibleGroup(g,this.pieces,this.edges))continue;
+    for(let i=this.state.groups.length-1;i>=0;i--){const g=this.state.groups[i];if(g.locked||(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id))))continue;
       for(const id of g.pieces){const p=this.pieces[id],lx=x-this.board.x-p.col*w-g.dx,ly=y-this.board.y-p.row*h-g.dy,pad=Math.min(w,h)*.24;
         if(lx>=-pad&&lx<=w+pad&&ly>=-pad&&ly<=h+pad&&this.hit.isPointInPath(this.paths[id],lx,ly))return g;}
     }
@@ -129,9 +131,24 @@ export class PuzzleTable {
     if(changed)this.draw();
   }
   cancelNetworkDrag(id?:number){if(id!==undefined&&this.drag?.id!==id)return;this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';this.draw();}
-  hint(){const groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges));if(!groups.length){this.notice(this.edges?'边缘已经拼完了，关闭「只看边缘」继续吧':'这幅拼图已经完成了');return;}
-    const selected=groups.find(g=>g.id===this.selected)||groups[0];this.selected=selected.id;this.hintId=selected.pieces[0];raiseGroup(this.state,selected.id);this.draw();this.notice('发光拼块对应桌面上的绿色轮廓，试着把它拖过去');
-    if(this.hintTimer)clearTimeout(this.hintTimer);this.hintTimer=setTimeout(()=>{this.hintId=null;this.draw();},6500);
+  setHints(ids:number[],until:number){
+    if(this.hintTimer)clearTimeout(this.hintTimer);
+    this.hintIds=ids.filter(id=>Number.isInteger(id)&&!!this.pieces[id]).slice(0,3);this.hintUntil=until;this.draw();
+    if(this.hintIds.length&&until>Date.now())this.notice('把相同编号的拼块与桌面轮廓对应起来。');
+    if(until>Date.now())this.hintTimer=setTimeout(()=>{this.hintIds=[];this.draw();},until-Date.now());
+  }
+  setUnderlay(until:number){
+    if(this.underlayTimer)clearTimeout(this.underlayTimer);this.underlayUntil=until;this.draw();
+    if(until>Date.now())this.underlayTimer=setTimeout(()=>{this.underlayUntil=0;this.draw();},until-Date.now());
+  }
+  private hintNumber(id:number){return this.hintIds.length&&this.hintUntil>Date.now()?this.hintIds.indexOf(id)+1:0;}
+  private hintMarker(c:CanvasRenderingContext2D,id:number,target=false){
+    const number=this.hintNumber(id);if(!number)return;
+    const z=this.camera.z,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    c.strokeStyle=this.theme==='dark'?'#f6d897':'#8b4e30';c.lineWidth=3/z;c.stroke(this.paths[id]);
+    if(target){c.fillStyle='#d49b4930';c.fill(this.paths[id]);}
+    const radius=Math.min(10/z,w*.3,h*.3);c.beginPath();c.arc(w/2,h/2,radius,0,Math.PI*2);c.fillStyle='#8b4e30';c.fill();
+    c.fillStyle='#fff8e8';c.font=`bold ${radius*1.4}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(String(number),w/2,h/2);
   }
   private playTone(){if(!this.sound)return;try{this.audio??=new AudioContext();void this.audio.resume();const osc=this.audio.createOscillator(),gain=this.audio.createGain(),t=this.audio.currentTime;osc.type='sine';osc.frequency.setValueAtTime(640,t);osc.frequency.exponentialRampToValueAtTime(900,t+.08);gain.gain.setValueAtTime(.045,t);gain.gain.exponentialRampToValueAtTime(.001,t+.16);osc.connect(gain);gain.connect(this.audio.destination);osc.start();osc.stop(t+.17);}catch{/* Sound is optional. */}}
   setTheme(theme:TableTheme){if(this.theme===theme)return;this.theme=theme;this.draw();}
@@ -175,18 +192,20 @@ export class PuzzleTable {
     const dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,this.width,this.height);c.save();c.translate(x,y);c.scale(z,z);
     c.fillStyle=palette.board;c.strokeStyle=palette.border;c.lineWidth=1/z;c.beginPath();c.roundRect(this.board.x-9,this.board.y-9,this.board.width+18,this.board.height+18,8);c.fill();c.stroke();
+    const underlay=this.underlayUntil>Date.now();
+    if(underlay){c.save();c.globalAlpha=.38;c.drawImage(this.picture,this.board.x,this.board.y,this.board.width,this.board.height);c.restore();}
     c.save();c.setLineDash([4/z,7/z]);c.strokeStyle=palette.grid;c.lineWidth=.6/z;
     for(let i=1;i<this.state.cols;i++){c.beginPath();c.moveTo(this.board.x+i*w,this.board.y);c.lineTo(this.board.x+i*w,this.board.y+this.board.height);c.stroke();}
     for(let i=1;i<this.state.rows;i++){c.beginPath();c.moveTo(this.board.x,this.board.y+i*h);c.lineTo(this.board.x+this.board.width,this.board.y+i*h);c.stroke();}c.restore();
-    if(!placedCount(this.state)){c.fillStyle=palette.hint;c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
+    if(!underlay&&!placedCount(this.state)){c.fillStyle=palette.hint;c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
     c.fillStyle=palette.caption;c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
     const groups=[...this.state.groups.filter(g=>g.locked),...this.state.groups.filter(g=>!g.locked)];
     for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g);
-    if(this.hintId!==null){const p=this.pieces[this.hintId];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);c.fillStyle='#ac62462a';c.strokeStyle='#ac6246';c.lineWidth=3/z;c.fill(this.paths[p.id]);c.stroke(this.paths[p.id]);c.restore();}
+    if(this.hintUntil>Date.now())for(const id of this.hintIds){if(!this.state.groups.some(g=>!g.locked&&g.pieces.includes(id)))continue;const p=this.pieces[id];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);this.hintMarker(c,id,true);c.restore();}
     c.restore();
   }
   private renderGroup(c:CanvasRenderingContext2D,g:Group){
-    if(!visibleGroup(g,this.pieces,this.edges))return;
+    if(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id)))return;
     const {x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
     const useSprites=!!this.sprites&&z*Math.min(devicePixelRatio||1,2)<=this.sprites.scale;
     const left=-x/z,right=(this.width-x)/z,top=-y/z,bottom=(this.height-y)/z,owner=this.remoteOwners[g.id];
@@ -202,10 +221,10 @@ export class PuzzleTable {
       if(!useSprites||((owner||g.id===this.selected)&&!g.locked)){
         c.strokeStyle=g.locked?'#5c493d66':owner?owner.color:g.id===this.selected?'#ac6246':'#fffbebbb';c.lineWidth=(owner||g.id===this.selected)&&!g.locked?2/z:.85/z;c.stroke(path);
       }
-      if(id===this.hintId&&!g.locked){c.strokeStyle='#ac6246';c.lineWidth=4/z;c.shadowColor='#ac6246';c.shadowBlur=18;c.stroke(path);}c.restore();
+      if(!g.locked)this.hintMarker(c,id);c.restore();
     }
     if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=TABLE_PALETTES[this.theme].owner;c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
   }
-  destroy(){this.stopLanguage();this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;void this.audio?.close();}
+  destroy(){this.stopLanguage();this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);if(this.underlayTimer)clearTimeout(this.underlayTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;void this.audio?.close();}
 }
 

@@ -1,13 +1,13 @@
 import { requireAccount } from '@/lib/account-store';
 import { failure,json } from '@/lib/room-store';
 import { RoomError } from '@/lib/room-engine';
-import { userImages,requireUploadMember,storeUserImage } from '@/lib/user-image-store';
+import { userImages,storeUserImage } from '@/lib/user-image-store';
 import { cleanUserWebP } from '@/lib/user-image-format';
 import { USER_UPLOAD_MAX_BYTES,USER_IMAGE_MAX_BYTES,USER_THUMB_MAX_BYTES } from '@/lib/custom-images';
 export async function GET(request:Request){try{return json({images:await userImages((await requireAccount(request)).id)});}catch(e){return failure(e);}}
 export async function POST(request:Request){try{
  if(request.headers.get('Origin')!==new URL(request.url).origin)throw new RoomError('请从本网站上传图片',403);
- const account=await requireAccount(request);await requireUploadMember(account.id);
+ const account=await requireAccount(request);
  const type=request.headers.get('Content-Type')||'';
  if(!type.startsWith('multipart/form-data;'))throw new RoomError('上传格式无效');
  if(Number(request.headers.get('Content-Length'))>USER_UPLOAD_MAX_BYTES)throw new RoomError('图片文件过大，请选择小一些的图片。',413);

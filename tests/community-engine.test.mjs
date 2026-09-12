@@ -37,17 +37,18 @@ test('completion freezes official time and counts only active account participan
  for(let i=0;i<12;i++){const g=r.puzzle.groups.find(g=>g.pieces.includes(i));if(g.locked)continue;applyAction(r,a,{type:'claim',groupId:g.id},5000+i*100);applyAction(r,a,{type:'drop',groupId:g.id,dx:0,dy:0,seq:1},5050+i*100);}
  assert.ok(r.completedAt);assert.equal(roomElapsedMs(r,999999),r.completedAt-5000);assert.deepEqual(Object.keys(r.participants),['account-a']);
 });
-test('solo organization preserves connected pieces and never rearranges a public table',()=>{
+test('organization preserves held and placed pieces in solo and public tables',()=>{
  const r=room('solo'),a=addMember(r,'a','甲','da',2000,'owner');
- applyAction(r,a,{type:'claim',groupId:0},3000);assert.throws(()=>applyAction(r,a,{type:'shuffle'},3001),error=>error.status===409);
+ applyAction(r,a,{type:'claim',groupId:0},3000);const held=structuredClone(r.puzzle.groups[0]);applyAction(r,a,{type:'shuffle'},3001);assert.deepEqual(r.puzzle.groups.find(g=>g.id===0),held);
  applyAction(r,a,{type:'drop',groupId:0,dx:0,dy:0,seq:1},3100);
  const locked=structuredClone(r.puzzle.groups.find(g=>g.locked)),start=r.startedAt;
- applyAction(r,a,{type:'shuffle'},3200);assert.deepEqual(r.puzzle.groups.find(g=>g.locked),locked);assert.equal(r.startedAt,start);
- const publicRoom=room(),b=addMember(publicRoom,'b','乙','db',2000,'owner');assert.throws(()=>applyAction(publicRoom,b,{type:'shuffle'},3000),error=>error.status===403);
+ applyAction(r,a,{type:'shuffle'},6000);assert.deepEqual(r.puzzle.groups.find(g=>g.locked),locked);assert.equal(r.startedAt,start);
+ const publicRoom=room(),b=addMember(publicRoom,'b','乙','db',2000,'owner');assert.doesNotThrow(()=>applyAction(publicRoom,b,{type:'shuffle'},3000));
 });
-test('ad assistance remains locked and an unfinished game cannot preview the whole picture',async()=>{
- assert.equal(ADS_AVAILABLE,false);assert.equal(ASSISTANCE_POLICY.hint.maxPerGame,3);assert.equal(ASSISTANCE_POLICY.reference.maxPerGame,null);assert.equal(ASSISTANCE_POLICY.reference.durationSeconds,30);
+test('free assistance has limited uses and completion previews still require completion',async()=>{
+ assert.equal(ADS_AVAILABLE,false);assert.equal(ASSISTANCE_POLICY.hint.maxPerGame,3);
+ for(const kind of ['reference','underlay']){assert.equal(ASSISTANCE_POLICY[kind].maxPerGame,1);assert.equal(ASSISTANCE_POLICY[kind].durationSeconds,30);}
  const source=await readFile(new URL('../app/puzzle-app.tsx',import.meta.url),'utf8'),game=source.slice(source.indexOf('export function Game'));
- assert.ok(!game.includes('.hint('));assert.ok(!game.includes('reference-card'));assert.match(game,/metrics\.placed\s*===\s*total\s*&&\s*<button className="text-button preview-game-button"/);
- for(const tool of ['hint','reference','underlay'])assert.ok(game.includes("setAssistance('"+tool+"')"));
+ assert.match(game,/metrics\.placed\s*===\s*total\s*&&\s*<button className="text-button preview-game-button"/);
+ assert.ok(game.includes('<AssistanceTools'));
 });

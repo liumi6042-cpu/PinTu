@@ -22,14 +22,14 @@ export async function insertMemberRoom(room:Room,userId:string){
   // The entitlement and quota are checked in the insertion itself, within the same transaction as the directory row.
   const result=await db.batch([
     db.prepare(`INSERT INTO puzzle_rooms (id,revision,data,expires_at) SELECT ?,0,?,?
-      WHERE EXISTS (SELECT 1 FROM puzzle_memberships WHERE user_id=? AND plan='puzzle' AND status='active' AND starts_at<=? AND expires_at>?)
+      WHERE (?='solo' OR EXISTS (SELECT 1 FROM puzzle_memberships WHERE user_id=? AND plan='puzzle' AND status='active' AND starts_at<=? AND expires_at>?))
       AND (?='solo' OR (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL)<?)
-      AND (? IS NULL OR EXISTS(SELECT 1 FROM puzzle_user_images WHERE id=? AND owner_id=?))`).bind(room.id,JSON.stringify(room),room.expiresAt,userId,now,now,room.visibility,userId,now,MEMBER_ROOM_LIMIT,room.customImage?.id??null,room.customImage?.id??null,userId),
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM puzzle_user_images WHERE id=? AND owner_id=?))`).bind(room.id,JSON.stringify(room),room.expiresAt,room.visibility,userId,now,now,room.visibility,userId,now,MEMBER_ROOM_LIMIT,room.customImage?.id??null,room.customImage?.id??null,userId),
     db.prepare(`INSERT INTO puzzle_room_directory (room_id,visibility,owner_id,title,image_id,piece_count,created_at,expires_at,completed_at,slot)
       SELECT ?,?,?,?,?,?,?,?,NULL,NULL WHERE EXISTS (SELECT 1 FROM puzzle_rooms WHERE id=?)`).bind(room.id,room.visibility,userId,room.title||photo.title,photo.id,room.puzzle.cols*room.puzzle.rows,room.createdAt,room.expiresAt,room.id),
   ]);
   if(result[0].meta.changes!==1){
-    if(!canCreateMemberRoom(await membershipFor(userId)))throw new RoomError(MEMBERSHIP_REQUIRED,403);
+    if(room.visibility!=='solo'&&!canCreateMemberRoom(await membershipFor(userId)))throw new RoomError(MEMBERSHIP_REQUIRED,403);
     if(room.customImage&&!await db.prepare('SELECT 1 FROM puzzle_user_images WHERE id=? AND owner_id=?').bind(room.customImage.id,userId).first())throw new RoomError('图片不存在',404);
     throw new RoomError('已有 3 个进行中的私人房间，请先完成其中一局',409);
   }
