@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   title: 'Jigsaw Nook — Online Jigsaw Puzzles',
   description: 'Play online jigsaw puzzles at your own pace, or share a public table with friends.',
   robots: { index: false, follow: false },
+  verification: { google: 'bfxx-dHZBIwufXXHSwbM8zOC2ofpzlb98bPI89ZCsh0' },
   icons: {
     icon: [
       { url: '/favicon.ico?v=paper-arch-1', sizes: '16x16 32x32 48x48', type: 'image/x-icon' },
