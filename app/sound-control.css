@@ -1,0 +1,15 @@
+.connection-glow{position:absolute;inset:0 auto auto 0;pointer-events:none;transform-origin:0 0;z-index:1;animation:connection-warmth .3s ease-out both;}
+.paper-theme .game :is(.table-tools,.zoom-controls){z-index:2;}
+@keyframes connection-warmth{0%{opacity:.08}18%{opacity:.66}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.connection-glow{animation:none;opacity:.45;}}
+.snap-sound-control{position:relative;display:flex;align-items:center;}
+.snap-sound-panel{position:absolute;right:0;bottom:calc(100% + 10px);z-index:25;width:218px;max-width:calc(100vw - 30px);padding:12px 14px;border:1px solid #bfa783;border-radius:13px;background:#f7f0e1;color:#594936;box-shadow:0 8px 24px #38291c20;text-shadow:none;pointer-events:auto;}
+.snap-sound-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;}
+.snap-sound-heading .icon-button{width:26px;height:26px;}
+.snap-sound-enabled{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;}
+.snap-sound-enabled input{width:17px;height:17px;accent-color:#a66546;}
+.snap-sound-volume{display:flex;flex-direction:column;gap:8px;font-size:12px;}
+.snap-sound-volume>span{display:flex;align-items:center;justify-content:space-between;}
+.snap-sound-volume input{width:100%;height:24px;accent-color:#a66546;}
+.snap-sound-panel .text-button{margin-top:6px;}
+.paper-theme .game[data-table-theme=dark] .snap-sound-panel{background:#2c2e33;color:#eadcca;border-color:#55555b;box-shadow:0 8px 24px #0003;}

@@ -2,6 +2,7 @@ import { applyRoomUpdate, roomPollDelay, type RoomUpdate } from './room-sync';
 import type { RoomSnapshot, RoomAction } from './room-engine';
 import type { PuzzleTable } from './puzzle-table';
 import { retryDelay } from './request-backoff';
+import { successfulDrop } from './connection-feedback';
 export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
 type Position = { dx: number; dy: number };
 type DragTask = {
@@ -67,6 +68,7 @@ export class RoomClient {
   }
   private receive(s: RoomSnapshot, force = false) {
     if (this.stopped || s.revision < this.revision || (s.revision === this.revision && s.serverTime < this.snapshot.serverTime)) return;
+    const showFeedback=this.connected&&this.revision>=0;
     const changed = s.puzzle.groups !== this.snapshot.puzzle.groups;
     const elapsedChanged = s.puzzle.elapsed !== this.state.elapsed;
     this.revision = s.revision; this.snapshot = s; this.receivedAt = Date.now();
@@ -88,7 +90,7 @@ export class RoomClient {
     if (this.table) {
       this.table.networkReady = true;
       if (changed || force || ownersKey !== this.ownersKey) {
-        this.table.syncRemote(s.puzzle, owners, new Set([...this.drags.values()].filter(t => !t.canceled).map(t => t.id)));
+        this.table.syncRemote(s.puzzle, owners, new Set([...this.drags.values()].filter(t => !t.canceled).map(t => t.id)),showFeedback);
       } else if (elapsedChanged) { this.state.elapsed = s.puzzle.elapsed; }
     } else { this.state.groups = structuredClone(s.puzzle.groups); this.state.elapsed = s.puzzle.elapsed; }
     this.ownersKey = ownersKey;
@@ -155,11 +157,15 @@ export class RoomClient {
       while (!this.stopped && !task.canceled) {
         // Drop has priority over unsent movement. At most one movement is in flight.
         if (task.ending) {
+          const before=task.ending.type==='drop'?this.snapshot.puzzle.groups.find(g=>g.id===task.id):undefined;
           const result = await this.request(task.ending.type === 'drop'
             ? { type: 'drop', groupId: task.id, dx: task.ending.dx, dy: task.ending.dy, seq: ++task.seq }
             : { type: 'release', groupId: task.id });
           this.drags.delete(task.id);
           this.receive(result, true);
+          // A polling response may arrive before this acknowledgement. Sound still
+          // belongs to this successful local drop, never to general room updates.
+          if(!this.stopped&&successfulDrop(before,result.puzzle,task.id))this.table?.playConnectionSound?.();
           return;
         }
         if (task.latest) {

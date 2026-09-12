@@ -880,5 +880,13 @@
   "暂时无法读取帮助次数，请重试": "Unable to load assistance usage. Please try again.",
   "收起原图": "Hide reference",
   "倒计时结束后自动收起": "Closes when the countdown ends",
-  "把相同编号的拼块与桌面轮廓对应起来。": "Match each numbered piece to the outline with the same number."
+  "把相同编号的拼块与桌面轮廓对应起来。": "Match each numbered piece to the outline with the same number.",
+  "拼合音效：已开启": "Connection sound: on",
+  "拼合音效：已关闭": "Connection sound: off",
+  "拼合音效设置": "Connection sound settings",
+  "纸板轻扣声": "Soft cardboard click",
+  "关闭音效设置": "Close sound settings",
+  "开启拼合音效": "Enable connection sound",
+  "音效音量": "Sound volume",
+  "试听轻扣声": "Preview click"
 }

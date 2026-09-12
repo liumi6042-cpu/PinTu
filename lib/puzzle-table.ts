@@ -3,13 +3,17 @@ import { PuzzleSprites } from './puzzle-sprites';
 import { pictureCrop, drawPiecePicture } from './puzzle-picture';
 import { t,subscribeLanguage } from './i18n';
 import { TABLE_PALETTES, type TableTheme } from './table-theme';
+import { newConnections } from './connection-feedback';
+import { ConnectionGlowRenderer } from './connection-glow';
+import { SnapSound,type SoundPreferences } from './snap-sound';
 type Notice = (message:string)=>void;
 export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
   board:ReturnType<typeof boardFor>;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
-  edges=false; sound=false; paused=false; selected:number|null=null;
+  edges=false; paused=false; selected:number|null=null;
+  private feedback:ConnectionGlowRenderer|null=null;private snapAudio=new SnapSound();
   private hintIds:number[]=[]; private hintUntil=0; private underlayUntil=0;
   private underlayTimer:ReturnType<typeof setTimeout>|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
@@ -22,7 +26,7 @@ export class PuzzleTable {
   private pan:{x:number;y:number;cx:number;cy:number}|null=null;
   private pointers=new Map<number,{x:number;y:number}>(); private pinch:{distance:number;z:number;wx:number;wy:number}|null=null;
   private space=false; private raf=0; private timer:ReturnType<typeof setInterval>; private hintTimer:ReturnType<typeof setTimeout>|null=null;
-  private resize:ResizeObserver; private abort=new AbortController(); private audio:AudioContext|null=null;
+  private resize:ResizeObserver; private abort=new AbortController();
   private update:()=>void; private notice:Notice;
   private stopLanguage:()=>void;
   constructor(canvas:HTMLCanvasElement,state:PuzzleState,image:HTMLImageElement,update:()=>void,notice:Notice) {
@@ -33,6 +37,7 @@ export class PuzzleTable {
     this.picture.width=Math.round(crop.width);this.picture.height=Math.round(crop.height);
     this.picture.getContext('2d')!.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,this.picture.width,this.picture.height);
     this.pieces=piecesFor(state.cols,state.rows,state.seed);this.paths=this.pieces.map(p=>new Path2D(pathFor(p,state.cols,state.rows)));
+    if(canvas.parentElement)this.feedback=new ConnectionGlowRenderer(canvas.parentElement,state,this.pieces,()=>this.camera);
     if(this.pieces.length>=300)this.sprites=new PuzzleSprites(this.picture,this.pieces,this.paths,state.cols,state.rows);
     this.resize=new ResizeObserver(()=>this.resizeCanvas());this.resize.observe(canvas);
     const opts={signal:this.abort.signal};
@@ -55,7 +60,7 @@ export class PuzzleTable {
     }
   }
   private down=(e:PointerEvent)=>{
-    if(this.paused||!this.networkReady||e.button>2)return;e.preventDefault();this.canvas.focus({preventScroll:true});this.canvas.setPointerCapture(e.pointerId);const p=this.point(e);this.pointers.set(e.pointerId,p);
+    if(this.paused||!this.networkReady||e.button>2)return;this.unlockSound();e.preventDefault();this.canvas.focus({preventScroll:true});this.canvas.setPointerCapture(e.pointerId);const p=this.point(e);this.pointers.set(e.pointerId,p);
     if(this.pointers.size===2){this.release();const [a,b]=[...this.pointers.values()],center={x:(a.x+b.x)/2,y:(a.y+b.y)/2},world=this.world(center);this.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),z:this.camera.z,wx:world.x,wy:world.y};this.pan=null;return;}
     if(this.pointers.size>2)return;
     const wp=this.world(p),g=this.groupAt(wp.x,wp.y);
@@ -85,8 +90,8 @@ export class PuzzleTable {
   private release(){
     this.claimSerial++;
     if(this.drag&&this.network){const id=this.drag.id;this.keepOnTable(id);const group=this.state.groups.find(g=>g.id===id);this.drag=null;if(group)void this.network.drop(id,group.dx,group.dy);}
-    if(this.drag){this.keepOnTable(this.drag.id);const result=dropGroup(this.state,this.drag.id,snapTolerance(this.state));
-      if(result.snapped){this.playTone();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':result.placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
+    if(this.drag){this.keepOnTable(this.drag.id);const before=this.state.groups.map(g=>({...g,pieces:[...g.pieces]})),result=dropGroup(this.state,this.drag.id,snapTolerance(this.state));
+      if(result.snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':result.placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
       this.drag=null;this.update();}
     this.pan=null;this.canvas.style.cursor='grab';this.draw();
   }
@@ -107,7 +112,7 @@ export class PuzzleTable {
     if(this.network&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter'].includes(e.key)){e.preventDefault();this.notice('多人模式请拖动拼块，方向键移动暂用于单人模式');return;}
     const delta:Record<string,number[]>={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
     if(delta[e.key]){e.preventDefault();const step=e.shiftKey?2:12;g.dx+=delta[e.key][0]*step;g.dy+=delta[e.key][1]*step;this.keepOnTable(g.id);raiseGroup(this.state,g.id);this.draw();this.update();}
-    if(e.key==='Enter'){e.preventDefault();const r=dropGroup(this.state,g.id,snapTolerance(this.state));if(r.snapped)this.playTone();this.update();this.draw();}
+    if(e.key==='Enter'){e.preventDefault();this.unlockSound();const before=this.state.groups.map(group=>({...group,pieces:[...group.pieces]})),r=dropGroup(this.state,g.id,snapTolerance(this.state));if(r.snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();}this.update();this.draw();}
   };
   private clamp(z:number){const max=Math.max(3,Math.min(16,96/Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)));return Math.max(.15,Math.min(max,z));}
   zoom(factor:number,point={x:this.width/2,y:this.height/2}){const w=this.world(point),z=this.clamp(this.camera.z*factor);this.camera={x:point.x-w.x*z,y:point.y-w.y*z,z};this.draw();this.update();}
@@ -115,7 +120,8 @@ export class PuzzleTable {
   setEdges(v:boolean){this.release();this.edges=v;this.draw();}
   setPaused(v:boolean){this.release();this.paused=v;}
   shuffle(){if(this.network){this.notice('多人模式保留大家正在整理的桌面，请直接拖动散片');return;}this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}
-  syncRemote(next:PuzzleState,owners:Record<string,{name:string;color:string}>,protectIds:ReadonlySet<number>){
+  syncRemote(next:PuzzleState,owners:Record<string,{name:string;color:string}>,protectIds:ReadonlySet<number>,showFeedback=true){
+    const beforeGroups=this.state.groups;
     const before=placedCount(this.state),elapsedChanged=this.state.elapsed!==next.elapsed,previous=new Map(this.state.groups.map(g=>[g.id,g])),order=this.state.groups.map(g=>g.id);let changed=previous.size!==next.groups.length;
     this.state.groups=next.groups.map(incoming=>{
       const old=previous.get(incoming.id),same=old&&old.locked===incoming.locked&&old.pieces.length===incoming.pieces.length&&old.pieces.every((id,i)=>id===incoming.pieces[i]);
@@ -127,7 +133,8 @@ export class PuzzleTable {
     if(JSON.stringify(this.remoteOwners)!==JSON.stringify(owners))changed=true;
     this.state.elapsed=next.elapsed;this.remoteOwners=owners;const after=placedCount(this.state);
     if(elapsedChanged||before!==after)this.update();
-    if(after>before){this.playTone();this.notice(`一起拼对了！已归位 ${after} / ${this.pieces.length} 片`);}
+    if(after>before)this.notice(`一起拼对了！已归位 ${after} / ${this.pieces.length} 片`);
+    if(showFeedback&&beforeGroups.length>this.state.groups.length)this.feedback?.show(newConnections(beforeGroups,this.state));
     if(changed)this.draw();
   }
   cancelNetworkDrag(id?:number){if(id!==undefined&&this.drag?.id!==id)return;this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';this.draw();}
@@ -150,9 +157,11 @@ export class PuzzleTable {
     const radius=Math.min(10/z,w*.3,h*.3);c.beginPath();c.arc(w/2,h/2,radius,0,Math.PI*2);c.fillStyle='#8b4e30';c.fill();
     c.fillStyle='#fff8e8';c.font=`bold ${radius*1.4}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(String(number),w/2,h/2);
   }
-  private playTone(){if(!this.sound)return;try{this.audio??=new AudioContext();void this.audio.resume();const osc=this.audio.createOscillator(),gain=this.audio.createGain(),t=this.audio.currentTime;osc.type='sine';osc.frequency.setValueAtTime(640,t);osc.frequency.exponentialRampToValueAtTime(900,t+.08);gain.gain.setValueAtTime(.045,t);gain.gain.exponentialRampToValueAtTime(.001,t+.16);osc.connect(gain);gain.connect(this.audio.destination);osc.start();osc.stop(t+.17);}catch{/* Sound is optional. */}}
+  setSoundPreferences(settings:SoundPreferences){this.snapAudio.setPreferences(settings);}
+  unlockSound(){void this.snapAudio.unlock();}
+  playConnectionSound(){void this.snapAudio.play();}
   setTheme(theme:TableTheme){if(this.theme===theme)return;this.theme=theme;this.draw();}
-  draw(backgroundChanged=true){if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.render();});}
+  draw(backgroundChanged=true){this.feedback?.update();if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.render();});}
   private render(){
     if(this.drag){
       const rebuild=this.backgroundDirty||this.backgroundDrag!==this.drag.id||this.background.width!==this.canvas.width||this.background.height!==this.canvas.height;
@@ -225,6 +234,6 @@ export class PuzzleTable {
     }
     if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=TABLE_PALETTES[this.theme].owner;c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
   }
-  destroy(){this.stopLanguage();this.release();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);if(this.underlayTimer)clearTimeout(this.underlayTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;void this.audio?.close();}
+  destroy(){this.stopLanguage();this.release();this.feedback?.destroy();this.snapAudio.destroy();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);if(this.underlayTimer)clearTimeout(this.underlayTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;}
 }
 
