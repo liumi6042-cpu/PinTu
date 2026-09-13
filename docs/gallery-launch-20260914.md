@@ -37,3 +37,26 @@ creation failure, full-response compatibility, actual HTTP identity preservation
 and private/solo rejection. Build smoke checks retain all public picture links
 and confirm removed advice markup is absent. Browser control has been timing out;
 network measurements do not establish device FPS or a visual interaction result.
+
+## Deployment and results
+
+Released as `20260914-01`, application commit
+`d4de18e05d58590741a8468b52ba3b14f2c6b4fb`. TypeScript, 33 targeted regression
+tests and the isolated runtime build passed. HTTP checks on Windows and Linux
+confirmed matching 5000-piece positions, cookie preservation, legacy responses,
+and identity/private/solo restrictions. All 146 runtime assets were verified.
+
+Public HTTPS checks confirmed 30 clean cards and 30 title links, plus the 34-page
+SEO checks. A fresh 5000-piece creation response was 652 bytes and took 1102 ms in
+this sample; 108 pieces returned 650 bytes in 2435 ms. These timings only cover
+creation and vary with the network; route loading and image download are separate.
+The compact payload is more than 99% smaller than the previous full creation
+response. Public test rooms were left without placing pieces.
+
+The current and rollback releases share 140 identical immutable WebP files by
+hard link, reusing 154757350 bytes. The older release and verified upload archive
+were removed; only current `20260914-01` and rollback `20260913-06` remain.
+The site directory measured 254279680 bytes after cleanup. Player data and backups
+were retained. IndexNow accepted the changed gallery URL (HTTP 200); indexing is
+not implied. Browser inspection still timed out, so visual interaction has not
+been falsely marked as verified.
