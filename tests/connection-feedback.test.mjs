@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import { createPuzzle,dropGroup,piecesFor,boardFor,pathFor } from '../lib/puzzle-engine.ts';
 import { newConnections,successfulDrop,connectionPath,CONNECTION_GLOW_MS } from '../lib/connection-feedback.ts';
-import { cardboardSamples,soundPreferences,SnapSound,SOUND_MERGE_MS } from '../lib/snap-sound.ts';
+import { doubleClickSamples,soundPreferences,SnapSound,SOUND_MERGE_MS } from '../lib/snap-sound.ts';
 import {ConnectionGlowRenderer} from '../lib/connection-glow.ts';
 
 function joined(){const state=createPuzzle('test',12,9,91);state.groups[0].dx=100;state.groups[0].dy=100;state.groups[1].dx=102;state.groups[1].dy=100;const before=structuredClone(state.groups);dropGroup(state,0,4);return {state,before};}
@@ -40,14 +42,22 @@ test('glows paint once, follow the camera without repainting, and release all ti
   renderer.show([glow]);renderer.destroy();assert.equal(nodes.length,0);assert.equal(timers.size,0);assert.equal(listeners,0);
  }finally{for(const key of keys){if(saved[key]===undefined)delete globalThis[key];else globalThis[key]=saved[key];}}
 });
-test('four soft taps have rounded attacks, low peaks and no ringing tail',()=>{
+test('the four double clicks exactly match the chosen audition PCM and source hashes',()=>{
  const variants=[];
- for(let i=0;i<4;i++){const data=cardboardSamples(48000,i);assert.ok(data.length>=4080&&data.length<=4512);assert.equal(data[0],0);assert.equal(Math.abs(data.at(-1)),0);assert.ok(data.every(Number.isFinite));assert.ok(Math.max(...data.map(Math.abs))<.14);const energy=(samples)=>samples.reduce((sum,n)=>sum+n*n,0);assert.ok(energy(data.slice(0,48))<energy(data.slice(48,480))*.005,'no sharp first millisecond');assert.ok(energy(data.slice(-480))<energy(data.slice(0,480))*.001);variants.push([...data.slice(0,200)]);}
+ const directory=new URL('../content/sound-effects/crisp-double-click/',import.meta.url),manifest=JSON.parse(readFileSync(new URL('manifest.json',directory),'utf8'));
+ assert.equal(manifest.selectedAudition,'C-clean-click');
+ for(let i=0;i<4;i++){
+  const source=readFileSync(new URL(manifest.files[i].file,directory)),data=doubleClickSamples(i);
+  assert.equal(createHash('sha256').update(source).digest('hex'),manifest.files[i].sha256);
+  assert.equal(source.toString('ascii',36,40),'data');assert.equal(data.length,4704);
+  for(let sample=0;sample<data.length;sample++)assert.equal(data[sample],source.readInt16LE(44+sample*2)/32768);
+  assert.equal(data[0],0);assert.equal(Math.abs(data.at(-1)),0);assert.ok(Math.max(...data.map(Math.abs))<.27);variants.push([...data.slice(0,1200)]);
+ }
  assert.notDeepEqual(variants[0],variants[1]);assert.notDeepEqual(variants[1],variants[2]);assert.notDeepEqual(variants[2],variants[3]);
 });
 test('rapid successes merge to one voice, mute stops it, and disposal frees audio resources',async()=>{
  const saved={document:globalThis.document,AudioContext:globalThis.AudioContext,performance:globalThis.performance};let clock=0,created=0,played=0,stopped=0,closed=0;
  globalThis.document={hidden:false};globalThis.performance={now:()=>clock};
- globalThis.AudioContext=class{state='running';sampleRate=48000;currentTime=0;destination={};constructor(){created++;}createGain(){return {gain:{value:0,setValueAtTime(){}},connect(){},disconnect(){}};}createBuffer(_,n){return {getChannelData:()=>new Float32Array(n)};}createBufferSource(){return {connect(){},disconnect(){},start(){played++;},stop(){stopped++;},onended:null};}async resume(){}async close(){closed++;}};
+ globalThis.AudioContext=class{state='running';sampleRate=44100;currentTime=0;destination={};constructor(){created++;}createGain(){return {gain:{value:0,setValueAtTime(){}},connect(){},disconnect(){}};}createBuffer(_,n,rate){assert.equal(rate,48000,'source rate stays correct on 44.1kHz output devices');return {getChannelData:()=>new Float32Array(n)};}createBufferSource(){return {connect(){},disconnect(){},start(){played++;},stop(){stopped++;},onended:null};}async resume(){}async close(){closed++;}};
  try{const sound=new SnapSound();await sound.play();assert.equal(created,0);sound.setPreferences({enabled:true,volume:.3});await Promise.all([sound.play(),sound.play(),sound.play()]);assert.equal(played,1);clock=SOUND_MERGE_MS+1;await sound.play();assert.equal(played,2);assert.equal(stopped,1,'a previous voice cannot overlap');sound.setPreferences({enabled:false,volume:.3});assert.equal(stopped,2);clock+=1000;await sound.play();assert.equal(played,2);sound.destroy();assert.equal(closed,1);await sound.play();assert.equal(played,2);}finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });
