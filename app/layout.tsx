@@ -8,6 +8,7 @@ import './lobby-grid.css';
 import './gallery.css';
 import './puzzle-opening.css';
 import './table-theme.css';
+import './room-chat.css';
 import './achievements.css';
 import './membership.css';
 import './ranking-records.css';

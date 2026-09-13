@@ -19,6 +19,7 @@ import { apiJson } from '@/lib/community-client';
 import { saveTicket, type RoomTicket } from '@/lib/room-client';
 import RoomToolbar from './room-toolbar';
 import RoomCursors from './room-cursors';
+import RoomChat from './room-chat';
 import AchievementBadge from './achievement-badge';
 import { Trophy } from 'lucide-react';
 import { useGameAchievements,AchievementToast,CompletionAchievements } from './game-achievements';
@@ -198,6 +199,7 @@ export function Game({ state, photo, persist, leave, restart, saveError, collabo
  <section className="table-area" aria-label={t("拼图游玩区")}><canvas ref={canvas} className="puzzle-canvas" tabIndex={0} aria-label={t(`${photo.title}拼图桌。拖动拼块拼合；滚轮缩放；空白处拖动桌面。键盘 N 选择下一块，方向键移动，Shift 加方向键微调，Enter 吸附。`)}/>
  <div className="game-progress"><div><span><strong>{t(metrics.placed)}</strong> / {t(total)}{t(" 片已归位")}</span></div></div>
  {isMultiplayer&&collaboration&&!loading&&!imageError&&<RoomCursors client={collaboration} canvas={canvas} getTable={getTable} hidden={paused||help||reset||complete||celebrating}/> }
+ {isMultiplayer&&collaboration&&!loading&&!imageError&&<RoomChat client={collaboration} hidden={help||reset||complete||celebrating}/>}
  {saveError && <div className="table-topline"><span className="save-state" role="status"><X size={13}/>{t("未能保存")}</span></div>}
  <AssistanceTools state={state} src={photo.src} client={collaboration} getTable={getTable} loading={loading} disabled={imageError||celebrating||metrics.placed===total} edgesButton={<button className={edges ? 'tool active' : 'tool'} aria-pressed={edges} onClick={switchEdges}><Scan size={20}/><span>{t("边缘")}</span></button>} organizeButton={<button className="tool" disabled={organizing||loading||imageError} aria-busy={organizing} title={t(isMultiplayer ? '整理散片，保留组合、已归位和正在拖动的拼块' : '整理散片')} onClick={() => void organizeTable()}><Shuffle size={20}/><span>{t(organizing?'整理中…':'整理')}</span></button>}/>
 

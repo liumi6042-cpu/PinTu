@@ -36,6 +36,8 @@ try{
   for(const photo of published)assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
   const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:3137'],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
+  const chat=spawnSync(process.execPath,[resolve(project,'tests/room-chat-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  assert.equal(chat.status,0,chat.stdout+chat.stderr);console.log(chat.stdout.trim());
   for(const url of manifest.runtimeAssets){const response=await get(url);assert.equal(response.status,200,url);const bytes=Buffer.from(await response.arrayBuffer());const entry=manifest.files.find(file=>file.path==='dist/client'+url);assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,url);}
   for(const path of ['/puzzles/emerald-river-valley.png','/.env','/README.md'])assert.equal((await get(path)).status,404,path);
   console.log(JSON.stringify({isolatedRuntime:true,files:manifest.files.length,assets:manifest.runtimeAssets.length,publicPictures:manifest.publicPictures,noProjectDependencies:true,originalsExcluded:true}));

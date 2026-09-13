@@ -33,6 +33,13 @@ export function applyDetectedLanguage(value:Language,revision:number){
   if(changed)for(const listener of listeners)listener();
 }
 const extras:Record<string,string>={
+ '聊天':'Chat','房间聊天':'Room chat','未读消息':'Unread messages','和这张桌上的朋友聊聊':'A little conversation, piece by piece',
+ '收起聊天':'Close chat','恢复已屏蔽的聊天':'Unblock hidden players','聊天消息':'Chat messages','从一句你好开始吧。':'Start with a little hello.',
+ '正在连接聊天…':'Connecting to chat…','屏蔽此玩家的聊天':'Hide this player’s messages','查看新消息':'See new messages','说点什么…':'Say something…',
+ '发送中…':'Sending…','发送':'Send','消息未发送，请重试':'Message not sent. Please try again.','消息正在发送':'Your message is being sent.',
+ '消息请填写 1–300 个字':'Write a message of 1–300 characters.','发送太快了，请稍等片刻再试':'Please wait a moment before sending again.',
+ '聊天暂时未连接，正在重试':'Chat disconnected. Reconnecting…','聊天仅用于多人拼图':'Chat is available in multiplayer rooms.',
+ '消息游标无效':'Invalid message cursor.','这条消息已发送，请使用新的消息编号':'This message was already sent. Please start a new message.',
  '正在打开拼图…':'Opening your puzzle…',
  '图片均为本项目原创生成':'Original artwork generated for this project',
  '服务器保存进度 · 完成后自动记录用时':'Progress saved on this server · Completion time recorded automatically',
