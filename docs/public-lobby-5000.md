@@ -52,3 +52,36 @@ image/thumbnail hashes, 30 gallery items, search, and public SEO redirects.
 
 Release packaging uses the isolated build and latest runtime archive only.
 Production deployment keeps one rollback release and all player data.
+
+## Completed release verification (2026-09-14 Asia/Shanghai)
+
+Deployed commit `64acd206f23c3b3244e457085872c3d46bbd34f1` as
+`20260913-06` on the existing Ubuntu host. TypeScript and the isolated release
+build passed. The regression run passed 154 tests, with zero failures and one
+skipped test. Separate isolated Node HTTP checks verified exact 5000-piece
+creation, two guest players, snapping, and shuffle protection of held pieces.
+
+The Linux preflight and live service verified all 146 runtime assets. Public
+HTTPS checks verified all 60 new play/thumbnail URLs with one-year immutable
+caching, six sampled file hashes, all 30 legacy picture redirects and the three
+hidden feature redirects. All 34 public pages passed English SSR, unique titles,
+canonical/Open Graph links, gallery links, robots and sitemap checks; private
+routes remain noindex. IndexNow accepted the 34 changed canonical public URLs
+with HTTP 200; that is receipt of the notification, not proof of indexing.
+
+After successful deployment, only release `20260913-05` was retained for
+rollback. The older `20260913-04` and verified upload archive were removed.
+The site directory measured 365,834,240 bytes (about 349 MiB), including retained
+runtime releases and shared data. Raw PNGs and withdrawn collages were not
+uploaded. Locally, 90 discarded collage PNG/WebP artifacts were removed, freeing
+592,264,079 bytes; their small generation notes were kept.
+
+The earlier puzzle-opening preloads, bounded drag layer and approved crisp
+double-click sound are present in the deployed build. Browser control repeatedly
+timed out, so actual browser drag smoothness, mobile layout and perceived sound
+comfort are still unverified in this run. API and rendering regression checks
+must not be described as a device FPS or listening test. Payment integration
+remains intentionally deferred by the user.
+
+Local verification evidence is under ignored `work/public-5000/`; the production
+deployment manifest is in `releases/20260913-06/deployment.json` on the host.
