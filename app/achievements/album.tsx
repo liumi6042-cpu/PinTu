@@ -31,7 +31,7 @@ export default function AchievementAlbum(){
     else{const data=await apiJson<{book:AchievementBook}>('/api/achievements',{action:'equip',badge:id});setServer(data.book);setError('');}
   }catch{if(source==='local')setLocalError('本机纪念册暂时无法保存，请检查浏览器存储权限。');else setError('徽章未能保存，请重试。');}finally{setBusy(false);}}
   return <CommunityShell active="personal"><main className="community-main achievement-album">
-    <div className="album-heading"><div><p className="section-kicker">PIECE BY PIECE</p><h1>{t('拼图纪念册')}</h1><p>{t('把慢慢拼好的时光，收进这一页。')}</p></div><a className="secondary" href="/personal">{t('回到个人空间')}<ArrowRight size={16}/></a></div>
+    <div className="album-heading"><div><p className="section-kicker">PIECE BY PIECE</p><h1>{t('拼图纪念册')}</h1><p>{t('把慢慢拼好的时光，收进这一页。')}</p></div><a className="secondary" href="/personal">{t('查看拼图记录')}<ArrowRight size={16}/></a></div>
     <div className="album-sources" aria-label={t('纪念册保存位置')}>{(['local','server'] as const).map(value=><button key={value} aria-pressed={source===value} onClick={()=>{setSource(value);history.replaceState(null,'','/achievements?source='+value);}}>{value==='local'?<Monitor size={17}/>:<Users size={17}/>} {t(value==='local'?'本机纪念册':'服务器纪念册')}</button>)}</div>
     <p className="album-storage-note">{t(source==='local'?'本机单人作品保存在当前浏览器，清除网站数据会丢失。本机徽章只在本机展示。':'服务器成就跟随当前游客或账号保存，不随房间到期消失。佩戴的徽章会显示在多人鼠标昵称旁。')}</p>
     {(source==='local'?localError:error)&&<div className="form-error" role="alert">{t(source==='local'?localError:error)}{source==='server'&&<button className="text-button" onClick={()=>setAttempt(n=>n+1)}>{t('重试')}</button>}</div>}

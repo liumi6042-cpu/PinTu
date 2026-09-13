@@ -14,6 +14,7 @@ import CommunityShell from '../community-shell';
 import PuzzleApp from '../puzzle-app';
 import { useAccount } from '../account-gate';
 import { accountLoginUrl } from '@/lib/account-return';
+import { PERSONAL_PLAY_VISIBLE,MEMBERSHIP_VISIBLE } from '@/lib/feature-visibility';
 
 export default function PersonalSpace() {
   const language = useLanguage();
@@ -27,9 +28,9 @@ export default function PersonalSpace() {
   const actionLock = useRef(false), roomsRequest = useRef(0);
   useEffect(() => {
     const initial = new URLSearchParams(window.location.search).get('mode');
-    if (initial === 'solo' || initial === 'create') setMode(initial);
+    if (initial === 'solo'&&PERSONAL_PLAY_VISIBLE || initial === 'create'&&MEMBERSHIP_VISIBLE) setMode(initial);
     let alive = true;
-    const loadLocal = () => { try { setLocal(readLocalProgress(localStorage)); setLocalError(''); }
+    const loadLocal = () => { if(!PERSONAL_PLAY_VISIBLE)return; try { setLocal(readLocalProgress(localStorage)); setLocalError(''); }
       catch { setLocalError('无法读取本机进度，请检查浏览器存储权限。'); } };
     const loadRooms = async () => {
       if (actionLock.current) return;
@@ -44,7 +45,7 @@ export default function PersonalSpace() {
     window.addEventListener('focus', onFocus); window.addEventListener('storage', loadLocal);
     return () => { alive = false; window.removeEventListener('focus', onFocus); window.removeEventListener('storage', loadLocal); };
   }, []);
-  const entries = useMemo(() => resumeProgress(local, rooms), [local, rooms]);
+  const entries = useMemo(() => resumeProgress(PERSONAL_PLAY_VISIBLE?local:[], rooms.filter(room=>room.visibility==='public'||room.visibility==='solo'&&PERSONAL_PLAY_VISIBLE||room.visibility==='private'&&MEMBERSHIP_VISIBLE)), [local, rooms]);
   const ongoing = entries.filter(entry => !entry.completed), completed = entries.filter(entry => entry.completed);
   const latest = ongoing[0];
   function choose(next: 'solo' | 'create') { window.history.replaceState(null, '', '/personal?mode=' + next); setMode(next); }
@@ -108,19 +109,20 @@ export default function PersonalSpace() {
   }
   if (mode) return <PuzzleApp entryMode={mode}/>;
   return <CommunityShell active="personal"><main className="community-main">
-    <section className="lobby-heading"><div><p className="section-kicker">A TABLE OF YOUR OWN</p><h1>{t('这一片，按你的节奏。')}</h1><p>{t('自己安静地拼，或挑一张图，邀请朋友坐下来。')}</p></div></section>
+    <section className="lobby-heading"><div><p className="section-kicker">YOUR PUZZLES</p><h1>{t(PERSONAL_PLAY_VISIBLE?'这一片，按你的节奏。':'拼图记录')}</h1><p>{t(PERSONAL_PLAY_VISIBLE?'自己安静地拼，或挑一张图，邀请朋友坐下来。':'继续你参与过的公开拼图。')}</p></div></section>
     {error && <p role="alert" className="form-error">{t(error)}</p>}{localError && <p role="alert" className="form-error">{t(localError)}</p>}
     {removed && <div className="record-undo" role="status"><span>{t('已删除记录')} · {removed.entry.customTitle ? removed.entry.title : t(removed.entry.title)}</span><button className="text-button" disabled={!!busy} onClick={() => void undoDelete()}><Undo2 size={16}/>{t(busy === 'undo' ? '正在恢复…' : '撤销删除')}</button></div>}
     {loading && <p className="muted">{t('正在寻找上次的桌面…')}</p>}
     {latest && <section className="resume-highlight" aria-label={t('继续上次拼图')}>{card(latest, true)}</section>}
     <a className="achievement-entry" href="/achievements"><BookOpen size={32}/><div><h2>{t("我的拼图纪念册")}</h2><p>{t("收集纪念徽章，看看下一枚离你还有多远。")}</p></div><ArrowUpRight size={24}/></a>
-    <a className="membership-personal-entry" href="/membership/manage"><Crown size={18}/>{t("我的会员与自建房间")}<ArrowUpRight size={16}/></a>
-    <a className="membership-personal-entry" href="/personal/images"><ImagePlus size={22}/><span>{t("我的图片 · 上传照片拼图")} <small>{t("登录免费使用")}</small></span><ArrowUpRight size={18}/></a>
-    <div className="personal-choices"><button className="personal-choice" onClick={() => choose('solo')}><img src={RESTORABLE_PHOTOS.find(p => p.id === 'seaside')!.thumbSrc} alt="" aria-hidden="true"/><div><span className="choice-label">JUST ME · {t("登录后免费游玩")}</span><h2>{t('独自拼图')}</h2><p>{t('登录普通账号，选择图片与片数，开启自己的计时挑战。')}</p><span className="choice-arrow">{t('挑一张喜欢的 ')}<ArrowUpRight size={22}/></span></div></button>
-    <button className="personal-choice" onClick={() => choose('create')}><img src={RESTORABLE_PHOTOS.find(p => p.id === 'alpine-village')!.thumbSrc} alt="" aria-hidden="true"/><div><span className="choice-label">WITH FRIENDS · {t('会员专属')}</span><h2>{t('创建私人房间')} <Crown size={24}/></h2><p>{t('订阅会员，创建仅凭邀请链接加入的私人拼图桌。')}</p><span className="choice-arrow">{t('查看会员权益')}<ArrowUpRight size={22}/></span></div></button></div>
+    {MEMBERSHIP_VISIBLE&&<a className="membership-personal-entry" href="/membership/manage"><Crown size={18}/>{t("我的会员与自建房间")}<ArrowUpRight size={16}/></a>}
+    {PERSONAL_PLAY_VISIBLE&&<a className="membership-personal-entry" href="/personal/images"><ImagePlus size={22}/><span>{t("我的图片 · 上传照片拼图")} <small>{t("登录免费使用")}</small></span><ArrowUpRight size={18}/></a>}
+    {(PERSONAL_PLAY_VISIBLE||MEMBERSHIP_VISIBLE)&&<div className="personal-choices">{PERSONAL_PLAY_VISIBLE&&<button className="personal-choice" onClick={() => choose('solo')}><img src={RESTORABLE_PHOTOS.find(p => p.id === 'seaside')!.thumbSrc} alt="" aria-hidden="true"/><div><span className="choice-label">JUST ME · {t("登录后免费游玩")}</span><h2>{t('独自拼图')}</h2><p>{t('登录普通账号，选择图片与片数，开启自己的计时挑战。')}</p><span className="choice-arrow">{t('挑一张喜欢的 ')}<ArrowUpRight size={22}/></span></div></button>}
+    {MEMBERSHIP_VISIBLE&&<button className="personal-choice" onClick={() => choose('create')}><img src={RESTORABLE_PHOTOS.find(p => p.id === 'alpine-village')!.thumbSrc} alt="" aria-hidden="true"/><div><span className="choice-label">WITH FRIENDS · {t('会员专属')}</span><h2>{t('创建私人房间')} <Crown size={24}/></h2><p>{t('订阅会员，创建仅凭邀请链接加入的私人拼图桌。')}</p><span className="choice-arrow">{t('查看会员权益')}<ArrowUpRight size={22}/></span></div></button>}</div>}
+    {!PERSONAL_PLAY_VISIBLE&&<a className="secondary" href="/lobby">{t('去公开大厅')}<ArrowUpRight size={18}/></a>}
     <section className="recent-section"><div className="recent-heading"><h2>{t('我的桌面')} <small>{ongoing.length}</small></h2></div>
-      <p className="retention-note">{t('本机存档保存在原浏览器。私人及单人房间保留 30 天；公开房间无人时，无进度会清理，有进度保留 24 小时。')}</p>
-      {ongoing.length ? <div className="recent-rooms">{ongoing.map(entry => card(entry))}</div> : !loading && <div className="recent-empty">{t('还没有未完成的拼图。从上面选一种方式开始吧。')}</div>}
+      <p className="retention-note">{t('公开房间有人在拼时保留；无人且无进度时清理，已有进度保留约 24 小时。')}</p>
+      {ongoing.length ? <div className="recent-rooms">{ongoing.map(entry => card(entry))}</div> : !loading && <div className="recent-empty">{t('还没有未完成的公开拼图，去大厅选一张吧。')}</div>}
       {completed.length > 0 && <details className="completed-progress"><summary>{t('已完成的作品')} ({completed.length})</summary><div className="recent-rooms">{completed.map(entry => card(entry))}</div></details>}
     </section>
     <AlertDialog open={!!deleting} onOpenChange={open => { if (!open && !actionLock.current) setDeleting(null); }}><AlertDialogContent>

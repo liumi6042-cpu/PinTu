@@ -11,7 +11,7 @@ test('membership uses server term boundaries; scheduled cancellation keeps acces
   assert.equal(membershipStatus(record,2000),'expired');assert.equal(canCreateMemberRoom({...record,status:'ended'},1500),false);
 });
 test('room ownership gates settings and preserves pieces, elapsed time and retention',()=>{
-  const room=makeRoom('r','seaside',108,1000);room.ownerId='owner';room.visibility='private';room.startedAt=null;
+  const room=makeRoom('r','seaside-native-v2',108,1000);room.ownerId='owner';room.visibility='private';room.startedAt=null;
   const before=JSON.stringify(room.puzzle),expiry=room.expiresAt;
   assert.throws(()=>manageRoom(room,new Set(['outsider']),{title:'No'},1100),/房主/);
   manageRoom(room,new Set(['owner']),{title:'晚风与朋友',visibility:'public',acceptingNew:false},1100);
@@ -20,7 +20,7 @@ test('room ownership gates settings and preserves pieces, elapsed time and reten
   for(const title of ['', ' '.repeat(3),'x'.repeat(41),'bad\nname'])assert.throws(()=>roomTitle(title));assert.equal(roomTitle('  A room  '),'A room');
 });
 test('closed admission rejects newcomers but admits owners and returning players even after presence pruning',()=>{
-  const room=makeRoom('r','seaside',108,1000);room.ownerId='owner';room.visibility='private';
+  const room=makeRoom('r','seaside-native-v2',108,1000);room.ownerId='owner';room.visibility='private';
   const friend=addMember(room,'f','Friend','ft',1000,undefined,'guest:friend');
   manageRoom(room,new Set(['owner']),{acceptingNew:false},1100);room.members=[];
   assert.throws(()=>addMember(room,'s','Stranger','st',1200,undefined,'guest:stranger'),/暂停/);
@@ -30,7 +30,7 @@ test('closed admission rejects newcomers but admits owners and returning players
   manageRoom(room,new Set(['owner']),{acceptingNew:true},1400);assert.ok(addMember(room,'s','Stranger','st',1400,undefined,'guest:stranger'));
 });
 test('room clients notify metadata and achievement changes without notifying on every position revision',()=>{
-  const room=makeRoom('r','seaside',108,1000),client=new RoomClient({token:'t',playerId:'p',room:snapshot(room,1000)});let updates=0;
+  const room=makeRoom('r','seaside-native-v2',108,1000),client=new RoomClient({token:'t',playerId:'p',room:snapshot(room,1000)});let updates=0;
   const stop=client.subscribe(()=>updates++);client.emit();assert.equal(updates,1);
   client.snapshot.revision++;client.emit();assert.equal(updates,1);
   client.snapshot.title='New title';client.emit();client.snapshot.acceptingNew=false;client.emit();client.snapshot.achievementDays={p:'2026-09-09'};client.emit();client.snapshot.completedAt=2000;client.emit();assert.equal(updates,5);stop();

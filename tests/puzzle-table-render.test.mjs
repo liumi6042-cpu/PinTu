@@ -14,8 +14,8 @@ function fixture(cols=20,rows=15){
   return {table,copies};
 }
 
-test('dragging uses a bounded footprint at both 108 and 300 pieces',()=>{
-  for(const [cols,rows] of [[12,9],[20,15]]){
+test('dragging uses a bounded footprint from 108 through 5000 pieces',()=>{
+  for(const [cols,rows] of [[12,9],[20,15],[50,40],[100,50]]){
     const {table,copies}=fixture(cols,rows);table.render();copies.length=0;
     for(let frame=0;frame<60;frame++){table.state.groups[0].dx+=1;table.render();}
     assert.equal(table.scenes,1,'stationary pieces are drawn only once');

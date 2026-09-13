@@ -35,7 +35,7 @@ test('2, 4 and 8 real clients converge during concurrent 2000-piece drag/drop an
   };
   for(const players of [2,4,8]){
     stats.length=0;
-    const created=(await call('/api/rooms',{imageId:'mountain-lake-reflection',pieces:2000,name:'负载测试1'})).data;
+    const created=(await call('/api/rooms',{imageId:'mountain-lake-reflection-native-v2',pieces:2000,name:'负载测试1'})).data;
     const path='/api/rooms/'+created.room.id;fixtureIds.push(created.room.id);
     const tickets=[created];for(let i=1;i<players;i++)tickets.push((await call(path+'/join',{name:'负载测试'+(i+1)})).data);
     const clients=tickets.map(ticket=>new RoomClient(ticket)),tables=clients.map(fakeTable),cleanup=clients.map((client,i)=>client.attach(tables[i]));
@@ -69,7 +69,7 @@ test('2, 4 and 8 real clients converge during concurrent 2000-piece drag/drop an
 });
 
 test('guest personal space lists owned and joined rooms, with a 30-day expiry and private isolation', {skip:process.env.PUZZLE_TEST_LOCAL!=='1'},async()=>{
-  const a=await call('/api/rooms',{imageId:'seaside',pieces:108,visibility:'private'}),path='/api/rooms/'+a.data.room.id;
+  const a=await call('/api/rooms',{imageId:'seaside-native-v2',pieces:108,visibility:'private'}),path='/api/rooms/'+a.data.room.id;
   const b=await call(path+'/join',{});assert.ok(b.cookie);
   assert.ok(a.data.room.expiresAt-Date.now()>29*86400000);
   const own=await call('/api/my-rooms',undefined,undefined,a.cookie),joined=await call('/api/my-rooms',undefined,undefined,b.cookie);

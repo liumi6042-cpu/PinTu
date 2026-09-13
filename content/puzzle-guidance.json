@@ -208,5 +208,215 @@
     "complexity": 2,
     "preferredCount": 108,
     "reason": "从彩虹弧线与草坡明暗开始，云层的渐变适合慢慢分辨。"
+  },
+  "emerald-river-valley-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "sunlit-coastal-headland-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "golden-sand-dunes-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "autumn-lakeshore-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "rainbow-grassland-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "mountain-lake-reflection-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "morning-meadow-tree-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "clear-sand-bay-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "lone-pine-snow-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "quiet-cliff-falls-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "lemon-still-life-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "sleepy-cat-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "sailboat-bay-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "tulip-vase-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "hill-cottage-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "whale-moon-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "orange-bicycle-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "peach-breakfast-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "desert-sun-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "floating-house-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "blossom-canal-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "alpine-village-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "seaside-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "tulip-windmill-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "autumn-teahouse-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "bakery-morning-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "ceramic-studio-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "harbor-houses-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "garden-table-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "winter-village-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
   }
 }

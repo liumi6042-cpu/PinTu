@@ -1,0 +1,62 @@
+{
+  "id": "rainbow-grassland-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/rainbow-grassland-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-2957b733-4a63-40b4-af83-efc7b1d08513.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+    "play": {
+      "src": "/puzzles/rainbow-grassland-native-v2-play-42b28fe777db.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "42b28fe777dbdc9dbd1abadd10ca87a91d394361f3dc9e0ec237269921d7b293",
+      "bytes": 2100994,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/rainbow-grassland-native-v2-thumbnail-9f178bdf851f.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "9f178bdf851ff8bbaaaef436c384f7e63bfa8b21ab2ac5f8f530e2ae023603f7",
+      "bytes": 28230,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

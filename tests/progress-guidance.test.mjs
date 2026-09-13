@@ -45,7 +45,7 @@ test('every published picture has real resolution, translated guidance and an el
 });
 
 test('playing extends a room for 30 days; idle heartbeats and finished-room visits do not',()=>{
-  const now=100000,room=makeRoom('r','seaside',108,now),member=addMember(room,'a','甲','hash',now);
+  const now=100000,room=makeRoom('r','seaside-native-v2',108,now),member=addMember(room,'a','甲','hash',now);
   assert.equal(ROOM_LIFETIME,30*86400000);
   applyAction(room,member,{type:'claim',groupId:0},now+86400000);
   assert.equal(room.expiresAt,now+86400000+ROOM_LIFETIME);
@@ -66,7 +66,7 @@ test('local retention upgrade is idempotent and preserves puzzle, tickets, and e
   try{
     db.exec(readFileSync(new URL('../drizzle/0000_puzzle_rooms.sql',import.meta.url),'utf8'));
     db.exec(readFileSync(new URL('../drizzle/0001_lobby_accounts.sql',import.meta.url),'utf8'));
-    const now=Date.now(),active=makeRoom('active','seaside',108,now),expired=makeRoom('expired','seaside',108,now-86400000*2);
+    const now=Date.now(),active=makeRoom('active','seaside-native-v2',108,now),expired=makeRoom('expired','seaside-native-v2',108,now-86400000*2);
     delete active.retentionVersion;delete expired.retentionVersion;
     active.expiresAt=now+86400000;expired.expiresAt=now-1000;
     const insert=db.prepare('INSERT INTO puzzle_rooms VALUES (?,0,?,?)');

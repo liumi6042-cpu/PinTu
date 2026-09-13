@@ -15,7 +15,7 @@ async function call(path,body,cookie='',token=''){
 }
 try{
  for(const count of [300,2000]){
-  const a=guest(),b=guest(),created=await call('/api/rooms',{visibility:'public',imageId:'seaside',pieces:count},a);
+  const a=guest(),b=guest(),created=await call('/api/rooms',{visibility:'public',imageId:'seaside-native-v2',pieces:count},a);
   assert.equal(created.status,201,JSON.stringify(created.data));const owner=created.data,id=owner.room.id,path='/api/rooms/'+id;rooms.push(id);
   // Only this new fixture is prepared with an already-placed piece and a joined pair.
   const fixture=JSON.parse(db.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data);

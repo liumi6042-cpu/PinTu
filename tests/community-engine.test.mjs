@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { addMember, applyAction, snapshot, roomElapsedMs } from '../lib/room-engine.ts';
 import { passwordHash,equalHash,registration,sessionToken,sessionCookie,randomSecret } from '../lib/account-crypto.ts';
 import { ADS_AVAILABLE,ASSISTANCE_POLICY } from '../lib/assistance-policy.ts';
-function room(visibility='public'){const r=makeRoom('room','seaside',12,1000);Object.assign(r,{visibility,startedAt:null,ownerId:'owner',participants:{}});return r;}
+function room(visibility='public'){const r=makeRoom('room','seaside-native-v2',12,1000);Object.assign(r,{visibility,startedAt:null,ownerId:'owner',participants:{}});return r;}
 
 test('password derivation is salted, repeatable and different from the password',async()=>{
  const a=await passwordHash('testing-password','salt-a'),b=await passwordHash('testing-password','salt-b');

@@ -13,7 +13,7 @@ test('configured administrator can reversibly moderate rooms, accounts and score
   const admin=await call('/api/auth/login',{username:fixture.username,password:fixture.password});assert.equal(admin.status,200);
   assert.equal((await call('/api/admin',undefined,admin.cookie)).status,200);assert.equal((await call('/api/admin')).status,401);
   const user=await call('/api/auth/register',{username,name:'运营验收',password:fixture.password});assert.equal(user.status,201);userId=user.data.account.id;
-  const room=makeRoom(roomId,'seaside',108,Date.now());room.visibility='public';addMember(room,id(),'运营验收',hash(token),Date.now(),undefined,owner);
+  const room=makeRoom(roomId,'seaside-native-v2',108,Date.now());room.visibility='public';addMember(room,id(),'运营验收',hash(token),Date.now(),undefined,owner);
   db.prepare('INSERT INTO puzzle_rooms VALUES (?,?,?,?)').run(roomId,0,JSON.stringify(room),room.expiresAt);
   db.prepare('INSERT INTO puzzle_room_directory VALUES (?,?,?,?,?,?,?,?,NULL,NULL)').run(roomId,'public',owner,'运营验收','seaside',108,Date.now(),room.expiresAt);
   db.prepare('INSERT INTO puzzle_results VALUES (?,?,?,?,?,?,?,?)').run(roomId,'team','seaside',108,1,12345,Date.now(),'["运营验收"]');

@@ -17,7 +17,7 @@ test('weekly and personal rankings use verified identities, preserve scores outs
   const different=await call(query+'&period=week',{cookie:otherCookie});assert.equal(different.data.myBest.elapsedMs,100);assert.equal((await call(query+'&period=invalid')).status,400);
   // Complete one real final piece through the production API; only setup is pre-seeded.
   score(100000,now-86400000,owner,108);
-  const room=makeRoom(id(),'seaside',108,now);ids.push(room.id);room.visibility='solo';room.ownerId=owner;room.startedAt=now-10000;room.participants={};const token=id();addMember(room,id(),'同名玩家',hash(token),now,undefined,owner);
+  const room=makeRoom(id(),'seaside-native-v2',108,now);ids.push(room.id);room.visibility='solo';room.ownerId=owner;room.startedAt=now-10000;room.participants={};const token=id();addMember(room,id(),'同名玩家',hash(token),now,undefined,owner);
   room.puzzle.groups=[{id:0,pieces:Array.from({length:107},(_,i)=>i),dx:0,dy:0,locked:true},{id:107,pieces:[107],dx:200,dy:200,locked:false}];
   db.prepare('INSERT INTO puzzle_rooms VALUES (?,?,?,?)').run(room.id,0,JSON.stringify(room),room.expiresAt);db.prepare('INSERT INTO puzzle_room_directory VALUES (?,?,?,?,?,?,?,?,NULL,NULL)').run(room.id,'solo',owner,'测试','seaside',108,now,room.expiresAt);
   const path='/api/rooms/'+room.id;assert.equal((await call(path,{cookie,token,body:{type:'claim',groupId:107}})).status,200);assert.equal((await call(path,{cookie,token,body:{type:'drop',groupId:107,dx:0,dy:0,seq:1}})).status,200);

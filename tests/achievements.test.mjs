@@ -32,7 +32,7 @@ test('local completions survive restarts, do not farm repeats, and history does 
   store.setItem(LOCAL_ACHIEVEMENTS_KEY,'bad json');assert.deepEqual(readLocalAchievements(store),emptyBook());
 });
 test('actual joins and first placements count once, not carried pieces, clicks, motion or duplicate drops',()=>{
-  const room=makeRoom('room','seaside',108,1000);room.visibility='private';
+  const room=makeRoom('room','seaside-native-v2',108,1000);room.visibility='private';
   const a=addMember(room,'a','A','token-a',1000,undefined,'guest:a'),b=addMember(room,'b','B','token-b',1000,undefined,'guest:b'),watcher=addMember(room,'c','C','token-c',1000,undefined,'guest:c');
   room.puzzle.groups.forEach(g=>{g.dx=600;g.dy=600;});room.puzzle.groups[0].dx=100;room.puzzle.groups[0].dy=100;room.puzzle.groups[1].dx=100;room.puzzle.groups[1].dy=100;
   applyAction(room,watcher,{type:'heartbeat'},1100);assert.equal(room.achievements,undefined);

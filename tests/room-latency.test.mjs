@@ -9,7 +9,7 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function fakeTable(client){return {state:client.state,network:null,networkReady:true,cancelNetworkDrag(){},syncRemote(next,owners,protect){const ids=protect instanceof Set?protect:new Set(protect===null?[]:[protect]);const previous=new Map(this.state.groups.map(g=>[g.id,g]));this.state.groups=structuredClone(next.groups);for(const g of this.state.groups){const held=previous.get(g.id);if(ids.has(g.id)&&held&&!g.locked){g.dx=held.dx;g.dy=held.dy;}}this.state.elapsed=next.elapsed;}};}
 
 test('a piece follows pointer motion before the claim response arrives',async()=>{
- let resolveClaim;const claimed=new Promise(r=>{resolveClaim=r;});const room=makeRoom('local','seaside',12,Date.now());
+ let resolveClaim;const claimed=new Promise(r=>{resolveClaim=r;});const room=makeRoom('local','seaside-native-v2',12,Date.now());
  const savedGlobals={document:globalThis.document,Path2D:globalThis.Path2D,ResizeObserver:globalThis.ResizeObserver,cancelAnimationFrame:globalThis.cancelAnimationFrame};
  const context={drawImage(){}};const canvas={getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){},style:{}};
  globalThis.document={createElement:()=>({getContext:()=>context}),addEventListener(){}};globalThis.Path2D=class{};globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.cancelAnimationFrame=()=>{};
@@ -21,7 +21,7 @@ test('a piece follows pointer motion before the claim response arrives',async()=
 });
 
 test('500 ms round trips do not build a queue of obsolete moves ahead of drop',async()=>{
- const originalFetch=globalThis.fetch,room=makeRoom('slow-room','seaside',12,Date.now()),member=addMember(room,'a','甲','a',Date.now()),sent=[];
+ const originalFetch=globalThis.fetch,room=makeRoom('slow-room','seaside-native-v2',12,Date.now()),member=addMember(room,'a','甲','a',Date.now()),sent=[];
  globalThis.fetch=async(url,options={})=>{const action=options.body?JSON.parse(options.body):null;const start=performance.now();if(action&&action.type!=='heartbeat'&&action.type!=='leave'){sent.push({type:action.type,dx:action.dx,start});await wait(500);}if(action){applyAction(room,member,action,Date.now());room.revision++;}return Response.json(snapshot(room,Date.now()));};
  const client=new RoomClient({token:'a',playerId:'a',room:snapshot(room,Date.now())}),table=fakeTable(client),cleanup=client.attach(table);
  try{assert.equal(await table.network.acquire(0),true);for(let i=1;i<=20;i++){table.state.groups.find(g=>g.id===0).dx=100+i;table.network.move(0,100+i,100);await wait(45);}
@@ -32,7 +32,7 @@ test('500 ms round trips do not build a queue of obsolete moves ahead of drop',a
 });
 
 async function withServer(run,beforeAction=async()=>{}) {
- const originalFetch=globalThis.fetch,room=makeRoom('interaction-room','seaside',12,Date.now()),member=addMember(room,'a','甲','a',Date.now()),sent=[];
+ const originalFetch=globalThis.fetch,room=makeRoom('interaction-room','seaside-native-v2',12,Date.now()),member=addMember(room,'a','甲','a',Date.now()),sent=[];
  globalThis.fetch=async(url,options={})=>{
    const action=options.body?JSON.parse(options.body):null;
    try{if(action){sent.push({...action,at:performance.now()});await beforeAction(action,room);applyAction(room,member,action,Date.now());room.revision++;}return Response.json(snapshot(room,Date.now()));}
@@ -44,7 +44,7 @@ async function withServer(run,beforeAction=async()=>{}) {
 }
 
 test('unchanged polling snapshots avoid drawing while z-order changes redraw the table',()=>{
- const state=makeRoom('canvas-room','seaside',12,Date.now()).puzzle,table=Object.create(PuzzleTable.prototype);let draws=0,updates=0;
+ const state=makeRoom('canvas-room','seaside-native-v2',12,Date.now()).puzzle,table=Object.create(PuzzleTable.prototype);let draws=0,updates=0;
  Object.assign(table,{state,remoteOwners:{},draw:()=>draws++,update:()=>updates++,notice(){},playTone(){}});
  table.syncRemote(structuredClone(state),{},new Set());assert.equal(draws,0);assert.equal(updates,0);
  const next=structuredClone(state);next.groups.reverse();table.syncRemote(next,{},new Set());assert.equal(draws,1);

@@ -24,12 +24,12 @@ assert.equal(registration.status,201,JSON.stringify(registration.data));assert.m
 assert.ok([401,403].includes((await request('/api/admin',{cookie:registration.cookie})).status));
 const a=await request('/api/guest',{body:{secret:randomBytes(32).toString('hex')}}),b=await request('/api/guest',{body:{secret:randomBytes(32).toString('hex')}});
 assert.match(a.headers.get('set-cookie'),/Secure/);
-assert.equal((await request('/api/rooms',{cookie:a.cookie,body:{visibility:'private',imageId:'seaside',pieces:108}})).status,403);
-assert.equal((await request('/api/rooms',{cookie:a.cookie,body:{visibility:'solo',imageId:'seaside',pieces:108}})).status,401);
-const solo=await request('/api/rooms',{cookie:registration.cookie,body:{visibility:'solo',imageId:'seaside',pieces:2000}});
+assert.equal((await request('/api/rooms',{cookie:a.cookie,body:{visibility:'private',imageId:'seaside-native-v2',pieces:108}})).status,403);
+assert.equal((await request('/api/rooms',{cookie:a.cookie,body:{visibility:'solo',imageId:'seaside-native-v2',pieces:108}})).status,401);
+const solo=await request('/api/rooms',{cookie:registration.cookie,body:{visibility:'solo',imageId:'seaside-native-v2',pieces:2000}});
 assert.equal(solo.status,201,JSON.stringify(solo.data));assert.equal(solo.data.room.puzzle.groups.length,2000);
 assert.equal((await request('/api/rooms/'+solo.data.room.id+'/join',{cookie:b.cookie,body:{}})).status,401);
-const created=await request('/api/rooms',{cookie:a.cookie,body:{visibility:'public',imageId:'seaside',pieces:108}});assert.equal(created.status,201);
+const created=await request('/api/rooms',{cookie:a.cookie,body:{visibility:'public',imageId:'seaside-native-v2',pieces:108}});assert.equal(created.status,201);
 const roomId=created.data.room.id;
 const one=await request('/api/rooms/'+roomId+'/join',{cookie:a.cookie,body:{}}),two=await request('/api/rooms/'+roomId+'/join',{cookie:b.cookie,body:{}});
 assert.equal(one.status,200,JSON.stringify(one.data));assert.equal(two.status,200,JSON.stringify(two.data));
@@ -45,7 +45,7 @@ await request(path,{...auth,body:{type:'leave'}});await request(path,{cookie:b.c
 db.exec('DELETE FROM puzzle_beta_seats');
 const rooms=[],samples=[],errors=[],start=performance.now();
 for(let r=0;r<roomCount;r++){
-  const room=makeRoom(id(),'seaside',2000,Date.now()),players=[];room.visibility='public';room.startedAt=null;room.participants={};
+  const room=makeRoom(id(),'seaside-native-v2',2000,Date.now()),players=[];room.visibility='public';room.startedAt=null;room.participants={};
   for(let p=0;p<8;p++){
     const secret=randomBytes(32).toString('hex'),token=id(),owner='guest:'+hash(secret);
     addMember(room,id(),'QA '+r+'-'+p,hash(token),Date.now(),undefined,owner);

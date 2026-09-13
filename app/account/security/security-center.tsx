@@ -24,7 +24,7 @@ export default function SecurityCenter(){
  }
  return <CommunityShell active="personal"><main className="service-main">
   <h1>{b('账号与安全','Account & security')}</h1><p>{data?.account.username}</p>
-  <p>{b('公开大厅和本机单人游玩仍无需登录。','You can still play public tables and device-only solo puzzles without signing in.')}</p>
+  <p>{b('公开大厅仍无需登录即可游玩。','You can still play public tables without signing in.')}</p>
   {error&&<p role="alert" className="form-error">{t(error)}</p>}{message&&<p role="status">{message}</p>}
   <label className="service-field">{b('当前密码（用于确认以下操作）','Current password (to confirm changes)')}<input type="password" autoComplete="current-password" value={password} maxLength={128} onChange={e=>setPassword(e.target.value)}/></label>
   <section className="service-card"><h2>{b('一次性恢复码','One-time recovery code')}</h2>

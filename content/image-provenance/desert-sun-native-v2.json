@@ -1,0 +1,62 @@
+{
+  "id": "desert-sun-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/desert-sun-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-bccd3e5d-61a0-4cd1-bb6e-5567ab309e60.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+    "play": {
+      "src": "/puzzles/desert-sun-native-v2-play-aa03b034ca8d.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "aa03b034ca8d82cd3e84640a569d85917fb6391612689a7aa9165bb52533f9d5",
+      "bytes": 1761924,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/desert-sun-native-v2-thumbnail-35e54945d5f4.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "35e54945d5f46e275a5d2190dd47d31ea772e7771b75c4303bc293612851f557",
+      "bytes": 20168,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

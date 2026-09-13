@@ -18,12 +18,12 @@ function fakeTable(client){return {state:client.state,networkReady:true,cancelNe
 
 test('creation is server-gated, while solo requires sign-in and existing room invitations still work',{skip:process.env.PUZZLE_TEST_LOCAL!=='1'},async()=>{
   for(const visibility of ['private',undefined]){
-    const result=await call('/api/rooms',{imageId:'seaside',pieces:108,name:'不应创建',...(visibility?{visibility}:{}),isMember:true,subscriptionActive:true});
+    const result=await call('/api/rooms',{imageId:'seaside-native-v2',pieces:108,name:'不应创建',...(visibility?{visibility}:{}),isMember:true,subscriptionActive:true});
     assert.equal(result.status,403);assert.match(result.data.error,/会员/);assert.ok(!result.data.room);
   }
-  const solo=await call('/api/rooms',{imageId:'seaside',pieces:108,visibility:'solo'});assert.equal(solo.status,401);
+  const solo=await call('/api/rooms',{imageId:'seaside-native-v2',pieces:108,visibility:'solo'});assert.equal(solo.status,401);
   // A pre-existing invitation remains usable by guests with no subscription.
-  const existing=await call('/api/rooms',{imageId:'seaside',pieces:108,visibility:'private'},undefined,undefined,true);assert.equal(existing.status,201);fixtures.push(existing.data.room.id);
+  const existing=await call('/api/rooms',{imageId:'seaside-native-v2',pieces:108,visibility:'private'},undefined,undefined,true);assert.equal(existing.status,201);fixtures.push(existing.data.room.id);
   const joined=await call('/api/rooms/'+existing.data.room.id+'/join',{});assert.equal(joined.status,200);
   const cursorPath='/api/rooms/'+existing.data.room.id+'/cursors';
   assert.equal((await call(cursorPath)).status,401);
@@ -34,7 +34,7 @@ test('creation is server-gated, while solo requires sign-in and existing room in
 });
 
 test('8 cursor channels coexist with concurrent 2000-piece dragging without changing the game on hover',{skip:process.env.PUZZLE_TEST_LOCAL!=='1'},async t=>{
-  const initial=await call('/api/rooms',{imageId:'seaside',pieces:2000,name:'鼠标测试1'},undefined,undefined,true);assert.equal(initial.status,201);
+  const initial=await call('/api/rooms',{imageId:'seaside-native-v2',pieces:2000,name:'鼠标测试1'},undefined,undefined,true);assert.equal(initial.status,201);
   const tickets=[initial.data],path='/api/rooms/'+initial.data.room.id;fixtures.push(initial.data.room.id);
   for(let i=1;i<8;i++){const joined=await call(path+'/join',{name:'鼠标测试'+(i+1)});assert.equal(joined.status,200);tickets.push(joined.data);}
   const before=(await call(path,undefined,tickets[0].token)).data;

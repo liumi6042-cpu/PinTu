@@ -8,7 +8,7 @@ test('localhost and the LAN invitation reach the same local room with correct or
   const info=await (await fetch(base+'/api/connection')).json();
   assert.equal(info.app,'together-puzzle');assert.equal(info.mode,'local');
   assert.ok(isLocalHostname(new URL(info.inviteOrigin).hostname));
-  const create=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json',Origin:new URL(base).origin},body:JSON.stringify({imageId:'seaside',pieces:108,name:'本机测试'})});
+  const create=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json',Origin:new URL(base).origin},body:JSON.stringify({imageId:'seaside-native-v2',pieces:108,name:'本机测试'})});
   assert.equal(create.status,201);const a=await create.json();
   const path=`/api/rooms/${a.room.id}`;
   const join=await fetch(info.inviteOrigin+path+'/join',{method:'POST',headers:{'Content-Type':'application/json',Origin:info.inviteOrigin},body:JSON.stringify({name:'局域网测试'})});

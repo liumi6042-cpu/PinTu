@@ -30,7 +30,7 @@ test('deleting one device save preserves other saves, identity and achievements;
 test('server removal is private to verified identities, reversible and leaves rooms untouched', async () => {
   const folder=mkdtempSync(resolve(tmpdir(),'puzzle-records-')), db=new SqliteD1(resolve(folder,'test.sqlite'),resolve('drizzle'));
   try {
-    const now=Date.now(), id='a'.repeat(32), room=makeRoom(id,'seaside',108,now);
+    const now=Date.now(), id='a'.repeat(32), room=makeRoom(id,'seaside-native-v2',108,now);
     room.visibility='public'; room.ownerId='owner';
     addMember(room,'member','Player','hash',now,undefined,'guest:friend');
     db.sql.prepare('INSERT INTO puzzle_rooms VALUES(?,0,?,?)').run(id,JSON.stringify(room),room.expiresAt);

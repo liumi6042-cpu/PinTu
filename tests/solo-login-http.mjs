@@ -16,7 +16,7 @@ async function call(path,body,cookie='',token=''){
 }
 try{
  const secret=randomBytes(32).toString('hex'),guestCookie='puzzle_guest='+secret,guestId='guest:'+hash(secret);identities.push(guestId);
- const input={imageId:'seaside',pieces:108,visibility:'solo'};
+ const input={imageId:'seaside-native-v2',pieces:108,visibility:'solo'};
  assert.equal((await call('/api/rooms',input)).status,401);
  assert.equal((await call('/api/rooms',{...input,isMember:true,accountId:id()},guestCookie)).status,401);
  const account=await call('/api/auth/register',{username:'soloq_'+id().slice(0,12),name:'Solo QA',password:'FreeSolo-'+id()},guestCookie);
@@ -34,7 +34,7 @@ try{
  assert.equal((await call(path+'/cursors',undefined,signed,created.data.token)).status,400);
  assert.equal((await call('/api/rooms',{...input,visibility:'private'},signed)).status,403,'free login does not grant membership');
  // A pre-update guest solo fixture stays owned by that browser, after signing in.
- const old=makeRoom(id(),'seaside',108,Date.now()),oldToken=id();old.visibility='solo';old.ownerId=guestId;old.startedAt=null;old.participants={};
+ const old=makeRoom(id(),'seaside-native-v2',108,Date.now()),oldToken=id();old.visibility='solo';old.ownerId=guestId;old.startedAt=null;old.participants={};
  const oldMember=addMember(old,id(),'Legacy guest',hash(oldToken),Date.now(),undefined,guestId);
  db.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(old.id,old.revision,JSON.stringify(old),old.expiresAt);rooms.push(old.id);
  const oldPath='/api/rooms/'+old.id,initial=JSON.stringify(old.puzzle);

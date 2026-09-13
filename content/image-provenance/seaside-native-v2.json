@@ -1,0 +1,62 @@
+{
+  "id": "seaside-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "a6bb2a8e4eb1f0f77451dfa06cac6df3a8a43e412c1fab6226ca702b5a650bc4",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/seaside-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-083fd6bd-0a15-484f-80b2-93821fd1a252.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "a6bb2a8e4eb1f0f77451dfa06cac6df3a8a43e412c1fab6226ca702b5a650bc4",
+    "play": {
+      "src": "/puzzles/seaside-native-v2-play-0215326a9178.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "0215326a9178f4ce677eaa11383245df8c7a8f320a2ed7ae6ae910398939b08e",
+      "bytes": 2318392,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/seaside-native-v2-thumbnail-05f117fb8a2d.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "05f117fb8a2de0e58f89729bf5bc3adc83179cefe212f330d6cc898cceaec2f8",
+      "bytes": 37432,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

@@ -22,7 +22,7 @@ test('local server serves verified cached game images and thumbnails and creates
     const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:id,pieces:108,name:'旧图校验'})});
     assert.equal(response.status,400);
   }
-  const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:'mountain-lake-reflection',pieces:2000,name:'生成图校验'})});
+  const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageId:'mountain-lake-reflection-native-v2',pieces:2000,name:'生成图校验'})});
   assert.equal(response.status,201);
   const created=await response.json(),path=base+'/api/rooms/'+created.room.id;
   try{

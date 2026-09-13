@@ -1,0 +1,62 @@
+{
+  "id": "tulip-windmill-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/tulip-windmill-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-5563106c-3e8e-43f4-bc93-0e46ef6459b6.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc",
+    "play": {
+      "src": "/puzzles/tulip-windmill-native-v2-play-84d9f621fc18.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "84d9f621fc18561658faf69a85bc1381ab512e8157e712c609dcdd4e37291289",
+      "bytes": 2141616,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/tulip-windmill-native-v2-thumbnail-063e643f6ea6.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "063e643f6ea6865c68b73aab90223086f986114f657b36f43aab1231a3c7a4f8",
+      "bytes": 30712,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

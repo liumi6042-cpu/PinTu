@@ -5,7 +5,7 @@ import {recordRoomChange,roomUpdate,applyRoomUpdate} from '../lib/room-sync.ts';
 import {RoomClient} from '../lib/room-client.ts';
 
 function fixture(count=300,visibility='public'){
- const room=makeRoom('organize','seaside',count,100000);room.visibility=visibility;room.ownerId='guest:a';room.startedAt=null;room.participants={};
+ const room=makeRoom('organize','seaside-native-v2',count,100000);room.visibility=visibility;room.ownerId='guest:a';room.startedAt=null;room.participants={};
  const players=['a','b','c'].map(id=>addMember(room,id,id,'digest-'+id,100000,undefined,'guest:'+id));
  room.puzzle.groups.forEach((g,i)=>{g.dx=3000+i;g.dy=4000+i;});
  Object.assign(room.puzzle.groups[0],{locked:true,dx:0,dy:0});

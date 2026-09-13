@@ -51,7 +51,7 @@ for url in urls:
     if path=='/':assert any(d.get('@type')=='WebSite' for d in page.jsonld)
     if path=='/gallery':gallery_links=page.links
     if path.startswith('/puzzle/'):
-        assert page.jsonld and '/gallery?image='+path.split('/')[-1] in page.links,path
+        assert page.jsonld and '/gallery?mode=public&image='+path.split('/')[-1] in page.links,path
 for image_id in ids:assert '/puzzle/'+image_id in gallery_links,image_id
 for path in ['/account','/personal','/personal/images','/feedback','/membership/manage','/room/00000000000000000000000000000000','/gallery?mode=solo','/gallery?image='+ids[0],'/api/health']:
     status,headers,html=get(path);assert 'noindex' in headers.get('X-Robots-Tag',''),path

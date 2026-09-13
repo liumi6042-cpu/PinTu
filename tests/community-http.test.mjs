@@ -21,7 +21,7 @@ test('local accounts, public directory, private/solo isolation and official rank
  });
  const suffix=crypto.randomUUID().replaceAll('-','').slice(0,10),username='test_'+suffix,password='test-pass-'+suffix;
  assert.equal((await call('/api/lobby')).status,200);
- assert.equal((await call('/api/rooms',{visibility:'invalid',imageId:'seaside',pieces:108})).status,400);
+ assert.equal((await call('/api/rooms',{visibility:'invalid',imageId:'seaside-native-v2',pieces:108})).status,400);
  assert.equal((await call('/api/auth/register',{username,name:'甲',password},'','','https://untrusted.test')).status,403);
  const registered=await call('/api/auth/register',{username,name:'测试甲',password});assert.equal(registered.status,201);ids.push(registered.data.account.id);
  assert.match(registered.cookie,/HttpOnly/);assert.match(registered.cookie,/SameSite=Strict/);assert.ok(!JSON.stringify(registered.data).includes(password));
@@ -31,7 +31,7 @@ test('local accounts, public directory, private/solo isolation and official rank
  const loggedIn=await call('/api/auth/login',{username:username.toUpperCase(),password});assert.equal(loggedIn.status,200);cookieA=loggedIn.cookie.split(';')[0];
  assert.equal((await call('/api/auth/me',undefined,cookieA)).data.account.id,ids[0]);
  const b=await call('/api/auth/register',{username:'other_'+suffix,name:'测试乙',password});assert.equal(b.status,201);ids.push(b.data.account.id);const cookieB=b.cookie.split(';')[0];
- async function create(visibility,pieces=108){const result=await call('/api/rooms',{visibility,imageId:'seaside',pieces},cookieA);assert.equal(result.status,201,JSON.stringify(result.data));roomIds.push(result.data.room.id);return result.data;}
+ async function create(visibility,pieces=108){const result=await call('/api/rooms',{visibility,imageId:'seaside-native-v2',pieces},cookieA);assert.equal(result.status,201,JSON.stringify(result.data));roomIds.push(result.data.room.id);return result.data;}
  const publicRoom=await create('public'),privateRoom=await create('private'),soloRoom=await create('solo');
  assert.equal((await call('/api/rooms/'+soloRoom.room.id,{type:'shuffle'},cookieA,soloRoom.token)).status,200);
  assert.equal((await call('/api/rooms/'+publicRoom.room.id,{type:'shuffle'},cookieA,publicRoom.token)).status,403);

@@ -18,7 +18,7 @@ test('member room quotas are atomic, only owners manage rooms, and expiry preser
  try{
   const anonymous=await call('/api/membership');assert.equal(anonymous.status,200);assert.equal(anonymous.data.summary.account,false);assert.equal(anonymous.data.summary.canCreate,false);assert.deepEqual(anonymous.data.orders,[]);
   const owner=await register(),outsider=await register();
-  const create={imageId:'seaside',pieces:108,visibility:'private',title:'朋友的桌面'};
+  const create={imageId:'seaside-native-v2',pieces:108,visibility:'private',title:'朋友的桌面'};
   assert.equal((await call('/api/rooms',{...create,isMember:true,expiresAt:Date.now()+9999999},owner.cookie)).status,403);
   const now=Date.now();assert.match(owner.data.account.id,/^[a-f0-9]{32}$/);
   // Test-only entitlement seeded directly; there is no public grant or fake payment endpoint.

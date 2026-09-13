@@ -9,7 +9,7 @@ import { PUBLIC_ROOM_IDLE_MS } from '../lib/public-room-retention.ts';
 test('cleanup preserves online work and merged groups, expires idle progress after 24h, and keeps private/solo/history',async()=>{
  const db=new SqliteD1(':memory:',resolve('drizzle')),now=Date.now(),day=PUBLIC_ROOM_IDLE_MS;
  const seed=(id,{visibility='public',age=1000,online=false,progress=false,merged=false}={})=>{
-  const room=makeRoom(id,'seaside',108,now-day*2);room.visibility=visibility;room.publicLastSeenAt=now-age;room.expiresAt=now-age+day;
+  const room=makeRoom(id,'seaside-native-v2',108,now-day*2);room.visibility=visibility;room.publicLastSeenAt=now-age;room.expiresAt=now-age+day;
   if(online)room.members=[{id:'player',name:'QA',lastSeen:now,joinedAt:now,digest:'token',color:'#fff'}];
   if(progress)room.puzzle.groups[0].locked=true;
   if(merged){room.puzzle.groups[0].pieces.push(...room.puzzle.groups[1].pieces);room.puzzle.groups.splice(1,1);}
@@ -37,19 +37,19 @@ test('cleanup preserves online work and merged groups, expires idle progress aft
 });
 
 test('public leave records a precise idle start and heartbeat renews it; private heartbeat retains its existing expiry',()=>{
- const now=Date.now(),room=makeRoom('r','seaside',108,now);room.visibility='public';
+ const now=Date.now(),room=makeRoom('r','seaside-native-v2',108,now);room.visibility='public';
  const player=addMember(room,'p','QA','token',now,undefined,'guest:qa');
  applyAction(room,player,{type:'heartbeat'},now+10000);
  assert.equal(room.publicLastSeenAt,now+10000);assert.equal(room.expiresAt,now+10000+PUBLIC_ROOM_IDLE_MS);
  applyAction(room,player,{type:'leave'},now+15000);assert.equal(player.lastSeen,0);assert.equal(room.publicLastSeenAt,now+15000);
  const back=addMember(room,'p2','QA','token2',now+ONLINE_MS+20000,undefined,'guest:qa');
  assert.equal(room.publicLastSeenAt,now+ONLINE_MS+20000);assert.equal(back.id,player.id);
- const privateRoom=makeRoom('private','seaside',108,now);privateRoom.visibility='private';const p=addMember(privateRoom,'p','QA','t',now);
+ const privateRoom=makeRoom('private','seaside-native-v2',108,now);privateRoom.visibility='private';const p=addMember(privateRoom,'p','QA','t',now);
  const expiry=privateRoom.expiresAt;applyAction(privateRoom,p,{type:'heartbeat'},now+10000);assert.equal(privateRoom.expiresAt,expiry);
 });
 
 test('cleanup rolls back the room deletion if related-row cleanup fails',async()=>{
- const db=new SqliteD1(':memory:',resolve('drizzle')),room=makeRoom('rollback','seaside',108,Date.now());room.visibility='public';
+ const db=new SqliteD1(':memory:',resolve('drizzle')),room=makeRoom('rollback','seaside-native-v2',108,Date.now());room.visibility='public';
  try{
   db.sql.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(room.id,0,JSON.stringify(room),room.expiresAt);
   db.sql.exec("INSERT INTO puzzle_room_directory VALUES('rollback','public',NULL,'QA','seaside',108,0,0,NULL,NULL); INSERT INTO puzzle_room_cursors VALUES('rollback','p','c',1,0,0,0); CREATE TRIGGER fixture_failure BEFORE DELETE ON puzzle_room_cursors BEGIN SELECT RAISE(ABORT,'fixture failure'); END;");

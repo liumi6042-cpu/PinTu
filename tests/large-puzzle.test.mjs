@@ -5,16 +5,16 @@ import { makeRoom, addMember, applyAction } from '../lib/room-engine.ts';
 import { PuzzleTable } from '../lib/puzzle-table.ts';
 import { parseTableTheme } from '../lib/table-theme.ts';
 
-test('new grids range from 108 to exactly 2000 and the save fits in a local database row',()=>{
-  assert.equal(Math.max(...LEVELS.map(l=>l.count)),2000);
-  assert.deepEqual(LEVELS.map(l=>l.count),[108,300,500,1000,1500,2000]);
+test('new grids range from 108 to exactly 5000 and the save fits in a local database row',()=>{
+  assert.equal(Math.max(...LEVELS.map(l=>l.count)),5000);
+  assert.deepEqual(LEVELS.map(l=>l.count),[108,300,500,1000,1500,2000,3000,4000,5000]);
   for(const level of LEVELS)assert.equal(level.cols*level.rows,level.count);
-  assert.throws(()=>createPuzzle('seaside',100,60));assert.throws(()=>makeRoom('unsupported','seaside',6000,Date.now()));
-  for(const [cols,rows] of [[4,3],[8,6],[60,50],[80,50],[100,50]]){
+  assert.throws(()=>createPuzzle('seaside',100,60));assert.throws(()=>makeRoom('unsupported','seaside-native-v2',6000,Date.now()));
+  for(const [cols,rows] of [[4,3],[8,6]]){
     assert.throws(()=>createPuzzle('seaside',cols,rows),/不支持的拼图片数/);
-    assert.throws(()=>makeRoom('retired','seaside',cols*rows,Date.now()),/请选择有效图片与片数/);
+    assert.throws(()=>makeRoom('retired','seaside-native-v2',cols*rows,Date.now()),/请选择有效图片与片数/);
   }
-  const state=createPuzzle('seaside',50,40,31);
+  const state=createPuzzle('seaside',100,50,31);
   const saved=JSON.stringify(state);assert.ok(Buffer.byteLength(saved)<900_000);
   assert.deepEqual(restorePuzzle(saved,['seaside']),state);
 });
@@ -39,7 +39,7 @@ test('slightly imperfect placement snaps in both singleplayer and multiplayer at
     const state=createPuzzle('seaside',level.cols,level.rows,34),near=Math.min(800/level.cols,600/level.rows)*.22;
     assert.ok(near>Math.min(800/level.cols,600/level.rows)*.18);
     moveGroup(state,0,near,0);assert.ok(dropGroup(state,0,snapTolerance(state)).placed>=1);
-    const room=makeRoom('snap','seaside',level.count,1000),member=addMember(room,'a','玩家','digest',1000);
+    const room=makeRoom('snap','seaside-native-v2',level.count,1000),member=addMember(room,'a','玩家','digest',1000);
     applyAction(room,member,{type:'claim',groupId:0},1001);
     applyAction(room,member,{type:'drop',groupId:0,dx:near,dy:0,seq:1},1002);
     assert.ok(room.puzzle.groups.some(g=>g.locked&&g.pieces.includes(0)));
@@ -74,7 +74,7 @@ test('2000 piece dragging reuses the stationary scene, culls offscreen pieces an
     table.render();const backgroundDraws=table.background.stats.images.length;assert.ok(backgroundDraws>1900);
     canvas.stats.images=[];moveGroup(state,group.id,1,1);table.render();
     assert.equal(table.background.stats.images.length,backgroundDraws,'a pointer move repainted all stationary pieces');
-    assert.equal(canvas.stats.images.length,2,'a drag frame should draw the cached scene and the held tile');
+    assert.equal(canvas.stats.images.length,3,'fallback drag restores the old and new footprints, then draws the cached held tile');
     globalThis.devicePixelRatio=2;table.drag=null;
     table.camera={x:-board.x*2,y:-board.y*2,z:2};canvas.stats.images=[];table.render();
     assert.ok(canvas.stats.images.length>0);

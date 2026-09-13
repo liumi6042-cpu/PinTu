@@ -88,7 +88,7 @@ export default function DreamIntro({ onEnter }: {
             event.currentTarget.style.transform = '';
             setNear(false);
             if (gesture.moved)
-                setMessage('把拼块拖到画中的缺口，或点击「进入选图」。');
+                setMessage('把拼块拖到画中的缺口，或点击「进入大厅」。');
         }
     }
     return <main ref={scene} className={`paper-entrance entrance-${phase}${dragging ? ' entrance-dragging' : ''}`} onPointerMove={event => {
@@ -118,7 +118,7 @@ export default function DreamIntro({ onEnter }: {
       <h1>{t("把时光，")}<br />{t("拼成喜欢的样子。")}</h1>
       <p className="entrance-subtitle">{t("从一片开始，收集生活里的美好")}</p>
       <button className="entrance-enter" onClick={() => enter()} disabled={phase !== 'idle'}>
-        {t(phase === 'idle' ? '进入选图' : '正在进入…')}<ArrowRight size={22} strokeWidth={1.3}/>
+        {t(phase === 'idle' ? '进入大厅' : '正在进入…')}<ArrowRight size={22} strokeWidth={1.3}/>
       </button>
       <p className="entrance-note">{t("无需登录，即刻开始")}</p>
       <p className="entrance-play-note"><Hand size={17} strokeWidth={1.6}/>{t("也可以拖动下方拼块，亲手开启")}</p>

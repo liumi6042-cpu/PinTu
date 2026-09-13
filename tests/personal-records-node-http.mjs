@@ -8,7 +8,7 @@ async function request(path,body,cookie='',token='',source=origin){
  const response=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https',Origin:source,Cookie:cookie,Authorization:token?'Bearer '+token:'',...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});
  return {status:response.status,data:await response.json(),cookie:response.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ')};
 }
-const create=async visibility=>{const result=await request('/api/rooms',{visibility,imageId:'seaside',pieces:108,title:'Records HTTP QA'});assert.equal(result.status,201);ids.push(result.data.room.id);return result;};
+const create=async visibility=>{const result=await request('/api/rooms',{visibility,imageId:'seaside-native-v2',pieces:108,title:'Records HTTP QA'});assert.equal(result.status,201);ids.push(result.data.room.id);return result;};
 const listed=async(cookie,id)=>(await request('/api/my-rooms',undefined,cookie)).data.rooms.some(r=>r.id===id);
 try{
  const owner=await create('solo'),other=await create('solo'),id=owner.data.room.id;

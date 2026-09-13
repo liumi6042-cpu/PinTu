@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const base=process.env.PUZZLE_TEST_URL||'http://localhost:3001';
 async function call(path,method='GET',input,token){const r=await fetch(base+path,{method,headers:{...(input?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`}:{})},body:input?JSON.stringify(input):undefined});return {status:r.status,data:await r.json()};}
 test('two real HTTP clients share actions, reject conflicting claims, reconnect, and complete together',async()=>{
- const created=await call('/api/rooms','POST',{imageId:'seaside',pieces:108,name:'测试甲'});assert.equal(created.status,201);const a=created.data,path='/api/rooms/'+a.room.id;
+ const created=await call('/api/rooms','POST',{imageId:'seaside-native-v2',pieces:108,name:'测试甲'});assert.equal(created.status,201);const a=created.data,path='/api/rooms/'+a.room.id;
  const joined=await call(path+'/join','POST',{name:'测试乙'});assert.equal(joined.status,200);const b=joined.data;
  const read=await call(path,'GET',undefined,b.token);assert.deepEqual(read.data.puzzle.groups,a.room.puzzle.groups);assert.equal(read.data.members.length,2);assert.equal((await call(path)).status,401);
  const claims=await Promise.all([call(path,'POST',{type:'claim',groupId:0},a.token),call(path,'POST',{type:'claim',groupId:0},b.token)]);assert.deepEqual(claims.map(c=>c.status).sort(),[200,409]);const winner=claims[0].status===200?a:b,other=winner===a?b:a;

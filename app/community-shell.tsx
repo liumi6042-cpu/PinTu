@@ -7,13 +7,14 @@ import { useState } from 'react';
 import { useAccount } from './account-gate';
 import LanguageSwitch from './language-switch';
 import ServiceFooter from './service-footer';
+import { PERSONAL_PLAY_VISIBLE,MEMBERSHIP_VISIBLE } from '@/lib/feature-visibility';
 export default function CommunityShell({ active, children }: {
     active: 'lobby' | 'personal' | 'ranking' | 'membership';
     children: React.ReactNode;
 }) {
     useLanguage();
     const { account, logout } = useAccount(), [busy, setBusy] = useState(false), [error, setError] = useState('');
-    return <div className="community"><header className="community-header"><a className="community-brand" href="/"><Puzzle size={28}/><span>{t("一起拼图")}<small>JIGSAW NOOK</small></span></a><nav aria-label={t("主要导航")}>{t([{ key: 'lobby', href: '/lobby', label: '公开大厅', Icon: Users }, { key: 'gallery', href: '/gallery', label: '图库', Icon: Images }, { key: 'personal', href: '/personal', label: '个人空间', Icon: UserRound }, { key: 'ranking', href: '/leaderboard', label: '用时榜', Icon: Trophy }, { key: 'membership', href: '/membership', label: '会员', Icon: Crown }].map(({ key, href, label, Icon }) => <a key={key} href={href} aria-current={active === key ? 'page' : undefined}><Icon size={18}/>{t(label)}</a>))}</nav><div className="community-tools"><LanguageSwitch />{account ? <div className="account-status"><span className="account-avatar">{account.name.slice(0, 1)}</span><a href="/account/security">{account.name}</a><button aria-label={t("退出登录")} title={t("退出登录")} disabled={busy} onClick={async () => { setBusy(true); try {
+    return <div className="community"><header className="community-header"><a className="community-brand" href="/"><Puzzle size={28}/><span>{t("一起拼图")}<small>JIGSAW NOOK</small></span></a><nav aria-label={t("主要导航")}>{t([{ key: 'lobby', href: '/lobby', label: '公开大厅', Icon: Users }, { key: 'gallery', href: '/gallery', label: '图库', Icon: Images }, { key: 'personal', href: '/personal', label: PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录', Icon: UserRound }, { key: 'ranking', href: '/leaderboard', label: '用时榜', Icon: Trophy }, { key: 'membership', href: '/membership', label: '会员', Icon: Crown }].filter(item=>item.key!=='membership'||MEMBERSHIP_VISIBLE).map(({ key, href, label, Icon }) => <a key={key} href={href} aria-current={active === key ? 'page' : undefined}><Icon size={18}/>{t(label)}</a>))}</nav><div className="community-tools"><LanguageSwitch />{account ? <div className="account-status"><span className="account-avatar">{account.name.slice(0, 1)}</span><a href="/account/security">{account.name}</a><button aria-label={t("退出登录")} title={t("退出登录")} disabled={busy} onClick={async () => { setBusy(true); try {
         await logout();
     }
     catch (e) {

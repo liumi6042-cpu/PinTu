@@ -10,7 +10,7 @@ async function request(path,body,cookie='',token=''){
  const response=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https','CF-Connecting-IP':'127.0.0.1',Origin:origin,Cookie:cookie,Authorization:token?'Bearer '+token:'',...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});
  return {status:response.status,data:await response.json(),cookie:response.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ')};
 }
-const create=(visibility,cookie,title='HTTP QA')=>request('/api/rooms',{visibility,imageId:'seaside',pieces:108,title},cookie);
+const create=(visibility,cookie,title='HTTP QA')=>request('/api/rooms',{visibility,imageId:'seaside-native-v2',pieces:108,title},cookie);
 try{
  const initial=await request('/api/lobby');assert.equal(initial.status,200);assert.equal(initial.data.rooms.length,0,'empty public rooms must not be seeded');
  const guest=await create('public','');assert.equal(guest.status,201,JSON.stringify(guest.data));assert.ok(guest.cookie);assert.equal(guest.data.room.visibility,'public');

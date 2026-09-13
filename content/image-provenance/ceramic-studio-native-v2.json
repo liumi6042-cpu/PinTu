@@ -1,0 +1,62 @@
+{
+  "id": "ceramic-studio-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/ceramic-studio-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-69b83169-8dc6-4dc5-b852-357e3b6c7772.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+    "play": {
+      "src": "/puzzles/ceramic-studio-native-v2-play-5bfc3f16d926.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "5bfc3f16d926d0f1456c723c6b46b68558581d7ae57d25f21ae1b10a3b5cc924",
+      "bytes": 1987618,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/ceramic-studio-native-v2-thumbnail-ccf170013821.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "ccf170013821869eb1717b7e8fc8b8e64d1a8326fd9d4f187032427de0d1e0e4",
+      "bytes": 18636,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

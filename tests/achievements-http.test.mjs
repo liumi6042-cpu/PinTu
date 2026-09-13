@@ -29,14 +29,14 @@ async function place(ticket,cookie,id){
 test('real guest achievements award once, exclude spectators, authorize equipment, decorate cursors and outlive rooms',{skip:process.env.PUZZLE_TEST_LOCAL!=='1'},async()=>{
  try{
   assert.deepEqual((await call('/api/achievements')).data.book.earned,{});
-  const solo=await call('/api/rooms',{imageId:'seaside',pieces:108,visibility:'solo'});assert.equal(solo.status,201);trackCookie(solo.cookie);await prepare(solo.data,[0]);
+  const solo=await call('/api/rooms',{imageId:'seaside-native-v2',pieces:108,visibility:'solo'});assert.equal(solo.status,201);trackCookie(solo.cookie);await prepare(solo.data,[0]);
   assert.equal((await call('/api/achievements',{action:'equip',badge:'first'},undefined,solo.cookie)).status,403);
   await place(solo.data,solo.cookie,0);
   const book=(await call('/api/achievements',undefined,undefined,solo.cookie)).data.book;assert.ok(book.earned.first);assert.equal(book.facts.length,1);assert.equal(book.days.length,1);assert.ok(!book.earned['team-first']);
   const again=(await call('/api/achievements',undefined,undefined,solo.cookie)).data.book;assert.equal(again.earned.first,book.earned.first);assert.equal(again.facts.length,1);
   assert.equal((await call('/api/achievements',{action:'equip',badge:'first'},undefined,solo.cookie)).status,200);
   assert.equal((await call('/api/achievements',{action:'award',badge:'team-first',earned:true},undefined,solo.cookie)).status,400);
-  const team=await call('/api/rooms',{imageId:'seaside',pieces:108,visibility:'private'},undefined,undefined,true);assert.equal(team.status,201);trackCookie(team.cookie);await prepare(team.data,[0,1]);
+  const team=await call('/api/rooms',{imageId:'seaside-native-v2',pieces:108,visibility:'private'},undefined,undefined,true);assert.equal(team.status,201);trackCookie(team.cookie);await prepare(team.data,[0,1]);
   const second=await call(pathFor(team.data.room.id)+'/join',{}),watcher=await call(pathFor(team.data.room.id)+'/join',{});assert.equal(second.status,200);assert.equal(watcher.status,200);trackCookie(second.cookie);trackCookie(watcher.cookie);
   await place(team.data,team.cookie,0);await place(second.data,second.cookie,1);
   for(const member of [team,second]){const b=(await call('/api/achievements',undefined,undefined,member.cookie)).data.book;assert.ok(b.earned.first);assert.ok(b.earned['team-first']);assert.equal(b.facts.length,1);}

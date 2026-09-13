@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound,permanentRedirect } from 'next/navigation';
 import { PHOTOS } from '@/lib/puzzle-catalog';
 import { englishCopy, jsonLd, publicMetadata, puzzlePath, SITE_URL } from '@/lib/seo';
 import PuzzleIntroduction from '../../puzzle-introduction';
@@ -6,11 +6,11 @@ export async function generateMetadata({params}:{params:Promise<{id:string}>}) {
   const {id}=await params,photo=PHOTOS.find(p=>p.id===id);
   if(!photo)return {title:'Puzzle not found | Jigsaw Nook',robots:{index:false,follow:false}};
   const title=englishCopy(photo.title);
-  return publicMetadata(puzzlePath(id),`${title} — Free Online Jigsaw Puzzle`,`${englishCopy(photo.subtitle)} Play the ${title} jigsaw online with 108–2,000 pieces, or create a free public table to play with friends.`,photo.thumbSrc);
+  return publicMetadata(puzzlePath(id),`${title} — Free Online Jigsaw Puzzle`,`${englishCopy(photo.subtitle)} Play the ${title} jigsaw online with 108–5,000 pieces in a free public table with friends.`,photo.thumbSrc);
 }
 export default async function Page({params}:{params:Promise<{id:string}>}) {
   const {id}=await params,photo=PHOTOS.find(p=>p.id===id);
-  if(!photo)notFound();
+  if(!photo){const replacement=PHOTOS.find(p=>'replaces' in p&&p.replaces===id);if(replacement)permanentRedirect(puzzlePath(replacement.id));notFound();}
   const title=englishCopy(photo.title),url=SITE_URL+puzzlePath(id);
   const data={'@context':'https://schema.org','@graph':[
     {'@type':'WebPage','@id':url,url,name:`${title} Jigsaw Puzzle`,description:englishCopy(photo.subtitle),inLanguage:'en',isPartOf:{'@id':SITE_URL+'/'},primaryImageOfPage:{'@type':'ImageObject',contentUrl:SITE_URL+photo.thumbSrc,caption:title}},

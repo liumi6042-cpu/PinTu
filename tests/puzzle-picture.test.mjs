@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { boardFor, LEVELS, BOARD, createPuzzle, restorePuzzle, normalizePuzzle, placedCount, piecesFor } from '../lib/puzzle-engine.ts';
 import { pictureCrop, drawPiecePicture } from '../lib/puzzle-picture.ts';
 
-test('every level has square piece bodies, with exactly 2000 pieces in a 5:4 frame',()=>{
+test('every level has square bodies, including exactly 5000 pieces in a 2:1 frame',()=>{
   for(const {count,cols,rows} of LEVELS){
     const board=boardFor(cols,rows);
     assert.equal(cols*rows,count);assert.ok(Math.abs(board.width/cols-board.height/rows)<1e-10);
@@ -12,6 +12,8 @@ test('every level has square piece bodies, with exactly 2000 pieces in a 5:4 fra
   }
   const level=LEVELS.find(l=>l.count===2000),board=boardFor(level.cols,level.rows);
   assert.equal(level.cols*level.rows,2000);assert.equal(board.width/board.height,5/4);
+  const largest=LEVELS.at(-1),largeBoard=boardFor(largest.cols,largest.rows);
+  assert.equal(largest.count,5000);assert.equal(largest.cols,100);assert.equal(largest.rows,50);assert.equal(largeBoard.width/largeBoard.height,2);
 });
 
 test('legacy progress migrates once without losing group membership, locks or time',()=>{

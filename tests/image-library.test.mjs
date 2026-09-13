@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkImageLibrary } from '../scripts/check-image-library.mjs';
-import { PHOTOS, PHOTO_IDS, FEATURED_PHOTOS, RETIRED_PHOTO_IDS } from '../lib/puzzle-catalog.ts';
+import { PHOTOS, RESTORABLE_PHOTOS, PHOTO_IDS, FEATURED_PHOTOS, RETIRED_PHOTO_IDS } from '../lib/puzzle-catalog.ts';
 import { makeRoom } from '../lib/room-engine.ts';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
@@ -20,7 +20,7 @@ async function fixture(t){
     await rm(dir,{recursive:true,force:true});
   });
   for(const path of ['content/image-provenance','content/image-prompts','public/puzzles'])await mkdir(join(dir,path),{recursive:true});
-  const photo=(await readJson(join(root,'content/puzzle-catalog.json'))).find(photo=>photo.id==='winter-village');
+  const photo={...(await readJson(join(root,'content/puzzle-catalog.json'))).find(photo=>photo.id==='winter-village'),status:'published'};
   await saveJson(join(dir,'content/puzzle-catalog.json'),[photo]);
   for(const path of ['content/image-provenance/winter-village.json','content/image-prompts/winter-village.txt','public/puzzles/winter-village.png', 'public'+photo.playSrc, 'public'+photo.thumbSrc])
     await copyFile(join(root,path),join(dir,path));
@@ -68,7 +68,7 @@ test('unregistered files cannot be served from the puzzle directory',async t=>{
 
 
 test('a changed delivery image cannot bypass provenance checks',async t=>{
-  const dir=await fixture(t),photo=PHOTOS.find(p=>p.id==='winter-village');
+  const dir=await fixture(t),photo=RESTORABLE_PHOTOS.find(p=>p.id==='winter-village');
   await writeFile(join(dir,'public'+photo.playSrc),'broken webp');
   await assert.rejects(checkImageLibrary(dir),/衍生图片哈希不一致/);
 });

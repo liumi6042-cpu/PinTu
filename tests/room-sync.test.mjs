@@ -5,7 +5,7 @@ import { recordRoomChange, roomUpdate, applyRoomUpdate, roomPollDelay } from '..
 import { RoomClient } from '../lib/room-client.ts';
 
 function setup(){
-  let now=100000;const room=makeRoom('delta','seaside',2000,now),member=addMember(room,'a','甲','secret-token-digest',now);
+  let now=100000;const room=makeRoom('delta','seaside-native-v2',2000,now),member=addMember(room,'a','甲','secret-token-digest',now);
   return {room,action(input){const previous=structuredClone(room.puzzle.groups);applyAction(room,member,input,++now);room.revision++;recordRoomChange(room,previous);return now;}};
 }
 test('2000-piece moves send only changed groups, and merge removals converge to the full snapshot',()=>{
