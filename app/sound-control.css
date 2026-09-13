@@ -1,4 +1,5 @@
 .connection-glow{position:absolute;inset:0 auto auto 0;pointer-events:none;transform-origin:0 0;z-index:1;animation:connection-warmth .3s ease-out both;}
+.dragged-piece-image{position:absolute;inset:0 auto auto 0;pointer-events:none;transform-origin:0 0;z-index:1;will-change:transform;}
 .paper-theme .game :is(.table-tools,.zoom-controls){z-index:2;}
 @keyframes connection-warmth{0%{opacity:.08}18%{opacity:.66}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.connection-glow{animation:none;opacity:.45;}}

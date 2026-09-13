@@ -40,9 +40,9 @@ test('glows paint once, follow the camera without repainting, and release all ti
   renderer.show([glow]);renderer.destroy();assert.equal(nodes.length,0);assert.equal(timers.size,0);assert.equal(listeners,0);
  }finally{for(const key of keys){if(saved[key]===undefined)delete globalThis[key];else globalThis[key]=saved[key];}}
 });
-test('four original dry clicks have a bounded short envelope with no ringing tail',()=>{
+test('four soft taps have rounded attacks, low peaks and no ringing tail',()=>{
  const variants=[];
- for(let i=0;i<4;i++){const data=cardboardSamples(48000,i);assert.ok(data.length>=3600&&data.length<=4100);assert.equal(data[0],0);assert.equal(Math.abs(data.at(-1)),0);assert.ok(data.every(Number.isFinite));assert.ok(Math.max(...data.map(Math.abs))<.65);const energy=(samples)=>samples.reduce((sum,n)=>sum+n*n,0);assert.ok(energy(data.slice(-480))<energy(data.slice(0,480))*.001);variants.push([...data.slice(0,200)]);}
+ for(let i=0;i<4;i++){const data=cardboardSamples(48000,i);assert.ok(data.length>=4080&&data.length<=4512);assert.equal(data[0],0);assert.equal(Math.abs(data.at(-1)),0);assert.ok(data.every(Number.isFinite));assert.ok(Math.max(...data.map(Math.abs))<.14);const energy=(samples)=>samples.reduce((sum,n)=>sum+n*n,0);assert.ok(energy(data.slice(0,48))<energy(data.slice(48,480))*.005,'no sharp first millisecond');assert.ok(energy(data.slice(-480))<energy(data.slice(0,480))*.001);variants.push([...data.slice(0,200)]);}
  assert.notDeepEqual(variants[0],variants[1]);assert.notDeepEqual(variants[1],variants[2]);assert.notDeepEqual(variants[2],variants[3]);
 });
 test('rapid successes merge to one voice, mute stops it, and disposal frees audio resources',async()=>{

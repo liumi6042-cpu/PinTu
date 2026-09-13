@@ -6,6 +6,7 @@ import { TABLE_PALETTES, type TableTheme } from './table-theme';
 import { newConnections } from './connection-feedback';
 import { ConnectionGlowRenderer } from './connection-glow';
 import { SnapSound,type SoundPreferences } from './snap-sound';
+import { DragImage } from './drag-image';
 type Notice = (message:string)=>void;
 export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
@@ -14,6 +15,8 @@ export class PuzzleTable {
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
   edges=false; paused=false; selected:number|null=null;
   private feedback:ConnectionGlowRenderer|null=null;private snapAudio=new SnapSound();
+  private dragImage:DragImage|null=null;
+  private floatingDrag:number|null=null;
   private hintIds:number[]=[]; private hintUntil=0; private underlayUntil=0;
   private underlayTimer:ReturnType<typeof setTimeout>|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
@@ -161,9 +164,17 @@ export class PuzzleTable {
   unlockSound(){void this.snapAudio.unlock();}
   playConnectionSound(){void this.snapAudio.play();}
   setTheme(theme:TableTheme){if(this.theme===theme)return;this.theme=theme;this.draw();}
-  draw(backgroundChanged=true){this.feedback?.update();if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.render();});}
+  draw(backgroundChanged=true){if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.feedback?.update();this.render();});}
   private render(){
     if(this.drag){
+      const moving=this.state.groups.find(g=>g.id===this.drag!.id);
+      if(moving&&this.canvas.parentElement&&this.renderDraggedImage(this.ctx,moving,true)){
+        // The full table is painted once; subsequent frames move only a small
+        // compositor layer. No background readback/copy while the pointer moves.
+        if(this.backgroundDirty||this.floatingDrag!==this.drag.id)this.renderScene(this.ctx,this.drag.id);
+        this.backgroundDirty=false;this.floatingDrag=this.drag.id;this.previousDragRect=null;return;
+      }
+      if(this.floatingDrag!==null){this.floatingDrag=null;this.backgroundDirty=true;}
       const rebuild=this.backgroundDirty||this.backgroundDrag!==this.drag.id||this.background.width!==this.canvas.width||this.background.height!==this.canvas.height;
       if(rebuild){
         if(this.background.width!==this.canvas.width)this.background.width=this.canvas.width;
@@ -181,8 +192,15 @@ export class PuzzleTable {
         c.drawImage(this.background,area.x,area.y,area.width,area.height,area.x,area.y,area.width,area.height);
       }
       c.setTransform(dpr,0,0,dpr,0,0);c.save();c.translate(x,y);c.scale(z,z);
-      if(group)this.renderGroup(c,group);c.restore();this.previousDragRect=rect;
-    }else{this.renderScene(this.ctx);this.backgroundDirty=true;this.previousDragRect=null;}
+      if(group&&rect&&!this.renderDraggedImage(c,group))this.renderGroup(c,group);
+      c.restore();this.previousDragRect=rect;
+    }else{this.dragImage?.clear();this.floatingDrag=null;this.renderScene(this.ctx);this.backgroundDirty=true;this.previousDragRect=null;}
+  }
+  private renderDraggedImage(c:CanvasRenderingContext2D,group:Group,floating=false){
+    this.dragImage??=new DragImage();
+    const z=this.camera.z,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    const appearance=`${this.theme}:${this.selected}:${this.edges}:${this.hintUntil}:${this.hintIds?.join(',')}:${this.remoteOwners[group.id]?.color||''}`;
+    return this.dragImage.draw(c,group,this.pieces,w,h,this.board,z*Math.min(devicePixelRatio||1,2),Math.min(w,h)*.26+48/z,appearance,context=>this.renderGroup(context,group,false),floating?{host:this.canvas.parentElement!,camera:this.camera}:undefined);
   }
   private dragRect(group:Group){
     const {x,y,z}=this.camera,dpr=Math.min(devicePixelRatio||1,2),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
@@ -213,14 +231,14 @@ export class PuzzleTable {
     if(this.hintUntil>Date.now())for(const id of this.hintIds){if(!this.state.groups.some(g=>!g.locked&&g.pieces.includes(id)))continue;const p=this.pieces[id];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);this.hintMarker(c,id,true);c.restore();}
     c.restore();
   }
-  private renderGroup(c:CanvasRenderingContext2D,g:Group){
+  private renderGroup(c:CanvasRenderingContext2D,g:Group,cull=true){
     if(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id)))return;
     const {x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
     const useSprites=!!this.sprites&&z*Math.min(devicePixelRatio||1,2)<=this.sprites.scale;
     const left=-x/z,right=(this.width-x)/z,top=-y/z,bottom=(this.height-y)/z,owner=this.remoteOwners[g.id];
     for(const id of g.pieces){
       const p=this.pieces[id],path=this.paths[id],px=this.board.x+p.col*w+g.dx,py=this.board.y+p.row*h+g.dy;
-      if(px+w+pad<left||px-pad>right||py+h+pad<top||py-pad>bottom)continue;
+      if(cull&&(px+w+pad<left||px-pad>right||py+h+pad<top||py-pad>bottom))continue;
       if(useSprites)this.sprites!.draw(c,id,px,py);
       c.save();c.translate(px,py);
       if(!useSprites){
@@ -234,6 +252,6 @@ export class PuzzleTable {
     }
     if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=TABLE_PALETTES[this.theme].owner;c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
   }
-  destroy(){this.stopLanguage();this.release();this.feedback?.destroy();this.snapAudio.destroy();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);if(this.underlayTimer)clearTimeout(this.underlayTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;}
+  destroy(){this.stopLanguage();this.release();this.feedback?.destroy();this.snapAudio.destroy();this.dragImage?.clear();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);if(this.underlayTimer)clearTimeout(this.underlayTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;}
 }
 
