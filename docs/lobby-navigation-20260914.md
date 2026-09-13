@@ -13,5 +13,21 @@ link label remain. It does not prefetch all rooms. Creation still uses the compa
 creation response and fresh in-memory ticket; server admission is unchanged.
 
 This is a targeted recovery for the reported click failure, not a claim that an
-unobserved browser exception was identified. Verify existing-room HTTP admission
-and assets after deployment and retain one rollback release.
+unobserved browser exception was identified.
+
+Deployed application commit `d2e1eca526590ab156983a076d265af654052ea0` as
+`20260914-02`. TypeScript, whitespace checks, the isolated release smoke check,
+and all 146 runtime assets passed. Linux staging confirmed compact creation of
+5,000-piece rooms still returns 652 bytes, with a matching full heartbeat state.
+
+After deployment, public lobby HTML and its new `public-lobby-61lEZyHc.js` bundle
+returned HTTP 200. The served bundle renders the room card as an `a` element with
+`href: /room/<id>`. Existing-room HTML, RSC, guest admission, join and leave also
+returned HTTP 200; the observed room retained its 38 placed pieces. No puzzle
+move, shuffle, or reset was issued. These are HTTP and artifact checks, not a
+claim of a successful automated browser click; browser control was unavailable.
+
+Retained `20260914-01` as rollback and removed only the verified upload archive
+and superseded `20260913-06` runtime. The current and rollback releases share
+140 unchanged immutable images (154,757,350 bytes). Measured site disk usage
+after cleanup: 254,259,200 bytes. Player data, uploaded images and backups remain.
