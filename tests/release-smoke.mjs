@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {resolve,sep} from 'node:path';
 import {spawn,spawnSync} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {walk} from '../scripts/release-files.mjs';
 
 const project=fileURLToPath(new URL('..',import.meta.url));
@@ -34,7 +34,7 @@ try{
   const gallery=await (await get('/gallery')).text();for(const photo of published)assert.ok(gallery.includes(photo.id),photo.id);
   for(const removed of ['class="picture-guidance"','class="picture-advice"','class="detail-note"','gallery-picture-details','About this puzzle'])assert.ok(!gallery.includes(removed),removed);
   for(const photo of published)assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
-  const creation=spawnSync(process.execPath,['--import',resolve(project,'tests/ts-register.mjs'),resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:3137'],{cwd:project,windowsHide:true,encoding:'utf8'});
+  const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:3137'],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
   for(const url of manifest.runtimeAssets){const response=await get(url);assert.equal(response.status,200,url);const bytes=Buffer.from(await response.arrayBuffer());const entry=manifest.files.find(file=>file.path==='dist/client'+url);assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,url);}
   for(const path of ['/puzzles/emerald-river-valley.png','/.env','/README.md'])assert.equal((await get(path)).status,404,path);
