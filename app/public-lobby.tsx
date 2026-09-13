@@ -12,7 +12,6 @@ import { t } from '@/lib/i18n';
 import { useLanguage } from './language-switch';
 import CommunityShell from './community-shell';
 import SearchIntroduction from './search-introduction';
-import Link from 'next/link';
 import { preloadPuzzleImage } from '@/lib/puzzle-image-loading';
 
 export default function PublicLobby(){
@@ -52,10 +51,10 @@ export default function PublicLobby(){
    const photo=RESTORABLE_PHOTOS.find(p=>p.id===room.imageId)!;
    const progress=Math.round(room.placed/room.pieces*100),full=room.players>=8;
    const elapsed=room.startedAt===null?0:Math.max(0,Math.floor((now+offset-room.startedAt)/1000));
-   return <article className="public-card" key={room.id}><Link prefetch={false} className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else preloadPuzzleImage(photo.src);}} aria-label={t(photo.title)+' · '+t(full?'已满员':'点击图片，加入拼图')}>
+   return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else preloadPuzzleImage(photo.src);}} aria-label={t(photo.title)+' · '+t(full?'已满员':'点击图片，加入拼图')}>
     <div className="public-picture"><img src={photo.thumbSrc} alt={t(photo.title)} loading={index<3?'eager':'lazy'}/><span className="picture-count">{room.pieces.toLocaleString()} {t('片')}</span><span className={'live-chip'+(room.players?' is-active':'')}><i/>{t(full?'已满员':room.acceptingNew===false?'暂停接待新玩家':room.players?'正在拼图':'等你开拼')}</span><div className="public-picture-stats"><span aria-label={t('拼图计时')}><Clock3 size={16}/><time>{clockLabel(elapsed)}</time></span><span aria-label={t('在线人数')}><Users size={16}/><strong>{room.players}/8</strong></span></div></div>
     <div className="public-card-body"><div className="public-title"><h2>{room.customTitle?room.title:t(photo.title)}</h2><ArrowUpRight size={19}/></div><div className="public-card-bottom"><span>{t(photo.category)} · {progress}% {t('已完成')}</span><span className="public-join-label">{t(full?'已满员':room.acceptingNew===false?'老朋友继续':'加入拼图')}</span></div><div className="room-progress" aria-hidden="true"><span style={{width:progress+'%'}}/></div></div>
-   </Link></article>;
+   </a></article>;
   })}</div>:<div className="community-empty"><Search size={30}/><h2>{t(rooms.length?'还没有符合条件的桌面':'还没有公开房间，来开第一桌吧。')}</h2><button className="secondary" onClick={()=>{setFilter('all');setQuery('');}}>{t('看看全部桌面')}</button></div>}
   <a href="/gallery?mode=public" className="create-table-link"><Plus size={20}/><span>{t('创建公开房间')}</span><ArrowUpRight size={20}/></a>
  <SearchIntroduction kind="lobby"/></main></CommunityShell>;
