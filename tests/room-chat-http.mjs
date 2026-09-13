@@ -24,6 +24,7 @@ try{
  assert.equal((await request(chat+'?after=-1',undefined,a)).status,400);
  for(const text of ['', '🌿'.repeat(301)])assert.equal((await request(chat,{requestId:id(),text},a)).status,400);
  assert.equal((await request(chat,{requestId:id(),text:'hello'},a,{origin:'https://unrelated.example'})).status,403);
+ assert.equal((await request(path,{type:'claim',groupId:0},a)).status,200);
  const before=db.prepare('SELECT * FROM puzzle_rooms WHERE id=?').get(a.room.id),requestId=id(),text='你好 👋\n<script>alert(1)</script>';
  const sent=await request(chat,{requestId,text,name:'Forged name'},a);assert.equal(sent.status,200);assert.equal(sent.data.message.name,a.room.members[0].name);
  const retries=await Promise.all(Array.from({length:4},()=>request(chat,{requestId,text},a)));assert.ok(retries.every(r=>r.status===200&&r.data.message.id===sent.data.message.id));
@@ -33,6 +34,8 @@ try{
  const reply=await request(chat,{requestId:id(),text:'Hello! 🧩',after:sent.data.message.id},b);assert.equal(reply.status,200);assert.equal(reply.data.messages.length,1);
  assert.equal((await request(chat+'?after='+sent.data.message.id,undefined,a)).data.messages[0].text,'Hello! 🧩');
  assert.deepEqual(db.prepare('SELECT * FROM puzzle_rooms WHERE id=?').get(a.room.id),before,'chat must not change any room state');
+ const moved=await request(path,{type:'move',groupId:0,dx:133,dy:192,seq:1},a);assert.equal(moved.status,200);assert.equal(moved.data.puzzle.groups.find(group=>group.id===0).dx,133);
+ assert.equal((await request(path,{type:'release',groupId:0},a)).status,200);
  const account=await request('/api/auth/register',{username:'chatqa_'+id().slice(0,10),name:'Chat account',password:randomBytes(18).toString('hex')});assert.equal(account.status,201,JSON.stringify(account.data));
  const solo=await create(account,'solo');assert.equal((await request('/api/rooms/'+solo.room.id+'/chat',undefined,solo)).status,403);
  const now=Date.now();db.prepare("INSERT INTO puzzle_memberships(user_id,plan,status,starts_at,expires_at,cancel_at_period_end) VALUES(?,'puzzle','active',?,?,0)").run(account.data.account.id,now-1000,now+3600000);
@@ -43,5 +46,5 @@ try{
  assert.equal((await request(privateChat,undefined,{...invitation.data,cookie:other.cookie})).data.messages[0].text,'Private table');
  await request(path,{type:'leave'},b);assert.equal((await request(chat,undefined,b)).status,409);
  db.prepare('DELETE FROM puzzle_rooms WHERE id=?').run(a.room.id);assert.equal(db.prepare('SELECT COUNT(*) n FROM puzzle_room_chat WHERE room_id=?').get(a.room.id).n,0);
- console.log(JSON.stringify({roomChat:true,twoPlayers:true,identityBound:true,privateIsolated:true,soloExcluded:true,retriesDeduplicated:true,rateLimited:true,plainText:true,puzzleRowUnchanged:true,deletionCascades:true}));
+ console.log(JSON.stringify({roomChat:true,twoPlayers:true,identityBound:true,privateIsolated:true,soloExcluded:true,retriesDeduplicated:true,rateLimited:true,plainText:true,puzzleRowUnchanged:true,dragLeasePreserved:true,deletionCascades:true}));
 }finally{for(const roomId of rooms)db.prepare('DELETE FROM puzzle_rooms WHERE id=?').run(roomId);db.close();}
