@@ -11,9 +11,9 @@ export async function currentGuest(request:Request,create=false,candidate?:strin
   const guestId='guest:'+await tokenHash(secret);
   return {id:guestId,guestId,name:'游客 '+guestId.slice(-4).toUpperCase(),cookie};
 }
-export async function currentPlayer(request:Request,create=false):Promise<PlayerIdentity|null>{
+export async function currentPlayer(request:Request,create=false,candidate?:string):Promise<PlayerIdentity|null>{
   const account=await currentAccount(request);
-  return account?{id:account.id,name:account.name,accountId:account.id}:currentGuest(request,create);
+  return account?{id:account.id,name:account.name,accountId:account.id}:currentGuest(request,create,candidate);
 }
 export async function requirePlayer(request:Request){const player=await currentPlayer(request);if(!player)throw new RoomError('请重新加入房间',401);return player;}
 export function withPlayerCookie(response:Response,player:PlayerIdentity){if(player.cookie)response.headers.set('Set-Cookie',player.cookie);return response;}

@@ -33,6 +33,7 @@ export function applyDetectedLanguage(value:Language,revision:number){
   if(changed)for(const listener of listeners)listener();
 }
 const extras:Record<string,string>={
+ '正在打开拼图…':'Opening your puzzle…',
  '图片均为本项目原创生成':'Original artwork generated for this project',
  '服务器保存进度 · 完成后自动记录用时':'Progress saved on this server · Completion time recorded automatically',
  '图库':'Gallery','去图库挑选更多':'Explore the full gallery','把喜欢的画面，慢慢拼起来。':'Find a picture. Make it yours.',

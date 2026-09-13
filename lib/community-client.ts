@@ -1,12 +1,17 @@
 import { saveTicket, type RoomTicket,roomSessionKey } from './room-client';
-import { ensureGuestSession } from './guest-client';
+import { ensureGuestSession, guestCreationSecret } from './guest-client';
+import { expandCreatedTicket, INITIAL_STATE_FORMAT, rememberCreatedTicket, takeCreatedTicket, type SeedRoomTicket } from './room-creation';
 export async function apiJson<T>(path:string,body?:unknown):Promise<T>{
- if(body!==undefined&&path==='/api/rooms')await ensureGuestSession();
+ const creation=body!==undefined&&path==='/api/rooms';
+ if(creation)body={...(body as Record<string,unknown>),guestSecret:await guestCreationSecret(),initialState:INITIAL_STATE_FORMAT};
  const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
  const data=await response.json().catch(()=>({error:'暂时无法连接，请重试'})) as {error?:string};
- if(!response.ok){throw new Error(data.error||'暂时无法连接，请重试');}return data as T;
+ if(!response.ok){throw new Error(data.error||'暂时无法连接，请重试');}
+ if(creation){const ticket=expandCreatedTicket(data as unknown as RoomTicket|SeedRoomTicket);rememberCreatedTicket(ticket);return ticket as T;}
+ return data as T;
 }
 export async function joinPuzzle(roomId:string,name?:string){
+ const created=takeCreatedTicket(roomId);if(created){saveTicket(created);return created;}
  // Reuse a valid tab ticket before joining again, so returning does not abandon a held lease.
  let ticket:RoomTicket|null=null,guestReady=false;
  const candidates=new Set<string>();try{const raw=sessionStorage.getItem(roomSessionKey(roomId));if(raw)candidates.add(raw);}catch{}try{const raw=localStorage.getItem(roomSessionKey(roomId)+':account');if(raw)candidates.add(raw);}catch{}

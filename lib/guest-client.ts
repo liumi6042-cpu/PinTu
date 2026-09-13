@@ -16,12 +16,17 @@ function browserSecret():Promise<string>{return new Promise((resolve,reject)=>{
 export function ensureGuestSession(){
  if(pending)return pending;
  pending=(async()=>{
-  const secret=await browserSecret().catch(()=>{
-   // Cookie-backed sessions still work if browser database storage is disabled.
-   try{const saved=localStorage.getItem('puzzle:guest-fallback');if(saved&&/^[a-f0-9]{64}$/.test(saved))return saved;const value=newSecret();localStorage.setItem('puzzle:guest-fallback',value);return value;}catch{return newSecret();}
-  });
+  const secret=await guestCreationSecret();
   const response=await fetch('/api/guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret}),cache:'no-store',signal:AbortSignal.timeout(12000)});
   if(!response.ok)throw new Error('暂时无法连接，请重试');
  })().finally(()=>{pending=null;});
  return pending;
+}
+// Creation can establish the same stable cookie in its own response. No network
+// round trip is needed just to obtain the browser's existing identity secret.
+export function guestCreationSecret(){
+ return browserSecret().catch(()=>{
+   // Cookie-backed sessions still work if browser database storage is disabled.
+   try{const saved=localStorage.getItem('puzzle:guest-fallback');if(saved&&/^[a-f0-9]{64}$/.test(saved))return saved;const value=newSecret();localStorage.setItem('puzzle:guest-fallback',value);return value;}catch{return newSecret();}
+  });
 }

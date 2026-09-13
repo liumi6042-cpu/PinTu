@@ -22,5 +22,4 @@
 .puzzle-related img{display:block;width:100%;height:auto;aspect-ratio:5/4;object-fit:cover;border-radius:10px;}
 .gallery-entry-card{min-width:0;display:flex;flex-direction:column;gap:8px;}
 .gallery-entry-card>.gallery-card{width:100%;flex:1;}
-.gallery-picture-details{align-self:flex-start;color:var(--paper-clay);font-size:12px;padding:6px 2px;text-underline-offset:4px;}
 @media(max-width:720px){.search-introduction{padding:40px 22px;}.search-introduction-grid{grid-template-columns:1fr;gap:26px;}.search-introduction h2{font-size:27px;}.puzzle-introduction{padding:12px 20px 40px;}.puzzle-introduction-hero{grid-template-columns:1fr;gap:24px;}.puzzle-introduction-hero>img{max-width:480px;}.puzzle-introduction h1{font-size:32px;}.puzzle-related>div{grid-template-columns:1fr;}.puzzle-related img{max-width:360px;}.puzzle-introduction-page .site-header{justify-content:center;}.puzzle-introduction-page .home-navigation{justify-content:center;}}

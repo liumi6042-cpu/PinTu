@@ -2,12 +2,13 @@
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Puzzle, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Game } from './puzzle-app';
 import { customPhoto } from '@/lib/custom-images';
 import { RESTORABLE_PHOTOS } from '@/lib/puzzle-catalog';
 import { RoomClient } from '@/lib/room-client';
+import type { RoomTicket } from '@/lib/room-client';
 import { joinPuzzle } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
 import { accountLoginUrl, SOLO_LOGIN_REQUIRED } from '@/lib/account-return';
@@ -17,7 +18,10 @@ export default function RoomPlay({ roomId }: {
 }) {
     useLanguage();
     const [client, setClient] = useState<RoomClient | null>(null), [error, setError] = useState(''), [attempt, setAttempt] = useState(0);
-    useEffect(() => { let canceled = false; setError(''); void joinPuzzle(roomId).then(ticket => { if (!canceled)
+    const admission=useRef<{roomId:string;attempt:number;promise:Promise<RoomTicket>}|null>(null);
+    useEffect(() => { let canceled = false; setError('');
+      if(!admission.current||admission.current.roomId!==roomId||admission.current.attempt!==attempt)admission.current={roomId,attempt,promise:joinPuzzle(roomId)};
+      void admission.current.promise.then(ticket => { if (!canceled)
         setClient(new RoomClient(ticket)); }).catch(error => { if (!canceled)
         { if(error instanceof Error && error.message===SOLO_LOGIN_REQUIRED) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
     if (client) {

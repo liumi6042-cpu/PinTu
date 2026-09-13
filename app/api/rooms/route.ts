@@ -1,6 +1,7 @@
 import { ensureBetaSeat } from '@/lib/beta-seats';
 import { requiresRoomMembership, canCreateMemberRoom, MEMBERSHIP_REQUIRED } from '@/lib/membership-policy';
-import { addMember, snapshot, RoomError, type RoomVisibility } from '@/lib/room-engine';
+import { addMember, snapshot, snapshotMetadata, RoomError, type RoomVisibility } from '@/lib/room-engine';
+import { INITIAL_STATE_FORMAT, type SeedRoomTicket } from '@/lib/room-creation';
 import { body, digestToken, newId, json, failure } from '@/lib/room-store';
 import { currentPlayer,withPlayerCookie } from '@/lib/player-identity';
 import { newPlayableRoom,insertPlayableRoom } from '@/lib/lobby-store';
@@ -16,7 +17,8 @@ export async function POST(request:Request){
   const input=await body(request),now=Date.now();
   if(input.visibility==='solo')await requireSoloAccount(request);
   // Visible rooms use an optional account or a persistent browser guest identity.
-  const registered=input.visibility!==undefined,player=await currentPlayer(request,true);
+  if(input.guestSecret!==undefined&&(typeof input.guestSecret!=='string'||!/^[a-f0-9]{64}$/.test(input.guestSecret)))throw new RoomError('玩家身份无效');
+  const registered=input.visibility!==undefined,player=await currentPlayer(request,true,input.guestSecret);
   if(registered&&!['solo','public','private'].includes(input.visibility))throw new RoomError('房间类型无效');
   const memberRoom=requiresRoomMembership(input.visibility);
   if(memberRoom&&(!player?.accountId||!canCreateMemberRoom(await membershipFor(player.accountId),now)))throw new RoomError(MEMBERSHIP_REQUIRED,403);
@@ -30,6 +32,10 @@ export async function POST(request:Request){
   if(room.visibility!=='solo') {room.title=roomTitle(input.title,true)||room.title;await ensureBetaSeat(player!.id,now);}
   const token=newId(),member=addMember(room,newId(),name,await digestToken(token),now,player?.accountId,player?.guestId);
   if(memberRoom||room.customImage)await insertMemberRoom(room,player!.accountId!);else await insertPlayableRoom(room);
-  const response=json({token,playerId:member.id,room:snapshot(room,now)},201);return player?withPlayerCookie(response,player):response;
+  const {groups:_groups,...initialPuzzle}=room.puzzle;
+  const ticket=input.initialState===INITIAL_STATE_FORMAT
+   ? {token,playerId:member.id,initialState:INITIAL_STATE_FORMAT,room:{...snapshotMetadata(room,now),puzzle:initialPuzzle}} satisfies SeedRoomTicket
+   : {token,playerId:member.id,room:snapshot(room,now)};
+  const response=json(ticket,201);return player?withPlayerCookie(response,player):response;
  }catch(error){return failure(error);}
 }
