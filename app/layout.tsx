@@ -6,6 +6,7 @@ import './paper-entrance.css';
 import './language.css';
 import './lobby-grid.css';
 import './gallery.css';
+import './puzzle-opening.css';
 import './table-theme.css';
 import './achievements.css';
 import './membership.css';

@@ -5,12 +5,17 @@ import { useLanguage } from './language-switch';
 
 export default function PuzzleOpening({photo,pieces}:{photo:{title:string;thumbSrc:string};pieces:number}){
  useLanguage();
- return <main className="room-join-page puzzle-opening" aria-busy="true">
-  <div className="room-join-heading"><a href="/lobby" className="back-button"><ArrowLeft size={18}/>{t('返回大厅')}</a></div>
-  <section className="join-card" role="status" aria-live="polite">
-   <img className="opening-picture" src={photo.thumbSrc} alt=""/>
-   <h1>{t(photo.title)}</h1><p className="opening-progress"><Puzzle className="loading-icon" size={22}/>{t('正在打开拼图…')}</p>
-   <p className="muted">{pieces.toLocaleString()} {t('片')}</p>
-  </section>
+ return <main className="puzzle-opening">
+  <nav className="puzzle-opening-nav"><a href="/lobby" className="puzzle-opening-back"><ArrowLeft size={17} aria-hidden="true"/>{t('返回大厅')}</a></nav>
+  <div className="puzzle-opening-stage">
+   <section className="puzzle-opening-card" aria-labelledby="opening-title" aria-busy="true">
+    <div className="puzzle-opening-frame"><img className="puzzle-opening-picture" src={photo.thumbSrc} width={480} height={240} alt=""/></div>
+    <div className="puzzle-opening-details">
+     <h1 id="opening-title">{t(photo.title)}</h1>
+     <span className="puzzle-opening-count">{pieces.toLocaleString()} {t('片')}</span>
+    </div>
+    <p className="puzzle-opening-status" role="status" aria-live="polite"><Puzzle size={18} aria-hidden="true"/><span>{t('正在打开拼图…')}</span></p>
+   </section>
+  </div>
  </main>;
 }
