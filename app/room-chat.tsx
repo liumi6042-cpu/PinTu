@@ -9,11 +9,12 @@ import type { RoomClient } from '@/lib/room-client';
 
 const empty:ChatState={messages:[],loaded:false,error:'',sending:false};
 export default memo(function RoomChat({client,hidden=false}:{client:RoomClient;hidden?:boolean}){
- const language=useLanguage(),[open,setOpen]=useState(false),[state,setState]=useState<ChatState>(empty);
+ const language=useLanguage(),[open,setOpen]=useState(true),[state,setState]=useState<ChatState>(empty);
  const [draft,setDraft]=useState(''),[sendError,setSendError]=useState(''),[unread,setUnread]=useState(0),[below,setBelow]=useState(false);
  const [muted,setMuted]=useState<string[]>([]),mutedRef=useRef<string[]>([]),openRef=useRef(false),seen=useRef(0),initialized=useRef(false);
  const channel=useRef<ChatClient|null>(null),button=useRef<HTMLButtonElement>(null),closeButton=useRef<HTMLButtonElement>(null),input=useRef<HTMLTextAreaElement>(null),list=useRef<HTMLDivElement>(null),atBottom=useRef(true);
  const panel=useRef<HTMLElement>(null);
+ const focusOnOpen=useRef(false);
  const storageKey='puzzle:chat-muted:'+client.snapshot.id;
  openRef.current=open&&!hidden;mutedRef.current=muted;
  useEffect(()=>{
@@ -37,7 +38,7 @@ export default memo(function RoomChat({client,hidden=false}:{client:RoomClient;h
   return()=>{alive=false;unsubscribe();chat.stop();channel.current=null;document.removeEventListener('visibilitychange',visibility);};
  },[client]);
  useEffect(()=>{channel.current?.setOpen(open&&!hidden);if(open&&!hidden){setUnread(0);setBelow(false);atBottom.current=true;
-  if(window.matchMedia('(pointer:fine)').matches)input.current?.focus({preventScroll:true});else closeButton.current?.focus({preventScroll:true});
+  if(focusOnOpen.current){focusOnOpen.current=false;if(window.matchMedia('(pointer:fine)').matches)input.current?.focus({preventScroll:true});else closeButton.current?.focus({preventScroll:true});}
  }},[open,hidden]);
  useEffect(()=>{
   if(!open||hidden)return;const viewport=window.visualViewport;
@@ -49,17 +50,17 @@ export default memo(function RoomChat({client,hidden=false}:{client:RoomClient;h
  const scrollEnd=()=>{if(list.current)list.current.scrollTop=list.current.scrollHeight;atBottom.current=true;setBelow(false);};
  useEffect(()=>{if(open&&!hidden&&atBottom.current)scrollEnd();},[state.messages,open,hidden,muted]);
  const block=(ids:string[])=>{setMuted(ids);try{localStorage.setItem(storageKey,JSON.stringify(ids));}catch{}};
- const close=()=>{setOpen(false);button.current?.focus({preventScroll:true});};
+ const close=()=>{const focusInside=!!panel.current?.contains(document.activeElement);setOpen(false);if(focusInside)requestAnimationFrame(()=>button.current?.focus({preventScroll:true}));};
  async function send(){
   if(!channel.current||state.sending)return;const text=draft;setSendError('');
   try{await channel.current.send(text);setDraft(current=>current===text?'':current);atBottom.current=true;scrollEnd();}
   catch(error){setSendError(error instanceof Error?error.message:'消息未发送，请重试');}
  }
  const visible=state.messages.filter(message=>!muted.includes(message.playerId));
- return <div className="room-chat" hidden={hidden}>
-  <button ref={button} className="room-chat-toggle" aria-expanded={open} aria-controls="room-chat-panel" onClick={()=>setOpen(value=>!value)}>
+ return <aside className="room-chat" hidden={hidden}>
+  {!open&&<button ref={button} className="room-chat-toggle" aria-expanded={false} aria-controls="room-chat-panel" onClick={()=>{focusOnOpen.current=true;setOpen(true);}}>
    <MessageCircle size={19}/><span>{t('聊天')}</span>{unread>0&&<span className="room-chat-unread" aria-label={t('未读消息')}>{unread===99?'99+':unread}</span>}
-  </button>
+  </button>}
   {open&&<section ref={panel} id="room-chat-panel" className="room-chat-panel" aria-labelledby="room-chat-title"
    onKeyDown={event=>{event.stopPropagation();if(event.key==='Escape'&&!event.nativeEvent.isComposing){event.preventDefault();close();}}} onWheel={event=>event.stopPropagation()}>
    <header className="room-chat-heading"><div><h2 id="room-chat-title">{t('房间聊天')}</h2><p>{t('和这张桌上的朋友聊聊')}</p></div><button ref={closeButton} onClick={close} aria-label={t('收起聊天')}><X size={18}/></button></header>
@@ -82,5 +83,5 @@ export default memo(function RoomChat({client,hidden=false}:{client:RoomClient;h
     {sendError&&<p className="room-chat-send-error" role="alert">{t(sendError)}</p>}
    </form>
   </section>}
- </div>;
+ </aside>;
 });
