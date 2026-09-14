@@ -8,7 +8,7 @@ const base=process.argv[2],filename=process.argv[3];
 assert.equal(base,'http://127.0.0.1:3137');assert.match(filename??'',/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle\.sqlite$/);
 const db=new DatabaseSync(resolve(filename)),id=()=>randomBytes(16).toString('hex'),rooms=[];
 async function request(path,body,actor={}){
- const r=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https',Origin:'https://jigsawnook.online',...(body===undefined?{}:{'Content-Type':'application/json'}),...(actor.cookie?{Cookie:actor.cookie}:{}),...(actor.token?{Authorization:'Bearer '+actor.token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(10000)});
+ const r=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https','CF-Connecting-IP':'192.0.2.41',Origin:'https://jigsawnook.online',...(body===undefined?{}:{'Content-Type':'application/json'}),...(actor.cookie?{Cookie:actor.cookie}:{}),...(actor.token?{Authorization:'Bearer '+actor.token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(10000)});
  const cookie=r.headers.get('set-cookie')?.split(';')[0];if(cookie)actor.cookie=cookie;
  return {status:r.status,data:await r.json()};
 }
@@ -22,7 +22,7 @@ try{
   }
  }
  assert.equal(db.prepare('SELECT COUNT(*) n FROM puzzle_rooms').get().n,countBefore);
- const account={};const registered=await request('/api/auth/register',{username:'access_'+id().slice(0,10),name:'Free account',password:id()},account);assert.equal(registered.status,201);
+ const account={};const registered=await request('/api/auth/register',{username:'access_'+id().slice(0,10),name:'Free account',password:id()},account);assert.equal(registered.status,201,JSON.stringify(registered.data));
  for(const pieces of [500,1000]){
   const ticket=await create(pieces,account),path='/api/rooms/'+ticket.room.id;
   assert.equal(ticket.room.puzzle.groups,undefined);const full=await request(path,undefined,account);assert.equal(full.status,200);assert.equal(full.data.puzzle.groups.length,pieces);

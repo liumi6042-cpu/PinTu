@@ -6,7 +6,7 @@ assert.equal(base,'http://127.0.0.1:3137','Only run against the disposable relea
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 const english=JSON.parse(readFileSync(new URL('../content/locales/en.json',import.meta.url),'utf8'));
 const photos=catalog.filter(p=>p.status==='published'&&['厚涂','平涂'].includes(p.category));assert.equal(photos.length,9);
-const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'};
+const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https','CF-Connecting-IP':'192.0.2.42'};
 const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
 const registration=await fetch(base+'/api/auth/register',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({username:'art_'+randomBytes(6).toString('hex'),name:'Art test',password:randomBytes(16).toString('hex')})});assert.equal(registration.status,201);const accountCookie=registration.headers.get('set-cookie').split(';')[0];await registration.arrayBuffer();
 const gallery=await (await get('/gallery')).text();

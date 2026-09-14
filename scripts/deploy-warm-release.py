@@ -55,7 +55,7 @@ def migrations(root):
     return {f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in (root / 'drizzle').glob('*.sql')}
 assert migrations(app) == migrations(old), 'Warm coexistence requires unchanged migrations'
 
-headers = {'Host': 'jigsawnook.online', 'X-Forwarded-Host': 'jigsawnook.online', 'X-Forwarded-Proto': 'https'}
+headers = {'Host': 'jigsawnook.online', 'X-Forwarded-Host': 'jigsawnook.online', 'X-Forwarded-Proto': 'https', 'CF-Connecting-IP': '192.0.2.43'}
 def request(port, path, body=None, actor=None):
     h = dict(headers)
     if body is not None: h['Content-Type'] = 'application/json'
