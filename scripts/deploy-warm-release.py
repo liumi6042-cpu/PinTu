@@ -3,7 +3,7 @@
 Run on the Linux host with explicit release/hash/commit/previous release and ports.
 Never ships source or original artwork. All mutable acceptance tests use a temp DB.
 """
-import argparse, hashlib, json, os, pathlib, re, secrets, socket, subprocess
+import argparse, hashlib, json, os, pathlib, re, secrets, socket, sqlite3, subprocess
 import tarfile, tempfile, time, urllib.request, urllib.error
 
 p = argparse.ArgumentParser()
@@ -116,10 +116,20 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
     try:
         launch(old, 3139); launch(app, 3138)
         check(3138, True)
+        old_picture = re.search(r'href="/puzzle/([a-z0-9-]+)"', get(3139, '/gallery')[1].decode()).group(1)
         for count in [3000, 5000]:
             actor = {}
-            ticket = json_request(3139, '/api/rooms', {'visibility': 'public', 'imageId': 'mountain-lake-reflection-native-v2', 'pieces': count, 'guestSecret': secrets.token_hex(32)}, actor, 201)
+            ticket = json_request(3139, '/api/rooms', {'visibility': 'public', 'imageId': old_picture, 'pieces': 108, 'guestSecret': secrets.token_hex(32)}, actor, 201)
             actor['token'] = ticket['token']; path = '/api/rooms/' + ticket['room']['id']
+            # Seed a legacy save into the isolated DB: future versions correctly
+            # reject retired counts at creation, but must continue existing games.
+            with sqlite3.connect(temporary + '/data/puzzle.sqlite') as db:
+                room = json.loads(db.execute('SELECT data FROM puzzle_rooms WHERE id=?', (ticket['room']['id'],)).fetchone()[0])
+                room['puzzle'].update(imageId='mountain-lake-reflection-native-v2', cols=count//50, rows=50,
+                    groups=[{'id': i, 'pieces': [i], 'dx': 200+(i%10)*5, 'dy': -100+(i//10)*5, 'locked': False} for i in range(count)])
+                room['revision'] += 1
+                db.execute('UPDATE puzzle_rooms SET data=?,revision=? WHERE id=?', (json.dumps(room), room['revision'], room['id']))
+                db.execute('UPDATE puzzle_room_directory SET image_id=?,piece_count=? WHERE room_id=?', ('mountain-lake-reflection-native-v2', count, room['id']))
             json_request(3139, path, {'type': 'claim', 'groupId': 0}, actor)
             before = json_request(3139, path, {'type': 'move', 'groupId': 0, 'dx': 123, 'dy': 456, 'seq': 1}, actor)
             after = json_request(3138, path, None, actor)
@@ -209,8 +219,18 @@ except Exception:
     raise
 run('systemctl', 'enable', new_unit)
 drained = False
+quiet_since = None
 for _ in range(80):
     if not workers.intersection(worker_pids()):
+        drained = True; break
+    # Other sites can keep old global nginx workers alive with WebSockets.
+    # This app uses bounded HTTP polling, not upgraded/streaming connections.
+    # Require 10 continuous seconds with no TCP connection on its old port.
+    connections = run('ss', '-Htn', f'( sport = :{args.from_port} or dport = :{args.from_port} )')
+    active = [line for line in connections.splitlines() if not line.startswith('TIME-WAIT')]
+    if active: quiet_since = None
+    elif quiet_since is None: quiet_since = time.monotonic()
+    elif time.monotonic() - quiet_since >= 10:
         drained = True; break
     time.sleep(.5)
 if drained:
@@ -224,7 +244,7 @@ if 'After=jigsaw-web.service' in backup_text:
     run('systemctl', 'daemon-reload')
 check(args.to_port)
 report = {'release': args.release, 'gitCommit': args.commit, 'activeUnit': new_unit, 'port': args.to_port,
-          'rollback': str(old), 'previousUnit': args.old_unit, 'oldWorkersDrained': drained,
+          'rollback': str(old), 'previousUnit': args.old_unit, 'oldAppRequestsDrained': drained,
           'assetsChecked': len(manifest['runtimeAssets']), 'retainedHashedAssets': retained,
           'reusedImmutableAssets': reused, 'reusedImmutableBytes': reused_bytes,
           'migrationChanges': False, 'isolatedCrossVersionTests': True, 'forcedClientRefresh': False}
