@@ -1,5 +1,7 @@
 # 本项目图片库约定
 
+- 2026-09-14 用户撤回本批5张动漫图：anime-seaside-platform-v1、anime-cat-shop-v1、anime-cloud-courier-v1、anime-rainy-corner-v1、anime-starlight-witch-v1 全部 archived。图库和随机恢复30张在架、48张归档，动漫分类自动消失，公开介绍页404且移出站点地图，服务端拒绝新建。旧房间、进度与兼容WebP保留，不在玩家游玩时删除资源；后续不得自动重新上架。刚生成的平涂「夏日汽水铺」也未获采用，不加入目录。以下新增35图条目仅为历史记录。
+
 - 2026-09-14 新增5张原创动漫/漫画图，目录新增「动漫 / Anime」，在架总数35、归档43；原30图全部保留。新图ID为 anime-seaside-platform-v1、anime-cat-shop-v1、anime-cloud-courier-v1、anime-rainy-corner-v1、anime-starlight-witch-v1；原生1536×1024，optimized约0.20–0.43MB，预览480×320。四档片数及暂停高清队列状态保持。来源与完整提示词见 docs/anime-gallery-20260914.md；后续数量测试按真实目录核对，不再假定30张。
 
 - 当前已上线版本为 releases/20260914-08/app（应用 Git 0b1082a58955633e2d6170a016a5f8ed03039046），运行 jigsaw-web@3104.service，slots/3104 指向08；3103旧实例已排空停止，07保留回退，06及本次临时上传包已清理。下一次以实际 current 与端口为准，不依赖下方旧运行信息。实测新动漫图CDN由MISS转HIT；项目目录约325.4 MiB，含旧图兼容资源和回退版本。发布回执见 docs/anime-gallery-20260914.md。

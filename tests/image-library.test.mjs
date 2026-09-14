@@ -6,7 +6,7 @@ import { join, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { checkImageLibrary } from '../scripts/check-image-library.mjs';
-import { PHOTOS, RESTORABLE_PHOTOS, PHOTO_IDS, FEATURED_PHOTOS, RETIRED_PHOTO_IDS } from '../lib/puzzle-catalog.ts';
+import { PHOTOS, RESTORABLE_PHOTOS, PHOTO_IDS, FEATURED_PHOTOS, RETIRED_PHOTO_IDS, CATEGORIES } from '../lib/puzzle-catalog.ts';
 import { makeRoom } from '../lib/room-engine.ts';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
@@ -34,7 +34,11 @@ test('all playable assets have matching original files, provenance and review re
   const catalog=await readJson(join(root,'content/puzzle-catalog.json'));
   const published=catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
   assert.deepEqual(PHOTOS.map(photo=>photo.id),published.map(photo=>photo.id));
-  assert.equal(PHOTOS.filter(photo=>photo.category==='动漫').length,5,'all five new anime pictures are published');
+  assert.equal(PHOTOS.length,30,'the original thirty pictures remain published');
+  assert.ok(!CATEGORIES.includes('动漫'));
+  const removedAnime=RESTORABLE_PHOTOS.filter(photo=>photo.category==='动漫');
+  assert.equal(removedAnime.length,5,'withdrawn pictures remain available to existing rooms');
+  for(const photo of removedAnime){assert.equal(photo.status,'archived');assert.ok(!PHOTO_IDS.includes(photo.id));assert.throws(()=>makeRoom('withdrawn-anime',photo.id,108,100000));}
   assert.equal(FEATURED_PHOTOS.length,8);assert.equal(new Set(FEATURED_PHOTOS.map(photo=>photo.id)).size,8);
   assert.ok(FEATURED_PHOTOS.every(photo=>PHOTO_IDS.includes(photo.id)));
   for(const id of PHOTO_IDS)assert.equal(makeRoom('catalog-test',id,108,100000).puzzle.imageId,id);

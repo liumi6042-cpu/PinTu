@@ -44,7 +44,7 @@ try{
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
   const chat=spawnSync(process.execPath,[resolve(project,'tests/room-chat-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(chat.status,0,chat.stdout+chat.stderr);console.log(chat.stdout.trim());
-  const anime=spawnSync(process.execPath,[resolve(project,'tests/anime-gallery-http.mjs'),'http://127.0.0.1:3137'],{cwd:project,windowsHide:true,encoding:'utf8'});
+  const anime=spawnSync(process.execPath,[resolve(project,'tests/anime-gallery-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(anime.status,0,anime.stdout+anime.stderr);console.log(anime.stdout.trim());
   for(const url of manifest.runtimeAssets){const response=await get(url);assert.equal(response.status,200,url);const bytes=Buffer.from(await response.arrayBuffer());const entry=manifest.files.find(file=>file.path==='dist/client'+url);assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,url);}
   for(const path of ['/puzzles/emerald-river-valley.png','/.env','/README.md'])assert.equal((await get(path)).status,404,path);
