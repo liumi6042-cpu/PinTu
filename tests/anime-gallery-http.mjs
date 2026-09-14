@@ -7,8 +7,9 @@ const base=process.argv[2],filename=process.argv[3];
 assert.equal(base,'http://127.0.0.1:3137','Run only against the disposable release smoke server');
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 assert.match(filename??'',/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle\.sqlite$/);
-const pictures=catalog.filter(photo=>photo.category==='动漫');
-assert.equal(pictures.length,5);assert.ok(pictures.every(photo=>photo.status==='archived'));
+const circled=['cel-sunset-train-v1','painted-crimson-rose-v1','painted-amber-autumn-v1','cel-rooftop-breeze-v1'];
+const pictures=catalog.filter(photo=>photo.category==='动漫'||circled.includes(photo.id));
+assert.equal(pictures.length,9);assert.ok(pictures.every(photo=>photo.status==='archived'));
 const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'};
 const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
 const database=new DatabaseSync(resolve(filename));
@@ -36,5 +37,5 @@ try{
   const roomPage=await get('/room/'+id);assert.equal(roomPage.status,200);const html=await roomPage.text();assert.ok(html.split('</head>')[0].includes(photo.optimizedSrc));
   for(const src of [photo.optimizedSrc,photo.playSrc,photo.thumbSrc]){const asset=await get(src);assert.equal(asset.status,200);await asset.arrayBuffer();}
  }
- console.log(JSON.stringify({withdrawnAnime:5,publishedPictures:catalog.filter(photo=>photo.status==='published').length,newCreationRejected:true,galleryAndSitemapExcluded:true,existingRoomJoinAndProgressPreserved:true,legacyAssetsAvailable:true}));
+ console.log(JSON.stringify({withdrawnAnime:5,withdrawnCircledArt:4,publishedPictures:catalog.filter(photo=>photo.status==='published').length,newCreationRejected:true,galleryAndSitemapExcluded:true,existingRoomJoinAndProgressPreserved:true,legacyAssetsAvailable:true}));
 }finally{database.close();}

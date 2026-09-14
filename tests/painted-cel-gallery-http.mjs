@@ -5,11 +5,11 @@ const base=process.argv[2];
 assert.equal(base,'http://127.0.0.1:3137','Only run against the disposable release server');
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 const english=JSON.parse(readFileSync(new URL('../content/locales/en.json',import.meta.url),'utf8'));
-const photos=catalog.filter(p=>p.status==='published'&&['厚涂','平涂'].includes(p.category));assert.equal(photos.length,7);
+const photos=catalog.filter(p=>p.status==='published'&&['厚涂','平涂'].includes(p.category));assert.equal(photos.length,3);
 const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'};
 const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
 const gallery=await (await get('/gallery')).text();
-assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,37);
+assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,33);
 for(const category of ['厚涂','平涂'])assert.ok(gallery.includes(english[category]));
 for(const [index,photo] of photos.entries()){
  const page=await get('/puzzle/'+photo.id);assert.equal(page.status,200);const detail=await page.text();
@@ -24,4 +24,4 @@ for(const [index,photo] of photos.entries()){
   const snapshot=await fetch(base+'/api/rooms/'+ticket.room.id,{headers:auth});assert.equal(snapshot.status,200);assert.equal((await snapshot.json()).puzzle.groups.length,pieces);
  }finally{const left=await fetch(base+'/api/rooms/'+ticket.room.id,{method:'POST',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify({type:'leave'})});assert.equal(left.status,200);await left.arrayBuffer();}
 }
-console.log(JSON.stringify({painted:4,celShading:3,newRoomCreation:true,englishPages:true,optimizedSSRPreload:true,seedAndFullSnapshot:true}));
+console.log(JSON.stringify({painted:2,celShading:1,newRoomCreation:true,englishPages:true,optimizedSSRPreload:true,seedAndFullSnapshot:true}));
