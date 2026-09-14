@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import { randomPhoto } from '../lib/random-photo.ts';
 import { PHOTOS, RESTORABLE_PHOTOS, RESTORABLE_PHOTO_IDS } from '../lib/puzzle-catalog.ts';
 import { createPuzzle, restorePuzzle } from '../lib/puzzle-engine.ts';
 import { makeRoom } from '../lib/room-engine.ts';
+const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 
 test('random draw can reach every published picture, including both ends',()=>{
   const choices=PHOTOS.map((_,i)=>randomPhoto(PHOTOS,()=>(i+.5)/PHOTOS.length).id);
@@ -15,7 +17,9 @@ test('random draw can reach every published picture, including both ends',()=>{
 
 test('archived artwork restores progress but cannot create a new server room or enter random draws',()=>{
   const archived=RESTORABLE_PHOTOS.filter(p=>p.status==='archived');
-  assert.equal(PHOTOS.length,30);assert.equal(archived.length,40);
+  assert.ok(archived.length>0);
+  assert.deepEqual(PHOTOS.map(photo=>photo.id),catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published').map(photo=>photo.id));
+  assert.deepEqual(archived.map(photo=>photo.id),catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='archived').map(photo=>photo.id));
   for(const photo of archived){
     assert.ok(!PHOTOS.some(p=>p.id===photo.id));
     const old=createPuzzle(photo.id,12,9);

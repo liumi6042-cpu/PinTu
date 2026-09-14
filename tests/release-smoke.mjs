@@ -6,18 +6,20 @@ import {resolve,sep} from 'node:path';
 import {spawn,spawnSync} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {walk} from '../scripts/release-files.mjs';
+import {walk,runtimeAssets} from '../scripts/release-files.mjs';
 
 const project=fileURLToPath(new URL('..',import.meta.url));
 const archive=resolve(project,'releases/latest.tar.gz');
-const published=JSON.parse(readFileSync(resolve(project,'content/puzzle-catalog.json'),'utf8')).filter(photo=>photo.status==='published');
+const catalog=JSON.parse(readFileSync(resolve(project,'content/puzzle-catalog.json'),'utf8'));
+const published=catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
+const expectedAssets=runtimeAssets(catalog,JSON.parse(readFileSync(resolve(project,'config/runtime-assets.json'),'utf8')));
 const root=mkdtempSync(resolve(tmpdir(),'jigsaw-release-test-')),app=resolve(root,'app');mkdirSync(app);
 let child,output='';
 try{
   const unpack=spawnSync('tar',['-xzf',archive,'-C',app],{windowsHide:true,encoding:'utf8'});assert.equal(unpack.status,0,unpack.stderr);
   const manifest=JSON.parse(readFileSync(resolve(app,'release.json'),'utf8'));
   assert.equal(manifest.app,'jigsaw-nook');assert.equal(manifest.publicPictures,published.length);
-  assert.equal(manifest.runtimeAssets.length,231);
+  assert.deepEqual(manifest.runtimeAssets,expectedAssets,'the release must contain every current and archived runtime asset');
   assert.deepEqual(walk(app),[...manifest.files.map(file=>file.path),'release.json'].sort());
   for(const file of manifest.files){const bytes=readFileSync(resolve(app,file.path));assert.equal(bytes.length,file.bytes,file.path);assert.equal(createHash('sha256').update(bytes).digest('hex'),file.sha256,file.path);}
   assert.ok(!existsSync(resolve(app,'public')));assert.ok(!existsSync(resolve(app,'app')));
@@ -42,6 +44,8 @@ try{
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
   const chat=spawnSync(process.execPath,[resolve(project,'tests/room-chat-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(chat.status,0,chat.stdout+chat.stderr);console.log(chat.stdout.trim());
+  const anime=spawnSync(process.execPath,[resolve(project,'tests/anime-gallery-http.mjs'),'http://127.0.0.1:3137'],{cwd:project,windowsHide:true,encoding:'utf8'});
+  assert.equal(anime.status,0,anime.stdout+anime.stderr);console.log(anime.stdout.trim());
   for(const url of manifest.runtimeAssets){const response=await get(url);assert.equal(response.status,200,url);const bytes=Buffer.from(await response.arrayBuffer());const entry=manifest.files.find(file=>file.path==='dist/client'+url);assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,url);}
   for(const path of ['/puzzles/emerald-river-valley.png','/.env','/README.md'])assert.equal((await get(path)).status,404,path);
   console.log(JSON.stringify({isolatedRuntime:true,files:manifest.files.length,assets:manifest.runtimeAssets.length,publicPictures:manifest.publicPictures,noProjectDependencies:true,originalsExcluded:true}));

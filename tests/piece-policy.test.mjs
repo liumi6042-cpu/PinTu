@@ -9,6 +9,7 @@ import {puzzleImageSource} from '../lib/puzzle-image-source.ts';
 import {roomImagePreload} from '../lib/room-image-preload.ts';
 import {randomPhoto} from '../lib/random-photo.ts';
 const large='mountain-lake-reflection-hd-v3',small='emerald-river-valley-native-v2';
+const published=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8')).filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
 test('four new-game choices retain legacy grids and reject remembered paused counts',()=>{
  assert.deepEqual(LEVELS.map(l=>l.count),[108,300,500,1000,2000,5000]);
  assert.deepEqual(NEW_GAME_LEVELS.map(l=>l.count),[108,300,500,1000]);
@@ -41,8 +42,9 @@ test('old low-resolution large rooms and all retired grids still restore, join, 
  }
 });
 test('filtered random pool covers all eligible pictures without selecting unavailable artwork',()=>{
- for(const level of NEW_GAME_LEVELS){const pool=PHOTOS.filter(p=>supportsPieceCount(p.id,level.count));assert.equal(pool.length,30);for(let i=0;i<pool.length;i++)assert.equal(randomPhoto(pool,()=> (i+.5)/pool.length).id,pool[i].id);}
- assert.equal(PHOTOS.length,30);for(const n of [2000,5000])assert.equal(PHOTOS.filter(p=>supportsPieceCount(p.id,n)).length,0);
+ assert.ok(published.length>0);assert.deepEqual(PHOTOS.map(photo=>photo.id),published.map(photo=>photo.id));
+ for(const level of NEW_GAME_LEVELS){const pool=PHOTOS.filter(p=>supportsPieceCount(p.id,level.count));assert.equal(pool.length,published.length);for(let i=0;i<pool.length;i++)assert.equal(randomPhoto(pool,()=> (i+.5)/pool.length).id,pool[i].id);}
+ for(const n of [2000,5000])assert.equal(PHOTOS.filter(p=>supportsPieceCount(p.id,n)).length,0);
  assert.equal(latestPublishedPhoto('mountain-lake-reflection').id,large);assert.equal(latestPublishedPhoto('mountain-lake-reflection-native-v2').id,large);
  const previous=RESTORABLE_PHOTOS.find(p=>p.id==='mountain-lake-reflection-native-v2');
  assert.equal(previous.playSrc,'/puzzles/mountain-lake-reflection-native-v2-play-05ac2f83031a.webp');

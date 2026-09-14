@@ -31,7 +31,10 @@ async function fixture(t,id='winter-village'){
 
 test('all playable assets have matching original files, provenance and review records',async()=>{
   assert.deepEqual(await checkImageLibrary(root),{published:PHOTOS.length});
-  assert.equal(PHOTOS.length,30);
+  const catalog=await readJson(join(root,'content/puzzle-catalog.json'));
+  const published=catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
+  assert.deepEqual(PHOTOS.map(photo=>photo.id),published.map(photo=>photo.id));
+  assert.equal(PHOTOS.filter(photo=>photo.category==='动漫').length,5,'all five new anime pictures are published');
   assert.equal(FEATURED_PHOTOS.length,8);assert.equal(new Set(FEATURED_PHOTOS.map(photo=>photo.id)).size,8);
   assert.ok(FEATURED_PHOTOS.every(photo=>PHOTO_IDS.includes(photo.id)));
   for(const id of PHOTO_IDS)assert.equal(makeRoom('catalog-test',id,108,100000).puzzle.imageId,id);

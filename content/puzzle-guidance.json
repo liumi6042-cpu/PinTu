@@ -439,5 +439,40 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "anime-seaside-platform-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "从人物、列车与向日葵的轮廓开始，再连接海天的颜色。"
+  },
+  "anime-cat-shop-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找橘猫、围裙和面包，再拼暖色的木质柜台。"
+  },
+  "anime-cloud-courier-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "人物与红色邮箱轮廓清楚，云海和石阶可以分区慢慢拼。"
+  },
+  "anime-rainy-corner-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先连接黄雨衣与蓝外套，再寻找路面的灯光倒影。"
+  },
+  "anime-starlight-witch-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "紫色衣裙、白猫和星图是清楚的线索，再连接夜空与远山。"
   }
 }

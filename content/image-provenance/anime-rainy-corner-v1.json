@@ -1,0 +1,81 @@
+{
+  "id": "anime-rainy-corner-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/anime-rainy-corner-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a09ef4-e17f-7621-ae85-8162298139d7/exec-aed89a33-65f8-446f-b070-2eaf31493bf5.png",
+    "sourceMetadata": "content/artwork/anime-20260914/anime-rainy-corner-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated image. No interpolation, composite assembly or AI upscaling. New games follow the current 108–1000 piece policy.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Full image inspected: clear original anime characters and scene, no visible lettering, signature, logos or watermarks.",
+      "Faces, hands, limbs and animal or prop shapes inspected; main subjects remain visible in central game crops. Scene detail is moderate, with readable large color shapes."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb",
+    "play": {
+      "src": "/puzzles/anime-rainy-corner-v1-play-d61a9c9a52a2.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "d61a9c9a52a20a59ba0b9114c8c7ebe066e4d1a532379960960eb110211debb5",
+      "bytes": 2328622,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/anime-rainy-corner-v1-thumbnail-630189c5c45c.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "630189c5c45c024876adb26c48f330b59dbc82d20de2211d40e99bda1906fe18",
+      "bytes": 53720,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/anime-rainy-corner-v1-optimized-2cf1100ead82.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "2cf1100ead82105da398eba7feea630ef4628d164095d2596f38506765a6867b",
+      "bytes": 425350,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb",
+      "inputSha256": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

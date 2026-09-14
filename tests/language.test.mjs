@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {getLanguage,setLanguage,subscribeLanguage,t,playerName} from '../lib/i18n.ts';
 import {PHOTOS,CATEGORIES} from '../lib/puzzle-catalog.ts';
 import {LEVELS,createPuzzle} from '../lib/puzzle-engine.ts';
+import {englishCopy} from '../lib/seo.ts';
 test('switching language translates content and dynamic labels without changing puzzle state or identifiers',()=>{
  const state=createPuzzle('seaside',50,40,7),before=JSON.stringify(state);let updates=0;
  setLanguage('zh');
@@ -10,7 +11,8 @@ test('switching language translates content and dynamic labels without changing 
  try{
   setLanguage('en');assert.equal(getLanguage(),'en');
   for(const photo of PHOTOS){assert.ok(!/[\u3400-\u9fff]/.test(t(photo.title)));assert.ok(!/[\u3400-\u9fff]/.test(t(photo.subtitle)));assert.equal(t(photo.id),photo.id);}
-  for(const category of CATEGORIES)assert.ok(!/[\u3400-\u9fff]/.test(t(category)));
+  for(const category of CATEGORIES){assert.ok(!/[\u3400-\u9fff]/.test(t(category)));assert.equal(englishCopy(category),t(category),'search and visible category labels share the same translation');}
+  assert.equal(t('动漫'),'Anime');assert.equal(englishCopy('动漫'),'Anime');
   for(const level of LEVELS)assert.ok(!/[\u3400-\u9fff]/.test(t(`${level.count.toLocaleString()} 片 · ${level.label}`)));
   for(const text of ['暗色背景','切换为暗色背景','切换为米色背景','随机一张，开始拼图','随机一张，创建房间','下一幅，交给一点小运气。','正在铺开 3,000 片拼图…','已拼 32 / 3000 片 · 01:23','珊瑚秘境完成效果预览','拉一下，开始拼，向下拉或点击','已完成','拼对了！已归位 3 / 12 片'])assert.ok(!/[\u3400-\u9fff]/.test(t(text)),text);
   assert.equal(playerName('游客 A123'),'Guest A123');assert.equal(playerName('公开大厅'),'公开大厅');

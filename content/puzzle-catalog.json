@@ -1,5 +1,65 @@
 [
   {
+    "id": "anime-seaside-platform-v1",
+    "title": "海风车站",
+    "subtitle": "海风吹过站台，下一趟旅程慢慢到来。",
+    "category": "动漫",
+    "src": "/puzzles/anime-seaside-platform-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/anime-seaside-platform-v1-play-c6222b0eb55c.webp",
+    "thumbSrc": "/puzzles/anime-seaside-platform-v1-thumbnail-587c82def48e.webp",
+    "optimizedSrc": "/puzzles/anime-seaside-platform-v1-optimized-b8fdb66c6a2a.webp"
+  },
+  {
+    "id": "anime-cat-shop-v1",
+    "title": "猫咪小店",
+    "subtitle": "橘猫守着柜台，午后的面包香刚刚好。",
+    "category": "动漫",
+    "src": "/puzzles/anime-cat-shop-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/anime-cat-shop-v1-play-c020abe18244.webp",
+    "thumbSrc": "/puzzles/anime-cat-shop-v1-thumbnail-a4b861b7839c.webp",
+    "optimizedSrc": "/puzzles/anime-cat-shop-v1-optimized-15e468dd27fc.webp"
+  },
+  {
+    "id": "anime-cloud-courier-v1",
+    "title": "云海送信员",
+    "subtitle": "带着一封信和一点好奇，坐看浮岛与云海。",
+    "category": "动漫",
+    "src": "/puzzles/anime-cloud-courier-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/anime-cloud-courier-v1-play-9ad629944b49.webp",
+    "thumbSrc": "/puzzles/anime-cloud-courier-v1-thumbnail-719d468e46dd.webp",
+    "optimizedSrc": "/puzzles/anime-cloud-courier-v1-optimized-f276ebe07916.webp"
+  },
+  {
+    "id": "anime-rainy-corner-v1",
+    "title": "雨夜街角",
+    "subtitle": "共撑一把伞，让雨夜多一点暖色。",
+    "category": "动漫",
+    "src": "/puzzles/anime-rainy-corner-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/anime-rainy-corner-v1-play-d61a9c9a52a2.webp",
+    "thumbSrc": "/puzzles/anime-rainy-corner-v1-thumbnail-630189c5c45c.webp",
+    "optimizedSrc": "/puzzles/anime-rainy-corner-v1-optimized-2cf1100ead82.webp"
+  },
+  {
+    "id": "anime-starlight-witch-v1",
+    "title": "星光小魔女",
+    "subtitle": "摊开星图，和小猫一起等月亮升起。",
+    "category": "动漫",
+    "src": "/puzzles/anime-starlight-witch-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/anime-starlight-witch-v1-play-2ca2dcd8ffb8.webp",
+    "thumbSrc": "/puzzles/anime-starlight-witch-v1-thumbnail-600e5ee017bd.webp",
+    "optimizedSrc": "/puzzles/anime-starlight-witch-v1-optimized-8107d4bf0de1.webp"
+  },
+  {
     "id": "mountain-lake-reflection-hd-v3",
     "title": "山湖倒影",
     "subtitle": "雪峰映进湖面，把宁静拼成一幅画。",
