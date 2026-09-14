@@ -14,7 +14,7 @@ const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
 const database=new DatabaseSync(resolve(filename));
 try{
  const gallery=await (await get('/gallery')).text(),sitemap=await (await get('/sitemap.xml')).text();
- assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,30);
+ assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,catalog.filter(photo=>photo.status==='published').length);
  for(const photo of pictures){
   assert.ok(!gallery.includes(photo.id));assert.ok(!sitemap.includes(photo.id));
   assert.equal((await get('/puzzle/'+photo.id)).status,404);
@@ -36,5 +36,5 @@ try{
   const roomPage=await get('/room/'+id);assert.equal(roomPage.status,200);const html=await roomPage.text();assert.ok(html.split('</head>')[0].includes(photo.optimizedSrc));
   for(const src of [photo.optimizedSrc,photo.playSrc,photo.thumbSrc]){const asset=await get(src);assert.equal(asset.status,200);await asset.arrayBuffer();}
  }
- console.log(JSON.stringify({withdrawnAnime:5,publishedPictures:30,newCreationRejected:true,galleryAndSitemapExcluded:true,existingRoomJoinAndProgressPreserved:true,legacyAssetsAvailable:true}));
+ console.log(JSON.stringify({withdrawnAnime:5,publishedPictures:catalog.filter(photo=>photo.status==='published').length,newCreationRejected:true,galleryAndSitemapExcluded:true,existingRoomJoinAndProgressPreserved:true,legacyAssetsAvailable:true}));
 }finally{database.close();}

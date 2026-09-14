@@ -1,0 +1,89 @@
+{
+  "id": "cel-sunset-train-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/cel-sunset-train-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "user-provided-style-reference",
+        "path": "content/artwork/painted-cel-20260914/style-references/cel-reference.png",
+        "sha256": "ff3f4eaf61cd131ac538996baa5e6ae8798f2d1cb3812d246feb3f8e9c9ca503",
+        "purpose": "rendering-style-only",
+        "authorization": "user-request-2026-09-14"
+      }
+    ],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-b7b3b65e-2129-49e1-8830-76223c948b0a.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/cel-sunset-train-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+    "play": {
+      "src": "/puzzles/cel-sunset-train-v1-play-d1fc0f24c7d3.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "d1fc0f24c7d348b671f3a82a989111b828f2bf7dec059af02c6e1731952bcfbf",
+      "bytes": 1480918,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-sunset-train-v1-thumbnail-f20ee4697b93.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "f20ee4697b933088256cf3abed7be601818639c39d4a70ca97b9ffe653fa26f3",
+      "bytes": 22908,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cel-sunset-train-v1-optimized-3e9db12afb37.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "3e9db12afb3705f265b106c9b8ecdb22acdb5d5a0746e02df11b36118dd7bce2",
+      "bytes": 169010,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "inputSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

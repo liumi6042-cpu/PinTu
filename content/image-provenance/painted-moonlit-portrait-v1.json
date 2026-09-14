@@ -1,0 +1,89 @@
+{
+  "id": "painted-moonlit-portrait-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/painted-moonlit-portrait-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "user-provided-style-reference",
+        "path": "content/artwork/painted-cel-20260914/style-references/painted-reference.png",
+        "sha256": "f5dbc1c9d360fb4e76f633552ef5d012065e7b6a267354313cb30b79b58c618c",
+        "purpose": "rendering-style-only",
+        "authorization": "user-request-2026-09-14"
+      }
+    ],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-633caa23-77db-46f0-ad3b-f533f4ce7aea.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/painted-moonlit-portrait-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+    "play": {
+      "src": "/puzzles/painted-moonlit-portrait-v1-play-7186f3ab6865.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "7186f3ab68652057aa877d7694212a0314cc5a3dc11524912e14bb87ac50b85c",
+      "bytes": 1876398,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-moonlit-portrait-v1-thumbnail-966f188ae2fd.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "966f188ae2fd477148cd770211cdd47793f336073be8cb5f46122b5eb3f37eda",
+      "bytes": 38514,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/painted-moonlit-portrait-v1-optimized-4b20b0a13d5a.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "4b20b0a13d5afbdf89aeb0bd006eae9d07866166f3c36319e4f5a9895aced15a",
+      "bytes": 255020,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+      "inputSha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

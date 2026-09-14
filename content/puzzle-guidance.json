@@ -474,5 +474,54 @@
     "complexity": 2,
     "preferredCount": 300,
     "reason": "紫色衣裙、白猫和星图是清楚的线索，再连接夜空与远山。"
+  },
+  "painted-moonlit-portrait-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找眼睛、发饰与蓝晶花，再沿发丝连接明暗。"
+  },
+  "cel-sunset-train-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "人物、车窗和橘色尾巴轮廓清楚，可以分别拼合。"
+  },
+  "painted-crimson-rose-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "从红色蔷薇与人物轮廓开始，再拼饰品和发丝。"
+  },
+  "painted-jade-feather-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "翠鸟、信封和羽毛胸针是清楚的定位线索。"
+  },
+  "painted-amber-autumn-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先区分银杏叶、衣领与人物，再连接暖色背景。"
+  },
+  "cel-rainy-bookshop-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "书架、雨窗与猫咪分区明显，可以从大轮廓开始。"
+  },
+  "cel-rooftop-breeze-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "人物、白色晾布和蓝色海面各有清晰轮廓。"
   }
 }

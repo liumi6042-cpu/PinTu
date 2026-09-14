@@ -1,0 +1,89 @@
+{
+  "id": "cel-rooftop-breeze-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/cel-rooftop-breeze-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "cel-sunset-train-v1",
+        "path": "public/puzzles/cel-sunset-train-v1.png",
+        "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+        "purpose": "rendering-style-only"
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-5581d089-d0b1-414d-b19f-c9d79f22f68c.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/cel-rooftop-breeze-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+    "play": {
+      "src": "/puzzles/cel-rooftop-breeze-v1-play-100766915aab.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "100766915aab8af90fb0f425b2a117ebf151b6f978c79651c0bca2b97b7f3043",
+      "bytes": 1818052,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rooftop-breeze-v1-thumbnail-b3996a66f057.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "b3996a66f057299d3d236e19f5bc51990ff2cc841bc8a23c7b559c9b6fb4406b",
+      "bytes": 34970,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cel-rooftop-breeze-v1-optimized-0346f0ab18f9.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "0346f0ab18f90e31abe5590c3c0e4cfc476df005a1e7d45f6ddee7b62a94dd37",
+      "bytes": 252044,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "inputSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

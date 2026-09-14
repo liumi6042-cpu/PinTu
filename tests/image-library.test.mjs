@@ -26,6 +26,11 @@ async function fixture(t,id='winter-village'){
   for(const path of ['content/image-provenance/'+id+'.json','content/image-prompts/'+id+'.txt','public/puzzles/'+id+'.png', 'public'+photo.playSrc, 'public'+photo.thumbSrc,'public'+photo.optimizedSrc,...(photo.standardSrc?['public'+photo.standardSrc,'public'+photo.optimizedStandardSrc]:[])])
     await copyFile(join(root,path),join(dir,path));
   if(photo.standardSrc)await cp(join(root,'content/artwork/gallery-hd',id),join(dir,'content/artwork/gallery-hd',id),{recursive:true});
+  const record=await readJson(join(root,'content/image-provenance',id+'.json'));
+  if(record.generation.referenceImages.some(ref=>ref.origin==='user-provided-style-reference')){
+    await cp(join(root,'content/artwork/painted-cel-20260914/style-references'),join(dir,'content/artwork/painted-cel-20260914/style-references'),{recursive:true});
+    await copyFile(join(root,'content/artwork/painted-cel-20260914/approved-style-references.json'),join(dir,'content/artwork/painted-cel-20260914/approved-style-references.json'));
+  }
   return dir;
 }
 
@@ -34,7 +39,9 @@ test('all playable assets have matching original files, provenance and review re
   const catalog=await readJson(join(root,'content/puzzle-catalog.json'));
   const published=catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
   assert.deepEqual(PHOTOS.map(photo=>photo.id),published.map(photo=>photo.id));
-  assert.equal(PHOTOS.length,30,'the original thirty pictures remain published');
+  assert.equal(PHOTOS.length,37,'the original thirty plus seven approved illustrations remain published');
+  assert.equal(PHOTOS.filter(photo=>photo.category==='厚涂').length,4);
+  assert.equal(PHOTOS.filter(photo=>photo.category==='平涂').length,3);
   assert.ok(!CATEGORIES.includes('动漫'));
   const removedAnime=RESTORABLE_PHOTOS.filter(photo=>photo.category==='动漫');
   assert.equal(removedAnime.length,5,'withdrawn pictures remain available to existing rooms');
@@ -82,11 +89,23 @@ test('a changed delivery image cannot bypass provenance checks',async t=>{
   await assert.rejects(checkImageLibrary(dir),/衍生图片哈希不一致/);
 });
 
+test('user style references require the exact approved provenance and immutable reference bytes',async t=>{
+  const id='painted-moonlit-portrait-v1',dir=await fixture(t,id),path=join(dir,'content/image-provenance',id+'.json'),original=await readJson(path);
+  assert.deepEqual(await checkImageLibrary(dir),{published:1});
+  for(const [key,value] of [['origin','project-ai-generated'],['purpose','direct-copy'],['authorization','assumed'],['path','../unrelated.png'],['sha256','0'.repeat(64)]]){
+    const edited=structuredClone(original);edited.generation.referenceImages[0][key]=value;await saveJson(path,edited);
+    await assert.rejects(checkImageLibrary(dir),/图片参考来源或用途未获登记/);
+  }
+  await saveJson(path,original);
+  await writeFile(join(dir,original.generation.referenceImages[0].path),'changed reference');
+  await assert.rejects(checkImageLibrary(dir),/生成参考图哈希不一致/);
+});
+
 test('HD project references, native regions and standard delivery are independently verified',async t=>{
   const id='mountain-lake-reflection-hd-v3',dir=await fixture(t,id),path=join(dir,'content/image-provenance',id+'.json'),original=await readJson(path);
   assert.deepEqual(await checkImageLibrary(dir),{published:1});
   const external=structuredClone(original);external.generation.referenceImages[0].origin='external';await saveJson(path,external);
-  await assert.rejects(checkImageLibrary(dir),/本项目生成的参考图/);
+  await assert.rejects(checkImageLibrary(dir),/图片参考来源或用途未获登记/);
   const changed=structuredClone(original);changed.composite.parts[0].sha256='0'.repeat(64);await saveJson(path,changed);
   await assert.rejects(checkImageLibrary(dir),/拼接分区来源不一致/);
   const standard=structuredClone(original);standard.delivery.standard.downsampled=false;await saveJson(path,standard);

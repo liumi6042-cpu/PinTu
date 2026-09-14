@@ -1,0 +1,89 @@
+{
+  "id": "cel-rainy-bookshop-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/cel-rainy-bookshop-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "cel-sunset-train-v1",
+        "path": "public/puzzles/cel-sunset-train-v1.png",
+        "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+        "purpose": "rendering-style-only"
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-2ebcf461-900c-4bcb-bb34-026efe9a80dd.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/cel-rainy-bookshop-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+    "play": {
+      "src": "/puzzles/cel-rainy-bookshop-v1-play-6a41282fe92e.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "6a41282fe92ebf1982600a6d46df52638d9ff0d0cb6b9883a82c17292f9b9e14",
+      "bytes": 1760628,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rainy-bookshop-v1-thumbnail-ef6947ff1369.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "ef6947ff136995da7418b567279f46f1268992853e02839286005fbaf99e2602",
+      "bytes": 31046,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cel-rainy-bookshop-v1-optimized-3ef7b9fdf1e4.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "3ef7b9fdf1e4294a7126472b604cb2f33b46386dcdd4640b93ae83e77fae1519",
+      "bytes": 239846,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "inputSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

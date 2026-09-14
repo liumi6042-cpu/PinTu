@@ -17,7 +17,18 @@ export async function checkImageLibrary(root){
     const record=JSON.parse(await readFile(join(root,'content/image-provenance',photo.id+'.json'),'utf8'));
     if(record.id!==photo.id||record.origin!=='project-ai-generated'||record.generation.tool!=='image_gen'||record.review.status!=='reviewed')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
     for(const reference of record.generation.referenceImages){
-      if(!reference||reference.origin!=='project-ai-generated'||!/^content\/artwork\/gallery-hd\/[a-z0-9-]+\/[a-z0-9-]+\.png$/.test(reference.path)||!/^[a-f0-9]{64}$/.test(reference.sha256))throw new Error(`当前图库只接收本项目生成的参考图：${photo.id}`);
+      if(!reference||!/^[a-f0-9]{64}$/.test(reference.sha256))throw new Error(`图片参考来源或用途未获登记：${photo.id}`);
+      const legacyProject=reference.origin==='project-ai-generated'&&/^content\/artwork\/gallery-hd\/[a-z0-9-]+\/[a-z0-9-]+\.png$/.test(reference.path);
+      const parent=restorable.find(item=>item.id===reference.imageId);
+      const catalogProject=reference.origin==='project-ai-generated'&&parent&&parent.id!==photo.id&&reference.path==='public'+parent.src&&reference.purpose==='rendering-style-only';
+      // The user supplied these two references and explicitly approved the resulting
+      // illustrations. Preserve that provenance; do not call the reference our art.
+      let approvedStyle=false;
+      if(reference.origin==='user-provided-style-reference'&&['painted-moonlit-portrait-v1','cel-sunset-train-v1'].includes(photo.id)&&/^content\/artwork\/painted-cel-20260914\/style-references\/(painted|cel)-reference\.png$/.test(reference.path)&&reference.purpose==='rendering-style-only'&&reference.authorization==='user-request-2026-09-14'){
+        const approvals=JSON.parse(await readFile(join(root,'content/artwork/painted-cel-20260914/approved-style-references.json'),'utf8'));
+        approvedStyle=['origin','path','sha256','purpose','authorization'].every(key=>approvals[photo.id]?.[key]===reference[key]);
+      }
+      if(!legacyProject&&!catalogProject&&!approvedStyle)throw new Error(`图片参考来源或用途未获登记：${photo.id}`);
       if(createHash('sha256').update(await readFile(join(root,reference.path))).digest('hex')!==reference.sha256)throw new Error(`生成参考图哈希不一致：${photo.id}`);
     }
     if(record.generation.promptPath){
