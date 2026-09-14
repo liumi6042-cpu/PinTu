@@ -4,6 +4,8 @@
 
 ## 后续发布规则
 
+2026-09-14 资源优化后，新增或调整图库先离线生成 `play`/`thumbnail`（高清还有 `standard`）及 `node scripts/prepare-optimized-delivery.mjs` 的 `optimized`/`compact`，再执行图片校验与提交。优化记录必须与真实文件匹配；旧哈希衍生图不可随意移除。当前新局只开放至1000片，高清自动升级已暂停，见 [资源优化](server-resource-optimization-20260914.md)。
+
 1. 完成改动和本地检查，提交 Git。
 2. 在构建机运行 `npm run release`，得到 `releases/latest.tar.gz`、`latest.json` 与 `latest.sha256`。命令自动在临时目录解压、启动并检查页面、全部图片与文件哈希，通过后才标记可上传。
 3. 使用 `npm run release:upload -- --host webhosting-main`，仅传送这个经过哈希及 Git 版本校验的最新运行包。可加 `--dry-run` 查看目标和体积，不连接服务器。
@@ -17,7 +19,7 @@
 ## 包含什么
 
 - 最新编译完成的服务端/客户端文件，以及 standalone 明确收集的运行依赖。
-- 网站实际使用的 favicon、首屏 WebP 和每张已发布/归档图片的无损游玩 WebP、缩略 WebP。归档画面的旧存档仍可继续。
+- 网站实际使用的 favicon、首屏 WebP、每张已发布/归档图片的 optimized/compact 有损交付 WebP 与缩略 WebP，以及旧客户端兼容所需的 play/standard 无损 WebP。归档画面的旧存档仍可继续；跨版本相同文件硬链接复用。
 - 不可改写的 SQL 迁移、五个运行/备份辅助模块；内含逐文件 SHA-256 的 `release.json`。
 
 ## 不包含什么
