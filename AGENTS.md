@@ -4,7 +4,7 @@
 
 - 2026-09-14 新增5张原创动漫/漫画图，目录新增「动漫 / Anime」，在架总数35、归档43；原30图全部保留。新图ID为 anime-seaside-platform-v1、anime-cat-shop-v1、anime-cloud-courier-v1、anime-rainy-corner-v1、anime-starlight-witch-v1；原生1536×1024，optimized约0.20–0.43MB，预览480×320。四档片数及暂停高清队列状态保持。来源与完整提示词见 docs/anime-gallery-20260914.md；后续数量测试按真实目录核对，不再假定30张。
 
-- 当前已上线版本为 releases/20260914-08/app（应用 Git 0b1082a58955633e2d6170a016a5f8ed03039046），运行 jigsaw-web@3104.service，slots/3104 指向08；3103旧实例已排空停止，07保留回退，06及本次临时上传包已清理。下一次以实际 current 与端口为准，不依赖下方旧运行信息。实测新动漫图CDN由MISS转HIT；项目目录约325.4 MiB，含旧图兼容资源和回退版本。发布回执见 docs/anime-gallery-20260914.md。
+- 当前已上线版本为 releases/20260914-09/app（应用 Git 2d312e071c7345adff815c26b04ab278bd9cd8ea），运行 jigsaw-web@3103.service，slots/3103 指向09；3104旧实例已排空停止，08保留回退，07及本次临时上传包已清理。下一次以实际 current 与端口为准，不依赖下方旧运行信息。项目目录343,064,576字节，含旧图兼容资源和回退版本；30张在架、5张动漫已下架。发布回执见 docs/anime-gallery-20260914.md。若回退08，会重新露出已撤回图，需在完成修复后恢复09或更新版。
 
 - 2026-09-14 资源节约决定覆盖下方高清自动升级与六档片数约定：新建局仅开放 108 / 300 / 500 / 1000，默认 300，旧偏好 2000/5000 回落 300；服务端同样拒绝更高新建。底层网格、旧局加载/加入/续玩/聊天不受限制，不能修改已有拼块和进度。高清升级队列及自动化 automation 已暂停，未经用户后续要求不自动恢复。
 - 图片在构建机离线生成优化交付版本：普通图 optimizedSrc 使用原尺寸 quality 84 有损 WebP，3 张完整高清用 quality 88；≤1000 片优先 optimizedStandardSrc（compact，1774×887、quality 84）。完整 optimized 最大 2 MiB，compact 最大 700 KiB，480 像素预览沿用。真实编码、尺寸、SHA 和来源写入原记录 delivery 扩展，不能称无损或提高原生清晰度。scripts/prepare-optimized-delivery.mjs 可重复执行；新资源随运行白名单和 nginx 哈希缓存规则一起发布。旧 play/standard/thumb 和旧客户端资源继续保留，原 PNG/生成分区只存本地与 Git，不在服务器转码。
