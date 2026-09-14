@@ -1,5 +1,44 @@
 [
   {
+    "id": "mountain-lake-reflection-hd-v3",
+    "title": "山湖倒影",
+    "subtitle": "雪峰映进湖面，把宁静拼成一幅画。",
+    "category": "风景",
+    "src": "/puzzles/mountain-lake-reflection-hd-v3.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "replaces": "mountain-lake-reflection-native-v2",
+    "playSrc": "/puzzles/mountain-lake-reflection-hd-v3-play-563c2612aa6c.webp",
+    "thumbSrc": "/puzzles/mountain-lake-reflection-hd-v3-thumbnail-0a408ca8a9e2.webp",
+    "standardSrc": "/puzzles/mountain-lake-reflection-hd-v3-standard-e247f09e7668.webp"
+  },
+  {
+    "id": "morning-meadow-tree-hd-v3",
+    "title": "晨光草坡",
+    "subtitle": "晨光越过草坡，一棵树静静站在风里。",
+    "category": "风景",
+    "src": "/puzzles/morning-meadow-tree-hd-v3.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "replaces": "morning-meadow-tree-native-v2",
+    "playSrc": "/puzzles/morning-meadow-tree-hd-v3-play-28ce2feb8f83.webp",
+    "thumbSrc": "/puzzles/morning-meadow-tree-hd-v3-thumbnail-ef4e7a2db071.webp",
+    "standardSrc": "/puzzles/morning-meadow-tree-hd-v3-standard-877e1bb7d17b.webp"
+  },
+  {
+    "id": "clear-sand-bay-hd-v3",
+    "title": "清澈海湾",
+    "subtitle": "沿着弧形沙岸，走进层层浅蓝。",
+    "category": "风景",
+    "src": "/puzzles/clear-sand-bay-hd-v3.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "replaces": "clear-sand-bay-native-v2",
+    "playSrc": "/puzzles/clear-sand-bay-hd-v3-play-803dc00989a8.webp",
+    "thumbSrc": "/puzzles/clear-sand-bay-hd-v3-thumbnail-eee0dd03149c.webp",
+    "standardSrc": "/puzzles/clear-sand-bay-hd-v3-standard-5ef347066062.webp"
+  },
+  {
     "id": "emerald-river-valley-native-v2",
     "title": "碧水山谷",
     "subtitle": "一弯碧水穿过草坡，把远山与晴空连在一起。",
@@ -66,7 +105,7 @@
     "category": "风景",
     "src": "/puzzles/mountain-lake-reflection-native-v2.png",
     "origin": "project-ai-generated",
-    "status": "published",
+    "status": "archived",
     "replaces": "mountain-lake-reflection",
     "playSrc": "/puzzles/mountain-lake-reflection-native-v2-play-05ac2f83031a.webp",
     "thumbSrc": "/puzzles/mountain-lake-reflection-native-v2-thumbnail-96d08a46989a.webp"
@@ -78,7 +117,7 @@
     "category": "风景",
     "src": "/puzzles/morning-meadow-tree-native-v2.png",
     "origin": "project-ai-generated",
-    "status": "published",
+    "status": "archived",
     "replaces": "morning-meadow-tree",
     "playSrc": "/puzzles/morning-meadow-tree-native-v2-play-c52b1377871e.webp",
     "thumbSrc": "/puzzles/morning-meadow-tree-native-v2-thumbnail-64a63bc67a04.webp"
@@ -90,7 +129,7 @@
     "category": "风景",
     "src": "/puzzles/clear-sand-bay-native-v2.png",
     "origin": "project-ai-generated",
-    "status": "published",
+    "status": "archived",
     "replaces": "clear-sand-bay",
     "playSrc": "/puzzles/clear-sand-bay-native-v2-play-69dfac64dbbe.webp",
     "thumbSrc": "/puzzles/clear-sand-bay-native-v2-thumbnail-a19a624dc4c7.webp"

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, copyFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, copyFile, cp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +12,7 @@ const root=fileURLToPath(new URL('..',import.meta.url));
 const readJson=async path=>JSON.parse(await readFile(path,'utf8'));
 const saveJson=(path,value)=>writeFile(path,JSON.stringify(value));
 
-async function fixture(t){
+async function fixture(t,id='winter-village'){
   const base=tmpdir(),dir=await mkdtemp(join(base,'puzzle-provenance-test-'));
   t.after(async()=>{
     const child=relative(base,dir);
@@ -20,10 +20,11 @@ async function fixture(t){
     await rm(dir,{recursive:true,force:true});
   });
   for(const path of ['content/image-provenance','content/image-prompts','public/puzzles'])await mkdir(join(dir,path),{recursive:true});
-  const photo={...(await readJson(join(root,'content/puzzle-catalog.json'))).find(photo=>photo.id==='winter-village'),status:'published'};
+  const photo={...(await readJson(join(root,'content/puzzle-catalog.json'))).find(photo=>photo.id===id),status:'published'};
   await saveJson(join(dir,'content/puzzle-catalog.json'),[photo]);
-  for(const path of ['content/image-provenance/winter-village.json','content/image-prompts/winter-village.txt','public/puzzles/winter-village.png', 'public'+photo.playSrc, 'public'+photo.thumbSrc])
+  for(const path of ['content/image-provenance/'+id+'.json','content/image-prompts/'+id+'.txt','public/puzzles/'+id+'.png', 'public'+photo.playSrc, 'public'+photo.thumbSrc,...(photo.standardSrc?['public'+photo.standardSrc]:[])])
     await copyFile(join(root,path),join(dir,path));
+  if(photo.standardSrc)await cp(join(root,'content/artwork/gallery-hd',id),join(dir,'content/artwork/gallery-hd',id),{recursive:true});
   return dir;
 }
 
@@ -71,4 +72,15 @@ test('a changed delivery image cannot bypass provenance checks',async t=>{
   const dir=await fixture(t),photo=RESTORABLE_PHOTOS.find(p=>p.id==='winter-village');
   await writeFile(join(dir,'public'+photo.playSrc),'broken webp');
   await assert.rejects(checkImageLibrary(dir),/衍生图片哈希不一致/);
+});
+
+test('HD project references, native regions and standard delivery are independently verified',async t=>{
+  const id='mountain-lake-reflection-hd-v3',dir=await fixture(t,id),path=join(dir,'content/image-provenance',id+'.json'),original=await readJson(path);
+  assert.deepEqual(await checkImageLibrary(dir),{published:1});
+  const external=structuredClone(original);external.generation.referenceImages[0].origin='external';await saveJson(path,external);
+  await assert.rejects(checkImageLibrary(dir),/本项目生成的参考图/);
+  const changed=structuredClone(original);changed.composite.parts[0].sha256='0'.repeat(64);await saveJson(path,changed);
+  await assert.rejects(checkImageLibrary(dir),/拼接分区来源不一致/);
+  const standard=structuredClone(original);standard.delivery.standard.downsampled=false;await saveJson(path,standard);
+  await assert.rejects(checkImageLibrary(dir),/小片数图片交付记录无效/);
 });

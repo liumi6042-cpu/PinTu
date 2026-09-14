@@ -5,7 +5,7 @@ import {expandCreatedTicket,rememberCreatedTicket,takeCreatedTicket} from '../li
 import {apiJson,joinPuzzle} from '../lib/community-client.ts';
 import {roomSessionKey} from '../lib/room-client.ts';
 
-const id='1'.repeat(32),token='2'.repeat(32),playerId='3'.repeat(32),imageId='emerald-river-valley-native-v2';
+const id='1'.repeat(32),token='2'.repeat(32),playerId='3'.repeat(32),imageId='mountain-lake-reflection-hd-v3';
 function fixture(level=LEVELS.at(-1),seed=42){
  const puzzle=createPuzzle(imageId,level.cols,level.rows,seed);
  const {groups,...initial}=puzzle;

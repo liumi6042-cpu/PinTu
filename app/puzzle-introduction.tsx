@@ -2,6 +2,7 @@
 import { t } from '@/lib/i18n';
 import { PHOTOS } from '@/lib/puzzle-catalog';
 import { photoGuidance, recommendedPieces } from '@/lib/play-guidance';
+import { maximumPieces } from '@/lib/piece-policy';
 import { useLanguage } from './language-switch';
 import HomeNavigation from './home-navigation';
 import ServiceFooter from './service-footer';
@@ -14,7 +15,7 @@ export default function PuzzleIntroduction({photo}:{photo:typeof PHOTOS[number]}
       <nav className="puzzle-breadcrumbs" aria-label={en?'Breadcrumb':'当前位置'}><a href="/">{en?'Home':'首页'}</a><span>/</span><a href="/gallery">{en?'Puzzle gallery':'图库'}</a><span>/</span><span>{t(photo.title)}</span></nav>
       <div className="puzzle-introduction-hero">
         <img src={photo.thumbSrc} alt={t(photo.title)+' — '+t(photo.subtitle)} width={480} height={Math.round(480*guide.height/guide.width)} decoding="async"/>
-        <div><p className="section-kicker">{t(photo.category)}</p><h1>{t(photo.title)}{en?' Jigsaw Puzzle':'拼图'}</h1><p className="puzzle-introduction-subtitle">{t(photo.subtitle)}</p><p>{t(guide.reason)}</p><p>{en?`Start with ${recommended} pieces, or choose a challenge from 108 to 5,000 pieces.`:`推荐从 ${recommended} 片开始，也可以选择 108–5,000 片挑战。`}</p>
+        <div><p className="section-kicker">{t(photo.category)}</p><h1>{t(photo.title)}{en?' Jigsaw Puzzle':'拼图'}</h1><p className="puzzle-introduction-subtitle">{t(photo.subtitle)}</p><p>{t(guide.reason)}</p><p>{en?`Start with ${recommended} pieces. This picture supports up to ${maximumPieces(photo.id).toLocaleString('en-US')} pieces.`:`推荐从 ${recommended} 片开始，这张图片最高支持 ${maximumPieces(photo.id).toLocaleString()} 片。`}</p>
           <div className="puzzle-introduction-actions"><a className="primary" href={'/gallery?mode=public&image='+photo.id}>{en?'Create a public puzzle':'创建公开拼图'} →</a><a className="secondary" href="/lobby">{en?'Join a table':'加入正在拼的房间'}</a></div>
         </div>
       </div>

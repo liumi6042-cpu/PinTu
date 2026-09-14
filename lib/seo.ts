@@ -8,7 +8,7 @@ export const puzzlePath = (id: string) => `/puzzle/${id}`;
 export const PUBLIC_PAGES = {
   '/': { title: 'Free Online Jigsaw Puzzles with Friends', description: 'Play free online jigsaw puzzles at Jigsaw Nook. Join a public table with up to 8 players, or choose an original picture and 108–5,000 pieces to play in your browser.' },
   '/lobby': { title: 'Multiplayer Jigsaw Puzzles — Public Lobby', description: 'Join or create a free public jigsaw puzzle room with up to 8 players. No sign-in needed. See available tables and piece counts, then invite your friends.' },
-  '/gallery': { title: 'Online Jigsaw Puzzle Gallery — 108 to 5,000 Pieces', description: 'Browse original nature, scenery and art jigsaw puzzles. Pick a picture and choose 108, 300, 500, 1,000, 1,500, 2,000, 3,000, 4,000 or 5,000 pieces to play online.' },
+  '/gallery': { title: 'Online Jigsaw Puzzle Gallery — 108 to 5,000 Pieces', description: 'Browse original nature, scenery and art jigsaw puzzles. Choose 108, 300, 500, 1,000, 2,000 or 5,000 pieces. The gallery shows pictures suited to your chosen count.' },
   '/help': { title: 'How to Play Online Jigsaw Puzzles — Help & Saves', description: 'Learn how to move and sort puzzle pieces, invite friends, save your progress and continue a puzzle at Jigsaw Nook. Get help with public tables and saved progress.' },
 } as const;
 export function isPublicSearchPage(path: string) {

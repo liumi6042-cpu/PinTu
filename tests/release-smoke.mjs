@@ -32,6 +32,8 @@ try{
   assert.ok(ready,output);
   for(const path of ['/','/gallery','/lobby','/help','/api/locale']){const response=await get(path);assert.equal(response.status,200,path);await response.arrayBuffer();}
   const gallery=await (await get('/gallery')).text();for(const photo of published)assert.ok(gallery.includes(photo.id),photo.id);
+  assert.equal((gallery.match(/type="radio"/g)||[]).length,6);
+  for(const count of [108,300,500,1000,2000,5000])assert.ok(gallery.includes('value="'+count+'"'));
   for(const removed of ['class="picture-guidance"','class="picture-advice"','class="detail-note"','gallery-picture-details','About this puzzle'])assert.ok(!gallery.includes(removed),removed);
   for(const photo of published)assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
   const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:3137'],{cwd:project,windowsHide:true,encoding:'utf8'});

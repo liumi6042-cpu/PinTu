@@ -2,6 +2,7 @@ import { touchPublicRoom } from './public-room-retention';
 import { createPuzzle, dropGroup, LEVELS, placedCount, boardFor, WORLD, snapTolerance, shuffleLoose, type PuzzleState } from './puzzle-engine';
 import { recordRoomContribution,type RoomAchievementState } from './room-achievements';
 import { PHOTO_IDS } from './puzzle-catalog';
+import { supportsPieceCount,PIECE_RESOLUTION_ERROR } from './piece-policy';
 export { PHOTO_IDS } from './puzzle-catalog';
 export const ROOM_LIFETIME=30*24*60*60*1000, LEASE_MS=10000, ONLINE_MS=22000;
 export const ORGANIZE_COOLDOWN_MS=2000;
@@ -14,7 +15,7 @@ export type RoomSnapshot={customImage?:import('./custom-images').CustomImage;tit
 export type RoomAction={type:'heartbeat'|'leave'|'claim'|'move'|'drop'|'release'|'shuffle';groupId?:number;dx?:number;dy?:number;seq?:number};
 export class RoomError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}
 export function validName(value:unknown){if(typeof value!=='string')throw new RoomError('请填写昵称');const name=value.trim().replace(/[\u0000-\u001f\u007f]/g,'');if(!name||name.length>16)throw new RoomError('昵称请填写 1–16 个字');return name;}
-export function makeRoom(id:string,imageId:string,count:number,now:number):Room{const level=LEVELS.find(l=>l.count===count);if(!level||!PHOTO_IDS.includes(imageId))throw new RoomError('请选择有效图片与片数');return {id,retentionVersion:2,lastPlayedAt:now,puzzle:createPuzzle(imageId,level.cols,level.rows),revision:0,createdAt:now,expiresAt:now+ROOM_LIFETIME,completedAt:null,members:[],leases:{}};}
+export function makeRoom(id:string,imageId:string,count:number,now:number):Room{const level=LEVELS.find(l=>l.count===count);if(!level||!PHOTO_IDS.includes(imageId))throw new RoomError('请选择有效图片与片数');if(!supportsPieceCount(imageId,count))throw new RoomError(PIECE_RESOLUTION_ERROR);return {id,retentionVersion:2,lastPlayedAt:now,puzzle:createPuzzle(imageId,level.cols,level.rows),revision:0,createdAt:now,expiresAt:now+ROOM_LIFETIME,completedAt:null,members:[],leases:{}};}
 export function ensureOpen(room:Pick<Room,'expiresAt'>,now:number){if(room.expiresAt<=now)throw new RoomError('房间已过期，请重新创建房间',410);}
 export function hasRoomAdmission(room:Room,identity?:string){return !!identity&&(room.ownerId===identity||!!room.admitted?.[identity]||!!room.participants?.[identity]||room.members.some(m=>m.accountId===identity||m.guestId===identity));}
 export function touchRoom(room:Room,now:number){if(room.completedAt!==null)return;room.lastPlayedAt=Math.max(room.lastPlayedAt||0,now);if(room.visibility==='public')touchPublicRoom(room,now);else room.expiresAt=room.lastPlayedAt+ROOM_LIFETIME;}

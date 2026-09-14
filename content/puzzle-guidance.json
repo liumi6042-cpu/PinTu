@@ -418,5 +418,26 @@
     "complexity": 2,
     "preferredCount": 300,
     "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "mountain-lake-reflection-hd-v3": {
+    "width": 3144,
+    "height": 1572,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "morning-meadow-tree-hd-v3": {
+    "width": 3147,
+    "height": 1574,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "clear-sand-bay-hd-v3": {
+    "width": 3147,
+    "height": 1574,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
   }
 }

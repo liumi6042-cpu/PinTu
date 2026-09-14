@@ -1,0 +1,135 @@
+{
+  "id": "mountain-lake-reflection-hd-v3",
+  "origin": "project-ai-generated",
+  "width": 3144,
+  "height": 1572,
+  "sha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
+  "nativeResolution": false,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in tool outputs and local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/mountain-lake-reflection-hd-v3.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-left-guide.png",
+        "sha256": "bd462c56ce14c382a7cf53274d0648ecef721074cbbe3e6758b62b776c40d7f7"
+      },
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-right-guide.png",
+        "sha256": "4f591a8fcee94273ac04e712c403c6c5952e88e7cfd242a6802efe9c9f0a060f"
+      },
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-left-guide.png",
+        "sha256": "7309f6319ba443b6a6da6263a3ba78f12876bac12553dd16d3418c551b3353bf"
+      },
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-right-guide.png",
+        "sha256": "bc769a28899fa46e3a33ce150a3d80426707dc590b73dcb3652135f11baf5c53"
+      }
+    ],
+    "compositionGuide": {
+      "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/composition-guide.png",
+      "sha256": "14723cadbcaaeaeabc685d1c71ab1ddf1b5a1918a63e49dc0d530afee29fa08d",
+      "projectImageId": null
+    },
+    "sourceMetadata": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/generation-record.json"
+  },
+  "composite": {
+    "method": "four-overlapping-project-generated-regions",
+    "parts": [
+      {
+        "id": "top-left",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-left-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "25d0a53a89baab6f4dcf497a9afd6b83185660b3d90f1ee3e0b03ab0b3040f04"
+      },
+      {
+        "id": "top-right",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-right-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "c653d6cc624885d7e7a9bc5e704c77e2b03bbf878c7f4eb993b227f88f524b00"
+      },
+      {
+        "id": "bottom-left",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-left-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "d4cc93dd6b692364cd12d10604228796e680545a1373f2a41174ce7a28813373"
+      },
+      {
+        "id": "bottom-right",
+        "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-right-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "07e8c128091e3c0e43ccc2493ae4df85e97f35366f7ecc7a79075523f4a7f37b"
+      }
+    ],
+    "assemblyRecord": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/manifest.json",
+    "finalUpscaling": false
+  },
+  "resolutionNote": "Four AI-regenerated overlapping regions assembled at native tile scale, with color correction and feathered seams. Composite output is not one native model output; no final interpolation enlargement. Fine details are AI-generated, not recovered photographic detail.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Full composition and generated regions visually inspected. Continuous natural landscape with consistent major contours; no visible panel borders, text, logos or watermarks.",
+      "Original dimensions, region provenance and final SHA verified. Lossless WebP decoded pixels match the assembled PNG."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
+    "play": {
+      "src": "/puzzles/mountain-lake-reflection-hd-v3-play-563c2612aa6c.webp",
+      "width": 3144,
+      "height": 1572,
+      "sha256": "563c2612aa6ce7c514f559170479395c719971a2333d752394f63de576a4da2c",
+      "bytes": 6621592,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "standard": {
+      "src": "/puzzles/mountain-lake-reflection-hd-v3-standard-e247f09e7668.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "e247f09e76684d893e34eb3bcf21e044e62c1fc74347be1c689c62b0eac38af2",
+      "bytes": 2188664,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 1000
+    },
+    "thumbnail": {
+      "src": "/puzzles/mountain-lake-reflection-hd-v3-thumbnail-0a408ca8a9e2.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "0a408ca8a9e2b40f023a94d3ee33cbbbcbede4bbe13786f574c613b7280020e0",
+      "bytes": 30638,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    }
+  }
+}

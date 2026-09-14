@@ -7,7 +7,7 @@ import { parseTableTheme } from '../lib/table-theme.ts';
 
 test('new grids range from 108 to exactly 5000 and the save fits in a local database row',()=>{
   assert.equal(Math.max(...LEVELS.map(l=>l.count)),5000);
-  assert.deepEqual(LEVELS.map(l=>l.count),[108,300,500,1000,1500,2000,3000,4000,5000]);
+  assert.deepEqual(LEVELS.map(l=>l.count),[108,300,500,1000,2000,5000]);
   for(const level of LEVELS)assert.equal(level.cols*level.rows,level.count);
   assert.throws(()=>createPuzzle('seaside',100,60));assert.throws(()=>makeRoom('unsupported','seaside-native-v2',6000,Date.now()));
   for(const [cols,rows] of [[4,3],[8,6]]){
@@ -39,7 +39,7 @@ test('slightly imperfect placement snaps in both singleplayer and multiplayer at
     const state=createPuzzle('seaside',level.cols,level.rows,34),near=Math.min(800/level.cols,600/level.rows)*.22;
     assert.ok(near>Math.min(800/level.cols,600/level.rows)*.18);
     moveGroup(state,0,near,0);assert.ok(dropGroup(state,0,snapTolerance(state)).placed>=1);
-    const room=makeRoom('snap','seaside-native-v2',level.count,1000),member=addMember(room,'a','玩家','digest',1000);
+    const room=makeRoom('snap','mountain-lake-reflection-hd-v3',level.count,1000),member=addMember(room,'a','玩家','digest',1000);
     applyAction(room,member,{type:'claim',groupId:0},1001);
     applyAction(room,member,{type:'drop',groupId:0,dx:near,dy:0,seq:1},1002);
     assert.ok(room.puzzle.groups.some(g=>g.locked&&g.pieces.includes(0)));

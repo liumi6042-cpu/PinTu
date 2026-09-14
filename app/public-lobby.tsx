@@ -13,6 +13,7 @@ import { useLanguage } from './language-switch';
 import CommunityShell from './community-shell';
 import SearchIntroduction from './search-introduction';
 import { preloadPuzzleImage } from '@/lib/puzzle-image-loading';
+import {puzzleImageSource} from '@/lib/puzzle-image-source';
 
 export default function PublicLobby(){
  const language=useLanguage();
@@ -21,7 +22,7 @@ export default function PublicLobby(){
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  async function launchRandom(){
   if(launchLock.current)return;launchLock.current=true;setRandomBusy(true);setLaunchError('');
-  const photo=randomPhoto(PHOTOS);preloadPuzzleImage(photo.src);
+  const photo=randomPhoto(PHOTOS);preloadPuzzleImage(puzzleImageSource(photo,recommendedPieces(photo.id)));
   try{const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:photo.id,pieces:recommendedPieces(photo.id),visibility:'public'});if(!mounted.current)return;saveTicket(ticket);router.push('/room/'+ticket.room.id);}
   catch(e){launchLock.current=false;if(mounted.current){setRandomBusy(false);setLaunchError(e instanceof Error?e.message:'暂时无法开始');}}
  }
@@ -51,7 +52,7 @@ export default function PublicLobby(){
    const photo=RESTORABLE_PHOTOS.find(p=>p.id===room.imageId)!;
    const progress=Math.round(room.placed/room.pieces*100),full=room.players>=8;
    const elapsed=room.startedAt===null?0:Math.max(0,Math.floor((now+offset-room.startedAt)/1000));
-   return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else preloadPuzzleImage(photo.src);}} aria-label={t(photo.title)+' · '+t(full?'已满员':'点击图片，加入拼图')}>
+   return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else preloadPuzzleImage(puzzleImageSource(photo,room.pieces));}} aria-label={t(photo.title)+' · '+t(full?'已满员':'点击图片，加入拼图')}>
     <div className="public-picture"><img src={photo.thumbSrc} alt={t(photo.title)} loading={index<3?'eager':'lazy'}/><span className="picture-count">{room.pieces.toLocaleString()} {t('片')}</span><span className={'live-chip'+(room.players?' is-active':'')}><i/>{t(full?'已满员':room.acceptingNew===false?'暂停接待新玩家':room.players?'正在拼图':'等你开拼')}</span><div className="public-picture-stats"><span aria-label={t('拼图计时')}><Clock3 size={16}/><time>{clockLabel(elapsed)}</time></span><span aria-label={t('在线人数')}><Users size={16}/><strong>{room.players}/8</strong></span></div></div>
     <div className="public-card-body"><div className="public-title"><h2>{room.customTitle?room.title:t(photo.title)}</h2><ArrowUpRight size={19}/></div><div className="public-card-bottom"><span>{t(photo.category)} · {progress}% {t('已完成')}</span><span className="public-join-label">{t(full?'已满员':room.acceptingNew===false?'老朋友继续':'加入拼图')}</span></div><div className="room-progress" aria-hidden="true"><span style={{width:progress+'%'}}/></div></div>
    </a></article>;

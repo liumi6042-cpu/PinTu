@@ -6,8 +6,9 @@ import {runtimeAssets,selectRuntimeFiles,inventory,inside} from '../scripts/rele
 
 test('runtime artwork retains archived saves but excludes PNG originals and unpublished artwork',()=>{
   const photo=(id,status)=>({id,status,origin:'project-ai-generated',src:`/puzzles/${id}.png`,playSrc:`/puzzles/${id}-play-0123456789ab.webp`,thumbSrc:`/puzzles/${id}-thumbnail-0123456789ab.webp`});
-  const urls=runtimeAssets([photo('new','published'),photo('old','archived'),photo('draft','draft')],{static:['/favicon.svg']});
-  assert.equal(urls.length,5);assert.ok(urls.some(url=>url.includes('/old-')));assert.ok(!urls.some(url=>url.endsWith('.png')||url.includes('draft')));
+  const hd={...photo('new','published'),standardSrc:'/puzzles/new-standard-0123456789ab.webp'};
+  const urls=runtimeAssets([hd,photo('old','archived'),photo('draft','draft')],{static:['/favicon.svg']});
+  assert.equal(urls.length,6);assert.ok(urls.includes(hd.standardSrc));assert.ok(urls.some(url=>url.includes('/old-')));assert.ok(!urls.some(url=>url.endsWith('.png')||url.includes('draft')));
   assert.throws(()=>runtimeAssets([photo('bad/../../','published')],{static:[]}));
   assert.throws(()=>runtimeAssets([],{static:['/../.env']}));
 });

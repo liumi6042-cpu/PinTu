@@ -13,7 +13,9 @@ async function request(path,body,token){
 }
 const rooms=[];
 try{
- const create=await request('/api/rooms',{imageId:'emerald-river-valley-native-v2',pieces:5000,visibility:'public',guestSecret:secret,initialState:'seed-v1'});
+ for(const pieces of [2000,5000])assert.equal((await request('/api/rooms',{imageId:'seaside-native-v2',pieces,visibility:'public',guestSecret:secret})).status,400);
+ for(const pieces of [1500,3000,4000])assert.equal((await request('/api/rooms',{imageId:'mountain-lake-reflection-hd-v3',pieces,visibility:'public',guestSecret:secret})).status,400);
+ const create=await request('/api/rooms',{imageId:'mountain-lake-reflection-hd-v3',pieces:5000,visibility:'public',guestSecret:secret,initialState:'seed-v1'});
  assert.equal(create.status,201);rooms.push(create.data);assert.ok(cookie.startsWith('puzzle_guest='));
  assert.ok(create.bytes<1500);assert.equal(create.data.initialState,'seed-v1');assert.equal(create.data.room.puzzle.groups,undefined);
  const initial=create.data.room.puzzle;

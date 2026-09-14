@@ -26,7 +26,7 @@ for photo in catalog:
         kind in prior and photo.get(field) == prior[kind].get('src') and
         (root / 'public' / prior[kind]['src'].lstrip('/')).exists() and
         sha256((root / 'public' / prior[kind]['src'].lstrip('/')).read_bytes()).hexdigest() == prior[kind]['sha256']
-        for kind, field in [('play', 'playSrc'), ('thumbnail', 'thumbSrc')]
+        for kind, field in [('play', 'playSrc'), ('thumbnail', 'thumbSrc')] + ([('standard', 'standardSrc')] if photo.get('standardSrc') else [])
     ):
         if photo['status'] == 'published':
             totals['originalBytes'] += len(original_bytes)
@@ -37,10 +37,13 @@ for photo in catalog:
         image = source.convert('RGB')
         assert image.size == (record['width'], record['height'])
         delivery = {'sourceSha256': record['sha256']}
-        for kind in ('play', 'thumbnail'):
+        for kind in ('play', 'thumbnail') + (('standard',) if photo.get('standardSrc') else ()):
             output = image.copy()
             options = {'format': 'WEBP', 'method': 6}
             if kind == 'play':
+                options['lossless'] = True
+            elif kind == 'standard':
+                output.thumbnail((1774, 1774), Image.Resampling.LANCZOS)
                 options['lossless'] = True
             else:
                 output.thumbnail((480, 384), Image.Resampling.LANCZOS)
@@ -53,13 +56,15 @@ for photo in catalog:
             (root / 'public' / src.lstrip('/')).write_bytes(data)
             with Image.open(BytesIO(data)) as decoded:
                 assert decoded.size == output.size
-                if kind == 'play':
-                    assert ImageChops.difference(image, decoded.convert('RGB')).getbbox() is None
+                if kind in ('play', 'standard'):
+                    assert ImageChops.difference(output, decoded.convert('RGB')).getbbox() is None
             delivery[kind] = {'src': src, 'width': output.width, 'height': output.height,
                               'sha256': digest, 'bytes': len(data),
-                              'format': 'webp', 'lossless': kind == 'play',
-                              'quality': None if kind == 'play' else 82, 'upscaled': False}
-            photo['playSrc' if kind == 'play' else 'thumbSrc'] = src
+                              'format': 'webp', 'lossless': kind in ('play', 'standard'),
+                              'quality': 82 if kind == 'thumbnail' else None, 'upscaled': False}
+            if kind == 'standard':
+                delivery[kind]['downsampled'] = True
+            photo[{'play': 'playSrc', 'thumbnail': 'thumbSrc', 'standard': 'standardSrc'}[kind]] = src
         record['delivery'] = delivery
         record_path.write_text(json.dumps(record, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
         if photo['status'] == 'published':
