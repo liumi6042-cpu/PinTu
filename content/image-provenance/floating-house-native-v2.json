@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/floating-house-native-v2-optimized-d9db7ae262bf.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "d9db7ae262bf604b0eb0542909c11c00854933bfeba0867574ec7ed16396b94f",
+      "bytes": 265556,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "c8c01215a8cab4a202374b785cc58b2ee73c079c0ebe277504495870d3294928",
+      "inputSha256": "c8c01215a8cab4a202374b785cc58b2ee73c079c0ebe277504495870d3294928",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

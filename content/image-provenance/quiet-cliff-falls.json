@@ -58,6 +58,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/quiet-cliff-falls-optimized-3e9e87d2282c.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "3e9e87d2282c48df363f24df37b403e7d790f38e9520c0df23d8966b38b808dd",
+      "bytes": 473224,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+      "inputSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

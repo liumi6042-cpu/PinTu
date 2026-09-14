@@ -6,9 +6,9 @@ export const SITE_NAME = 'Jigsaw Nook';
 export const englishCopy = (text: string) => (english as Record<string, string>)[text] || text;
 export const puzzlePath = (id: string) => `/puzzle/${id}`;
 export const PUBLIC_PAGES = {
-  '/': { title: 'Free Online Jigsaw Puzzles with Friends', description: 'Play free online jigsaw puzzles at Jigsaw Nook. Join a public table with up to 8 players, or choose an original picture and 108–5,000 pieces to play in your browser.' },
+  '/': { title: 'Free Online Jigsaw Puzzles with Friends', description: 'Play free online jigsaw puzzles at Jigsaw Nook. Join a public table with up to 8 players, or choose an original picture and 108–1,000 pieces to play in your browser.' },
   '/lobby': { title: 'Multiplayer Jigsaw Puzzles — Public Lobby', description: 'Join or create a free public jigsaw puzzle room with up to 8 players. No sign-in needed. See available tables and piece counts, then invite your friends.' },
-  '/gallery': { title: 'Online Jigsaw Puzzle Gallery — 108 to 5,000 Pieces', description: 'Browse original nature, scenery and art jigsaw puzzles. Choose 108, 300, 500, 1,000, 2,000 or 5,000 pieces. The gallery shows pictures suited to your chosen count.' },
+  '/gallery': { title: 'Online Jigsaw Puzzle Gallery — 108 to 1,000 Pieces', description: 'Browse original nature, scenery and art jigsaw puzzles. Choose 108, 300, 500 or 1,000 pieces. Click a picture to start a free public puzzle with friends.' },
   '/help': { title: 'How to Play Online Jigsaw Puzzles — Help & Saves', description: 'Learn how to move and sort puzzle pieces, invite friends, save your progress and continue a puzzle at Jigsaw Nook. Get help with public tables and saved progress.' },
 } as const;
 export function isPublicSearchPage(path: string) {

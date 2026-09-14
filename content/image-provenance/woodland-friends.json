@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/woodland-friends-optimized-6e7d582858fd.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "6e7d582858fd4cd68817893d1ac086184160884c6d6873b79c9d6ab626c262b2",
+      "bytes": 650034,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "1199446d03476b2090fcb6fc91a2875c0b76b20b0ba1ed8b009e03e1a84bbd2c",
+      "inputSha256": "1199446d03476b2090fcb6fc91a2875c0b76b20b0ba1ed8b009e03e1a84bbd2c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

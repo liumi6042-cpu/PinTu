@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/floating-islands-optimized-209ed26d6529.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "209ed26d65291719257f0e970519e0c9ff15926aeab7a2a4bafd8045537006c5",
+      "bytes": 620930,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+      "inputSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

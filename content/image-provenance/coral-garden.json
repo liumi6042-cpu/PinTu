@@ -65,6 +65,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/coral-garden-optimized-232e4d089b04.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "232e4d089b044516e9526737fa5f4328c0d344fe4b4139079070768f46797b04",
+      "bytes": 701146,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+      "inputSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

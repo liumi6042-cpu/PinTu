@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/lantern-market-optimized-bec35d733845.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "bec35d733845bddecb67d8a1b0756e36b764b71315eaea443a0df8dadc2c55ed",
+      "bytes": 581850,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+      "inputSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/sleepy-cat-native-v2-optimized-5719ebdc4e4c.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "5719ebdc4e4c102c0d530c791efafc0bc5a3b5cbdad81f3af5c27c1a103b4d43",
+      "bytes": 292668,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "0b4bcddcf8cfc252b269a44841ca402d8ef1d2954acf85870058d9c60ce942c6",
+      "inputSha256": "0b4bcddcf8cfc252b269a44841ca402d8ef1d2954acf85870058d9c60ce942c6",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

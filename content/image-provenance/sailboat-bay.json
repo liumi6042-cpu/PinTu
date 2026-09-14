@@ -58,6 +58,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/sailboat-bay-optimized-944a369ee381.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "944a369ee38195a86483814f78681fabdf6298c38fa73217eec30e9c94f8b2b4",
+      "bytes": 178054,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "inputSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

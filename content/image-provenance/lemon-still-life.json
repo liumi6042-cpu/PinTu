@@ -58,6 +58,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/lemon-still-life-optimized-d8b24a6a599e.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "d8b24a6a599e247b7b136dda70a8d6702acdcc79cd8f1aedf7a5937e1f8ce5ce",
+      "bytes": 115178,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+      "inputSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

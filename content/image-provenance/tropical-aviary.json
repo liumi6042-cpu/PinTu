@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/tropical-aviary-optimized-cd57dc72f961.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "cd57dc72f961d375975980cc9a338b60afee5cde70351f282d2c4ce208891b77",
+      "bytes": 616916,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "f56f6c745c6eee9ededc7ce637fac6e2a7a2d2baa5867892020b7b5cc3d3b66a",
+      "inputSha256": "f56f6c745c6eee9ededc7ce637fac6e2a7a2d2baa5867892020b7b5cc3d3b66a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

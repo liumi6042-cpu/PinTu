@@ -58,6 +58,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/desert-sun-optimized-756cb116c7c6.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "756cb116c7c6deb38f5b8cea24f093084282b653db5f0c855cae7cf55411d356",
+      "bytes": 49154,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+      "inputSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

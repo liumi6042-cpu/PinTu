@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/harbor-houses-optimized-32a8c8d6056d.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "32a8c8d6056d3d633c8d2586f7c800b1923897d4b2c210a61ab1ffd787d59216",
+      "bytes": 578734,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+      "inputSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

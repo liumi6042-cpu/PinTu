@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/rainbow-grassland-native-v2-optimized-b25355e426da.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "b25355e426dae570eafde9c8bd1ad62aaec7d63cefd4e7488fe89ef9ccbfc6d1",
+      "bytes": 334668,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+      "inputSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import { LEVELS } from './puzzle-engine';
+import { NEW_GAME_LEVELS as LEVELS } from './piece-policy';
 import { PHOTO_IDS } from './puzzle-catalog';
 type Tool={name:string;title:string;description:string;inputSchema:object;annotations:{readOnlyHint:boolean;untrustedContentHint:boolean};execute:(input:unknown)=>unknown};
 type Registry={registerTool:(tool:Tool,options:{signal:AbortSignal})=>void|Promise<void>};

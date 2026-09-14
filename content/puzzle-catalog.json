@@ -10,7 +10,9 @@
     "replaces": "mountain-lake-reflection-native-v2",
     "playSrc": "/puzzles/mountain-lake-reflection-hd-v3-play-563c2612aa6c.webp",
     "thumbSrc": "/puzzles/mountain-lake-reflection-hd-v3-thumbnail-0a408ca8a9e2.webp",
-    "standardSrc": "/puzzles/mountain-lake-reflection-hd-v3-standard-e247f09e7668.webp"
+    "standardSrc": "/puzzles/mountain-lake-reflection-hd-v3-standard-e247f09e7668.webp",
+    "optimizedSrc": "/puzzles/mountain-lake-reflection-hd-v3-optimized-eacf05631c58.webp",
+    "optimizedStandardSrc": "/puzzles/mountain-lake-reflection-hd-v3-compact-1eda9430a072.webp"
   },
   {
     "id": "morning-meadow-tree-hd-v3",
@@ -23,7 +25,9 @@
     "replaces": "morning-meadow-tree-native-v2",
     "playSrc": "/puzzles/morning-meadow-tree-hd-v3-play-28ce2feb8f83.webp",
     "thumbSrc": "/puzzles/morning-meadow-tree-hd-v3-thumbnail-ef4e7a2db071.webp",
-    "standardSrc": "/puzzles/morning-meadow-tree-hd-v3-standard-877e1bb7d17b.webp"
+    "standardSrc": "/puzzles/morning-meadow-tree-hd-v3-standard-877e1bb7d17b.webp",
+    "optimizedSrc": "/puzzles/morning-meadow-tree-hd-v3-optimized-eeb2598a912d.webp",
+    "optimizedStandardSrc": "/puzzles/morning-meadow-tree-hd-v3-compact-acae83af8769.webp"
   },
   {
     "id": "clear-sand-bay-hd-v3",
@@ -36,7 +40,9 @@
     "replaces": "clear-sand-bay-native-v2",
     "playSrc": "/puzzles/clear-sand-bay-hd-v3-play-803dc00989a8.webp",
     "thumbSrc": "/puzzles/clear-sand-bay-hd-v3-thumbnail-eee0dd03149c.webp",
-    "standardSrc": "/puzzles/clear-sand-bay-hd-v3-standard-5ef347066062.webp"
+    "standardSrc": "/puzzles/clear-sand-bay-hd-v3-standard-5ef347066062.webp",
+    "optimizedSrc": "/puzzles/clear-sand-bay-hd-v3-optimized-e2ceeefda1cd.webp",
+    "optimizedStandardSrc": "/puzzles/clear-sand-bay-hd-v3-compact-6191306c291b.webp"
   },
   {
     "id": "emerald-river-valley-native-v2",
@@ -48,7 +54,8 @@
     "status": "published",
     "replaces": "emerald-river-valley",
     "playSrc": "/puzzles/emerald-river-valley-native-v2-play-09ebdd9f974b.webp",
-    "thumbSrc": "/puzzles/emerald-river-valley-native-v2-thumbnail-f821ab3720a9.webp"
+    "thumbSrc": "/puzzles/emerald-river-valley-native-v2-thumbnail-f821ab3720a9.webp",
+    "optimizedSrc": "/puzzles/emerald-river-valley-native-v2-optimized-31bef7ba3bec.webp"
   },
   {
     "id": "sunlit-coastal-headland-native-v2",
@@ -60,7 +67,8 @@
     "status": "published",
     "replaces": "sunlit-coastal-headland",
     "playSrc": "/puzzles/sunlit-coastal-headland-native-v2-play-b973a8451adc.webp",
-    "thumbSrc": "/puzzles/sunlit-coastal-headland-native-v2-thumbnail-f84d69f50b3a.webp"
+    "thumbSrc": "/puzzles/sunlit-coastal-headland-native-v2-thumbnail-f84d69f50b3a.webp",
+    "optimizedSrc": "/puzzles/sunlit-coastal-headland-native-v2-optimized-c423ea3989aa.webp"
   },
   {
     "id": "golden-sand-dunes-native-v2",
@@ -72,7 +80,8 @@
     "status": "published",
     "replaces": "golden-sand-dunes",
     "playSrc": "/puzzles/golden-sand-dunes-native-v2-play-54dd8775f62c.webp",
-    "thumbSrc": "/puzzles/golden-sand-dunes-native-v2-thumbnail-47662e08216d.webp"
+    "thumbSrc": "/puzzles/golden-sand-dunes-native-v2-thumbnail-47662e08216d.webp",
+    "optimizedSrc": "/puzzles/golden-sand-dunes-native-v2-optimized-d2fc1961d7a6.webp"
   },
   {
     "id": "autumn-lakeshore-native-v2",
@@ -84,7 +93,8 @@
     "status": "published",
     "replaces": "autumn-lakeshore",
     "playSrc": "/puzzles/autumn-lakeshore-native-v2-play-21a6f1094498.webp",
-    "thumbSrc": "/puzzles/autumn-lakeshore-native-v2-thumbnail-ad7f3e75d88e.webp"
+    "thumbSrc": "/puzzles/autumn-lakeshore-native-v2-thumbnail-ad7f3e75d88e.webp",
+    "optimizedSrc": "/puzzles/autumn-lakeshore-native-v2-optimized-e3914272512e.webp"
   },
   {
     "id": "rainbow-grassland-native-v2",
@@ -96,7 +106,8 @@
     "status": "published",
     "replaces": "rainbow-grassland",
     "playSrc": "/puzzles/rainbow-grassland-native-v2-play-42b28fe777db.webp",
-    "thumbSrc": "/puzzles/rainbow-grassland-native-v2-thumbnail-9f178bdf851f.webp"
+    "thumbSrc": "/puzzles/rainbow-grassland-native-v2-thumbnail-9f178bdf851f.webp",
+    "optimizedSrc": "/puzzles/rainbow-grassland-native-v2-optimized-b25355e426da.webp"
   },
   {
     "id": "mountain-lake-reflection-native-v2",
@@ -108,7 +119,8 @@
     "status": "archived",
     "replaces": "mountain-lake-reflection",
     "playSrc": "/puzzles/mountain-lake-reflection-native-v2-play-05ac2f83031a.webp",
-    "thumbSrc": "/puzzles/mountain-lake-reflection-native-v2-thumbnail-96d08a46989a.webp"
+    "thumbSrc": "/puzzles/mountain-lake-reflection-native-v2-thumbnail-96d08a46989a.webp",
+    "optimizedSrc": "/puzzles/mountain-lake-reflection-native-v2-optimized-4c2fd2eae149.webp"
   },
   {
     "id": "morning-meadow-tree-native-v2",
@@ -120,7 +132,8 @@
     "status": "archived",
     "replaces": "morning-meadow-tree",
     "playSrc": "/puzzles/morning-meadow-tree-native-v2-play-c52b1377871e.webp",
-    "thumbSrc": "/puzzles/morning-meadow-tree-native-v2-thumbnail-64a63bc67a04.webp"
+    "thumbSrc": "/puzzles/morning-meadow-tree-native-v2-thumbnail-64a63bc67a04.webp",
+    "optimizedSrc": "/puzzles/morning-meadow-tree-native-v2-optimized-43a858fdcc91.webp"
   },
   {
     "id": "clear-sand-bay-native-v2",
@@ -132,7 +145,8 @@
     "status": "archived",
     "replaces": "clear-sand-bay",
     "playSrc": "/puzzles/clear-sand-bay-native-v2-play-69dfac64dbbe.webp",
-    "thumbSrc": "/puzzles/clear-sand-bay-native-v2-thumbnail-a19a624dc4c7.webp"
+    "thumbSrc": "/puzzles/clear-sand-bay-native-v2-thumbnail-a19a624dc4c7.webp",
+    "optimizedSrc": "/puzzles/clear-sand-bay-native-v2-optimized-bacaad35fb44.webp"
   },
   {
     "id": "lone-pine-snow-native-v2",
@@ -144,7 +158,8 @@
     "status": "published",
     "replaces": "lone-pine-snow",
     "playSrc": "/puzzles/lone-pine-snow-native-v2-play-09aa4e7d9e31.webp",
-    "thumbSrc": "/puzzles/lone-pine-snow-native-v2-thumbnail-4ef8a6c6f399.webp"
+    "thumbSrc": "/puzzles/lone-pine-snow-native-v2-thumbnail-4ef8a6c6f399.webp",
+    "optimizedSrc": "/puzzles/lone-pine-snow-native-v2-optimized-34ef3dd60c61.webp"
   },
   {
     "id": "quiet-cliff-falls-native-v2",
@@ -156,7 +171,8 @@
     "status": "published",
     "replaces": "quiet-cliff-falls",
     "playSrc": "/puzzles/quiet-cliff-falls-native-v2-play-c3adb310954c.webp",
-    "thumbSrc": "/puzzles/quiet-cliff-falls-native-v2-thumbnail-626d33828104.webp"
+    "thumbSrc": "/puzzles/quiet-cliff-falls-native-v2-thumbnail-626d33828104.webp",
+    "optimizedSrc": "/puzzles/quiet-cliff-falls-native-v2-optimized-a8b12b63d281.webp"
   },
   {
     "id": "lemon-still-life-native-v2",
@@ -168,7 +184,8 @@
     "status": "published",
     "replaces": "lemon-still-life",
     "playSrc": "/puzzles/lemon-still-life-native-v2-play-ab88934e2870.webp",
-    "thumbSrc": "/puzzles/lemon-still-life-native-v2-thumbnail-07e8165718fe.webp"
+    "thumbSrc": "/puzzles/lemon-still-life-native-v2-thumbnail-07e8165718fe.webp",
+    "optimizedSrc": "/puzzles/lemon-still-life-native-v2-optimized-4f7b85c6982b.webp"
   },
   {
     "id": "sleepy-cat-native-v2",
@@ -180,7 +197,8 @@
     "status": "published",
     "replaces": "sleepy-cat",
     "playSrc": "/puzzles/sleepy-cat-native-v2-play-c9eedd3cec20.webp",
-    "thumbSrc": "/puzzles/sleepy-cat-native-v2-thumbnail-6e13e45276b8.webp"
+    "thumbSrc": "/puzzles/sleepy-cat-native-v2-thumbnail-6e13e45276b8.webp",
+    "optimizedSrc": "/puzzles/sleepy-cat-native-v2-optimized-5719ebdc4e4c.webp"
   },
   {
     "id": "sailboat-bay-native-v2",
@@ -192,7 +210,8 @@
     "status": "published",
     "replaces": "sailboat-bay",
     "playSrc": "/puzzles/sailboat-bay-native-v2-play-c17b488b5cea.webp",
-    "thumbSrc": "/puzzles/sailboat-bay-native-v2-thumbnail-216af1686bcf.webp"
+    "thumbSrc": "/puzzles/sailboat-bay-native-v2-thumbnail-216af1686bcf.webp",
+    "optimizedSrc": "/puzzles/sailboat-bay-native-v2-optimized-51652d90180b.webp"
   },
   {
     "id": "tulip-vase-native-v2",
@@ -204,7 +223,8 @@
     "status": "published",
     "replaces": "tulip-vase",
     "playSrc": "/puzzles/tulip-vase-native-v2-play-d021217a1c05.webp",
-    "thumbSrc": "/puzzles/tulip-vase-native-v2-thumbnail-ac75758b8e18.webp"
+    "thumbSrc": "/puzzles/tulip-vase-native-v2-thumbnail-ac75758b8e18.webp",
+    "optimizedSrc": "/puzzles/tulip-vase-native-v2-optimized-87b2a5df0ff6.webp"
   },
   {
     "id": "hill-cottage-native-v2",
@@ -216,7 +236,8 @@
     "status": "published",
     "replaces": "hill-cottage",
     "playSrc": "/puzzles/hill-cottage-native-v2-play-c9b13a91e032.webp",
-    "thumbSrc": "/puzzles/hill-cottage-native-v2-thumbnail-314f1ea02612.webp"
+    "thumbSrc": "/puzzles/hill-cottage-native-v2-thumbnail-314f1ea02612.webp",
+    "optimizedSrc": "/puzzles/hill-cottage-native-v2-optimized-5d368736a87e.webp"
   },
   {
     "id": "whale-moon-native-v2",
@@ -228,7 +249,8 @@
     "status": "published",
     "replaces": "whale-moon",
     "playSrc": "/puzzles/whale-moon-native-v2-play-ce2c82a89b21.webp",
-    "thumbSrc": "/puzzles/whale-moon-native-v2-thumbnail-2dc9dbddd901.webp"
+    "thumbSrc": "/puzzles/whale-moon-native-v2-thumbnail-2dc9dbddd901.webp",
+    "optimizedSrc": "/puzzles/whale-moon-native-v2-optimized-dab1cbdec1a5.webp"
   },
   {
     "id": "orange-bicycle-native-v2",
@@ -240,7 +262,8 @@
     "status": "published",
     "replaces": "orange-bicycle",
     "playSrc": "/puzzles/orange-bicycle-native-v2-play-e679449cfb96.webp",
-    "thumbSrc": "/puzzles/orange-bicycle-native-v2-thumbnail-d549da791d47.webp"
+    "thumbSrc": "/puzzles/orange-bicycle-native-v2-thumbnail-d549da791d47.webp",
+    "optimizedSrc": "/puzzles/orange-bicycle-native-v2-optimized-7b170f60ddaf.webp"
   },
   {
     "id": "peach-breakfast-native-v2",
@@ -252,7 +275,8 @@
     "status": "published",
     "replaces": "peach-breakfast",
     "playSrc": "/puzzles/peach-breakfast-native-v2-play-3e08b520b58c.webp",
-    "thumbSrc": "/puzzles/peach-breakfast-native-v2-thumbnail-08303e3534ca.webp"
+    "thumbSrc": "/puzzles/peach-breakfast-native-v2-thumbnail-08303e3534ca.webp",
+    "optimizedSrc": "/puzzles/peach-breakfast-native-v2-optimized-00f127b51434.webp"
   },
   {
     "id": "desert-sun-native-v2",
@@ -264,7 +288,8 @@
     "status": "published",
     "replaces": "desert-sun",
     "playSrc": "/puzzles/desert-sun-native-v2-play-aa03b034ca8d.webp",
-    "thumbSrc": "/puzzles/desert-sun-native-v2-thumbnail-35e54945d5f4.webp"
+    "thumbSrc": "/puzzles/desert-sun-native-v2-thumbnail-35e54945d5f4.webp",
+    "optimizedSrc": "/puzzles/desert-sun-native-v2-optimized-f8acca556f70.webp"
   },
   {
     "id": "floating-house-native-v2",
@@ -276,7 +301,8 @@
     "status": "published",
     "replaces": "floating-house",
     "playSrc": "/puzzles/floating-house-native-v2-play-b375cfeba220.webp",
-    "thumbSrc": "/puzzles/floating-house-native-v2-thumbnail-e73afeb54279.webp"
+    "thumbSrc": "/puzzles/floating-house-native-v2-thumbnail-e73afeb54279.webp",
+    "optimizedSrc": "/puzzles/floating-house-native-v2-optimized-d9db7ae262bf.webp"
   },
   {
     "id": "blossom-canal-native-v2",
@@ -288,7 +314,8 @@
     "status": "published",
     "replaces": "blossom-canal",
     "playSrc": "/puzzles/blossom-canal-native-v2-play-ecf9e708b8d7.webp",
-    "thumbSrc": "/puzzles/blossom-canal-native-v2-thumbnail-c4bbba6d127c.webp"
+    "thumbSrc": "/puzzles/blossom-canal-native-v2-thumbnail-c4bbba6d127c.webp",
+    "optimizedSrc": "/puzzles/blossom-canal-native-v2-optimized-b2047cc43051.webp"
   },
   {
     "id": "alpine-village-native-v2",
@@ -300,7 +327,8 @@
     "status": "published",
     "replaces": "alpine-village",
     "playSrc": "/puzzles/alpine-village-native-v2-play-d52aa8abe4ae.webp",
-    "thumbSrc": "/puzzles/alpine-village-native-v2-thumbnail-1d1c2dce9ede.webp"
+    "thumbSrc": "/puzzles/alpine-village-native-v2-thumbnail-1d1c2dce9ede.webp",
+    "optimizedSrc": "/puzzles/alpine-village-native-v2-optimized-85b0351fbc78.webp"
   },
   {
     "id": "seaside-native-v2",
@@ -312,7 +340,8 @@
     "status": "published",
     "replaces": "seaside",
     "playSrc": "/puzzles/seaside-native-v2-play-0215326a9178.webp",
-    "thumbSrc": "/puzzles/seaside-native-v2-thumbnail-05f117fb8a2d.webp"
+    "thumbSrc": "/puzzles/seaside-native-v2-thumbnail-05f117fb8a2d.webp",
+    "optimizedSrc": "/puzzles/seaside-native-v2-optimized-e06407b749db.webp"
   },
   {
     "id": "tulip-windmill-native-v2",
@@ -324,7 +353,8 @@
     "status": "published",
     "replaces": "tulip-windmill",
     "playSrc": "/puzzles/tulip-windmill-native-v2-play-84d9f621fc18.webp",
-    "thumbSrc": "/puzzles/tulip-windmill-native-v2-thumbnail-063e643f6ea6.webp"
+    "thumbSrc": "/puzzles/tulip-windmill-native-v2-thumbnail-063e643f6ea6.webp",
+    "optimizedSrc": "/puzzles/tulip-windmill-native-v2-optimized-eac562ed21c9.webp"
   },
   {
     "id": "autumn-teahouse-native-v2",
@@ -336,7 +366,8 @@
     "status": "published",
     "replaces": "autumn-teahouse",
     "playSrc": "/puzzles/autumn-teahouse-native-v2-play-0ab5f379db04.webp",
-    "thumbSrc": "/puzzles/autumn-teahouse-native-v2-thumbnail-fe898d0bc4af.webp"
+    "thumbSrc": "/puzzles/autumn-teahouse-native-v2-thumbnail-fe898d0bc4af.webp",
+    "optimizedSrc": "/puzzles/autumn-teahouse-native-v2-optimized-d8f697535864.webp"
   },
   {
     "id": "bakery-morning-native-v2",
@@ -348,7 +379,8 @@
     "status": "published",
     "replaces": "bakery-morning",
     "playSrc": "/puzzles/bakery-morning-native-v2-play-d489b8334683.webp",
-    "thumbSrc": "/puzzles/bakery-morning-native-v2-thumbnail-bdc949984254.webp"
+    "thumbSrc": "/puzzles/bakery-morning-native-v2-thumbnail-bdc949984254.webp",
+    "optimizedSrc": "/puzzles/bakery-morning-native-v2-optimized-c286d84dd455.webp"
   },
   {
     "id": "ceramic-studio-native-v2",
@@ -360,7 +392,8 @@
     "status": "published",
     "replaces": "ceramic-studio",
     "playSrc": "/puzzles/ceramic-studio-native-v2-play-5bfc3f16d926.webp",
-    "thumbSrc": "/puzzles/ceramic-studio-native-v2-thumbnail-ccf170013821.webp"
+    "thumbSrc": "/puzzles/ceramic-studio-native-v2-thumbnail-ccf170013821.webp",
+    "optimizedSrc": "/puzzles/ceramic-studio-native-v2-optimized-465c95333307.webp"
   },
   {
     "id": "harbor-houses-native-v2",
@@ -372,7 +405,8 @@
     "status": "published",
     "replaces": "harbor-houses",
     "playSrc": "/puzzles/harbor-houses-native-v2-play-11f4b589a747.webp",
-    "thumbSrc": "/puzzles/harbor-houses-native-v2-thumbnail-9fad6c135239.webp"
+    "thumbSrc": "/puzzles/harbor-houses-native-v2-thumbnail-9fad6c135239.webp",
+    "optimizedSrc": "/puzzles/harbor-houses-native-v2-optimized-e85bac4bd1d5.webp"
   },
   {
     "id": "garden-table-native-v2",
@@ -384,7 +418,8 @@
     "status": "published",
     "replaces": "garden-table",
     "playSrc": "/puzzles/garden-table-native-v2-play-a58ffa4b65b9.webp",
-    "thumbSrc": "/puzzles/garden-table-native-v2-thumbnail-22407ec6159f.webp"
+    "thumbSrc": "/puzzles/garden-table-native-v2-thumbnail-22407ec6159f.webp",
+    "optimizedSrc": "/puzzles/garden-table-native-v2-optimized-98cba0eff578.webp"
   },
   {
     "id": "winter-village-native-v2",
@@ -396,7 +431,8 @@
     "status": "published",
     "replaces": "winter-village",
     "playSrc": "/puzzles/winter-village-native-v2-play-f825b351727f.webp",
-    "thumbSrc": "/puzzles/winter-village-native-v2-thumbnail-0c178c067353.webp"
+    "thumbSrc": "/puzzles/winter-village-native-v2-thumbnail-0c178c067353.webp",
+    "optimizedSrc": "/puzzles/winter-village-native-v2-optimized-96073e7f8c82.webp"
   },
   {
     "id": "emerald-river-valley",
@@ -407,7 +443,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/emerald-river-valley-play-7949306eaa84.webp",
-    "thumbSrc": "/puzzles/emerald-river-valley-thumbnail-487330d2a587.webp"
+    "thumbSrc": "/puzzles/emerald-river-valley-thumbnail-487330d2a587.webp",
+    "optimizedSrc": "/puzzles/emerald-river-valley-optimized-2d86f48b3515.webp"
   },
   {
     "id": "sunlit-coastal-headland",
@@ -418,7 +455,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/sunlit-coastal-headland-play-23618550bd5e.webp",
-    "thumbSrc": "/puzzles/sunlit-coastal-headland-thumbnail-762e40c41598.webp"
+    "thumbSrc": "/puzzles/sunlit-coastal-headland-thumbnail-762e40c41598.webp",
+    "optimizedSrc": "/puzzles/sunlit-coastal-headland-optimized-ad9441550180.webp"
   },
   {
     "id": "golden-sand-dunes",
@@ -429,7 +467,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/golden-sand-dunes-play-6033cc6f3ce7.webp",
-    "thumbSrc": "/puzzles/golden-sand-dunes-thumbnail-6f3d81c994f7.webp"
+    "thumbSrc": "/puzzles/golden-sand-dunes-thumbnail-6f3d81c994f7.webp",
+    "optimizedSrc": "/puzzles/golden-sand-dunes-optimized-5d70c7b1ba93.webp"
   },
   {
     "id": "autumn-lakeshore",
@@ -440,7 +479,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/autumn-lakeshore-play-96797b6a80f6.webp",
-    "thumbSrc": "/puzzles/autumn-lakeshore-thumbnail-5bdf424a0a75.webp"
+    "thumbSrc": "/puzzles/autumn-lakeshore-thumbnail-5bdf424a0a75.webp",
+    "optimizedSrc": "/puzzles/autumn-lakeshore-optimized-1c76dd818968.webp"
   },
   {
     "id": "rainbow-grassland",
@@ -451,7 +491,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/rainbow-grassland-play-75ba8c03a2c6.webp",
-    "thumbSrc": "/puzzles/rainbow-grassland-thumbnail-537ca8ee53bf.webp"
+    "thumbSrc": "/puzzles/rainbow-grassland-thumbnail-537ca8ee53bf.webp",
+    "optimizedSrc": "/puzzles/rainbow-grassland-optimized-7ff7268904ea.webp"
   },
   {
     "id": "mountain-lake-reflection",
@@ -462,7 +503,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/mountain-lake-reflection-play-955c5c497ba9.webp",
-    "thumbSrc": "/puzzles/mountain-lake-reflection-thumbnail-014103253f54.webp"
+    "thumbSrc": "/puzzles/mountain-lake-reflection-thumbnail-014103253f54.webp",
+    "optimizedSrc": "/puzzles/mountain-lake-reflection-optimized-1867e2d4de16.webp"
   },
   {
     "id": "morning-meadow-tree",
@@ -473,7 +515,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/morning-meadow-tree-play-b1879002897a.webp",
-    "thumbSrc": "/puzzles/morning-meadow-tree-thumbnail-8750918ab6b2.webp"
+    "thumbSrc": "/puzzles/morning-meadow-tree-thumbnail-8750918ab6b2.webp",
+    "optimizedSrc": "/puzzles/morning-meadow-tree-optimized-689cf2ac905c.webp"
   },
   {
     "id": "clear-sand-bay",
@@ -484,7 +527,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/clear-sand-bay-play-60097e7b105d.webp",
-    "thumbSrc": "/puzzles/clear-sand-bay-thumbnail-971e9300045f.webp"
+    "thumbSrc": "/puzzles/clear-sand-bay-thumbnail-971e9300045f.webp",
+    "optimizedSrc": "/puzzles/clear-sand-bay-optimized-b6ebebf3c564.webp"
   },
   {
     "id": "lone-pine-snow",
@@ -495,7 +539,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/lone-pine-snow-play-1c7e911f9c54.webp",
-    "thumbSrc": "/puzzles/lone-pine-snow-thumbnail-4249c2e1f234.webp"
+    "thumbSrc": "/puzzles/lone-pine-snow-thumbnail-4249c2e1f234.webp",
+    "optimizedSrc": "/puzzles/lone-pine-snow-optimized-083ae5be3e49.webp"
   },
   {
     "id": "quiet-cliff-falls",
@@ -506,7 +551,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/quiet-cliff-falls-play-58048feab040.webp",
-    "thumbSrc": "/puzzles/quiet-cliff-falls-thumbnail-925d563cffb2.webp"
+    "thumbSrc": "/puzzles/quiet-cliff-falls-thumbnail-925d563cffb2.webp",
+    "optimizedSrc": "/puzzles/quiet-cliff-falls-optimized-3e9e87d2282c.webp"
   },
   {
     "id": "lemon-still-life",
@@ -517,7 +563,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/lemon-still-life-play-351bb31dec03.webp",
-    "thumbSrc": "/puzzles/lemon-still-life-thumbnail-8c5a0448dd12.webp"
+    "thumbSrc": "/puzzles/lemon-still-life-thumbnail-8c5a0448dd12.webp",
+    "optimizedSrc": "/puzzles/lemon-still-life-optimized-d8b24a6a599e.webp"
   },
   {
     "id": "sleepy-cat",
@@ -528,7 +575,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/sleepy-cat-play-57213fc195a7.webp",
-    "thumbSrc": "/puzzles/sleepy-cat-thumbnail-c49d7e4d1010.webp"
+    "thumbSrc": "/puzzles/sleepy-cat-thumbnail-c49d7e4d1010.webp",
+    "optimizedSrc": "/puzzles/sleepy-cat-optimized-3522daec8e39.webp"
   },
   {
     "id": "sailboat-bay",
@@ -539,7 +587,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/sailboat-bay-play-6a73f7ec1f43.webp",
-    "thumbSrc": "/puzzles/sailboat-bay-thumbnail-daacaea1f9fe.webp"
+    "thumbSrc": "/puzzles/sailboat-bay-thumbnail-daacaea1f9fe.webp",
+    "optimizedSrc": "/puzzles/sailboat-bay-optimized-944a369ee381.webp"
   },
   {
     "id": "tulip-vase",
@@ -550,7 +599,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/tulip-vase-play-728aaedbe835.webp",
-    "thumbSrc": "/puzzles/tulip-vase-thumbnail-fcb40404fae3.webp"
+    "thumbSrc": "/puzzles/tulip-vase-thumbnail-fcb40404fae3.webp",
+    "optimizedSrc": "/puzzles/tulip-vase-optimized-d09d1fe5f14e.webp"
   },
   {
     "id": "hill-cottage",
@@ -561,7 +611,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/hill-cottage-play-a0a139866d7d.webp",
-    "thumbSrc": "/puzzles/hill-cottage-thumbnail-179a213e140b.webp"
+    "thumbSrc": "/puzzles/hill-cottage-thumbnail-179a213e140b.webp",
+    "optimizedSrc": "/puzzles/hill-cottage-optimized-60b9a4b62ee7.webp"
   },
   {
     "id": "whale-moon",
@@ -572,7 +623,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/whale-moon-play-1637afcdf018.webp",
-    "thumbSrc": "/puzzles/whale-moon-thumbnail-462b3eb77a54.webp"
+    "thumbSrc": "/puzzles/whale-moon-thumbnail-462b3eb77a54.webp",
+    "optimizedSrc": "/puzzles/whale-moon-optimized-e6b46c5a0771.webp"
   },
   {
     "id": "orange-bicycle",
@@ -583,7 +635,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/orange-bicycle-play-00a7ee5b7f98.webp",
-    "thumbSrc": "/puzzles/orange-bicycle-thumbnail-f6d0c4f92a73.webp"
+    "thumbSrc": "/puzzles/orange-bicycle-thumbnail-f6d0c4f92a73.webp",
+    "optimizedSrc": "/puzzles/orange-bicycle-optimized-8122151359da.webp"
   },
   {
     "id": "peach-breakfast",
@@ -594,7 +647,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/peach-breakfast-play-01afe93eeb77.webp",
-    "thumbSrc": "/puzzles/peach-breakfast-thumbnail-56ee6654835c.webp"
+    "thumbSrc": "/puzzles/peach-breakfast-thumbnail-56ee6654835c.webp",
+    "optimizedSrc": "/puzzles/peach-breakfast-optimized-e78fd7fd081b.webp"
   },
   {
     "id": "desert-sun",
@@ -605,7 +659,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/desert-sun-play-81b806fe08e2.webp",
-    "thumbSrc": "/puzzles/desert-sun-thumbnail-93030157090c.webp"
+    "thumbSrc": "/puzzles/desert-sun-thumbnail-93030157090c.webp",
+    "optimizedSrc": "/puzzles/desert-sun-optimized-756cb116c7c6.webp"
   },
   {
     "id": "floating-house",
@@ -616,7 +671,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/floating-house-play-0edf56ad945b.webp",
-    "thumbSrc": "/puzzles/floating-house-thumbnail-08f4d3d888e4.webp"
+    "thumbSrc": "/puzzles/floating-house-thumbnail-08f4d3d888e4.webp",
+    "optimizedSrc": "/puzzles/floating-house-optimized-abf5047c9f31.webp"
   },
   {
     "id": "blossom-canal",
@@ -627,7 +683,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/blossom-canal-play-1b1afc5db71a.webp",
-    "thumbSrc": "/puzzles/blossom-canal-thumbnail-ab2cc4687425.webp"
+    "thumbSrc": "/puzzles/blossom-canal-thumbnail-ab2cc4687425.webp",
+    "optimizedSrc": "/puzzles/blossom-canal-optimized-38e9abcf0f4a.webp"
   },
   {
     "id": "coral-garden",
@@ -638,7 +695,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/coral-garden-play-251886942d5b.webp",
-    "thumbSrc": "/puzzles/coral-garden-thumbnail-81c0426bec73.webp"
+    "thumbSrc": "/puzzles/coral-garden-thumbnail-81c0426bec73.webp",
+    "optimizedSrc": "/puzzles/coral-garden-optimized-232e4d089b04.webp"
   },
   {
     "id": "cat-library",
@@ -649,7 +707,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/cat-library-play-0807df1a38a1.webp",
-    "thumbSrc": "/puzzles/cat-library-thumbnail-d2661e89cd92.webp"
+    "thumbSrc": "/puzzles/cat-library-thumbnail-d2661e89cd92.webp",
+    "optimizedSrc": "/puzzles/cat-library-optimized-f8cd932c094b.webp"
   },
   {
     "id": "alpine-village",
@@ -660,7 +719,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/alpine-village-play-ad7aa273c289.webp",
-    "thumbSrc": "/puzzles/alpine-village-thumbnail-f2ab8f7ecf6b.webp"
+    "thumbSrc": "/puzzles/alpine-village-thumbnail-f2ab8f7ecf6b.webp",
+    "optimizedSrc": "/puzzles/alpine-village-optimized-9b69d116744b.webp"
   },
   {
     "id": "seaside",
@@ -671,7 +731,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/seaside-play-ca7174e77276.webp",
-    "thumbSrc": "/puzzles/seaside-thumbnail-ed9549cc365d.webp"
+    "thumbSrc": "/puzzles/seaside-thumbnail-ed9549cc365d.webp",
+    "optimizedSrc": "/puzzles/seaside-optimized-daee3d7abdfb.webp"
   },
   {
     "id": "skate-garden",
@@ -682,7 +743,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/skate-garden-play-884a5d26624c.webp",
-    "thumbSrc": "/puzzles/skate-garden-thumbnail-a0176a1a6279.webp"
+    "thumbSrc": "/puzzles/skate-garden-thumbnail-a0176a1a6279.webp",
+    "optimizedSrc": "/puzzles/skate-garden-optimized-5969ded60f60.webp"
   },
   {
     "id": "amber-cabinet",
@@ -693,7 +755,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/amber-cabinet-play-87071a7ec4d6.webp",
-    "thumbSrc": "/puzzles/amber-cabinet-thumbnail-b5d538d458cd.webp"
+    "thumbSrc": "/puzzles/amber-cabinet-thumbnail-b5d538d458cd.webp",
+    "optimizedSrc": "/puzzles/amber-cabinet-optimized-8eaa3c563177.webp"
   },
   {
     "id": "vermilion-garden",
@@ -704,7 +767,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/vermilion-garden-play-b54e890e0a58.webp",
-    "thumbSrc": "/puzzles/vermilion-garden-thumbnail-a5c77e092a92.webp"
+    "thumbSrc": "/puzzles/vermilion-garden-thumbnail-a5c77e092a92.webp",
+    "optimizedSrc": "/puzzles/vermilion-garden-optimized-13a666b25e35.webp"
   },
   {
     "id": "lantern-market",
@@ -715,7 +779,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/lantern-market-play-a08e167238cb.webp",
-    "thumbSrc": "/puzzles/lantern-market-thumbnail-2493faf2382d.webp"
+    "thumbSrc": "/puzzles/lantern-market-thumbnail-2493faf2382d.webp",
+    "optimizedSrc": "/puzzles/lantern-market-optimized-bec35d733845.webp"
   },
   {
     "id": "tulip-windmill",
@@ -726,7 +791,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/tulip-windmill-play-96d1fb95e025.webp",
-    "thumbSrc": "/puzzles/tulip-windmill-thumbnail-116adeb7c698.webp"
+    "thumbSrc": "/puzzles/tulip-windmill-thumbnail-116adeb7c698.webp",
+    "optimizedSrc": "/puzzles/tulip-windmill-optimized-f329d9b4ade4.webp"
   },
   {
     "id": "autumn-teahouse",
@@ -737,7 +803,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/autumn-teahouse-play-531755dd2723.webp",
-    "thumbSrc": "/puzzles/autumn-teahouse-thumbnail-5d53386d4009.webp"
+    "thumbSrc": "/puzzles/autumn-teahouse-thumbnail-5d53386d4009.webp",
+    "optimizedSrc": "/puzzles/autumn-teahouse-optimized-2c19055b348b.webp"
   },
   {
     "id": "bakery-morning",
@@ -748,7 +815,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/bakery-morning-play-1bc923303fe7.webp",
-    "thumbSrc": "/puzzles/bakery-morning-thumbnail-61e2e0f3b75c.webp"
+    "thumbSrc": "/puzzles/bakery-morning-thumbnail-61e2e0f3b75c.webp",
+    "optimizedSrc": "/puzzles/bakery-morning-optimized-f858a1bc72e3.webp"
   },
   {
     "id": "tropical-aviary",
@@ -759,7 +827,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/tropical-aviary-play-6e1d568c1b1b.webp",
-    "thumbSrc": "/puzzles/tropical-aviary-thumbnail-b249d8aa9fdc.webp"
+    "thumbSrc": "/puzzles/tropical-aviary-thumbnail-b249d8aa9fdc.webp",
+    "optimizedSrc": "/puzzles/tropical-aviary-optimized-cd57dc72f961.webp"
   },
   {
     "id": "woodland-friends",
@@ -770,7 +839,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/woodland-friends-play-a570b7a959af.webp",
-    "thumbSrc": "/puzzles/woodland-friends-thumbnail-78c4420f01b2.webp"
+    "thumbSrc": "/puzzles/woodland-friends-thumbnail-78c4420f01b2.webp",
+    "optimizedSrc": "/puzzles/woodland-friends-optimized-6e7d582858fd.webp"
   },
   {
     "id": "ceramic-studio",
@@ -781,7 +851,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/ceramic-studio-play-151ce006e135.webp",
-    "thumbSrc": "/puzzles/ceramic-studio-thumbnail-ce44ab7fdb9e.webp"
+    "thumbSrc": "/puzzles/ceramic-studio-thumbnail-ce44ab7fdb9e.webp",
+    "optimizedSrc": "/puzzles/ceramic-studio-optimized-27ae99ef7be6.webp"
   },
   {
     "id": "star-observatory",
@@ -792,7 +863,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/star-observatory-play-adaaa23caa19.webp",
-    "thumbSrc": "/puzzles/star-observatory-thumbnail-2e6e5cb3ac62.webp"
+    "thumbSrc": "/puzzles/star-observatory-thumbnail-2e6e5cb3ac62.webp",
+    "optimizedSrc": "/puzzles/star-observatory-optimized-d1237d3774db.webp"
   },
   {
     "id": "floating-islands",
@@ -803,7 +875,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/floating-islands-play-cc2bf3f201d6.webp",
-    "thumbSrc": "/puzzles/floating-islands-thumbnail-837a5c15defc.webp"
+    "thumbSrc": "/puzzles/floating-islands-thumbnail-837a5c15defc.webp",
+    "optimizedSrc": "/puzzles/floating-islands-optimized-209ed26d6529.webp"
   },
   {
     "id": "harbor-houses",
@@ -814,7 +887,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/harbor-houses-play-d4c9611f3bf1.webp",
-    "thumbSrc": "/puzzles/harbor-houses-thumbnail-bfeed0789495.webp"
+    "thumbSrc": "/puzzles/harbor-houses-thumbnail-bfeed0789495.webp",
+    "optimizedSrc": "/puzzles/harbor-houses-optimized-32a8c8d6056d.webp"
   },
   {
     "id": "garden-table",
@@ -825,7 +899,8 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/garden-table-play-00852b035590.webp",
-    "thumbSrc": "/puzzles/garden-table-thumbnail-86ce914461f9.webp"
+    "thumbSrc": "/puzzles/garden-table-thumbnail-86ce914461f9.webp",
+    "optimizedSrc": "/puzzles/garden-table-optimized-5de140c6180d.webp"
   },
   {
     "id": "winter-village",
@@ -836,6 +911,7 @@
     "origin": "project-ai-generated",
     "status": "archived",
     "playSrc": "/puzzles/winter-village-play-fa909191d22a.webp",
-    "thumbSrc": "/puzzles/winter-village-thumbnail-bfea8c39bd6c.webp"
+    "thumbSrc": "/puzzles/winter-village-thumbnail-bfea8c39bd6c.webp",
+    "optimizedSrc": "/puzzles/winter-village-optimized-76be54565d36.webp"
   }
 ]

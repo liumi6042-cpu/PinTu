@@ -55,6 +55,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/vermilion-garden-optimized-13a666b25e35.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "13a666b25e3591bcc310ea80b50474fcf165383a7f5bfbe81647985d234e7f0b",
+      "bytes": 568980,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "inputSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

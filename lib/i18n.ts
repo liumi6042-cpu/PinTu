@@ -39,6 +39,7 @@ const extras:Record<string,string>={
  '可选画面':'Available pictures','没有符合当前片数与筛选条件的图片。':'No pictures match this piece count and your filters.',
  '清除搜索和分类':'Clear search and category','改为 300 片，查看更多':'Switch to 300 pieces for more pictures',
  '这张图片暂不支持该片数，请选择较少片数或其他图片。':'This picture does not support that piece count. Choose fewer pieces or another picture.',
+ '大于 1000 片的新拼图暂时关闭，已有房间可以继续。':'New puzzles above 1,000 pieces are temporarily paused. Existing rooms can still be played.',
  '聊天':'Chat','房间聊天':'Room chat','未读消息':'Unread messages','和这张桌上的朋友聊聊':'A little conversation, piece by piece',
  '收起聊天':'Close chat','恢复已屏蔽的聊天':'Unblock hidden players','聊天消息':'Chat messages','从一句你好开始吧。':'Start with a little hello.',
  '正在连接聊天…':'Connecting to chat…','屏蔽此玩家的聊天':'Hide this player’s messages','查看新消息':'See new messages','说点什么…':'Say something…',

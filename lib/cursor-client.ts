@@ -12,19 +12,37 @@ export class CursorClient {
   private retryAt=0;
   private roomId:string;private token:string;private playerId:string;
   private receive:(cursors:SharedCursor[])=>void;private ready:()=>boolean;private hidden:()=>boolean;
+  private visibilityTarget:Document|null=null;
+  private visibilityChanged=()=>{
+    if(this.stopped)return;
+    if(this.hidden()){
+      if(this.timer)clearTimeout(this.timer);this.timer=null;
+      // Publish one tombstone before sleeping, including when a position is in flight.
+      this.point(null);this.receive([]);
+    }else this.schedule(0);
+  };
   constructor(roomId:string,token:string,playerId:string,
     receive:(cursors:SharedCursor[])=>void,ready:()=>boolean,hidden:()=>boolean=()=>false){
     this.roomId=roomId;this.token=token;this.playerId=playerId;this.receive=receive;this.ready=ready;this.hidden=hidden;
   }
-  start(){this.stopped=false;this.schedule(0);}
+  start(){
+    if(!this.stopped)return;this.stopped=false;
+    if(typeof document!=='undefined'){this.visibilityTarget=document;document.addEventListener('visibilitychange',this.visibilityChanged);}
+    this.schedule(0);
+  }
   point(point:CursorPoint|null){
+    if(this.hidden())point=null;
     if(this.stopped || (!point&&!this.visible&&this.pending===undefined))return;
     this.visible=point!==null;this.pending=point;this.lastMotion=Date.now();
     this.schedule(Math.max(0,CURSOR_INTERVAL-(performance.now()-this.sentAt)));
   }
-  private schedule(delay:number){if(this.stopped||this.running)return;if(this.timer)clearTimeout(this.timer);this.timer=setTimeout(()=>void this.exchange(),Math.max(delay,this.retryAt-Date.now()));}
+  private schedule(delay:number){
+    if(this.timer)clearTimeout(this.timer);this.timer=null;
+    if(this.stopped||this.running||(this.hidden()&&this.pending!==null))return;
+    this.timer=setTimeout(()=>{this.timer=null;void this.exchange();},Math.max(delay,this.retryAt-Date.now()));
+  }
   private async exchange(){
-    if(this.stopped)return;
+    if(this.stopped||(this.hidden()&&this.pending!==null))return;
     if(!this.ready()){this.receive([]);this.schedule(1500);return;}
     this.running=true;this.sentAt=performance.now();
     const point=this.pending;this.pending=undefined;let active=false;
@@ -39,7 +57,7 @@ export class CursorClient {
       if(!this.stopped){
         const now=Date.now();
         const others=data.cursors.filter(cursor=>cursor.playerId!==this.playerId).map(cursor=>({...cursor,updatedAt:now-Math.max(0,(data.serverTime??now)-cursor.updatedAt)}));
-        active=others.length>0;this.receive(others);
+        active=others.length>0;this.receive(this.hidden()?[]:others);
       }
     }catch{if(!this.stopped)this.receive([]);}
     finally{
@@ -49,7 +67,9 @@ export class CursorClient {
   }
   stop(){
     if(this.stopped)return;
-    this.stopped=true;if(this.timer)clearTimeout(this.timer);this.controller?.abort();this.receive([]);
+    this.stopped=true;if(this.timer)clearTimeout(this.timer);this.timer=null;
+    this.visibilityTarget?.removeEventListener('visibilitychange',this.visibilityChanged);this.visibilityTarget=null;
+    this.controller?.abort();this.receive([]);
     // A higher sequence tombstone also defeats a delayed in-flight position update.
     if(this.visible||this.pending!==undefined)void fetch(`/api/rooms/${this.roomId}/cursors`,{method:'POST',keepalive:true,
       headers:{Authorization:`Bearer ${this.token}`,'Content-Type':'application/json'},body:JSON.stringify({clientId:this.id,seq:++this.seq,point:null})}).catch(()=>{});

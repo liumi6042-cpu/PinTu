@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/harbor-houses-native-v2-optimized-e85bac4bd1d5.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "e85bac4bd1d5e020495f2338de3757a0b99bf4b7babe3d27bacafd07a9a7fe50",
+      "bytes": 277296,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "inputSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

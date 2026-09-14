@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/bakery-morning-native-v2-optimized-c286d84dd455.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "c286d84dd45502159a7736031564334d8b4edda1aecb22ff8ba3ee65c9085e87",
+      "bytes": 257424,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
+      "inputSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

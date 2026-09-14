@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/garden-table-native-v2-optimized-98cba0eff578.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "98cba0eff57862a1991773a43963ddb72df61049b8d895ed1e83e953b4b9a25e",
+      "bytes": 303686,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+      "inputSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

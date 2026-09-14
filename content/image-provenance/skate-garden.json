@@ -55,6 +55,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/skate-garden-optimized-5969ded60f60.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "5969ded60f60806f35f62f3553fe72cc89fbd1fd2db2c454bddab4a1d49e67c9",
+      "bytes": 503520,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "inputSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/winter-village-optimized-76be54565d36.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "76be54565d362b04dc16108b28e769a62dffcf1019768bc483bb3caeb77c22f5",
+      "bytes": 530268,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+      "inputSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

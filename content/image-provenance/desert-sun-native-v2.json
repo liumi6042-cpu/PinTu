@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/desert-sun-native-v2-optimized-f8acca556f70.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "f8acca556f70b69182379fffb72e35539963d9c9deb0ae2e27f7e08cd605587a",
+      "bytes": 226448,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+      "inputSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeRoom, addMember, applyAction, snapshot } from '../lib/room-engine.ts';
+import { addMember, applyAction, snapshot } from '../lib/room-engine.ts';
+import {makeFixtureRoom as makeRoom} from './legacy-fixtures.mjs';
 import { recordRoomChange, roomUpdate, applyRoomUpdate, roomPollDelay } from '../lib/room-sync.ts';
 import { RoomClient } from '../lib/room-client.ts';
 

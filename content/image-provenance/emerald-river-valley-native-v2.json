@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/emerald-river-valley-native-v2-optimized-31bef7ba3bec.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "31bef7ba3bec94d5d024935f3dd53ecf6a22667f5cda7b6de48645f1cbde10c4",
+      "bytes": 553518,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "inputSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -35,7 +35,7 @@ assert run('systemctl', 'is-active', args.old_unit) == 'active'
 nginx_before = nginx.read_text()
 source_address, target_address = [f'http://127.0.0.1:{port}' for port in [args.from_port, args.to_port]]
 assert source_address in nginx_before and target_address not in nginx_before
-nginx_after = nginx_before.replace(source_address, target_address).replace('(?:play|thumbnail)', '(?:play|standard|thumbnail)')
+nginx_after = nginx_before.replace(source_address, target_address).replace('(?:play|thumbnail)', '(?:play|standard|thumbnail|optimized|compact)').replace('(?:play|standard|thumbnail)', '(?:play|standard|thumbnail|optimized|compact)')
 
 app.mkdir(parents=True)
 with tarfile.open(archive) as bundle:
@@ -84,7 +84,7 @@ def check(port, all_assets=False):
         assert 'href="/membership"' not in html
         if path == '/gallery':
             assert html.count('class="gallery-entry-card"') == manifest['publicPictures']
-            assert html.count('type="radio"') == 6
+            assert html.count('type="radio"') == 4
             for marker in ['mountain-lake-reflection-hd-v3', 'morning-meadow-tree-hd-v3', 'clear-sand-bay-hd-v3']:
                 assert marker in html
             for marker in ['class="picture-guidance"', 'class="picture-advice"', 'gallery-picture-details']:
@@ -142,11 +142,13 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             json_request(3139, path + '/chat', {'requestId': secrets.token_hex(16), 'text': text}, actor)
             assert json_request(3138, path + '/chat', None, actor)['messages'][0]['text'] == text
             json_request(3138, path, {'type': 'release', 'groupId': 0}, actor)
+            head = get(3138, '/room/' + ticket['room']['id'])[1].decode().partition('</head>')[0]
+            assert '/puzzles/mountain-lake-reflection-native-v2-optimized-' in head
         for count in [2000, 5000]:
             json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'seaside-native-v2', 'pieces': count, 'guestSecret': secrets.token_hex(32)}, {}, 400)
-        for count in [1500, 3000, 4000]:
+        for count in [1500, 2000, 3000, 4000, 5000]:
             json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'mountain-lake-reflection-hd-v3', 'pieces': count, 'guestSecret': secrets.token_hex(32)}, {}, 400)
-        for count, kind in [(300, 'standard'), (5000, 'play')]:
+        for count, kind in [(300, 'compact'), (1000, 'compact')]:
             actor = {}
             ticket = json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'mountain-lake-reflection-hd-v3', 'pieces': count, 'guestSecret': secrets.token_hex(32), 'initialState': 'seed-v1'}, actor, 201)
             assert 'groups' not in ticket['room']['puzzle'] and len(json.dumps(ticket)) < 1600

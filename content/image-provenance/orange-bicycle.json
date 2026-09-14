@@ -58,6 +58,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/orange-bicycle-optimized-8122151359da.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "8122151359da8de0d792a5eef12c2d29efebbba8250b693dcf62aa311d3495a0",
+      "bytes": 154972,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+      "inputSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/ceramic-studio-native-v2-optimized-465c95333307.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "465c95333307be9e6660ec83c6abc3b978906ebc7a26fbd981798ca07f273dd4",
+      "bytes": 299358,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+      "inputSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

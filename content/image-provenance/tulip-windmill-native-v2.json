@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/tulip-windmill-native-v2-optimized-eac562ed21c9.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "eac562ed21c99e7643b009f1c3d239e36385491c54d6fa3236b87b0210b441bb",
+      "bytes": 359606,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc",
+      "inputSha256": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

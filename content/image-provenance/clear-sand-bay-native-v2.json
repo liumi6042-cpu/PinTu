@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/clear-sand-bay-native-v2-optimized-bacaad35fb44.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "bacaad35fb44ef3afbc13c2efda410611e1d5cec64e7d3b535c18533bb746854",
+      "bytes": 428410,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "inputSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

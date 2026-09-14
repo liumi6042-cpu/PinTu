@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/mountain-lake-reflection-native-v2-optimized-4c2fd2eae149.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "4c2fd2eae149fc37f0b3dc57692c5940da228911304101004757e7e27dbb7dfc",
+      "bytes": 315946,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "231037dc16d0cf0115c496d139c1e6fc9f5e4e719445dfbf2c8ac02dc35afde8",
+      "inputSha256": "231037dc16d0cf0115c496d139c1e6fc9f5e4e719445dfbf2c8ac02dc35afde8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/tulip-vase-native-v2-optimized-87b2a5df0ff6.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "87b2a5df0ff6d93bb7b189e70dc482adc2146b1ac81380f381c305042e5543d1",
+      "bytes": 154342,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+      "inputSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

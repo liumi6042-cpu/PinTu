@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/autumn-lakeshore-native-v2-optimized-e3914272512e.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "e3914272512e8248c79cde115e3bb5b5ce461e4aa91d70493418434b73c18264",
+      "bytes": 421714,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "71286f0f311e8041d66e8773842e4cf43ed446bc228e3012a732cc2df37f7437",
+      "inputSha256": "71286f0f311e8041d66e8773842e4cf43ed446bc228e3012a732cc2df37f7437",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

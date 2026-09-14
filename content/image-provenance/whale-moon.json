@@ -58,6 +58,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/whale-moon-optimized-e6b46c5a0771.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "e6b46c5a0771cc4d2f90e51f6f7d3c605c5bcdf100e6959cc3ab2cbef9fdd448",
+      "bytes": 158696,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+      "inputSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

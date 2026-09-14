@@ -21,9 +21,10 @@ export function walk(root) {
 export function runtimeAssets(catalog, config) {
   const urls=new Set(config.static);
   for(const photo of catalog.filter(p=>p.origin==='project-ai-generated'&&['published','archived'].includes(p.status))){
-    for(const name of ['playSrc','thumbSrc',...(photo.standardSrc?['standardSrc']:[])]){
+    for(const name of ['playSrc','thumbSrc','optimizedSrc',...(photo.standardSrc?['standardSrc','optimizedStandardSrc']:[])]){
       const url=photo[name];
-      if(typeof url!=='string'||!/^\/puzzles\/[^/]+-(play|standard|thumbnail)-[a-f0-9]{12}\.webp$/.test(url))throw new Error('Missing runtime artwork: '+photo.id);
+      const kind={playSrc:'play',thumbSrc:'thumbnail',standardSrc:'standard',optimizedSrc:'optimized',optimizedStandardSrc:'compact'}[name];
+      if(!/^[a-z0-9-]+$/.test(photo.id)||typeof url!=='string'||!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Missing runtime artwork: '+photo.id);
       urls.add(url);
     }
   }

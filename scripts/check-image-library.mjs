@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const fullHdOptimizedIds=new Set(['mountain-lake-reflection-hd-v3','morning-meadow-tree-hd-v3','clear-sand-bay-hd-v3']);
+
 // This validates provenance records and serving rules, not a legal guarantee.
 export async function checkImageLibrary(root){
   const catalog=JSON.parse(await readFile(join(root,'content/puzzle-catalog.json'),'utf8'));
@@ -47,12 +49,51 @@ export async function checkImageLibrary(root){
       if(kind==='standard'&&(item.lossless!==true||!losslessWebp(data)||item.downsampled!==true||size.width>1774||size.height>1774||size.width>record.width||size.height>record.height))throw new Error(`小片数图片交付记录无效：${photo.id}`);
       files.add(item.src.slice('/puzzles/'.length));
     }
+    if(!photo.standardSrc&&(photo.optimizedStandardSrc||record.delivery.compact))throw new Error(`压缩小图缺少标准图来源：${photo.id}`);
+    for(const [kind,field] of [['optimized','optimizedSrc'],...(photo.standardSrc?[['compact','optimizedStandardSrc']]:[])]){
+      const item=record.delivery[kind],compact=kind==='compact',source=compact?record.delivery.standard:record;
+      const expectedQuality=compact?84:fullHdOptimizedIds.has(photo.id)?88:84;
+      if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||item.quality!==expectedQuality)throw new Error(`压缩交付记录无效：${photo.id}`);
+      if(item.sourceSha256!==record.sha256||item.inputSha256!==source.sha256)throw new Error(`压缩交付原件关联无效：${photo.id}`);
+      if(item.encoding?.library!=='sharp'||typeof item.encoding.version!=='string'||!item.encoding.version||item.encoding.effort!==5||item.encoding.smartSubsample!==true)throw new Error(`压缩交付编码记录无效：${photo.id}`);
+      const data=await readFile(join(root,'public',item.src.slice(1)));
+      if(createHash('sha256').update(data).digest('hex')!==item.sha256||data.length!==item.bytes)throw new Error(`压缩交付哈希或字节不一致：${photo.id}`);
+      if(data.length>(compact?700*1024:2*1024*1024))throw new Error(`压缩交付超过体积预算：${photo.id}`);
+      const size=lossyWebpSize(data);
+      if(!size)throw new Error(`压缩交付必须是静态 VP8 有损 WebP：${photo.id}`);
+      if(size.width!==item.width||size.height!==item.height||size.width!==source.width||size.height!==source.height)throw new Error(`压缩交付不得改变来源像素尺寸：${photo.id}`);
+      if(compact&&(item.downsampled!==true||item.maximumPieces!==1000||size.width>1774||size.height>1774))throw new Error(`压缩小图交付记录无效：${photo.id}`);
+      files.add(item.src.slice('/puzzles/'.length));
+    }
   }
   const served=await readdir(join(root,'public/puzzles'));
   for(const file of served)if(!files.has(file))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
   return {published:published.length};
 }
 
+// Read the actual VP8 key-frame dimensions, not just an optional VP8X canvas.
+// No animated, lossless or alpha payload can masquerade as optimized delivery.
+function lossyWebpSize(data){
+  if(data.length<30||data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP'||data.readUInt32LE(4)+8!==data.length)return null;
+  let frame=null,canvas=null,offset=12;
+  while(offset+8<=data.length){
+    const kind=data.toString('ascii',offset,offset+4),length=data.readUInt32LE(offset+4),start=offset+8,end=start+length;
+    if(end+(length%2)>data.length)return null;
+    if(kind==='VP8 '){
+      if(frame||length<10||(data[start]&1)!==0||data.toString('hex',start+3,start+6)!=='9d012a')return null;
+      const partitionSize=data.readUIntLE(start,3)>>>5;
+      if(partitionSize>length-10)return null;
+      frame={width:data.readUInt16LE(start+6)&0x3fff,height:data.readUInt16LE(start+8)&0x3fff};
+      if(!frame.width||!frame.height)return null;
+    }else if(kind==='VP8X'){
+      if(canvas||length!==10||(data[start]&0x12)!==0)return null;
+      canvas={width:1+data.readUIntLE(start+4,3),height:1+data.readUIntLE(start+7,3)};
+    }else if(['VP8L','ANIM','ANMF','ALPH'].includes(kind))return null;
+    offset=end+(length%2);
+  }
+  if(offset!==data.length||!frame||canvas&&(canvas.width!==frame.width||canvas.height!==frame.height))return null;
+  return frame;
+}
 function losslessWebp(data){
   let lossless=false;
   for(let offset=12;offset+8<=data.length;){

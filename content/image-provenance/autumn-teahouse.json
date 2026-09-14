@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/autumn-teahouse-optimized-2c19055b348b.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "2c19055b348b4fc08deae94abc3b059273b2b38426935954fcaf1bf616c6f9e3",
+      "bytes": 632606,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "4aae9d7de6c78cbf798b47ac7e6df4d91031ac7ca62c46de084e689c277c5578",
+      "inputSha256": "4aae9d7de6c78cbf798b47ac7e6df4d91031ac7ca62c46de084e689c277c5578",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

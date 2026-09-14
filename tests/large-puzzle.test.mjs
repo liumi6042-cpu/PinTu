@@ -2,14 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPuzzle, restartPuzzle, LEVELS, snapTolerance, moveGroup, dropGroup, restorePuzzle, boardFor, shuffleLoose } from '../lib/puzzle-engine.ts';
 import { makeRoom, addMember, applyAction } from '../lib/room-engine.ts';
+import {makeFixtureRoom} from './legacy-fixtures.mjs';
+import {NEW_GAME_LEVELS,HIGH_PIECES_PAUSED} from '../lib/piece-policy.ts';
 import { PuzzleTable } from '../lib/puzzle-table.ts';
 import { parseTableTheme } from '../lib/table-theme.ts';
 
-test('new grids range from 108 to exactly 5000 and the save fits in a local database row',()=>{
+test('new games stop at 1000 while legacy geometry still reaches exactly 5000 and fits a saved row',()=>{
+  assert.deepEqual(NEW_GAME_LEVELS.map(l=>l.count),[108,300,500,1000]);
   assert.equal(Math.max(...LEVELS.map(l=>l.count)),5000);
   assert.deepEqual(LEVELS.map(l=>l.count),[108,300,500,1000,2000,5000]);
   for(const level of LEVELS)assert.equal(level.cols*level.rows,level.count);
   assert.throws(()=>createPuzzle('seaside',100,60));assert.throws(()=>makeRoom('unsupported','seaside-native-v2',6000,Date.now()));
+  for(const count of [2000,5000])assert.throws(()=>makeRoom('paused','mountain-lake-reflection-hd-v3',count,Date.now()),{message:HIGH_PIECES_PAUSED});
   for(const [cols,rows] of [[4,3],[8,6]]){
     assert.throws(()=>createPuzzle('seaside',cols,rows),/不支持的拼图片数/);
     assert.throws(()=>makeRoom('retired','seaside-native-v2',cols*rows,Date.now()),/请选择有效图片与片数/);
@@ -39,7 +43,7 @@ test('slightly imperfect placement snaps in both singleplayer and multiplayer at
     const state=createPuzzle('seaside',level.cols,level.rows,34),near=Math.min(800/level.cols,600/level.rows)*.22;
     assert.ok(near>Math.min(800/level.cols,600/level.rows)*.18);
     moveGroup(state,0,near,0);assert.ok(dropGroup(state,0,snapTolerance(state)).placed>=1);
-    const room=makeRoom('snap','mountain-lake-reflection-hd-v3',level.count,1000),member=addMember(room,'a','玩家','digest',1000);
+    const room=makeFixtureRoom('snap','mountain-lake-reflection-hd-v3',level.count,1000),member=addMember(room,'a','玩家','digest',1000);
     applyAction(room,member,{type:'claim',groupId:0},1001);
     applyAction(room,member,{type:'drop',groupId:0,dx:near,dy:0,seq:1},1002);
     assert.ok(room.puzzle.groups.some(g=>g.locked&&g.pieces.includes(0)));

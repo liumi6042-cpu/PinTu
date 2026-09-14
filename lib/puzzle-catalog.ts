@@ -2,7 +2,7 @@ import catalog from '../content/puzzle-catalog.json' with { type:'json' };
 
 // Archived project artwork remains available to existing saves and rooms only.
 export const RESTORABLE_PHOTOS=catalog.filter(photo=>photo.origin==='project-ai-generated'&&['published','archived'].includes(photo.status)).map(photo=>({
- ...photo,originalSrc:photo.src,src:photo.playSrc,thumbSrc:photo.thumbSrc,
+ ...photo,originalSrc:photo.src,src:photo.optimizedSrc??photo.playSrc,thumbSrc:photo.thumbSrc,
 }));
 export const RESTORABLE_PHOTO_IDS=RESTORABLE_PHOTOS.map(photo=>photo.id);
 export const PHOTOS=RESTORABLE_PHOTOS.filter(photo=>photo.status==='published');

@@ -6,7 +6,7 @@ import { Puzzle, Moon, Sun, ArrowRight, ArrowLeft, Search, Play, Pause, Image as
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import LanguageSwitch from './language-switch';
-import { createPuzzle, restartPuzzle, LEVELS, placedCount, type PuzzleState } from '@/lib/puzzle-engine';
+import { createPuzzle, restartPuzzle, placedCount, type PuzzleState } from '@/lib/puzzle-engine';
 import { CompletionGate } from '@/lib/celebration-engine';
 import { CelebrationOverlay, CelebrationPreview } from './celebration';
 import { PuzzleTable } from '@/lib/puzzle-table';
@@ -28,7 +28,7 @@ import { useMembership } from '@/lib/use-membership';
 import {ReportProblem} from './feedback-widget';
 import CompletionRecord from './completion-record';
 import HomeNavigation from './home-navigation';
-import {DEFAULT_PIECES,PIECE_PREFERENCE_KEY,preferredPieceCount,supportsPieceCount,PIECE_RESOLUTION_ERROR} from '@/lib/piece-policy';
+import {NEW_GAME_LEVELS as LEVELS,DEFAULT_PIECES,PIECE_PREFERENCE_KEY,preferredPieceCount,supportsPieceCount,PIECE_RESOLUTION_ERROR} from '@/lib/piece-policy';
 import PiecePicker from './piece-picker';
 import GalleryCard from './gallery-card';
 import PuzzleOpening from './puzzle-opening';
@@ -117,7 +117,7 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
 
 export function Game({ state, photo, persist, leave, restart, saveError, collaboration }: {
     state: PuzzleState;
-    photo: Pick<Photo,'id'|'title'|'src'>&{standardSrc?:string};
+    photo: Pick<Photo,'id'|'title'|'src'>&{standardSrc?:string;optimizedSrc?:string;optimizedStandardSrc?:string};
     persist: (s: PuzzleState) => void;
     leave: () => void;
     restart: () => void;

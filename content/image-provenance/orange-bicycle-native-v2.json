@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/orange-bicycle-native-v2-optimized-7b170f60ddaf.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "7b170f60ddafcc2b448b9a05f707c90b012efb1ed8fe89fed7b5e898554f23e3",
+      "bytes": 386364,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+      "inputSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

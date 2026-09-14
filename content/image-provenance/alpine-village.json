@@ -66,6 +66,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/alpine-village-optimized-9b69d116744b.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "9b69d116744bdc588bf076d776e65ec8680b7868e0797972f341af76e3a76bf1",
+      "bytes": 610524,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "inputSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

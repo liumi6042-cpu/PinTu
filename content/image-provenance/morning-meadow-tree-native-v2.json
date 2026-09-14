@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/morning-meadow-tree-native-v2-optimized-43a858fdcc91.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "43a858fdcc91de4a900e6c52fb5c821cab221b7315bbe445676657669281605b",
+      "bytes": 519386,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+      "inputSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

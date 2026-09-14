@@ -58,6 +58,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/lone-pine-snow-optimized-083ae5be3e49.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "083ae5be3e49fb02a270008177e25cc455c9aafe4a66325740b5c8ee6a8527f1",
+      "bytes": 223984,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa",
+      "inputSha256": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

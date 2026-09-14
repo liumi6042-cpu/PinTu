@@ -57,6 +57,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/blossom-canal-native-v2-optimized-b2047cc43051.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "b2047cc43051b53ea14e451045747f9140a5c878d7fda2f630241c94dc3292dc",
+      "bytes": 467198,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "c32a5856c0e7cf153d972116ee9beab6eed6211e09b66e636ec6c22200be9ef1",
+      "inputSha256": "c32a5856c0e7cf153d972116ee9beab6eed6211e09b66e636ec6c22200be9ef1",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }

@@ -5,6 +5,9 @@ import { makeRoom, roomElapsedMs, ONLINE_MS, type Room, type RoomVisibility } fr
 import { PHOTOS, RESTORABLE_PHOTOS } from './puzzle-catalog';
 import { placedCount } from './puzzle-engine';
 import type { RoomCard } from './lobby-types';
+import { env } from 'cloudflare:workers';
+import { PublicLobbyCache } from './public-lobby-cache';
+const publicLobbyCache=new PublicLobbyCache();
 export function newPlayableRoom(id:string,imageId:string,pieces:number,visibility:RoomVisibility,ownerId?:string,now=Date.now()){
  const room=makeRoom(id,imageId,pieces,now);room.visibility=visibility;room.ownerId=ownerId;room.startedAt=null;room.participants={};touchPublicRoom(room,now);return room;
 }
@@ -31,8 +34,16 @@ const summaryColumns=`json_extract(r.data,'$.customImage') AS customImageData,(j
  COALESCE((SELECT SUM(json_array_length(json_extract(g.value,'$.pieces'))) FROM json_each(r.data,'$.puzzle.groups') g WHERE json_extract(g.value,'$.locked')=1),0) AS placed`;
 export async function roomCards(ownerId?:string,onlyOwned=false){
  await maintainPublicRooms();
+ const database=localDb();
+ // withSession may produce a new wrapper on every request. Key by the underlying
+ // binding, while the actual query continues to use this request's primary session.
+ const binding=(env as unknown as {PUZZLE_DB?:D1Database}).PUZZLE_DB;
+ if(!ownerId&&!onlyOwned&&binding)return publicLobbyCache.read(binding,()=>queryRoomCards(database));
+ return queryRoomCards(database,ownerId,onlyOwned);
+}
+async function queryRoomCards(database:D1DatabaseSession,ownerId?:string,onlyOwned=false){
  const now=Date.now(),where=onlyOwned?"d.owner_id=? AND d.visibility IN ('private','public') AND d.slot IS NULL":ownerId?"(d.owner_id=? OR (d.visibility!='solo' AND (EXISTS (SELECT 1 FROM json_each(r.data,'$.participants') participant WHERE participant.key=?) OR EXISTS (SELECT 1 FROM json_each(r.data,'$.members') member WHERE json_extract(member.value,'$.accountId')=? OR json_extract(member.value,'$.guestId')=?))))":'d.visibility=\'public\' AND d.completed_at IS NULL';
- const query=localDb().prepare('SELECT '+summaryColumns+' FROM puzzle_room_directory d JOIN puzzle_rooms r ON r.id=d.room_id WHERE '+where+' AND NOT EXISTS(SELECT 1 FROM puzzle_room_moderation m WHERE m.room_id=r.id AND m.closed=1) AND d.expires_at>? ORDER BY lastPlayedAt DESC'+(ownerId?'':' LIMIT 24'));
+ const query=database.prepare('SELECT '+summaryColumns+' FROM puzzle_room_directory d JOIN puzzle_rooms r ON r.id=d.room_id WHERE '+where+' AND NOT EXISTS(SELECT 1 FROM puzzle_room_moderation m WHERE m.room_id=r.id AND m.closed=1) AND d.expires_at>? ORDER BY lastPlayedAt DESC'+(ownerId?'':' LIMIT 24'));
  const result=await (onlyOwned?query.bind(now-ONLINE_MS,ownerId,now):ownerId?query.bind(now-ONLINE_MS,ownerId,ownerId,ownerId,ownerId,now):query.bind(now-ONLINE_MS,now)).all<CardRow>();
  return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||(ownerId&&row.customImageData)).map(row=>({...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
 }

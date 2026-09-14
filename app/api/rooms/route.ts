@@ -12,7 +12,7 @@ import { ownedUserImage } from '@/lib/user-image-store';
 import { createPuzzle,LEVELS } from '@/lib/puzzle-engine';
 import type { Room } from '@/lib/room-engine';
 import { requireSoloAccount } from '@/lib/solo-account';
-import { countsForDimensions,PIECE_RESOLUTION_ERROR } from '@/lib/piece-policy';
+import { countsForDimensions,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PAUSED } from '@/lib/piece-policy';
 export async function POST(request:Request){
  try{
   const input=await body(request),now=Date.now();
@@ -28,6 +28,7 @@ export async function POST(request:Request){
     if(!player?.accountId)throw new RoomError('请先登录本地账号',401);
     if(!['solo','private'].includes(input.visibility))throw new RoomError('自上传图片仅供自己和邀请的朋友游玩，不能公开到大厅。',403);
     const image=await ownedUserImage(player.accountId,input.imageId),level=LEVELS.find(l=>l.count===input.pieces);if(!level)throw new RoomError('请选择有效图片与片数');
+    if(level.count>MAX_NEW_PIECES)throw new RoomError(HIGH_PIECES_PAUSED);
     if(!countsForDimensions(image.width,image.height).includes(level.count))throw new RoomError(PIECE_RESOLUTION_ERROR);
     room={id:newId(),customImage:{id:image.id,title:image.title,width:image.width,height:image.height},title:image.title.slice(0,40),ownerId:player.id,visibility:input.visibility,retentionVersion:2,lastPlayedAt:now,puzzle:createPuzzle(image.id,level.cols,level.rows),revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,members:[],leases:{},startedAt:null,participants:{}};
   }else room=newPlayableRoom(newId(),input.imageId,input.pieces,(input.visibility??'private') as RoomVisibility,player!.id,now);

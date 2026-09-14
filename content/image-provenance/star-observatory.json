@@ -70,6 +70,25 @@
       "lossless": false,
       "quality": 82,
       "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/star-observatory-optimized-d1237d3774db.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "d1237d3774db25b361da186e6d56152def04bcbf7605ed6b1beb4037aaeb4b71",
+      "bytes": 562188,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "inputSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
     }
   }
 }
