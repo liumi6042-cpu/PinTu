@@ -142,6 +142,10 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             json_request(3139, path + '/chat', {'requestId': secrets.token_hex(16), 'text': text}, actor)
             assert json_request(3138, path + '/chat', None, actor)['messages'][0]['text'] == text
             json_request(3138, path, {'type': 'release', 'groupId': 0}, actor)
+            returning = json_request(3138, path + '/join', {}, actor)
+            actor['token'] = returning['token']
+            assert returning['room']['puzzle']['cols'] * returning['room']['puzzle']['rows'] == count
+            json_request(3138, path + '/join', {}, {}, 401)
             head = get(3138, '/room/' + ticket['room']['id'])[1].decode().partition('</head>')[0]
             assert '/puzzles/mountain-lake-reflection-native-v2-optimized-' in head
         for count in [2000, 5000]:
@@ -150,6 +154,9 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'mountain-lake-reflection-hd-v3', 'pieces': count, 'guestSecret': secrets.token_hex(32)}, {}, 400)
         for count, kind in [(300, 'compact'), (1000, 'compact')]:
             actor = {}
+            if count >= 500:
+                json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'mountain-lake-reflection-hd-v3', 'pieces': count}, actor, 401)
+                json_request(3138, '/api/auth/register', {'username': 'warm_' + secrets.token_hex(6), 'name': 'Warm test', 'password': secrets.token_hex(16)}, actor, 201)
             ticket = json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'mountain-lake-reflection-hd-v3', 'pieces': count, 'guestSecret': secrets.token_hex(32), 'initialState': 'seed-v1'}, actor, 201)
             assert 'groups' not in ticket['room']['puzzle'] and len(json.dumps(ticket)) < 1600
             actor['token'] = ticket['token']; path = '/api/rooms/' + ticket['room']['id']

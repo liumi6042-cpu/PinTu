@@ -42,6 +42,8 @@ try{
   for(const photo of published)assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
   const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
+  const access=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/access-assistance-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  assert.equal(access.status,0,access.stdout+access.stderr);console.log(access.stdout.trim());
   const chat=spawnSync(process.execPath,[resolve(project,'tests/room-chat-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(chat.status,0,chat.stdout+chat.stderr);console.log(chat.stdout.trim());
   const anime=spawnSync(process.execPath,[resolve(project,'tests/anime-gallery-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});

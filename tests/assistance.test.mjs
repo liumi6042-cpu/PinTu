@@ -25,16 +25,17 @@ test('local usage survives serialization, expires by time, and resets only for a
  const saved=JSON.parse(JSON.stringify(grants));assert.equal(assistanceRemaining(saved,'hint'),0);assert.equal(activeAssistance(saved,'hint',now),undefined);assert.throws(()=>makeAssistanceGrant(saved,'hint','fourth',s,now),/次数已用完/);
  assert.equal(makeAssistanceGrant(saved,'hint','0',s,now).expiresAt,31000,'late retry never grants another window');
  assert.notEqual(localAssistanceKey(s),localAssistanceKey({...s,seed:78}));
- for(const kind of ['reference','underlay']){const one=makeAssistanceGrant([],kind,kind,s,1000);assert.throws(()=>makeAssistanceGrant([one],kind,'again',s,31001),/次数已用完/);}
+ const one=makeAssistanceGrant([],'underlay','first',s,1000);assert.equal(assistanceRemaining([one],'underlay'),1);const two=makeAssistanceGrant([one],'underlay','second',s,31001);assert.equal(two.expiresAt,61001);assert.throws(()=>makeAssistanceGrant([one,two],'underlay','third',s,61002),/次数已用完/);
+ assert.throws(()=>makeAssistanceGrant([],'reference','removed',s,1000),/功能已移除/);assert.throws(()=>makeAssistanceGrant([{requestId:'old',kind:'reference',expiresAt:31000,pieceIds:[]}],'reference','old',s,1000),/功能已移除/);
 });
 test('server atomic quotas, idempotent retries, identities, leases and cleanup',async()=>{
  const now=Date.now(),room={id:'a'.repeat(32),puzzle:state(),leases:{0:{playerId:'someone',expires:now+90000,seq:0}},revision:0,expiresAt:now+86400000};
  db.sql.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(room.id,0,JSON.stringify(room),room.expiresAt);
- const original=JSON.stringify(room),all=await Promise.all(Array.from({length:12},(_,i)=>grantRoomAssistance(room,'alice','reference',String(i),now)));
+ const original=JSON.stringify(room),all=await Promise.all(Array.from({length:12},(_,i)=>grantRoomAssistance(room,'alice','underlay',String(i),now)));
  assert.ok(all.every(g=>g.length===1));const first=(await roomAssistance(room.id,'alice'))[0];
- assert.equal((await grantRoomAssistance(room,'alice','reference',first.requestId,now+90000))[0].expiresAt,first.expiresAt);
- await assert.rejects(grantRoomAssistance(room,'alice','reference','new',now+90000),/次数已用完/);
- assert.equal((await grantRoomAssistance(room,'bob','reference','bob-1',now)).length,1);
+ assert.equal((await grantRoomAssistance(room,'alice','underlay',first.requestId,now+90000))[0].expiresAt,first.expiresAt);
+ assert.equal((await grantRoomAssistance(room,'alice','underlay','new',now+90000)).length,2);await assert.rejects(grantRoomAssistance(room,'alice','underlay','third',now+120001),/次数已用完/);
+ assert.equal((await grantRoomAssistance(room,'bob','underlay','bob-1',now)).length,1);
  for(let i=0;i<3;i++){const grants=await grantRoomAssistance(room,'alice','hint','hint-'+i,now+i*30001);const hint=grants.find(g=>g.requestId==='hint-'+i);assert.equal(hint.pieceIds.length,3);assert.ok(!hint.pieceIds.includes(0));}
  await assert.rejects(grantRoomAssistance(room,'alice','hint','hint-4',now+100000),/次数已用完/);
  assert.equal(JSON.stringify(room),original);assert.equal(db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(room.id).data,original);

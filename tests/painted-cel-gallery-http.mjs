@@ -8,6 +8,7 @@ const english=JSON.parse(readFileSync(new URL('../content/locales/en.json',impor
 const photos=catalog.filter(p=>p.status==='published'&&['厚涂','平涂'].includes(p.category));assert.equal(photos.length,9);
 const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'};
 const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
+const registration=await fetch(base+'/api/auth/register',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({username:'art_'+randomBytes(6).toString('hex'),name:'Art test',password:randomBytes(16).toString('hex')})});assert.equal(registration.status,201);const accountCookie=registration.headers.get('set-cookie').split(';')[0];await registration.arrayBuffer();
 const gallery=await (await get('/gallery')).text();
 assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,39);
 for(const category of ['厚涂','平涂'])assert.ok(gallery.includes(english[category]));
@@ -15,8 +16,8 @@ for(const [index,photo] of photos.entries()){
  const page=await get('/puzzle/'+photo.id);assert.equal(page.status,200);const detail=await page.text();
  assert.ok(detail.includes(english[photo.title]));assert.ok(detail.includes(english[photo.subtitle]));
  const pieces=index%2?108:1000;
- const response=await fetch(base+'/api/rooms',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({imageId:photo.id,pieces,visibility:'public',guestSecret:randomBytes(32).toString('hex'),initialState:'seed-v1'}),signal:AbortSignal.timeout(10000)});
- assert.equal(response.status,201);const ticket=await response.json(),cookie=response.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
+ const response=await fetch(base+'/api/rooms',{method:'POST',headers:{...headers,...(pieces>=500?{Cookie:accountCookie}:{}),'Content-Type':'application/json'},body:JSON.stringify({imageId:photo.id,pieces,visibility:'public',guestSecret:randomBytes(32).toString('hex'),initialState:'seed-v1'}),signal:AbortSignal.timeout(10000)});
+ assert.equal(response.status,201);const ticket=await response.json(),cookie=response.headers.get('set-cookie')?.split(';')[0]||(pieces>=500?accountCookie:null);assert.ok(cookie);
  const auth={...headers,Cookie:cookie,Authorization:'Bearer '+ticket.token};
  try{
   assert.equal(ticket.room.puzzle.imageId,photo.id);assert.equal(ticket.room.puzzle.groups,undefined);

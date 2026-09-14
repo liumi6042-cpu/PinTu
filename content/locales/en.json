@@ -981,5 +981,16 @@
   "请长按或手动复制上方地址。": "Press and hold, or copy the address above manually.",
   "书签由浏览器保存，请在浏览器中完成收藏。": "Complete the bookmark in your browser.",
   "已收藏，不再提醒": "I've bookmarked it",
-  "稍后再说": "Maybe later"
+  "稍后再说": "Maybe later",
+  "需登录": "Sign in",
+  "500 片及以上的拼图需要登录，普通账号即可免费游玩。": "Puzzles of 500 pieces or more require sign-in. A free account is all you need.",
+  "108、300 片无需登录；500 片及以上需登录普通账号。": "Play 108 or 300 pieces as a guest. Sign in with a free account for 500 pieces or more.",
+  "108、300 片可游客游玩；500 片及以上需要登录，普通账号免费。": "Play 108 or 300 pieces as a guest. For 500 pieces or more, sign in or create a free account.",
+  "免费公开房间 · 500 片及以上需登录": "Free public room · Sign in for 500 pieces or more",
+  "每局每人可开启两次底图，每次持续 30 秒。": "Each player can use the underlay twice per puzzle, for 30 seconds each time.",
+  "该帮助功能已移除，请使用底图或提示。": "This assistance feature has been removed. Please use the underlay or hints.",
+  "「边缘」只显示含边缘的拼块组。每局每人可开启底图 2 次，每次 30 秒；提示可用 3 次，每次标出最多 3 片及对应位置。刷新不会重置次数。": "Edges shows groups containing edge pieces. Each player gets two 30-second underlays per puzzle, plus three hints that highlight up to three pieces and their matching positions. Reloading does not reset usage.",
+  "108、300 片可直接加入，500 片及以上需登录。": "Join 108- or 300-piece puzzles as a guest. Sign in for 500 pieces or more.",
+  "公开房间免费，500 片及以上首次入座需要登录。": "Public rooms are free. First joining 500 pieces or more requires sign-in.",
+  "新玩家需登录": "New players sign in"
 }

@@ -13,6 +13,7 @@ import { createPuzzle,LEVELS } from '@/lib/puzzle-engine';
 import type { Room } from '@/lib/room-engine';
 import { requireSoloAccount } from '@/lib/solo-account';
 import { countsForDimensions,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PAUSED } from '@/lib/piece-policy';
+import {checkPieceCreation} from '@/lib/room-piece-access';
 export async function POST(request:Request){
  try{
   const input=await body(request),now=Date.now();
@@ -24,6 +25,9 @@ export async function POST(request:Request){
   const memberRoom=requiresRoomMembership(input.visibility);
   if(memberRoom&&(!player?.accountId||!canCreateMemberRoom(await membershipFor(player.accountId),now)))throw new RoomError(MEMBERSHIP_REQUIRED,403);
   const name=player!.name;let room:Room;
+  // Retain the existing validation/error for paused piece counts.
+  if(typeof input.pieces==='number'&&input.pieces>MAX_NEW_PIECES)throw new RoomError(HIGH_PIECES_PAUSED);
+  if(typeof input.pieces==='number')checkPieceCreation(input.pieces,player?.accountId);
   if(isCustomImageId(input.imageId)){
     if(!player?.accountId)throw new RoomError('请先登录本地账号',401);
     if(!['solo','private'].includes(input.visibility))throw new RoomError('自上传图片仅供自己和邀请的朋友游玩，不能公开到大厅。',403);

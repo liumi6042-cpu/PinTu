@@ -25,7 +25,7 @@ try{
   assert.equal(rejected.status,400);assert.equal(rejected.data.error,HIGH_PIECES_PAUSED);
  }
  for(const pieces of [1500,3000,4000])assert.equal((await request('/api/rooms',{imageId:'mountain-lake-reflection-hd-v3',pieces,visibility:'public',guestSecret:secret})).status,400);
- const create=await request('/api/rooms',{imageId:'mountain-lake-reflection-hd-v3',pieces:1000,visibility:'public',guestSecret:secret,initialState:'seed-v1'});
+ const create=await request('/api/rooms',{imageId:'mountain-lake-reflection-hd-v3',pieces:300,visibility:'public',guestSecret:secret,initialState:'seed-v1'});
  assert.equal(create.status,201);rooms.push(create.data);assert.ok(cookie.startsWith('puzzle_guest='));
  assert.ok(create.bytes<1500);assert.equal(create.data.initialState,'seed-v1');assert.equal(create.data.room.puzzle.groups,undefined);
  const initial=create.data.room.puzzle;
@@ -72,5 +72,5 @@ try{
    legacyGridChecks.push(count);
   }
  }
- console.log(JSON.stringify({compact1000Bytes:create.bytes,full1000Bytes:full.bytes,positionsMatch:true,legacySnapshotClientCompatible:true,legacyGridChecks,cookieIdentityPreserved:true,privateAndSoloProtected:true,highNewRoomsRejected:true}));
+ console.log(JSON.stringify({compact300Bytes:create.bytes,full300Bytes:full.bytes,positionsMatch:true,legacySnapshotClientCompatible:true,legacyGridChecks,cookieIdentityPreserved:true,privateAndSoloProtected:true,highNewRoomsRejected:true}));
 }finally{for(const room of rooms)await request('/api/rooms/'+room.room.id,{type:'leave'},room.token).catch(()=>{});database?.close();}

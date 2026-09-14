@@ -20,7 +20,7 @@ export function useAssistance(state:PuzzleState,client?:RoomClient){
  },[roomId,token]);
  const reload=useCallback(async()=>{try{apply(roomId?await request():{grants:readLocal(),serverTime:Date.now()});if(mounted.current)setError('');}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'暂时无法读取帮助次数，请重试');}},[roomId,request,readLocal,apply]);
  useEffect(()=>{mounted.current=true;void reload();const focus=()=>{if(!document.hidden)void reload();};const storage=(e:StorageEvent)=>{if(e.key===key||e.key===null)void reload();};window.addEventListener('focus',focus);document.addEventListener('visibilitychange',focus);if(!roomId)window.addEventListener('storage',storage);return()=>{mounted.current=false;window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',focus);window.removeEventListener('storage',storage);};},[reload,key,roomId]);
- const ticking=grants.some(g=>g.expiresAt>now);
+ const ticking=grants.some(g=>g.kind!=='reference'&&g.expiresAt>now);
  useEffect(()=>{if(!ticking)return;const tick=()=>setNow(Date.now()),timer=setInterval(tick,1000);return()=>clearInterval(timer);},[ticking]);
  const activate=async(kind:AssistanceKind)=>{
   if(locked.current||!ready)return false;locked.current=true;setBusy(true);setError('');
@@ -36,5 +36,5 @@ export function useAssistance(state:PuzzleState,client?:RoomClient){
   }catch(e){if(mounted.current)setError(e instanceof Error?e.message:'暂时无法读取帮助次数，请重试');return false;}
   finally{locked.current=false;if(mounted.current)setBusy(false);}
  };
- return {grants,now,ready,busy,error,reload,activate,reference:activeAssistance(grants,'reference',now),underlay:activeAssistance(grants,'underlay',now),hint:activeAssistance(grants,'hint',now)};
+ return {grants,now,ready,busy,error,reload,activate,underlay:activeAssistance(grants,'underlay',now),hint:activeAssistance(grants,'hint',now)};
 }
