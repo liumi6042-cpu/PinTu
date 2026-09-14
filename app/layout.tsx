@@ -14,6 +14,7 @@ import './membership.css';
 import './ranking-records.css';
 import './service-pages.css';
 import './search-pages.css';
+import './bookmark-site.css';
 import { LanguageProvider } from './language-switch';
 import FeedbackWidget from './feedback-widget';
 export const metadata: Metadata = {

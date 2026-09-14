@@ -523,5 +523,47 @@
     "complexity": 2,
     "preferredCount": 300,
     "reason": "人物、白色晾布和蓝色海面各有清晰轮廓。"
+  },
+  "painted-tidal-encounter-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "painted-snow-parasol-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "painted-glasshouse-workbench-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "painted-wolf-oath-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "cel-coastal-family-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "cel-rainy-bridge-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
   }
 }

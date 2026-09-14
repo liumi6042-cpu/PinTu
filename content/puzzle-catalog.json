@@ -1,5 +1,77 @@
 [
   {
+    "id": "cel-coastal-family-v1",
+    "title": "庭院团圆",
+    "subtitle": "花树下，一家人的笑声和海风坐在一起。",
+    "category": "平涂",
+    "src": "/puzzles/cel-coastal-family-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/cel-coastal-family-v1-play-3043a3edd2fa.webp",
+    "thumbSrc": "/puzzles/cel-coastal-family-v1-thumbnail-52f2b7947655.webp",
+    "optimizedSrc": "/puzzles/cel-coastal-family-v1-optimized-a9c3bd49fd5f.webp"
+  },
+  {
+    "id": "cel-rainy-bridge-v1",
+    "title": "雨中同行",
+    "subtitle": "共撑一把伞，沿着小桥发现雨天的惊喜。",
+    "category": "平涂",
+    "src": "/puzzles/cel-rainy-bridge-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/cel-rainy-bridge-v1-play-b7cd143f16b3.webp",
+    "thumbSrc": "/puzzles/cel-rainy-bridge-v1-thumbnail-904e80d0c382.webp",
+    "optimizedSrc": "/puzzles/cel-rainy-bridge-v1-optimized-e52cdef9093e.webp"
+  },
+  {
+    "id": "painted-tidal-encounter-v1",
+    "title": "深蓝来客",
+    "subtitle": "伸出手，和深蓝里的温柔来客打个招呼。",
+    "category": "厚涂",
+    "src": "/puzzles/painted-tidal-encounter-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/painted-tidal-encounter-v1-play-ff0ddc658b88.webp",
+    "thumbSrc": "/puzzles/painted-tidal-encounter-v1-thumbnail-67261c06f424.webp",
+    "optimizedSrc": "/puzzles/painted-tidal-encounter-v1-optimized-088ded801b91.webp"
+  },
+  {
+    "id": "painted-snow-parasol-v1",
+    "title": "雪径归人",
+    "subtitle": "红伞穿过雪径，小狐狸在灯下等候。",
+    "category": "厚涂",
+    "src": "/puzzles/painted-snow-parasol-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/painted-snow-parasol-v1-play-f2c3b8c86b6d.webp",
+    "thumbSrc": "/puzzles/painted-snow-parasol-v1-thumbnail-9c2c66242aa6.webp",
+    "optimizedSrc": "/puzzles/painted-snow-parasol-v1-optimized-f4eef6ac8885.webp"
+  },
+  {
+    "id": "painted-glasshouse-workbench-v1",
+    "title": "温室来信",
+    "subtitle": "种下一点绿意，让阳光和猫咪陪着你。",
+    "category": "厚涂",
+    "src": "/puzzles/painted-glasshouse-workbench-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/painted-glasshouse-workbench-v1-play-239bfa06b10a.webp",
+    "thumbSrc": "/puzzles/painted-glasshouse-workbench-v1-thumbnail-e389c52f9521.webp",
+    "optimizedSrc": "/puzzles/painted-glasshouse-workbench-v1-optimized-81f63049cb3a.webp"
+  },
+  {
+    "id": "painted-wolf-oath-v1",
+    "title": "林间约定",
+    "subtitle": "林间安静下来，掌心轻轻落在白狼额前。",
+    "category": "厚涂",
+    "src": "/puzzles/painted-wolf-oath-v1.png",
+    "origin": "project-ai-generated",
+    "status": "published",
+    "playSrc": "/puzzles/painted-wolf-oath-v1-play-9bdb55a3d6bb.webp",
+    "thumbSrc": "/puzzles/painted-wolf-oath-v1-thumbnail-548446540b8c.webp",
+    "optimizedSrc": "/puzzles/painted-wolf-oath-v1-optimized-c00ca199b93e.webp"
+  },
+  {
     "id": "painted-moonlit-portrait-v1",
     "title": "雨后月光",
     "subtitle": "月光落进眼眸，发丝与蓝晶花映出雨后的微光。",

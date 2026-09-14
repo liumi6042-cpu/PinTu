@@ -7,6 +7,7 @@ import { Users, Trophy, UserRound, Images, Crown } from 'lucide-react';
 import type { Account } from '@/lib/account-crypto';
 import { apiJson } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
+import BookmarkSite from './bookmark-site';
 import { MEMBERSHIP_VISIBLE,PERSONAL_PLAY_VISIBLE } from '@/lib/feature-visibility';
 export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:string}) {
     useLanguage();
@@ -27,5 +28,6 @@ export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:st
   {MEMBERSHIP_VISIBLE&&<a href="/membership"><Crown size={17}/>{t("会员")}</a>}
   <a className="home-account-link" href={account?"/account/security":"/account"}>{account ? account.name : t('登录（可选）')}</a>
   <LanguageSwitch />
+  <BookmarkSite />
  </nav>;
 }

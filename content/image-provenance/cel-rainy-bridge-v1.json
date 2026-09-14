@@ -1,0 +1,81 @@
+{
+  "id": "cel-rainy-bridge-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Current built-in imagegen tool result",
+    "promptPath": "content/image-prompts/cel-rainy-bridge-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-0472a909-8f8b-4dea-bdd3-0c4cb5ad0a0d.png",
+    "sourceMetadata": "content/artwork/original-family-rain-20260914/cel-rainy-bridge-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024, no upscaling or compositing; new games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Inspected generated image: distinct original character designs, readable faces and hands, coherent family/umbrella scene, no visible signature or watermark.",
+      "User stated the two supplied anime wallpapers have no publication permission and requested regeneration. Wallpaper files were NOT used as image inputs or published. Only broad family-togetherness and rainy-companionship themes were retained in text prompts."
+    ],
+    "scope": "Visual review and provenance are not a guarantee of exclusive rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+    "play": {
+      "src": "/puzzles/cel-rainy-bridge-v1-play-b7cd143f16b3.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "b7cd143f16b37c805b73dcaf877e172971c8a3853c534a75196253e7b3d539a6",
+      "bytes": 2328190,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rainy-bridge-v1-thumbnail-904e80d0c382.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "904e80d0c382eaad2df60100fff9055d33938231c6fb460c0042383719ffd094",
+      "bytes": 58616,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cel-rainy-bridge-v1-optimized-e52cdef9093e.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "e52cdef9093e2983d2fdcce26c075f7d0e44e45bb583fafde4e0ddf9e61b7e87",
+      "bytes": 448064,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+      "inputSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "id": "painted-snow-parasol-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Previous built-in imagegen tool result and saved preview metadata",
+    "promptPath": "content/image-prompts/painted-snow-parasol-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-76588342-af37-4205-a8f7-4f4dd5fa29c0.png",
+    "sourceMetadata": "content/artwork/painted-scenes-20260914/painted-snow-parasol-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024, no upscaling or compositing; new games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User explicitly requested publication of the four preview images. Inspected primary faces, hands, animal anatomy and distinct compositions.",
+      "No reference-image inputs: web research informed new textual descriptions of subjects and environments. No website image pixels are used in this asset.",
+      "The shrine has a small decorative plaque with faint ornamental marks; no recognizable brand or signature. Preserve the user-approved image."
+    ],
+    "scope": "Visual review and provenance are not a guarantee of exclusive rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961",
+    "play": {
+      "src": "/puzzles/painted-snow-parasol-v1-play-f2c3b8c86b6d.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "f2c3b8c86b6dd8cd5a818f08ae32a1af4acb6ed8b3d441f53ecbbb6484ed7d60",
+      "bytes": 2130432,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-snow-parasol-v1-thumbnail-9c2c66242aa6.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "9c2c66242aa6c5887fa34c772d57b14d7937ec1ff9557de4bb2bca7a97959379",
+      "bytes": 46720,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/painted-snow-parasol-v1-optimized-f4eef6ac8885.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "f4eef6ac8885bcc95a5a0e78a472dbcf66c6d7911d54636e6c49e98d5a1f380b",
+      "bytes": 337064,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961",
+      "inputSha256": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}
