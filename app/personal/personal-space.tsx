@@ -14,7 +14,7 @@ import CommunityShell from '../community-shell';
 import PuzzleApp from '../puzzle-app';
 import { useAccount } from '../account-gate';
 import { accountLoginUrl } from '@/lib/account-return';
-import { PERSONAL_PLAY_VISIBLE,MEMBERSHIP_VISIBLE } from '@/lib/feature-visibility';
+import { PERSONAL_PLAY_VISIBLE,MEMBERSHIP_VISIBLE,USER_IMAGE_UPLOAD_VISIBLE } from '@/lib/feature-visibility';
 
 export default function PersonalSpace() {
   const language = useLanguage();
@@ -116,7 +116,7 @@ export default function PersonalSpace() {
     {latest && <section className="resume-highlight" aria-label={t('继续上次拼图')}>{card(latest, true)}</section>}
     <a className="achievement-entry" href="/achievements"><BookOpen size={32}/><div><h2>{t("我的拼图纪念册")}</h2><p>{t("收集纪念徽章，看看下一枚离你还有多远。")}</p></div><ArrowUpRight size={24}/></a>
     {MEMBERSHIP_VISIBLE&&<a className="membership-personal-entry" href="/membership/manage"><Crown size={18}/>{t("我的会员与自建房间")}<ArrowUpRight size={16}/></a>}
-    {PERSONAL_PLAY_VISIBLE&&<a className="membership-personal-entry" href="/personal/images"><ImagePlus size={22}/><span>{t("我的图片 · 上传照片拼图")} <small>{t("登录免费使用")}</small></span><ArrowUpRight size={18}/></a>}
+    {USER_IMAGE_UPLOAD_VISIBLE&&<a className="membership-personal-entry" href="/personal/images"><ImagePlus size={22}/><span>{t("我的图片 · 上传照片拼图")} <small>{t("登录免费使用")}</small></span><ArrowUpRight size={18}/></a>}
     {(PERSONAL_PLAY_VISIBLE||MEMBERSHIP_VISIBLE)&&<div className="personal-choices">{PERSONAL_PLAY_VISIBLE&&<button className="personal-choice" onClick={() => choose('solo')}><img src={RESTORABLE_PHOTOS.find(p => p.id === 'seaside')!.thumbSrc} alt="" aria-hidden="true"/><div><span className="choice-label">JUST ME · {t("登录后免费游玩")}</span><h2>{t('独自拼图')}</h2><p>{t('登录普通账号，选择图片与片数，开启自己的计时挑战。')}</p><span className="choice-arrow">{t('挑一张喜欢的 ')}<ArrowUpRight size={22}/></span></div></button>}
     {MEMBERSHIP_VISIBLE&&<button className="personal-choice" onClick={() => choose('create')}><img src={RESTORABLE_PHOTOS.find(p => p.id === 'alpine-village')!.thumbSrc} alt="" aria-hidden="true"/><div><span className="choice-label">WITH FRIENDS · {t('会员专属')}</span><h2>{t('创建私人房间')} <Crown size={24}/></h2><p>{t('订阅会员，创建仅凭邀请链接加入的私人拼图桌。')}</p><span className="choice-arrow">{t('查看会员权益')}<ArrowUpRight size={22}/></span></div></button>}</div>}
     {!PERSONAL_PLAY_VISIBLE&&<a className="secondary" href="/lobby">{t('去公开大厅')}<ArrowUpRight size={18}/></a>}

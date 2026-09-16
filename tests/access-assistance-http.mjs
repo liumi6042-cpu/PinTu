@@ -26,8 +26,9 @@ try{
  for(const pieces of [500,1000]){
   const ticket=await create(pieces,account),path='/api/rooms/'+ticket.room.id;
   assert.equal(ticket.room.puzzle.groups,undefined);const full=await request(path,undefined,account);assert.equal(full.status,200);assert.equal(full.data.puzzle.groups.length,pieces);
-  assert.equal((await request(path+'/join',{})).status,401,'new guests cannot join');
-  assert.equal((await request(path+'/join',{accountId:registered.data.account.id})).status,401,'identity in JSON cannot bypass sign-in');
+  const guest={};const guestJoin=await request(path+'/join',{accountId:registered.data.account.id},guest);
+  assert.equal(guestJoin.status,200,'joining a high-count room needs no account');
+  assert.notEqual(guestJoin.data.room.members.find(m=>m.id===guestJoin.data.playerId).name,'Free account','an accountId in the JSON body must not grant account identity');
   const joined=await request(path+'/join',{},account);assert.equal(joined.status,200);account.token=joined.data.token;
   assert.equal((await request(path,undefined,{token:account.token})).status,401,'a copied account ticket is insufficient');
  }
@@ -59,11 +60,11 @@ try{
  const oldActor={cookie:b.cookie,token:other.token},oldPath='/api/rooms/'+room.id;
  assert.equal((await request(oldPath,{type:'heartbeat'},oldActor)).status,200);
  const continued=await request(oldPath+'/join',{},oldActor);assert.equal(continued.status,200);oldActor.token=continued.data.token;assert.deepEqual(continued.data.room.puzzle.groups,room.puzzle.groups);
- assert.equal((await request(oldPath+'/join',{})).status,401);
+ const lateGuest={};assert.equal((await request(oldPath+'/join',{},lateGuest)).status,200,'high-count rooms accept guests without an account');
  assert.equal((await request(oldPath,{type:'claim',groupId:1},oldActor)).status,200);
  assert.equal((await request(oldPath,{type:'move',groupId:1,dx:123,dy:234,seq:1},oldActor)).status,200);
  assert.equal((await request(oldPath+'/chat',{requestId:id(),text:'Existing guest continues'},oldActor)).status,200);
  await request('/api/auth/logout',{},account);
  assert.equal((await request('/api/rooms',{imageId:'mountain-lake-reflection-hd-v3',pieces:500,visibility:'public'},account)).status,401);
- console.log(JSON.stringify({free500And1000Account:true,guest108And300:true,firstGuestAdmissionRejected:true,expiredSessionRejected:true,oldGuestReconnectMovesChat:true,twoUnderlays30Seconds:true,referenceRemoved:true,threeHintsOfThree:true,identityQuotasAndRetries:true,puzzleStateUnaffected:true}));
+ console.log(JSON.stringify({free500And1000Account:true,guest108And300:true,creationRequiresAccount:true,guestJoinHighCount:true,forgedIdentityIgnored:true,expiredSessionRejected:true,oldGuestReconnectMovesChat:true,twoUnderlays30Seconds:true,referenceRemoved:true,threeHintsOfThree:true,identityQuotasAndRetries:true,puzzleStateUnaffected:true}));
 }finally{for(const roomId of rooms)db.prepare('DELETE FROM puzzle_rooms WHERE id=?').run(roomId);db.close();}

@@ -2,6 +2,10 @@
 // This does not erase existing rooms, uploads, accounts, or membership records.
 export const PERSONAL_PLAY_VISIBLE = false;
 export const MEMBERSHIP_VISIBLE = false;
+// Uploading your own picture to build a puzzle is open to signed-in accounts and
+// is independent of PERSONAL_PLAY_VISIBLE: the entry and the page stay reachable
+// while solo mode and paid membership remain hidden.
+export const USER_IMAGE_UPLOAD_VISIBLE = true;
 export function galleryEntry(mode?:string){
  if(mode==='create'&&MEMBERSHIP_VISIBLE)return {entryMode:'create' as const,guestPlay:false};
  if(mode==='solo'&&PERSONAL_PLAY_VISIBLE)return {entryMode:'solo' as const,guestPlay:false};

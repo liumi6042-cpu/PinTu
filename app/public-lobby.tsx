@@ -14,7 +14,7 @@ import CommunityShell from './community-shell';
 import SearchIntroduction from './search-introduction';
 import { preloadPuzzleImage } from '@/lib/puzzle-image-loading';
 import {puzzleImageSource} from '@/lib/puzzle-image-source';
-import {PIECE_LOGIN_REQUIRED,requiresPieceAccount} from '@/lib/piece-access';
+import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
 import {accountLoginUrl,publicPuzzleReturnTo} from '@/lib/account-return';
 
 export default function PublicLobby(){
@@ -46,7 +46,7 @@ export default function PublicLobby(){
   return text.includes(query.trim().toLocaleLowerCase())&&(filter==='all'||filter==='active'&&room.players>0||filter==='open'&&room.players<8&&room.acceptingNew!==false);
  }),[rooms,query,filter,language]);
  return <CommunityShell active="lobby"><main className="community-main lobby-main">
-  <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{t('公开拼图大厅')}</h1><p>{t('108、300 片可直接加入，500 片及以上需登录。')}</p></div><div className="lobby-summary"><span><Users size={16}/><strong>{rooms.reduce((sum,r)=>sum+r.players,0)}</strong> {t('位玩家在线')}</span><span><strong>{rooms.length}</strong> {t('个公开房间')}</span></div></section>
+  <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{t('公开拼图大厅')}</h1><p>{t('任何片数都能直接加入；只有创建 500 片及以上房间需要登录。')}</p></div><div className="lobby-summary"><span><Users size={16}/><strong>{rooms.reduce((sum,r)=>sum+r.players,0)}</strong> {t('位玩家在线')}</span><span><strong>{rooms.length}</strong> {t('个公开房间')}</span></div></section>
   <div className="public-create-row"><a className="primary" href="/gallery?mode=public"><Plus size={19}/>{t('创建公开房间')}</a><button className="secondary" disabled={randomBusy} onClick={()=>void launchRandom()} title={t('随机选图，按推荐片数创建公开房间')}><Shuffle size={18}/>{t(randomBusy?'正在铺开桌面…':'随机开一桌')}</button><p>{t('公开房间免费，500 片及以上首次入座需要登录。')}</p></div>{launchError&&<p className="form-error" role="alert">{t(launchError)}</p>}<p className="public-retention-note">{t('有人在拼的房间保留；无人且未拼合的房间清理，已有进度保留 24 小时。')}</p>
   <div className="lobby-filters"><div className="filter-tabs">{[{id:'all',name:'所有拼图'},{id:'active',name:'有人在拼'},{id:'open',name:'可以加入'}].map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{t(item.name)}</button>)}</div><label className="lobby-search"><Search size={18}/><input aria-label={t('搜索公开拼图')} placeholder={t('搜索喜欢的画面')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
   {error&&<p className="form-error" role="alert">{t(error)}</p>}
@@ -55,7 +55,7 @@ export default function PublicLobby(){
    const progress=Math.round(room.placed/room.pieces*100),full=room.players>=8;
    const elapsed=room.startedAt===null?0:Math.max(0,Math.floor((now+offset-room.startedAt)/1000));
    return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else preloadPuzzleImage(puzzleImageSource(photo,room.pieces));}} aria-label={t(photo.title)+' · '+t(full?'已满员':'点击图片，加入拼图')}>
-    <div className="public-picture"><img src={photo.thumbSrc} alt={t(photo.title)} loading={index<3?'eager':'lazy'}/><span className="picture-count">{room.pieces.toLocaleString()} {t('片')}{requiresPieceAccount(room.pieces)?' · '+t('新玩家需登录'):''}</span><span className={'live-chip'+(room.players?' is-active':'')}><i/>{t(full?'已满员':room.acceptingNew===false?'暂停接待新玩家':room.players?'正在拼图':'等你开拼')}</span><div className="public-picture-stats"><span aria-label={t('拼图计时')}><Clock3 size={16}/><time>{clockLabel(elapsed)}</time></span><span aria-label={t('在线人数')}><Users size={16}/><strong>{room.players}/8</strong></span></div></div>
+    <div className="public-picture"><img src={photo.thumbSrc} alt={t(photo.title)} loading={index<3?'eager':'lazy'}/><span className="picture-count">{room.pieces.toLocaleString()} {t('片')}</span><span className={'live-chip'+(room.players?' is-active':'')}><i/>{t(full?'已满员':room.acceptingNew===false?'暂停接待新玩家':room.players?'正在拼图':'等你开拼')}</span><div className="public-picture-stats"><span aria-label={t('拼图计时')}><Clock3 size={16}/><time>{clockLabel(elapsed)}</time></span><span aria-label={t('在线人数')}><Users size={16}/><strong>{room.players}/8</strong></span></div></div>
     <div className="public-card-body"><div className="public-title"><h2>{room.customTitle?room.title:t(photo.title)}</h2><ArrowUpRight size={19}/></div><div className="public-card-bottom"><span>{t(photo.category)} · {progress}% {t('已完成')}</span><span className="public-join-label">{t(full?'已满员':room.acceptingNew===false?'老朋友继续':'加入拼图')}</span></div><div className="room-progress" aria-hidden="true"><span style={{width:progress+'%'}}/></div></div>
    </a></article>;
   })}</div>:<div className="community-empty"><Search size={30}/><h2>{t(rooms.length?'还没有符合条件的桌面':'还没有公开房间，来开第一桌吧。')}</h2><button className="secondary" onClick={()=>{setFilter('all');setQuery('');}}>{t('看看全部桌面')}</button></div>}

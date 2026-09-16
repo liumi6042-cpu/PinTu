@@ -12,7 +12,6 @@ import type { RoomTicket } from '@/lib/room-client';
 import { joinPuzzle } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
 import { accountLoginUrl, SOLO_LOGIN_REQUIRED } from '@/lib/account-return';
-import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
 const noop = () => { };
 export default function RoomPlay({ roomId }: {
     roomId: string;
@@ -24,7 +23,7 @@ export default function RoomPlay({ roomId }: {
       if(!admission.current||admission.current.roomId!==roomId||admission.current.attempt!==attempt)admission.current={roomId,attempt,promise:joinPuzzle(roomId)};
       void admission.current.promise.then(ticket => { if (!canceled)
         setClient(new RoomClient(ticket)); }).catch(error => { if (!canceled)
-        { if(error instanceof Error && [SOLO_LOGIN_REQUIRED,PIECE_LOGIN_REQUIRED].includes(error.message)) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
+        { if(error instanceof Error && error.message === SOLO_LOGIN_REQUIRED) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
     if (client) {
         const photo = client.snapshot.customImage?customPhoto(client.snapshot.customImage,client.snapshot.id):RESTORABLE_PHOTOS.find(p => p.id === client.state.imageId);
         if (photo)
