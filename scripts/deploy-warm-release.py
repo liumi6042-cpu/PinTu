@@ -145,7 +145,10 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             returning = json_request(3138, path + '/join', {}, actor)
             actor['token'] = returning['token']
             assert returning['room']['puzzle']['cols'] * returning['room']['puzzle']['rows'] == count
-            json_request(3138, path + '/join', {}, {}, 401)
+            # Sign-in covers creation only now: any guest may join any piece count.
+            # The 500+ creation check for a fresh guest is covered below.
+            guest = json_request(3138, path + '/join', {}, {})
+            assert guest['room']['puzzle']['cols'] * guest['room']['puzzle']['rows'] == count
             head = get(3138, '/room/' + ticket['room']['id'])[1].decode().partition('</head>')[0]
             assert '/puzzles/mountain-lake-reflection-native-v2-optimized-' in head
         for count in [2000, 5000]:
