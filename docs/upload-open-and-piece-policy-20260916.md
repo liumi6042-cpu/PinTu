@@ -48,6 +48,19 @@
 
 本机 Node 的递归目录拷贝不可用：`fs.cpSync` 只要目标是目录就使进程以 `0xC0000409` fail-fast 退出（单文件拷贝正常，Node 22 与 24 均复现，三种目标路径一致）。因此 `scripts/build-server.mjs` 改为用 `readdirSync` + `mkdirSync` + `copyFileSync` 逐项拷贝源码树、`drizzle` 与 standalone 产物，输出布局不变。`scripts/deploy-warm-release.py` 的隔离测试同步更新：新游客加入高片数房间由期望 401 改为期望 200，并断言片数一致；500 片以上「创建」仍需账号的检查保持不变。
 
-## 发布
+## 发布与上线
 
-运行包在最后一次提交上生成，哈希与体积以 `releases/latest.json`、`releases/latest.sha256` 为准，只上传运行文件。上传与切换按 `docs/runtime-releases.md` 与双端口预热流程执行，切换前核对服务器 `current`、槽位与在线连接。部署状态与最终回执见 `AGENTS.md` 顶部条目。
+运行包在最后一次提交上生成，哈希与体积以 `releases/latest.json`、`releases/latest.sha256` 为准，只上传运行文件。上传与切换按 `docs/runtime-releases.md` 与双端口预热流程执行，切换前核对服务器 `current`、槽位与在线连接。
+
+线上结果：
+
+- `releases/20260916-15/app`，应用 Git `befdd7b579ff95900866323a8becf8dda4a3e358`，运行包 sha256 `f2cbfe3d16695360fc4dfba204f55834d74ff3bbf0a2ffaa027b8b8850d223dd`（266,126,561 字节、2910 文件），`jigsaw-web@3103.service` 活跃，3104 请求排空后停止，回退保留 `20260916-14`（cedc8a7）。`migrationChanges: false`，隔离跨版本测试通过，EXIT_CODE=0。
+- 首版（`20260916-14`）上线后复核发现 `/lobby` 的搜索描述仍是旧文案「500 pieces and above require a free account」，与新版规则矛盾；单独提交 `befdd7b` 修订 `lib/seo.ts` 后重新出包并第二次预热切换，线上已无旧描述。
+- 上线后线上核对（HTTPS）：`/`、`/lobby`、`/gallery`、`/help`、`/personal`、`/personal/images`、`/sitemap.xml` 均 200，`/membership` 307（未开放，符合预期）；`/lobby` HTML 含「Any piece count can be joined」「Join a table of any piece count」。
+- 仅向 IndexNow 补交变化的公开页 `/lobby`：2026-09-16T13:17:41Z，status 200。私人页与接口一律未提交。
+
+## 发布收尾注意事项
+
+`npm run release` 会在运行包已生成且 `verified: true` 之后，于 `scripts/package-release.mjs` 的 `finally` 中删除 `releases/staging`；本机 safe-delete 保护对单轮超过 50 个文件的操作会直接抛错（本次 2959 个文件），所以命令以 EXITCODE=1 结束，但运行包本身有效，**不要因此重跑构建**。残留目录用 `robocopy <空目录> releases\staging /MIR` 清空即可（已验证清空后 `releases/latest.tar.gz` 哈希不变）。
+
+服务器旧版本清理（13、12）本轮未执行。
