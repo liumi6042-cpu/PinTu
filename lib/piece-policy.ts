@@ -14,7 +14,12 @@ export const MIN_PIECE_PIXELS=30;
 export const PIECE_RESOLUTION_ERROR='这张图片暂不支持该片数，请选择较少片数或其他图片。';
 export function countsForDimensions(width:number,height:number){
  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return [];
- return NEW_GAME_LEVELS.filter(level=>Math.min(width/level.cols,height/level.rows)>=(level.count===108?20:MIN_PIECE_PIXELS)).map(level=>level.count);
+ // Ask the same question the board will: can a fitted grid hold this many pieces
+ // with square bodies above the pixel floor? Measuring the fixed LEVELS grids
+ // instead would hide levels a portrait picture can actually play — a 1122-wide
+ // photo cannot fill 40 columns at 30 pixels, yet a fitted 28x35=980 board
+ // comfortably can, and the gallery would show it as unavailable.
+ return NEW_GAME_LEVELS.filter(level=>gridForDimensions(width,height,level.count)).map(level=>level.count);
 }
 // --- Dynamic grids for member uploads -------------------------------------
 // An uploaded picture keeps its own aspect ratio instead of being cropped into a
@@ -36,6 +41,12 @@ function retainedRatio(ratio:number,cols:number,rows:number){
 // both expressed as fractions, so they can be weighed against each other: keep
 // the picture whole first, land near the requested count second.
 const COUNT_WEIGHT=1, CROP_WEIGHT=2.6;
+// How far a board may miss the requested count before we stop calling it that
+// level. A fitted grid rarely lands exactly, and a few percent is invisible to
+// players, but a 35 percent miss meant a small picture could advertise 1000
+// pieces and hand back 650. Every catalog picture stays within 11 percent, so
+// 15 keeps them all while refusing boards that are a different puzzle.
+const MAX_COUNT_DEVIATION=0.15;
 function gridScore(count:number,pixels:number,ratio:number,cols:number,rows:number,floor:number){
  const miss=Math.abs(cols*rows-count)/count;
  const crop=1-retainedRatio(ratio,cols,rows);
@@ -56,9 +67,9 @@ export function gridForDimensions(width:number,height:number,count:number){
  let best:{cols:number;rows:number;pixels:number;score:number}|null=null;
  for(let rows=2;rows<=span;rows++)for(let cols=2;cols<=span;cols++){
   const total=cols*rows;
-  // Keep the search near the requested count; a grid 35 percent off is a
-  // different puzzle, not a rounding of the same one.
-  if(Math.abs(total-count)>count*0.35)continue;
+  // Keep the search near the requested count: a board that misses by more than
+  // MAX_COUNT_DEVIATION is a different puzzle, not a rounding of the same one.
+  if(Math.abs(total-count)>count*MAX_COUNT_DEVIATION)continue;
   const pixels=gridPixels(width,height,cols,rows);
   if(pixels<floor)continue;
   const score=gridScore(count,pixels,ratio,cols,rows,floor);

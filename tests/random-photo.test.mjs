@@ -18,8 +18,10 @@ test('random draw can reach every published picture, including both ends',()=>{
 test('archived artwork restores progress but cannot create a new server room or enter random draws',()=>{
   const archived=RESTORABLE_PHOTOS.filter(p=>p.status==='archived');
   assert.ok(archived.length>0);
-  assert.deepEqual(PHOTOS.map(photo=>photo.id),catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published').map(photo=>photo.id));
-  assert.deepEqual(archived.map(photo=>photo.id),catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='archived').map(photo=>photo.id));
+  const published=catalog.filter(photo=>['project-ai-generated','user-provided'].includes(photo.origin)&&photo.status==='published');
+  const retired=catalog.filter(photo=>['project-ai-generated','user-provided'].includes(photo.origin)&&photo.status==='archived');
+  assert.deepEqual(PHOTOS.map(photo=>photo.id),published.map(photo=>photo.id));
+  assert.deepEqual(archived.map(photo=>photo.id),retired.map(photo=>photo.id));
   for(const photo of archived){
     assert.ok(!PHOTOS.some(p=>p.id===photo.id));
     const old=createPuzzle(photo.id,12,9);

@@ -796,7 +796,6 @@
   "正好": "exactly",
   "已按图片比例贴近所选片数": "fitted to the picture's shape near your chosen count",
   "公开大厅一起玩": "Play in the public lobby",
-  "创建公开房间": "Create a public room",
   "公开房间会出现在大厅，任何访客都能加入一起拼；这张图片不会进入公开图库，成绩也不计入用时榜。": "A public room is listed in the lobby and any visitor can join the table. This picture stays out of the public gallery and its time is not recorded on the leaderboard.",
   "我有权使用这张图片。我了解：自己拼和私人房间只有我和受邀玩家能看到；如果开公开房间，这张图片会被其他玩家看到，但不会进入公开图库或用时榜。": "I have the right to use this picture. I understand that solo play and private tables are visible only to me and invited players; if I open a public room, other players will see this picture, but it stays out of the public gallery and the time leaderboard.",
   "图片仅自己和受邀玩家可见，不加入公开图库或用时榜。": "Only you and invited players can see uploaded pictures. They stay out of the public gallery and the leaderboard.",
@@ -1009,5 +1008,8 @@
   "每局每人可开启两次底图，每次持续 30 秒。": "Each player can use the underlay twice per puzzle, for 30 seconds each time.",
   "该帮助功能已移除，请使用底图或提示。": "This assistance feature has been removed. Please use the underlay or hints.",
   "「边缘」只显示含边缘的拼块组。每局每人可开启底图 2 次，每次 30 秒；提示可用 3 次，每次标出最多 3 片及对应位置。刷新不会重置次数。": "Edges shows groups containing edge pieces. Each player gets two 30-second underlays per puzzle, plus three hints that highlight up to three pieces and their matching positions. Reloading does not reset usage.",
-  "任何片数都能直接加入；只有创建 500 片及以上房间需要登录。": "Join a table of any piece count directly. Only creating a room with 500 pieces or more requires sign-in."
+  "任何片数都能直接加入；只有创建 500 片及以上房间需要登录。": "Join a table of any piece count directly. Only creating a room with 500 pieces or more requires sign-in.",
+  "猫咪会议": "Cat Stand-Up",
+  "橘猫忙着开会，主人在键盘旁睡着了。": "An orange cat runs the video call while its human naps on the desk.",
+  "竖版画面，键盘、书架与绿植细节密集。建议先从视频窗口里的三只猫和屏幕边框定位。": "A tall scene packed with keyboard, shelves and plants. Start from the three cats in the call window and the screen edge."
 }

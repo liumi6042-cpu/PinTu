@@ -1129,5 +1129,17 @@
     "playSrc": "/puzzles/winter-village-play-fa909191d22a.webp",
     "thumbSrc": "/puzzles/winter-village-thumbnail-bfea8c39bd6c.webp",
     "optimizedSrc": "/puzzles/winter-village-optimized-76be54565d36.webp"
+  },
+  {
+    "id": "cat-video-call-v1",
+    "title": "猫咪会议",
+    "subtitle": "橘猫忙着开会，主人在键盘旁睡着了。",
+    "category": "动物",
+    "src": "/puzzles/cat-video-call-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/cat-video-call-v1-play-4eb1b2603437.webp",
+    "thumbSrc": "/puzzles/cat-video-call-v1-thumbnail-30f2fe02f81c.webp",
+    "optimizedSrc": "/puzzles/cat-video-call-v1-optimized-164a8edd1bef.webp"
   }
 ]

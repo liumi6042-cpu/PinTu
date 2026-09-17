@@ -18,6 +18,12 @@ test('manual submission cannot leak rooms, credentials, queries or other domains
 test('initial submission covers all published public puzzle pages', () => {
   const catalog = JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json', import.meta.url), 'utf8'));
   const urls = selectUrls(catalog);
-  assert.equal(urls.length, 34);
+  // Derive the expectation from the catalog instead of freezing a number that
+  // silently goes stale each time a picture is published.
+  const published = catalog.filter(photo => ['project-ai-generated', 'user-provided'].includes(photo.origin) && photo.status === 'published');
+  const fixed = ['/', '/lobby', '/gallery', '/help'];
+  assert.equal(urls.length, fixed.length + published.length);
   assert.equal(new Set(urls).size, urls.length);
+  for (const photo of published) assert.ok(urls.includes(origin + '/puzzle/' + photo.id), photo.id);
+  for (const path of fixed) assert.ok(urls.includes(origin + path), path);
 });

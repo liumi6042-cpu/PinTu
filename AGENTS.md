@@ -9,8 +9,13 @@
   - **对外表述必须如实**：`user-provided` 的图在界面上要能与「本站 AI 生成」区分，不得笼统声称全部图片均为本站生成。新增 `user-provided` 图时，`content/image-provenance/<id>.json` 与目录条目的 `origin` 必须一致。
   - 判定收口在 `scripts/image-origin.mjs`（`isPlayableOrigin`／`PLAYABLE_ORIGINS`／`isRetained`／`isPublishedPlayable`），新增来源类型只改这一处，不要再往各个脚本里散落硬编码字符串。改动前该字符串散落在构建校验、两个交付编码器、发布打包、搜索提交与图库运行时共 6 处，漏改任一处都会造成「图能显示但不进发布包」。
   - 实测（独立 scratch 目录，1122×1402 竖版图，无提示词、无生图记录）：`prepare-image-delivery` exit=0、`prepare-optimized-delivery` exit=0（`encoded:1`、`noResize:true`）、构建校验返回 `CHECK_OK {"published":1}`，交付记录含 `sourceSha256`／`play`／`thumbnail`／`optimized`。验证用文件已清理，未污染 `content/` 与 `public/`。
-  - 验证：`tsc --noEmit` 干净；`check:images` 39 张通过（老图零影响）；`tests/image-library.test.mjs` 19/19（新增 6 组 user-provided 用例：正向通过、缺来源/授权被拒、伪造生成记录被拒、缺 PNG 原件与衍生图被拒、目录夹带被拒、共享判定单元测试）；全量 221 用例 199 通过，**失败数与基线一致**。规范细节见 `docs/图片库来源与扩充规范.md`。
-  - **注意**：用户那张具体的 1122×1402 图**尚未入库，文件从未落到磁盘**（日志中的 SHA-256 来自当次读取剪贴板）。通道已通，待用户重新提供文件后再登记。
+  - 验证：`tsc --noEmit` 干净；`check:images` 通过（老图零影响）；`tests/image-library.test.mjs` 19/19（新增 6 组 user-provided 用例：正向通过、缺来源/授权被拒、伪造生成记录被拒、缺 PNG 原件与衍生图被拒、目录夹带被拒、共享判定单元测试）；全量测试失败数不高于基线。规范细节见 `docs/图片库来源与扩充规范.md`。
+  - 首张真实素材：`cat-video-call-v1`（「猫咪会议」，用户 2026-09-17 提供，1122×1402 竖版，`origin='user-provided'`）。原件由 JPEG 转 PNG，衍生图 play／thumbnail／optimized 齐全。**新图入库时必须同时补齐三样，缺一即构建失败**：`content/image-provenance/<id>.json`、`content/puzzle-guidance.json` 的引导条目（含真实 `width`/`height`，动态网格靠它算棋盘）、`content/locales/en.json` 的标题／副标题／reason 三条英文翻译（`search-indexing` 与 `progress-guidance` 会断言「英文翻译不得等于中文原文」）。
+
+- 2026-09-17 修正动态网格的两个遗留缺口（同一轮发现，**未部署、未出包**）：
+  - **档位判定与棋盘生成不一致**：`countsForDimensions` 原先用固定 `LEVELS` 的 `cols/rows` 算「哪些档位可选」，而实际棋盘走 `gridForDimensions`。对竖版图两者会矛盾——1122 宽的图填不满 40 列（`1122/40=28 < 30`），于是 1000 片被判为不可选，但动态网格明明能给出 `28×35=980`（每片 40 像素）。现已让 `countsForDimensions` 直接复用 `gridForDimensions`。**老图结果完全不变**（目录图最小 1536×1024，四条档位本就齐全），只补上竖版图缺失的档位。
+  - **片数偏差上限从 35% 收紧到 15%**（`MAX_COUNT_DEVIATION`）：35% 意味着 800×750 的图会「声称支持 1000 片、实际给 650 片」。实测全部目录图在各档位的偏差都 ≤11.1%，改为 15% 零误伤，同时挡掉荒唐结果。
+  - 同时修掉三个**本来就已过期**的测试断言（与本次改动无关，是图库从 30 涨到 39 时留下的）：`search-submission` 写死 sitemap 34 个 URL（实际 44 = 4 固定页 + 40 图，已改为从目录算出）、`random-photo` 与 `piece-policy` 的 `published` 过滤只认 AI 生成来源。另修 `piece-policy` 中「1199×750 应拒绝 1000 片」的断言——动态网格在该尺寸给出 `39×25=975`、每片正好 30 像素达标，这是改进而非放宽，断言改用实测边界 `800×750`。
 
 - 2026-09-17 动态网格与上传图公开房间（**已本地验收通过，未部署、未出包**）。用户决定：拼图棋盘不再把图片裁进固定 4:3／2:1 画幅，而是按图片自身比例生成「贴合网格」，让 2:1 风景图保住左右、竖版照片保住上下；用户选 300 片时允许实际落在附近片数（如 288／306），因此引入「片数档位」保证榜单不被拆散。**本条覆盖下方 2026-09-16「按所选片数等比居中裁切，拼块主体保持正方形」以及 `pictureCrop` 造成的既有裁切行为，也覆盖下方「自上传图片仅供自己和邀请的朋友游玩，不能公开到大厅」。** 具体：
   - `lib/piece-policy.ts` 新增 `gridForDimensions(width,height,count)`：遍历 `cols×rows` 候选，保证拼块是正方形（`unit=min(w/cols,h/rows)`）、每片不低于 `MIN_PIECE_PIXELS`（108 片档放宽到 20）、片数落在目标 ±35% 内，并按 `片数偏差×1 + 裁切比例×2.6 + 像素紧张×0.5` 打分取最优。返回 `{cols,rows,count,pixels,exact}`，无解返回 `null`。另有 `dynamicCountsForDimensions`、`minPixelsForCount`。**不要退回字典序（先比片数再比比例）比较**：实测那样会让 39 张图在 4 个档位上的平均保留率只有 73.5%，改用加权打分后 156/156 全部提升、平均 100%。

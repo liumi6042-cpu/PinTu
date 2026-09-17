@@ -565,5 +565,12 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "cat-video-call-v1": {
+    "width": 1122,
+    "height": 1402,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "竖版画面，键盘、书架与绿植细节密集。建议先从视频窗口里的三只猫和屏幕边框定位。"
   }
 }

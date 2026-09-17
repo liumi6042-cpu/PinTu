@@ -37,11 +37,17 @@ async function fixture(t,id='winter-village'){
 test('all playable assets have matching original files, provenance and review records',async()=>{
   assert.deepEqual(await checkImageLibrary(root),{published:PHOTOS.length});
   const catalog=await readJson(join(root,'content/puzzle-catalog.json'));
-  const published=catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
+  const published=catalog.filter(photo=>['project-ai-generated','user-provided'].includes(photo.origin)&&photo.status==='published');
   assert.deepEqual(PHOTOS.map(photo=>photo.id),published.map(photo=>photo.id));
-  assert.equal(PHOTOS.length,39,'the thirty-three retained images plus four approved paintings and two new original cel illustrations are published');
-  assert.equal(PHOTOS.filter(photo=>photo.category==='厚涂').length,6);
-  assert.equal(PHOTOS.filter(photo=>photo.category==='平涂').length,3);
+  // Both origins are published; keep them counted separately so a new picture of
+  // either kind shows up as itself rather than as an unexplained off-by-one.
+  const generated=PHOTOS.filter(photo=>photo.origin==='project-ai-generated');
+  const provided=PHOTOS.filter(photo=>photo.origin==='user-provided');
+  assert.equal(generated.length,39,'the thirty-three retained images plus four approved paintings and two new original cel illustrations are published');
+  assert.ok(provided.length>=1,'user-provided pictures are published alongside generated ones');
+  assert.equal(PHOTOS.length,generated.length+provided.length);
+  assert.equal(generated.filter(photo=>photo.category==='厚涂').length,6);
+  assert.equal(generated.filter(photo=>photo.category==='平涂').length,3);
   for(const id of ['cel-sunset-train-v1','painted-crimson-rose-v1','painted-amber-autumn-v1','cel-rooftop-breeze-v1']){
     assert.equal(RESTORABLE_PHOTOS.find(photo=>photo.id===id)?.status,'archived');
     assert.ok(!PHOTO_IDS.includes(id));assert.throws(()=>makeRoom('withdrawn-painting',id,108,100000));

@@ -9,7 +9,7 @@ import {puzzleImageSource} from '../lib/puzzle-image-source.ts';
 import {roomImagePreload} from '../lib/room-image-preload.ts';
 import {randomPhoto} from '../lib/random-photo.ts';
 const large='mountain-lake-reflection-hd-v3',small='emerald-river-valley-native-v2';
-const published=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8')).filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
+const published=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8')).filter(photo=>['project-ai-generated','user-provided'].includes(photo.origin)&&photo.status==='published');
 test('four new-game choices retain legacy grids and reject remembered paused counts',()=>{
  assert.deepEqual(LEVELS.map(l=>l.count),[108,300,500,1000,2000,5000]);
  assert.deepEqual(NEW_GAME_LEVELS.map(l=>l.count),[108,300,500,1000]);
@@ -19,7 +19,7 @@ test('four new-game choices retain legacy grids and reject remembered paused cou
  assert.deepEqual(countsForDimensions(3144,1572),[108,300,500,1000]);
  assert.deepEqual(countsForDimensions(240,240),[108]);
  assert.deepEqual(countsForDimensions(NaN,887),[]);assert.deepEqual(allowedPieceCounts('unknown'),[]);
- assert.equal(countsForDimensions(1200,750).includes(1000),true);assert.equal(countsForDimensions(1199,750).includes(1000),false,'the square-body crop still requires 30 pixels per piece');
+ assert.equal(countsForDimensions(1200,750).includes(1000),true);assert.equal(countsForDimensions(800,750).includes(1000),false,'a fitted board still refuses 1000 pieces when no grid clears the 30-pixel floor');
  assert.equal(countsForDimensions(30000,15000).includes(5000),false,'large native dimensions cannot bypass the operational limit');
 });
 test('all editions reject paused high counts while every allowed new-game option remains playable',()=>{
