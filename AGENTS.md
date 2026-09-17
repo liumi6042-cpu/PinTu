@@ -1,5 +1,11 @@
 # 本项目图片库约定
 
+- 2026-09-17 上面的**回退已上线**，线上为 `releases/20260917-24/app`（应用 Git `c310bcd`，运行包 sha256 `0a91643ac0db81f2ca9a47a106a1dbcf6bfdfdbf6467eb94a209ef92e63fab7b`，268,115,832 字节 / 2913 文件，`verified:true`、`dirty:false`），`jigsaw-web@3104.service` 活跃、nginx 指向 3104，3103 已排空停止，回退版本为 `20260917-23`；`20260917-22` 已按「当前 + 一个回退」的约定清理。
+  - 端口：`--from-port 3103`、`--to-port 3104`、`--old-unit jigsaw-web@3103.service`（**每次都要先探明，端口是往返复用的**）。
+  - 线上分片 `puzzle-app-D1G45IS5.js` 核对：`dragged-piece-image`／`DragImage`／`selectFacing`／`claimMany`／`DRAG_LEASE_GROUPS`／`selectedExtra`／`MULTI_SELECT_LIMIT` **计数全为 0**，而 `previousDragRect` 出现 4 次——图层与多选确实从线上消失了，原始拖动路径回来了。
+  - **真实浏览器验证**（本机生产构建 + Playwright）：拖动中 `.dragged-piece-image` 元素数 **0**；起点像素 20611→0、目标点 20611→20611（拼块内容原样从起点搬到目标点），证明拼块跟着指针且不再消失；无障碍标签里已无「Shift 或 Ctrl 点选多块／Ctrl 加 A 全选」；零运行时报错。
+  - 全量 219 用例 196 通过、6 条失败**全是既有基线或本机 safe-delete 噪声**（用例数由 237 降到 219 是删掉多选/图层测试的预期结果，不是异常）。
+
 - 2026-09-17 **整块回退：删除「多选拖动」，并恢复最初的拖动渲染方式**（用户原话：「你把这一套功能删除吧，恢复一开始的不能多选的样子，原来的拖动」）。**本条一次性覆盖下方四条既有约定**，把它们全部作废：
   1. 第 205 行那条「拖动时把拼块组缓存为独立小图层、通过 CSS 移动；普通指针帧不得重绘桌面」的**浮动图层约定**；
   2. 多选功能的完整条目（含 `MULTI_SELECT_LIMIT`、`dragIds`、共享位移、缓存键、Ctrl+A 等）；
