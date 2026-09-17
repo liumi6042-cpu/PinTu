@@ -1,16 +1,21 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {randomBytes} from 'node:crypto';
+import {isPublishedPlayable} from '../scripts/image-origin.mjs';
 const base=process.argv[2];
 assert.equal(base,'http://127.0.0.1:3137','Only run against the disposable release server');
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 const english=JSON.parse(readFileSync(new URL('../content/locales/en.json',import.meta.url),'utf8'));
-const photos=catalog.filter(p=>p.status==='published'&&['厚涂','平涂'].includes(p.category));assert.equal(photos.length,9);
+const photos=catalog.filter(p=>p.status==='published'&&['厚涂','平涂'].includes(p.category));assert.ok(photos.length>0);
+// Count from the catalogue rather than a frozen literal: the gallery grew from 39
+// to 40 pictures when the first user-provided one was published, and a hardcoded
+// total makes every future addition fail the release smoke test.
+const publishedTotal=catalog.filter(isPublishedPlayable).length;
 const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https','CF-Connecting-IP':'192.0.2.42'};
 const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
 const registration=await fetch(base+'/api/auth/register',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({username:'art_'+randomBytes(6).toString('hex'),name:'Art test',password:randomBytes(16).toString('hex')})});assert.equal(registration.status,201);const accountCookie=registration.headers.get('set-cookie').split(';')[0];await registration.arrayBuffer();
 const gallery=await (await get('/gallery')).text();
-assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,39);
+assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,publishedTotal);
 for(const category of ['厚涂','平涂'])assert.ok(gallery.includes(english[category]));
 for(const [index,photo] of photos.entries()){
  const page=await get('/puzzle/'+photo.id);assert.equal(page.status,200);const detail=await page.text();
