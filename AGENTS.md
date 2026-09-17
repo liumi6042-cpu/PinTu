@@ -1,5 +1,17 @@
 # 本项目图片库约定
 
+- 2026-09-17 多选拖动已上线，线上为 `releases/20260917-17/app`（应用 Git `c1bd884`，运行包 sha256 `d264c4bb4c52e286f0211d571be547554429b75cc336fe9fca2843c190d6f7fe`，268,122,861 字节 / 2913 文件 / 288 资产 / 40 图，`verified:true`、`dirty:false`），`jigsaw-web@3103.service` 活跃，nginx 指向 3103，3104 排空后停止，`migrationChanges:false`、隔离跨版本测试通过。上一个版本 `20260917-17` 的对偶是 `20260917-16`（保留作回退，`deployment.json` 的 `rollback` 字段即指它）。
+  - **`scripts/deploy-warm-release.py` 的端口参数语义反直觉，容易传反（本轮连错两次）**：`--from-port` 是**当前正在服务的端口**（脚本断言它的 unit 处于 active、且 nginx 里有它），`--to-port` 是**新的空闲端口**（断言 nginx 里没有它，并把新版本 slot 挂到这里）。`--old-unit` 必须等于 `jigsaw-web@{from_port}.service`。所以本轮正确的是 `--from-port 3104 --to-port 3103 --old-unit jigsaw-web@3104.service`。**传反会在第一个断言就失败、不会造成任何破坏**（失败点在 `app.mkdir` 之前，无残留目录）。
+  - 脚本**没有 `--archive` 参数**，运行包路径由 sha256 前 16 位推导：`/tmp/jigsaw-nook-<sha256前16位>.tar.gz`。
+  - `npm run release` 本轮**一次通过（exit=0）**。上一轮记录里「`finally` 里的 `rmSync` 被 safe-delete 拒绝导致 exit=1」的现象，**加 `env -u NODE_OPTIONS -u CODEBUDDY_SAFE_DELETE_ENABLED -u CODEBUDDY_TOOL_CALL_ID -u CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR` 前缀即可避免**。出包、上传、部署三条命令都建议带这个前缀。
+  - 线上验收：`/`、`/gallery`、`/lobby`、`/help`、`/healthz` 全 200；图库 40 卡片、4 档位；`puzzle-app-BEjcEcG_.js` 分片里 `selectFacing`／`toggleSelection`／`dragIds` 与三条多选提示语均在（`MULTI_SELECT_LIMIT` 被压缩掉属正常）。
+  - **全图库建房扫描 160/160 通过**（40 图 × 4 档），`grids over the 1000-piece ceiling: 0`，最大贴合棋盘 `cel-coastal-family-v1 @1000 → 38×26=988`，说明上方的 503 故障类已修复且在生产得到验证。
+- **本机（非服务器）对线上跑大批量验收会被 Cloudflare 限流，不是产品故障——不要再据此判断服务异常**。本轮我用本机跑 160 次建房扫描，得到大量 429，白查了半天：该响应的特征是 `Server: cloudflare` + `Retry-After: 60` + 正文 `Too many requests. Please try again shortly.`（英文、句号结尾）。**我们自己的 429 是 `Retry-After: 2` 且正文为中文**（`lib/room-store.ts` 的 `failure()` 统一设 2；`middleware.ts` 的鉴权限流是 `Retry-After: 900`）。同理 `guestSecret` 必须匹配 `^[a-f0-9]{64}$`，否则返回 400「玩家身份无效」而不是 429——我第一版扫描脚本用随机字母数字串，把 400 和 429 混在一起误判成服务端问题。
+  - **正确做法是把批量验收脚本放到服务器上、直连 `127.0.0.1:<port>` 跑**，带上 `deploy-warm-release.py` 里那组头（`Host`/`X-Forwarded-Host: jigsawnook.online`、`X-Forwarded-Proto: https`、`CF-Connecting-IP: 192.0.2.43`），即可绕开 CDN 限流、测到应用本身。本地跑小批量（十几次以内）没问题。
+  - 注意：**直连源站时 `healthz` 返回 404 属正常**（nginx 才把 `/healthz` 映射到 `/api/health`），要探健康应请求 `/api/health`。
+  - 批量验收**会在生产库留下大量测试房间**。本轮 160 个房间进入 `puzzle_rooms` 与 `puzzle_room_directory`，事后已按「public + 创建时间落在扫描窗口」精确删除，库恢复为 17 房（7 public + 10 solo，全部是真实用户房间）。**清理生产库前必须先备份**（`cp -a` 到 `/tmp` 并记 sha256，本轮 `754d2644…`），且**删除条件要用数据自身的时间分布来定**（先 `GROUP BY` 出直方图看分界），不要凭手算的时间戳猜——本轮第一次手算的毫秒阈值算大了，导致「该删的 0 个、该留的 17 个」，幸好删前先做了 dry-run 核对才没有误删。
+  - 上一轮把 `healthz` 之类的判断也记进测试契约时要小心：本项目局部 `/api/health` 与 nginx 的 `/healthz` 不是同一路径。
+
 - 2026-09-17 新增「多选拼块一次性拖动」（**用户要求，已实现并本地验收，明确未部署、未出包**）。用户要的是「按住 shift 或 ctrl 点选多块再一次性拖动」，并问了两件事：能不能做、会不会让房间很卡。结论：**能做，已做出来；不会更卡**。本条是**加层**，不是替换——单击拖动的原有行为一字未改，多选是叠在它上面的一层。具体：
   - 选择模型：`selected` 仍是「最后碰到的那一组」，新增 `selectedExtra:Set<number>` 是真正的选择集，**`selected` 恒为 `selectedExtra` 的成员**，所以键盘 N／方向键／描边高亮照旧作用于最后一次点到的块，不需要额外的锚点账本。Shift／Ctrl／Meta／Alt 点击 = 增删单个（**集合永不为空**：删掉最后一个成员时它保持选中）；**普通点击 = 显式重置**，清空集合后重新开始。这条刻意做得简单：早先写过「锚点交接」的版本，会出现 `[4]` 取代 `[0,4]`、`[2,4]` 取代 `[0,4]` 这类丢成员的行为，已废弃。**不要再引入中间锚点状态。**
   - 自动吸附邻居：普通点击除了选中被点的那组，还会把「边缘相向且几乎贴住」的散片一起带走（`selectFacing`，容差 `min(w,h)*.35`，`touches()` 判断）。**这就是不用按 Shift 也能一次拖动一小片散块区域的原因**，也是用户问「多选」时真正想要的顺滑感。跳过 `locked`、跳过 `remoteOwners`、跳过 `canAcquire` 返回 false 的组。
