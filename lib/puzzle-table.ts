@@ -9,8 +9,9 @@ import { SnapSound,type SoundPreferences } from './snap-sound';
 import { DragImage } from './drag-image';
 type Notice = (message:string)=>void;
 // A drag carries at most this many groups. The ceiling keeps the browser drag
-// layer, the dirty rectangle and the per-group network claims bounded, and it
-// matches the room engine's eight-lease allowance with room to spare.
+// layer, the dirty rectangle and the per-gesture network claim bounded, and it
+// must stay at or below the room engine's `DRAG_LEASE_GROUPS`, because one
+// gesture claims its whole selection in a single request.
 export const MULTI_SELECT_LIMIT=12;
 export type TableNetwork={canAcquire?:(id:number)=>boolean;canAcquireAll?:(ids:number[])=>boolean;acquire:(id:number)=>Promise<boolean>;acquireAll?:(ids:number[])=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
@@ -18,11 +19,12 @@ export class PuzzleTable {
   board:ReturnType<typeof boardFor>;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
   edges=false; paused=false; selected:number|null=null;
-  // Multi-select layers an additive gesture on top of the single-piece drag rather
-  // than replacing it: one click still behaves as before, Shift/Ctrl click adds to
-  // the set, and a plain click on a member picks the whole set up. `selected` is
-  // always one of `selectedExtra`, so the keyboard N/arrows and the outline colour
-  // keep working on the last group touched.
+  // Multi-select layers an opt-in gesture on top of the single-piece drag rather
+  // than replacing it: one click drags exactly one group, Shift/Ctrl click adds to
+  // the set, and only then does a click on a member pick the whole set up. Nothing
+  // is ever added to a gesture behind the player's back. `selected` is always one of
+  // `selectedExtra`, so the keyboard N/arrows and the outline colour keep working on
+  // the last group touched.
   private selectedExtra=new Set<number>();
   private didMultiSelect=false;
   private feedback:ConnectionGlowRenderer|null=null;private snapAudio=new SnapSound();
@@ -71,40 +73,21 @@ export class PuzzleTable {
   private resizeCanvas(){const r=this.canvas.getBoundingClientRect(),oldW=this.width,oldH=this.height;this.width=r.width;this.height=r.height;const dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);if(!oldW)this.fit();else{this.camera.x+=(this.width-oldW)/2;this.camera.y+=(this.height-oldH)/2;}this.draw();}
   private point(e:{clientX:number;clientY:number}){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
   private world(p:{x:number;y:number}){return {x:(p.x-this.camera.x)/this.camera.z,y:(p.y-this.camera.y)/this.camera.z};}
-  // Everything the current gesture carries: the clicked group plus the rest of a
-  // live selection. Locked groups (already on the board) never take part.
+  // Everything the current gesture carries. A plain click drags exactly the group
+  // under the pointer; only an explicit selection (Shift/Ctrl click, or Ctrl+A) makes
+  // a gesture carry more than one group.
+  //
+  // There used to be an "auto-select touching neighbours" rule here, which quietly
+  // turned every plain click into a multi-piece drag. That surprised players (picking
+  // up one piece also grabbed the ones beside it) and made the common case depend on
+  // every neighbour's lease being free, so a single refused neighbour looked like
+  // "nothing can be dragged at all". Multi-piece moving is now strictly opt-in.
   private dragMembers(id:number){
     const ids=new Set<number>([id]);
-    if(this.selected===id||this.selectedExtra.has(id)){if(this.selected!==null)ids.add(this.selected);for(const extra of this.selectedExtra)ids.add(extra);}
+    // Only an explicit selection widens the gesture, and only when the clicked group
+    // is part of it — clicking outside a selection starts a fresh single-group drag.
+    if(this.selectedExtra.size>1&&this.selectedExtra.has(id))for(const extra of this.selectedExtra)ids.add(extra);
     return [...ids].filter(groupId=>{const group=this.state.groups.find(g=>g.id===groupId);return !!group&&!group.locked;});
-  }
-  // Auto-selection: friendly loose pieces whose edges face the clicked group and
-  // which almost touch it. Multiplayer restricts this to groups already granted
-  // to this player, because a lease is per group.
-  private selectFacing(g:Group){
-    const ids=[g.id];if(g.locked)return ids;
-    const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
-    const box=(group:Group)=>{
-      let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
-      for(const id of group.pieces){const p=this.pieces[id];left=Math.min(left,p.col*w);top=Math.min(top,p.row*h);right=Math.max(right,(p.col+1)*w);bottom=Math.max(bottom,(p.row+1)*h);}
-      return {left:left+group.dx,top:top+group.dy,right:right+group.dx,bottom:bottom+group.dy};
-    };
-    const own=box(g),gap=Math.min(w,h)*.35;
-    for(const other of this.state.groups){
-      if(other===g||other.locked||this.remoteOwners[other.id])continue;
-      if(this.network&&this.network.canAcquire?.(other.id)===false)continue;
-      if(!this.touches(own,box(other),gap))continue;
-      ids.push(other.id);if(ids.length>=MULTI_SELECT_LIMIT)break;
-    }
-    return ids;
-  }
-  private touches(own:{left:number;top:number;right:number;bottom:number},other:{left:number;top:number;right:number;bottom:number},gap:number){
-    const overlapX=Math.min(own.right,other.right)-Math.max(own.left,other.left);
-    const overlapY=Math.min(own.bottom,other.bottom)-Math.max(own.top,other.top);
-    if(overlapX>=0&&overlapY>=0)return true;
-    if(overlapX>0)return Math.abs(own.bottom-other.top)<=gap||Math.abs(other.bottom-own.top)<=gap;
-    if(overlapY>0)return Math.abs(own.right-other.left)<=gap||Math.abs(other.right-own.left)<=gap;
-    return false;
   }
   // Bounding box of several groups in the same coordinate space dragRect uses.
   private dragBounds(ids:readonly number[]){
@@ -128,19 +111,20 @@ export class PuzzleTable {
     if(g&&!this.space&&e.button===0){
       const additive=e.shiftKey||e.ctrlKey||e.metaKey||e.altKey;
       if(additive){this.toggleSelection(g.id);return;}
-      // A plain click on a member of the current selection picks the whole set up.
-      // Anything else is a fresh single-group gesture: the old selection is dropped
-      // by autoSelect, which then widens only to groups touching the clicked piece.
+      // A plain click on a member of a multi-selection picks the whole set up. Clicking
+      // any other group collapses the selection to just that group and drags it alone.
       if(this.selectedExtra.has(g.id)&&this.selectedExtra.size>1){this.beginDrag(g,wp);return;}
+      this.selected=g.id;this.selectedExtra=new Set([g.id]);this.didMultiSelect=false;
       this.beginDrag(g,wp);
     }
-    else{this.selectedExtra.clear();this.didMultiSelect=false;this.pan={x:p.x,y:p.y,cx:this.camera.x,cy:this.camera.y};this.canvas.style.cursor='grabbing';}
+    else{this.selectedExtra.clear();this.selected=null;this.didMultiSelect=false;this.pan={x:p.x,y:p.y,cx:this.camera.x,cy:this.camera.y};this.canvas.style.cursor='grabbing';}
     this.draw();
   };
-  // Shift/ctrl click toggles one group in or out of the multi-selection. The
+  // Shift/ctrl click toggles one group in or out of the multi-selection. This is the
+  // only way a gesture ever carries more than one group, apart from Ctrl+A. The
   // anchor (`selected`) is simply the most recently touched group, so the set is
   // always exactly `selectedExtra` and there is no separate anchor bookkeeping to
-  // get out of step. A plain click is the reset: it clears the set and starts over.
+  // get out of step. A plain click is the reset: it collapses the set to one group.
   private toggleSelection(id:number){
     if(this.selectedExtra.has(id))this.selectedExtra.delete(id);else this.selectedExtra.add(id);
     // Never leave an empty set: removing the last member keeps it selected.
@@ -157,11 +141,10 @@ export class PuzzleTable {
     return `第 ${row+1} 行第 ${col+1} 列`;
   }
   private beginDrag(g:Group,wp:{x:number;y:number}){
-    // A pointer landing on a group that is already part of a multi-selection picks
-    // the whole set up. Anything else starts a fresh gesture on the clicked group
-    // and may widen to touching neighbours.
-    const keep=this.selectedExtra.has(g.id)&&this.selectedExtra.size>1;
-    const ids=keep?this.dragMembers(g.id):this.autoSelect(g);
+    // How many groups this gesture carries is decided entirely by the selection: one
+    // group for a plain click, the whole set when the pointer lands on a group that is
+    // part of an explicit multi-selection. Nothing is added behind the player's back.
+    const ids=this.dragMembers(g.id);
     this.dragOffsets.clear();this.dragIds=[];
     for(const id of ids){
       const group=this.state.groups.find(item=>item.id===id);if(!group||group.locked)continue;
@@ -174,15 +157,6 @@ export class PuzzleTable {
     if(this.network?.canAcquireAll?.(this.dragIds)===false)return;
     this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';
     if(this.network){const serial=++this.claimSerial;void this.acquireSelected(serial,this.dragIds);}
-  }
-  // A fresh gesture selects the clicked group, then widens to any facing neighbours
-  // it can carry as one body. This is what makes a single click-and-drag move a
-  // whole scattered cluster without any Shift key at all.
-  private autoSelect(g:Group){
-    this.selected=g.id;this.selectedExtra=new Set([g.id]);
-    if(g.locked)return this.dragMembers(g.id);
-    for(const id of this.selectFacing(g))this.selectedExtra.add(id);
-    return [...this.selectedExtra];
   }
   private async acquireSelected(serial:number,ids:number[]){
     // Local pointer motion begins immediately. Only a denied claim cancels it, and the

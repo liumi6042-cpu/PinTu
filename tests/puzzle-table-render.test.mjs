@@ -86,7 +86,10 @@ function selectable(cols=20,rows=15){
     const group=id===null?table.target:table.state.groups.find(g=>g.id===id);
     table.target=group;if(!group)return;
     if(shift){table.toggleSelection(group.id);return;}
+    // A click on a member of a multi-selection picks the whole set up; any other group
+    // collapses the selection to itself and drags alone. Mirrors the real handler.
     if(table.selectedExtra.has(group.id)&&table.selectedExtra.size>1){table.beginDrag(group,{x:0,y:0});return;}
+    table.selected=group.id;table.selectedExtra=new Set([group.id]);table.didMultiSelect=false;
     table.beginDrag(group,{x:0,y:0});
   };
   table.pointerMove=function({x,y,origin={x:0,y:0}}){if(!table.drag)return;table.moveSelectionTo(table.drag.dx+x-origin.x,table.drag.dy+y-origin.y);};
@@ -207,30 +210,37 @@ test('a drop snaps every carried group so a gathered cluster merges in one gestu
   assert.ok(table.messages.some(message=>message.includes('归位')||message.includes('连在一起')||message.includes('找到了自己的位置')));
 });
 
-test('auto-selection gathers only groups that visually touch, and never exceeds the ceiling',()=>{
+test('a click never gathers the neighbours, however flush they sit',()=>{
+  // This is the rule that replaced auto-selection. Players reported that clicking one
+  // piece also picked up the pieces next to it, and that the widened gesture then
+  // depended on every neighbour being free — so a single busy neighbour made the click
+  // look dead. Selection is opt-in: only Shift/Ctrl click or Ctrl+A widens a gesture.
   const table=selectable(20,15).isolate(),w=table.board.width/20,h=table.board.height/15;
-  // dx/dy are offsets from a piece's own board slot, so a neighbour that should
-  // sit flush to the right of piece 0 needs dx = -1 column + a hair.
+  // dx/dy are offsets from a piece's own board slot, so a neighbour sitting flush to
+  // the right of piece 0 needs dx = -1 column + a hair.
   const clicked=place(table,0,0,0);
   const right=place(table,1,-1+.003,0);        // visually flush to the right
   const below=place(table,20,0,-.997);         // visually flush underneath
-  const ids=table.selectFacing(clicked);
-  assert.ok(ids.includes(0));
-  assert.ok(ids.includes(1),'a visually touching neighbour joins the drag');
-  assert.ok(ids.includes(20),'a neighbour on the other axis joins too');
-  assert.ok(ids.length<=MULTI_SELECT_LIMIT);
-  // A group parked elsewhere is never swept in, however close to another group.
+  const ids=table.dragMembers(clicked.id);
+  assert.deepEqual(ids,[0],'a plain click carries the clicked group alone');
+
+  // Even when the neighbours are free and perfectly placed, they stay out.
+  assert.ok(!ids.includes(right.id),'a flush neighbour is not swept in');
+  assert.ok(!ids.includes(below.id),'nor is one on the other axis');
   const far=place(table,7,4000,4000);
-  assert.ok(!table.selectFacing(clicked).includes(7));
-  right.dx=w*3;below.dx=w*3;below.dy=h*3;
-  assert.deepEqual(table.selectFacing(clicked),[0]);
-  // Pieces already locked onto the board are never swallowed by a loose drag.
-  below.locked=true;below.dx=-1;below.dy=-.997;
-  assert.deepEqual(table.selectFacing(clicked),[0]);
-  // Nor is a group another player is holding.
-  below.locked=false;below.dx=0;below.dy=-.997;
-  table.remoteOwners={20:{name:'同伴',color:'#56aabb'}};
-  assert.deepEqual(table.selectFacing(clicked),[0]);
+  assert.deepEqual(table.dragMembers(clicked.id),[0]);
+  assert.ok(!table.dragMembers(clicked.id).includes(far.id));
+
+  // An explicit selection is the one thing that widens a gesture.
+  table.toggleSelection(clicked.id);table.toggleSelection(right.id);table.toggleSelection(below.id);
+  assert.deepEqual(table.dragMembers(clicked.id).slice().sort((a,b)=>a-b),[0,1,20],
+    'Shift/Ctrl click widens the gesture to the whole selection');
+  // …and only when the pointer lands on a member of it.
+  assert.deepEqual(table.dragMembers(far.id),[7],'clicking outside the selection starts fresh');
+  // A locked group is never carried, even when it is part of the selection.
+  below.locked=true;
+  assert.deepEqual(table.dragMembers(clicked.id).slice().sort((a,b)=>a-b),[0,1],
+    'a locked group drops out of the gesture');
 });
 
 test('arrow keys and Enter move the whole selection in single-player',()=>{
