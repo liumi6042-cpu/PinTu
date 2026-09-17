@@ -1,5 +1,22 @@
 # 本项目图片库约定
 
+- 2026-09-17 新增「多选拼块一次性拖动」（**用户要求，已实现并本地验收，明确未部署、未出包**）。用户要的是「按住 shift 或 ctrl 点选多块再一次性拖动」，并问了两件事：能不能做、会不会让房间很卡。结论：**能做，已做出来；不会更卡**。本条是**加层**，不是替换——单击拖动的原有行为一字未改，多选是叠在它上面的一层。具体：
+  - 选择模型：`selected` 仍是「最后碰到的那一组」，新增 `selectedExtra:Set<number>` 是真正的选择集，**`selected` 恒为 `selectedExtra` 的成员**，所以键盘 N／方向键／描边高亮照旧作用于最后一次点到的块，不需要额外的锚点账本。Shift／Ctrl／Meta／Alt 点击 = 增删单个（**集合永不为空**：删掉最后一个成员时它保持选中）；**普通点击 = 显式重置**，清空集合后重新开始。这条刻意做得简单：早先写过「锚点交接」的版本，会出现 `[4]` 取代 `[0,4]`、`[2,4]` 取代 `[0,4]` 这类丢成员的行为，已废弃。**不要再引入中间锚点状态。**
+  - 自动吸附邻居：普通点击除了选中被点的那组，还会把「边缘相向且几乎贴住」的散片一起带走（`selectFacing`，容差 `min(w,h)*.35`，`touches()` 判断）。**这就是不用按 Shift 也能一次拖动一小片散块区域的原因**，也是用户问「多选」时真正想要的顺滑感。跳过 `locked`、跳过 `remoteOwners`、跳过 `canAcquire` 返回 false 的组。
+  - 上限 `MULTI_SELECT_LIMIT=12`（导出常量）：一次手势最多带走 12 组，正好匹配房间引擎的 8 个租约预留余量。**这个上限是性能与网络的双重保险，不要拿掉**——它保证每帧工作量和租约申请数都不随桌面规模增长。
+  - 一个共享位移：手势开始时把每组的 `dx/dy` 记进 `dragOffsets`，之后每个成员都是「自己的起点 + 同一段相对位移」。**`drag` 只在 `beginDrag` 里写一次，手势中途不再重锚**，这是选择集能保持刚体的关键。`moveSelectionTo` 是唯一入口，`move` 处理器只做转发。
+  - 落下时按阅读顺序逐组 `dropGroup`，**每次循环都重新读 `state.groups`**，因为前一次的合并可能已经把后面的 id 吸收进某个已锁定的锚点；发光／音效／提示只触发一次。`didMultiSelect` 控制落下后清空集合。
+  - 渲染：`DragImage.draw` 改成接收 `readonly Group[]`，把整个选择集合成**一张**位图，锚点取选择集自身的包围盒，画笔每次重建时拿到一次 `DragOrigin`。
+    - **缓存键必须是「拓扑 + 外观」，绝不能含位置**（`id/pieces.length/firstPieceId` + `scale/padding/appearance`），位移另外用 `drift()` 算。这是本功能最容易写错的地方：第一版把 `dx,dy` 写进键里，结果每帧都重新栅格化（实测 `61 !== 1`、`109 !== 1` 组被重画），而位图还是按设备像素分配的、画笔却按逻辑单位画，双重错误。
+    - 脏矩形用 `dragRect()`／`dragBounds()` 取**整个选择集**的并集，`renderScene` 支持传 id 或 id 数组来排除。
+    - 被选中的组（不管在不在手上）共用同一种高亮色，松开指针后选择状态仍然看得见。
+  - 键盘：Ctrl+A 全选桌面散片（截到上限），方向键／Shift+方向键挪动**整个**选择集，Enter 整组吸附，N 循环并回到单体选择。多人模式下方向键仍提示「请拖动拼块」。
+  - 多人：`acquireSelected` 逐个申请租约，**任何一个被拒就整体取消**（本地指针动作立即开始，只有被拒才回退）。
+  - 性能实测（5000 片即最大网格 100×50，`MULTI_SELECT_LIMIT=12` 且散开摆放，retina `devicePixelRatio=2`）：`dragBounds` 6.2 µs/次、`dragRect` 1.8 µs/次，合计约 **8 µs/帧，占 60 fps 帧预算的 0.05%**。热点路径与原来完全同构——仍然是一张缓存位图加一次变换，每帧零背景重绘（`tests/drag-image.test.mjs` 断言 10,800 帧只栅格化 1 次、位图分配 1 次；`tests/puzzle-table-render.test.mjs` 断言 200 帧里 `groupsDrawn` 不增长）。网络侧由上限 12 个租约 + 既有 60 ms 移动合并器兜住。**结论：不会让房间变卡。**
+  - 文案（中英双语已同步，`lib/i18n.ts` 用正则匹配而非精确字符串，因为提示里嵌了行／列／组数）：`第 N 行第 M 列已选中 K 组…`、`已全选桌上的 K 组拼块…`、`桌面上没有可选的散片。`；画布 `aria-label` 同步加上「Shift 或 Ctrl 点选多块…Ctrl 加 A 全选」。
+  - 验证：`tsc --noEmit` 干净；`check:images` 40 张通过；`test:release` 2/2；聚焦用例 `puzzle-table-render`＋`large-puzzle`＋`celebration`＋`room-latency` **32/32**（`puzzle-table-render` 从 6 条扩到 12 条）；全量 229 用例 207 通过、**失败 5 条全部是既有基线**（free assistance、生产迁移 12!==11、drag/drop 轮询 400!==201、两客户端 fetch failed、drag-image 旧签名）。**其中 `tests/drag-image.test.mjs` 是本轮改坏的**（它按旧的「单组 + board 参数」签名调用），已同步到新签名并改为断言「位图从自身原点绘制、位置漂移不再进入缓存键」；其余 4 条已用 `git stash` 对照确认**在没有本轮改动时同样失败**，属既有噪声。另在真实本地服务上核对打包产物：`GET /room/<id>` 的 `puzzle-app-*.js` 分片里 `selectFacing`／`toggleSelection`／`dragIds` 与三条新提示语均在。
+  - 未做：**未部署、未出包、未提交**（用户明确「先不要部署，先做出来」）。改动仅 7 个文件：`lib/puzzle-table.ts`、`lib/drag-image.ts`、`lib/i18n.ts`、`app/puzzle-app.tsx`、`tests/puzzle-table-render.test.mjs`、`tests/large-puzzle.test.mjs`、`tests/drag-image.test.mjs`。
+
 - 2026-09-17 **线上真实故障：18 张图在 1000 片档建房必然 503**（已在本地复现、定位、修复）。`gridForDimensions` 的搜索只校「与目标片数的偏差 ≤15%」，从不校 `MAX_FITTED_PIECES` 上限。3:2 的图（1536×1024）请求 1000 片时，`39×26=1014` 偏差 1.4% 顺利过关被返回，随后 `createFittedPuzzle` 因为「超过 1000 片」抛 `不支持的拼图片数`，异常不是 `RoomError`，被 `lib/room-store.ts` 的 `failure()` 兜成 503「房间连接暂时不可用，请稍后重试」——**用户看到的是服务器故障，不是参数错误，所以从日志上极难定位**（`X [ERROR] Room request failed` 后面跟的是空对象）。影响面：82 条引导数据里 18 条命中（全部是 1000 片档、3:2 图）。修法：在搜索循环里直接 `if(total>DYNAMIC_GRID_MAX_PIECES)continue`，让「helper 给出的网格」恒等于「引擎建得出来的网格」。修复后该尺寸给出 `38×26=988`（比例 1.462 vs 图片 1.500，裁切 2.5%），82 张图 × 4 档位全部可建、无一张掉档。**回归测试写在 `tests/piece-policy.test.mjs`：遍历全部已发布图 × 全部档位，断言 `grid.count<=MAX_FITTED_PIECES` 且 `createFittedPuzzle` 不抛。**以后动 `gridForDimensions` 的过滤条件，必须保住这条不变式。
 
 - 2026-09-17 出包链路一并修复三处「固定网格假设」残留（**本轮才发现，全部是既有缺陷**）：

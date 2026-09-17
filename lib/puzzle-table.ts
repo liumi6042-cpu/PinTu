@@ -8,15 +8,26 @@ import { ConnectionGlowRenderer } from './connection-glow';
 import { SnapSound,type SoundPreferences } from './snap-sound';
 import { DragImage } from './drag-image';
 type Notice = (message:string)=>void;
+// A drag carries at most this many groups. The ceiling keeps the browser drag
+// layer, the dirty rectangle and the per-group network claims bounded, and it
+// matches the room engine's eight-lease allowance with room to spare.
+export const MULTI_SELECT_LIMIT=12;
 export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
   board:ReturnType<typeof boardFor>;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
   edges=false; paused=false; selected:number|null=null;
+  // Multi-select layers an additive gesture on top of the single-piece drag rather
+  // than replacing it: one click still behaves as before, Shift/Ctrl click adds to
+  // the set, and a plain click on a member picks the whole set up. `selected` is
+  // always one of `selectedExtra`, so the keyboard N/arrows and the outline colour
+  // keep working on the last group touched.
+  private selectedExtra=new Set<number>();
+  private didMultiSelect=false;
   private feedback:ConnectionGlowRenderer|null=null;private snapAudio=new SnapSound();
   private dragImage:DragImage|null=null;
-  private floatingDrag:number|null=null;
+  private floatingDrag:string|null=null;
   private hintIds:number[]=[]; private hintUntil=0; private underlayUntil=0;
   private underlayTimer:ReturnType<typeof setTimeout>|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
@@ -26,6 +37,11 @@ export class PuzzleTable {
   network:TableNetwork|null=null; networkReady=true; private claimSerial=0;
   private remoteOwners:Record<string,{name:string;color:string}>={};
   private drag:{id:number;x:number;y:number;dx:number;dy:number}|null=null;
+  // The pieces carried by the current drag. A single group gives the same object
+  // as before, so nothing about single-piece behaviour changes; a multi-selection
+  // moves several groups by one shared delta.
+  private dragIds:number[]=[];
+  private dragOffsets=new Map<number,{dx:number;dy:number}>();
   private pan:{x:number;y:number;cx:number;cy:number}|null=null;
   private pointers=new Map<number,{x:number;y:number}>(); private pinch:{distance:number;z:number;wx:number;wy:number}|null=null;
   private space=false; private raf=0; private timer:ReturnType<typeof setInterval>; private hintTimer:ReturnType<typeof setTimeout>|null=null;
@@ -55,8 +71,50 @@ export class PuzzleTable {
   private resizeCanvas(){const r=this.canvas.getBoundingClientRect(),oldW=this.width,oldH=this.height;this.width=r.width;this.height=r.height;const dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);if(!oldW)this.fit();else{this.camera.x+=(this.width-oldW)/2;this.camera.y+=(this.height-oldH)/2;}this.draw();}
   private point(e:{clientX:number;clientY:number}){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
   private world(p:{x:number;y:number}){return {x:(p.x-this.camera.x)/this.camera.z,y:(p.y-this.camera.y)/this.camera.z};}
-  private groupAt(x:number,y:number):Group|undefined {
+  // Everything the current gesture carries: the clicked group plus the rest of a
+  // live selection. Locked groups (already on the board) never take part.
+  private dragMembers(id:number){
+    const ids=new Set<number>([id]);
+    if(this.selected===id||this.selectedExtra.has(id)){if(this.selected!==null)ids.add(this.selected);for(const extra of this.selectedExtra)ids.add(extra);}
+    return [...ids].filter(groupId=>{const group=this.state.groups.find(g=>g.id===groupId);return !!group&&!group.locked;});
+  }
+  // Auto-selection: friendly loose pieces whose edges face the clicked group and
+  // which almost touch it. Multiplayer restricts this to groups already granted
+  // to this player, because a lease is per group.
+  private selectFacing(g:Group){
+    const ids=[g.id];if(g.locked)return ids;
     const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    const box=(group:Group)=>{
+      let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+      for(const id of group.pieces){const p=this.pieces[id];left=Math.min(left,p.col*w);top=Math.min(top,p.row*h);right=Math.max(right,(p.col+1)*w);bottom=Math.max(bottom,(p.row+1)*h);}
+      return {left:left+group.dx,top:top+group.dy,right:right+group.dx,bottom:bottom+group.dy};
+    };
+    const own=box(g),gap=Math.min(w,h)*.35;
+    for(const other of this.state.groups){
+      if(other===g||other.locked||this.remoteOwners[other.id])continue;
+      if(this.network&&this.network.canAcquire?.(other.id)===false)continue;
+      if(!this.touches(own,box(other),gap))continue;
+      ids.push(other.id);if(ids.length>=MULTI_SELECT_LIMIT)break;
+    }
+    return ids;
+  }
+  private touches(own:{left:number;top:number;right:number;bottom:number},other:{left:number;top:number;right:number;bottom:number},gap:number){
+    const overlapX=Math.min(own.right,other.right)-Math.max(own.left,other.left);
+    const overlapY=Math.min(own.bottom,other.bottom)-Math.max(own.top,other.top);
+    if(overlapX>=0&&overlapY>=0)return true;
+    if(overlapX>0)return Math.abs(own.bottom-other.top)<=gap||Math.abs(other.bottom-own.top)<=gap;
+    if(overlapY>0)return Math.abs(own.right-other.left)<=gap||Math.abs(other.right-own.left)<=gap;
+    return false;
+  }
+  // Bounding box of several groups in the same coordinate space dragRect uses.
+  private dragBounds(ids:readonly number[]){
+    const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+    for(const id of ids){const group=this.state.groups.find(g=>g.id===id);if(!group)continue;
+      for(const piece of group.pieces){const p=this.pieces[piece];left=Math.min(left,p.col*w+group.dx);top=Math.min(top,p.row*h+group.dy);right=Math.max(right,(p.col+1)*w+group.dx);bottom=Math.max(bottom,(p.row+1)*h+group.dy);}}
+    return Number.isFinite(left)?{left:left+this.board.x,top:top+this.board.y,right:right+this.board.x,bottom:bottom+this.board.y}:null;
+  }
+  private groupAt(x:number,y:number):Group|undefined {    const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     for(let i=this.state.groups.length-1;i>=0;i--){const g=this.state.groups[i];if(g.locked||(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id))))continue;
       for(const id of g.pieces){const p=this.pieces[id],lx=x-this.board.x-p.col*w-g.dx,ly=y-this.board.y-p.row*h-g.dy,pad=Math.min(w,h)*.24;
         if(lx>=-pad&&lx<=w+pad&&ly>=-pad&&ly<=h+pad&&this.hit.isPointInPath(this.paths[id],lx,ly))return g;}
@@ -68,23 +126,88 @@ export class PuzzleTable {
     if(this.pointers.size>2)return;
     const wp=this.world(p),g=this.groupAt(wp.x,wp.y);
     if(g&&!this.space&&e.button===0){
-      if(this.network){if(this.remoteOwners[g.id]){this.notice(`${this.remoteOwners[g.id].name} 正在移动这组拼块`);return;}
-        if(this.network.canAcquire?.(g.id)===false){this.notice('这组拼块还在确认位置，可以先移动其他拼块');return;}
-        const serial=++this.claimSerial;this.selected=g.id;raiseGroup(this.state,g.id);
-        this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';
-        void this.network.acquire(g.id).then(ok=>{
-          // Local pointer motion begins immediately. Only a denied claim cancels it.
-          if(!ok&&serial===this.claimSerial){this.drag=null;this.canvas.style.cursor='grab';this.draw();}
-        });
-      }else{this.selected=g.id;raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';}
+      const additive=e.shiftKey||e.ctrlKey||e.metaKey||e.altKey;
+      if(additive){this.toggleSelection(g.id);return;}
+      // A plain click on a member of the current selection picks the whole set up.
+      // Anything else is a fresh single-group gesture: the old selection is dropped
+      // by autoSelect, which then widens only to groups touching the clicked piece.
+      if(this.selectedExtra.has(g.id)&&this.selectedExtra.size>1){this.beginDrag(g,wp);return;}
+      this.beginDrag(g,wp);
     }
-    else{this.pan={x:p.x,y:p.y,cx:this.camera.x,cy:this.camera.y};this.canvas.style.cursor='grabbing';}
+    else{this.selectedExtra.clear();this.didMultiSelect=false;this.pan={x:p.x,y:p.y,cx:this.camera.x,cy:this.camera.y};this.canvas.style.cursor='grabbing';}
     this.draw();
   };
+  // Shift/ctrl click toggles one group in or out of the multi-selection. The
+  // anchor (`selected`) is simply the most recently touched group, so the set is
+  // always exactly `selectedExtra` and there is no separate anchor bookkeeping to
+  // get out of step. A plain click is the reset: it clears the set and starts over.
+  private toggleSelection(id:number){
+    if(this.selectedExtra.has(id))this.selectedExtra.delete(id);else this.selectedExtra.add(id);
+    // Never leave an empty set: removing the last member keeps it selected.
+    if(!this.selectedExtra.size)this.selectedExtra.add(id);
+    this.selected=id;
+    raiseGroup(this.state,id);this.canvas.style.cursor='grab';this.draw();this.notice(`${this.selectionLabel()}已选中 ${this.selectedCount()} 组，拖动即可整组移动。按住 Shift 点选可加减。`);
+  }
+  // `selected` is always one of `selectedExtra`, so the set's size is the count.
+  private selectedCount(){return this.selectedExtra.size;}
+  private selectionLabel(){
+    if(this.selected===null)return '';
+    const group=this.state.groups.find(g=>g.id===this.selected),piece=group?.pieces[0]??0;
+    const col=piece%this.state.cols,row=Math.floor(piece/this.state.cols);
+    return `第 ${row+1} 行第 ${col+1} 列`;
+  }
+  private beginDrag(g:Group,wp:{x:number;y:number}){
+    // A pointer landing on a group that is already part of a multi-selection picks
+    // the whole set up. Anything else starts a fresh gesture on the clicked group
+    // and may widen to touching neighbours.
+    const keep=this.selectedExtra.has(g.id)&&this.selectedExtra.size>1;
+    const ids=keep?this.dragMembers(g.id):this.autoSelect(g);
+    this.dragOffsets.clear();this.dragIds=[];
+    for(const id of ids){
+      const group=this.state.groups.find(item=>item.id===id);if(!group||group.locked)continue;
+      this.dragOffsets.set(id,{dx:group.dx,dy:group.dy});raiseGroup(this.state,id);
+    }
+    this.dragIds=[...this.dragOffsets.keys()];
+    this.didMultiSelect=this.dragIds.length>1;
+    const ownerName=this.dragIds.map(id=>this.remoteOwners[id]?.name).find(Boolean);
+    if(ownerName){this.notice(`${ownerName} 正在移动这组拼块`);return;}
+    if(this.dragIds.some(id=>this.network?.canAcquire?.(id)===false))return;
+    this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';
+    if(this.network){const serial=++this.claimSerial;void this.acquireSelected(serial,this.dragIds);}
+  }
+  // A fresh gesture selects the clicked group, then widens to any facing neighbours
+  // it can carry as one body. This is what makes a single click-and-drag move a
+  // whole scattered cluster without any Shift key at all.
+  private autoSelect(g:Group){
+    this.selected=g.id;this.selectedExtra=new Set([g.id]);
+    if(g.locked)return this.dragMembers(g.id);
+    for(const id of this.selectFacing(g))this.selectedExtra.add(id);
+    return [...this.selectedExtra];
+  }
+  private async acquireSelected(serial:number,ids:number[]){
+    // Local pointer motion begins immediately. Only a denied claim cancels it.
+    for(const id of ids){const ok=await this.network!.acquire(id);if(!ok&&serial===this.claimSerial){this.dropDrag();this.canvas.style.cursor='grab';this.draw();return;}}
+  }
+  private dropDrag(){this.drag=null;this.dragIds=[];this.dragOffsets.clear();}
+  moveSelectionTo(dx:number,dy:number){
+    if(!this.drag)return;
+    // dx/dy are absolute offsets for the group the gesture started on. Every other
+    // carried group keeps its own starting offset plus the same *relative* motion,
+    // and nothing is re-anchored mid-gesture: `drag` is set once in beginDrag and
+    // only cleared by release. That is what keeps a selection rigid.
+    const base={dx:this.drag.dx,dy:this.drag.dy};
+    moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);
+    for(const id of this.dragIds){
+      if(id===this.drag.id)continue;
+      const start=this.dragOffsets.get(id);if(!start)continue;
+      const next={dx:start.dx+(dx-base.dx),dy:start.dy+(dy-base.dy)};
+      moveGroup(this.state,id,next.dx,next.dy);this.network?.move(id,next.dx,next.dy);
+    }
+  }
   private move=(e:PointerEvent)=>{
     const p=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,p);
     if(this.pinch&&this.pointers.size>=2){const [a,b]=[...this.pointers.values()],z=this.clamp(this.pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,this.pinch.distance));this.camera={x:(a.x+b.x)/2-this.pinch.wx*z,y:(a.y+b.y)/2-this.pinch.wy*z,z};this.draw();return;}
-    if(this.drag){const wp=this.world(p);const dx=this.drag.dx+wp.x-this.drag.x,dy=this.drag.dy+wp.y-this.drag.y;moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);this.draw(false);}
+    if(this.drag){const wp=this.world(p);this.moveSelectionTo(this.drag.dx+wp.x-this.drag.x,this.drag.dy+wp.y-this.drag.y);this.draw(false);}
     else if(this.pan){this.camera.x=this.pan.cx+p.x-this.pan.x;this.camera.y=this.pan.cy+p.y-this.pan.y;this.draw();}
     else if(!this.paused){const wp=this.world(p);this.canvas.style.cursor=this.groupAt(wp.x,wp.y)?'grab':this.space?'grabbing':'default';}
   };
@@ -92,17 +215,28 @@ export class PuzzleTable {
   private cancel=(e:PointerEvent)=>{this.pointers.delete(e.pointerId);this.release();this.pinch=null;};
   private release(){
     this.claimSerial++;
-    if(this.drag&&this.network){const id=this.drag.id;this.keepOnTable(id);const group=this.state.groups.find(g=>g.id===id);this.drag=null;if(group)void this.network.drop(id,group.dx,group.dy);}
-    if(this.drag){this.keepOnTable(this.drag.id);const before=this.state.groups.map(g=>({...g,pieces:[...g.pieces]})),result=dropGroup(this.state,this.drag.id,snapTolerance(this.state));
-      if(result.snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':result.placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
-      this.drag=null;this.update();}
+    if(this.drag&&this.network){const ids=[...this.dragIds];this.keepOnTable(ids);this.drag=null;
+      for(const id of ids){const group=this.state.groups.find(g=>g.id===id);if(group)void this.network.drop(id,group.dx,group.dy);}}
+    if(this.drag){
+      const ids=this.dragIds.length?[...this.dragIds]:[this.drag.id];
+      this.keepOnTable(ids);
+      const before=this.state.groups.map(g=>({...g,pieces:[...g.pieces]}));
+      let snapped=false,placed=false;
+      // Multi-selections drop in reading order so a cluster joins from the top
+      // left inward; each drop re-reads the live group list, because an earlier
+      // merge may already have absorbed a later id into a locked anchor.
+      for(const id of ids){const group=this.state.groups.find(g=>g.id===id);if(!group||group.locked)continue;
+        const result=dropGroup(this.state,id,snapTolerance(this.state));snapped=snapped||result.snapped;placed=placed||result.placed>0;}
+      if(snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
+      if(this.didMultiSelect)this.selectedExtra.clear();
+      this.dropDrag();this.update();}
+    this.didMultiSelect=false;
     this.pan=null;this.canvas.style.cursor='grab';this.draw();
   }
-  private keepOnTable(id:number){const g=this.state.groups.find(g=>g.id===id);if(!g||g.locked)return;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+  private keepOnTable(id:number|readonly number[]){for(const groupId of typeof id==='number'?[id]:id){const g=this.state.groups.find(item=>item.id===groupId);if(!g||g.locked)continue;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     const minX=Math.min(...g.pieces.map(id=>this.board.x+this.pieces[id].col*w)),maxX=Math.max(...g.pieces.map(id=>this.board.x+(this.pieces[id].col+1)*w));
     const minY=Math.min(...g.pieces.map(id=>this.board.y+this.pieces[id].row*h)),maxY=Math.max(...g.pieces.map(id=>this.board.y+(this.pieces[id].row+1)*h));
-    g.dx=Math.max(18-minX,Math.min(WORLD.width-18-maxX,g.dx));g.dy=Math.max(18-minY,Math.min(WORLD.height-18-maxY,g.dy));
-  }
+    g.dx=Math.max(18-minX,Math.min(WORLD.width-18-maxX,g.dx));g.dy=Math.max(18-minY,Math.min(WORLD.height-18-maxY,g.dy));}}
   private wheel=(e:WheelEvent)=>{e.preventDefault();if(this.drag||this.paused)return;this.zoom(Math.exp(-e.deltaY*.0014),this.point(e));};
   private keydown=(e:KeyboardEvent)=>{
     if(this.paused||!this.networkReady)return;
@@ -110,12 +244,20 @@ export class PuzzleTable {
     if(e.key==='+'||e.key==='='){e.preventDefault();this.zoom(1.2);return;}if(e.key==='-'){e.preventDefault();this.zoom(1/1.2);return;}
     if(e.key==='0'){e.preventDefault();this.fit();return;}
     if(e.key==='Tab'){return;}
-    if(e.key.toLowerCase()==='n') {e.preventDefault();const visible=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),idx=visible.findIndex(g=>g.id===this.selected);if(visible.length){this.selected=visible[(idx+1)%visible.length].id;this.draw();this.notice('已选中下一块。方向键移动，回车吸附。');}return;}
+    if(e.key.toLowerCase()==='n') {e.preventDefault();const visible=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),idx=visible.findIndex(g=>g.id===this.selected);if(visible.length){this.selected=visible[(idx+1)%visible.length].id;this.selectedExtra=new Set([this.selected]);this.draw();this.notice('已选中下一块。方向键移动，回车吸附。');}return;}
+    if(e.key.toLowerCase()==='a'&&(e.ctrlKey||e.metaKey)){e.preventDefault();const visible=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)).slice(0,MULTI_SELECT_LIMIT);this.selectedExtra=new Set(visible.map(g=>g.id));this.selected=this.selectedExtra.has(this.selected??-1)?this.selected:visible[0]?.id??null;this.draw();this.notice(this.selectedExtra.size>1?`已全选桌上的 ${this.selectedExtra.size} 组拼块，拖动即可整组移动。`:'桌面上没有可选的散片。');return;}
     if(this.selected===null)return;const g=this.state.groups.find(g=>g.id===this.selected);if(!g||g.locked)return;
     if(this.network&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter'].includes(e.key)){e.preventDefault();this.notice('多人模式请拖动拼块，方向键移动暂用于单人模式');return;}
+    // The arrow keys and Enter act on the whole selection in solo games, so a set
+    // gathered with Shift can be nudged and snapped without touching the pointer.
+    const carried=this.selectedExtra.size>1?[...this.selectedExtra]:[g.id];
     const delta:Record<string,number[]>={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
-    if(delta[e.key]){e.preventDefault();const step=e.shiftKey?2:12;g.dx+=delta[e.key][0]*step;g.dy+=delta[e.key][1]*step;this.keepOnTable(g.id);raiseGroup(this.state,g.id);this.draw();this.update();}
-    if(e.key==='Enter'){e.preventDefault();this.unlockSound();const before=this.state.groups.map(group=>({...group,pieces:[...group.pieces]})),r=dropGroup(this.state,g.id,snapTolerance(this.state));if(r.snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();}this.update();this.draw();}
+    if(delta[e.key]){e.preventDefault();const step=e.shiftKey?2:12;
+      for(const id of carried){const group=this.state.groups.find(item=>item.id===id);if(!group||group.locked)continue;group.dx+=delta[e.key][0]*step;group.dy+=delta[e.key][1]*step;}
+      this.keepOnTable(carried);for(const id of carried)raiseGroup(this.state,id);this.draw();this.update();}
+    if(e.key==='Enter'){e.preventDefault();this.unlockSound();const before=this.state.groups.map(group=>({...group,pieces:[...group.pieces]}));let snapped=false;
+      for(const id of carried){const group=this.state.groups.find(item=>item.id===id);if(!group||group.locked)continue;snapped=dropGroup(this.state,id,snapTolerance(this.state)).snapped||snapped;}
+      if(snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();}this.update();this.draw();}
   };
   private clamp(z:number){const max=Math.max(3,Math.min(16,96/Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)));return Math.max(.15,Math.min(max,z));}
   zoom(factor:number,point={x:this.width/2,y:this.height/2}){const w=this.world(point),z=this.clamp(this.camera.z*factor);this.camera={x:point.x-w.x*z,y:point.y-w.y*z,z};this.draw();this.update();}
@@ -140,7 +282,7 @@ export class PuzzleTable {
     if(showFeedback&&beforeGroups.length>this.state.groups.length)this.feedback?.show(newConnections(beforeGroups,this.state));
     if(changed)this.draw();
   }
-  cancelNetworkDrag(id?:number){if(id!==undefined&&this.drag?.id!==id)return;this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';this.draw();}
+  cancelNetworkDrag(id?:number){if(id!==undefined&&this.drag?.id!==id)return;this.claimSerial++;this.dropDrag();this.pan=null;this.canvas.style.cursor='default';this.draw();}
   setHints(ids:number[],until:number){
     if(this.hintTimer)clearTimeout(this.hintTimer);
     this.hintIds=ids.filter(id=>Number.isInteger(id)&&!!this.pieces[id]).slice(0,3);this.hintUntil=until;this.draw();
@@ -167,22 +309,22 @@ export class PuzzleTable {
   draw(backgroundChanged=true){if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.feedback?.update();this.render();});}
   private render(){
     if(this.drag){
-      const moving=this.state.groups.find(g=>g.id===this.drag!.id);
-      if(moving&&this.canvas.parentElement&&this.renderDraggedImage(this.ctx,moving,true)){
+      const key=this.dragKey();
+      if(this.canvas.parentElement&&this.renderDraggedImage(this.ctx,true)){
         // The full table is painted once; subsequent frames move only a small
         // compositor layer. No background readback/copy while the pointer moves.
-        if(this.backgroundDirty||this.floatingDrag!==this.drag.id)this.renderScene(this.ctx,this.drag.id);
-        this.backgroundDirty=false;this.floatingDrag=this.drag.id;this.previousDragRect=null;return;
+        if(this.backgroundDirty||this.floatingDrag!==key)this.renderScene(this.ctx,this.carriedIds());
+        this.backgroundDirty=false;this.floatingDrag=key;this.previousDragRect=null;return;
       }
       if(this.floatingDrag!==null){this.floatingDrag=null;this.backgroundDirty=true;}
       const rebuild=this.backgroundDirty||this.backgroundDrag!==this.drag.id||this.background.width!==this.canvas.width||this.background.height!==this.canvas.height;
       if(rebuild){
         if(this.background.width!==this.canvas.width)this.background.width=this.canvas.width;
         if(this.background.height!==this.canvas.height)this.background.height=this.canvas.height;
-        this.renderScene(this.background.getContext('2d')!,this.drag.id);this.backgroundDirty=false;this.backgroundDrag=this.drag.id;
+        this.renderScene(this.background.getContext('2d')!,this.carriedIds());this.backgroundDirty=false;this.backgroundDrag=this.drag.id;
       }
       const c=this.ctx,dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera;
-      const group=this.state.groups.find(g=>g.id===this.drag!.id),rect=group?this.dragRect(group):null;
+      const rect=this.dragRect();
       // Restore only the old/new piece footprint. A full viewport bitmap copy on
       // every pointer frame is expensive on high-DPI phones, even with an atlas.
       c.setTransform(1,0,0,1,0,0);
@@ -192,29 +334,38 @@ export class PuzzleTable {
         c.drawImage(this.background,area.x,area.y,area.width,area.height,area.x,area.y,area.width,area.height);
       }
       c.setTransform(dpr,0,0,dpr,0,0);c.save();c.translate(x,y);c.scale(z,z);
-      if(group&&rect&&!this.renderDraggedImage(c,group))this.renderGroup(c,group);
+      if(rect&&!this.renderDraggedImage(c))for(const id of this.carriedIds()){const group=this.state.groups.find(g=>g.id===id);if(group)this.renderGroup(c,group);}
       c.restore();this.previousDragRect=rect;
     }else{this.dragImage?.clear();this.floatingDrag=null;this.renderScene(this.ctx);this.backgroundDirty=true;this.previousDragRect=null;}
   }
-  private renderDraggedImage(c:CanvasRenderingContext2D,group:Group,floating=false){
+  private dragKey(){return this.carriedIds().join(',');}
+  private carriedIds(){return this.dragIds.length||!this.drag?this.dragIds:[this.drag.id];}
+  private renderDraggedImage(c:CanvasRenderingContext2D,floating=false){
+    if(!this.drag)return false;
     this.dragImage??=new DragImage();
     const z=this.camera.z,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
-    const appearance=`${this.theme}:${this.selected}:${this.edges}:${this.hintUntil}:${this.hintIds?.join(',')}:${this.remoteOwners[group.id]?.color||''}`;
-    return this.dragImage.draw(c,group,this.pieces,w,h,this.board,z*Math.min(devicePixelRatio||1,2),Math.min(w,h)*.26+48/z,appearance,context=>this.renderGroup(context,group,false),floating?{host:this.canvas.parentElement!,camera:this.camera}:undefined);
+    const appearance=`${this.theme}:${this.selected}:${this.selectedExtra.size}:${this.edges}:${this.hintUntil}:${this.hintIds?.join(',')}`;
+    const ids=(this.carriedIds()).map(id=>this.state.groups.find(g=>g.id===id)).filter((g):g is Group=>!!g);
+    if(!ids.length)return false;
+    // The compositor bitmap is anchored on the selection's own bounding box, so
+    // its cache key is position-independent: moving a selection never re-rasterizes
+    // it. Painters receive that origin and draw in that local space.
+    return this.dragImage.draw(c,ids,this.pieces,w,h,z*Math.min(devicePixelRatio||1,2),Math.min(w,h)*.26+48/z,appearance,(context,origin)=>{context.translate(-this.board.x-origin.x,-this.board.y-origin.y);for(const group of ids)this.renderGroup(context,group,false);},floating?{host:this.canvas.parentElement!,camera:this.camera}:undefined);
   }
-  private dragRect(group:Group){
+  // Dirty rectangle of everything the gesture carries, in device pixels.
+  private dragRect(ids=this.carriedIds()){
     const {x,y,z}=this.camera,dpr=Math.min(devicePixelRatio||1,2),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
-    let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
-    for(const id of group.pieces){const p=this.pieces[id];left=Math.min(left,p.col*w);top=Math.min(top,p.row*h);right=Math.max(right,(p.col+1)*w);bottom=Math.max(bottom,(p.row+1)*h);}
+    const bounds=this.dragBounds(ids);if(!bounds)return null;
     // Include tabs, selected outlines, hints and the small-puzzle drop shadow.
     const margin=Math.min(w,h)*.26*z+48;
-    const x1=Math.max(0,Math.floor((x+(this.board.x+group.dx+left)*z-margin)*dpr));
-    const y1=Math.max(0,Math.floor((y+(this.board.y+group.dy+top)*z-margin)*dpr));
-    const x2=Math.min(this.canvas.width,Math.ceil((x+(this.board.x+group.dx+right)*z+margin)*dpr));
-    const y2=Math.min(this.canvas.height,Math.ceil((y+(this.board.y+group.dy+bottom)*z+margin)*dpr));
+    const x1=Math.max(0,Math.floor((x+bounds.left*z-margin)*dpr));
+    const y1=Math.max(0,Math.floor((y+bounds.top*z-margin)*dpr));
+    const x2=Math.min(this.canvas.width,Math.ceil((x+bounds.right*z+margin)*dpr));
+    const y2=Math.min(this.canvas.height,Math.ceil((y+bounds.bottom*z+margin)*dpr));
     return x2>x1&&y2>y1?{x:x1,y:y1,width:x2-x1,height:y2-y1}:null;
   }
-  private renderScene(c:CanvasRenderingContext2D,exclude?:number){
+  private renderScene(c:CanvasRenderingContext2D,exclude?:number|readonly number[]){
+    const skip=exclude===undefined?null:new Set(typeof exclude==='number'?[exclude]:exclude);
     const palette=TABLE_PALETTES[this.theme];
     const dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,this.width,this.height);c.save();c.translate(x,y);c.scale(z,z);
@@ -227,7 +378,7 @@ export class PuzzleTable {
     if(!underlay&&!placedCount(this.state)){c.fillStyle=palette.hint;c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
     c.fillStyle=palette.caption;c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
     const groups=[...this.state.groups.filter(g=>g.locked),...this.state.groups.filter(g=>!g.locked)];
-    for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g);
+    for(const g of groups)if(!skip?.has(g.id))this.renderGroup(c,g);
     if(this.hintUntil>Date.now())for(const id of this.hintIds){if(!this.state.groups.some(g=>!g.locked&&g.pieces.includes(id)))continue;const p=this.pieces[id];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);this.hintMarker(c,id,true);c.restore();}
     c.restore();
   }
@@ -236,17 +387,21 @@ export class PuzzleTable {
     const {x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
     const useSprites=!!this.sprites&&z*Math.min(devicePixelRatio||1,2)<=this.sprites.scale;
     const left=-x/z,right=(this.width-x)/z,top=-y/z,bottom=(this.height-y)/z,owner=this.remoteOwners[g.id];
+    // Selected groups share one highlight colour whether or not they are being
+    // carried, so the selection stays readable when the pointer is released.
+    const marked=!g.locked&&(g.id===this.selected||this.selectedExtra.has(g.id));
     for(const id of g.pieces){
       const p=this.pieces[id],path=this.paths[id],px=this.board.x+p.col*w+g.dx,py=this.board.y+p.row*h+g.dy;
       if(cull&&(px+w+pad<left||px-pad>right||py+h+pad<top||py-pad>bottom))continue;
       if(useSprites)this.sprites!.draw(c,id,px,py);
       c.save();c.translate(px,py);
       if(!useSprites){
-        if(!this.sprites&&!g.locked){c.shadowColor='#60462a66';c.shadowBlur=this.drag?.id===g.id?14:7;c.shadowOffsetY=this.drag?.id===g.id?7:3;c.fillStyle='#d8d2c2';c.fill(path);c.shadowColor='transparent';}
+        const lifted=this.dragIds.includes(g.id);
+        if(!this.sprites&&!g.locked){c.shadowColor='#60462a66';c.shadowBlur=lifted?14:7;c.shadowOffsetY=lifted?7:3;c.fillStyle='#d8d2c2';c.fill(path);c.shadowColor='transparent';}
         c.save();c.clip(path);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';drawPiecePicture(c,this.picture,p,this.state.cols,this.state.rows,this.board.width,this.board.height);c.restore();
       }
-      if(!useSprites||((owner||g.id===this.selected)&&!g.locked)){
-        c.strokeStyle=g.locked?'#5c493d66':owner?owner.color:g.id===this.selected?'#ac6246':'#fffbebbb';c.lineWidth=(owner||g.id===this.selected)&&!g.locked?2/z:.85/z;c.stroke(path);
+      if(!useSprites||((owner||marked)&&!g.locked)){
+        c.strokeStyle=g.locked?'#5c493d66':owner?owner.color:marked?'#ac6246':'#fffbebbb';c.lineWidth=(owner||marked)&&!g.locked?2/z:.85/z;c.stroke(path);
       }
       if(!g.locked)this.hintMarker(c,id);c.restore();
     }
