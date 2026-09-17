@@ -7,6 +7,12 @@ import { hash, inside, inventory, runtimeAssets, selectRuntimeFiles } from './re
 const root=fileURLToPath(new URL('..',import.meta.url));
 process.chdir(root);
 const run=(command,args,options={})=>{const result=spawnSync(command,args,{cwd:root,windowsHide:true,stdio:'inherit',...options});if(result.error||result.status!==0)throw new Error('Command failed: '+command);return result;};
+// Tar must be the Windows bsdtar, addressed by absolute path. Git Bash ships GNU
+// tar earlier on PATH, and GNU tar reads the "D:" in a drive-letter path as a
+// remote host ("Cannot connect to D: resolve failed"), which fails the release
+// after the build has already succeeded. Picking the interpreter explicitly
+// keeps packaging identical no matter which shell invokes it.
+const TAR=process.platform==='win32'?resolve(process.env.SystemRoot||'C:\\Windows','System32/tar.exe'):'tar';
 const git=args=>run('git',args,{stdio:'pipe',encoding:'utf8'}).stdout.trim();
 const commit=git(['rev-parse','HEAD']),dirty=!!git(['status','--porcelain']);
 if(dirty&&!process.argv.includes('--allow-dirty'))throw new Error('Commit the source before creating an uploadable release. Use --allow-dirty only for local validation.');
@@ -24,7 +30,7 @@ try{
   const manifest={schema:1,app:'jigsaw-nook',createdAt:new Date().toISOString(),gitCommit:commit,dirty,nodeMajor:Number(process.versions.node.split('.')[0]),buildPlatform:process.platform,platform:'portable-no-native-binaries',publicPictures:catalog.filter(p=>p.status==='published').length,runtimeAssets:assets,files:inventory(stage,files)};
   writeFileSync(resolve(stage,'release.json'),JSON.stringify(manifest,null,2)+'\n');
   const archive=inside(releases,resolve(releases,'next.tar.gz'));
-  run('tar',['-czf',archive,'-C',stage,'.']);
+  run(TAR,['-czf',archive,'-C',stage,'.']);
   const bytes=readFileSync(archive),sha256=hash(bytes);
   const report={schema:1,app:'jigsaw-nook',file:'latest.tar.gz',bytes:bytes.length,sha256,gitCommit:commit,dirty,verified:false,files:files.length,uncompressedBytes:manifest.files.reduce((sum,file)=>sum+file.bytes,0),nodeMajor:manifest.nodeMajor};
   const latest=inside(releases,resolve(releases,'latest.tar.gz'));
