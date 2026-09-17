@@ -7,7 +7,10 @@
   - 两种来源**共同强制**、任何情况下不得放宽的：`public/puzzles` 里每个文件都必须登记（目录闭合检查，防止有人把图直接扔进目录就上线）；`public/<id>.png` 必须是真正的 PNG 原件（`89504e470d0a1a0a`）且尺寸与哈希与记录一致；衍生图（play／thumbnail／optimized，以及有 `standardSrc` 时的 standard／compact）必须有完整交付记录并通过哈希、尺寸、体积、编码校验。
   - 运行时不区分来源：`lib/puzzle-catalog.ts` 的 `RESTORABLE_PHOTOS`、`scripts/release-files.mjs` 的 `runtimeAssets`、`scripts/prepare-image-delivery.py`、`scripts/prepare-optimized-delivery.mjs`、`scripts/notify-search-engines.mjs` 统一改用共享判定，新来源的图照常进图库、进大厅、进随机开局、进发布包、进 sitemap。
   - **对外表述必须如实**：`user-provided` 的图在界面上要能与「本站 AI 生成」区分，不得笼统声称全部图片均为本站生成。新增 `user-provided` 图时，`content/image-provenance/<id>.json` 与目录条目的 `origin` 必须一致。
-  - 判定收口在 `scripts/image-origin.mjs`（`isPlayableOrigin`／`PLAYABLE_ORIGINS`），新增来源类型只改这一处，不要再往各个脚本里散落硬编码字符串。
+  - 判定收口在 `scripts/image-origin.mjs`（`isPlayableOrigin`／`PLAYABLE_ORIGINS`／`isRetained`／`isPublishedPlayable`），新增来源类型只改这一处，不要再往各个脚本里散落硬编码字符串。改动前该字符串散落在构建校验、两个交付编码器、发布打包、搜索提交与图库运行时共 6 处，漏改任一处都会造成「图能显示但不进发布包」。
+  - 实测（独立 scratch 目录，1122×1402 竖版图，无提示词、无生图记录）：`prepare-image-delivery` exit=0、`prepare-optimized-delivery` exit=0（`encoded:1`、`noResize:true`）、构建校验返回 `CHECK_OK {"published":1}`，交付记录含 `sourceSha256`／`play`／`thumbnail`／`optimized`。验证用文件已清理，未污染 `content/` 与 `public/`。
+  - 验证：`tsc --noEmit` 干净；`check:images` 39 张通过（老图零影响）；`tests/image-library.test.mjs` 19/19（新增 6 组 user-provided 用例：正向通过、缺来源/授权被拒、伪造生成记录被拒、缺 PNG 原件与衍生图被拒、目录夹带被拒、共享判定单元测试）；全量 221 用例 199 通过，**失败数与基线一致**。规范细节见 `docs/图片库来源与扩充规范.md`。
+  - **注意**：用户那张具体的 1122×1402 图**尚未入库，文件从未落到磁盘**（日志中的 SHA-256 来自当次读取剪贴板）。通道已通，待用户重新提供文件后再登记。
 
 - 2026-09-17 动态网格与上传图公开房间（**已本地验收通过，未部署、未出包**）。用户决定：拼图棋盘不再把图片裁进固定 4:3／2:1 画幅，而是按图片自身比例生成「贴合网格」，让 2:1 风景图保住左右、竖版照片保住上下；用户选 300 片时允许实际落在附近片数（如 288／306），因此引入「片数档位」保证榜单不被拆散。**本条覆盖下方 2026-09-16「按所选片数等比居中裁切，拼块主体保持正方形」以及 `pictureCrop` 造成的既有裁切行为，也覆盖下方「自上传图片仅供自己和邀请的朋友游玩，不能公开到大厅」。** 具体：
   - `lib/piece-policy.ts` 新增 `gridForDimensions(width,height,count)`：遍历 `cols×rows` 候选，保证拼块是正方形（`unit=min(w/cols,h/rows)`）、每片不低于 `MIN_PIECE_PIXELS`（108 片档放宽到 20）、片数落在目标 ±35% 内，并按 `片数偏差×1 + 裁切比例×2.6 + 像素紧张×0.5` 打分取最优。返回 `{cols,rows,count,pixels,exact}`，无解返回 `null`。另有 `dynamicCountsForDimensions`、`minPixelsForCount`。**不要退回字典序（先比片数再比比例）比较**：实测那样会让 39 张图在 4 个档位上的平均保留率只有 73.5%，改用加权打分后 156/156 全部提升、平均 100%。
