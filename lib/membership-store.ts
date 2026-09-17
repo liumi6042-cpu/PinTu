@@ -2,6 +2,7 @@ import { localDb } from './local-db';
 import { MEMBERSHIP_LAUNCHED,MEMBER_ROOM_LIMIT,MEMBERSHIP_REQUIRED,canCreateMemberRoom,membershipStatus,type MembershipRecord,type MembershipSummary } from './membership-policy';
 import { RoomError,type Room } from './room-engine';
 import { PHOTOS } from './puzzle-catalog';
+import { pieceBand } from './piece-policy';
 type MembershipRow={plan:'puzzle';status:'active'|'ended';startsAt:number;expiresAt:number;cancelAtPeriodEnd:number};
 export async function membershipFor(userId:string):Promise<MembershipRecord|null>{
   const row=await localDb().prepare('SELECT plan,status,starts_at AS startsAt,expires_at AS expiresAt,cancel_at_period_end AS cancelAtPeriodEnd FROM puzzle_memberships WHERE user_id=?').bind(userId).first<MembershipRow>();
@@ -26,7 +27,7 @@ export async function insertMemberRoom(room:Room,userId:string){
       AND (?='solo' OR (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL)<?)
       AND (? IS NULL OR EXISTS(SELECT 1 FROM puzzle_user_images WHERE id=? AND owner_id=?))`).bind(room.id,JSON.stringify(room),room.expiresAt,room.visibility,userId,now,now,room.visibility,userId,now,MEMBER_ROOM_LIMIT,room.customImage?.id??null,room.customImage?.id??null,userId),
     db.prepare(`INSERT INTO puzzle_room_directory (room_id,visibility,owner_id,title,image_id,piece_count,created_at,expires_at,completed_at,slot)
-      SELECT ?,?,?,?,?,?,?,?,NULL,NULL WHERE EXISTS (SELECT 1 FROM puzzle_rooms WHERE id=?)`).bind(room.id,room.visibility,userId,room.title||photo.title,photo.id,room.puzzle.cols*room.puzzle.rows,room.createdAt,room.expiresAt,room.id),
+      SELECT ?,?,?,?,?,?,?,?,NULL,NULL WHERE EXISTS (SELECT 1 FROM puzzle_rooms WHERE id=?)`).bind(room.id,room.visibility,userId,room.title||photo.title,photo.id,pieceBand(room.puzzle.cols*room.puzzle.rows)??room.puzzle.cols*room.puzzle.rows,room.createdAt,room.expiresAt,room.id),
   ]);
   if(result[0].meta.changes!==1){
     if(room.visibility!=='solo'&&!canCreateMemberRoom(await membershipFor(userId)))throw new RoomError(MEMBERSHIP_REQUIRED,403);

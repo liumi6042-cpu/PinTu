@@ -6,7 +6,7 @@ import { Puzzle, Moon, Sun, ArrowRight, ArrowLeft, Search, Play, Pause, Images, 
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import LanguageSwitch from './language-switch';
-import { createPuzzle, restartPuzzle, placedCount, type PuzzleState } from '@/lib/puzzle-engine';
+import { createPuzzle, createFittedPuzzle, restartPuzzle, placedCount, type PuzzleState } from '@/lib/puzzle-engine';
 import { CompletionGate } from '@/lib/celebration-engine';
 import { CelebrationOverlay, CelebrationPreview } from './celebration';
 import { PuzzleTable } from '@/lib/puzzle-table';
@@ -28,7 +28,8 @@ import { useMembership } from '@/lib/use-membership';
 import {ReportProblem} from './feedback-widget';
 import CompletionRecord from './completion-record';
 import HomeNavigation from './home-navigation';
-import {NEW_GAME_LEVELS as LEVELS,DEFAULT_PIECES,PIECE_PREFERENCE_KEY,preferredPieceCount,supportsPieceCount,PIECE_RESOLUTION_ERROR} from '@/lib/piece-policy';
+import {NEW_GAME_LEVELS as LEVELS,DEFAULT_PIECES,PIECE_PREFERENCE_KEY,preferredPieceCount,supportsPieceCount,PIECE_RESOLUTION_ERROR,gridForDimensions} from '@/lib/piece-policy';
+import {photoGuidance} from '@/lib/play-guidance';
 import PiecePicker from './piece-picker';
 import GalleryCard from './gallery-card';
 import PuzzleOpening from './puzzle-opening';
@@ -75,7 +76,12 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
  },[guestPlay]);
  const photos=useMemo(()=>PHOTOS.filter(p=>supportsPieceCount(p.id,count)&&(!gallery||(category==='全部'||p.category===category)&&[p.title,p.category,p.subtitle,englishCopy(p.title),englishCopy(p.category),englishCopy(p.subtitle)].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))),[gallery,category,query,count]);
  const persist=useCallback((state:PuzzleState)=>{try{writeLocalProgress(localStorage,state);setSaveError(false);}catch{setSaveError(true);}},[]);
- const start=useCallback((chosen:Photo,pieces:number)=>{const level=LEVELS.find(l=>l.count===pieces);if(!level)throw new Error('请选择列表内的图片和片数');const previous=saved[saveKey(chosen.id,pieces)],state=previous&&placedCount(previous)<pieces?structuredClone(previous):createPuzzle(chosen.id,level.cols,level.rows);persist(state);setSession(state);},[saved,persist]);
+ // A catalog picture also plays on a board fitted to its own shape, so a 2:1
+ // landscape no longer loses its left and right edges to the fixed 4:3 board.
+ // The requested piece count is still what the player chose; the board lands near
+ // it, and the leaderboard groups the result into the band of the requested level.
+ const fittedState=useCallback((photo:Photo,pieces:number)=>{const level=LEVELS.find(l=>l.count===pieces),guidance=photoGuidance(photo.id);if(!level)throw new Error('请选择列表内的图片和片数');const grid=guidance?gridForDimensions(guidance.width,guidance.height,level.count):null;return grid?createFittedPuzzle(photo.id,grid.cols,grid.rows):createPuzzle(photo.id,level.cols,level.rows);},[]);
+ const start=useCallback((chosen:Photo,pieces:number)=>{const previous=saved[saveKey(chosen.id,pieces)],state=previous&&placedCount(previous)<pieces?structuredClone(previous):fittedState(chosen,pieces);persist(state);setSession(state);},[saved,persist,fittedState]);
  const beginPuzzle=useCallback(async(chosen:Photo,pieces:number)=>{
   if(entryMode==='create'&&(!membership.data?.summary.canCreate||membership.loading||membership.error))throw new Error(MEMBERSHIP_REQUIRED);
   if(launchLock.current)throw new Error('拼图正在打开，请稍候');

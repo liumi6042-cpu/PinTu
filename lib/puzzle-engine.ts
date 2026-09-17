@@ -67,8 +67,25 @@ export function createPuzzle(imageId:string,cols:number,rows:number,seed=Date.no
   if(!LEVELS.some(l=>l.cols===cols&&l.rows===rows)) throw new Error('不支持的拼图片数');
   return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed)};
 }
+// Member uploads use a grid fitted to the picture instead of a fixed board, so a
+// portrait photo keeps its top and bottom. Only new games take this path: saved
+// rooms and local progress are still restored through SAVED_LEVELS below, and a
+// dynamic grid is never accepted by restorePuzzle, which reads a stored grid only.
+export const MAX_FITTED_PIECES=1000;
+export function createFittedPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0):PuzzleState {
+  if(!Number.isInteger(cols)||!Number.isInteger(rows)||cols<2||rows<2)throw new Error('不支持的拼图片数');
+  const total=cols*rows;
+  if(total<12||total>MAX_FITTED_PIECES)throw new Error('不支持的拼图片数');
+  return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed)};
+}
+// A grid already stored in a room or a local save is always playable, whether it
+// came from the fixed levels or from a fitted upload. Validation of new games is
+// separate: createPuzzle only accepts fixed levels, createFittedPuzzle only
+// accepts a fitted grid, and neither accepts an arbitrary one.
+export function knownGrid(cols:number,rows:number){return savedGrids.some(l=>l.cols===cols&&l.rows===rows);}
+export function fittedGrid(cols:number,rows:number){return Number.isInteger(cols)&&Number.isInteger(rows)&&cols>=2&&rows>=2&&cols*rows>=12&&cols*rows<=MAX_FITTED_PIECES;}
 export function restartPuzzle(state:PuzzleState,seed=Date.now()>>>0):PuzzleState {
-  if(!savedGrids.some(l=>l.cols===state.cols&&l.rows===state.rows))throw new Error('不支持的拼图片数');
+  if(!knownGrid(state.cols,state.rows)&&!fittedGrid(state.cols,state.rows))throw new Error('不支持的拼图片数');
   return {version:1,layout:'square',imageId:state.imageId,cols:state.cols,rows:state.rows,seed,elapsed:0,groups:scatteredGroups(state.cols,state.rows,seed)};
 }
 export function adjacent(a:number,b:number,cols:number) {return Math.abs(a-b)===cols || (Math.floor(a/cols)===Math.floor(b/cols)&&Math.abs(a-b)===1);}
@@ -105,7 +122,7 @@ export function dropGroup(state:PuzzleState,id:number,tolerance:number,blocked=n
 export function placedCount(state:PuzzleState) {return state.groups.filter(g=>g.locked).reduce((n,g)=>n+g.pieces.length,0);}
 export function visibleGroup(group:Group,pieces:Piece[],edgesOnly:boolean) {return group.locked||!edgesOnly||group.pieces.some(id=>pieces[id].border);}
 export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0,blocked:ReadonlySet<number>=new Set()) {
-  if(!savedGrids.some(l=>l.cols===state.cols&&l.rows===state.rows))throw new Error('不支持的拼图片数');
+  if(!knownGrid(state.cols,state.rows)&&!fittedGrid(state.cols,state.rows))throw new Error('不支持的拼图片数');
   const fresh=scatteredGroups(state.cols,state.rows,seed);let changed=0;
   for(const g of state.groups) if(!g.locked&&g.pieces.length===1&&!blocked.has(g.id)) {const pos=fresh[g.pieces[0]];g.dx=pos.dx;g.dy=pos.dy;changed++;}
   return changed;
@@ -113,7 +130,7 @@ export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0,blocked:Reado
 export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {
   try {
     const v=JSON.parse(raw) as PuzzleState;
-    if(v.version!==1||(v.layout!==undefined&&v.layout!=='square')||!imageIds.includes(v.imageId)||!savedGrids.some(l=>l.cols===v.cols&&l.rows===v.rows)||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
+    if(v.version!==1||(v.layout!==undefined&&v.layout!=='square')||!imageIds.includes(v.imageId)||(!knownGrid(v.cols,v.rows)&&!fittedGrid(v.cols,v.rows))||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
     const ids=new Set<number>(),groups=new Set<number>();
     for(const g of v.groups) {
       if(!Number.isInteger(g.id)||groups.has(g.id)||!Array.isArray(g.pieces)||!g.pieces.length||!Number.isFinite(g.dx)||!Number.isFinite(g.dy)||Math.abs(g.dx)>20000||Math.abs(g.dy)>20000||typeof g.locked!=='boolean'||g.locked&&(g.dx!==0||g.dy!==0))return null;

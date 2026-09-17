@@ -9,10 +9,11 @@ import { membershipFor,insertMemberRoom } from '@/lib/membership-store';
 import { roomTitle } from '@/lib/room-management';
 import { isCustomImageId } from '@/lib/custom-images';
 import { ownedUserImage } from '@/lib/user-image-store';
-import { createPuzzle,LEVELS } from '@/lib/puzzle-engine';
+import { photoGuidance } from '@/lib/play-guidance';
+import { createPuzzle,createFittedPuzzle,LEVELS } from '@/lib/puzzle-engine';
 import type { Room } from '@/lib/room-engine';
 import { requireSoloAccount } from '@/lib/solo-account';
-import { countsForDimensions,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PAUSED } from '@/lib/piece-policy';
+import { countsForDimensions,gridForDimensions,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PAUSED,NEW_GAME_LEVELS } from '@/lib/piece-policy';
 import {checkPieceCreation} from '@/lib/room-piece-access';
 export async function POST(request:Request){
  try{
@@ -30,15 +31,32 @@ export async function POST(request:Request){
   if(typeof input.pieces==='number')checkPieceCreation(input.pieces,player?.accountId);
   if(isCustomImageId(input.imageId)){
     if(!player?.accountId)throw new RoomError('请先登录本地账号',401);
-    if(!['solo','private'].includes(input.visibility))throw new RoomError('自上传图片仅供自己和邀请的朋友游玩，不能公开到大厅。',403);
-    const image=await ownedUserImage(player.accountId,input.imageId),level=LEVELS.find(l=>l.count===input.pieces);if(!level)throw new RoomError('请选择有效图片与片数');
-    if(level.count>MAX_NEW_PIECES)throw new RoomError(HIGH_PIECES_PAUSED);
-    if(!countsForDimensions(image.width,image.height).includes(level.count))throw new RoomError(PIECE_RESOLUTION_ERROR);
-    room={id:newId(),customImage:{id:image.id,title:image.title,width:image.width,height:image.height},title:image.title.slice(0,40),ownerId:player.id,visibility:input.visibility,retentionVersion:2,lastPlayedAt:now,puzzle:createPuzzle(image.id,level.cols,level.rows),revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,members:[],leases:{},startedAt:null,participants:{}};
-  }else room=newPlayableRoom(newId(),input.imageId,input.pieces,(input.visibility??'private') as RoomVisibility,player!.id,now);
+    if(!['solo','private','public'].includes(input.visibility))throw new RoomError('房间类型无效');
+    const image=await ownedUserImage(player.accountId,input.imageId),level=NEW_GAME_LEVELS.find(l=>l.count===input.pieces);if(!level)throw new RoomError('请选择有效图片与片数');
+    // Uploads keep their own aspect ratio: the grid is fitted to the picture
+    // instead of being cropped into the fixed board for that piece count.
+    const grid=gridForDimensions(image.width,image.height,level.count);
+    if(!grid)throw new RoomError(PIECE_RESOLUTION_ERROR);
+    room={id:newId(),customImage:{id:image.id,title:image.title,width:image.width,height:image.height},title:image.title.slice(0,40),ownerId:player.id,visibility:input.visibility,retentionVersion:2,lastPlayedAt:now,puzzle:createFittedPuzzle(image.id,grid.cols,grid.rows),revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,members:[],leases:{},startedAt:null,participants:{}};
+  }else{
+   // Catalog pictures also keep their own frame now. The room is still created
+   // from the fixed level, which validates the request, then the grid is fitted
+   // to the picture so a 2:1 landscape stops losing its left and right edges to
+   // the 4:3 default board. Leaderboards group the fitted count into the band of
+   // the level that was requested, so results stay on one board.
+   room=newPlayableRoom(newId(),input.imageId,input.pieces,(input.visibility??'private') as RoomVisibility,player!.id,now);
+   const picture=photoGuidance(input.imageId),level=NEW_GAME_LEVELS.find(l=>l.count===input.pieces);
+   if(picture&&level){
+    const grid=gridForDimensions(picture.width,picture.height,level.count);
+    if(grid&&(grid.cols!==level.cols||grid.rows!==level.rows))room.puzzle=createFittedPuzzle(input.imageId,grid.cols,grid.rows);
+   }
+  }
   if(room.visibility!=='solo') {room.title=roomTitle(input.title,true)||room.title;await ensureBetaSeat(player!.id,now);}
   const token=newId(),member=addMember(room,newId(),name,await digestToken(token),now,player?.accountId,player?.guestId);
-  if(memberRoom||room.customImage)await insertMemberRoom(room,player!.accountId!);else await insertPlayableRoom(room);
+  // Membership applies to private rooms only. A public upload room is as free as
+  // any other public table, so it takes the ordinary playable path and never
+  // spends a member slot; a private or solo upload still needs the image owner.
+  if(memberRoom||(room.customImage&&room.visibility==='private'))await insertMemberRoom(room,player!.accountId!);else await insertPlayableRoom(room);
   const {groups:_groups,...initialPuzzle}=room.puzzle;
   const ticket=input.initialState===INITIAL_STATE_FORMAT
    ? {token,playerId:member.id,initialState:INITIAL_STATE_FORMAT,room:{...snapshotMetadata(room,now),puzzle:initialPuzzle}} satisfies SeedRoomTicket

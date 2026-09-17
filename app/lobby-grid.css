@@ -24,6 +24,11 @@
 .public-tiled-grid .public-card-bottom{font-size:13px;align-items:center;}
 .public-tiled-grid .public-join-label{color:#925236!important;font-weight:500;}
 .public-tiled-grid .room-progress{height:3px;margin:13px 0 0;}
+/* A public room playing an uploaded picture has no catalog artwork, so the card
+   shows a neutral placeholder instead of the picture until the visitor joins. */
+.public-picture-upload{display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:linear-gradient(150deg,#2a4450,#1c313c);color:#8fb0ba;}
+.public-upload-note{display:block;font-size:12px;color:#8a7a62;margin:7px 0 0;}
+.paper-theme .public-picture-upload{background:linear-gradient(150deg,#e0d0b1,#eadcc2);color:#a08a66;}
 @media(min-width:1600px){.lobby-main{max-width:1460px;}.public-tiled-grid{grid-template-columns:repeat(4,minmax(0,1fr));}}
 @media(max-width:1020px){.public-tiled-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.lobby-summary{gap:8px;flex-direction:column;align-items:flex-end;}.community-header{flex-wrap:wrap;gap:16px;}.community-header nav{order:3;width:100%;justify-content:center;}}
 @media(max-width:620px){.lobby-main{padding:26px 16px;}.lobby-main .lobby-heading h1{font-size:29px;}.lobby-summary{display:none;}.public-tiled-grid{gap:14px;}.public-tiled-grid .public-picture{aspect-ratio:1.2;}.public-tiled-grid .public-title h2{font-size:16px;}.public-tiled-grid .public-card-body{padding:11px;}.public-tiled-grid .public-title>svg{display:none;}.public-tiled-grid .live-chip{display:none;}.public-tiled-grid .picture-count{left:8px;top:8px;font-size:11px;}.public-picture-stats{font-size:13px;padding:20px 8px 9px;}.public-picture-stats>span{gap:4px;}.public-picture-stats svg{width:13px;}.public-tiled-grid .public-card-bottom{flex-wrap:wrap;gap:5px;}.public-tiled-grid .public-card-bottom>span{font-size:12px;}.public-tiled-grid .public-join-label{display:none;}}

@@ -6,5 +6,5 @@ export const isCustomImageId=(id:unknown):id is string=>typeof id==='string'&&/^
 export function customPhoto(image:CustomImage,roomId?:string){
  const query=roomId?'?room='+encodeURIComponent(roomId):'';
  const src='/api/user-images/'+image.id+query;
- return {...image,src,thumbSrc:src+(query?'&':'?')+'preview=1',subtitle:'你上传的私人图片',category:'我的图片'};
+ return {...image,src,thumbSrc:src+(query?'&':'?')+'preview=1',subtitle:'玩家上传的图片',category:'玩家上传'};
 }

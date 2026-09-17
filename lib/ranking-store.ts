@@ -2,6 +2,7 @@ import { localDb } from './local-db';
 import { RoomError,type Room } from './room-engine';
 import { PHOTOS,RESTORABLE_PHOTOS } from './puzzle-catalog';
 import { SAVED_LEVELS } from './puzzle-engine';
+import { pieceBand } from './piece-policy';
 import { tokenHash } from './account-crypto';
 import { beijingWeek,recordKind } from './ranking-policy';
 import type { RankingRow,RankingBoard } from './lobby-types';
@@ -10,8 +11,12 @@ const fields='r.room_id,r.elapsed_ms,r.completed_at,r.player_count,r.players_jso
 const joins='FROM puzzle_results r LEFT JOIN puzzle_room_directory d ON d.room_id=r.room_id';
 const order='r.elapsed_ms ASC,r.completed_at ASC,r.room_id ASC';
 function conditions(url:URL,now:number){
-  const mode=url.searchParams.get('mode')||'team',imageId=url.searchParams.get('imageId')||PHOTOS[0].id,pieces=Number(url.searchParams.get('pieces')||108),players=Number(url.searchParams.get('players')||1),period=url.searchParams.get('period')||'all';
-  if(!['solo','team'].includes(mode)||!RESTORABLE_PHOTOS.some(p=>p.id===imageId)||!SAVED_LEVELS.some(l=>l.count===pieces)||!Number.isInteger(players)||players<1||players>32||!['all','week'].includes(period))throw new RoomError('请选择有效的榜单条件');
+  const mode=url.searchParams.get('mode')||'team',imageId=url.searchParams.get('imageId')||PHOTOS[0].id,requested=Number(url.searchParams.get('pieces')||108),players=Number(url.searchParams.get('players')||1),period=url.searchParams.get('period')||'all';
+  // A fitted board can land between levels, so the URL accepts any count inside a
+  // band and resolves it to the level that owns the board. A legacy exact grid is
+  // its own band, which keeps every existing link and result working unchanged.
+  const pieces=pieceBand(requested);
+  if(!['solo','team'].includes(mode)||!RESTORABLE_PHOTOS.some(p=>p.id===imageId)||pieces===null||!SAVED_LEVELS.some(l=>l.count===pieces)||!Number.isInteger(players)||players<1||players>32||!['all','week'].includes(period))throw new RoomError('请选择有效的榜单条件');
   const week=beijingWeek(now),values:(number|string)[]=[mode,imageId,pieces,mode==='solo'?1:players];
   let sql='r.mode=? AND r.image_id=? AND r.piece_count=? AND r.player_count=? AND NOT EXISTS(SELECT 1 FROM puzzle_score_moderation m WHERE m.room_id=r.room_id AND m.hidden=1)';
   if(period==='week'){sql+=' AND r.completed_at>=? AND r.completed_at<?';values.push(week.start,week.end);}

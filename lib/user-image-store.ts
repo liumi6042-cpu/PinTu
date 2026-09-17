@@ -34,11 +34,21 @@ export async function userImageBytes(id:string,preview:boolean){
  const row=await localDb().prepare(`SELECT ${preview?'preview':'data'} AS bytes FROM puzzle_user_images WHERE id=?`).bind(id).first<{bytes:ArrayBuffer|number[]|Uint8Array}>();
  if(!row)throw new RoomError('图片不存在',404);return new Uint8Array(row.bytes as ArrayBuffer);
 }
+// An uploaded picture is readable by its owner, or by anyone admitted to a room
+// that plays it. A public room is open to every visitor, so admission there is
+// effectively granted to all, which is what the upload page discloses. Solo and
+// private rooms stay limited to their seats.
+async function admittedToRoom(room:Room,id:string,owners:ReadonlySet<string>){
+ if(room.puzzle.imageId!==id||room.customImage?.id!==id)return false;
+ if(room.visibility!=='private'&&room.visibility!=='public')return false;
+ if(room.visibility==='public')return true;
+ return room.members.some(m=>owners.has(m.accountId||m.guestId||''))||[...owners].some(owner=>room.admitted?.[owner]);
+}
 export async function canReadUserImage(id:string,owners:ReadonlySet<string>,roomId?:string|null){
  if(!isCustomImageId(id)||!owners.size)return false;
  const image=await localDb().prepare('SELECT owner_id AS owner FROM puzzle_user_images WHERE id=?').bind(id).first<{owner:string}>();if(!image)return false;if(owners.has(image.owner))return true;
  if(!roomId||!/^[a-f0-9]{32}$/.test(roomId))return false;
  const row=await localDb().prepare("SELECT r.data FROM puzzle_rooms r LEFT JOIN puzzle_room_moderation m ON m.room_id=r.id WHERE r.id=? AND r.expires_at>? AND COALESCE(m.closed,0)=0").bind(roomId,Date.now()).first<{data:string}>();
  if(!row)return false;const room=JSON.parse(row.data) as Room;
- return room.visibility==='private'&&room.puzzle.imageId===id&&room.customImage?.id===id&&(room.members.some(m=>owners.has(m.accountId||m.guestId||''))||[...owners].some(owner=>room.admitted?.[owner]));
+ return admittedToRoom(room,id,owners);
 }
