@@ -3,13 +3,14 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { isPublishedPlayable } from './image-origin.mjs';
 
 const ORIGIN = 'https://jigsawnook.online';
 const root = fileURLToPath(new URL('..', import.meta.url));
 export function publicUrls(catalog) {
   const paths = ['/', '/lobby', '/gallery', '/help'];
   for (const photo of catalog) {
-    if (photo.origin !== 'project-ai-generated' || photo.status !== 'published') continue;
+    if (!isPublishedPlayable(photo)) continue;
     assert.match(photo.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     paths.push('/puzzle/' + photo.id);
   }

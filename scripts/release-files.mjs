@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve, relative, sep, posix } from 'node:path';
+import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
 
 export const hash = data => createHash('sha256').update(data).digest('hex');
 export function inside(root, path) {
@@ -20,7 +21,7 @@ export function walk(root) {
 }
 export function runtimeAssets(catalog, config) {
   const urls=new Set(config.static);
-  for(const photo of catalog.filter(p=>p.origin==='project-ai-generated'&&['published','archived'].includes(p.status))){
+  for(const photo of catalog.filter(p=>isPlayableOrigin(p.origin)&&RETAINED_STATUSES.includes(p.status))){
     for(const name of ['playSrc','thumbSrc','optimizedSrc',...(photo.standardSrc?['standardSrc','optimizedStandardSrc']:[])]){
       const url=photo[name];
       const kind={playSrc:'play',thumbSrc:'thumbnail',standardSrc:'standard',optimizedSrc:'optimized',optimizedStandardSrc:'compact'}[name];

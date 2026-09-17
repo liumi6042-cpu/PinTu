@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const catalogPath = path.join(root, 'content/puzzle-catalog.json');
@@ -53,7 +54,7 @@ const totals = {
 };
 
 for (const photo of catalog) {
-  if (photo.origin !== 'project-ai-generated' || !['published', 'archived'].includes(photo.status)) continue;
+  if (!isPlayableOrigin(photo.origin) || !RETAINED_STATUSES.includes(photo.status)) continue;
   assert.match(photo.id, /^[a-z0-9-]+$/);
   const recordPath = path.join(root, 'content/image-provenance', `${photo.id}.json`);
   const originalRecordText = await fs.readFile(recordPath, 'utf8');

@@ -1,5 +1,14 @@
 # 本项目图片库约定
 
+- 2026-09-17 图库开放第二种来源 `origin=user-provided`（**用户提供并授权的图片可以直接进图库上架**）。用户决定：不该强制「每张图都有 AI 生图记录和提示词」——那条规矩是为「本站生成」这一来源设计的，套用到用户自己提供的图上属于错配。**本条覆盖下方 2026-09-14「网络图不得直接成为可玩素材」中「一律不得」的部分、以及下方 2026-09-08 关于「禁止发布外部来源图片」的绝对表述。** 具体：
+  - 两种来源并存，校验按 `origin` 分叉，**不是删掉约束**：
+    - `project-ai-generated`（现有 39 张 + 52 归档）：维持原全套——`generation.tool==='image_gen'`、`review.status==='reviewed'`、提示词存档、参考图哈希与授权、`commercialUse.basis==='provider-output-terms'`。
+    - `user-provided`（新增）：只要`来源说明`（`source.description`）、`授权依据`（`rights.basis` 与 `rights.statement`）、真实 `width`/`height`/`sha256`、`review.status==='reviewed'` 与审核人。**不需要**提示词、**不需要** `generation.tool`、**不需要**参考图哈希链、**不需要** openai 政策链接。
+  - 两种来源**共同强制**、任何情况下不得放宽的：`public/puzzles` 里每个文件都必须登记（目录闭合检查，防止有人把图直接扔进目录就上线）；`public/<id>.png` 必须是真正的 PNG 原件（`89504e470d0a1a0a`）且尺寸与哈希与记录一致；衍生图（play／thumbnail／optimized，以及有 `standardSrc` 时的 standard／compact）必须有完整交付记录并通过哈希、尺寸、体积、编码校验。
+  - 运行时不区分来源：`lib/puzzle-catalog.ts` 的 `RESTORABLE_PHOTOS`、`scripts/release-files.mjs` 的 `runtimeAssets`、`scripts/prepare-image-delivery.py`、`scripts/prepare-optimized-delivery.mjs`、`scripts/notify-search-engines.mjs` 统一改用共享判定，新来源的图照常进图库、进大厅、进随机开局、进发布包、进 sitemap。
+  - **对外表述必须如实**：`user-provided` 的图在界面上要能与「本站 AI 生成」区分，不得笼统声称全部图片均为本站生成。新增 `user-provided` 图时，`content/image-provenance/<id>.json` 与目录条目的 `origin` 必须一致。
+  - 判定收口在 `scripts/image-origin.mjs`（`isPlayableOrigin`／`PLAYABLE_ORIGINS`），新增来源类型只改这一处，不要再往各个脚本里散落硬编码字符串。
+
 - 2026-09-17 动态网格与上传图公开房间（**已本地验收通过，未部署、未出包**）。用户决定：拼图棋盘不再把图片裁进固定 4:3／2:1 画幅，而是按图片自身比例生成「贴合网格」，让 2:1 风景图保住左右、竖版照片保住上下；用户选 300 片时允许实际落在附近片数（如 288／306），因此引入「片数档位」保证榜单不被拆散。**本条覆盖下方 2026-09-16「按所选片数等比居中裁切，拼块主体保持正方形」以及 `pictureCrop` 造成的既有裁切行为，也覆盖下方「自上传图片仅供自己和邀请的朋友游玩，不能公开到大厅」。** 具体：
   - `lib/piece-policy.ts` 新增 `gridForDimensions(width,height,count)`：遍历 `cols×rows` 候选，保证拼块是正方形（`unit=min(w/cols,h/rows)`）、每片不低于 `MIN_PIECE_PIXELS`（108 片档放宽到 20）、片数落在目标 ±35% 内，并按 `片数偏差×1 + 裁切比例×2.6 + 像素紧张×0.5` 打分取最优。返回 `{cols,rows,count,pixels,exact}`，无解返回 `null`。另有 `dynamicCountsForDimensions`、`minPixelsForCount`。**不要退回字典序（先比片数再比比例）比较**：实测那样会让 39 张图在 4 个档位上的平均保留率只有 73.5%，改用加权打分后 156/156 全部提升、平均 100%。
   - `lib/puzzle-engine.ts` 新增 `createFittedPuzzle`／`MAX_FITTED_PIECES=1000`／`knownGrid`／`fittedGrid`。`createPuzzle` **仍然只接受固定 `LEVELS`**；`restartPuzzle`／`shuffleLoose`／`restorePuzzle` 放宽为「已知网格或贴合网格」，这样老存档与老房间照旧能恢复。改这块时必须保持「新建走白名单、恢复走宽松校验」这两条路分开。

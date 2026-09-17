@@ -13,8 +13,12 @@ root = Path(__file__).resolve().parent.parent
 catalog_path = root / 'content/puzzle-catalog.json'
 catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
 totals = {'originalBytes': 0, 'playBytes': 0, 'thumbnailBytes': 0}
+# Kept in step with scripts/image-origin.mjs — both origins get the same derived
+# delivery, because a user-provided original still needs play/thumbnail WebP.
+PLAYABLE_ORIGINS = ('project-ai-generated', 'user-provided')
+RETAINED_STATUSES = ('published', 'archived')
 for photo in catalog:
-    if photo['origin'] != 'project-ai-generated' or photo['status'] not in ('published', 'archived'):
+    if photo['origin'] not in PLAYABLE_ORIGINS or photo['status'] not in RETAINED_STATUSES:
         continue
     original = root / 'public' / photo['src'].lstrip('/')
     record_path = root / 'content/image-provenance' / (photo['id'] + '.json')

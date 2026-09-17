@@ -1,12 +1,20 @@
 import catalog from '../content/puzzle-catalog.json' with { type:'json' };
 
-// Archived project artwork remains available to existing saves and rooms only.
-export const RESTORABLE_PHOTOS=catalog.filter(photo=>photo.origin==='project-ai-generated'&&['published','archived'].includes(photo.status)).map(photo=>({
+// Two origins can be served: our own generations and images a user provided with
+// a recorded right to use them. The build validator (scripts/check-image-library.mjs)
+// is what actually proves each one; here we only pick what may be shown.
+const PLAYABLE_ORIGINS=['project-ai-generated','user-provided'];
+
+// Archived artwork remains available to existing saves and rooms only.
+export const RESTORABLE_PHOTOS=catalog.filter(photo=>PLAYABLE_ORIGINS.includes(photo.origin)&&['published','archived'].includes(photo.status)).map(photo=>({
  ...photo,originalSrc:photo.src,src:photo.optimizedSrc??photo.playSrc,thumbSrc:photo.thumbSrc,
 }));
 export const RESTORABLE_PHOTO_IDS=RESTORABLE_PHOTOS.map(photo=>photo.id);
 export const PHOTOS=RESTORABLE_PHOTOS.filter(photo=>photo.status==='published');
 export const PHOTO_IDS=PHOTOS.map(photo=>photo.id);
+// True for artwork we generated ourselves; the gallery must not call a
+// user-provided picture "本站 AI 生成".
+export function isProjectAiGenerated(photo:{origin?:string}){return photo.origin==='project-ai-generated';}
 // Follow artwork editions for public SEO links only. Never remap a saved room.
 export function latestPublishedPhoto(id:string){
  const visited=new Set<string>();let current=id;

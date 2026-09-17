@@ -59,7 +59,7 @@ test('all playable assets have matching original files, provenance and review re
 test('an external-source catalog entry blocks publication',async t=>{
   const dir=await fixture(t),path=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(path);
   catalog[0].origin='external-demo';await saveJson(path,catalog);
-  await assert.rejects(checkImageLibrary(dir),/禁止发布外部来源图片/);
+  await assert.rejects(checkImageLibrary(dir),/禁止发布未登记来源的图片/);
 });
 
 test('an unreviewed asset blocks publication',async t=>{
@@ -190,4 +190,78 @@ test('adding optimized delivery does not relax the original play lossless requir
   const id='winter-village',dir=await fixture(t,id),recordPath=join(dir,'content/image-provenance',id+'.json'),record=await readJson(recordPath);
   record.delivery.play.lossless=false;await saveJson(recordPath,record);
   await assert.rejects(checkImageLibrary(dir),/游玩图片必须无损并保留原生尺寸/);
+});
+
+// A user-provided picture has no prompt and no generation tool, and demanding
+// one would only invite a fabricated record. It must instead state where it came
+// from and on what basis it may be published.
+async function userProvidedFixture(t){
+  const dir=await fixture(t),catalogPath=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(catalogPath);
+  const recordPath=join(dir,'content/image-provenance/winter-village.json'),source=await readJson(recordPath);
+  const record={id:'winter-village',origin:'user-provided',width:source.width,height:source.height,sha256:source.sha256,
+    nativeResolution:true,delivery:source.delivery,
+    source:{description:'用户提供的照片，作为图库素材使用。',providedOn:'2026-09-17'},
+    rights:{basis:'user-owned',statement:'提供者确认拥有该图片的使用权并同意在本站公开。'},
+    review:{status:'reviewed',reviewedOn:'2026-09-17',reviewer:'Codex visual review',observations:'已查看原图，无文字、水印或商标。'}};
+  catalog[0].origin='user-provided';catalog[0].category='用户提供';
+  await saveJson(catalogPath,catalog);await saveJson(recordPath,record);
+  // The prompt archive is not part of this origin and must not be required.
+  await rm(join(dir,'content/image-prompts/winter-village.txt'),{force:true});
+  return {dir,catalogPath,recordPath};
+}
+
+test('a user-provided picture publishes without a prompt or generation record',async t=>{
+  const {dir}=await userProvidedFixture(t);
+  assert.deepEqual(await checkImageLibrary(dir),{published:1});
+});
+
+test('a user-provided picture must state its source and its right to be published',async t=>{
+  const {dir,recordPath}=await userProvidedFixture(t),original=await readJson(recordPath);
+  for(const [label,edit,pattern] of [
+    ['missing description',r=>{r.source.description='';},/缺少图片来源说明/],
+    ['missing source block',r=>{delete r.source;},/缺少图片来源说明/],
+    ['missing rights basis',r=>{r.rights.basis='';},/缺少使用授权说明/],
+    ['missing rights statement',r=>{r.rights.statement='  ';},/缺少使用授权说明/],
+    ['missing rights block',r=>{delete r.rights;},/缺少使用授权说明/],
+  ]){
+    const record=structuredClone(original);edit(record);await saveJson(recordPath,record);
+    await assert.rejects(checkImageLibrary(dir),pattern,label);
+  }
+});
+
+test('a user-provided picture cannot carry a fabricated AI generation record',async t=>{
+  const {dir,recordPath}=await userProvidedFixture(t),record=await readJson(recordPath);
+  record.generation={provider:'OpenAI',tool:'image_gen',model:null,generatedDate:'2026-09-17',promptPath:null,referenceImages:[]};
+  await saveJson(recordPath,record);
+  await assert.rejects(checkImageLibrary(dir),/不得伪造生成记录/);
+});
+
+test('a user-provided picture still requires a real PNG original and derived delivery',async t=>{
+  const {dir,recordPath}=await userProvidedFixture(t),original=await readJson(recordPath);
+  // Origin and rights do not excuse a substituted original.
+  await copyFile(join(root,'public/puzzles/amber-cabinet.png'),join(dir,'public/puzzles/winter-village.png'));
+  await assert.rejects(checkImageLibrary(dir),/图片与原始记录不一致/);
+  await copyFile(join(root,'public/puzzles/winter-village.png'),join(dir,'public/puzzles/winter-village.png'));
+  // Nor a broken derived asset.
+  const record=structuredClone(original);await saveJson(recordPath,record);
+  await writeFile(join(dir,'public'+record.delivery.play.src),'broken webp');
+  await assert.rejects(checkImageLibrary(dir),/衍生图片哈希不一致/);
+});
+
+test('a user-provided picture cannot smuggle files into the puzzle directory',async t=>{
+  const {dir}=await userProvidedFixture(t);
+  await writeFile(join(dir,'public/puzzles/side-loaded.png'),'unregistered');
+  await assert.rejects(checkImageLibrary(dir),/未登记或未审核素材/);
+});
+
+test('the build validator accepts both origins through one shared decision',async()=>{
+  const { isPlayableOrigin, PLAYABLE_ORIGINS, isPublishedPlayable, isRetained }=await import('../scripts/image-origin.mjs');
+  assert.deepEqual(PLAYABLE_ORIGINS,['project-ai-generated','user-provided']);
+  assert.ok(isPlayableOrigin('project-ai-generated')&&isPlayableOrigin('user-provided'));
+  for(const bad of [undefined,null,'','external','user-provided-style-reference','PROJECT-AI-GENERATED'])
+    assert.ok(!isPlayableOrigin(bad),String(bad));
+  assert.ok(isPublishedPlayable({origin:'user-provided',status:'published'}));
+  assert.ok(!isPublishedPlayable({origin:'user-provided',status:'archived'}));
+  assert.ok(isRetained({origin:'user-provided',status:'archived'}));
+  assert.ok(!isRetained({origin:'external',status:'published'}));
 });
