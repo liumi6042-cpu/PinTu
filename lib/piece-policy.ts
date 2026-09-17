@@ -70,6 +70,12 @@ export function gridForDimensions(width:number,height:number,count:number){
   // Keep the search near the requested count: a board that misses by more than
   // MAX_COUNT_DEVIATION is a different puzzle, not a rounding of the same one.
   if(Math.abs(total-count)>count*MAX_COUNT_DEVIATION)continue;
+  // Never propose a board the engine will refuse to build. The deviation window
+  // lets a 1000-piece request round up, but createFittedPuzzle caps a fitted
+  // board at MAX_FITTED_PIECES (1000), so a 39x26=1014 grid passed this filter,
+  // was returned to the caller, and then threw 不支持的拼图片数 when the room was
+  // created — an 18-picture outage at the 1000 level that surfaced as a 503.
+  if(total>DYNAMIC_GRID_MAX_PIECES)continue;
   const pixels=gridPixels(width,height,cols,rows);
   if(pixels<floor)continue;
   const score=gridScore(count,pixels,ratio,cols,rows,floor);

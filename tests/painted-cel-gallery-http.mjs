@@ -27,7 +27,9 @@ for(const [index,photo] of photos.entries()){
  try{
   assert.equal(ticket.room.puzzle.imageId,photo.id);assert.equal(ticket.room.puzzle.groups,undefined);
   const room=await get('/room/'+ticket.room.id);assert.equal(room.status,200);const html=await room.text();assert.ok(html.split('</head>')[0].includes(photo.optimizedSrc));
-  const snapshot=await fetch(base+'/api/rooms/'+ticket.room.id,{headers:auth});assert.equal(snapshot.status,200);assert.equal((await snapshot.json()).puzzle.groups.length,pieces);
+  // Catalog rooms are fitted to the picture, so the board is the grid the ticket
+  // reported (1000 pieces on a 3:2 picture plays 38x26=988), not the level count.
+  const snapshot=await fetch(base+'/api/rooms/'+ticket.room.id,{headers:auth});assert.equal(snapshot.status,200);assert.equal((await snapshot.json()).puzzle.groups.length,ticket.room.puzzle.cols*ticket.room.puzzle.rows);
  }finally{const left=await fetch(base+'/api/rooms/'+ticket.room.id,{method:'POST',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify({type:'leave'})});assert.equal(left.status,200);await left.arrayBuffer();}
 }
 console.log(JSON.stringify({painted:6,celShading:3,newRoomCreation:true,englishPages:true,optimizedSSRPreload:true,seedAndFullSnapshot:true}));

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {countsForDimensions,allowedPieceCounts,supportsPieceCount,maximumPieces,preferredPieceCount,NEW_GAME_LEVELS,HIGH_PIECES_PAUSED,gridForDimensions,dynamicCountsForDimensions,minPixelsForCount,pieceBand,bandForGrid,bandLabel,PIECE_RESOLUTION_ERROR} from '../lib/piece-policy.ts';
 import {PHOTOS,RESTORABLE_PHOTOS,latestPublishedPhoto} from '../lib/puzzle-catalog.ts';
-import {LEVELS,SAVED_LEVELS,createPuzzle,createFittedPuzzle,restartPuzzle,restorePuzzle,knownGrid,fittedGrid} from '../lib/puzzle-engine.ts';
+import {LEVELS,SAVED_LEVELS,createPuzzle,createFittedPuzzle,restartPuzzle,restorePuzzle,knownGrid,fittedGrid,MAX_FITTED_PIECES} from '../lib/puzzle-engine.ts';
 import {makeRoom,addMember,applyAction} from '../lib/room-engine.ts';
 import {puzzleImageSource} from '../lib/puzzle-image-source.ts';
 import {roomImagePreload} from '../lib/room-image-preload.ts';
@@ -102,6 +102,26 @@ test('every published picture gains or keeps its frame under a fitted grid',()=>
    assert.ok(retained>=0.9,`${photo.id} at ${level.count} pieces retains ${retained}`);
   }
  }
+});
+// The deviation window lets a request round up, but a fitted board is capped at
+// MAX_FITTED_PIECES. A 1000-piece request on a 3:2 picture used to produce
+// 39x26=1014, which the grid search returned and createFittedPuzzle then threw
+// 不支持的拼图片数 on, so the room could not be created at all (a 503 for the
+// caller). Every grid the helper offers must be one the engine will build.
+test('every offered grid is one the engine can actually build',()=>{
+ for(const photo of published){
+  for(const level of NEW_GAME_LEVELS){
+   const grid=gridForDimensions(photo.width,photo.height,level.count);
+   if(!grid)continue;
+   assert.ok(grid.count<=MAX_FITTED_PIECES,`${photo.id} at ${level.count} offers ${grid.cols}x${grid.rows}=${grid.count}`);
+   if(knownGrid(grid.cols,grid.rows))continue;
+   assert.doesNotThrow(()=>createFittedPuzzle(photo.id,grid.cols,grid.rows,1),`${photo.id} at ${level.count} must build ${grid.cols}x${grid.rows}`);
+  }
+ }
+ // The exact shape that broke: a 3:2 picture at the 1000 level.
+ const grid=gridForDimensions(1536,1024,1000);
+ assert.ok(grid&&grid.count<=MAX_FITTED_PIECES,`1536x1024 at 1000 stays within the cap, got ${grid&&grid.cols+'x'+grid.rows}`);
+ assert.ok(grid.count>=1000*0.85,'and still lands close to the requested count');
 });
 test('a piece-count band keeps a fitted board on the same leaderboard as its level',()=>{
  // A fixed level is its own band, so every existing result and link is unchanged.
