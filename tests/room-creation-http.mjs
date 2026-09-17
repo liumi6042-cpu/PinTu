@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {resolve} from 'node:path';
-import {createPuzzle,SAVED_LEVELS} from '../lib/puzzle-engine.ts';
+import {createPuzzle,createFittedPuzzle,LEVELS,SAVED_LEVELS} from '../lib/puzzle-engine.ts';
 import {createFixturePuzzle} from './legacy-fixtures.mjs';
-import {HIGH_PIECES_PAUSED} from '../lib/piece-policy.ts';
+import {HIGH_PIECES_PAUSED,gridForDimensions} from '../lib/piece-policy.ts';
+import {photoGuidance} from '../lib/play-guidance.ts';
 
 const base=process.argv[2]||'http://127.0.0.1:3137';
 const local=base.startsWith('http://127.0.0.1:');
@@ -30,11 +31,24 @@ try{
  assert.ok(create.bytes<1500);assert.equal(create.data.initialState,'seed-v1');assert.equal(create.data.room.puzzle.groups,undefined);
  const initial=create.data.room.puzzle;
  const full=await request('/api/rooms/'+create.data.room.id,undefined,create.data.token);
- assert.equal(full.status,200);assert.deepEqual(full.data.puzzle,createPuzzle(initial.imageId,initial.cols,initial.rows,initial.seed));
+ // Catalog rooms are created from the fixed level but the board is fitted to the
+ // picture, so the grid that comes back is usually not the LEVELS grid (a 2:1
+ // photo asked for 300 plays 24x12=288, not 20x15). createPuzzle only accepts
+ // fixed LEVELS grids, so a fitted board must be rebuilt with createFittedPuzzle
+ // — asserting through createPuzzle would test the fixed-grid path that the
+ // server deliberately no longer uses for catalog pictures.
+ const guidance=photoGuidance(initial.imageId);assert.ok(guidance,'catalog pictures carry guidance');
+ const fitted=gridForDimensions(guidance.width,guidance.height,300);
+ const expectedGrid=fitted??LEVELS.find(level=>level.count===300);
+ assert.equal(full.status,200);assert.equal(initial.cols,expectedGrid.cols);assert.equal(initial.rows,expectedGrid.rows);
+ assert.deepEqual(full.data.puzzle,createFittedPuzzle(initial.imageId,initial.cols,initial.rows,initial.seed));
  const firstName=create.data.room.members[0].name;
  // A candidate cannot replace an established cookie identity.
  const legacy=await request('/api/rooms',{imageId:initial.imageId,pieces:108,visibility:'public',guestSecret:randomBytes(32).toString('hex')});
- assert.equal(legacy.status,201);rooms.push(legacy.data);assert.equal(legacy.data.room.puzzle.groups.length,108);assert.equal(legacy.data.room.members[0].name,firstName);
+ // The 108 level is fitted too, so this 2:1 picture plays 14x7=98 rather than
+ // the fixed 12x9=108. The seat-identity check is what this room is for.
+ const legacyGrid=gridForDimensions(guidance.width,guidance.height,108)??LEVELS.find(level=>level.count===108);
+ assert.equal(legacy.status,201);rooms.push(legacy.data);assert.equal(legacy.data.room.puzzle.groups.length,legacyGrid.cols*legacyGrid.rows);assert.equal(legacy.data.room.members[0].name,firstName);
  for(const [visibility,status] of [['solo',401],['private',403]])assert.equal((await request('/api/rooms',{imageId:initial.imageId,pieces:108,visibility,guestSecret:secret,initialState:'seed-v1'})).status,status);
  assert.equal((await request('/api/rooms',{imageId:initial.imageId,pieces:108,visibility:'public',guestSecret:'invalid',initialState:'seed-v1'})).status,400);
  const validCookie=cookie;cookie='puzzle_guest='+randomBytes(32).toString('hex');
