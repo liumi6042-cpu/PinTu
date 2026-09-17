@@ -6,17 +6,18 @@ import {resolve,sep} from 'node:path';
 import {spawn,spawnSync} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {walk,runtimeAssets} from '../scripts/release-files.mjs';
+import {walk,runtimeAssets,TAR} from '../scripts/release-files.mjs';
+import {isPublishedPlayable} from '../scripts/image-origin.mjs';
 
 const project=fileURLToPath(new URL('..',import.meta.url));
 const archive=resolve(project,'releases/latest.tar.gz');
 const catalog=JSON.parse(readFileSync(resolve(project,'content/puzzle-catalog.json'),'utf8'));
-const published=catalog.filter(photo=>photo.origin==='project-ai-generated'&&photo.status==='published');
+const published=catalog.filter(isPublishedPlayable);
 const expectedAssets=runtimeAssets(catalog,JSON.parse(readFileSync(resolve(project,'config/runtime-assets.json'),'utf8')));
 const root=mkdtempSync(resolve(tmpdir(),'jigsaw-release-test-')),app=resolve(root,'app');mkdirSync(app);
 let child,output='';
 try{
-  const unpack=spawnSync('tar',['-xzf',archive,'-C',app],{windowsHide:true,encoding:'utf8'});assert.equal(unpack.status,0,unpack.stderr);
+  const unpack=spawnSync(TAR,['-xzf',archive,'-C',app],{windowsHide:true,encoding:'utf8'});assert.equal(unpack.status,0,unpack.stderr);
   const manifest=JSON.parse(readFileSync(resolve(app,'release.json'),'utf8'));
   assert.equal(manifest.app,'jigsaw-nook');assert.equal(manifest.publicPictures,published.length);
   assert.deepEqual(manifest.runtimeAssets,expectedAssets,'the release must contain every current and archived runtime asset');

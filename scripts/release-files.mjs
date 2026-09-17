@@ -4,6 +4,15 @@ import { resolve, relative, sep, posix } from 'node:path';
 import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
 
 export const hash = data => createHash('sha256').update(data).digest('hex');
+// Tar must be the Windows bsdtar, addressed by absolute path. Git Bash puts GNU
+// tar ahead of the bundled bsdtar on PATH, and GNU tar reads the "D:" in a
+// drive-letter path as a remote host ("Cannot connect to D: resolve failed"),
+// which failed packaging after the (already successful) build. Resolving the
+// interpreter here keeps packing, unpacking and the shell that invoked them
+// independent of PATH ordering; on POSIX the system tar is already correct.
+export const TAR = process.platform === 'win32'
+  ? resolve(process.env.SystemRoot || 'C:\\Windows', 'System32/tar.exe')
+  : 'tar';
 export function inside(root, path) {
   const absolute=resolve(path),base=realpathSync(root);
   if(absolute===base||!absolute.startsWith(base+sep))throw new Error('Path must remain inside its output directory');

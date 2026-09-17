@@ -2,17 +2,11 @@ import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeF
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { hash, inside, inventory, runtimeAssets, selectRuntimeFiles } from './release-files.mjs';
+import { hash, inside, inventory, runtimeAssets, selectRuntimeFiles, TAR } from './release-files.mjs';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
 process.chdir(root);
 const run=(command,args,options={})=>{const result=spawnSync(command,args,{cwd:root,windowsHide:true,stdio:'inherit',...options});if(result.error||result.status!==0)throw new Error('Command failed: '+command);return result;};
-// Tar must be the Windows bsdtar, addressed by absolute path. Git Bash ships GNU
-// tar earlier on PATH, and GNU tar reads the "D:" in a drive-letter path as a
-// remote host ("Cannot connect to D: resolve failed"), which fails the release
-// after the build has already succeeded. Picking the interpreter explicitly
-// keeps packaging identical no matter which shell invokes it.
-const TAR=process.platform==='win32'?resolve(process.env.SystemRoot||'C:\\Windows','System32/tar.exe'):'tar';
 const git=args=>run('git',args,{stdio:'pipe',encoding:'utf8'}).stdout.trim();
 const commit=git(['rev-parse','HEAD']),dirty=!!git(['status','--porcelain']);
 if(dirty&&!process.argv.includes('--allow-dirty'))throw new Error('Commit the source before creating an uploadable release. Use --allow-dirty only for local validation.');
