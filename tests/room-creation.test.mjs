@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPuzzle,LEVELS} from '../lib/puzzle-engine.ts';
+import {createPuzzle,createFittedPuzzle,LEVELS} from '../lib/puzzle-engine.ts';
 import {expandCreatedTicket,rememberCreatedTicket,takeCreatedTicket} from '../lib/room-creation.ts';
 import {apiJson,joinPuzzle} from '../lib/community-client.ts';
 import {roomSessionKey} from '../lib/room-client.ts';
@@ -20,8 +20,20 @@ test('compact fresh creation reproduces all piece positions through 5000, withou
  }
  const {full,small}=fixture();assert.ok(JSON.stringify(small).length<JSON.stringify(full).length/100);
 });
-test('full snapshots including old progress stay intact; malformed seed responses are rejected',()=>{
- const {full,small}=fixture();full.room.puzzle.groups[0].locked=true;full.room.revision=8;
+// Catalog rooms are created from a fixed level but their board is fitted to the
+// picture, so most seeds carry a grid that is not in LEVELS (a 2:1 photo asked
+// for 300 plays 24x12=288). Rebuilding every seed through createPuzzle threw
+// 不支持的拼图片数 and the freshly created room could not be opened at all, so a
+// fitted seed must be expanded through the fitted path the server used.
+test('a fitted seed grid expands like a fixed one, and odd grids stay rejected',()=>{
+ const fitted=createFittedPuzzle(imageId,24,12,42);
+ const {groups,...initial}=fitted;
+ const metadata={id,visibility:'public',revision:0,serverTime:100,expiresAt:86400100,members:[],leases:{},startedAt:null};
+ const ticket={token,playerId,initialState:'seed-v1',room:{...metadata,puzzle:initial}};
+ assert.deepEqual(expandCreatedTicket(ticket),{token,playerId,room:{...metadata,puzzle:fitted}});
+ for(const [cols,rows] of [[3,3],[1,300],[60,60]])assert.throws(()=>expandCreatedTicket({...ticket,room:{...ticket.room,puzzle:{...initial,cols,rows}}}));
+});
+test('full snapshots including old progress stay intact; malformed seed responses are rejected',()=>{ const {full,small}=fixture();full.room.puzzle.groups[0].locked=true;full.room.revision=8;
  assert.equal(expandCreatedTicket(full),full);
  for(const bad of [{...small,initialState:'future'}, {...small,room:{...small.room,revision:1}}, {...small,room:{...small.room,puzzle:{...small.room.puzzle,elapsed:5}}}])assert.throws(()=>expandCreatedTicket(bad));
 });

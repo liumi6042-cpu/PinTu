@@ -25,7 +25,9 @@ try{
  const account={};const registered=await request('/api/auth/register',{username:'access_'+id().slice(0,10),name:'Free account',password:id()},account);assert.equal(registered.status,201,JSON.stringify(registered.data));
  for(const pieces of [500,1000]){
   const ticket=await create(pieces,account),path='/api/rooms/'+ticket.room.id;
-  assert.equal(ticket.room.puzzle.groups,undefined);const full=await request(path,undefined,account);assert.equal(full.status,200);assert.equal(full.data.puzzle.groups.length,pieces);
+  // Catalog rooms are fitted to the picture, so the board is the grid the ticket
+  // reported (512 for the 500 level on this 2:1 landscape), not the level count.
+  assert.equal(ticket.room.puzzle.groups,undefined);const full=await request(path,undefined,account);assert.equal(full.status,200);assert.equal(full.data.puzzle.groups.length,ticket.room.puzzle.cols*ticket.room.puzzle.rows);
   const guest={};const guestJoin=await request(path+'/join',{accountId:registered.data.account.id},guest);
   assert.equal(guestJoin.status,200,'joining a high-count room needs no account');
   assert.notEqual(guestJoin.data.room.members.find(m=>m.id===guestJoin.data.playerId).name,'Free account','an accountId in the JSON body must not grant account identity');

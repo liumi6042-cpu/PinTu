@@ -1,5 +1,11 @@
 # 本项目图片库约定
 
+- 2026-09-17 出包链路一并修复三处「固定网格假设」残留（**本轮才发现，全部是既有缺陷**）：
+  - **`expandCreatedTicket` 会让贴合网格的新房间根本打不开（线上真实缺陷）**。`lib/room-creation.ts` 展开 `initialState:'seed-v1'` 票据时一律走 `createPuzzle`，而该函数只接受固定 `LEVELS` 网格。图库房间现在是「先用固定档位校验、再贴合图片生成棋盘」，于是 2:1 的 `mountain-lake-reflection-hd-v3` 选 300 片会返回 `24×12=288`，客户端展开时抛 `不支持的拼图片数`，**新建的房间点不进去**。`lib/community-client.ts` 给每一次建房都带 `initialState:'seed-v1'`，所以影响面是所有非 4:3 的图库图片。修法与建图端保持同一套分流：`knownGrid` → `createPuzzle`，`fittedGrid` → `createFittedPuzzle`，两者都不是 → 仍拒绝。**这条与上方「新建走白名单、恢复走宽松校验」不冲突**：种子票据是「服务端刚生成的新局」，走的是服务端同一个分流，不是放松校验。
+  - **`npm run release` 在本机 Git Bash 下必然失败**。Git Bash 的 GNU tar 1.35 会把握盘符 `D:` 当远程主机，报 `Cannot connect to D: resolve failed`，而此时构建已经成功、只差打包。修法是把 tar 收口到 `scripts/release-files.mjs` 导出的 `TAR`（win32 下解析为 `%SystemRoot%\System32\tar.exe`，即 bsdtar 3.5.2），`package-release.mjs`、`tests/release-smoke.mjs` 与 `work/` 下的若干验证脚本统一引用。**只修打包端不够**——冒烟测试解包用的是同一个裸 `tar`，会把失败推迟一步而不是消除。
+  - **三个 HTTP 测试断言的是「贴合前」的旧行为**：`tests/room-creation-http.mjs`（用 `createPuzzle` 重建服务端返回、写死 108 片）、`tests/access-assistance-http.mjs`（断言 `groups.length===pieces`）都假设服务端回显固定档位网格。已改为与服务端同一套算法比对（贴合网格用 `gridForDimensions` 算出后按 `createFittedPuzzle` 重建，或直接读票据回报的 `cols×rows`）。**它们只在「拿真实服务器跑冒烟」时才会暴露**，单元测试因为 fixture 全部由 `LEVELS` 构造而结构性地测不到。
+  - 验证：`tsc --noEmit` 干净；`tests/room-creation.test.mjs` 新增「贴合种子票据可展开且异常网格仍被拒」用例 6/6 通过。
+
 - 2026-09-17 图库开放第二种来源 `origin=user-provided`（**用户提供并授权的图片可以直接进图库上架**）。用户决定：不该强制「每张图都有 AI 生图记录和提示词」——那条规矩是为「本站生成」这一来源设计的，套用到用户自己提供的图上属于错配。**本条覆盖下方 2026-09-14「网络图不得直接成为可玩素材」中「一律不得」的部分、以及下方 2026-09-08 关于「禁止发布外部来源图片」的绝对表述。** 具体：
   - 两种来源并存，校验按 `origin` 分叉，**不是删掉约束**：
     - `project-ai-generated`（现有 39 张 + 52 归档）：维持原全套——`generation.tool==='image_gen'`、`review.status==='reviewed'`、提示词存档、参考图哈希与授权、`commercialUse.basis==='provider-output-terms'`。
