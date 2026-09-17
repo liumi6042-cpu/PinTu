@@ -6,13 +6,18 @@ import { supportsPieceCount,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PA
 export { PHOTO_IDS } from './puzzle-catalog';
 export const ROOM_LIFETIME=30*24*60*60*1000, LEASE_MS=10000, ONLINE_MS=22000;
 export const ORGANIZE_COOLDOWN_MS=2000;
+// One gesture may carry this many groups, and one player may hold no more than this.
+// Bigger than the old single-lease rule so a multi-piece selection is possible, small
+// enough that one player cannot sweep the board. The client caps its selection with
+// `MULTI_SELECT_LIMIT`, which must stay at or below this number.
+export const DRAG_LEASE_GROUPS=12;
 export const COLORS=['#d6e8b4','#99caf4','#eeafcf','#ffcb8e','#b6acf7','#8cddd1','#f3e192','#dda990'];
 export type Member={id:string;name:string;color:string;digest:string;previousDigests?:string[];lastSeen:number;joinedAt:number;accountId?:string;guestId?:string};
 export type Lease={playerId:string;expires:number;seq:number};
 export type RoomVisibility='public'|'private'|'solo';
 export type Room={lastOrganizedAt?:number;customImage?:import('./custom-images').CustomImage;publicLastSeenAt?:number;title?:string;acceptingNew?:boolean;admitted?:Record<string,boolean>;achievements?:RoomAchievementState;syncHistory?:import('./room-sync').RoomChange[];retentionVersion?:2;lastPlayedAt?:number;id:string;puzzle:PuzzleState;revision:number;createdAt:number;expiresAt:number;completedAt:number|null;members:Member[];leases:Record<string,Lease>;visibility?:RoomVisibility;ownerId?:string;startedAt?:number|null;participants?:Record<string,string>};
 export type RoomSnapshot={customImage?:import('./custom-images').CustomImage;title?:string;acceptingNew?:boolean;achievementDays?:Record<string,string>;id:string;puzzle:PuzzleState;revision:number;serverTime:number;expiresAt:number;members:Omit<Member,'digest'|'previousDigests'|'joinedAt'|'accountId'|'guestId'>[];leases:Record<string,Lease>;visibility?:RoomVisibility;completedAt?:number|null;startedAt?:number|null;participantCount?:number};
-export type RoomAction={type:'heartbeat'|'leave'|'claim'|'move'|'drop'|'release'|'shuffle';groupId?:number;dx?:number;dy?:number;seq?:number};
+export type RoomAction={type:'heartbeat'|'leave'|'claim'|'claimMany'|'move'|'drop'|'release'|'shuffle';groupId?:number;groupIds?:number[];dx?:number;dy?:number;seq?:number};
 export class RoomError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}
 export function validName(value:unknown){if(typeof value!=='string')throw new RoomError('请填写昵称');const name=value.trim().replace(/[\u0000-\u001f\u007f]/g,'');if(!name||name.length>16)throw new RoomError('昵称请填写 1–16 个字');return name;}
 export function makeRoom(id:string,imageId:string,count:number,now:number):Room{const level=LEVELS.find(l=>l.count===count);if(!level||!PHOTO_IDS.includes(imageId))throw new RoomError('请选择有效图片与片数');if(count>MAX_NEW_PIECES)throw new RoomError(HIGH_PIECES_PAUSED);if(!supportsPieceCount(imageId,count))throw new RoomError(PIECE_RESOLUTION_ERROR);return {id,retentionVersion:2,lastPlayedAt:now,puzzle:createPuzzle(imageId,level.cols,level.rows),revision:0,createdAt:now,expiresAt:now+ROOM_LIFETIME,completedAt:null,members:[],leases:{}};}
@@ -58,7 +63,30 @@ export function applyAction(room:Room,member:Member,action:RoomAction,now:number
   if(changed){room.lastOrganizedAt=now;touchRoom(room,now);}
   return;
  }
- if(!['claim','move','drop','release'].includes(action.type))throw new RoomError('不支持的操作');
+ if(!['claim','claimMany','move','drop','release'].includes(action.type))throw new RoomError('不支持的操作');
+ if(action.type==='claimMany'){
+  // A multi-piece gesture claims its whole selection in one step. The "one gesture
+  // at a time" rule still holds — it is checked against the *other* groups this
+  // player holds, not against the ones being claimed right now.
+  const ids=[...new Set(action.groupIds??[])];
+  if(!ids.length)throw new RoomError('请选择要移动的拼块');
+  if(ids.length>DRAG_LEASE_GROUPS)throw new RoomError(`一次最多移动 ${DRAG_LEASE_GROUPS} 组拼块`);
+  if(!ids.every(Number.isInteger))throw new RoomError('拼块编号无效');
+  const held=new Set(Object.entries(room.leases).filter(([,l])=>l.playerId===member.id).map(([id])=>Number(id)));
+  // Every group must be free or already ours, and the resulting set must fit the ceiling.
+  for(const id of ids){
+   const group=room.puzzle.groups.find(g=>g.id===id);
+   if(!group||group.locked)throw new RoomError('这组拼块已合并或归位，请重新选择',409);
+   const owned=room.leases[id];
+   if(owned&&owned.playerId!==member.id)throw new RoomError('这组拼块正被另一位玩家移动',409);
+  }
+  // Claiming must not silently abandon a group from an earlier gesture.
+  if([...held].some(id=>!ids.includes(id)))throw new RoomError('请先放下当前拼块',409);
+  if(room.startedAt===null)room.startedAt=now;
+  const participant=member.accountId||member.guestId;if(participant)(room.participants??={})[participant]=member.name;
+  for(const id of ids)room.leases[id]={playerId:member.id,expires:now+LEASE_MS,seq:0};
+  touchRoom(room,now);return;
+ }
  if(!Number.isInteger(action.groupId))throw new RoomError('拼块编号无效');const groupId=action.groupId!,group=room.puzzle.groups.find(g=>g.id===groupId);
  if(!group||group.locked)throw new RoomError('这组拼块已合并或归位，请重新选择',409);
  const lease=room.leases[groupId];

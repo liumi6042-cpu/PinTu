@@ -1,5 +1,21 @@
 # 本项目图片库约定
 
+- 2026-09-17 **线上真实故障：上一轮上线的多选功能导致「所有拼块都拖不动」**（用户报告「现在更新后怎么连拼图块都拖动不了了」）。已定位、修复、加回归测试，**待重新出包部署**。**本条覆盖上方 `20260917-17` 的可用性结论**——那个版本虽然验收项全绿，但它带着一个只在多人房间里才发作的缺陷。
+  - 根因是两层，缺一不可：
+    1. **服务端本来就只允许「同一时刻一份租约」**：`lib/room-engine.ts` 的 `claim` 分支里 `if(Object.entries(room.leases).some(([id,l])=>Number(id)!==groupId&&l.playerId===member.id))throw new RoomError('请先放下当前拼块',409)`。多选客户端却**逐个 id 发 `claim`**（`acquireSelected` 的 `for` 循环），所以第二个 id 必然 409。**多选在多人房里从来就没成功过**——单人模式 `network` 为 `null`，根本不走这条路径，所以本地单人验收全绿，掩盖了问题。
+    2. **被拒的手势会泄漏客户端状态，之后连单块都拖不动**。`RoomClient` 原本用**单槽**记账：`private active: DragTask|null`（它存在的意义是串行化 claim，因为 `runDrag` 要 `await previousDrag` 来保证同一玩家的移动有序）。多组手势无法用单槽表达：第一个 id 占住槽位后，引擎的「一次一个手势」判定把后续 id 全判为不可申请；而 `puzzle-table.ts` 的 `dropDrag()` 只清本地状态、**不通知网络释放已拿到的 id**，于是那个 claim 永远挂着。`canAcquire` 从此对**任何** id 都返回 false → 整桌拼块都拖不动。这正是用户看到的症状。
+  - 修法是把「一个手势」变成服务端的一等动作，而不是在客户端凑：
+    - `RoomAction` 新增 `claimMany` + `groupIds?:number[]`。**整批租约一次申请、要么全给要么全不给**，所以不存在「被拒却已拿到一半」的状态。校验顺序：非空 → 不超过 `DRAG_LEASE_GROUPS` → 全是整数 → 每个 id 必须「空闲或已属于我」且未锁定 → **`held`（我已有租约）不得有本批之外的成员**（不许静默丢弃上一手势的组）→ 写入。
+    - 新增导出常量 `DRAG_LEASE_GROUPS=12`（引擎）与 `DRAG_LEASE_LIMIT=12`（客户端，与前者同值）。**这两个数必须相等且 ≥ `MULTI_SELECT_LIMIT`**，否则一个合法选择会被服务端拒掉。`tests/drag-multiselect.test.mjs` 里有断言守着 `MULTI_SELECT_LIMIT<=DRAG_LEASE_GROUPS`。旧上限 8 已作废，因为一次手势最多带走 12 组。
+    - `TableNetwork` 新增可选 `canAcquireAll?` / `acquireAll?`；`beginDrag` 改用 `canAcquireAll(this.dragIds)` 一次判定，`acquireSelected` 改调 `acquireAll`。保留了 `claimOneByOne` 作为无批量能力的兜底，**且它失败时会 `release` 已拿到的 id**——就是原版漏掉的那一步。
+    - `RoomClient` 的 `active` 从单槽改为**集合**（`Set<DragTask>`，即「本手势持有的一批」）。新增 `acquireAll` / `runBatch` / `runClaimed`：`acquireAll` 预留整批 tombstone 后交给 `runBatch`（一次 `claimMany`，成功后按 id 顺序把每个 task 串进 `previousDrag` 链），`runClaimed` 复用原有的移动/落下循环。**失败路径必须走 `finally` 里的 `!leased` 分支整批注销**（`drags` / `active` / `finish` 三处都要清），否则又会留下悬空槽位。所有拆除点（租约被抢、`fail`、`runDrag` 的 finally、`drop`、`release`）统一改为 `this.active.delete(task)`，`stop` 改为 `this.active.clear()`。
+  - 回归测试（**这是本次最重要的产出，不要再删**）：
+    - 新增 `tests/drag-multiselect.test.mjs`（3 条，**完全离线**：把 `fetch` 直接接到 `applyAction`，不依赖 HTTP 服务）。三条分别钉死「多选一次申请并全部租到」「被服务端拒绝的手势不租任何组且不留 task」「被拒之后仍能拖动 + 单人模式不受影响 + 上限关系」。**第二条与第三条就是用户症状的最小复现。**
+    - `tests/room-engine.test.mjs` 从 10 条扩到 13 条，新增 `claimMany` 的批量语义、全有全无、上限、去重、锁定 id、被拒不得泄漏已持有租约、批内组的移动与落下。
+    - 写这类测试的两个坑：房间时钟**必须在每次响应时前进**（`receive()` 会丢弃 `serverTime` 未更新的快照，否则表现为「莫名其妙 always false」）；`dx/dy` 是**被 `boundedOffset` 夹到世界边界**的偏移量，且小偏移会把拼块吸附归位，所以断言要放在远离棋盘的坐标上、并断言「确实移动了」而不是写死绝对值。
+  - 验证：`tsc --noEmit` 干净；`check:images` 通过；聚焦用例 **46/46**（`puzzle-table-render`＋`large-puzzle`＋`celebration`＋`drag-image`＋`drag-multiselect`＋`room-engine`＋`cursor-visibility`）；全量 218 用例 212 通过、失败 6 条**全部是既有基线或本机 safe-delete 噪声**（free assistance、生产迁移 12!==11、两个 HTTP 客户端、drag/drop 轮询 400!==201，以及 `release-allowlist`／`retention` 两条因单轮删除累计超 50 触发 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`——把 `work/` 下的旧 scratch 目录清空后复跑即恢复基线）。
+  - 未做：**未提交、未出包、未部署**。线上 `20260917-17` **仍带着这个缺陷**，必须重新走一遍发布流程才能修好。
+
 - 2026-09-17 多选拖动已上线，线上为 `releases/20260917-17/app`（应用 Git `c1bd884`，运行包 sha256 `d264c4bb4c52e286f0211d571be547554429b75cc336fe9fca2843c190d6f7fe`，268,122,861 字节 / 2913 文件 / 288 资产 / 40 图，`verified:true`、`dirty:false`），`jigsaw-web@3103.service` 活跃，nginx 指向 3103，3104 排空后停止，`migrationChanges:false`、隔离跨版本测试通过。上一个版本 `20260917-17` 的对偶是 `20260917-16`（保留作回退，`deployment.json` 的 `rollback` 字段即指它）。
   - **`scripts/deploy-warm-release.py` 的端口参数语义反直觉，容易传反（本轮连错两次）**：`--from-port` 是**当前正在服务的端口**（脚本断言它的 unit 处于 active、且 nginx 里有它），`--to-port` 是**新的空闲端口**（断言 nginx 里没有它，并把新版本 slot 挂到这里）。`--old-unit` 必须等于 `jigsaw-web@{from_port}.service`。所以本轮正确的是 `--from-port 3104 --to-port 3103 --old-unit jigsaw-web@3104.service`。**传反会在第一个断言就失败、不会造成任何破坏**（失败点在 `app.mkdir` 之前，无残留目录）。
   - 脚本**没有 `--archive` 参数**，运行包路径由 sha256 前 16 位推导：`/tmp/jigsaw-nook-<sha256前16位>.tar.gz`。

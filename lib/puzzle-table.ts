@@ -12,7 +12,7 @@ type Notice = (message:string)=>void;
 // layer, the dirty rectangle and the per-group network claims bounded, and it
 // matches the room engine's eight-lease allowance with room to spare.
 export const MULTI_SELECT_LIMIT=12;
-export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
+export type TableNetwork={canAcquire?:(id:number)=>boolean;canAcquireAll?:(ids:number[])=>boolean;acquire:(id:number)=>Promise<boolean>;acquireAll?:(ids:number[])=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
   board:ReturnType<typeof boardFor>;
@@ -171,7 +171,7 @@ export class PuzzleTable {
     this.didMultiSelect=this.dragIds.length>1;
     const ownerName=this.dragIds.map(id=>this.remoteOwners[id]?.name).find(Boolean);
     if(ownerName){this.notice(`${ownerName} 正在移动这组拼块`);return;}
-    if(this.dragIds.some(id=>this.network?.canAcquire?.(id)===false))return;
+    if(this.network?.canAcquireAll?.(this.dragIds)===false)return;
     this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';
     if(this.network){const serial=++this.claimSerial;void this.acquireSelected(serial,this.dragIds);}
   }
@@ -185,8 +185,22 @@ export class PuzzleTable {
     return [...this.selectedExtra];
   }
   private async acquireSelected(serial:number,ids:number[]){
-    // Local pointer motion begins immediately. Only a denied claim cancels it.
-    for(const id of ids){const ok=await this.network!.acquire(id);if(!ok&&serial===this.claimSerial){this.dropDrag();this.canvas.style.cursor='grab';this.draw();return;}}
+    // Local pointer motion begins immediately. Only a denied claim cancels it, and the
+    // claim is one request for the whole selection, so a refusal never leaves part of
+    // the selection locked to this player.
+    const network=this.network;if(!network)return;
+    const ok=network.acquireAll?await network.acquireAll(ids):await this.claimOneByOne(network,ids);
+    if(!ok&&serial===this.claimSerial){this.dropDrag();this.canvas.style.cursor='grab';this.draw();}
+  }
+  /** Fallback for a transport without batch claims; releases what it took before bailing. */
+  private async claimOneByOne(network:TableNetwork,ids:number[]){
+    const taken:number[]=[];
+    for(const id of ids){
+      const ok=await network.acquire(id);
+      if(!ok){for(const held of taken)network.release(held);return false;}
+      taken.push(id);
+    }
+    return true;
   }
   private dropDrag(){this.drag=null;this.dragIds=[];this.dragOffsets.clear();}
   moveSelectionTo(dx:number,dy:number){
