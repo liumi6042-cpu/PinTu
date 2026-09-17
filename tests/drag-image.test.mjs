@@ -16,8 +16,14 @@ test('drag cache is stable across long movement and bounded at extreme zoom',()=
   // reports how far it drifted, so 10,800 frames of movement still rasterize once.
   for(let i=0;i<10800;i++){group.dx+=.01;group.dy-=.02;assert.ok(draw());}
   assert.equal(paints,1);assert.equal(allocated.length,1);assert.equal(copies.length,10801);
-  assert.equal(copies.at(-1)[2],copies[0][2],'the cached bitmap is drawn from its own origin');
-  assert.equal(copies.at(-1)[3],copies[0][3]);
+  // The draw position must track the accumulated drift (108 right, 216 up) — the
+  // floating overlay follows the pointer. An earlier bug compared the live layout
+  // string to the live group positions, which are always equal, so the drift was
+  // always zero and a dragged selection stayed frozen at its first position.
+  // drawImage args are [image, x, y, w, h], so the position lives at [1] and [2].
+  const [firstX,firstY]=[copies[0][1],copies[0][2]],[lastX,lastY]=[copies.at(-1)[1],copies.at(-1)[2]];
+  assert.ok(Math.abs(lastX-(firstX+108))<1e-6,`draw x follows the drift: ${lastX} vs ${firstX+108}`);
+  assert.ok(Math.abs(lastY-(firstY-216))<1e-6,`draw y follows the drift: ${lastY} vs ${firstY-216}`);
   assert.equal(draw(100),false);assert.equal(allocated.length,1,'oversized textures are not allocated');assert.equal(allocated[0].width,0);
   assert.ok(draw(3));cache.clear();assert.ok(allocated.every(image=>image.width===0&&image.height===0));
  }finally{globalThis.document=previous;}

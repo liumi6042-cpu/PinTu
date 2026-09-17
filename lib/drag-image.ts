@@ -37,7 +37,7 @@ export class DragImage {
   }
   if(!this.image)return false;
   // How far the selection moved since the bitmap was rasterized, in device units.
-  const moved=this.offset===layout?[0,0]:this.drift(layout,groups);
+  const moved=this.offset===layout?[0,0]:this.drift(groups);
   if(presentation){
    const {host,camera}=presentation;
    if(this.image.parentElement!==host){this.image.className='dragged-piece-image';this.image.setAttribute('aria-hidden','true');host.appendChild(this.image);}
@@ -51,9 +51,13 @@ export class DragImage {
   return true;
  }
  // Every carried group moves by the same delta, so any one of them reports how
- // far the cached bitmap has to shift.
- private drift(layout:string,groups:readonly Group[]){
-  const before=layout.split('|')[0].split(',').map(Number),first=groups[0];
+ // far the cached bitmap has to shift. `this.offset` is the layout string frozen
+ // at rasterization time; comparing it to the group's *current* position gives the
+ // real delta. (Passing the live `layout` here instead was a bug: it is built from
+ // the same current positions as `groups[0]`, so the subtraction was always zero
+ // and the floating overlay never moved during a drag.)
+ private drift(groups:readonly Group[]){
+  const before=this.offset.split('|')[0].split(',').map(Number),first=groups[0];
   return Number.isFinite(before[0])&&first?[first.dx-before[0],first.dy-before[1]]:[0,0];
  }
  clear(){if(this.image){this.image.remove?.();this.image.width=0;this.image.height=0;}this.image=null;this.pieces=null;this.key='';this.offset='';}

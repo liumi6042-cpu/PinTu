@@ -1,6 +1,11 @@
 # 本项目图片库约定
 
-- 2026-09-17 上面两条改动**已上线**，线上为 `releases/20260917-22/app`（应用 Git `2c7945d`，运行包 sha256 `b4c86592ebf26ae86c2492cef9cdf96735a24267b2ab1e9ec5c90360c100997c`，268,125,508 字节 / 2913 文件，`verified:true`、`dirty:false`），`jigsaw-web@3104.service` 活跃、nginx 指向 3104，3103 已排空停止，回退版本为 `20260917-17`。
+- 2026-09-17 **修复「拖动时拼块消失、松手又出现」**（用户报告：「我选中的拼图块拖动的时候会消失，然后停止拖动又会出现」）。根因在 `lib/drag-image.ts` 的 `drift()`：它拿**当帧的 `layout` 字符串**（由当前 `groups` 位置现场拼出）去和**同一份当前 `groups[0].dx/dy`** 相减，两边永远相等，位移恒为 `[0,0]`。后果是浮动合成层（`.dragged-piece-image`）在拖动全程被锚死在首次栅格化的位置：主画布刻意不画被拖的拼块（交给浮层），浮层又不动 → 视觉上「拖动时消失」；松手后走整景重画路径，拼块在新位置出现 →「松手又出现」。**这个 bug 是多选功能上线时就有的**，不是本轮改动引入；自动吸附删除后用户才稳定复现并报告。修法一行：`drift()` 改用 `this.offset`（栅格化时刻冻结的布局串）与当前 `groups[0]` 相减。
+  - **验证必须真浏览器跑**（`work/probe-drag2.mjs` 模式：Playwright + 本机 Chrome，扫若干候选点位到 `.dragged-piece-image` 出现为止，断言按下→移动后的 `transform` 位移等于指针位移）。修复前 transform 在按下/移动两帧**完全相同**；修复后位移精确等于 `(80,50)`。**只靠单测测不出这个 bug**：旧的 `drag-image.test.mjs` 把「位移恒零、绘制点不动」当正确行为断言了（`copies.at(-1)[2]===copies[0][2]`），错误行为被测试钉死。已改为断言绘制位置跟随累计漂移（10,800 帧 × .01/.02 → x+108/y−216，浮点误差用 `1e-6` 容差）。
+  - **`drawImage` 的参数下标极易搞错**：`(...args)` 里 `args[0]` 是 image，**`args[1]`=x、`args[2]`=y、`args[3]`=w、`args[4]`=h**。本轮断言先写成了 `[2]/[3]`，实际取到的是 y 和 w，得出「-216」的假象差点误导排查方向。
+  - 隔离环境跑 Playwright 的办法：`npm install playwright-core` 装进 `C:\Users\Administrator\.workbuddy\binaries\node\workspace\`（目录不存在要先建），脚本里用 `createRequire('file:///C:/Users/Administrator/.workbuddy/binaries/node/workspace/')` 加载（**ESM 不认 `NODE_PATH`**），浏览器用 `chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'})`，不必下载 Playwright 自带 Chromium。
+  - `npm run local` 起的是**生产构建**（`vinext start`），改源码后必须重新 build 再重启，改完直接刷新页面看不到效果。
+  - 2026-09-17 上面两条改动**已上线**，线上为 `releases/20260917-22/app`（应用 Git `2c7945d`，运行包 sha256 `b4c86592ebf26ae86c2492cef9cdf96735a24267b2ab1e9ec5c90360c100997c`，268,125,508 字节 / 2913 文件，`verified:true`、`dirty:false`），`jigsaw-web@3104.service` 活跃、nginx 指向 3104，3103 已排空停止，回退版本为 `20260917-17`。
   - 端口：`--from-port 3103`（**当前正在服务**）、`--to-port 3104`（空闲），`--old-unit jigsaw-web@3103.service`。本轮一次通过。
   - 线上验收：`/`、`/gallery`、`/lobby`、`/help`、`/api/health` 全 200（`/zh`、`/en` 不是路由，404 属正常）。客户端分片 `puzzle-app-*.js` 里 `selectFacing`／`autoSelect` **计数均为 0**、`dragMembers` 存在；`home-navigation-*.js` 里 `groupIds` 与 `请先放下当前拼块` 均在——两条修复都确实进了线上包。
   - **真实端到端验收（直连 `127.0.0.1:3104`，绕开 CDN 限流）**：建房 → `claimMany` 一次带走 `[0,1,2]` 三组 → **返回 200** 且三组租约全部落到该玩家 → `drop` 200。这正是故障的最小复现路径，故线上已确认修好。
