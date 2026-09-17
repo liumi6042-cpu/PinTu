@@ -163,7 +163,11 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             ticket = json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'mountain-lake-reflection-hd-v3', 'pieces': count, 'guestSecret': secrets.token_hex(32), 'initialState': 'seed-v1'}, actor, 201)
             assert 'groups' not in ticket['room']['puzzle'] and len(json.dumps(ticket)) < 1600
             actor['token'] = ticket['token']; path = '/api/rooms/' + ticket['room']['id']
-            assert len(json_request(3138, path, None, actor)['puzzle']['groups']) == count
+            # Catalog rooms are fitted to the picture, so this 2:1 landscape plays
+            # 24x12=288 at the 300 level and 38x26=988 at the 1000 level, not the
+            # requested count. Assert the board the ticket promised was delivered.
+            grid = ticket['room']['puzzle']
+            assert len(json_request(3138, path, None, actor)['puzzle']['groups']) == grid['cols'] * grid['rows']
             head = get(3138, '/room/' + ticket['room']['id'])[1].decode().partition('</head>')[0]
             assert '/puzzles/mountain-lake-reflection-hd-v3-' + kind + '-' in head
         print('Isolated Linux: old rooms, cross-version moves/chat, resolution policy, SSR delivery and all assets passed.', flush=True)
