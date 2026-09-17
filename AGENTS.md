@@ -1,5 +1,22 @@
 # 本项目图片库约定
 
+- 2026-09-17 **整块回退：删除「多选拖动」，并恢复最初的拖动渲染方式**（用户原话：「你把这一套功能删除吧，恢复一开始的不能多选的样子，原来的拖动」）。**本条一次性覆盖下方四条既有约定**，把它们全部作废：
+  1. 第 205 行那条「拖动时把拼块组缓存为独立小图层、通过 CSS 移动；普通指针帧不得重绘桌面」的**浮动图层约定**；
+  2. 多选功能的完整条目（含 `MULTI_SELECT_LIMIT`、`dragIds`、共享位移、缓存键、Ctrl+A 等）；
+  3. 「自动吸附邻居」条目；
+  4. 「拖动时拼块消失」的 `drift()` 修复条目（该修复随图层一起删除，已无意义）。
+  - **为什么回退**：浮动图层虽然把每帧开销从约 9.8ms 降到 0.023ms，但它把拼块位置从「一份数据」改成了「锚点 + 位移」两处相减，连续引出两个线上故障（多选上线后全部拼块都拖不动、拖动时拼块消失）。维护成本与出故障的概率都明显偏高，用户明确要求回到简单的那套。
+  - **用户知情并接受代价**：回退会把 2026-09-13 反馈过的**拖动卡顿**一并带回来（原始路径每帧要还原新旧脏矩形、再重画拼块；`tests/large-puzzle.test.mjs` 里那句「fallback drag restores the old and new footprints」断言的就是这个行为）。这是用户在被告知权衡后主动选择的，**不要以「性能更好」为由再把浮动图层加回来**。
+  - 具体做法（基线很干净，可精确回退）：
+    - `lib/puzzle-table.ts` ← `f816ee4~1`（该文件自 `f816ee4~1` 之后的改动**只有**浮动图层与三个多选提交，所以直接切回基线即等于「原始拖动 + 无多选」）。
+    - `lib/room-client.ts`、`lib/room-engine.ts` ← `a99269a~1`（`room-engine.ts` 用 `a99269a~1` 而非更早，是为了保留 `fcb4e84`/`f263972` 两个无关改动）。
+    - 其余文件（`lib/i18n.ts`、`app/puzzle-app.tsx`、三个测试文件）因混有无关改动，改用**按提交反向套用**：`git diff <c>~1 <c> -- <file> | git apply -R`，顺序从新到旧。`tests/puzzle-table-render.test.mjs` 需要依次反向 `2c7945d` → `c1bd884` → `f816ee4`。
+    - 删除 `lib/drag-image.ts`、`tests/drag-image.test.mjs`、`tests/drag-multiselect.test.mjs`；从 `app/sound-control.css` 移除 `.dragged-piece-image` 规则。
+  - **`f816ee4` 是混合提交，不能整条 revert**：它同时含拖动图层与「音效/暖光柔化」。本次**只回退拖动那部分**，音效改动（`lib/snap-sound.ts`、`app/sound-control.*`、`content/locales/en.json` 的 `柔和轻触声`、`docs/connection-feedback.md`、`tests/connection-feedback.test.mjs`）**全部保留**。以后要退这条提交务必先分辨。
+  - 保底：回退前的状态打了标签 `pre-multiselect-rollback-20260917-2331`，需要时可比对或整体恢复。
+  - 回退后 `lib/puzzle-table.ts` 的形态：`render()` 在拖动时用 `previousDragRect` 从 `this.background` 还原旧、新两块脏矩形，然后 `if(group)this.renderGroup(c,group)` **直接把拼块画在当前坐标上**；`dragRect(group)` 收单数组，`carriedIds`/`dragIds`/`selectedExtra`/`claimMany` 全部不存在。`room-client.ts` 的 `active` 回到**单槽** `DragTask|null`，`room-engine.ts` 的 `RoomAction` 回到只有 `claim`（无 `claimMany`/`groupIds`）。
+  - 验证：`tsc --noEmit` 干净；`check:images` 40 张通过；`test:release` 2/2；`puzzle-table-render`＋`large-puzzle`＋`room-engine` **19/19**。
+
 - 2026-09-17 上面的拖拽浮层修复**已上线**，线上为 `releases/20260917-23/app`（应用 Git `2f38c48`，运行包 sha256 `5f96832135aa4ae6921528c5d38fc537a7766470a0a8fb9a387efdec70233807`，268,125,591 字节 / 2913 文件，`verified:true`、`dirty:false`），`jigsaw-web@3103.service` 活跃、nginx 指向 3103，3104 已排空停止，回退版本为 `20260917-22`。
   - 端口：`--from-port 3104`（**当前正在服务**）、`--to-port 3103`（已空闲），`--old-unit jigsaw-web@3104.service`。**注意端口是往返复用的**——每上线一次就在 3103/3104 之间翻一次，所以每次都要先 `systemctl is-active` + `ss -ltn` 确认哪个在服务、哪个空闲，不能照抄上一轮的命令。
   - 线上验收：`/`、`/gallery`、`/lobby`、`/help`、`/api/health` 全 200。客户端分片 `puzzle-app-tt9bDXFV.js` 里含 `offset.split('|')[0].split`——即修复后的 `drift()`（改用冻结的 `this.offset`），修复确实进了线上包。

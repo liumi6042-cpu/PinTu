@@ -5,11 +5,6 @@ import { retryDelay } from './request-backoff';
 import { successfulDrop } from './connection-feedback';
 export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
 type Position = { dx: number; dy: number };
-// How many groups one player may hold at the same time on the server. Must match
-// `DRAG_LEASE_GROUPS` in the room engine, and must be at least as large as a full
-// multi-piece selection (`MULTI_SELECT_LIMIT` in puzzle-table), because one gesture
-// claims its whole selection up front.
-const DRAG_LEASE_LIMIT = 12;
 type DragTask = {
   id: number; seq: number; granted: boolean; canceled: boolean; lastMoveAt: number;
   latest: Position | null; ending: ({ type: 'drop' } & Position) | { type: 'release' } | null;
@@ -33,12 +28,7 @@ export class RoomClient {
   private retryAt = 0;
   private receivedAt = Date.now();
   private drags = new Map<number, DragTask>();
-  // The tasks one gesture is holding. A single-piece drag is a batch of one, which
-  // is why the old single-slot field worked for it; a multi-piece selection claims
-  // several groups in turn, so the batch has to be a set rather than one slot.
-  // `batched` is only false before the first claim of a gesture, and a new gesture
-  // may only start once the previous batch has fully drained.
-  private active = new Set<DragTask>();
+  private active: DragTask | null = null;
   private previousDrag: Promise<void> = Promise.resolve();
   private organizing = false;
 
@@ -87,7 +77,7 @@ export class RoomClient {
       // An unconfirmed local drag is deliberately protected from older poll results.
       if (task.granted && !task.ending && s.leases[task.id]?.playerId !== this.ticket.playerId) {
         task.canceled = true; task.wake?.();
-        this.active.delete(task);
+        if (this.active === task) this.active = null;
         this.table?.cancelNetworkDrag(task.id);
       }
     }
@@ -113,7 +103,7 @@ export class RoomClient {
     if (status !== 409 && status !== 400) {
       this.connected = false; this.failures++;
       for (const task of this.drags.values()) { task.canceled = true; task.grant(false); task.wake?.(); }
-      this.active.clear();
+      this.active = null;
       if (this.table) { this.table.networkReady = false; this.table.cancelNetworkDrag(); }
     }
     this.emit();
@@ -121,15 +111,7 @@ export class RoomClient {
   attach(table: PuzzleTable) {
     this.table = table; this.stopped = false;
     table.network = {
-      // A gesture may grow its own batch up to the lease ceiling, but a *new*
-      // gesture must wait for the previous batch to drain. That keeps one player's
-      // movements ordered without refusing the later groups of a multi-selection.
-      canAcquire: id => this.connected && !this.organizing && !this.drags.has(id) && this.drags.size < DRAG_LEASE_LIMIT,
-      // A selection is claimed in one request. Claiming group by group would race the
-      // server's "one gesture at a time" rule and leak a lease on every refusal.
-      canAcquireAll: ids => this.connected && !this.organizing
-        && ids.every(id => !this.drags.has(id)) && this.drags.size + ids.length <= DRAG_LEASE_LIMIT,
-      acquireAll: ids => this.acquireAll(ids),
+      canAcquire: id => this.connected && !this.organizing && this.active === null && !this.drags.has(id) && this.drags.size < 8,
       acquire: id => this.acquire(id), move: (id, dx, dy) => this.move(id, dx, dy),
       drop: (id, dx, dy) => this.drop(id, dx, dy), release: id => this.release(id),
     };
@@ -151,111 +133,14 @@ export class RoomClient {
     } catch (error) { this.fail(error); }
     finally { if (!this.stopped) this.pollTimer = setTimeout(() => void this.poll(), Math.max(this.retryAt-Date.now(),this.connected ? roomPollDelay(this.drags.size > 0 || Object.keys(this.snapshot.leases).length > 0, this.idlePolls, typeof document !== 'undefined' && document.hidden) : Math.min(4000, 800 * this.failures))); }
   }
-  /**
-   * Claims a whole selection with one request. Every id in the batch gets its own
-   * DragTask (movement and dropping stay per group), but they share one claim
-   * round-trip: either the server leases all of them or it leases none, so a refused
-   * gesture can never leave half a selection locked to us.
-   */
-  acquireAll(ids: number[]): Promise<boolean> {
-    const wanted = [...new Set(ids)];
-    if (!wanted.length) return Promise.resolve(false);
-    if (!this.connected || this.organizing) return Promise.resolve(false);
-    if (wanted.some(id => this.drags.has(id))) return Promise.resolve(false);
-    if (this.drags.size + wanted.length > DRAG_LEASE_LIMIT) return Promise.resolve(false);
-    const tasks: DragTask[] = [];
-    for (const id of wanted) {
-      let finish!: () => void;
-      const finished = new Promise<void>(resolve => { finish = resolve; });
-      tasks.push({ id, seq: 0, granted: false, canceled: false, lastMoveAt: -Infinity,
-        latest: null, ending: null, wake: null, finished, finish, grant: () => {} });
-    }
-    // Reserve immediately so incoming snapshots cannot pull the local pieces backward.
-    const previous = this.previousDrag;
-    for (const task of tasks) { this.drags.set(task.id, task); this.active.add(task); }
-    let settle!: (ok: boolean) => void;
-    const claimed = new Promise<boolean>(resolve => { settle = resolve; });
-    this.previousDrag = this.runBatch(tasks, previous, settle);
-    return claimed;
-  }
-  /**
-   * Claims a batch in one request, then runs each task's movement loop in id order so
-   * one player's movements stay ordered. A refusal leases nothing, so the reserved
-   * batch is released wholesale and no task can dangle.
-   */
-  private async runBatch(tasks: DragTask[], previous: Promise<void>, settle: (ok: boolean) => void) {
-    let leased = false;
-    let chain = previous;
-    try {
-      await previous;
-      if (this.stopped || tasks.some(t => t.canceled)) { settle(false); return; }
-      const claimed = await this.request({ type: 'claimMany', groupIds: tasks.map(t => t.id) });
-      this.receive(claimed);
-      if (this.stopped || tasks.some(t => t.canceled)) { settle(false); return; }
-      leased = true;
-      for (const task of tasks) { task.granted = true; task.grant(true); chain = this.runClaimed(task, chain); }
-      settle(true);
-    } catch (failure) {
-      settle(false);
-      for (const task of tasks) task.grant(false);
-      this.fail(failure);
-      for (const task of tasks) this.table?.cancelNetworkDrag(task.id);
-    } finally {
-      if (!leased) {
-        // Nothing was leased, so forget the reserved batch outright.
-        for (const task of tasks) {
-          if (this.drags.get(task.id) === task) this.drags.delete(task.id);
-          this.active.delete(task);
-          task.finish();
-        }
-      }
-    }
-  }
-  /** The movement loop for a task whose lease is already held. */
-  private async runClaimed(task: DragTask, previous: Promise<void>) {
-    let error: unknown;
-    try {
-      await previous;
-      if (this.stopped || task.canceled || task.ending?.type === 'release') return;
-      while (!this.stopped && !task.canceled) {
-        if (task.ending) {
-          // Drop has priority over unsent movement. At most one movement is in flight.
-          const before = task.ending.type === 'drop' ? this.snapshot.puzzle.groups.find(g => g.id === task.id) : undefined;
-          const result = await this.request(task.ending.type === 'drop'
-            ? { type: 'drop', groupId: task.id, dx: task.ending.dx, dy: task.ending.dy, seq: ++task.seq }
-            : { type: 'release', groupId: task.id });
-          this.drags.delete(task.id);
-          this.receive(result, true);
-          if (!this.stopped && successfulDrop(before, result.puzzle, task.id)) this.table?.playConnectionSound?.();
-          return;
-        }
-        if (task.latest) {
-          const delay = 60 - (performance.now() - task.lastMoveAt);
-          if (delay > 0) { await this.waitForMove(task, delay); continue; }
-          const latest = task.latest; task.latest = null;
-          task.lastMoveAt = performance.now();
-          const result = await this.request({ type: 'move', groupId: task.id, ...latest, seq: ++task.seq });
-          this.receive(result);
-          continue;
-        }
-        await this.waitForMove(task);
-      }
-    } catch (failure) { error = failure; }
-    finally {
-      if (this.drags.get(task.id) === task) this.drags.delete(task.id);
-      this.active.delete(task);
-      if (error) { this.table?.cancelNetworkDrag(task.id); this.fail(error); }
-      task.finish();
-    }
-  }
   acquire(id: number): Promise<boolean> {
-    if (!this.connected || this.organizing || this.drags.has(id) || this.drags.size >= DRAG_LEASE_LIMIT) return Promise.resolve(false);
+    if (!this.connected || this.organizing || this.active || this.drags.has(id) || this.drags.size >= 8) return Promise.resolve(false);
     let grant!: (ok: boolean) => void; let finish!: () => void;
     const granted = new Promise<boolean>(resolve => { grant = resolve; });
     const finished = new Promise<void>(resolve => { finish = resolve; });
     const task: DragTask = { id, seq: 0, granted: false, canceled: false, lastMoveAt: -Infinity, latest: null, ending: null, wake: null, finished, finish, grant };
     // Reserve immediately so incoming snapshots cannot pull the local piece backward.
-    this.drags.set(id, task); this.active.add(task);
+    this.drags.set(id, task); this.active = task;
     const previous = this.previousDrag; this.previousDrag = finished;
     void this.runDrag(task, previous);
     return granted;
@@ -298,7 +183,7 @@ export class RoomClient {
     finally {
       task.grant(false);
       if (this.drags.get(task.id) === task) this.drags.delete(task.id);
-      this.active.delete(task);
+      if (this.active === task) this.active = null;
       if (error) { this.table?.cancelNetworkDrag(task.id); this.fail(error); }
       // Reconcile denied/expired claims, including other players' authoritative offsets.
       if (!this.stopped) {
@@ -323,20 +208,20 @@ export class RoomClient {
   private drop(id: number, dx: number, dy: number) {
     const task = this.drags.get(id); if (!task) return Promise.resolve();
     task.latest = null; task.ending = { type: 'drop', dx, dy };
-    this.active.delete(task);
+    if (this.active === task) this.active = null;
     task.wake?.(); return task.finished;
   }
   private release(id: number) {
     const task = this.drags.get(id); if (!task) return;
     task.latest = null; task.ending = { type: 'release' };
-    this.active.delete(task);
+    if (this.active === task) this.active = null;
     task.wake?.();
   }
   private stop() {
     this.stopped = true;
     if (this.pollTimer) clearTimeout(this.pollTimer);
     for (const task of this.drags.values()) { task.canceled = true; task.grant(false); task.wake?.(); }
-    this.active.clear(); this.table?.cancelNetworkDrag();
+    this.active = null; this.table?.cancelNetworkDrag();
   }
   async organize() {
     if(this.organizing)throw new Error('正在整理，请稍候。');

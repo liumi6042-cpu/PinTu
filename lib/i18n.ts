@@ -84,14 +84,11 @@ function englishText(text:string):string{
   if((match=text.match(/^(一起)?拼对了！已归位 (\d+) \/ (\d+) 片$/)))return `${match[1]?'Nice teamwork':'Nice fit'}! ${match[2]} / ${match[3]} pieces placed`;
   if((match=text.match(/^已整理 (\d+) 块散片，组合保持完整$/)))return `Arranged ${match[1]} loose pieces. Connected groups stayed together.`;
   if((match=text.match(/^(.+) 正在移动这组拼块$/)))return `${match[1]} is moving this group`;
-  if((match=text.match(/^第 (\d+) 行第 (\d+) 列已选中 (\d+) 组，拖动即可整组移动。按住 Shift 点选可加减。$/)))return `Row ${match[1]}, column ${match[2]}: ${match[3]} groups selected. Drag to move them together. Shift-click adds or removes.`;
-  if((match=text.match(/^已全选桌上的 (\d+) 组拼块，拖动即可整组移动。$/)))return `All ${match[1]} groups on the table selected. Drag to move them together.`;
-  if((match=text.match(/^桌面上没有可选的散片。$/)))return 'No loose pieces to select.';
   if((match=text.match(/^(.+)暂时锁定$/)))return `${englishText(match[1])} is locked for now`;
   if((match=text.match(/^抽到了「(.+)」。选好片数后就能开始。$/)))return `You got “${englishText(match[1])}”. Choose a piece count to begin.`;
   if((match=text.match(/^(.+)完成(?:庆祝|效果)预览$/)))return `${englishText(match[1])} completion preview`;
   if((match=text.match(/^(.+)，向下拉或点击$/)))return `${englishText(match[1])}. Pull down or click`;
-  if((match=text.match(/^(.+)拼图桌。/)))return `${englishText(match[1])} puzzle table. Drag pieces to connect. Scroll to zoom; drag empty space to pan. N selects a piece, Shift or Ctrl click selects several, arrows move them, Shift makes fine adjustments, Ctrl+A selects everything, and Enter snaps it.`;
+  if((match=text.match(/^(.+)拼图桌。/)))return `${englishText(match[1])} puzzle table. Drag pieces to connect. Scroll to zoom; drag empty space to pan. N selects a piece, arrows move it, Shift makes fine adjustments, and Enter snaps it.`;
   return text;
 }
 // UI boundary only: IDs, stored state and player names keep their original values.

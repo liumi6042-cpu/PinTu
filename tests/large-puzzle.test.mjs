@@ -73,7 +73,7 @@ test('2000 piece dragging reuses the stationary scene, culls offscreen pieces an
     table=new PuzzleTable(canvas,state,{naturalWidth:8000,naturalHeight:6000},()=>{},()=>{});
     assert.equal(table.picture.width,7500);assert.equal(table.picture.height,6000,'native image detail must survive the 5:4 crop');
     table.width=1500;table.height=1100;table.camera={x:0,y:0,z:1};
-    const group=state.groups[0];moveGroup(state,group.id,0,0);table.drag={id:group.id,x:0,y:0,dx:0,dy:0};table.dragIds=[group.id];
+    const group=state.groups[0];moveGroup(state,group.id,0,0);table.drag={id:group.id,x:0,y:0,dx:0,dy:0};
     assert.ok(table.sprites.canvas.width*table.sprites.canvas.height<8_300_000);
     table.render();const backgroundDraws=table.background.stats.images.length;assert.ok(backgroundDraws>1900);
     canvas.stats.images=[];moveGroup(state,group.id,1,1);table.render();
@@ -107,7 +107,7 @@ test('background switching preserves a live 2000-piece drag and refreshes its ca
     const state=createPuzzle('seaside',50,40,2),canvas=fakeCanvas();
     table=new PuzzleTable(canvas,state,{naturalWidth:1402,naturalHeight:1122},()=>updates++,()=>{});
     table.width=1500;table.height=1100;table.camera={x:17,y:23,z:1};
-    table.selected=0;table.drag={id:0,x:0,y:0,dx:state.groups[0].dx,dy:state.groups[0].dy};table.dragIds=[0];
+    table.selected=0;table.drag={id:0,x:0,y:0,dx:state.groups[0].dx,dy:state.groups[0].dy};
     table.remoteOwners={1:{name:'同伴',color:'#56aabb'}};
     table.network={acquire:async()=>{networkCalls++;return true;},move:()=>networkCalls++,drop:async()=>{networkCalls++;},release:()=>networkCalls++};
     table.render();const before=JSON.stringify(state),camera=table.camera,drag=table.drag,sprites=table.sprites,picture=table.picture;
