@@ -2,7 +2,7 @@ import { applyRoomUpdate, roomPollDelay, type RoomUpdate } from './room-sync';
 import type { RoomSnapshot, RoomAction } from './room-engine';
 import type { PuzzleTable } from './puzzle-table';
 import { retryDelay } from './request-backoff';
-import { successfulDrop } from './connection-feedback';
+import { successfulDrop,successfulRemoteConnection } from './connection-feedback';
 export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
 type Position = { dx: number; dy: number };
 type DragTask = {
@@ -66,10 +66,11 @@ export class RoomClient {
     if (!recovery.ok) throw new Error(full.error || '连接暂时中断');
     return full;
   }
-  private receive(s: RoomSnapshot, force = false) {
+  private receive(s: RoomSnapshot, force = false, soundRemote = true) {
     if (this.stopped || s.revision < this.revision || (s.revision === this.revision && s.serverTime < this.snapshot.serverTime)) return;
     const showFeedback=this.connected&&this.revision>=0;
-    const changed = s.puzzle.groups !== this.snapshot.puzzle.groups;
+    const beforeGroups=this.snapshot.puzzle.groups;
+    const changed = s.puzzle.groups !== beforeGroups;
     const elapsedChanged = s.puzzle.elapsed !== this.state.elapsed;
     this.revision = s.revision; this.snapshot = s; this.receivedAt = Date.now();
     this.connected = true; this.failures = 0; this.message = '房间已连接';
@@ -90,7 +91,10 @@ export class RoomClient {
     if (this.table) {
       this.table.networkReady = true;
       if (changed || force || ownersKey !== this.ownersKey) {
-        this.table.syncRemote(s.puzzle, owners, new Set([...this.drags.values()].filter(t => !t.canceled).map(t => t.id)),showFeedback);
+        const protectedIds=new Set([...this.drags.values()].filter(t => !t.canceled).map(t => t.id));
+        const teammateConnected=showFeedback&&soundRemote&&successfulRemoteConnection(beforeGroups,s.puzzle,protectedIds);
+        this.table.syncRemote(s.puzzle, owners, protectedIds,showFeedback);
+        if(teammateConnected)this.table.playConnectionSound('teammate');
       } else if (elapsedChanged) { this.state.elapsed = s.puzzle.elapsed; }
     } else { this.state.groups = structuredClone(s.puzzle.groups); this.state.elapsed = s.puzzle.elapsed; }
     this.ownersKey = ownersKey;
@@ -162,10 +166,10 @@ export class RoomClient {
             ? { type: 'drop', groupId: task.id, dx: task.ending.dx, dy: task.ending.dy, seq: ++task.seq }
             : { type: 'release', groupId: task.id });
           this.drags.delete(task.id);
-          this.receive(result, true);
+          this.receive(result, true, false);
           // A polling response may arrive before this acknowledgement. Sound still
           // belongs to this successful local drop, never to general room updates.
-          if(!this.stopped&&successfulDrop(before,result.puzzle,task.id))this.table?.playConnectionSound?.();
+          if(!this.stopped&&successfulDrop(before,result.puzzle,task.id))this.table?.playConnectionSound?.('local');
           return;
         }
         if (task.latest) {

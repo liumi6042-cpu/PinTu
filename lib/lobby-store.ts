@@ -58,11 +58,8 @@ async function queryRoomCards(database:D1DatabaseSession,ownerId?:string,onlyOwn
  const now=Date.now(),where=onlyOwned?"d.owner_id=? AND d.visibility IN ('private','public') AND d.slot IS NULL":ownerId?"(d.owner_id=? OR (d.visibility!='solo' AND (EXISTS (SELECT 1 FROM json_each(r.data,'$.participants') participant WHERE participant.key=?) OR EXISTS (SELECT 1 FROM json_each(r.data,'$.members') member WHERE json_extract(member.value,'$.accountId')=? OR json_extract(member.value,'$.guestId')=?))))":'d.visibility=\'public\' AND d.completed_at IS NULL';
  const query=database.prepare('SELECT '+summaryColumns+' FROM puzzle_room_directory d JOIN puzzle_rooms r ON r.id=d.room_id WHERE '+where+' AND NOT EXISTS(SELECT 1 FROM puzzle_room_moderation m WHERE m.room_id=r.id AND m.closed=1) AND d.expires_at>? ORDER BY lastPlayedAt DESC'+(ownerId?'':' LIMIT 24'));
  const result=await (onlyOwned?query.bind(now-ONLINE_MS,ownerId,now):ownerId?query.bind(now-ONLINE_MS,ownerId,ownerId,ownerId,ownerId,now):query.bind(now-ONLINE_MS,now)).all<CardRow>();
- // Catalog artwork is carded for everyone. A room playing an uploaded picture is
- // carded too: the card carries the title and progress only, never the picture
- // bytes, so a public upload table can be listed and joined by any visitor.
- // `customImage` is still attached for its owner alone; other players receive
- // the picture from the room snapshot after they are admitted.
- return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>({...(row.customImageData&&ownerId?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
+ // Uploaded public rooms expose only safe image metadata. The card requests its
+ // separate 480px preview; neither original nor preview bytes enter this JSON.
+ return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>({...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
 }
 export async function managedRooms(ownerId:string){return roomCards(ownerId,true);}

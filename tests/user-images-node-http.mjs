@@ -36,8 +36,9 @@ try{
  assert.equal((await call('/api/user-images/'+id,{action:'delete'},owner.cookie)).status,409);
  assert.equal((await call('/api/user-images/'+id,{action:'delete'},stranger.cookie)).status,404);
  assert.equal((await call('/api/member-rooms/'+roomId,{visibility:'public'},owner.cookie)).status,200,'an upload room can be switched to the lobby');
- const card=(await call('/api/lobby')).data.rooms.find(room=>room.id===roomId);assert.ok(card,'a public upload room is listed in the lobby');assert.equal(card.customImage,undefined,'the lobby card never carries the picture bytes');assert.equal(card.customTitle,true);assert.equal(card.title,ticket.room.title);
+ const lobbyResponse=await call('/api/lobby'),card=lobbyResponse.data.rooms.find(room=>room.id===roomId);assert.ok(card,'a public upload room is listed in the lobby');assert.deepEqual(card.customImage,{id,title:image.title,width:image.width,height:image.height},'the lobby receives thumbnail metadata without image bytes');assert.ok(!JSON.stringify(lobbyResponse.data).includes('RIFF'),'the lobby JSON never carries WebP bytes');assert.equal(card.customTitle,true);assert.equal(card.title,ticket.room.title);
  const publicUrl=image.src+'?room='+roomId;
+ const anonymousPreview=await raw(publicUrl+'&preview=1');assert.equal(anonymousPreview.status,200,'an anonymous lobby card can read only the public preview');assert.match(anonymousPreview.headers.get('Cache-Control'),/^public, max-age=60/);
  assert.equal((await raw(publicUrl,undefined,stranger.cookie)).status,200,'a public upload room lets any visitor read the picture it discloses');
  assert.equal((await raw(image.src,undefined,stranger.cookie)).status,404,'without a room reference the picture stays private');
  assert.equal((await call('/api/member-rooms/'+roomId,{visibility:'private'},owner.cookie)).status,200,'and switched back to private');

@@ -31,6 +31,10 @@ export function successfulDrop(before:Pick<Group,'pieces'|'locked'>|undefined,af
  const group=after.groups.find(g=>g.id===groupId);
  return !!group&&(group.locked||group.pieces.length>before.pieces.length)&&before.pieces.every(id=>group.pieces.includes(id));
 }
+export function successfulRemoteConnection(before:readonly Group[],after:PuzzleState,protectedIds:ReadonlySet<number>){
+ const previous=new Map(before.map(group=>[group.id,group]));
+ return after.groups.some(group=>!protectedIds.has(group.id)&&successfulDrop(previous.get(group.id),after,group.id));
+}
 // Same tab geometry as pathFor, limited to the shared right/bottom edge.
 export function connectionPath(piece:Piece,cols:number,rows:number,side:1|2){
  const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows,d=Math.min(w,h)*.23;

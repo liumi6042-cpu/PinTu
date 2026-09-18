@@ -2,10 +2,11 @@ import { DOUBLE_CLICK_PCM16,DOUBLE_CLICK_SAMPLE_RATE } from './double-click-data
 
 export const SNAP_SOUND_KEY='together-puzzle:snap-sound:v1';
 export const SOUND_MERGE_MS=180;
-export type SoundPreferences={enabled:boolean;volume:number};
-export const DEFAULT_SOUND:SoundPreferences={enabled:false,volume:.25};
+export type SoundSource='local'|'teammate';
+export type SoundPreferences={enabled:boolean;teammates:boolean;volume:number};
+export const DEFAULT_SOUND:SoundPreferences={enabled:true,teammates:true,volume:.25};
 export function soundPreferences(raw:string|null):SoundPreferences{
- try{const value=JSON.parse(raw||'null');if(!value||typeof value.enabled!=='boolean'||typeof value.volume!=='number'||!Number.isFinite(value.volume))return {...DEFAULT_SOUND};return {enabled:value.enabled,volume:Math.max(0,Math.min(1,value.volume))};}catch{return {...DEFAULT_SOUND};}
+ try{const value=JSON.parse(raw||'null');if(!value||typeof value.enabled!=='boolean'||typeof value.volume!=='number'||!Number.isFinite(value.volume))return {...DEFAULT_SOUND};return {enabled:value.enabled,teammates:typeof value.teammates==='boolean'?value.teammates:true,volume:Math.max(0,Math.min(1,value.volume))};}catch{return {...DEFAULT_SOUND};}
 }
 // Exact PCM from the chosen C audition, decoded once when audio is enabled.
 // Keep the source sample rate; AudioContext resamples for the output device.
@@ -25,8 +26,8 @@ export class SnapSound{
    if(this.context.state==='suspended')await this.context.resume();
   }catch{/* A browser without audio can still play normally. */}
  }
- async play(){
-  const requested=performance.now();if(this.disposed||!this.settings.enabled||!this.settings.volume||document.hidden||requested-this.last<SOUND_MERGE_MS)return;
+ async play(source:SoundSource='local'){
+  const requested=performance.now();if(this.disposed||!this.settings.enabled||(source==='teammate'&&!this.settings.teammates)||!this.settings.volume||document.hidden||requested-this.last<SOUND_MERGE_MS)return;
   this.last=requested;await this.unlock();
   const context=this.context;if(this.disposed||!this.settings.enabled||document.hidden||!context||context.state!=='running'||performance.now()-requested>SOUND_MERGE_MS)return;
   try{this.stop();const voice=context.createBufferSource();voice.buffer=this.buffers[this.variant++%this.buffers.length];voice.connect(this.gain!);voice.onended=()=>{voice.disconnect();if(this.voice===voice)this.voice=null;};this.voice=voice;voice.start();}catch{/* Optional feedback never interrupts a drop. */}

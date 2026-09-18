@@ -16,6 +16,7 @@ import { preloadPuzzleImage } from '@/lib/puzzle-image-loading';
 import {puzzleImageSource} from '@/lib/puzzle-image-source';
 import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
 import {accountLoginUrl,publicPuzzleReturnTo} from '@/lib/account-return';
+import {customPhoto} from '@/lib/custom-images';
 
 export default function PublicLobby(){
  const language=useLanguage();
@@ -51,17 +52,14 @@ export default function PublicLobby(){
   <div className="lobby-filters"><div className="filter-tabs">{[{id:'all',name:'所有拼图'},{id:'active',name:'有人在拼'},{id:'open',name:'可以加入'}].map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{t(item.name)}</button>)}</div><label className="lobby-search"><Search size={18}/><input aria-label={t('搜索公开拼图')} placeholder={t('搜索喜欢的画面')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
   {error&&<p className="form-error" role="alert">{t(error)}</p>}
   {!ready?<div className="community-empty"><RefreshCw className="loading-icon" size={28}/><p>{t('正在铺开公开桌面…')}</p></div>:visible.length?<div className="public-grid public-tiled-grid">{visible.map((room,index)=>{
-   // A room playing an uploaded picture has no catalog entry. Its card shows the
-   // uploader's title and a neutral placeholder instead of the picture, which
-   // only becomes visible after joining.
-   const photo=RESTORABLE_PHOTOS.find(p=>p.id===room.imageId);
-   const uploadOnly=!photo&&!!room.customTitle,title=photo?photo.title:room.title,category=photo?photo.category:'玩家上传';
+   const catalogPhoto=RESTORABLE_PHOTOS.find(p=>p.id===room.imageId),uploadedPhoto=room.customImage?customPhoto(room.customImage,room.id):null;
+   const photo=catalogPhoto||uploadedPhoto,uploadOnly=!catalogPhoto&&!!room.customTitle,title=catalogPhoto?catalogPhoto.title:room.title,category=catalogPhoto?catalogPhoto.category:'玩家上传';
    const progress=Math.round(room.placed/room.pieces*100),full=room.players>=8;
    const elapsed=room.startedAt===null?0:Math.max(0,Math.floor((now+offset-room.startedAt)/1000));
    const joinLabel=t(full?'已满员':room.acceptingNew===false?'老朋友继续':'加入拼图');
-   return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else if(photo)preloadPuzzleImage(puzzleImageSource(photo,room.pieces));}} aria-label={t(title)+' · '+t(full?'已满员':'点击图片，加入拼图')}>
+   return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else if(catalogPhoto)preloadPuzzleImage(puzzleImageSource(catalogPhoto,room.pieces));}} aria-label={t(title)+' · '+t(full?'已满员':'点击图片，加入拼图')}>
     <div className="public-picture">{photo?<img src={photo.thumbSrc} alt={t(title)} loading={index<3?'eager':'lazy'}/>:<span className="public-picture-upload" aria-hidden="true"><ImagePlus size={30}/></span>}<span className="picture-count">{room.pieces.toLocaleString()} {t('片')}</span><span className={'live-chip'+(room.players?' is-active':'')}><i/>{t(full?'已满员':room.acceptingNew===false?'暂停接待新玩家':room.players?'正在拼图':'等你开拼')}</span><div className="public-picture-stats"><span aria-label={t('拼图计时')}><Clock3 size={16}/><time>{clockLabel(elapsed)}</time></span><span aria-label={t('在线人数')}><Users size={16}/><strong>{room.players}/8</strong></span></div></div>
-    <div className="public-card-body"><div className="public-title"><h2>{photo&&!room.customTitle?t(photo.title):room.title}</h2><ArrowUpRight size={19}/></div><div className="public-card-bottom"><span>{t(category)} · {progress}% {t('已完成')}</span><span className="public-join-label">{uploadOnly?t('玩家上传'):joinLabel}</span>{uploadOnly&&<span className="public-upload-note">{t('加入后可见图片')}</span>}</div><div className="room-progress" aria-hidden="true"><span style={{width:progress+'%'}}/></div></div>
+    <div className="public-card-body"><div className="public-title"><h2>{catalogPhoto&&!room.customTitle?t(catalogPhoto.title):room.title}</h2><ArrowUpRight size={19}/></div><div className="public-card-bottom"><span>{t(category)} · {progress}% {t('已完成')}</span><span className="public-join-label">{uploadOnly?t('玩家上传'):joinLabel}</span></div><div className="room-progress" aria-hidden="true"><span style={{width:progress+'%'}}/></div></div>
    </a></article>;
   })}</div>:<div className="community-empty"><Search size={30}/><h2>{t(rooms.length?'还没有符合条件的桌面':'还没有公开房间，来开第一桌吧。')}</h2><button className="secondary" onClick={()=>{setFilter('all');setQuery('');}}>{t('看看全部桌面')}</button></div>}
   <a href="/gallery?mode=public" className="create-table-link"><Plus size={20}/><span>{t('创建公开房间')}</span><ArrowUpRight size={20}/></a>

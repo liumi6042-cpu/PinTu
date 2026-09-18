@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import { createPuzzle,dropGroup,piecesFor,boardFor,pathFor } from '../lib/puzzle-engine.ts';
-import { newConnections,successfulDrop,connectionPath,CONNECTION_GLOW_MS } from '../lib/connection-feedback.ts';
+import { newConnections,successfulDrop,successfulRemoteConnection,connectionPath,CONNECTION_GLOW_MS } from '../lib/connection-feedback.ts';
 import { doubleClickSamples,soundPreferences,SnapSound,SOUND_MERGE_MS } from '../lib/snap-sound.ts';
 import {ConnectionGlowRenderer} from '../lib/connection-glow.ts';
 
@@ -16,6 +16,8 @@ test('only newly joined edges glow; wrong drops, arrangement, locked placement a
  const moved=structuredClone(state);moved.groups[0].dx+=100;assert.deepEqual(newConnections(state.groups,moved),[]);
  const placed=structuredClone(state);placed.groups.find(g=>g.id===2).locked=true;assert.ok(successfulDrop(state.groups.find(g=>g.id===2),placed,2));assert.deepEqual(newConnections(state.groups,placed),[]);
  assert.equal(successfulDrop(undefined,state,0),false);
+ assert.equal(successfulRemoteConnection(before,state,new Set()),true);
+ assert.equal(successfulRemoteConnection(before,state,new Set([0])),false,'a pending local drop is not classified as a teammate connection');
 });
 test('large merges stay bounded and shared-edge paths follow the existing tabs',()=>{
  const state=createPuzzle('test',50,40,72),before=structuredClone(state.groups);state.groups=[{id:0,pieces:before.flatMap(g=>g.pieces),dx:0,dy:0,locked:true}];
@@ -23,9 +25,11 @@ test('large merges stay bounded and shared-edge paths follow the existing tabs',
  const pieces=piecesFor(12,9,91),board=boardFor(12,9);
  for(const side of [1,2]){const edge=connectionPath(pieces[0],12,9,side);assert.ok(edge.startsWith(side===1?`M ${board.width/12} 0`:`M ${board.width/12} ${board.height/9}`));assert.ok(pathFor(pieces[0],12,9).includes(edge.slice(edge.indexOf(' L '))));}
 });
-test('sound preferences default to mute and sanitize persisted values',()=>{
- for(const raw of [null,'broken','null','{"enabled":true,"volume":"1"}'])assert.deepEqual(soundPreferences(raw),{enabled:false,volume:.25});
- assert.deepEqual(soundPreferences('{"enabled":true,"volume":0.37}'),{enabled:true,volume:.37});
+test('sound preferences default both switches on and migrate older saved preferences',()=>{
+ for(const raw of [null,'broken','null','{"enabled":true,"volume":"1"}'])assert.deepEqual(soundPreferences(raw),{enabled:true,teammates:true,volume:.25});
+ assert.deepEqual(soundPreferences('{"enabled":true,"volume":0.37}'),{enabled:true,teammates:true,volume:.37});
+ assert.deepEqual(soundPreferences('{"enabled":false,"volume":0.37}'),{enabled:false,teammates:true,volume:.37},'an old explicit master mute stays muted');
+ assert.deepEqual(soundPreferences('{"enabled":true,"teammates":false,"volume":0.37}'),{enabled:true,teammates:false,volume:.37});
  assert.equal(soundPreferences('{"enabled":true,"volume":4}').volume,1);assert.equal(soundPreferences('{"enabled":false,"volume":-3}').volume,0);
 });
 test('glows paint once, follow the camera without repainting, and release all timers and canvases',()=>{
@@ -59,5 +63,5 @@ test('rapid successes merge to one voice, mute stops it, and disposal frees audi
  const saved={document:globalThis.document,AudioContext:globalThis.AudioContext,performance:globalThis.performance};let clock=0,created=0,played=0,stopped=0,closed=0;
  globalThis.document={hidden:false};globalThis.performance={now:()=>clock};
  globalThis.AudioContext=class{state='running';sampleRate=44100;currentTime=0;destination={};constructor(){created++;}createGain(){return {gain:{value:0,setValueAtTime(){}},connect(){},disconnect(){}};}createBuffer(_,n,rate){assert.equal(rate,48000,'source rate stays correct on 44.1kHz output devices');return {getChannelData:()=>new Float32Array(n)};}createBufferSource(){return {connect(){},disconnect(){},start(){played++;},stop(){stopped++;},onended:null};}async resume(){}async close(){closed++;}};
- try{const sound=new SnapSound();await sound.play();assert.equal(created,0);sound.setPreferences({enabled:true,volume:.3});await Promise.all([sound.play(),sound.play(),sound.play()]);assert.equal(played,1);clock=SOUND_MERGE_MS+1;await sound.play();assert.equal(played,2);assert.equal(stopped,1,'a previous voice cannot overlap');sound.setPreferences({enabled:false,volume:.3});assert.equal(stopped,2);clock+=1000;await sound.play();assert.equal(played,2);sound.destroy();assert.equal(closed,1);await sound.play();assert.equal(played,2);}finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
+ try{const sound=new SnapSound();sound.setPreferences({enabled:true,teammates:false,volume:.3});await sound.play('teammate');assert.equal(created,0);await Promise.all([sound.play(),sound.play(),sound.play()]);assert.equal(played,1);clock=SOUND_MERGE_MS+1;await sound.play();assert.equal(played,2);assert.equal(stopped,1,'a previous voice cannot overlap');sound.setPreferences({enabled:false,teammates:true,volume:.3});assert.equal(stopped,2);clock+=1000;await sound.play();assert.equal(played,2);sound.destroy();assert.equal(closed,1);await sound.play();assert.equal(played,2);}finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });

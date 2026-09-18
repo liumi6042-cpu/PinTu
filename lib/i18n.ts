@@ -48,6 +48,7 @@ const extras:Record<string,string>={
  '聊天暂时未连接，正在重试':'Chat disconnected. Reconnecting…','聊天仅用于多人拼图':'Chat is available in multiplayer rooms.',
  '消息游标无效':'Invalid message cursor.','这条消息已发送，请使用新的消息编号':'This message was already sent. Please start a new message.',
  '正在打开拼图…':'Opening your puzzle…',
+ '播放队友拼合音效':'Play teammates’ connection sounds',
  '图片均为本项目原创生成':'Original artwork generated for this project',
  '服务器保存进度 · 完成后自动记录用时':'Progress saved on this server · Completion time recorded automatically',
  '图库':'Gallery','去图库挑选更多':'Explore the full gallery','把喜欢的画面，慢慢拼起来。':'Find a picture. Make it yours.',

@@ -163,7 +163,7 @@ export class PuzzleTable {
   }
   setSoundPreferences(settings:SoundPreferences){this.snapAudio.setPreferences(settings);}
   unlockSound(){void this.snapAudio.unlock();}
-  playConnectionSound(){void this.snapAudio.play();}
+  playConnectionSound(source:'local'|'teammate'='local'){void this.snapAudio.play(source);}
   setTheme(theme:TableTheme){if(this.theme===theme)return;this.theme=theme;this.draw();}
   draw(backgroundChanged=true){this.feedback?.update();if(backgroundChanged){this.backgroundDirty=true;this.gestureView=null;}this.scheduleDraw();}
   private drawGesture(){this.feedback?.update();this.scheduleDraw();}

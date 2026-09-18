@@ -52,3 +52,9 @@ export async function canReadUserImage(id:string,owners:ReadonlySet<string>,room
  if(!row)return false;const room=JSON.parse(row.data) as Room;
  return admittedToRoom(room,id,owners);
 }
+export async function canReadPublicUserImagePreview(id:string,roomId?:string|null){
+ if(!isCustomImageId(id)||!roomId||!/^[a-f0-9]{32}$/.test(roomId))return false;
+ const row=await localDb().prepare("SELECT r.data FROM puzzle_rooms r LEFT JOIN puzzle_room_moderation m ON m.room_id=r.id WHERE r.id=? AND r.expires_at>? AND COALESCE(m.closed,0)=0 AND json_extract(r.data,'$.visibility')='public'").bind(roomId,Date.now()).first<{data:string}>();
+ if(!row)return false;const room=JSON.parse(row.data) as Room;
+ return room.puzzle.imageId===id&&room.customImage?.id===id;
+}

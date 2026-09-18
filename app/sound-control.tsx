@@ -17,6 +17,7 @@ export default function SoundControl({getTable,loading}:{getTable:()=>PuzzleTabl
   <button className="icon-button" aria-label={t(settings.enabled?'拼合音效：已开启':'拼合音效：已关闭')} title={t('拼合音效设置')} aria-expanded={open} onClick={()=>setOpen(!open)}>{settings.enabled?<Volume2 size={17}/>:<VolumeX size={17}/>}</button>
   {open&&<section className="snap-sound-panel" aria-label={t('拼合音效设置')}><div className="snap-sound-heading"><strong>{t('清脆双击')}</strong><button className="icon-button" aria-label={t('关闭音效设置')} onClick={()=>setOpen(false)}><X size={15}/></button></div>
    <label className="snap-sound-enabled"><span>{t('开启拼合音效')}</span><input type="checkbox" checked={settings.enabled} onChange={e=>change({...settings,enabled:e.target.checked})}/></label>
+   <label className="snap-sound-enabled snap-sound-teammates"><span>{t('播放队友拼合音效')}</span><input type="checkbox" checked={settings.teammates} disabled={!settings.enabled} onChange={e=>change({...settings,teammates:e.target.checked})}/></label>
    <label className="snap-sound-volume"><span>{t('音效音量')} <output>{Math.round(settings.volume*100)}%</output></span><input type="range" min="0" max="100" step="1" aria-label={t('音效音量')} aria-valuetext={`${Math.round(settings.volume*100)}%`} value={Math.round(settings.volume*100)} onChange={e=>change({...settings,volume:Number(e.target.value)/100})}/></label>
    <button className="text-button" disabled={!settings.enabled||!settings.volume||loading} onClick={()=>getTable()?.playConnectionSound()}>{t('试听轻扣声')}<Volume2 size={14}/></button>
   </section>}
