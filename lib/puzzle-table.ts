@@ -6,7 +6,9 @@ import { TABLE_PALETTES, type TableTheme } from './table-theme';
 import { newConnections } from './connection-feedback';
 import { ConnectionGlowRenderer } from './connection-glow';
 import { SnapSound,type SoundPreferences } from './snap-sound';
+import { gestureFrameSample,type GestureFrame } from './puzzle-gesture-cache';
 type Notice = (message:string)=>void;
+type RenderView={width:number;height:number;camera:{x:number;y:number;z:number};dpr:number};
 export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
@@ -16,7 +18,8 @@ export class PuzzleTable {
   private feedback:ConnectionGlowRenderer|null=null;private snapAudio=new SnapSound();
   private hintIds:number[]=[]; private hintUntil=0; private underlayUntil=0;
   private underlayTimer:ReturnType<typeof setTimeout>|null=null;
-  private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement;
+  private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement; private gestureCanvas:HTMLCanvasElement;
+  private gestureView:(GestureFrame&{dpr:number})|null=null;
   private backgroundDirty=true; private backgroundDrag:number|null=null;
   private previousDragRect:{x:number;y:number;width:number;height:number}|null=null;
   private theme:TableTheme='beige';
@@ -27,12 +30,13 @@ export class PuzzleTable {
   private pointers=new Map<number,{x:number;y:number}>(); private pinch:{distance:number;z:number;wx:number;wy:number}|null=null;
   private space=false; private raf=0; private timer:ReturnType<typeof setInterval>; private hintTimer:ReturnType<typeof setTimeout>|null=null;
   private resize:ResizeObserver; private abort=new AbortController();
+  private canvasRect={left:0,top:0};
   private update:()=>void; private notice:Notice;
   private stopLanguage:()=>void;
   constructor(canvas:HTMLCanvasElement,state:PuzzleState,image:HTMLImageElement,update:()=>void,notice:Notice) {
     this.canvas=canvas;this.state=normalizePuzzle(state);this.board=boardFor(state.cols,state.rows);this.image=image;this.update=update;this.notice=notice;
     this.ctx=canvas.getContext('2d')!;this.hit=document.createElement('canvas').getContext('2d')!;
-    this.picture=document.createElement('canvas');this.background=document.createElement('canvas');
+    this.picture=document.createElement('canvas');this.background=document.createElement('canvas');this.gestureCanvas=document.createElement('canvas');
     const crop=pictureCrop(image.naturalWidth,image.naturalHeight,this.board.width,this.board.height);
     this.picture.width=Math.round(crop.width);this.picture.height=Math.round(crop.height);
     this.picture.getContext('2d')!.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,this.picture.width,this.picture.height);
@@ -49,8 +53,8 @@ export class PuzzleTable {
     this.timer=setInterval(()=>{if(!this.network&&!this.paused&&!document.hidden&&placedCount(state)<this.pieces.length){state.elapsed++;this.update();}},1000);
     this.stopLanguage=subscribeLanguage(()=>this.draw());
   }
-  private resizeCanvas(){const r=this.canvas.getBoundingClientRect(),oldW=this.width,oldH=this.height;this.width=r.width;this.height=r.height;const dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);if(!oldW)this.fit();else{this.camera.x+=(this.width-oldW)/2;this.camera.y+=(this.height-oldH)/2;}this.draw();}
-  private point(e:{clientX:number;clientY:number}){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+  private resizeCanvas(){const r=this.canvas.getBoundingClientRect(),oldW=this.width,oldH=this.height;this.canvasRect={left:r.left,top:r.top};this.width=r.width;this.height=r.height;const dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);this.finishGesture();if(!oldW)this.fit();else{this.camera.x+=(this.width-oldW)/2;this.camera.y+=(this.height-oldH)/2;}this.draw();}
+  private point(e:{clientX:number;clientY:number}){return {x:e.clientX-this.canvasRect.left,y:e.clientY-this.canvasRect.top};}
   private world(p:{x:number;y:number}){return {x:(p.x-this.camera.x)/this.camera.z,y:(p.y-this.camera.y)/this.camera.z};}
   private groupAt(x:number,y:number):Group|undefined {
     const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
@@ -60,8 +64,8 @@ export class PuzzleTable {
     }
   }
   private down=(e:PointerEvent)=>{
-    if(this.paused||!this.networkReady||e.button>2)return;this.unlockSound();e.preventDefault();this.canvas.focus({preventScroll:true});this.canvas.setPointerCapture(e.pointerId);const p=this.point(e);this.pointers.set(e.pointerId,p);
-    if(this.pointers.size===2){this.release();const [a,b]=[...this.pointers.values()],center={x:(a.x+b.x)/2,y:(a.y+b.y)/2},world=this.world(center);this.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),z:this.camera.z,wx:world.x,wy:world.y};this.pan=null;return;}
+    if(this.paused||!this.networkReady||e.button>2)return;this.unlockSound();e.preventDefault();this.canvas.focus({preventScroll:true});this.canvas.setPointerCapture(e.pointerId);const rect=this.canvas.getBoundingClientRect();this.canvasRect={left:rect.left,top:rect.top};const p=this.point(e);this.pointers.set(e.pointerId,p);
+    if(this.pointers.size===2){this.release();const [a,b]=[...this.pointers.values()],center={x:(a.x+b.x)/2,y:(a.y+b.y)/2},world=this.world(center);this.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),z:this.camera.z,wx:world.x,wy:world.y};this.pan=null;this.beginGestureFrame();this.drawGesture();return;}
     if(this.pointers.size>2)return;
     const wp=this.world(p),g=this.groupAt(wp.x,wp.y);
     if(g&&!this.space&&e.button===0){
@@ -76,16 +80,16 @@ export class PuzzleTable {
       }else{this.selected=g.id;raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';}
     }
     else{this.pan={x:p.x,y:p.y,cx:this.camera.x,cy:this.camera.y};this.canvas.style.cursor='grabbing';}
-    this.draw();
+    if(this.pan){this.beginGestureFrame();this.drawGesture();}else this.draw();
   };
   private move=(e:PointerEvent)=>{
     const p=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,p);
-    if(this.pinch&&this.pointers.size>=2){const [a,b]=[...this.pointers.values()],z=this.clamp(this.pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,this.pinch.distance));this.camera={x:(a.x+b.x)/2-this.pinch.wx*z,y:(a.y+b.y)/2-this.pinch.wy*z,z};this.draw();return;}
+    if(this.pinch&&this.pointers.size>=2){const [a,b]=[...this.pointers.values()],z=this.clamp(this.pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,this.pinch.distance));this.camera={x:(a.x+b.x)/2-this.pinch.wx*z,y:(a.y+b.y)/2-this.pinch.wy*z,z};this.drawGesture();return;}
     if(this.drag){const wp=this.world(p);const dx=this.drag.dx+wp.x-this.drag.x,dy=this.drag.dy+wp.y-this.drag.y;moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);this.draw(false);}
-    else if(this.pan){this.camera.x=this.pan.cx+p.x-this.pan.x;this.camera.y=this.pan.cy+p.y-this.pan.y;this.draw();}
+    else if(this.pan){this.camera.x=this.pan.cx+p.x-this.pan.x;this.camera.y=this.pan.cy+p.y-this.pan.y;this.drawGesture();}
     else if(!this.paused){const wp=this.world(p);this.canvas.style.cursor=this.groupAt(wp.x,wp.y)?'grab':this.space?'grabbing':'default';}
   };
-  private up=(e:PointerEvent)=>{this.pointers.delete(e.pointerId);if(this.pinch){this.pinch=null;this.pan=null;}else this.release();if(this.canvas.hasPointerCapture(e.pointerId))this.canvas.releasePointerCapture(e.pointerId);};
+  private up=(e:PointerEvent)=>{this.pointers.delete(e.pointerId);if(this.pinch){this.pinch=null;this.pan=null;this.finishGesture();this.draw();this.update();}else this.release();if(this.canvas.hasPointerCapture(e.pointerId))this.canvas.releasePointerCapture(e.pointerId);};
   private cancel=(e:PointerEvent)=>{this.pointers.delete(e.pointerId);this.release();this.pinch=null;};
   private release(){
     this.claimSerial++;
@@ -93,7 +97,7 @@ export class PuzzleTable {
     if(this.drag){this.keepOnTable(this.drag.id);const before=this.state.groups.map(g=>({...g,pieces:[...g.pieces]})),result=dropGroup(this.state,this.drag.id,snapTolerance(this.state));
       if(result.snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':result.placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
       this.drag=null;this.update();}
-    this.pan=null;this.canvas.style.cursor='grab';this.draw();
+    this.pan=null;this.finishGesture();this.canvas.style.cursor='grab';this.draw();
   }
   private keepOnTable(id:number){const g=this.state.groups.find(g=>g.id===id);if(!g||g.locked)return;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     const minX=Math.min(...g.pieces.map(id=>this.board.x+this.pieces[id].col*w)),maxX=Math.max(...g.pieces.map(id=>this.board.x+(this.pieces[id].col+1)*w));
@@ -149,9 +153,9 @@ export class PuzzleTable {
     if(until>Date.now())this.underlayTimer=setTimeout(()=>{this.underlayUntil=0;this.draw();},until-Date.now());
   }
   private hintNumber(id:number){return this.hintIds.length&&this.hintUntil>Date.now()?this.hintIds.indexOf(id)+1:0;}
-  private hintMarker(c:CanvasRenderingContext2D,id:number,target=false){
+  private hintMarker(c:CanvasRenderingContext2D,id:number,target=false,z=this.camera.z){
     const number=this.hintNumber(id);if(!number)return;
-    const z=this.camera.z,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     c.strokeStyle=this.theme==='dark'?'#f6d897':'#8b4e30';c.lineWidth=3/z;c.stroke(this.paths[id]);
     if(target){c.fillStyle='#d49b4930';c.fill(this.paths[id]);}
     const radius=Math.min(10/z,w*.3,h*.3);c.beginPath();c.arc(w/2,h/2,radius,0,Math.PI*2);c.fillStyle='#8b4e30';c.fill();
@@ -161,8 +165,11 @@ export class PuzzleTable {
   unlockSound(){void this.snapAudio.unlock();}
   playConnectionSound(){void this.snapAudio.play();}
   setTheme(theme:TableTheme){if(this.theme===theme)return;this.theme=theme;this.draw();}
-  draw(backgroundChanged=true){this.feedback?.update();if(backgroundChanged)this.backgroundDirty=true;if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.render();});}
+  draw(backgroundChanged=true){this.feedback?.update();if(backgroundChanged){this.backgroundDirty=true;this.gestureView=null;}this.scheduleDraw();}
+  private drawGesture(){this.feedback?.update();this.scheduleDraw();}
+  private scheduleDraw(){if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.render();});}
   private render(){
+    if((this.pan||this.pinch)&&!this.drag){this.renderGesture();this.backgroundDirty=true;this.previousDragRect=null;return;}
     if(this.drag){
       const rebuild=this.backgroundDirty||this.backgroundDrag!==this.drag.id||this.background.width!==this.canvas.width||this.background.height!==this.canvas.height;
       if(rebuild){
@@ -196,10 +203,31 @@ export class PuzzleTable {
     const y2=Math.min(this.canvas.height,Math.ceil((y+(this.board.y+group.dy+bottom)*z+margin)*dpr));
     return x2>x1&&y2>y1?{x:x1,y:y1,width:x2-x1,height:y2-y1}:null;
   }
-  private renderScene(c:CanvasRenderingContext2D,exclude?:number){
+  private beginGestureFrame(){
+    const margin=Math.min(96,Math.max(56,Math.min(this.width,this.height)*.16));
+    const width=this.width+margin*2,height=this.height+margin*2,dpr=Math.min(devicePixelRatio||1,1.5);
+    const camera={x:this.camera.x+margin,y:this.camera.y+margin,z:this.camera.z};
+    const pixelWidth=Math.max(1,Math.round(width*dpr)),pixelHeight=Math.max(1,Math.round(height*dpr));
+    if(this.gestureCanvas.width!==pixelWidth)this.gestureCanvas.width=pixelWidth;
+    if(this.gestureCanvas.height!==pixelHeight)this.gestureCanvas.height=pixelHeight;
+    const view={width,height,camera,dpr};this.renderScene(this.gestureCanvas.getContext('2d')!,undefined,view);
+    this.gestureView={width,height,camera:{...camera},dpr};
+  }
+  private renderGesture(){
+    if(!this.gestureView)this.beginGestureFrame();
+    let frame=this.gestureView!,sample=gestureFrameSample(frame,this.camera,this.width,this.height);
+    if(!sample){this.beginGestureFrame();frame=this.gestureView!;sample=gestureFrameSample(frame,this.camera,this.width,this.height);}
+    if(!sample){this.renderScene(this.ctx);return;}
+    const c=this.ctx;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,this.canvas.width,this.canvas.height);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='medium';
+    const sx=Math.max(0,sample.x)*frame.dpr,sy=Math.max(0,sample.y)*frame.dpr;
+    const sw=Math.min(sample.width,frame.width-Math.max(0,sample.x))*frame.dpr,sh=Math.min(sample.height,frame.height-Math.max(0,sample.y))*frame.dpr;
+    c.drawImage(this.gestureCanvas,sx,sy,sw,sh,0,0,this.canvas.width,this.canvas.height);
+  }
+  private finishGesture(){this.gestureView=null;}
+  private renderScene(c:CanvasRenderingContext2D,exclude?:number,view?:RenderView){
     const palette=TABLE_PALETTES[this.theme];
-    const dpr=Math.min(devicePixelRatio||1,2),{x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
-    c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,this.width,this.height);c.save();c.translate(x,y);c.scale(z,z);
+    const dpr=view?.dpr??Math.min(devicePixelRatio||1,2),{x,y,z}=view?.camera??this.camera,width=view?.width??this.width,height=view?.height??this.height,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,width,height);c.save();c.translate(x,y);c.scale(z,z);
     c.fillStyle=palette.board;c.strokeStyle=palette.border;c.lineWidth=1/z;c.beginPath();c.roundRect(this.board.x-9,this.board.y-9,this.board.width+18,this.board.height+18,8);c.fill();c.stroke();
     const underlay=this.underlayUntil>Date.now();
     if(underlay){c.save();c.globalAlpha=.38;c.drawImage(this.picture,this.board.x,this.board.y,this.board.width,this.board.height);c.restore();}
@@ -209,15 +237,16 @@ export class PuzzleTable {
     if(!underlay&&!placedCount(this.state)){c.fillStyle=palette.hint;c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
     c.fillStyle=palette.caption;c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
     const groups=[...this.state.groups.filter(g=>g.locked),...this.state.groups.filter(g=>!g.locked)];
-    for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g);
-    if(this.hintUntil>Date.now())for(const id of this.hintIds){if(!this.state.groups.some(g=>!g.locked&&g.pieces.includes(id)))continue;const p=this.pieces[id];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);this.hintMarker(c,id,true);c.restore();}
+    const renderView={width,height,camera:{x,y,z},dpr};
+    for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g,renderView);
+    if(this.hintUntil>Date.now())for(const id of this.hintIds){if(!this.state.groups.some(g=>!g.locked&&g.pieces.includes(id)))continue;const p=this.pieces[id];c.save();c.translate(this.board.x+p.col*w,this.board.y+p.row*h);this.hintMarker(c,id,true,z);c.restore();}
     c.restore();
   }
-  private renderGroup(c:CanvasRenderingContext2D,g:Group){
+  private renderGroup(c:CanvasRenderingContext2D,g:Group,view?:RenderView){
     if(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id)))return;
-    const {x,y,z}=this.camera,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
-    const useSprites=!!this.sprites&&z*Math.min(devicePixelRatio||1,2)<=this.sprites.scale;
-    const left=-x/z,right=(this.width-x)/z,top=-y/z,bottom=(this.height-y)/z,owner=this.remoteOwners[g.id];
+    const {x,y,z}=view?.camera??this.camera,width=view?.width??this.width,height=view?.height??this.height,dpr=view?.dpr??Math.min(devicePixelRatio||1,2),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
+    const useSprites=!!this.sprites&&z*dpr<=this.sprites.scale;
+    const left=-x/z,right=(width-x)/z,top=-y/z,bottom=(height-y)/z,owner=this.remoteOwners[g.id];
     for(const id of g.pieces){
       const p=this.pieces[id],path=this.paths[id],px=this.board.x+p.col*w+g.dx,py=this.board.y+p.row*h+g.dy;
       if(px+w+pad<left||px-pad>right||py+h+pad<top||py-pad>bottom)continue;
@@ -230,10 +259,9 @@ export class PuzzleTable {
       if(!useSprites||((owner||g.id===this.selected)&&!g.locked)){
         c.strokeStyle=g.locked?'#5c493d66':owner?owner.color:g.id===this.selected?'#ac6246':'#fffbebbb';c.lineWidth=(owner||g.id===this.selected)&&!g.locked?2/z:.85/z;c.stroke(path);
       }
-      if(!g.locked)this.hintMarker(c,id);c.restore();
+      if(!g.locked)this.hintMarker(c,id,false,z);c.restore();
     }
     if(owner){const p=this.pieces[g.pieces[0]];c.save();c.font=`${12/z}px "Microsoft YaHei",sans-serif`;c.fillStyle=TABLE_PALETTES[this.theme].owner;c.fillText(owner.name,this.board.x+p.col*w+g.dx,this.board.y+p.row*h+g.dy-12/z);c.restore();}
   }
-  destroy(){this.stopLanguage();this.release();this.feedback?.destroy();this.snapAudio.destroy();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);if(this.underlayTimer)clearTimeout(this.underlayTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;}
+  destroy(){this.stopLanguage();this.release();this.feedback?.destroy();this.snapAudio.destroy();this.abort.abort();this.resize.disconnect();clearInterval(this.timer);if(this.hintTimer)clearTimeout(this.hintTimer);if(this.underlayTimer)clearTimeout(this.underlayTimer);cancelAnimationFrame(this.raf);this.sprites?.destroy();this.picture.width=0;this.picture.height=0;this.background.width=0;this.background.height=0;this.gestureCanvas.width=0;this.gestureCanvas.height=0;}
 }
-

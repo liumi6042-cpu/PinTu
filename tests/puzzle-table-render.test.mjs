@@ -7,7 +7,7 @@ function fixture(cols=20,rows=15){
   globalThis.devicePixelRatio=2;globalThis.requestAnimationFrame=()=>1;
   const table=Object.create(PuzzleTable.prototype),state=createPuzzle('seaside',cols,rows,91),copies=[];
   const context={setTransform(){},clearRect(){},save(){},restore(){},translate(){},scale(){},drawImage(...args){copies.push(args);}};
-  Object.assign(table,{canvas:{width:2560,height:1600},width:1280,height:800,ctx:context,state,board:boardFor(cols,rows),pieces:piecesFor(cols,rows,91),camera:{x:0,y:0,z:.7},background:{width:0,height:0,getContext:()=>context},backgroundDirty:true,backgroundDrag:null,previousDragRect:null,drag:{id:0},remoteOwners:{},theme:'beige',update(){},notice(){},raf:0});
+  Object.assign(table,{canvas:{width:2560,height:1600},width:1280,height:800,ctx:context,state,board:boardFor(cols,rows),pieces:piecesFor(cols,rows,91),camera:{x:0,y:0,z:.7},background:{width:0,height:0,getContext:()=>context},gestureCanvas:{width:0,height:0,getContext:()=>context},gestureView:null,backgroundDirty:true,backgroundDrag:null,previousDragRect:null,drag:{id:0},pan:null,pinch:null,remoteOwners:{},theme:'beige',update(){},notice(){},raf:0});
   table.state.groups[0].dx=0;table.state.groups[0].dy=0;
   table.renderScene=()=>{table.scenes++;};table.renderGroup=()=>{table.groupsDrawn++;};table.scenes=0;table.groupsDrawn=0;
   return {table,copies};
@@ -41,4 +41,13 @@ test('teammate updates refresh the background; local movement echoes do not dist
   table.syncRemote(echo,{},new Set([0]));table.render(); // protected drag is raised once
   const scenes=table.scenes;table.syncRemote(echo,{},new Set([0]));table.render();
   assert.equal(table.scenes,scenes);assert.equal(table.state.groups.find(g=>g.id===0).dx,0);
+});
+
+test('mobile panning reuses one overscanned frame until the gesture finishes',()=>{
+  const {table,copies}=fixture(50,40);table.drag=null;table.camera={x:0,y:0,z:.85};table.pan={x:0,y:0,cx:0,cy:0};
+  table.beginGestureFrame();assert.equal(table.scenes,1);copies.length=0;
+  for(let frame=0;frame<60;frame++){table.camera.x=frame*.5;table.camera.y=frame*.25;table.render();}
+  assert.equal(table.scenes,1,'panning does not redraw thousands of groups every pointer frame');
+  assert.equal(copies.length,60,'each gesture frame is one cached bitmap copy');
+  table.pan=null;table.finishGesture();table.render();assert.equal(table.scenes,2,'the settled board is redrawn once at full quality');
 });

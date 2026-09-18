@@ -2,7 +2,7 @@
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Puzzle, Moon, Sun, ArrowRight, ArrowLeft, Search, Play, Pause, Images, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, RotateCcw, Check, X, Clock3, Expand, Minimize, LockKeyhole, PartyPopper } from 'lucide-react';
+import { Puzzle, Moon, Sun, ArrowRight, ArrowLeft, Search, Play, Pause, Images, ImagePlus, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, RotateCcw, Check, X, Clock3, Expand, Minimize, LockKeyhole, PartyPopper } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import LanguageSwitch from './language-switch';
@@ -44,6 +44,7 @@ import { preloadPuzzleImage } from '@/lib/puzzle-image-loading';
 import {puzzleImageSource} from '@/lib/puzzle-image-source';
 import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
 import {accountLoginUrl,publicPuzzleReturnTo} from '@/lib/account-return';
+import {USER_IMAGE_UPLOAD_VISIBLE} from '@/lib/feature-visibility';
 export { PHOTOS } from '@/lib/puzzle-catalog';
 
 type Photo = typeof PHOTOS[number];
@@ -104,7 +105,7 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
  return <main className={'collection collection-simple'+(gallery?' gallery-collection':'')}>
   <header className="site-header"><a href="/" className="collection-brand-link"><Brand/></a><HomeNavigation galleryHref={guestPlay?'/gallery':'/gallery?mode='+entryMode}/></header>
   <section className="collection-intro"><p className="eyebrow">{gallery?'THE PICTURE LIBRARY':'A LITTLE SURPRISE'}</p><h1>{t(entryMode==='public'?'创建公开房间':gallery?'把喜欢的画面，慢慢拼起来。':entryMode==='solo'?'下一幅，交给一点小运气。':'随机一幅画，准备一起拼。')}</h1><p className="muted">{t(gallery?'所有画面都在这里，选好片数，点图开拼。':'从整个图库随机挑一张，点一下就开拼。')}</p>
-   {gallery?<div className="gallery-filters"><div className="search-box"><Search size={18}/><input disabled={creating} value={query} onChange={e=>{setQuery(e.target.value);}} placeholder={t('搜索拼图、风景、艺术…')} aria-label={t('搜索拼图')}/>{query&&<button disabled={creating} className="clear-search" aria-label={t('清空搜索')} onClick={()=>{setQuery('');}}><X size={16}/></button>}</div><div className="categories" aria-label={t('拼图分类')}>{CATEGORIES.map(c=><button key={c} disabled={creating} aria-pressed={category===c} className={category===c?'active':''} onClick={()=>{setCategory(c);}}>{t(c)}</button>)}</div></div>:<a className="gallery-entry" href={guestPlay?'/gallery':'/gallery?mode='+entryMode}><Images size={18}/>{t('去图库挑选更多')}<ArrowRight size={17}/></a>}
+   {gallery?<>{USER_IMAGE_UPLOAD_VISIBLE&&<a className="gallery-upload-entry" href="/personal/images"><span className="gallery-upload-icon"><ImagePlus size={27}/></span><span className="gallery-upload-copy"><strong>{t('上传自己的图片制作拼图')}</strong><small>{t('普通账号免费使用，最多保存 10 张。')}</small></span><span className="gallery-upload-action">{t('上传新图片')}<ArrowRight size={17}/></span></a>}<div className="gallery-filters"><div className="search-box"><Search size={18}/><input disabled={creating} value={query} onChange={e=>{setQuery(e.target.value);}} placeholder={t('搜索拼图、风景、艺术…')} aria-label={t('搜索拼图')}/>{query&&<button disabled={creating} className="clear-search" aria-label={t('清空搜索')} onClick={()=>{setQuery('');}}><X size={16}/></button>}</div><div className="categories" aria-label={t('拼图分类')}>{CATEGORIES.map(c=><button key={c} disabled={creating} aria-pressed={category===c} className={category===c?'active':''} onClick={()=>{setCategory(c);}}>{t(c)}</button>)}</div></div></>:<a className="gallery-entry" href={guestPlay?'/gallery':'/gallery?mode='+entryMode}><Images size={18}/>{t('去图库挑选更多')}<ArrowRight size={17}/></a>}
   </section>
   <div className="collection-settings"><PiecePicker count={count} onChange={chooseCount} disabled={creating} roomCreation={entryMode!=='solo'&&!guestPlay}/>{entryMode!=='solo'&&<label className="member-room-name">{t('房间名称（可选）')}<input maxLength={40} value={roomName} onChange={e=>setRoomName(e.target.value)} disabled={creating} placeholder={t('留空使用图片名称')}/><small>{t(entryMode==='public'?'108、300 片无需登录；创建 500 片及以上房间需登录普通账号。':'最多同时进行 3 个私人房间，每桌最多 8 人。')}</small></label>}{roomOptions}</div>
   {entryError&&<p className="form-error collection-error" role="alert">{t(entryError)}</p>}
