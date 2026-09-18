@@ -126,7 +126,7 @@ export default function PersonalSpace() {
     </section>
     <AlertDialog open={!!deleting} onOpenChange={open => { if (!open && !actionLock.current) setDeleting(null); }}><AlertDialogContent>
       <AlertDialogTitle>{t('删除这条拼图记录？')}</AlertDialogTitle>
-      <AlertDialogDescription>{deleting && <><strong>{deleting.customTitle ? deleting.title : t(deleting.title)}</strong><br/>{t(deleting.source === 'local' ? '将清除这幅拼图在当前浏览器的存档。' : '仅从你的个人记录中移除，服务器房间和其他玩家的进度保持不变。')}<br/>{t('已有成绩和成就保留。删除后可在当前页面撤销。')}</>}</AlertDialogDescription>
+      <AlertDialogDescription>{deleting && <><strong>{deleting.customTitle ? deleting.title : t(deleting.title)}</strong><br/>{t(deleting.source === 'local' ? '将清除这幅拼图在当前浏览器的存档。' : '仅从你的个人记录中移除，服务器房间和其他玩家的进度保持不变。')}<br/>{t('已有成就保留。删除后可在当前页面撤销。')}</>}</AlertDialogDescription>
       {deleteError && <p className="form-error" role="alert">{t(deleteError)}</p>}
       <AlertDialogFooter><AlertDialogCancel disabled={!!busy}>{t('取消')}</AlertDialogCancel><button className="primary record-delete-confirm" disabled={!!busy} onClick={() => void deleteRecord()}>{t(busy ? '正在删除…' : '确认删除')}</button></AlertDialogFooter>
     </AlertDialogContent></AlertDialog>
