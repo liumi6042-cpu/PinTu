@@ -1,5 +1,20 @@
 # 本项目图片库约定
 
+- 2026-09-20 **首批「用户提供作品」成批上架图库：一次 7 张**（用户把 7 张自己用 ChatGPT 生成的 1448×1086 画作交来，要求「上传到图库」）。图库已发布图从 **40 张增至 47 张**。
+  - **走 `origin='user-provided'`，不标成项目生成**。这 7 张是网页版 ChatGPT 生成的，不满足 `project-ai-generated` 对 `generation.tool==='image_gen'` ＋ 本站提示词存档的要求，**不得**伪造生成记录（校验脚本会直接报「用户提供图片不得伪造生成记录」）。`source.description` 如实写「由提供者在 ChatGPT 中生成后交给本站」。
+  - **本条局部覆盖下方 2026-09-17「图库开放第二种来源」条目的「首张真实素材」表述**：`user-provided` 不再只有 `cat-video-call-v1` 一张。
+  - **必须同步改对外表述**：`app/service-document.tsx` 原写「图库使用**为项目生成**并登记来源的图片」，放进用户提供的图后已不准确，已改为「图库使用**已登记来源与使用授权**的图片：多数由本站生成，少部分由用户提供并授权公开」（中英一起改）。这正是下方 2026-09-17 条目里「对外表述必须如实…不得笼统声称全部图片均为本站生成」的落地。
+  - **标题是「按可测量事实」取的中性名，不是内容描述**。用户明确表示不想写标题（原话「不写标题，全部空着就行」），但**留空会直接挂构建**——`tests/search-indexing.test.mjs` 有 `assert.notEqual(englishCopy(photo.title), photo.title)`，空标题时两边都是空串，断言必然失败；已向用户说明并让其选择，用户选定「用中性名自动填，今天上线」。所以：
+    - 标题 = **实测主色**命名（`暖棕厚涂 01` / `Warm Sienna Study 01` 等 7 个），
+    - 引导语 `reason` = **实测九宫格细节密度**（哪一格边缘最强就从哪开始），
+    - **副标题只写画风与色调，一个字都不描述画面主体**——因为整个环节没有任何识图能力，写主体就是编造。
+    - **改名成本**：换标题要重跑 `check:images` 并重新出包上线。用户若要正式命名，让他给每张 2–6 字，其余（副标题/引导语/英文）可照旧由实测数据生成。
+  - **审核字段如实写「提供者确认」**，`reviewer` 记为 `提供者确认（provider confirmation）`，`observations` 明确「本条为提供者自述，本站未做逐像素人工复核」。**不得**写成「WorkBuddy visual review（我方已查看原图）」——当前模型读不了图片，那是假话。
+  - **无识图能力这件事已确认无法绕过**（2026-09-20 实测）：模型本身不支持读图；`agent-browser` 只能截图和取页面文本；`buddy-image-processing` 只有 erase/enhance/beauty/restore/matting，无识别描述；派生的子代理继承同一模型，同样读不了图；去 `~/.codex` 用 sha256 反查生成提示词 **0/7 命中**（网页版生成、导出重编码，哈希已变）。**下次再有「帮我描述这些图」，直接告诉用户我需要他给文字，不要再试这些弯路。**
+  - **加图七步**（缺一即构建失败，见下方 2026-09-17 条目）：① `public/puzzles/<id>.png` 真 PNG → ② `content/image-provenance/<id>.json` → ③ `content/puzzle-catalog.json` → ④ `content/puzzle-guidance.json`（真实 width/height，`complexity` 取 1–3、`preferredCount` 现有 40 张**全是 300**）→ ⑤ `content/locales/en.json` 三条英文（标题/副标题/reason，标题的英文必须≠中文）→ ⑥ `scripts/prepare-image-delivery.py`（出 play/thumbnail）＋ `scripts/prepare-optimized-delivery.mjs`（出 optimized）→ ⑦ `npm run check:images`。
+    - 跑 ⑥ 的 python 必须用托管 venv `C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Scripts/python.exe`（**系统 python 没有 Pillow**）。
+    - 本轮实测：`check:images` 通过 47 张；真浏览器验收图库 47 张卡片、7 张新图标题全部显示、缩略图零失败、`azure-blue-study-04` 开 300 片成功、零报错。
+
 - 2026-09-18 **图库上传入口迁移 + 手机 79%–95% 手势性能优化**：用户要求把「自己上传图片」从个人空间移到图库并做成醒目入口，同时解决手机在 79%–95% 缩放区间拖拼块、滑桌面明显掉帧。
   - `/gallery` 标题说明下方、搜索分类上方新增暖纸色 `gallery-upload-entry`，直达 `/personal/images`，明确「普通账号免费、最多 10 张」；`/personal` 删除重复入口。未登录用户仍由既有上传页引导登录，不恢复会员门槛。
   - 保留用户明确要求的**单块拖动 + 单一 Canvas 状态**，没有重新引入已回退的浮动 DOM 图层、多选或双份拼块坐标。拼块拖动继续使用原有新旧脏矩形恢复；同时缓存 Canvas 边界，避免每个 `pointermove` 都触发布局读取。
