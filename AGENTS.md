@@ -1,5 +1,36 @@
 # 本项目图片库约定
 
+- 2026-09-20 **中文化 /zh 上线（中英双版本 + hreflang）**。用户问「中文用户只加『免费拼图』二字行不行」，
+  核查后**没有采纳**：图页 title 实测 **62 字符**，搜索结果约 **60 等效宽度**处截断，再塞中文（中文双宽，
+  4 字≈8 个英文宽度）到 70 会**切掉结尾的品牌/作品名**。改为**独立中文页面**方案。
+  - **根地址保持英文不变**（现有英文 SEO 不丢）；新增 `app/zh/**`：`/zh`、`/zh/gallery`、`/zh/lobby`、
+    `/zh/help`、`/zh/puzzle/[id]`（47 张图全覆盖，共 51 个中文地址）。
+  - `lib/seo.ts` 增加 `ZH_PUBLIC_PAGES`、`zhPath/englishPath/isChinesePath`、`hasChineseVersion`、
+    `zhPageMetadata/zhPuzzleMetadata`；`publicMetadata` 现在发 **hreflang 三方互指**（`en` / `zh-CN` / `x-default`）。
+    纯路径函数移入 **`lib/site-paths.ts`**，避免客户端组件把拼图引擎拖进浏览器包。
+  - `app/sitemap.xml/route.ts` 每条 URL 发双语 + hreflang（实测 **102 条 `<loc>`、51 条 `/zh`**）。
+  - `scripts/notify-search-engines.mjs` 的 `publicUrls` 同步收录 `/zh`（提交数翻倍）。
+  - **语言切换器改为 URL 感知**：`/zh/*` 点 EN 跳英文地址，英文页点「中文」跳 `/zh` 对应地址；
+    **没有中文版的页面**（`/personal`、`/account`、`/membership`、`/room/*`）只在页内切换，不会跳 404。
+    `HomeNavigation` / `CommunityShell` / `SearchIntroduction` / `ServiceFooter` / `AccountForm` /
+    `PuzzleOpening` / `PublicLobby` 的链接改为**按当前地址自动判定**，不再硬编码英文路径。
+  - **中文页有独立服务端渲染内容**（不靠 `englishCopy`）：`app/zh/chinese-navigation.tsx`、
+    `chinese-introduction.tsx`，图页的 h1/副标题/引导语/相关推荐全部中文。中文页上
+    `SearchIntroduction` **主动返回 null**，否则会和中文块打印两遍同样内容。
+  - **已覆盖的旧约定**：`tests/search-indexing.test.mjs` 原来断言「**公开页标题一律不得含中文**」
+    （`!/[\u3400-\u9fff]/.test(m.title.absolute)`）—— 该断言现在**只对英文页生效**，中文页新增
+    「必须含中文、必须唯一、hreflang 必须与英文页完全对称」的断言。这是有意修改，不是弱化。
+  - **已知限制（诚实记录）**：根布局仍输出 `<html lang="en">`（Next 只允许根布局持有 `<html>`，
+    改中文需拆路由组重排全部路由，风险过高）。中文页的 `lang` 靠
+    **`<meta http-equiv="content-language" content="zh-CN">`（无需 JS）+ 客户端 `applyLanguage` 重写
+    `documentElement.lang`**；**纯静态抓取**看到的是 `lang="en"`，能执行 JS 的爬虫看到 `zh-CN`。
+    真正的主信号是 title/description/正文/hreflang，这些已全部就位。
+  - **另一个坑**：vinext 把 `alternates.languages` 输出成全小写的 `rel="alternate"` 但 **`hrefLang` 驼峰**，
+    `grep hreflang` 会**误判为缺失**（HTML 属性名大小写不敏感，DOM 里 `link.hreflang` 取值正常）。
+    校验 hreflang 请用 DOM 属性读取，别用区分大小写的 grep。
+  - **待办**：`/room/*` 内的返回链接（`app/room-play.tsx`、`member-room-gate.tsx`）仍指向英文 `/lobby`
+    —— 房间本身无中文版，暂按共享处理。
+
 - 2026-09-20 **图页标题改为「关键词前置」**：`app/puzzle/[id]/page.tsx` 的 `generateMetadata` 由
   `` `${title} — Free Online Jigsaw Puzzle` `` 改成 `` `Free Online Jigsaw Puzzle — ${title}` ``。
   线上效果：`Free Online Jigsaw Puzzle — Warm Sienna Study 01 | Jigsaw Nook`（`publicMetadata` 会再补 `| Jigsaw Nook`）。

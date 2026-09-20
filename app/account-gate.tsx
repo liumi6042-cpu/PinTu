@@ -2,6 +2,8 @@
 import { PERSONAL_PLAY_VISIBLE } from '@/lib/feature-visibility';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
+import { usePathname } from 'next/navigation';
+import { isChinesePath } from '@/lib/site-paths';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ArrowRight, Puzzle, Eye, EyeOff } from 'lucide-react';
@@ -55,6 +57,8 @@ function AccountForm({ onSuccess, initialError, solo }: {
     solo: boolean;
 }) {
     useLanguage();
+    // Keep a Chinese visitor on the Chinese lobby rather than the English one.
+    const lobbyHref = isChinesePath(usePathname() || '') ? '/zh/lobby' : '/lobby';
     const [register, setRegister] = useState(false), [username, setUsername] = useState(''), [name, setName] = useState(''), [password, setPassword] = useState(''), [visible, setVisible] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(initialError);
     async function submit(e: React.FormEvent) { e.preventDefault(); setError(''); try {
         const input = register ? registration({ username, name, password }) : { username: usernameOf(username), password };
@@ -92,7 +96,7 @@ function AccountForm({ onSuccess, initialError, solo }: {
     {t(error && <p className="form-error" role="alert">{t(error)}</p>)}
     <button className="primary" disabled={busy}>{t(busy ? '正在连接…' : register ? '注册并进入' : '登录并进入')}<ArrowRight size={18}/></button>
    </form>
-   <a className="guest-return-link" href="/lobby">{t("先去公开大厅，无需登录")}<ArrowRight size={16}/></a>
+   <a className="guest-return-link" href={lobbyHref}>{t("先去公开大厅，无需登录")}<ArrowRight size={16}/></a>
    <a className="guest-return-link" href="/account/recover">{t('忘记密码？使用恢复码')}</a>
    <p className="account-note">{t("本地账号 \u00B7 仅用于这台服务器的拼图世界")}</p>
   </section>

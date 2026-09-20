@@ -6,8 +6,10 @@ const origin = 'https://jigsawnook.online';
 const photo = (id, status = 'published', source = 'project-ai-generated') => ({ id, status, origin: source });
 
 test('discovery excludes archived, draft and member-upload images', () => {
+  const paths = ['/', '/lobby', '/gallery', '/help', '/puzzle/lake'];
   const urls = publicUrls([photo('lake'), photo('old', 'archived'), photo('draft', 'draft'), photo('private', 'published', 'member-upload')]);
-  assert.deepEqual(urls, ['/', '/lobby', '/gallery', '/help', '/puzzle/lake'].map(path => origin + path));
+  // Every listed page is submitted twice, once per language.
+  assert.deepEqual(urls, [...paths, ...paths.map(path => '/zh' + (path === '/' ? '' : path))].map(path => origin + path));
 });
 test('manual submission cannot leak rooms, credentials, queries or other domains', () => {
   for (const url of [origin + '/room/secret', origin + '/personal/images', origin + '/gallery?image=lake', origin + '/account', 'https://example.com/', origin + '/puzzle/unknown']) {
@@ -22,8 +24,9 @@ test('initial submission covers all published public puzzle pages', () => {
   // silently goes stale each time a picture is published.
   const published = catalog.filter(photo => ['project-ai-generated', 'user-provided'].includes(photo.origin) && photo.status === 'published');
   const fixed = ['/', '/lobby', '/gallery', '/help'];
-  assert.equal(urls.length, fixed.length + published.length);
+  assert.equal(urls.length, (fixed.length + published.length) * 2);
   assert.equal(new Set(urls).size, urls.length);
   for (const photo of published) assert.ok(urls.includes(origin + '/puzzle/' + photo.id), photo.id);
   for (const path of fixed) assert.ok(urls.includes(origin + path), path);
+  for (const path of [...fixed, ...published.map(photo => '/puzzle/' + photo.id)]) assert.ok(urls.includes(origin + '/zh' + (path === '/' ? '' : path)), 'zh ' + path);
 });

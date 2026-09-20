@@ -14,7 +14,11 @@ export function publicUrls(catalog) {
     assert.match(photo.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     paths.push('/puzzle/' + photo.id);
   }
-  return [...new Set(paths)].map(path => ORIGIN + path);
+  // Every public page also exists in Chinese under /zh, and those pages are new to
+  // search engines, so they are submitted alongside the English ones instead of
+  // waiting for a crawler to stumble onto them.
+  const unique = [...new Set(paths)];
+  return [...unique, ...unique.map(path => '/zh' + (path === '/' ? '' : path))].map(path => ORIGIN + path);
 }
 export function selectUrls(catalog, requested = []) {
   const allowed = new Set(publicUrls(catalog));

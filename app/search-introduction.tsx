@@ -1,8 +1,13 @@
 'use client';
 import { useLanguage } from './language-switch';
+import { usePathname } from 'next/navigation';
+import { isChinesePath } from '@/lib/site-paths';
 import { PHOTOS } from '@/lib/puzzle-catalog';
+// Chinese pages carry their own server-rendered copy, so this section stands down
+// there rather than printing the same three blocks twice (see ChineseIntroduction).
 export default function SearchIntroduction({kind}:{kind:'home'|'lobby'}) {
   const en = useLanguage() === 'en';
+  if (isChinesePath(usePathname() || '')) return null;
   return <section className="search-introduction">
     <p className="section-kicker">JIGSAW NOOK</p>
     <h2>{en ? kind === 'home' ? 'Free online jigsaw puzzles, at your own pace.' : 'How to play a jigsaw puzzle with friends' : kind === 'home' ? '在线拼图，按自己的节奏慢慢来。' : '和朋友一起拼，三步就能开始。'}</h2>
