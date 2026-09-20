@@ -28,6 +28,14 @@
   - **另一个坑**：vinext 把 `alternates.languages` 输出成全小写的 `rel="alternate"` 但 **`hrefLang` 驼峰**，
     `grep hreflang` 会**误判为缺失**（HTML 属性名大小写不敏感，DOM 里 `link.hreflang` 取值正常）。
     校验 hreflang 请用 DOM 属性读取，别用区分大小写的 grep。
+  - **已上线 `releases/20260920-03`**（应用 Git `c0f896c`，运行包 sha256 `a910de0bd285c5c6d3fb8e8d383519bd63defe68e8ed80ad733f14905a91201d`，2939 文件，`verified:true`、`dirty:false`），
+    `jigsaw-web@3104` 活跃、nginx 指向 3104，3103 已排空，回退版本 `20260920-02`。
+    线上验收：10 个页面（5 英 + 5 中）全 200；6 个中文图页/静态页标题与 canonical 正确；**英文标题一字未变**；
+    sitemap 实测 **102 条 `<loc>`（51 条 `/zh`）、306 条 hreflang**；102 条 URL 已提交 IndexNow（含 51 个中文页，返回「该批次已收到」）。
+    线上 hreflang 以标准小写 `hreflang` 输出（本地构建曾见驼峰，两者等价）。
+  - **验证基线**：全量 226 用例中 5 条失败**全部是既有基线**（社区引擎 `maxPerGame` 未定义、迁移 `12!==11`、
+    轮询客户端 `400!==201`、release allowlist 与 local-infrastructure 的 safe-delete 沙箱噪声）—— **本次改动零新增失败**。
+    本机全量测试仍会**卡在用例 200**（环境问题，非本次引入），须看输出文件的最后修改时间判断是否卡死。
   - **待办**：`/room/*` 内的返回链接（`app/room-play.tsx`、`member-room-gate.tsx`）仍指向英文 `/lobby`
     —— 房间本身无中文版，暂按共享处理。
 
