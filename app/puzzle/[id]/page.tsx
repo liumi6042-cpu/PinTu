@@ -7,7 +7,7 @@ export async function generateMetadata({params}:{params:Promise<{id:string}>}) {
   const {id}=await params,photo=PHOTOS.find(p=>p.id===id);
   if(!photo)return {title:'Puzzle not found | Jigsaw Nook',robots:{index:false,follow:false}};
   const title=englishCopy(photo.title);
-  return publicMetadata(puzzlePath(id),`${title} — Free Online Jigsaw Puzzle`,`${englishCopy(photo.subtitle)} Play the ${title} jigsaw online with 108–${maximumPieces(id).toLocaleString('en-US')} pieces in a free public table with friends.`,photo.thumbSrc);
+  return publicMetadata(puzzlePath(id),`Free Online Jigsaw Puzzle — ${title}`,`${englishCopy(photo.subtitle)} Play the ${title} jigsaw online with 108–${maximumPieces(id).toLocaleString('en-US')} pieces in a free public table with friends.`,photo.thumbSrc);
 }
 export default async function Page({params}:{params:Promise<{id:string}>}) {
   const {id}=await params,photo=PHOTOS.find(p=>p.id===id);
