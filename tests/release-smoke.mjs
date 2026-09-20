@@ -24,7 +24,13 @@ try{
   assert.deepEqual(walk(app),[...manifest.files.map(file=>file.path),'release.json'].sort());
   for(const file of manifest.files){const bytes=readFileSync(resolve(app,file.path));assert.equal(bytes.length,file.bytes,file.path);assert.equal(createHash('sha256').update(bytes).digest('hex'),file.sha256,file.path);}
   assert.ok(!existsSync(resolve(app,'public')));assert.ok(!existsSync(resolve(app,'app')));
-  child=spawn(process.execPath,['server.js'],{cwd:app,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,TEMP:process.env.TEMP,NODE_ENV:'production',HOST:'127.0.0.1',PORT:'3137',VINEXT_TRUSTED_HOSTS:'jigsawnook.online',VINEXT_TRUST_PROXY:'1',PUZZLE_PUBLIC_ORIGIN:'https://jigsawnook.online',DATABASE_PATH:resolve(root,'data/puzzle.sqlite'),MIGRATIONS_DIR:resolve(app,'drizzle')}});
+  // The disposable smoke server must not be capped by the public beta capacity.
+  // Opening a public room takes a seat that lives 22s, and these HTTP suites open
+  // one room per 厚涂/平涂 picture (each twice), so the demand grows every time the
+  // gallery does. At the 24-seat default this suite started failing with 429 once
+  // the catalogue reached 16 such pictures. The beta cap is a product limit for real
+  // visitors, not something these tests mean to exercise.
+  child=spawn(process.execPath,['server.js'],{cwd:app,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,TEMP:process.env.TEMP,NODE_ENV:'production',HOST:'127.0.0.1',PORT:'3137',VINEXT_TRUSTED_HOSTS:'jigsawnook.online',VINEXT_TRUST_PROXY:'1',PUZZLE_PUBLIC_ORIGIN:'https://jigsawnook.online',PUZZLE_BETA_CAPACITY:'200',DATABASE_PATH:resolve(root,'data/puzzle.sqlite'),MIGRATIONS_DIR:resolve(app,'drizzle')}});
   child.stdout.on('data',data=>{output+=data;});child.stderr.on('data',data=>{output+=data;});
   const get=path=>fetch('http://127.0.0.1:3137'+path,{headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'},signal:AbortSignal.timeout(5000)});
   let ready=false;
