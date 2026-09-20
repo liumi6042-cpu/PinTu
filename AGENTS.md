@@ -1,5 +1,28 @@
 # 本项目图片库约定
 
+- 2026-09-20 **图页标题改为「关键词前置」**：`app/puzzle/[id]/page.tsx` 的 `generateMetadata` 由
+  `` `${title} — Free Online Jigsaw Puzzle` `` 改成 `` `Free Online Jigsaw Puzzle — ${title}` ``。
+  线上效果：`Free Online Jigsaw Puzzle — Warm Sienna Study 01 | Jigsaw Nook`（`publicMetadata` 会再补 `| Jigsaw Nook`）。
+  **已上线 `releases/20260920-02`**（应用 Git `ef63cd4`，sha256 `49f1c585…`），`jigsaw-web@3103` 活跃，回退版本 `20260920-01`。
+  五个页面全 200；四个抽样图页标题均已前置；47 个图页已通过 `npm run search:notify` 重新提交（status 200）。
+
+  - **用户原本要求「把作品名删掉、只留关键词」，我没照做，原因必须记住**：
+    作品名是**唯一区分 47 个图页的东西**。删掉后所有图页标题都会变成同一条
+    `Free Online Jigsaw Puzzle | Jigsaw Nook` → `tests/search-indexing.test.mjs` 的
+    `assert.ok(!titles.has(m.title.absolute))`（标题必须唯一）**必然失败，出不了包**；
+    而且 47 条重复标题本身就是低质量信号、还会丢掉作品名带来的长尾关键词。已向用户说明并改成「关键词前置」。
+  - **顺带更正一个我先前说错的判断**：图页标题**本来就已经含关键词**（`— Free Online Jigsaw Puzzle`），
+    不是「只写了作品名」。所以「给图页加关键词」这条建议是多余的——**改前先看线上实际 title**，
+    别凭对代码的印象下结论。
+  - 静态页（`/`、`/gallery` 等）走 `lib/seo.ts` 的 `PUBLIC_PAGES`，**已经是关键词在前**，本次未动。
+
+  - SEO 现状实测（供后续参考，别再重复查）：**已被搜索引擎收录**；`robots.txt` 干净且声明 sitemap；
+  sitemap **51 条**（4 静态 + 47 图页）；title/description/2 块 JSON-LD 齐备；每图有英文翻译；
+  **IndexNow 已接入**（key `public/f1c371032d00d04300ada03a4902ef52.txt`）。
+  → **技术 SEO 底子已经不错，剩下的瓶颈是「内容太薄」（47 个图页各只有一张图 + 一句话）和「没有外链」**，
+  这两个都不是装统计工具能解决的。用户若再问「装什么工具能提权重」，先讲清：**统计工具不提升排名，
+  它们只是仪表盘**；真正加权靠内容、外链、技术 SEO。
+
 - 2026-09-20 **首批「用户提供作品」成批上架图库：一次 7 张**（用户把 7 张自己用 ChatGPT 生成的 1448×1086 画作交来，要求「上传到图库」）。图库已发布图从 **40 张增至 47 张**。
   - **走 `origin='user-provided'`，不标成项目生成**。这 7 张是网页版 ChatGPT 生成的，不满足 `project-ai-generated` 对 `generation.tool==='image_gen'` ＋ 本站提示词存档的要求，**不得**伪造生成记录（校验脚本会直接报「用户提供图片不得伪造生成记录」）。`source.description` 如实写「由提供者在 ChatGPT 中生成后交给本站」。
   - **本条局部覆盖下方 2026-09-17「图库开放第二种来源」条目的「首张真实素材」表述**：`user-provided` 不再只有 `cat-video-call-v1` 一张。
