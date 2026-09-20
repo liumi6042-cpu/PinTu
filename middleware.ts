@@ -6,6 +6,11 @@ import { isPublicSearchPage } from './lib/seo';
 export async function middleware(request:NextRequest) {
   const s=settings(),local=!!s.PUZZLE_LOCAL_ORIGIN;
   let response:NextResponse;
+  // The root layout owns <html>, so it cannot read the path itself. Handing it the
+  // path lets it declare the right language in the markup a crawler receives,
+  // which the Content-Language header alone does not cover.
+  const requestHeaders=new Headers(request.headers);
+  requestHeaders.set('x-jigsaw-path',request.nextUrl.pathname);
   if(!local&&(!s.PUZZLE_PUBLIC_ORIGIN||new URL(request.url).origin!==s.PUZZLE_PUBLIC_ORIGIN)) {
     response=NextResponse.json({error:'Service configuration is incomplete.'},{status:503});
   } else {
@@ -17,7 +22,7 @@ export async function middleware(request:NextRequest) {
         if(!ip)return NextResponse.json({error:'Authentication service is unavailable.'},{status:503});
         await securityLimit('auth-ip',ip,40);
       }
-      response=NextResponse.next();
+      response=NextResponse.next({request:{headers:requestHeaders}});
     } catch {
       response=NextResponse.json({error:'Too many requests. Please try again later.'},{status:429,headers:{'Retry-After':'900'}});
     }

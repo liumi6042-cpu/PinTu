@@ -15,6 +15,7 @@ import './ranking-records.css';
 import './service-pages.css';
 import './search-pages.css';
 import './bookmark-site.css';
+import { headers } from 'next/headers';
 import { LanguageProvider } from './language-switch';
 import FeedbackWidget from './feedback-widget';
 export const metadata: Metadata = {
@@ -36,4 +37,11 @@ export const metadata: Metadata = {
     apple: { url: '/apple-touch-icon.png?v=paper-arch-1', sizes: '180x180', type: 'image/png' },
   },
 };
-export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="en" className="paper-theme"><body><LanguageProvider>{children}<FeedbackWidget/></LanguageProvider></body></html>; }
+// The Chinese pages live under /zh, so the middleware passes the path through and
+// the markup declares zh-CN from the first byte. Without the header (a direct
+// render outside the server, e.g. a prerender pass) this stays English.
+export default async function RootLayout({children}:{children:React.ReactNode}) {
+  const path=(await headers()).get('x-jigsaw-path') ?? '/';
+  const lang=path==='/zh'||path.startsWith('/zh/')?'zh-CN':'en';
+  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}<FeedbackWidget/></LanguageProvider></body></html>;
+}

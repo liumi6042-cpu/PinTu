@@ -20,11 +20,17 @@
   - **已覆盖的旧约定**：`tests/search-indexing.test.mjs` 原来断言「**公开页标题一律不得含中文**」
     （`!/[\u3400-\u9fff]/.test(m.title.absolute)`）—— 该断言现在**只对英文页生效**，中文页新增
     「必须含中文、必须唯一、hreflang 必须与英文页完全对称」的断言。这是有意修改，不是弱化。
-  - **已知限制（诚实记录）**：根布局仍输出 `<html lang="en">`（Next 只允许根布局持有 `<html>`，
-    改中文需拆路由组重排全部路由，风险过高）。中文页的 `lang` 靠
-    **`<meta http-equiv="content-language" content="zh-CN">`（无需 JS）+ 客户端 `applyLanguage` 重写
-    `documentElement.lang`**；**纯静态抓取**看到的是 `lang="en"`，能执行 JS 的爬虫看到 `zh-CN`。
-    真正的主信号是 title/description/正文/hreflang，这些已全部就位。
+  - **`<html lang>` 已修正（2026-09-20 同批上线，覆盖上面那条「已知限制」）**：根布局现在按路径声明语言。
+    做法是**中间件把路径透传给根布局**（`requestHeaders.set('x-jigsaw-path', pathname)` +
+    `NextResponse.next({request:{headers:requestHeaders}})`），根布局 `await headers()` 后输出
+    `lang="zh-CN"` 或 `lang="en"`。**实测纯 HTML（无 JS）10 个页面语言全部正确**，
+    不用拆路由组、不动任何路由。代价是根布局变为动态渲染（本站流量极低，可忽略）。
+    `<meta http-equiv="content-language">` 与客户端 `applyLanguage` 保留为双保险。
+  - **顺带修掉一个真问题**：`app/gallery-card.tsx` 硬编码 `/puzzle/<id>`，导致 `/zh/gallery` 的
+    47 张卡片全指向**英文**拼图页；已改为按当前地址判定。现在中文图库 47 条全走 `/zh/puzzle/*`。
+  - **`tests/seo-http.py` 已升级为双语验收**（原来只认 51 条英文 URL、且**自 20260920-01 加图起就已陈旧**：
+    它只统计 `origin=='project-ai-generated'`，漏掉了 7 张用户提供的图）。现在检查 102 页的
+    语言声明、hreflang 对称、双语标题唯一性、中文图库链接指向中文页。**本地实测全绿**。
   - **另一个坑**：vinext 把 `alternates.languages` 输出成全小写的 `rel="alternate"` 但 **`hrefLang` 驼峰**，
     `grep hreflang` 会**误判为缺失**（HTML 属性名大小写不敏感，DOM 里 `link.hreflang` 取值正常）。
     校验 hreflang 请用 DOM 属性读取，别用区分大小写的 grep。
