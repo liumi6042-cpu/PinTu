@@ -1141,5 +1141,89 @@
     "playSrc": "/puzzles/cat-video-call-v1-play-4eb1b2603437.webp",
     "thumbSrc": "/puzzles/cat-video-call-v1-thumbnail-30f2fe02f81c.webp",
     "optimizedSrc": "/puzzles/cat-video-call-v1-optimized-164a8edd1bef.webp"
+  },
+  {
+    "id": "warm-sienna-study-01",
+    "title": "暖棕厚涂 01",
+    "subtitle": "暖棕主调的厚涂作品，色调沉稳温暖。",
+    "category": "厚涂",
+    "src": "/puzzles/warm-sienna-study-01.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/warm-sienna-study-01-play-0e24ddc6007d.webp",
+    "thumbSrc": "/puzzles/warm-sienna-study-01-thumbnail-83c8433cea97.webp",
+    "optimizedSrc": "/puzzles/warm-sienna-study-01-optimized-2b7517a62176.webp"
+  },
+  {
+    "id": "verdant-green-study-02",
+    "title": "青绿厚涂 02",
+    "subtitle": "青绿与米黄交织的厚涂作品，气息清爽。",
+    "category": "厚涂",
+    "src": "/puzzles/verdant-green-study-02.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/verdant-green-study-02-play-6f0432bc8e29.webp",
+    "thumbSrc": "/puzzles/verdant-green-study-02-thumbnail-00741da618ec.webp",
+    "optimizedSrc": "/puzzles/verdant-green-study-02-optimized-faab64119d31.webp"
+  },
+  {
+    "id": "olive-tone-study-03",
+    "title": "橄榄厚涂 03",
+    "subtitle": "橄榄绿主导的厚涂作品，调子沉静。",
+    "category": "厚涂",
+    "src": "/puzzles/olive-tone-study-03.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/olive-tone-study-03-play-352aecdbc17e.webp",
+    "thumbSrc": "/puzzles/olive-tone-study-03-thumbnail-e1a53c85943a.webp",
+    "optimizedSrc": "/puzzles/olive-tone-study-03-optimized-1ec96ac902a4.webp"
+  },
+  {
+    "id": "azure-blue-study-04",
+    "title": "湖蓝厚涂 04",
+    "subtitle": "湖蓝为主、点缀暖红的厚涂作品。",
+    "category": "厚涂",
+    "src": "/puzzles/azure-blue-study-04.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/azure-blue-study-04-play-63b5f5841b11.webp",
+    "thumbSrc": "/puzzles/azure-blue-study-04-thumbnail-83356118108d.webp",
+    "optimizedSrc": "/puzzles/azure-blue-study-04-optimized-0b5d59b89a40.webp"
+  },
+  {
+    "id": "golden-amber-study-05",
+    "title": "暖金厚涂 05",
+    "subtitle": "暖金色调浓郁的厚涂作品，饱和度最高。",
+    "category": "厚涂",
+    "src": "/puzzles/golden-amber-study-05.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/golden-amber-study-05-play-126940c8a987.webp",
+    "thumbSrc": "/puzzles/golden-amber-study-05-thumbnail-1f93f481f000.webp",
+    "optimizedSrc": "/puzzles/golden-amber-study-05-optimized-0c7ebaf3f6ca.webp"
+  },
+  {
+    "id": "sage-green-study-06",
+    "title": "苔绿厚涂 06",
+    "subtitle": "苔绿与米色相间的厚涂作品。",
+    "category": "厚涂",
+    "src": "/puzzles/sage-green-study-06.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/sage-green-study-06-play-917fd2de6235.webp",
+    "thumbSrc": "/puzzles/sage-green-study-06-thumbnail-e6594778920f.webp",
+    "optimizedSrc": "/puzzles/sage-green-study-06-optimized-97b7bc29ce88.webp"
+  },
+  {
+    "id": "grass-green-study-07",
+    "title": "草绿厚涂 07",
+    "subtitle": "草绿为主的厚涂作品，细节分布最均匀。",
+    "category": "厚涂",
+    "src": "/puzzles/grass-green-study-07.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/grass-green-study-07-play-32dcb9f5340b.webp",
+    "thumbSrc": "/puzzles/grass-green-study-07-thumbnail-3c75966233a1.webp",
+    "optimizedSrc": "/puzzles/grass-green-study-07-optimized-e8371ce33774.webp"
   }
 ]

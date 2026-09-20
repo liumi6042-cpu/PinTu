@@ -572,5 +572,54 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "竖版画面，键盘、书架与绿植细节密集。建议先从视频窗口里的三只猫和屏幕边框定位。"
+  },
+  "warm-sienna-study-01": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "画面中央与左上区域细节最密集，建议先从中央偏左处入手。"
+  },
+  "verdant-green-study-02": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "左中到中下一带细节最密集，建议先从画面下方中部开始。"
+  },
+  "olive-tone-study-03": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "中下与右下细节最密集，建议先从画面下方右侧入手。"
+  },
+  "azure-blue-study-04": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "右下与中下细节最密集，建议先从画面右下角开始。"
+  },
+  "golden-amber-study-05": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "右下细节密度最高，建议先从画面右下角入手。"
+  },
+  "sage-green-study-06": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "右侧中部到右下细节较密，建议先从画面右侧入手。"
+  },
+  "grass-green-study-07": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "左半侧细节最密集，建议先从画面左上与左下入手。"
   }
 }
