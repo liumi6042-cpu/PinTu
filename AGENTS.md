@@ -14,6 +14,11 @@
   - **加图七步**（缺一即构建失败，见下方 2026-09-17 条目）：① `public/puzzles/<id>.png` 真 PNG → ② `content/image-provenance/<id>.json` → ③ `content/puzzle-catalog.json` → ④ `content/puzzle-guidance.json`（真实 width/height，`complexity` 取 1–3、`preferredCount` 现有 40 张**全是 300**）→ ⑤ `content/locales/en.json` 三条英文（标题/副标题/reason，标题的英文必须≠中文）→ ⑥ `scripts/prepare-image-delivery.py`（出 play/thumbnail）＋ `scripts/prepare-optimized-delivery.mjs`（出 optimized）→ ⑦ `npm run check:images`。
     - 跑 ⑥ 的 python 必须用托管 venv `C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Scripts/python.exe`（**系统 python 没有 Pillow**）。
     - 本轮实测：`check:images` 通过 47 张；真浏览器验收图库 47 张卡片、7 张新图标题全部显示、缩略图零失败、`azure-blue-study-04` 开 300 片成功、零报错。
+  - **已上线** `releases/20260920-01`（应用 Git `0cf9f8f`，运行包 sha256 `aa796c4c1c2ad9279fd5446248acf2be477859c16a7976a3ebe2055d6500b09c`，290,119,835 字节 / 2926 文件，`verified:true`、`dirty:false`），`jigsaw-web@3104.service` 活跃、nginx 指向 3104，回退版本 `20260918-27`。端口 `--from-port 3103 --to-port 3104`。资产校验 **309 项**（原 288，+21 = 7 图 × play/缩略图/优化版）。线上复验：五个页面全 200、47 张卡片、7 个新标题全对、缩略图零失败、零报错；资源的实际字节数与登记记录逐字节一致（play 2,503,570 / 缩略图 76,686）。
+  - **两个「加图必踩」的坑（本次都踩了）**：
+    1. **`public/puzzles/<id>.png` 原件不对外提供**，线上取它会 **404，这是设计如此**（旧图同样 404）。对外只有 play/缩略图/优化版三种 webp。别把它当故障排查。
+    2. **图库一变大，`release-smoke` 会撞 beta 席位上限而 429**。`app/api/rooms/route.ts` 里**建公开房要占一个席位**（`puzzle_beta_seats`，TTL **22 秒**），而 `tests/painted-cel-gallery-http.mjs` 会**遍历每一张「厚涂/平涂」图各建 2 个公开房**。席位数由 `PUZZLE_BETA_CAPACITY` 决定，未设时默认 **24**（本地模式 `PUZZLE_LOCAL_ORIGIN` 下为 0 即不限）；冒烟服务器的 env **没有** `PUZZLE_LOCAL_ORIGIN`，所以吃到 24 上限。本次把「厚涂/平涂」从 9 张加到 16 张 → 建房需求 18 → 32 个 → 第 25 个起 429，`npm run release` 报 `429 !== 201`。
+       修法：在 `tests/release-smoke.mjs` 给**一次性冒烟服务器**的 env 加 `PUZZLE_BETA_CAPACITY:'200'`（该上限是给真实访客的产品限制，不是这些测试要验证的东西；已确认**没有任何测试**依赖它）。**以后再加图，若 `npm run release` 报 429，先查这里，不要怀疑构建。**
 
 - 2026-09-18 **图库上传入口迁移 + 手机 79%–95% 手势性能优化**：用户要求把「自己上传图片」从个人空间移到图库并做成醒目入口，同时解决手机在 79%–95% 缩放区间拖拼块、滑桌面明显掉帧。
   - `/gallery` 标题说明下方、搜索分类上方新增暖纸色 `gallery-upload-entry`，直达 `/personal/images`，明确「普通账号免费、最多 10 张」；`/personal` 删除重复入口。未登录用户仍由既有上传页引导登录，不恢复会员门槛。
