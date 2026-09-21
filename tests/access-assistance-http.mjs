@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {createPuzzle} from '../lib/puzzle-engine.ts';
 import {PIECE_LOGIN_REQUIRED} from '../lib/piece-access.ts';
 const base=process.argv[2],filename=process.argv[3];
-assert.equal(base,'http://127.0.0.1:3137');assert.match(filename??'',/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle\.sqlite$/);
+assert.match(base,/^http:\/\/127\.0\.0\.1:31\d\d$/,'Run only against the disposable release smoke server');assert.match(filename??'',/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle\.sqlite$/);
 const db=new DatabaseSync(resolve(filename)),id=()=>randomBytes(16).toString('hex'),rooms=[];
 async function request(path,body,actor={}){
  const r=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https','CF-Connecting-IP':'192.0.2.41',Origin:'https://jigsawnook.online',...(body===undefined?{}:{'Content-Type':'application/json'}),...(actor.cookie?{Cookie:actor.cookie}:{}),...(actor.token?{Authorization:'Bearer '+actor.token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(10000)});

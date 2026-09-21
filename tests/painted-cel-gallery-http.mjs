@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {randomBytes} from 'node:crypto';
 import {isPublishedPlayable} from '../scripts/image-origin.mjs';
 const base=process.argv[2];
-assert.equal(base,'http://127.0.0.1:3137','Only run against the disposable release server');
+assert.match(base,/^http:\/\/127\.0\.0\.1:31\d\d$/,'Only run against the disposable release server');
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 const english=JSON.parse(readFileSync(new URL('../content/locales/en.json',import.meta.url),'utf8'));
 const photos=catalog.filter(p=>p.status==='published'&&['厚涂','平涂'].includes(p.category));assert.ok(photos.length>0);

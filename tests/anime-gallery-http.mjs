@@ -4,7 +4,7 @@ import {randomBytes} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {resolve} from 'node:path';
 const base=process.argv[2],filename=process.argv[3];
-assert.equal(base,'http://127.0.0.1:3137','Run only against the disposable release smoke server');
+assert.match(base,/^http:\/\/127\.0\.0\.1:31\d\d$/,'Run only against the disposable release smoke server');
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 assert.match(filename??'',/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle\.sqlite$/);
 const circled=['cel-sunset-train-v1','painted-crimson-rose-v1','painted-amber-autumn-v1','cel-rooftop-breeze-v1'];

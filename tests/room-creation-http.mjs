@@ -7,7 +7,7 @@ import {createFixturePuzzle} from './legacy-fixtures.mjs';
 import {HIGH_PIECES_PAUSED,gridForDimensions} from '../lib/piece-policy.ts';
 import {photoGuidance} from '../lib/play-guidance.ts';
 
-const base=process.argv[2]||'http://127.0.0.1:3137';
+const base=process.argv[2]||'http://127.0.0.1:3137';assert.match(base,/^http:\/\/127\.0\.0\.1:31\d\d$/,'Run only against the disposable release smoke server');
 const local=base.startsWith('http://127.0.0.1:');
 const filename=process.argv[3];
 if(filename&&(!local||!/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle\.sqlite$/.test(filename)))throw Error('Legacy fixtures require an isolated release database');

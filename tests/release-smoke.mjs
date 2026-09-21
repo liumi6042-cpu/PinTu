@@ -6,9 +6,11 @@ import {resolve,sep} from 'node:path';
 import {spawn,spawnSync} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath,pathToFileURL} from 'node:url';
+import {createServer} from 'node:net';
 import {walk,runtimeAssets,TAR} from '../scripts/release-files.mjs';
 import {isPublishedPlayable} from '../scripts/image-origin.mjs';
 
+const freePort=async(start)=>{for(let port=start;port<start+40;port++){const taken=await new Promise(resolve=>{const probe=createServer();probe.once('error',()=>resolve(true));probe.once('listening',()=>probe.close(()=>resolve(false)));probe.listen(port,'127.0.0.1');});if(!taken)return port;}throw new Error('No free port near '+start);};
 const project=fileURLToPath(new URL('..',import.meta.url));
 const archive=resolve(project,'releases/latest.tar.gz');
 const catalog=JSON.parse(readFileSync(resolve(project,'content/puzzle-catalog.json'),'utf8'));
@@ -30,9 +32,10 @@ try{
   // gallery does. At the 24-seat default this suite started failing with 429 once
   // the catalogue reached 16 such pictures. The beta cap is a product limit for real
   // visitors, not something these tests mean to exercise.
-  child=spawn(process.execPath,['server.js'],{cwd:app,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,TEMP:process.env.TEMP,NODE_ENV:'production',HOST:'127.0.0.1',PORT:'3137',VINEXT_TRUSTED_HOSTS:'jigsawnook.online',VINEXT_TRUST_PROXY:'1',PUZZLE_PUBLIC_ORIGIN:'https://jigsawnook.online',PUZZLE_BETA_CAPACITY:'200',DATABASE_PATH:resolve(root,'data/puzzle.sqlite'),MIGRATIONS_DIR:resolve(app,'drizzle')}});
+const port=await freePort(3137);
+  child=spawn(process.execPath,['server.js'],{cwd:app,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,TEMP:process.env.TEMP,NODE_ENV:'production',HOST:'127.0.0.1',PORT:String(port),VINEXT_TRUSTED_HOSTS:'jigsawnook.online',VINEXT_TRUST_PROXY:'1',PUZZLE_PUBLIC_ORIGIN:'https://jigsawnook.online',PUZZLE_BETA_CAPACITY:'200',DATABASE_PATH:resolve(root,'data/puzzle.sqlite'),MIGRATIONS_DIR:resolve(app,'drizzle')}});
   child.stdout.on('data',data=>{output+=data;});child.stderr.on('data',data=>{output+=data;});
-  const get=path=>fetch('http://127.0.0.1:3137'+path,{headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'},signal:AbortSignal.timeout(5000)});
+  const get=path=>fetch('http://127.0.0.1:'+port+path,{headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'},signal:AbortSignal.timeout(5000)});
   let ready=false;
   for(let attempt=0;attempt<60;attempt++){
     if(child.exitCode!==null)throw new Error(output);
@@ -47,15 +50,15 @@ try{
   for(const count of [2000,5000])assert.ok(!gallery.includes('value="'+count+'"'));
   for(const removed of ['class="picture-guidance"','class="picture-advice"','class="detail-note"','gallery-picture-details','About this puzzle'])assert.ok(!gallery.includes(removed),removed);
   for(const photo of published)assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
-  const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
-  const access=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/access-assistance-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  const access=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/access-assistance-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(access.status,0,access.stdout+access.stderr);console.log(access.stdout.trim());
-  const chat=spawnSync(process.execPath,[resolve(project,'tests/room-chat-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  const chat=spawnSync(process.execPath,[resolve(project,'tests/room-chat-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(chat.status,0,chat.stdout+chat.stderr);console.log(chat.stdout.trim());
-  const anime=spawnSync(process.execPath,[resolve(project,'tests/anime-gallery-http.mjs'),'http://127.0.0.1:3137',resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  const anime=spawnSync(process.execPath,[resolve(project,'tests/anime-gallery-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(anime.status,0,anime.stdout+anime.stderr);console.log(anime.stdout.trim());
-  const painted=spawnSync(process.execPath,[resolve(project,'tests/painted-cel-gallery-http.mjs'),'http://127.0.0.1:3137'],{cwd:project,windowsHide:true,encoding:'utf8'});
+  const painted=spawnSync(process.execPath,[resolve(project,'tests/painted-cel-gallery-http.mjs'),'http://127.0.0.1:'+port],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(painted.status,0,painted.stdout+painted.stderr);console.log(painted.stdout.trim());
   for(const url of manifest.runtimeAssets){const response=await get(url);assert.equal(response.status,200,url);const bytes=Buffer.from(await response.arrayBuffer());const entry=manifest.files.find(file=>file.path==='dist/client'+url);assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,url);}
   for(const path of ['/puzzles/emerald-river-valley.png','/.env','/README.md'])assert.equal((await get(path)).status,404,path);
