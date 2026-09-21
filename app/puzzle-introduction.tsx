@@ -4,10 +4,12 @@ import { PHOTOS } from '@/lib/puzzle-catalog';
 import { photoGuidance, recommendedPieces } from '@/lib/play-guidance';
 import { maximumPieces } from '@/lib/piece-policy';
 import { useLanguage } from './language-switch';
+import { usePathname } from 'next/navigation';
+import { isChinesePath } from '@/lib/site-paths';
 import HomeNavigation from './home-navigation';
 import ServiceFooter from './service-footer';
 export default function PuzzleIntroduction({photo}:{photo:typeof PHOTOS[number]}) {
-  const en=useLanguage()==='en',guide=photoGuidance(photo.id),recommended=recommendedPieces(photo.id);
+  const en=isChinesePath(usePathname()||'')?false:useLanguage()==='en',guide=photoGuidance(photo.id),recommended=recommendedPieces(photo.id);
   const related=PHOTOS.filter(p=>p.id!==photo.id&&p.category===photo.category).slice(0,3);
   return <div className="puzzle-introduction-page">
     <header className="site-header"><a className="collection-brand-link" href="/">{t('一起拼图')}</a><HomeNavigation/></header>

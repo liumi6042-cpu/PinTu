@@ -1,5 +1,5 @@
 'use client';
-import { t } from '@/lib/i18n';
+import { useAddressCopy } from '@/lib/address-copy';
 import { useLanguage } from '@/app/language-switch';
 import { usePathname } from 'next/navigation';
 import { isChinesePath,zhPath } from '@/lib/site-paths';
@@ -15,6 +15,7 @@ import { MEMBERSHIP_VISIBLE,PERSONAL_PLAY_VISIBLE } from '@/lib/feature-visibili
 // visitor inside /zh, and the routes that have no Chinese copy stay shared. Deriving
 // it here rather than from a prop means every caller gets the right links.
 export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:string}) {
+    const copy=useAddressCopy();
     useLanguage();
     const zh=isChinesePath(usePathname()||'');
     const zhHref=(href:string)=>{const [path,...query]=href.split('?');return zh?zhPath(path)+(query.length?'?'+query.join('?'):''):href;};
@@ -27,12 +28,12 @@ export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:st
             setAccount(data.account); }).catch(() => { });
         return () => { alive = false; };
     }, []);
-    return <nav className="home-navigation" aria-label={t("主要导航")}>
-  <a href={zh?'/zh/lobby':'/lobby'}><Users size={17}/>{t("公开大厅")}</a>
-  <a href={zhHref(galleryHref)}><Images size={17}/>{t('图库')}</a>
-  <a href="/personal"><UserRound size={17}/>{t(PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录')}</a>
-  {MEMBERSHIP_VISIBLE&&<a href="/membership"><Crown size={17}/>{t("会员")}</a>}
-  <a className="home-account-link" href={account?"/account/security":"/account"}>{account ? account.name : t('登录（可选）')}</a>
+    return <nav className="home-navigation" aria-label={copy("主要导航")}>
+  <a href={zh?'/zh/lobby':'/lobby'}><Users size={17}/>{copy("公开大厅")}</a>
+  <a href={zhHref(galleryHref)}><Images size={17}/>{copy('图库')}</a>
+  <a href="/personal"><UserRound size={17}/>{copy(PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录')}</a>
+  {MEMBERSHIP_VISIBLE&&<a href="/membership"><Crown size={17}/>{copy("会员")}</a>}
+  <a className="home-account-link" href={account?"/account/security":"/account"}>{account ? account.name : copy('登录（可选）')}</a>
   <LanguageSwitch />
   <BookmarkSite />
  </nav>;

@@ -89,7 +89,16 @@ for url in urls:
         entrance=html.split('id="today"')[0]
         assert ('今天的图' if zh else 'Picture of the day') in entrance,(path,'entrance missing its daily link')
         assert ('Picture of the day' if zh else '今天的图') not in entrance,(path,'entrance label is in the other language')
-    if path in ('/gallery','/zh/gallery'):gallery_links[path]=page.links
+    if path in ('/gallery','/zh/gallery'):
+        gallery_links[path]=page.links
+        # The picture names are the whole content of a gallery page, and the markup a
+        # crawler reads has to carry them in the page's own language. The interface
+        # language is only known after the visitor's browser reports it, so copy that
+        # follows it instead of the address leaves English names on the Chinese page.
+        cards=re.findall(r'<a [^>]*href="(/(?:zh/)?puzzle/[^"]+)"[^>]*>([^<]+)</a>',html)
+        assert len(cards)>=len(ids),(path,len(cards),len(ids))
+        for href,name in cards:
+            assert bool(re.search('[\u3400-\u9fff]',name))==zh,(path,href,name)
     if '/puzzle/' in path:
         image_id=path.split('/')[-1]
         assert page.jsonld,path

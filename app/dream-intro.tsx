@@ -1,8 +1,8 @@
 'use client';
-import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 import { usePathname } from 'next/navigation';
 import { isChinesePath } from '@/lib/site-paths';
+import { useAddressCopy } from '@/lib/address-copy';
 import { markLobbyVisited } from '@/lib/entrance-preference';
 
 import { useEffect, useRef, useState } from 'react';
@@ -16,8 +16,11 @@ export default function DreamIntro({ onEnter, dailyTitle }: {
     useLanguage();
     // The link down to the cards below names today's picture, which the server picked
     // in the page's own language. Its label follows the address for the same reason:
-    // t() is the interface language and on the server it is English, which put an
-    // English label next to a Chinese picture name in the Chinese page's HTML.
+    // the interface language is only known after the browser reports it, and while the
+    // server renders t() is English, which put an English label next to a Chinese
+    // picture name in the Chinese page's HTML. The same applies to every other string
+    // on this screen, so all of them go through copy().
+    const copy = useAddressCopy();
     const zhPage = isChinesePath(usePathname() || '');
     const scene = useRef<HTMLElement>(null);
     const stage = useRef<HTMLDivElement>(null);
@@ -122,18 +125,18 @@ export default function DreamIntro({ onEnter, dailyTitle }: {
             }
         }}>
     <header className="entrance-header">
-      <a className="entrance-brand" href="/">{t("一起拼图")}</a>
+      <a className="entrance-brand" href="/">{copy("一起拼图")}</a>
       <HomeNavigation />
     </header>
 
     <section className="entrance-copy">
-      <h1>{t("把时光，")}<br />{t("拼成喜欢的样子。")}</h1>
-      <p className="entrance-subtitle">{t("从一片开始，收集生活里的美好")}</p>
+      <h1>{copy("把时光，")}<br />{copy("拼成喜欢的样子。")}</h1>
+      <p className="entrance-subtitle">{copy("从一片开始，收集生活里的美好")}</p>
       <button className="entrance-enter" onClick={() => enter()} disabled={phase !== 'idle'}>
-        {t(phase === 'idle' ? '进入大厅' : '正在进入…')}<ArrowRight size={22} strokeWidth={1.3}/>
+        {copy(phase === 'idle' ? '进入大厅' : '正在进入…')}<ArrowRight size={22} strokeWidth={1.3}/>
       </button>
-      <p className="entrance-note">{t("无需登录，即刻开始")}</p>
-      <p className="entrance-play-note"><Hand size={17} strokeWidth={1.6}/>{t("也可以拖动下方拼块，亲手开启")}</p>
+      <p className="entrance-note">{copy("无需登录，即刻开始")}</p>
+      <p className="entrance-play-note"><Hand size={17} strokeWidth={1.6}/>{copy("也可以拖动下方拼块，亲手开启")}</p>
       {dailyTitle && <p className="entrance-daily"><a href="#today">{zhPage ? '今天的图' : 'Picture of the day'} · {dailyTitle}<span aria-hidden="true"> ↓</span></a></p>}
     </section>
 
@@ -148,9 +151,9 @@ export default function DreamIntro({ onEnter, dailyTitle }: {
       <div className={`entrance-slot${near ? ' is-near' : ''}`} ref={slot} aria-hidden="true">
         <svg viewBox="0 0 100 100"><path d={PAPER_PIECE_PATH}/></svg>
         <span className="entrance-slot-number">2</span>
-        <span className="entrance-slot-label">{t(near ? '松手，开启拼图' : '把拼块放到这里')}</span>
+        <span className="entrance-slot-label">{copy(near ? '松手，开启拼图' : '把拼块放到这里')}</span>
       </div>
-      <button className="entrance-piece" ref={key} aria-label={t("拖动这块拼图到海岸画中的缺口，或点击进入选图")} aria-describedby="entrance-drag-instruction" disabled={phase !== 'idle'} onClick={event => { if (event.detail === 0 || !suppress.current)
+      <button className="entrance-piece" ref={key} aria-label={copy("拖动这块拼图到海岸画中的缺口，或点击进入选图")} aria-describedby="entrance-drag-instruction" disabled={phase !== 'idle'} onClick={event => { if (event.detail === 0 || !suppress.current)
         enter(); }} onPointerDown={event => {
             if (event.button !== 0 || phaseRef.current !== 'idle' || drag.current)
                 return;
@@ -173,15 +176,15 @@ export default function DreamIntro({ onEnter, dailyTitle }: {
                 setNear(Math.hypot(piece.left + piece.width / 2 - target.left - target.width / 2, piece.top + piece.height / 2 - target.top - target.height / 2) < Math.max(86, target.width * .72));
         }} onPointerUp={event => release(event)} onPointerCancel={event => release(event, true)} onLostPointerCapture={event => release(event, true)}>
         <svg className="entrance-piece-shape" viewBox="0 0 100 100" aria-hidden="true"><path d={PAPER_PIECE_PATH}/></svg>
-        <span className="entrance-piece-grip" aria-hidden="true"><Hand size={34} strokeWidth={1.4}/><span>{t("拖动我")}</span></span>
+        <span className="entrance-piece-grip" aria-hidden="true"><Hand size={34} strokeWidth={1.4}/><span>{copy("拖动我")}</span></span>
         <span className="entrance-piece-number" aria-hidden="true">1</span>
       </button>
-      <p className="entrance-piece-label" id="entrance-drag-instruction">{t("拿起这一片 ")}<ArrowRight size={17} strokeWidth={1.5}/><span>{t("拼进缺口，开启旅程")}</span></p>
+      <p className="entrance-piece-label" id="entrance-drag-instruction">{copy("拿起这一片 ")}<ArrowRight size={17} strokeWidth={1.5}/><span>{copy("拼进缺口，开启旅程")}</span></p>
     </div>
 
     <footer className="entrance-footer">
-      <span role="status" aria-live="polite">{t(message)}</span>
-      <button onClick={finish}>{t("跳过开场 \u2192")}</button>
+      <span role="status" aria-live="polite">{copy(message)}</span>
+      <button onClick={finish}>{copy("跳过开场 \u2192")}</button>
     </footer>
     <div className="entrance-wash" aria-hidden="true"/>
   </main>;

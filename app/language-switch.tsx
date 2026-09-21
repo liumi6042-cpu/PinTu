@@ -47,5 +47,5 @@ export default function LanguageSwitch(){
     if(target&&target!==pathname)router.push(target);
   };
   const auto=()=>{setLanguagePreference('auto');if(chinesePage)router.push(english);};
-  return <div className="language-switch" role="group" aria-label={language==='en'?'Language':'语言'}><Languages size={15} aria-hidden="true"/><button type="button" aria-pressed={active==='auto'} title={language==='en'?'Choose language automatically by IP region':'根据 IP 所在地区自动选择语言'} onClick={auto}>{language==='en'?'Auto':'自动'}</button><button type="button" lang="zh-CN" aria-pressed={active==='zh'} onClick={()=>go('zh')}>中文</button><button type="button" lang="en" aria-pressed={active==='en'} onClick={()=>go('en')}>EN</button></div>;
+  return <div className="language-switch" role="group" aria-label={chinesePage?'语言':'Language'}><Languages size={15} aria-hidden="true"/><button type="button" aria-pressed={active==='auto'} title={chinesePage?'根据 IP 所在地区自动选择语言':'Choose language automatically by IP region'} onClick={auto}>{chinesePage?'自动':'Auto'}</button><button type="button" lang="zh-CN" aria-pressed={active==='zh'} onClick={()=>go('zh')}>中文</button><button type="button" lang="en" aria-pressed={active==='en'} onClick={()=>go('en')}>EN</button></div>;
 }
