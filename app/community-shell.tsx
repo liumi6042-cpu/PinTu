@@ -4,8 +4,11 @@ import { useLanguage } from '@/app/language-switch';
 import { usePathname } from 'next/navigation';
 import { isChinesePath,zhPath } from '@/lib/site-paths';
 // Lobby and gallery have Chinese pages, so on /zh the header keeps the visitor in
-// Chinese; personal space and membership have no Chinese copy and stay shared.
-const localizedHref = (zh:boolean, path:string) => (zh && (path === '/lobby' || path === '/gallery') ? zhPath(path) : path);
+// Chinese; personal space and membership have no Chinese copy and stay shared. The
+// brand is the way back to the entrance, which otherwise sends a returning visitor
+// straight to the tables, so it carries the parameter that asks for the entrance.
+const localizedHref = (zh:boolean, path:string) => (zh && (path === '/' || path === '/lobby' || path === '/gallery') ? zhPath(path) : path);
+const entranceHref = (zh:boolean) => localizedHref(zh, '/') + '?home=1';
 
 import { Puzzle, Users, UserRound, LogOut, Images, Crown } from 'lucide-react';
 import { useState } from 'react';
@@ -21,7 +24,7 @@ export default function CommunityShell({ active, children }: {
     useLanguage();
     const zh = isChinesePath(usePathname() || '');
     const { account, logout } = useAccount(), [busy, setBusy] = useState(false), [error, setError] = useState('');
-    return <div className="community"><header className="community-header"><a className="community-brand" href={localizedHref(zh, '/')}><Puzzle size={28}/><span>{t("一起拼图")}<small>JIGSAW NOOK</small></span></a><nav aria-label={t("主要导航")}>{t([{ key: 'lobby', href: '/lobby', label: '公开大厅', Icon: Users }, { key: 'gallery', href: '/gallery', label: '图库', Icon: Images }, { key: 'personal', href: '/personal', label: PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录', Icon: UserRound }, { key: 'membership', href: '/membership', label: '会员', Icon: Crown }].filter(item=>item.key!=='membership'||MEMBERSHIP_VISIBLE).map(({ key, href, label, Icon }) => <a key={key} href={localizedHref(zh, href)} aria-current={active === key ? 'page' : undefined}><Icon size={18}/>{t(label)}</a>))}</nav><div className="community-tools"><BookmarkSite/><LanguageSwitch />{account ? <div className="account-status"><span className="account-avatar">{account.name.slice(0, 1)}</span><a href="/account/security">{account.name}</a><button aria-label={t("退出登录")} title={t("退出登录")} disabled={busy} onClick={async () => { setBusy(true); try {
+    return <div className="community"><header className="community-header"><a className="community-brand" href={entranceHref(zh)}><Puzzle size={28}/><span>{t("一起拼图")}<small>JIGSAW NOOK</small></span></a><nav aria-label={t("主要导航")}>{t([{ key: 'lobby', href: '/lobby', label: '公开大厅', Icon: Users }, { key: 'gallery', href: '/gallery', label: '图库', Icon: Images }, { key: 'personal', href: '/personal', label: PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录', Icon: UserRound }, { key: 'membership', href: '/membership', label: '会员', Icon: Crown }].filter(item=>item.key!=='membership'||MEMBERSHIP_VISIBLE).map(({ key, href, label, Icon }) => <a key={key} href={localizedHref(zh, href)} aria-current={active === key ? 'page' : undefined}><Icon size={18}/>{t(label)}</a>))}</nav><div className="community-tools"><BookmarkSite/><LanguageSwitch />{account ? <div className="account-status"><span className="account-avatar">{account.name.slice(0, 1)}</span><a href="/account/security">{account.name}</a><button aria-label={t("退出登录")} title={t("退出登录")} disabled={busy} onClick={async () => { setBusy(true); try {
         await logout();
     }
     catch (e) {

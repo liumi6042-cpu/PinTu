@@ -2,6 +2,7 @@
 import argparse,json,re,urllib.request,urllib.error,xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlparse
 
 parser=argparse.ArgumentParser();parser.add_argument('base');parser.add_argument('--local',action='store_true');args=parser.parse_args()
 base=args.base.rstrip('/');origin='https://jigsawnook.online'
@@ -24,12 +25,22 @@ class Page(HTMLParser):
             if tag=='h1':self.h1.append(self.buffer)
             if tag=='script':self.jsonld.append(json.loads(self.buffer))
             self.kind=None
-def get(path):
+def get(path,cookie=None):
     headers={'User-Agent':'Mozilla/5.0'}
+    if cookie:headers['Cookie']=cookie
     if base.startswith('http://127.0.0.1:3113'):headers.update({'Host':'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'})
     try:r=urllib.request.urlopen(urllib.request.Request(base+path,headers=headers),timeout=30)
     except urllib.error.HTTPError as e:r=e
     return r.status,r.headers,r.read().decode('utf-8')
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*a,**k):return None
+noredirect=urllib.request.build_opener(NoRedirect)
+def peek(path,cookie=None):
+    headers={'User-Agent':'Mozilla/5.0'}
+    if cookie:headers['Cookie']=cookie
+    try:r=noredirect.open(urllib.request.Request(base+path,headers=headers),timeout=30)
+    except urllib.error.HTTPError as e:r=e
+    return r.status,r.headers
 def chinese_path(path):return '/zh' if path=='/' else '/zh'+path
 def twin(path,zh):return (origin+(path[3:] or '/')) if zh else origin+chinese_path(path)
 norm=lambda u:u.rstrip('/')
@@ -93,6 +104,20 @@ for path in ['/account','/personal','/personal/images','/feedback','/membership/
 for path in ['/puzzle/not-real','/puzzle/skate','/zh/puzzle/not-real']:
     status,headers,html=get(path);assert status==404,(path,status)
     assert 'noindex' in headers.get('X-Robots-Tag','')
+# The entrance is offered once. A browser that has already stood in the lobby is sent on
+# to the tables, while a request carrying no cookie — every crawler — still receives the
+# entrance page itself, and the brand link's bypass always reaches it.
+for path,lobby in [('/','/lobby'),('/zh','/zh/lobby')]:
+    status,headers=peek(path,cookie='puzzle-entered=1')
+    assert status in (302,307) and urlparse(headers.get('Location','')).path==lobby,(path,status,headers.get('Location'))
+    assert 'noindex' in headers.get('X-Robots-Tag',''),(path,'a redirect must not claim to be indexable')
+    # A cookie decides this answer, so no shared cache may hold on to either version.
+    shared=lambda h:'cookie' in h.get('Vary','').lower() and 'no-store' in h.get('Cache-Control','')
+    assert shared(headers),(path,'the redirect must not be shared-cached')
+    assert peek(path+'?home=1',cookie='puzzle-entered=1')[0]==200,(path,'?home=1 must reach the entrance')
+    status,headers=peek(path)
+    assert status==200,(path,'without the cookie the entrance is still served')
+    assert shared(headers),(path,'the entrance must not be shared-cached')
 status,headers,robots=get('/robots.txt');assert status==200 and origin+'/sitemap.xml' in robots
 # Cloudflare adds separate AI-crawler groups; evaluate search bots, not every group.
 groups=[];agents=[];rules=[]

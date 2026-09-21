@@ -3,6 +3,7 @@ import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 import { usePathname } from 'next/navigation';
 import { isChinesePath } from '@/lib/site-paths';
+import { markLobbyVisited } from '@/lib/entrance-preference';
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Hand } from 'lucide-react';
@@ -49,6 +50,9 @@ export default function DreamIntro({ onEnter, dailyTitle }: {
         for (const timer of timers.current)
             clearTimeout(timer);
         cancelAnimationFrame(raf.current);
+        // The entrance has now been seen; from the next visit this browser goes
+        // straight to the tables.
+        markLobbyVisited();
         onEnter();
     }
     function enter(fromPiece = false) {

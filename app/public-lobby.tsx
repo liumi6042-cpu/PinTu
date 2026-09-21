@@ -11,9 +11,11 @@ import { apiJson,clockLabel } from '@/lib/community-client';
 import { t } from '@/lib/i18n';
 import { useLanguage } from './language-switch';
 import CommunityShell from './community-shell';
+import ResumePuzzle from './resume-puzzle';
 import SearchIntroduction from './search-introduction';
 import { usePathname } from 'next/navigation';
 import { isChinesePath } from '@/lib/site-paths';
+import { markLobbyVisited } from '@/lib/entrance-preference';
 import { preloadPuzzleImage } from '@/lib/puzzle-image-loading';
 import {puzzleImageSource} from '@/lib/puzzle-image-source';
 import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
@@ -29,7 +31,7 @@ export default function PublicLobby({daily}:{daily?:React.ReactNode}){
  const zh=isChinesePath(usePathname()||''),createTableHref=zh?'/zh/gallery?mode=public':'/gallery?mode=public';
  const router=useRouter(),launchLock=useRef(false),mounted=useRef(true);
  const [randomBusy,setRandomBusy]=useState(false),[launchError,setLaunchError]=useState('');
- useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ useEffect(()=>{mounted.current=true;markLobbyVisited();return()=>{mounted.current=false;};},[]);
  async function launchRandom(){
   if(launchLock.current)return;launchLock.current=true;setRandomBusy(true);setLaunchError('');
   const photo=randomPhoto(PHOTOS);preloadPuzzleImage(puzzleImageSource(photo,recommendedPieces(photo.id)));
@@ -55,6 +57,7 @@ export default function PublicLobby({daily}:{daily?:React.ReactNode}){
  }),[rooms,query,filter,language]);
  return <CommunityShell active="lobby"><main className="community-main lobby-main">
   <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{t('公开拼图大厅')}</h1><p>{t('任何片数都能直接加入；只有创建 500 片及以上房间需要登录。')}</p></div><div className="lobby-summary"><span><Users size={16}/><strong>{rooms.reduce((sum,r)=>sum+r.players,0)}</strong> {t('位玩家在线')}</span><span><strong>{rooms.length}</strong> {t('个公开房间')}</span></div></section>
+  <ResumePuzzle/>
   {daily}
   <div className="public-create-row"><a className="primary" href={createTableHref}><Plus size={19}/>{t('创建公开房间')}</a><button className="secondary" disabled={randomBusy} onClick={()=>void launchRandom()} title={t('随机选图，按推荐片数创建公开房间')}><Shuffle size={18}/>{t(randomBusy?'正在铺开桌面…':'随机开一桌')}</button><p>{t('公开房间免费，500 片及以上首次入座需要登录。')}</p></div>{launchError&&<p className="form-error" role="alert">{t(launchError)}</p>}<p className="public-retention-note">{t('有人在拼的房间保留；无人且未拼合的房间清理，已有进度保留 24 小时。')}</p>
   <div className="lobby-filters"><div className="filter-tabs">{[{id:'all',name:'所有拼图'},{id:'active',name:'有人在拼'},{id:'open',name:'可以加入'}].map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{t(item.name)}</button>)}</div><label className="lobby-search"><Search size={18}/><input aria-label={t('搜索公开拼图')} placeholder={t('搜索喜欢的画面')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
