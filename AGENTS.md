@@ -1,5 +1,25 @@
 # 本项目图片库约定
 
+- 2026-09-21 **方案 A：回来过的人直进大厅 + 回访提醒搬进大厅**（`releases/20260921-05`）。
+  - 新增 `lib/entrance-preference.ts`（**纯函数**，可单测）：`entrancePaths / isEntrancePath /
+    skipsEntrance / lobbyFor / markLobbyVisited`。
+  - **判定放在中间件、用 Cookie，不放客户端**：客户端跳转会**先闪一下首屏**，而 localStorage 中间件读不到。
+    Cookie `puzzle-entered=1`（一年）。**爬虫不带 Cookie → 永远拿到首屏本身**（线上实测无 Cookie 时 `/`
+    仍是 200 + `index, follow`）。
+  - **跳过范围刻意收窄**：只有 `/` 与 `/zh`，必须带 Cookie、且没有 `home` 参数。
+    `/lobby` 的品牌链接原本指向 `/`（且中文页上也指向**英文**首屏 —— 语言泄漏），
+    已改成 `localizedHref(zh,'/')+'?home=1'`：既修了泄漏，又是**回到首屏的唯一入口**（否则用户会进不去）。
+  - **⚠️ 缓存陷阱（重要，别忘）**：响应依赖 Cookie → **绝不能被共享缓存**。否则 Cloudflare 缓存下来的 307
+    会把首次访客直接甩进大厅，或缓存的 200 会让老访客永远看不到大厅。中间件对这两个地址显式发
+    `Vary: Cookie` + `Cache-Control: private, no-store`；`tests/seo-http.py` **已断言这两个响应头**。
+  - **回访提醒搬进大厅**：`PublicLobby` 内直接渲染 `<ResumePuzzle/>`。大厅顺序：
+    标题 → 回访提醒 → 今日一图 → 创建按钮。`markLobbyVisited()` 两处调用：`PublicLobby` 挂载、`DreamIntro.finish()`。
+  - **测试要点**：`tests/entrance-preference.test.mjs`（纯函数：只两个地址、无 Cookie 不跳、`?home=1` 不跳、
+    其他页面绝不跳）；`tests/seo-http.py` 新增带 Cookie 的 307 断言（Location 精确匹配、noindex、`?home=1` 可达、
+    无 Cookie 仍 200、Vary/`no-store`）。**`urllib` 默认跟随重定向** —— 为此加了 `peek()`
+    （用 `HTTPRedirectHandler` 子类禁用跟随），否则永远看不到 307 本身。
+  - **观察到的瞬时失败**：`npm run test:release` 曾有一条 allowlist 用例失败一次，随后 5 次（含同环境、含
+    不带 shim）全绿，`npm run release` 内部也全绿，**未能复现** —— 记为疑似环境瞬时干扰，若再出现要查。
 - 2026-09-21 **每日一图也进公开大厅**（`variant="strip"`），外加一条**未实施的架构讨论**。
   - `app/daily-puzzle.tsx` 加 `variant?: 'full'|'strip'`。大厅用 **strip（一行）**：大厅是列表页，
     首页那张 476px 的大卡会把房间挤到折线以下。实测 strip 桌面 **177px**（top 268）、
