@@ -36,6 +36,12 @@
 .entrance-note { margin: 13px 0 0; font-size: 14px; letter-spacing: 1px; color: #7f6c55; }
 .entrance-play-note { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; font-size: 14px; line-height: 1.5; color: #885035; }
 .entrance-play-note svg { flex-shrink: 0; }
+/* The entrance is a full screen on its own, and its button leaves the page, so the
+   cards under it need naming here or nobody meets them. */
+.entrance-daily { margin: 13px 0 0; font-size: 15px; letter-spacing: 1px; }
+.entrance-daily a { color: #885035; text-decoration: underline; text-underline-offset: 5px; }
+.entrance-daily a:hover { color: #6f3d22; }
+.entrance-daily a span { text-decoration: none; display: inline-block; }
 .entrance-stage { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .entrance-camera { position: absolute; inset: 0; transform-origin: 67% 51%; transition: transform 1.32s cubic-bezier(.63,.08,.48,1); }
 .entrance-scenery { display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: center; transform: translate(calc(var(--entrance-x) * -9px), calc(var(--entrance-y) * -6px)) scale(1.025); transition: transform .35s ease-out; }
@@ -70,7 +76,7 @@
 .entrance-opening .entrance-camera { transform: scale(3.6); }
 .entrance-opening .entrance-copy, .entrance-opening .entrance-header, .entrance-opening .entrance-footer, .entrance-opening .entrance-piece, .entrance-opening .entrance-slot, .entrance-opening .entrance-piece-label, .entrance-opening .entrance-drag-guide { opacity: 0; pointer-events: none; transition: opacity .35s; }
 .entrance-opening .entrance-wash { animation: entrance-light 1.32s ease-in both; }
-.entrance-enter:focus-visible, .entrance-piece:focus-visible, .entrance-footer button:focus-visible, .entrance-header a:focus-visible { outline: 2px solid #905538; outline-offset: 6px; }
+.entrance-enter:focus-visible, .entrance-piece:focus-visible, .entrance-footer button:focus-visible, .entrance-header a:focus-visible, .entrance-daily a:focus-visible { outline: 2px solid #905538; outline-offset: 6px; }
 @keyframes entrance-light { 0%, 42% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes entrance-beacon { 0%, 100% { box-shadow: 0 0 0 0 #bf8d4740; } 50% { box-shadow: 0 0 0 12px #bf8d4700; } }
 @keyframes entrance-hand { 0%, 22%, 70%, 100% { transform: translate(0, 0); } 42%, 55% { transform: translate(3px, -5px); } }

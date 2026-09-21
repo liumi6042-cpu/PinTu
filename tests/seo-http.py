@@ -67,6 +67,17 @@ for url in urls:
     want={'en':url if not zh else twin(path,zh),'zh-CN':twin(path,zh) if not zh else url,'x-default':url if not zh else twin(path,zh)}
     assert {k:norm(v) for k,v in page.alternates.items()}=={k:norm(v) for k,v in want.items()},(path,page.alternates,want)
     if not zh and path=='/':assert any(d.get('@type')=='WebSite' for d in page.jsonld)
+    if path in ('/','/zh'):
+        # The entrance fills the first screen on its own, so the cards beneath it are
+        # reached through this link. Its label has to be in the page's own language in
+        # the markup itself — the interface language is English on the server, which
+        # once put an English label beside a Chinese picture name — and the anchor has
+        # to start above both cards rather than at the picture.
+        assert '#today' in page.links,(path,page.links)
+        assert 'id="today"' in html,path
+        entrance=html.split('id="today"')[0]
+        assert ('今天的图' if zh else 'Picture of the day') in entrance,(path,'entrance missing its daily link')
+        assert ('Picture of the day' if zh else '今天的图') not in entrance,(path,'entrance label is in the other language')
     if path in ('/gallery','/zh/gallery'):gallery_links[path]=page.links
     if '/puzzle/' in path:
         image_id=path.split('/')[-1]

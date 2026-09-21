@@ -1,15 +1,23 @@
 'use client';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
+import { usePathname } from 'next/navigation';
+import { isChinesePath } from '@/lib/site-paths';
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Hand } from 'lucide-react';
 import { PAPER_PIECE_PATH, reducedPaperMotion } from '@/lib/paper-interactions';
 import HomeNavigation from './home-navigation';
-export default function DreamIntro({ onEnter }: {
+export default function DreamIntro({ onEnter, dailyTitle }: {
     onEnter: () => void;
+    dailyTitle?: string;
 }) {
     useLanguage();
+    // The link down to the cards below names today's picture, which the server picked
+    // in the page's own language. Its label follows the address for the same reason:
+    // t() is the interface language and on the server it is English, which put an
+    // English label next to a Chinese picture name in the Chinese page's HTML.
+    const zhPage = isChinesePath(usePathname() || '');
     const scene = useRef<HTMLElement>(null);
     const stage = useRef<HTMLDivElement>(null);
     const key = useRef<HTMLButtonElement>(null);
@@ -122,6 +130,7 @@ export default function DreamIntro({ onEnter }: {
       </button>
       <p className="entrance-note">{t("无需登录，即刻开始")}</p>
       <p className="entrance-play-note"><Hand size={17} strokeWidth={1.6}/>{t("也可以拖动下方拼块，亲手开启")}</p>
+      {dailyTitle && <p className="entrance-daily"><a href="#today">{zhPage ? '今天的图' : 'Picture of the day'} · {dailyTitle}<span aria-hidden="true"> ↓</span></a></p>}
     </section>
 
     <div className="entrance-stage" ref={stage}>
