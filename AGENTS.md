@@ -25,6 +25,16 @@
   - 顺手清掉 `work/release-package-tests/fixture-*` 残骸（上一次 release 冒烟的产物，87 个文件）：
     它们让 `node node_modules/typescript/bin/tsc --noEmit` 报 3 条假错 `Cannot find name 'fixture'`，
     会让类型检查看起来是红的 —— **`tsc` 出现这种假错先看 `work/` 有没有残骸，别怀疑源码**。
+  - **顺带发现的既有缺陷（本轮只记录、未修，等用户定）**：**`/zh/gallery` 的服务端 HTML 里图名是英文的**。
+    实测（线上 + 本地各一次）：`https://jigsawnook.online/zh/gallery` 的 HTML 里是 `Cat Stand-Up` / `Garden Picnic`
+    / 分类 `Animals` / 按钮 `Start puzzle`，而页面自己声明 `lang="zh-CN"`，卡片链接也已经是 `/zh/puzzle/...`。
+    **原因**：`app/gallery-card.tsx` 只用 `isChinesePath(usePathname())` 决定 **href**，显示文字走 `t(photo.title)`，
+    而 `t()` 在服务端默认英文；语言要等客户端 `detectLanguage()` 拿回结果才切到 zh。
+    **真浏览器实测（CDP 读 innerText）**：hydration 之后页面是中文（7 个新图名全部中文出现、英文一个都没有），
+    所以正常访客看到的是对的；**受影响的是 SSR 首帧与爬虫（百度/Google 在这页看到的是英文正文）**。
+    **修法方向**（与之前两次同类修复一致）：把卡片文案也按地址判定（`isChinesePath`），或由 `app/gallery/page.tsx` /
+    `app/zh/gallery/page.tsx` 把 locale 当 prop 传下去；改动涉及搜索/筛选那一排 `t()` 文案，要连同 `tests/seo-http.py`
+    加「中文图库页不得出现英文图名」的断言一起做。
 - 2026-09-21 **方案 A：回来过的人直进大厅 + 回访提醒搬进大厅**（`releases/20260921-05`）。
   - 新增 `lib/entrance-preference.ts`（**纯函数**，可单测）：`entrancePaths / isEntrancePath /
     skipsEntrance / lobbyFor / markLobbyVisited`。
