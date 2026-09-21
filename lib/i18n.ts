@@ -71,7 +71,9 @@ const extras:Record<string,string>={
   '无需登录，点开就能一起拼。':'No sign-in needed. Pick a puzzle and join in.',
   '公开拼图大厅':'Public puzzle lobby','点击图片，加入拼图':'Click a picture to join',
   '拼图计时':'Puzzle time','在线人数':'Players online','已满员':'Full',
-  '正在游玩':'Playing now','个公开房间':'public rooms','位玩家在线':'players online',
+  '正在游玩':'Playing now','个公开房间':'public rooms',
+  // What the lobby shows instead of a live player count: how much the site has finished.
+  '幅 · 今天完成':'completed today','幅 · 累计完成':'completed in total',
   '所有拼图':'All puzzles','个人游玩':'Solo play','去创建房间':'Create a room',
   '无需登录 · 最多 8 人一起拼':'No sign-in · Up to 8 players',
   '按玩家实际参与操作统计。':'Counts players who actually moved pieces.',

@@ -1,5 +1,35 @@
 # 本项目图片库约定
 
+- 2026-09-21 **三件事：完成后「下一把」、去掉大厅在线人数、完成数统计**（用户反馈 + 截图）。
+  - **① 完成后直接开下一把**。现状：公开房间里完成一局后，结算弹窗的主按钮「再挑一幅」→ `leave()` →
+    `window.location.assign('/lobby')`，用户还得自己重新选图 —— 这就是用户说的「完成后还是到了大厅」。
+    - `Game` 新增可选 **`onNext?: () => Promise<void>`**；`app/room-play.tsx` **只在公开房间**传它
+      （私人/单人房间没有「下一把」的语义）。弹窗里新按钮取代主按钮位置，原「再挑一幅」降为 secondary。
+    - 决策抽成纯函数 **`lib/next-table.ts` 的 `nextTableChoice()`**：**绝不复用刚拼完的图**；**同档次片数**
+      （`pieceBand(cols*rows)`，98 片的贴合盘算作 108 档）；新图撑不住该片数时退回它自己的推荐片数。
+    - **游客边界**：创建 500 片及以上房间要账号。游客坐在 1000 片房间里点「下一把」会 403 —— 已做
+      **回退到 300 片**再试一次，否则按钮必死。
+  - **② 大厅去掉「N 位玩家在线」**（房间卡片里的「0/8」保留，用户明确说那个不用动）。
+    `extras` 里随之删掉 `'位玩家在线'` 词条。**同一位置改成完成数**（见③）。
+  - **③ 完成数统计（今天 + 累计）**。数据源 **`puzzle_results`**（一局一行，`saveCompletion` 写入；
+    前提是 `startedAt` 与 `participants` 都有值 —— 也就是玩家**真的拖过拼块**，所以「建了房没玩」不会计数）。
+    - `lib/completion-stats.ts`：**纯函数** `beijingDayStart()`（复用 `dailyPuzzleDay`，与每日一图同一个北京时间零点）
+      + `completionStats(now, database)`。**数据库是参数、不是模块级导入** —— 否则 `cloudflare:workers` 会让纯 node
+      测试加载不了（本轮踩过）。**30 秒缓存**，缓存键含「数据库对象 + 北京日」，**跨零点必然重算**，隔夜不会给旧数字。
+    - **服务端渲染**：`app/lobby/page.tsx` 与 `app/zh/lobby/page.tsx` 里 `await` 后经 `initialStats` 传给 `PublicLobby`，
+      并 `.catch(() => null)` 兜底 —— 统计要出现在 HTML 里（爬虫能读、首帧就有），不能只靠客户端轮询。
+      `/api/lobby` 同时带上 `stats`，供每 3.5 秒的轮询刷新。
+    - 文案：`'幅 · 今天完成'` / `'幅 · 累计完成'`（英文 `completed today` / `completed in total`），
+      渲染成「1 幅 · 今天完成」「4 幅 · 累计完成」。
+  - **验收手法（可复用）**：用 **`node:sqlite` 直接改本地 `.wrangler` 库**把一局置成「所有拼块在一个 locked 组里」
+    —— `placedCount()` 只数锁定组，所以这等价于「已拼完」，于是能在**真浏览器**里走通完成弹窗与「下一把」，
+    不必手工拼 100 片（脚本 `work/finish-local-room.mjs`，用 `work/target2.txt` 里的标签）。
+    **注意**：后台标签里 rAF 不跑 → 完成庆祝动画不会结束 → 弹窗永远不出现；`/json/activate` 在窗口未聚焦时不生效。
+    本轮用**本地探针**（临时把 `beginCelebration()` 换成 `setComplete(true)`）验完立即还原 —— 探针别留在提交里。
+    CDP `/click` 的 body **必须是原始字符串**：`--data-urlencode` 会把空格变 `+`、把引号/方括号百分号编码，
+    选择器请用**不含引号与方括号**的写法（如 `.complete-dialog button.primary`）。
+  - **新增测试**：`tests/completion-stats.test.mjs`（北京时间边界、缓存命中/过期/跨零点/跨库）、
+    `tests/next-table.test.mjs`（不同图、同档次、贴合盘归档、撑不住时回退、空池报错）。
 - 2026-09-21 **把「按地址」这条规矩在成对页面上贯彻到底**（用户报「中文大厅里还有个别英文没翻译」）。
   - **用户看到的**：`/lobby` 页面主体是中文，但**回访提醒**（`Your “Moonlight after Rain” is 712 pieces from done`
     ／`Keep going`）和**今日一图**（`PUZZLE OF THE DAY` / `Garden Picnic` / `Start a table`）是英文。
