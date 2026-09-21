@@ -38,3 +38,25 @@
 .resume-puzzle-inner h2{font-family:var(--font-serif,serif);font-weight:400;font-size:19px;line-height:1.4;margin:0 0 4px;color:var(--paper-ink);}
 .resume-puzzle-inner p{color:var(--paper-muted);font-size:13px;margin:0;}
 .resume-puzzle-action{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--paper-clay);text-underline-offset:4px;white-space:nowrap;}
+
+/* The lobby's version of the picture of the day. It sits inside the lobby's own
+   container, so it drops the page padding and matches the heading's spacing, and it
+   is one row: a full card here would push the tables below the fold. */
+.daily-puzzle-strip{max-width:none;margin:0 0 34px;padding:0;}
+.daily-puzzle-strip-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--paper-card-bottom);border:1px solid var(--paper-line);border-radius:12px;padding:14px 18px;}
+.daily-puzzle-strip-row>img{width:112px;height:90px;object-fit:cover;border-radius:8px;flex:0 0 auto;display:block;}
+.daily-puzzle-strip-copy{flex:1 1 260px;min-width:0;}
+.daily-puzzle-strip-copy h2{font-family:var(--font-serif,serif);font-weight:400;font-size:19px;line-height:1.4;margin:0 0 4px;color:var(--paper-ink);}
+.daily-puzzle-strip-copy p{color:var(--paper-muted);font-size:13px;line-height:1.6;margin:0;}
+.daily-puzzle-strip .daily-puzzle-action{margin-left:auto;white-space:nowrap;}
+.daily-puzzle-strip .daily-puzzle-note{margin:10px 0 0;}
+/* On a phone the same row wraps to nearly twice the height, and the lobby's tables are
+   what people came for, so the spacing tightens up there. */
+@media (max-width:720px){
+  .daily-puzzle-strip{margin-bottom:24px;}
+  .daily-puzzle-strip-row{gap:14px;padding:12px 14px;}
+  .daily-puzzle-strip-row>img{width:84px;height:68px;}
+  .daily-puzzle-strip-copy h2{font-size:17px;}
+  .daily-puzzle-strip-copy p{line-height:1.5;}
+  .daily-puzzle-strip .daily-puzzle-note{margin-top:6px;font-size:12px;}
+}

@@ -20,7 +20,10 @@ import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
 import {accountLoginUrl,publicPuzzleReturnTo} from '@/lib/account-return';
 import {customPhoto} from '@/lib/custom-images';
 
-export default function PublicLobby(){
+// `daily` is a server-rendered slot, the same one the home page uses, so the day's
+// picture is in the lobby's HTML rather than appearing only after the client asks for
+// it — and the lobby shows it as a single row, because the tables are what people came for.
+export default function PublicLobby({daily}:{daily?:React.ReactNode}){
  const language=useLanguage();
  // Creating a public table should keep a Chinese visitor on the Chinese gallery.
  const zh=isChinesePath(usePathname()||''),createTableHref=zh?'/zh/gallery?mode=public':'/gallery?mode=public';
@@ -52,6 +55,7 @@ export default function PublicLobby(){
  }),[rooms,query,filter,language]);
  return <CommunityShell active="lobby"><main className="community-main lobby-main">
   <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{t('公开拼图大厅')}</h1><p>{t('任何片数都能直接加入；只有创建 500 片及以上房间需要登录。')}</p></div><div className="lobby-summary"><span><Users size={16}/><strong>{rooms.reduce((sum,r)=>sum+r.players,0)}</strong> {t('位玩家在线')}</span><span><strong>{rooms.length}</strong> {t('个公开房间')}</span></div></section>
+  {daily}
   <div className="public-create-row"><a className="primary" href={createTableHref}><Plus size={19}/>{t('创建公开房间')}</a><button className="secondary" disabled={randomBusy} onClick={()=>void launchRandom()} title={t('随机选图，按推荐片数创建公开房间')}><Shuffle size={18}/>{t(randomBusy?'正在铺开桌面…':'随机开一桌')}</button><p>{t('公开房间免费，500 片及以上首次入座需要登录。')}</p></div>{launchError&&<p className="form-error" role="alert">{t(launchError)}</p>}<p className="public-retention-note">{t('有人在拼的房间保留；无人且未拼合的房间清理，已有进度保留 24 小时。')}</p>
   <div className="lobby-filters"><div className="filter-tabs">{[{id:'all',name:'所有拼图'},{id:'active',name:'有人在拼'},{id:'open',name:'可以加入'}].map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{t(item.name)}</button>)}</div><label className="lobby-search"><Search size={18}/><input aria-label={t('搜索公开拼图')} placeholder={t('搜索喜欢的画面')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
   {error&&<p className="form-error" role="alert">{t(error)}</p>}

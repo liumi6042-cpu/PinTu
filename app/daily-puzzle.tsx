@@ -6,11 +6,27 @@ import { zhPath } from '@/lib/site-paths';
 
 // Rendered on the server so the day's picture is in the HTML a crawler reads, and
 // so two visitors on the same day can never be shown different pictures.
-export default function DailyPuzzle({locale}:{locale:'zh'|'en'}) {
+//
+// `strip` is the lobby's version of the same pick: the lobby is a list of tables, and
+// the full card there would push the tables people came for below the fold.
+export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';variant?:'full'|'strip'}) {
   const photo=dailyPuzzle(),zh=locale==='zh',now=Date.now();
   const title=zh?photo.title:englishCopy(photo.title),subtitle=zh?photo.subtitle:englishCopy(photo.subtitle);
   const recommended=recommendedPieces(photo.id),maximum=maximumPieces(photo.id);
   const href=(zh?zhPath('/gallery'):'/gallery')+'?mode=public&image='+photo.id;
+  const note=zh?`${dailyPuzzleDate(now)} · 每天零点（北京时间）换一张，全站同一张。`:`${dailyPuzzleDate(now)} · A new picture each day at midnight Beijing time, the same for every visitor.`;
+  if(variant==='strip')return <section className="daily-puzzle daily-puzzle-strip" aria-labelledby="daily-puzzle-heading">
+    <p className="section-kicker">{zh?'今日拼图':'PUZZLE OF THE DAY'}</p>
+    <div className="daily-puzzle-strip-row">
+      <img src={photo.thumbSrc} alt="" width={112} height={90} loading="lazy" decoding="async"/>
+      <div className="daily-puzzle-strip-copy">
+        <h2 id="daily-puzzle-heading">{title}</h2>
+        <p>{subtitle}</p>
+      </div>
+      <a className="daily-puzzle-action" href={href}>{zh?'现在开一桌':'Start a table'} →</a>
+    </div>
+    <p className="daily-puzzle-note">{note}</p>
+  </section>;
   return <section className="daily-puzzle" aria-labelledby="daily-puzzle-heading">
     <p className="section-kicker">{zh?'今日拼图':'PUZZLE OF THE DAY'}</p>
     <h2 id="daily-puzzle-heading">{zh?'今天，就拼这一幅':'One picture, picked for today'}</h2>
@@ -23,6 +39,6 @@ export default function DailyPuzzle({locale}:{locale:'zh'|'en'}) {
         <a className="daily-puzzle-action" href={href}>{zh?'现在开一桌':'Start a table'} →</a>
       </div>
     </div>
-    <p className="daily-puzzle-note">{zh?`${dailyPuzzleDate(now)} · 每天零点（北京时间）换一张，全站同一张。`:`${dailyPuzzleDate(now)} · A new picture each day at midnight Beijing time, the same for every visitor.`}</p>
+    <p className="daily-puzzle-note">{note}</p>
   </section>;
 }
