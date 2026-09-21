@@ -20,3 +20,9 @@ export function resumeProgress(local: LocalProgress[], rooms: RoomCard[]): Resum
   for (const room of unique.values()) entries.push({ ...room, source: 'server', updatedAt: room.lastPlayedAt ?? 0 });
   return entries.sort((a, b) => Number(a.completed) - Number(b.completed) || b.updatedAt - a.updatedAt || a.id.localeCompare(b.id));
 }
+// The one to offer on the home page: the newest entry that is genuinely in progress.
+// Entries at zero pieces were opened and abandoned, and finished ones are not a
+// reason to come back, so neither is worth a reminder.
+export function nextResume(entries: ResumeProgress[]) {
+  return entries.find(entry => !entry.completed && entry.placed > 0 && entry.placed < entry.pieces);
+}

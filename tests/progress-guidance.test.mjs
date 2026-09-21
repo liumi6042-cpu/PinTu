@@ -5,7 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { PHOTOS } from '../lib/puzzle-catalog.ts';
 import { createPuzzle, restartPuzzle } from '../lib/puzzle-engine.ts';
 import { readLocalProgress, writeLocalProgress, saveKey } from '../lib/local-progress.ts';
-import { resumeProgress } from '../lib/resume-progress.ts';
+import { nextResume,resumeProgress } from '../lib/resume-progress.ts';
 import { photoGuidance, recommendedPieces, pixelsPerPiece, puzzleDifficulty, limitedDetail } from '../lib/play-guidance.ts';
 import { setLanguage, t } from '../lib/i18n.ts';
 import { makeRoom, addMember, applyAction, ROOM_LIFETIME } from '../lib/room-engine.ts';
@@ -78,4 +78,23 @@ test('local retention upgrade is idempotent and preserves puzzle, tickets, and e
     assert.equal(read('expired').data,JSON.stringify(expired));
     db.exec(sql);assert.deepEqual(read('active'),upgraded);
   }finally{db.close();}
+});
+
+test('the home reminder offers the newest unfinished game and nothing else', () => {
+  const room = (id, placed, completed, lastPlayedAt) => ({ id, title: '山湖倒影', imageId: 'mountain-lake-reflection', pieces: 300, placed, elapsed: 60, completed, lastPlayedAt, expiresAt: 0, visibility: 'public', players: 2, started: true, startedAt: 0 });
+  const entries = resumeProgress([], [
+    room('opened', 0, false, 900),      // opened and abandoned
+    room('finished', 300, true, 800),
+    room('halfway', 120, false, 700),
+    room('newer-thin', 3, false, 950),
+  ]);
+  const pick = nextResume(entries);
+  // Newest wins, but only among games that actually have pieces placed.
+  assert.equal(pick.id, 'newer-thin');
+  assert.equal(pick.pieces - pick.placed, 297);
+  assert.equal(nextResume(entries.filter(entry => entry.id !== 'newer-thin')).id, 'halfway');
+  // Finished and untouched games are never a reason to come back.
+  assert.equal(nextResume([room('finished', 300, true, 800)]), undefined);
+  assert.equal(nextResume([room('opened', 0, false, 900)]), undefined);
+  assert.equal(nextResume([]), undefined);
 });

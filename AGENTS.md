@@ -1,5 +1,30 @@
 # 本项目图片库约定
 
+- 2026-09-21 **回访钩子（留存第二批）+ 百度站点验证**。两处**更正**与两处**新发现**要记住。
+  - **更正 1**：我先前说「完成页没有『再来一张』的主动作」是**错的**。结算弹窗
+    （`app/puzzle-app.tsx:222` 的 `<Dialog open={complete}>`）**本来就有**「再挑一幅 →」作为 primary
+    按钮（调 `leave` 回画廊）。当时只 grep 了「再来/下一幅」没看实际渲染。**别再重复这个结论。**
+  - **更正 2**：`PERSONAL_PLAY_VISIBLE = false`（`lib/feature-visibility.ts`）→ `galleryEntry()` 恒返回
+    `guestPlay:false` → **图库永远不会读本地存档**，`readLocalProgress` 目前在生产路径上**完全没被使用**
+    （`/personal` 也因开关为 false 传空数组）。所以**本地进度现在不是一条真实存在的数据**。
+  - **新发现（重要）**：点 `/gallery` 的图片卡是**创建服务端房间并跳到 `/room/<id>`**，
+    不是本地单人局。**玩家进度只在服务端**，回访钩子必须走 `/api/my-rooms`。
+  - **回访钩子**：新增 `app/resume-puzzle.tsx`（客户端），挂在 `HomeExperience` 里（在每日一图之前）。
+    用 `resumeProgress([], rooms)` + 新增的 `nextResume()`（`lib/resume-progress.ts`）挑
+    「未完成且已放片」的最新一局，链到 `/room/<id>`。**已完成、或一片没放的房间都不提醒**（有测试）。
+  - **语言判定必须只用地址，不能用界面语言**：这台机器是中文 IP，界面语言会被自动检测成 `zh`；
+    卡片一度在**英文页显示中文作品名**。已统一改成 `isChinesePath(usePathname())` 判定。
+    **新组件一律照这个来**（`HomeNavigation` / `CommunityShell` / `GalleryCard` 都是这个套路）。
+  - **百度验证**：`app/layout.tsx` 的 `verification.other` 加
+    `'baidu-site-verification': 'codeva-CaQO2UXiXo'`（与 google / msvalidate 并列）。
+    实测 `/`、`/gallery`、`/zh`、`/puzzle/*` **四个页面都已注入** —— 根布局的 `verification` 会与页面
+    metadata 合并，不会被页面覆盖。
+  - 新增测试：`tests/progress-guidance.test.mjs` 里加「回访提醒只挑最新的未完成局，
+    跳过已完成与一片没放的」。验证：聚焦测试 **25/25**、`test:release` 2/2、`check:images` 47、
+    `tests/seo-http.py --local` 全绿（102 页）；浏览器用**接口拦截**验证了服务端房间分支的
+    中英文案与 `/room/<id>` 链接。
+  - **未做**：完成页的「分享」。
+
 - 2026-09-21 **留存优化第一批：每日一图 + 徽章阶梯补密**（用户从三条建议里选了这两条先做）。
   - **每日一图**：新增 `lib/daily-puzzle.ts` —— `dailyPuzzleDay/dailyPuzzleDate/dailyPuzzle`。
     **按北京时间零点换图**（`now + 8h`，与本项目 `achievementDay` 同一口径），

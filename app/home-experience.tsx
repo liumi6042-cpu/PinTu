@@ -2,6 +2,7 @@
 import { usePathname,useRouter } from 'next/navigation';
 import { isChinesePath } from '@/lib/site-paths';
 import DreamIntro from './dream-intro';
+import ResumePuzzle from './resume-puzzle';
 import SearchIntroduction from './search-introduction';
 import ServiceFooter from './service-footer';
 // `daily` is a server-rendered slot: the page decides which language's puzzle of
@@ -13,5 +14,5 @@ export default function HomeExperience({daily,footer=true}:{daily?:React.ReactNo
   const router=useRouter();
   // The entrance button must land in the same language as the page it was pressed on.
   const zh=isChinesePath(usePathname()||'');
-  return <><DreamIntro onEnter={() => router.push(zh?'/zh/lobby':'/lobby')}/>{daily}<SearchIntroduction kind="home"/>{footer&&<ServiceFooter/>}</>;
+  return <><DreamIntro onEnter={() => router.push(zh?'/zh/lobby':'/lobby')}/><ResumePuzzle/>{daily}<SearchIntroduction kind="home"/>{footer&&<ServiceFooter/>}</>;
 }

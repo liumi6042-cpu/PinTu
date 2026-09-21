@@ -26,7 +26,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   verification: {
     google: 'bfxx-dHZBIwufXXHSwbM8zOC2ofpzlb98bPI89ZCsh0',
-    other: { 'msvalidate.01': 'EE9AC4E74617F79BFC8A29692C3523D9' },
+    // Search-engine ownership proofs. Baidu serves Chinese visitors, which is most
+    // of this site's audience, so its token belongs here with the others.
+    other: { 'msvalidate.01': 'EE9AC4E74617F79BFC8A29692C3523D9', 'baidu-site-verification': 'codeva-CaQO2UXiXo' },
   },
   icons: {
     icon: [

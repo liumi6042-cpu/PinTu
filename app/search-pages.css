@@ -32,3 +32,9 @@
 .daily-puzzle-action{display:inline-block;color:var(--paper-clay);text-underline-offset:4px;}
 .daily-puzzle-note{color:var(--paper-muted);font-size:13px;margin:14px 0 0;}
 @media (max-width:720px){.daily-puzzle-card{grid-template-columns:minmax(0,1fr);}}
+.resume-puzzle{max-width:1120px;margin:0 auto;padding:8px 28px 0;}
+.resume-puzzle-inner{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--paper-card-bottom);border:1px solid var(--paper-line);border-left:3px solid var(--paper-clay);border-radius:12px;padding:16px 20px;}
+.resume-puzzle-icon{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:var(--paper);color:var(--paper-clay);flex:0 0 auto;}
+.resume-puzzle-inner h2{font-family:var(--font-serif,serif);font-weight:400;font-size:19px;line-height:1.4;margin:0 0 4px;color:var(--paper-ink);}
+.resume-puzzle-inner p{color:var(--paper-muted);font-size:13px;margin:0;}
+.resume-puzzle-action{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--paper-clay);text-underline-offset:4px;white-space:nowrap;}
