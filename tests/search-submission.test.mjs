@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { publicUrls, selectUrls } from '../scripts/notify-search-engines.mjs';
+import { baiduEndpoint, publicUrls, selectUrls } from '../scripts/notify-search-engines.mjs';
 const origin = 'https://jigsawnook.online';
 const photo = (id, status = 'published', source = 'project-ai-generated') => ({ id, status, origin: source });
 
@@ -29,4 +29,18 @@ test('initial submission covers all published public puzzle pages', () => {
   for (const photo of published) assert.ok(urls.includes(origin + '/puzzle/' + photo.id), photo.id);
   for (const path of fixed) assert.ok(urls.includes(origin + path), path);
   for (const path of [...fixed, ...published.map(photo => '/puzzle/' + photo.id)]) assert.ok(urls.includes(origin + '/zh' + (path === '/' ? '' : path)), 'zh ' + path);
+});
+test('the Baidu endpoint stays on this site and leaves the site string unencoded', () => {
+  const url = baiduEndpoint(origin, 'abc123');
+  assert.equal(url, 'http://data.zz.baidu.com/urls?site=https://jigsawnook.online&token=abc123');
+  // Percent-encoding the site makes Baidu answer "site init fail"; the raw
+  // separators are what it expects.
+  assert.ok(!url.includes('%3A') && !url.includes('%2F'), 'Baidu rejects an encoded site parameter');
+  assert.throws(() => baiduEndpoint('https://example.com/', 'abc123'), /bare https origin/);
+  assert.throws(() => baiduEndpoint('https://example.com/sitemap', 'abc123'), /bare https origin/);
+  const config = JSON.parse(readFileSync(new URL('../config/search-engines.json', import.meta.url), 'utf8'));
+  // The token belongs to this domain: a Baidu token paired with someone else's site
+  // is exactly the mix-up this pins down.
+  assert.equal(config.baidu.site, origin);
+  assert.match(config.baidu.token, /^[A-Za-z0-9]+$/);
 });

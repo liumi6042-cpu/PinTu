@@ -1,5 +1,24 @@
 # 本项目图片库约定
 
+- 2026-09-21 **百度主动推送接入**（`search:notify` 的第二条通道）。两个坑，都别再踩。
+  - `config/search-engines.json` 新增 `baidu` 段（`site` + `token`）；`scripts/notify-search-engines.mjs`
+    增加 **`--baidu` 通道**，**默认仍是 IndexNow**（不带 `--baidu` 的命令行为与以前完全一致）。
+    用法：`npm run search:notify -- --baidu [--indexnow] --submit [URL...]`。
+  - **配额只有 10 条/天**（响应里的 `remain`）。策略：**枢纽页优先**（首页/图库/大厅/帮助，中英各四），
+    图页交给爬虫从地图与图库自然发现、再用每日余量慢慢补。`accepted`/`quotaRemaining` 写进
+    `work/baidu/latest.json`，同批次不重发，`--force` 才重发。
+  - **坑 1：`site` 参数不能百分号编码。** `encodeURIComponent` 出来的
+    `site=https%3A%2F%2Fjigsawnook.online` 会被百度拒成 `site init fail`（HTTP 400），
+    必须原样传 `site=https://jigsawnook.online`。已抽出 `baiduEndpoint()` 并用测试钉住。
+  - **坑 2：判断 token 属于哪个站，不要看 URL 里的 `site=`。** 用户给的地址里 `site=` 一度是
+    **另一个项目的域名**，但 token 实际属于本站。**直接用 curl 打一条本域 URL 看百度怎么答**：
+    `{"remain":N,"success":1}` = 属于本站；`site error` = 不属于。已加断言
+    `config.baidu.site === ORIGIN`，防止配对错站。
+  - **`scripts/` 与 `config/` 都不在运行包里** → 改提交流程**不需要重新出包或部署**
+    （与 `deploy-warm-release.py` 同理），单独提交即可。
+  - 已提交（当天配额 10 条用尽）：`/`、`/lobby`、`/gallery`、`/help`、`/zh`、`/zh/lobby`、
+    `/zh/gallery`、`/zh/help` + 两个最新中文图页。文档见 `docs/search-engines.md`。
+
 - 2026-09-21 **回访钩子（留存第二批）+ 百度站点验证**。两处**更正**与两处**新发现**要记住。
   - **更正 1**：我先前说「完成页没有『再来一张』的主动作」是**错的**。结算弹窗
     （`app/puzzle-app.tsx:222` 的 `<Dialog open={complete}>`）**本来就有**「再挑一幅 →」作为 primary
