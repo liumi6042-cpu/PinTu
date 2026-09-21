@@ -74,8 +74,9 @@ export class PuzzleTable {
         const serial=++this.claimSerial;this.selected=g.id;raiseGroup(this.state,g.id);
         this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';
         void this.network.acquire(g.id).then(ok=>{
-          // Local pointer motion begins immediately. Only a denied claim cancels it.
-          if(!ok&&serial===this.claimSerial){this.drag=null;this.canvas.style.cursor='grab';this.draw();}
+          // Local pointer motion begins immediately. Only a denied claim cancels it, and a
+          // claim is denied by the server when the group moved on without us.
+          if(!ok&&serial===this.claimSerial){this.drag=null;this.canvas.style.cursor='grab';if(this.networkReady)this.notice('这组拼块没能确认，已经放回原处');this.draw();}
         });
       }else{this.selected=g.id;raiseGroup(this.state,g.id);this.drag={id:g.id,x:wp.x,y:wp.y,dx:g.dx,dy:g.dy};this.canvas.style.cursor='grabbing';}
     }
@@ -130,7 +131,11 @@ export class PuzzleTable {
     this.state.groups=next.groups.map(incoming=>{
       const old=previous.get(incoming.id),same=old&&old.locked===incoming.locked&&old.pieces.length===incoming.pieces.length&&old.pieces.every((id,i)=>id===incoming.pieces[i]);
       if(same){if(!protectIds.has(old.id)&&(old.dx!==incoming.dx||old.dy!==incoming.dy)){old.dx=incoming.dx;old.dy=incoming.dy;changed=true;}return old;}
-      changed=true;return {...incoming,pieces:[...incoming.pieces]};
+      changed=true;const rebuilt={...incoming,pieces:[...incoming.pieces]};
+      // A merge can rebuild the group under the pointer. Keep the position the player is
+      // dragging it to instead of snapping it back to the last one the server sent.
+      if(old&&!rebuilt.locked&&protectIds.has(rebuilt.id)){rebuilt.dx=old.dx;rebuilt.dy=old.dy;}
+      return rebuilt;
     });
     for(const id of protectIds)raiseGroup(this.state,id);
     if(this.state.groups.some((g,i)=>g.id!==order[i]))changed=true;
@@ -141,7 +146,9 @@ export class PuzzleTable {
     if(showFeedback&&beforeGroups.length>this.state.groups.length)this.feedback?.show(newConnections(beforeGroups,this.state));
     if(changed)this.draw();
   }
-  cancelNetworkDrag(id?:number){if(id!==undefined&&this.drag?.id!==id)return;this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';this.draw();}
+  // Returns whether a local drag was actually taken back, and explains it to the player when
+  // it was: a drag the server refuses should never disappear without a word.
+  cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const dropped=!!this.drag;this.claimSerial++;this.drag=null;this.pan=null;this.canvas.style.cursor='default';if(dropped&&reason)this.notice(reason);this.draw();return dropped;}
   setHints(ids:number[],until:number){
     if(this.hintTimer)clearTimeout(this.hintTimer);
     this.hintIds=ids.filter(id=>Number.isInteger(id)&&!!this.pieces[id]).slice(0,3);this.hintUntil=until;this.draw();

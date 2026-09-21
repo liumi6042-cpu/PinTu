@@ -14,7 +14,7 @@ test('a piece follows pointer motion before the claim response arrives',async()=
  const context={drawImage(){}};const canvas={getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){},style:{}};
  globalThis.document={createElement:()=>({getContext:()=>context}),addEventListener(){}};globalThis.Path2D=class{};globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.cancelAnimationFrame=()=>{};
  const table=new PuzzleTable(canvas,room.puzzle,{naturalWidth:800,naturalHeight:600},()=>{},()=>{});const group=room.puzzle.groups[0],original={dx:group.dx,dy:group.dy};
- Object.assign(table,{state:room.puzzle,paused:false,networkReady:true,remoteOwners:{},claimSerial:0,selected:null,drag:null,pan:null,space:false,pointers:new Map(),canvas:{focus(){},setPointerCapture(){},style:{}},network:{acquire:()=>claimed,move(){},release(){},drop:async()=>{}},point:e=>({x:e.clientX,y:e.clientY}),world:p=>p,groupAt:()=>group,draw(){}});
+ Object.assign(table,{state:room.puzzle,paused:false,networkReady:true,remoteOwners:{},claimSerial:0,selected:null,drag:null,pan:null,space:false,pointers:new Map(),canvas:{focus(){},setPointerCapture(){},getBoundingClientRect:()=>({left:0,top:0,width:800,height:600}),style:{}},network:{acquire:()=>claimed,move(){},release(){},drop:async()=>{}},point:e=>({x:e.clientX,y:e.clientY}),world:p=>p,groupAt:()=>group,draw(){}});
  table.down({button:0,pointerId:1,clientX:20,clientY:20,preventDefault(){}});
  table.move({pointerId:1,clientX:80,clientY:50});
  try{assert.equal(group.dx,original.dx+60);assert.equal(group.dy,original.dy+30);}finally{resolveClaim(true);await claimed;await Promise.resolve();table.destroy();Object.assign(globalThis,savedGlobals);}
@@ -89,3 +89,70 @@ test('fast connections coalesce high frequency motion without delaying drop',asy
  });
 });
 
+
+// The browser bits a PuzzleTable needs. The table is the real one; only the canvas is a stub.
+function stubCanvas(){const context={drawImage(){}};return {canvas:{getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){},releasePointerCapture(){},hasPointerCapture:()=>false,getBoundingClientRect:()=>({left:0,top:0,width:800,height:600}),style:{}}};}
+function stubDom(){const saved={document:globalThis.document,Path2D:globalThis.Path2D,ResizeObserver:globalThis.ResizeObserver,cancelAnimationFrame:globalThis.cancelAnimationFrame};
+ const context={drawImage(){}};globalThis.document={createElement:()=>({getContext:()=>context}),addEventListener(){}};globalThis.Path2D=class{};globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.cancelAnimationFrame=()=>{};
+ return {restore(){Object.assign(globalThis,saved);}};}
+
+test('the piece just dropped can be picked up again before the drop is confirmed',async()=>{
+ const originalFetch=globalThis.fetch,room=makeRoom('fast-hands','seaside-native-v2',12,Date.now()),member=addMember(room,'a','甲','a',Date.now()),moves=[];
+ globalThis.fetch=async(url,options={})=>{const action=options.body?JSON.parse(options.body):null;if(action){moves.push({...action});await wait(120);applyAction(room,member,action,Date.now());room.revision++;}return Response.json(snapshot(room,Date.now()));};
+ const {canvas}=stubCanvas(),saved=stubDom(),told=[];
+ const client=new RoomClient({token:'a',playerId:'a',room:snapshot(room,Date.now())});
+ const table=new PuzzleTable(canvas,structuredClone(room.puzzle),{naturalWidth:800,naturalHeight:600},()=>{},message=>told.push(message));
+ const cancelled=[],dropDrag=table.cancelNetworkDrag.bind(table);table.cancelNetworkDrag=(id,reason)=>{cancelled.push(id);return dropDrag(id,reason);};
+ const cleanup=client.attach(table);
+ Object.assign(table,{remoteOwners:{},pointers:new Map(),selected:null,drag:null,pan:null,point:e=>({x:e.clientX,y:e.clientY}),world:p=>p,groupAt:()=>table.state.groups.find(g=>g.id===0),draw(){},update(){}});
+ const group=()=>table.state.groups.find(g=>g.id===0),start={dx:group().dx,dy:group().dy};
+ try{
+  table.down({button:0,pointerId:1,clientX:0,clientY:0,preventDefault(){}});
+  table.move({pointerId:1,clientX:40,clientY:40});
+  table.up({pointerId:1});
+  assert.equal(table.network.canAcquire(0),true,'the piece just dropped stayed locked out until the server answered');
+  table.down({button:0,pointerId:2,clientX:40,clientY:40,preventDefault(){}});
+  assert.ok(table.drag,'the second drag never started');
+  table.move({pointerId:2,clientX:130,clientY:110});
+  const expected=start.dx+40+90;
+  assert.equal(group().dx,expected,'the piece did not follow the pointer');
+  table.up({pointerId:2});
+  await wait(700);
+  const drops=moves.filter(action=>action.type==='drop');
+  assert.equal(drops.length,2);
+  assert.equal(drops.at(-1).dx,expected,'the second drop did not carry the position the player left the piece at');
+  assert.equal(Math.round(room.puzzle.groups.find(g=>g.id===0).dx),Math.round(expected));
+  assert.deepEqual(moves.filter(a=>a.type==='claim'||a.type==='drop').map(a=>a.type),['claim','drop','claim','drop'],'the second claim jumped ahead of the drop it replaces');
+  assert.deepEqual(cancelled,[],'the first drop confirmation cancelled the drag that replaced it');
+  assert.deepEqual(told,[]);
+ }finally{cleanup();table.destroy();saved.restore();globalThis.fetch=originalFetch;}
+});
+
+test('a refusal belongs to the drag it was sent for and never cancels the next one',async()=>{
+ await withServer(async({room,table,canceled})=>{
+   const firstClaim=table.network.acquire(0);table.network.move(0,60,60);
+   const firstDrop=table.network.drop(0,60,60);
+   assert.equal(table.network.canAcquire(0),true,'the group awaiting confirmation was still locked out');
+   const secondClaim=table.network.acquire(0);
+   table.state.groups.find(g=>g.id===0).dx=200;table.network.move(0,200,200);
+   await firstDrop;
+   assert.deepEqual(canceled,[],'the refusal cancelled the newer drag');
+   assert.equal(await firstClaim,true);
+   assert.equal(await secondClaim,false,'a claim on a group the server has taken away has to be denied');
+   assert.deepEqual(canceled,[0],'the newer drag was not taken back after the server refused it');
+   assert.ok(room.puzzle.groups.some(g=>g.locked&&g.pieces.includes(0)));
+ },async(action,room)=>{if(action.type==='drop'){const group=room.puzzle.groups.find(g=>g.id===0);if(group&&!group.locked){group.locked=true;group.dx=0;group.dy=0;}}});
+});
+
+test('a refused claim takes the piece back and says why',async()=>{
+ const {canvas}=stubCanvas(),saved=stubDom(),told=[],room=makeRoom('refused-room','seaside-native-v2',12,Date.now());
+ const table=new PuzzleTable(canvas,room.puzzle,{naturalWidth:800,naturalHeight:600},()=>{},message=>told.push(message));
+ Object.assign(table,{paused:false,networkReady:true,remoteOwners:{},claimSerial:0,selected:null,drag:null,pan:null,space:false,pointers:new Map(),network:{canAcquire:()=>true,acquire:async()=>false,move(){},drop(){},release(){}},point:e=>({x:e.clientX,y:e.clientY}),world:p=>p,groupAt:()=>table.state.groups[0],draw(){}});
+ try{
+  table.down({button:0,pointerId:1,clientX:10,clientY:10,preventDefault(){}});
+  assert.ok(table.drag,'the press has to start the drag before the server answers');
+  await wait(0);await wait(0);
+  assert.equal(table.drag,null,'the piece stayed under the pointer after a refused claim');
+  assert.deepEqual(told,['这组拼块没能确认，已经放回原处']);
+ }finally{table.destroy();saved.restore();}
+});

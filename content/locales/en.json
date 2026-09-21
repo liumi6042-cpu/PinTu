@@ -316,6 +316,7 @@
   "桌面没有足够的散片位置": "There is not enough room for the loose pieces.",
   "不支持的拼图片数": "Unsupported piece count",
   "这组拼块还在确认位置，可以先移动其他拼块": "This group's position is still syncing. Try moving another piece.",
+  "这组拼块没能确认，已经放回原处": "That group could not be confirmed, so it went back where it was.",
   "每一片，都找到了自己的位置。": "Every piece has found its place.",
   "拼块连在一起了，可以整组拖动": "Pieces connected! You can drag them as a group.",
   "已选中下一块。方向键移动，回车吸附。": "Next piece selected. Use arrow keys to move and Enter to snap.",

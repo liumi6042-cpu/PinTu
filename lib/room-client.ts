@@ -115,7 +115,10 @@ export class RoomClient {
   attach(table: PuzzleTable) {
     this.table = table; this.stopped = false;
     table.network = {
-      canAcquire: id => this.connected && !this.organizing && this.active === null && !this.drags.has(id) && this.drags.size < 8,
+      // A group whose drop is still being confirmed can be picked up again: the piece is back
+      // on the table, and waiting for the confirmation is what made a quick second drag feel
+      // blocked. Only a group that is being moved right now is refused.
+      canAcquire: id => this.connected && !this.organizing && this.active === null && this.drags.size < 8 && !this.moving(id),
       acquire: id => this.acquire(id), move: (id, dx, dy) => this.move(id, dx, dy),
       drop: (id, dx, dy) => this.drop(id, dx, dy), release: id => this.release(id),
     };
@@ -137,8 +140,9 @@ export class RoomClient {
     } catch (error) { this.fail(error); }
     finally { if (!this.stopped) this.pollTimer = setTimeout(() => void this.poll(), Math.max(this.retryAt-Date.now(),this.connected ? roomPollDelay(this.drags.size > 0 || Object.keys(this.snapshot.leases).length > 0, this.idlePolls, typeof document !== 'undefined' && document.hidden) : Math.min(4000, 800 * this.failures))); }
   }
+  private moving(id: number) { const task = this.drags.get(id); return !!task && !task.ending; }
   acquire(id: number): Promise<boolean> {
-    if (!this.connected || this.organizing || this.active || this.drags.has(id) || this.drags.size >= 8) return Promise.resolve(false);
+    if (!this.connected || this.organizing || this.active || this.drags.size >= 8 || this.moving(id)) return Promise.resolve(false);
     let grant!: (ok: boolean) => void; let finish!: () => void;
     const granted = new Promise<boolean>(resolve => { grant = resolve; });
     const finished = new Promise<void>(resolve => { finish = resolve; });
@@ -165,7 +169,8 @@ export class RoomClient {
           const result = await this.request(task.ending.type === 'drop'
             ? { type: 'drop', groupId: task.id, dx: task.ending.dx, dy: task.ending.dy, seq: ++task.seq }
             : { type: 'release', groupId: task.id });
-          this.drags.delete(task.id);
+          // A newer drag of this group may have taken the reservation over; leave it in place.
+          if (this.drags.get(task.id) === task) this.drags.delete(task.id);
           this.receive(result, true, false);
           // A polling response may arrive before this acknowledgement. Sound still
           // belongs to this successful local drop, never to general room updates.
@@ -186,9 +191,13 @@ export class RoomClient {
     } catch (failure) { error = failure; task.grant(false); }
     finally {
       task.grant(false);
+      // A newer drag of the same group replaces this one in the map and owns the group now.
+      const superseded = this.drags.has(task.id) && this.drags.get(task.id) !== task;
       if (this.drags.get(task.id) === task) this.drags.delete(task.id);
       if (this.active === task) this.active = null;
-      if (error) { this.table?.cancelNetworkDrag(task.id); this.fail(error); }
+      // A refusal belongs to the drag it was sent for: it never cancels the newer one, which
+      // hears about it through its own claim.
+      if (error) { if (!superseded) this.table?.cancelNetworkDrag(task.id); this.fail(error); }
       // Reconcile denied/expired claims, including other players' authoritative offsets.
       if (!this.stopped) {
         if (error) { try { this.receive(await this.request(), true); } catch (failure) { this.fail(failure); } }
