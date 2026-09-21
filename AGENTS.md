@@ -1,5 +1,30 @@
 # 本项目图片库约定
 
+- 2026-09-21 **7 张「用户提供作品」正式命名：识图命名，取代「实测主色」中性名**。
+  - **本条覆盖下方 2026-09-20「首批用户提供作品成批上架」条目里的三条约定**：即「标题 = 实测主色命名」
+    「副标题只写画风与色调，一个字都不描述画面主体」「整个环节没有任何识图能力」。
+    当时读不了图属实，但**现在换的模型可以读图了**，用户要求「让模型识图给这些图片起名」。
+  - **逐张看图后重新命名**（旧 → 新）：暖棕厚涂 01 → **青花果宴**（地中海长桌静物：青花瓷茶具、藤篮水果、猫、窗外海景）／
+    青绿厚涂 02 → **鸟屋花园**（鸟屋与花径、多种鸟、湖景白屋）／橄榄厚涂 03 → **林中聚会**（狐狸·鹿·猫头鹰·松鼠·兔子·瀑布木屋）／
+    湖蓝厚涂 04 → **碧海漫游**（海龟·海豚·小丑鱼·珊瑚）／暖金厚涂 05 → **金色草原**（狮·象·长颈鹿·斑马·火烈鸟的日落水塘）／
+    苔绿厚涂 06 → **红仓农场**（马·奶牛·绵羊·猪·鸡鸭与红谷仓）／草绿厚涂 07 → **石屋花径**（石屋花径、金毛·花猫·刺猬）。
+  - **副标题同步改成如实描述画面主体**（识图之后才允许这么写，之前那样写就是编造）；英文名与英文副标题一并给出，
+    风格沿用既有的短句（`Blue Porcelain Feast` / `Woodland Gathering` / `Golden Savanna` …）。
+  - **改动面只有两个文件**：`content/puzzle-catalog.json`（title + subtitle）与 `content/locales/en.json`（14 条词条）。
+    **id 一律不动** → 线上 URL、sitemap 条数（51）、房间与存档引用、`content/image-provenance/*.json` 全不受影响，
+    也不需要重出图片资源或跑 `prepare-image-delivery`。改完仍要 `npm run check:images` ＋ 重新出包上线（用户原话「改名成本」那条照旧成立）。
+  - **⚠️⚠️ `content/locales/en.json` 绝对不能做 `JSON.parse` → `JSON.stringify` 回写**：这个文件里 **`渐入佳境` 是重复键**
+    （第 307 行是难度档位 `Find your flow`，第 522 行是成就名 `Finding the Rhythm`）。`JSON.parse` 取后者，
+    回写就会**抹掉前一条、直接改变线上文案**——这次我先这么干了一版，`git diff` 里看到 `渐入佳境` 被改掉才发现，已回滚重做。
+    改这个文件必须**逐行文本替换，并断言每条明文在文件里恰好命中一次**（脚本 `work/rename-studies.mjs` 就是这么写的，
+    它同时校验「改后行数不变」，能兜住这类误伤）。**复查重复键**：`node work/dupcheck.cjs`（不解析 JSON，按行统计）。
+    这个重复键本身是**既有问题，本次未动**：线上两处都显示 `Finding the Rhythm`，可接受，但别再踩上面那个回写坑。
+  - **测试约束（漏一条英文词条就挂）**：`tests/search-indexing.test.mjs` 要求**中英标题各自在全站唯一**
+    （`photo.subtitle` 出现在中文页 description 里，所以副标题也要唯一）；`tests/language.test.mjs` 要求
+    `t(photo.title)` / `t(photo.subtitle)` 不含汉字。命名脚本里内置了这两项唯一性校验，先在本地挂掉比在发布包里挂掉便宜。
+  - 顺手清掉 `work/release-package-tests/fixture-*` 残骸（上一次 release 冒烟的产物，87 个文件）：
+    它们让 `node node_modules/typescript/bin/tsc --noEmit` 报 3 条假错 `Cannot find name 'fixture'`，
+    会让类型检查看起来是红的 —— **`tsc` 出现这种假错先看 `work/` 有没有残骸，别怀疑源码**。
 - 2026-09-21 **方案 A：回来过的人直进大厅 + 回访提醒搬进大厅**（`releases/20260921-05`）。
   - 新增 `lib/entrance-preference.ts`（**纯函数**，可单测）：`entrancePaths / isEntrancePath /
     skipsEntrance / lobbyFor / markLobbyVisited`。
