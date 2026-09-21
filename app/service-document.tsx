@@ -3,7 +3,7 @@ import { useEffect,useState } from 'react';
 import CommunityShell from './community-shell';
 import { useLanguage } from './language-switch';
 import { usePathname } from 'next/navigation';
-import { isChinesePath } from '@/lib/site-paths';
+import { hasChineseAddress,isChinesePath } from '@/lib/site-paths';
 import { apiJson } from '@/lib/community-client';
 const sections={
  help:[
@@ -35,7 +35,7 @@ const sections={
  ]
 };
 export default function ServiceDocument({kind}:{kind:keyof typeof sections}){
- const lang=useLanguage(),zh=isChinesePath(usePathname()||''),en=zh?false:lang==='en';const [info,setInfo]=useState<{operator:string;support:string;policiesReviewed:boolean}|null>(null);
+ const lang=useLanguage(),pathname=usePathname()||'',zh=isChinesePath(pathname),en=hasChineseAddress(pathname)?!zh:lang==='en';const [info,setInfo]=useState<{operator:string;support:string;policiesReviewed:boolean}|null>(null);
  useEffect(()=>{apiJson<typeof info>('/api/site-info').then(setInfo).catch(()=>{});},[]);
  const title=kind==='help'?(en?'Help & saves':'帮助与存档'):kind==='privacy'?(en?'Privacy information':'隐私说明'):(en?'Terms of use':'服务条款');
  return <CommunityShell active="personal"><main className="service-main"><h1>{title}</h1>

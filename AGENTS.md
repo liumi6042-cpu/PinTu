@@ -1,5 +1,37 @@
 # 本项目图片库约定
 
+- 2026-09-21 **把「按地址」这条规矩在成对页面上贯彻到底**（用户报「中文大厅里还有个别英文没翻译」）。
+  - **用户看到的**：`/lobby` 页面主体是中文，但**回访提醒**（`Your “Moonlight after Rain” is 712 pieces from done`
+    ／`Keep going`）和**今日一图**（`PUZZLE OF THE DAY` / `Garden Picnic` / `Start a table`）是英文。
+  - **根因：上一版只把「跟地址走」应用到了一半**，于是同页两种规则并存 ——
+    跟地址的（回访提醒、今日一图、图卡/导航/页脚）、跟界面语言的（`copy()` 在**英文地址**上退回了 `t()`）。
+    访客的界面语言由 IP 判定（`/api/locale` 对本机返回 `{"language":"en","source":"ip"}` —— 走代理出口是海外），
+    于是「英文地址 + 中文界面」时，页面就成了中文正文夹英文卡片。
+  - **统一后的规矩（一句话）**：**成对地址的页面，两种语言都由地址决定，双向成立** ——
+    `/lobby` 全英文（哪怕访客浏览器是中文）、`/zh/lobby` 全中文（哪怕访客浏览器是英文）；
+    **没有中文版的页面**（`/personal`、`/room/<id>`、`/membership`、`/admin`、`/achievements`、`/privacy`、`/terms`）
+    才跟随访客语言 —— 那里强制按地址会把中文用户按成英文。
+  - **实现**：`lib/address-language.ts` 导出**纯函数** `addressCopy(pathname, text)`
+    （成对 → 中文地址返回原文 / 英文地址 `englishFor()`；非成对 → `t()`），`useAddressCopy()` 只是它的客户端壳。
+    `lib/i18n.ts` 新增导出 **`englishFor()`**＝「不管界面语言，一律给英文」（`t()` 现在就是它 + 一道语言闸）。
+  - **必须一起改的组件（`zh ? 中文 : 界面语言` 这种「半地址」写法全部作废）**：
+    `service-footer` / `feedback-widget` / `puzzle-introduction` / `service-document` / `search-introduction`
+    改成 `hasChineseAddress(pathname) ? !zh : (useLanguage()==='en')`；`puzzle-opening`（点图到进房之间的过场，
+    渲染在成对页面上）改用 `copy()`。
+    **`Game`（房间）、`assistance-tools`、`sound-control`、`celebration`、`game-achievements`、`achievement-badge`
+    保持 `t()`** —— 它们只在没有中文版的房间里渲染。`app/paper-launch|reel|surprise.tsx` 是**死代码（无引用）**，不要动。
+  - **注意 `LanguageSwitch` 与 `ServiceFooter` 的差别**：语言按钮的 `Auto/自动`、`语言/Language`、
+    页脚的 `帮助与存档/Help & saves` 是**硬编码中英对**（`en.json`/`extras` 里**没有**这些键），
+    所以它们用 `chinesePage?'自动':'Auto'` 这种**内联对照 + 地址判断**，**不能**交给 `copy()`（会原样吐出中文）。
+  - **新增护栏 `tests/address-language.test.mjs`**（4 条）：① 成对地址双向（中文地址原样、英文地址必须变成英文且不含汉字，
+    含全部 47 张图的标题/副标题）② 非成对页面跟随界面语言 ③ 非字符串原样透传
+    ④ **扫描 `app/*.tsx` 里所有 `copy('中文')`，断言每一条都有英文对照** —— 这条当场抓出
+    `dream-intro` 的 `跳过开场 →` 在英文首屏没有对照（`en.json` 里其实有，是源码写成 `\u2192` 转义导致的假警报，
+    扫描需要先解码转义；但这类扫描值得留着）。**改文案后跑它，比上线后发现便宜。**
+  - **真浏览器验收脚本 `work/check-mixed-language.mjs`**：逐页打开成对地址（含 `/?home=1`、`/zh?home=1`
+    绕开首屏跳转），把 DOM 里越界文案列出来（英文页出现中文 / 中文页出现英文，品牌标语与 `EN`/`中文` 按钮除外）。
+    实测 **8 个页面全部 0 越界**（唯一命中是运营者邮箱 `mliu03831@gmail.com`，属数据不是文案）。
+    **用它的前提**：本地起了服务、CDP 代理在跑、拿一个标签页 id。
 - 2026-09-21 **中文页的服务端文案全面改为「按地址」判定（`useAddressCopy`）＋ 7 张作品改分类**。
   - 起因：用户一句「修正 出包上线」。**实测发现缺陷比我先前报告的大得多**：
     `/zh/gallery` 的 SSR HTML **整页英文**（导航、筛选按钮、47 个图名与描述、`Start puzzle`）；

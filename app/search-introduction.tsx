@@ -6,7 +6,9 @@ import { PHOTOS } from '@/lib/puzzle-catalog';
 // Chinese pages carry their own server-rendered copy, so this section stands down
 // there rather than printing the same three blocks twice (see ChineseIntroduction).
 export default function SearchIntroduction({kind}:{kind:'home'|'lobby'}) {
-  const en = useLanguage() === 'en';
+  // This section only renders on the English address (the Chinese pages carry their own copy),
+  // so its wording is English whatever language the visitor reads.
+  const en = !isChinesePath(usePathname() || '');
   if (isChinesePath(usePathname() || '')) return null;
   return <section className="search-introduction">
     <p className="section-kicker">JIGSAW NOOK</p>

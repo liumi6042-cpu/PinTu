@@ -105,4 +105,12 @@ export function t<T>(value:T):T {
   const trimmed=value.trim(),translated=englishText(trimmed);
   return (translated===trimmed?value:value.replace(trimmed,translated)) as T;
 }
+// The English copy of a string, whatever language the visitor reads. A page whose address is
+// the English one says everything in English — otherwise a Chinese-reading visitor on /lobby
+// got Chinese body copy with an English day's picture and an English resume card mixed in.
+export function englishFor<T>(value:T):T {
+  if(typeof value!=='string')return value;
+  const trimmed=value.trim(),translated=englishText(trimmed);
+  return (translated===trimmed?value:value.replace(trimmed,translated)) as T;
+}
 export function playerName(value:string){return /^游客 [A-F0-9]{4}$/.test(value)?t(value):value;}
