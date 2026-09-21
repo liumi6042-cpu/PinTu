@@ -1,0 +1,28 @@
+import { dailyPuzzle,dailyPuzzleDate } from '@/lib/daily-puzzle';
+import { recommendedPieces } from '@/lib/play-guidance';
+import { maximumPieces } from '@/lib/piece-policy';
+import { englishCopy } from '@/lib/seo';
+import { zhPath } from '@/lib/site-paths';
+
+// Rendered on the server so the day's picture is in the HTML a crawler reads, and
+// so two visitors on the same day can never be shown different pictures.
+export default function DailyPuzzle({locale}:{locale:'zh'|'en'}) {
+  const photo=dailyPuzzle(),zh=locale==='zh',now=Date.now();
+  const title=zh?photo.title:englishCopy(photo.title),subtitle=zh?photo.subtitle:englishCopy(photo.subtitle);
+  const recommended=recommendedPieces(photo.id),maximum=maximumPieces(photo.id);
+  const href=(zh?zhPath('/gallery'):'/gallery')+'?mode=public&image='+photo.id;
+  return <section className="daily-puzzle" aria-labelledby="daily-puzzle-heading">
+    <p className="section-kicker">{zh?'今日拼图':'PUZZLE OF THE DAY'}</p>
+    <h2 id="daily-puzzle-heading">{zh?'今天，就拼这一幅':'One picture, picked for today'}</h2>
+    <div className="daily-puzzle-card">
+      <img src={photo.thumbSrc} alt={title} width={480} height={384} loading="lazy" decoding="async"/>
+      <div>
+        <h3>{title}</h3>
+        <p>{subtitle}</p>
+        <p>{zh?`建议从 ${recommended} 片开始，这张图最高支持 ${maximum.toLocaleString('zh-CN')} 片。`:`Start with ${recommended} pieces. This picture supports up to ${maximum.toLocaleString('en-US')}.`}</p>
+        <a className="daily-puzzle-action" href={href}>{zh?'现在开一桌':'Start a table'} →</a>
+      </div>
+    </div>
+    <p className="daily-puzzle-note">{zh?`${dailyPuzzleDate(now)} · 每天零点（北京时间）换一张，全站同一张。`:`${dailyPuzzleDate(now)} · A new picture each day at midnight Beijing time, the same for every visitor.`}</p>
+  </section>;
+}

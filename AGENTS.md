@@ -1,5 +1,31 @@
 # 本项目图片库约定
 
+- 2026-09-21 **留存优化第一批：每日一图 + 徽章阶梯补密**（用户从三条建议里选了这两条先做）。
+  - **每日一图**：新增 `lib/daily-puzzle.ts` —— `dailyPuzzleDay/dailyPuzzleDate/dailyPuzzle`。
+    **按北京时间零点换图**（`now + 8h`，与本项目 `achievementDay` 同一口径），
+    同一天内所有访客拿到**同一张**；目录顺序固定，所以同一天永远同一张，
+    且**47 天覆盖全部 47 张后才重复**。新增服务端组件 `app/daily-puzzle.tsx`
+    （接收 `locale`，中文/英文各自的文案，服务端直出所以爬虫读得到），
+    通过 `HomeExperience` 的 **`daily` 插槽 prop** 注入首页（RSC 允许把服务端组件当 prop 传给客户端组件）。
+  - **顺手修掉中文首页的页脚位置**：`HomeExperience` 加了 `footer` 开关。原来 `/zh` 是
+    `HomeExperience` + `ChineseIntroduction`，而 `ServiceFooter` 在 `HomeExperience` 内部，
+    导致**页脚出现在中文内容之前**（中间）。现在 `/zh` 传 `footer={false}`，页脚移到最后。
+  - **徽章从 10 枚补到 16 枚**（`lib/achievements.ts`）：收藏组补 2/3 张，同行组补 2/3 张，
+    日常组补 2 天/3 天档，**`days-7` 保留为长期目标**。
+    依据是实测漏斗：「第一幅风景」50 人 →「小小收藏家」只剩 6 人，而唯一的日常徽章
+    `days-7` 发放数为 **0**（玩家最多只到 5 天）—— 阶梯太陡、日常组完全没反馈。
+  - **踩到的测试约束**：`tests/achievements.test.mjs` **写死了 `ACHIEVEMENTS.length===10`**
+    与「一次给满后 `awardAchievements(...).length===10`」，已同步改为 16（**有意修改**）。
+    同文件另有断言：**每个徽章的 name/description/group 都必须能译成英文且不含中文** ——
+    所以新徽章必须同时补 `content/locales/en.json` 的词条，否则测试失败。
+  - 新增 `tests/daily-puzzle.test.mjs`：同一天一致、**北京时间零点换图**（并断言 16:00 UTC
+    已属次日，即 UTC 口径会错）、**整轮不重复且覆盖全部已发布图**。
+  - 验证：tsc 干净；聚焦测试 **20/20**；`test:release` 2/2；`check:images` 47；
+    `tests/seo-http.py --local` **全绿**（102 页）；真浏览器验收两语首页每日一图可见、
+    缩略图加载、位于页脚之前、链接各自本地化（`/gallery?…` vs `/zh/gallery?…`）、零报错。
+  - **已知待办**：`app/achievements/album.tsx` 里「去拼一幅新作品」仍硬编码 `/gallery`
+    （`/achievements` 无中文版，暂可接受）。
+
 - 2026-09-20 **中文化 /zh 上线（中英双版本 + hreflang）**。用户问「中文用户只加『免费拼图』二字行不行」，
   核查后**没有采纳**：图页 title 实测 **62 字符**，搜索结果约 **60 等效宽度**处截断，再塞中文（中文双宽，
   4 字≈8 个英文宽度）到 70 会**切掉结尾的品牌/作品名**。改为**独立中文页面**方案。

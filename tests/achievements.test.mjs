@@ -13,12 +13,12 @@ test('every achievement name and condition has an English translation',()=>{
   try{setLanguage('en');for(const badge of ACHIEVEMENTS)for(const value of [badge.name,badge.description,badge.group])assert.ok(!/[\u3400-\u9fff]/.test(t(value)),value);}
   finally{setLanguage('zh');}
 });
-test('10 badges use distinct pictures, solo challenge sizes, unique days, and stable award dates',()=>{
-  assert.equal(ACHIEVEMENTS.length,10);const book=emptyBook();
+test('16 badges use distinct pictures, solo challenge sizes, unique days, and stable award dates',()=>{
+  assert.equal(ACHIEVEMENTS.length,16);const book=emptyBook();
   book.facts=Array.from({length:10},(_,i)=>({key:''+i,imageId:'picture'+i,pieces:2000,mode:i<5?'team':'solo',category:'风景',completedAt:100}));
   book.facts.push({...book.facts[0],key:'repeat'});book.days=Array.from({length:7},(_,i)=>'2026-09-'+(10+i));book.days.push(book.days[0]);
   assert.equal(achievementProgress(book).pictures,10);assert.equal(achievementProgress(book).days,7);
-  assert.equal(awardAchievements(book,1000).length,10);assert.deepEqual(awardAchievements(book,2000),[]);assert.equal(book.earned.first,1000);
+  assert.equal(awardAchievements(book,1000).length,16);assert.deepEqual(awardAchievements(book,2000),[]);assert.equal(book.earned.first,1000);
   book.facts=book.facts.filter(f=>f.mode==='team');assert.equal(achievementProgress(book).soloPieces,0);
   assert.equal(achievementDay(Date.parse('2026-09-09T16:00:00Z')),'2026-09-10');
 });
