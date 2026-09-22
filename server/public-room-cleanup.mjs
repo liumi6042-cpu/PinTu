@@ -1,10 +1,13 @@
 // Works with both D1 and the Node SQLite adapter. All eligibility checks run
 // against the latest stored row inside the same transaction as deletion.
 //
-// A public room is kept for at most one day from the moment it is created. That deadline lives
-// in expires_at and is never extended by playing again (lib/public-room-retention.ts), so the
-// sweep deletes public rooms whose stored deadline has passed. Rooms nobody has played, with no
-// connected or placed pieces, go as soon as the table empties.
+// A public room is shown in the lobby for one day from creation (36 hours at 500 pieces and up).
+// Once that day ends the room is hidden from the lobby, but it is not thrown away: everyone who
+// played it keeps it in their puzzle records and can come back at any time, and it briefly shows
+// in the lobby again while somebody plays it. So the sweep only reclaims public rooms that
+// nobody is sitting at and that either have no progress at all, or have been left untouched for
+// a month (the same horizon private rooms use).
+const IDLE_KEEP_MS=30*24*60*60*1000;
 export async function cleanupPublicRooms(database,now=Date.now()){
   const orphans="SELECT d.room_id FROM puzzle_room_directory d WHERE d.visibility='public' AND NOT EXISTS(SELECT 1 FROM puzzle_rooms r WHERE r.id=d.room_id)";
   const result=await database.batch([
@@ -12,7 +15,7 @@ export async function cleanupPublicRooms(database,now=Date.now()){
       AND NOT EXISTS(SELECT 1 FROM json_each(data,'$.members') m WHERE json_extract(m.value,'$.lastSeen')>?)
       AND (NOT EXISTS(SELECT 1 FROM json_each(data,'$.puzzle.groups') g
         WHERE json_extract(g.value,'$.locked')=1 OR json_array_length(json_extract(g.value,'$.pieces'))>1)
-        OR expires_at<=?)`).bind(now-22000,now),
+        OR COALESCE(json_extract(data,'$.lastPlayedAt'),json_extract(data,'$.createdAt'),0)<=?)`).bind(now-22000,now-IDLE_KEEP_MS),
     database.prepare(`DELETE FROM puzzle_room_cursors WHERE room_id IN (${orphans})`),
     database.prepare(`DELETE FROM puzzle_room_moderation WHERE room_id IN (${orphans})`),
     database.prepare(`DELETE FROM puzzle_room_directory WHERE room_id IN (${orphans})`),

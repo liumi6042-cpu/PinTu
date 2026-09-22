@@ -16,7 +16,17 @@ export type RoomAction={type:'heartbeat'|'leave'|'claim'|'move'|'drop'|'release'
 export class RoomError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}
 export function validName(value:unknown){if(typeof value!=='string')throw new RoomError('请填写昵称');const name=value.trim().replace(/[\u0000-\u001f\u007f]/g,'');if(!name||name.length>16)throw new RoomError('昵称请填写 1–16 个字');return name;}
 export function makeRoom(id:string,imageId:string,count:number,now:number):Room{const level=LEVELS.find(l=>l.count===count);if(!level||!PHOTO_IDS.includes(imageId))throw new RoomError('请选择有效图片与片数');if(count>MAX_NEW_PIECES)throw new RoomError(HIGH_PIECES_PAUSED);if(!supportsPieceCount(imageId,count))throw new RoomError(PIECE_RESOLUTION_ERROR);return {id,retentionVersion:2,lastPlayedAt:now,puzzle:createPuzzle(imageId,level.cols,level.rows),revision:0,createdAt:now,expiresAt:now+ROOM_LIFETIME,completedAt:null,members:[],leases:{}};}
-export function ensureOpen(room:Pick<Room,'expiresAt'>,now:number){if(room.expiresAt<=now)throw new RoomError('房间已过期，请重新创建房间',410);}
+// A table counts as started once a group has been connected or locked. That is what makes it
+// worth keeping after its lobby day ends, and what lets its players come back to it.
+export function hasTableProgress(puzzle:Pick<PuzzleState,'groups'>){return puzzle.groups.some(group=>group.locked||group.pieces.length>1);}
+export function ensureOpen(room:Pick<Room,'expiresAt'|'visibility'|'puzzle'>,now:number){
+ if(room.expiresAt>now)return;
+ // Past its lobby day a public table is not gone: everyone who played it can return from My
+ // puzzles and pick up where they left off, and it briefly shows in the lobby again while
+ // somebody plays. A table with nothing on it is not worth keeping.
+ if(room.visibility==='public'&&hasTableProgress(room.puzzle))return;
+ throw new RoomError('房间已过期，请重新创建房间',410);
+}
 export function hasRoomAdmission(room:Room,identity?:string){return !!identity&&(room.ownerId===identity||!!room.admitted?.[identity]||!!room.participants?.[identity]||room.members.some(m=>m.accountId===identity||m.guestId===identity));}
 export function touchRoom(room:Room,now:number){if(room.completedAt!==null)return;room.lastPlayedAt=Math.max(room.lastPlayedAt||0,now);if(room.visibility==='public')touchPublicRoom(room,now);else room.expiresAt=room.lastPlayedAt+ROOM_LIFETIME;}
 export function pruneLeases(room:Room,now:number){for(const [id,l] of Object.entries(room.leases))if(l.expires<=now||!room.puzzle.groups.some(g=>g.id===Number(id)&&!g.locked))delete room.leases[id];}
@@ -37,7 +47,7 @@ export function addMember(room:Room,id:string,name:string,digest:string,now:numb
  room.members=room.members.filter(m=>now-m.lastSeen<5*60*1000);if(room.members.length>=32)throw new RoomError('加入过于频繁，请稍后再试',429);
  const used=new Set(room.members.filter(m=>now-m.lastSeen<ONLINE_MS).map(m=>m.color));const member={id,name:validName(name),digest,lastSeen:now,joinedAt:now,color:COLORS.find(c=>!used.has(c))||COLORS[room.members.length%8],...(accountId?{accountId}:{}),...(guestId?{guestId}:{})};room.members.push(member);touchRoom(room,now);return member;
 }
-export function authenticate(room:Pick<Room,'expiresAt'|'members'>,digest:string,now:number){ensureOpen(room,now);const member=room.members.find(m=>m.digest===digest||((m.accountId||m.guestId)&&m.previousDigests?.includes(digest)));if(!member)throw new RoomError('请重新加入房间',401);return member;}
+export function authenticate(room:Pick<Room,'expiresAt'|'visibility'|'puzzle'|'members'>,digest:string,now:number){ensureOpen(room,now);const member=room.members.find(m=>m.digest===digest||((m.accountId||m.guestId)&&m.previousDigests?.includes(digest)));if(!member)throw new RoomError('请重新加入房间',401);return member;}
 export function roomElapsedMs(room:Room,now:number){const start=room.startedAt===undefined?room.createdAt:room.startedAt;return start===null?0:Math.max(0,(room.completedAt??now)-start);}
 export function snapshotMetadata(room:Room,now:number):Omit<RoomSnapshot,'puzzle'> {return {customImage:room.customImage,title:room.title,acceptingNew:room.acceptingNew!==false,achievementDays:Object.fromEntries(room.members.filter(m=>now-m.lastSeen<ONLINE_MS).map(m=>[m.id,room.achievements?.contributors[m.accountId||m.guestId||'']?.days.at(-1)||''])),id:room.id,revision:room.revision,serverTime:now,expiresAt:room.expiresAt,visibility:room.visibility,startedAt:room.startedAt,completedAt:room.completedAt,participantCount:Object.keys(room.participants||{}).length,members:room.members.filter(m=>now-m.lastSeen<ONLINE_MS).map(({id,name,color,lastSeen})=>({id,name,color,lastSeen})),leases:Object.fromEntries(Object.entries(room.leases).filter(([,l])=>l.expires>now))};}
 export function snapshot(room:Room,now:number):RoomSnapshot {const puzzle=structuredClone(room.puzzle);puzzle.elapsed=Math.floor(roomElapsedMs(room,now)/1000);return {...snapshotMetadata(room,now),puzzle};}

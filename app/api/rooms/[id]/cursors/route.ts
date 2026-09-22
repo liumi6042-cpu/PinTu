@@ -1,15 +1,15 @@
 import { localDb } from '@/lib/local-db';
 import { body, failure, getDigest, json,readRoom } from '@/lib/room-store';
 import { checkRoomAccount } from '@/lib/room-account';
-import { ONLINE_MS, RoomError, type Member, type RoomVisibility } from '@/lib/room-engine';
+import { ONLINE_MS, RoomError, type Member, type Room, type RoomVisibility } from '@/lib/room-engine';
 import { CURSOR_TTL, cursorInput, type SharedCursor } from '@/lib/room-cursors';
 type Context={params:Promise<{id:string}>};
-type CursorRoom={id:string;expiresAt:number;visibility?:RoomVisibility;members:Member[]};
+type CursorRoom={id:string;expiresAt:number;visibility?:RoomVisibility;members:Member[];puzzle:Room['puzzle']};
 async function authorize(request:Request,context:Context){
   const {id}=await context.params,now=Date.now(),digest=await getDigest(request);
   if(!/^[a-f0-9]{32}$/.test(id))throw new RoomError('邀请链接格式不正确',404);
   // Share the bounded room read cache with polling. Revision is checked in SQLite on every request.
-  const stored=await readRoom(id),room:CursorRoom={id,expiresAt:stored.expiresAt,visibility:stored.visibility,members:stored.members};
+  const stored=await readRoom(id),room:CursorRoom={id,expiresAt:stored.expiresAt,visibility:stored.visibility,members:stored.members,puzzle:stored.puzzle};
   const member=await checkRoomAccount(request,room,digest,now);
   if(room.visibility==='solo')throw new RoomError('单人拼图无需同步鼠标',400);
   if(now-member.lastSeen>=ONLINE_MS)throw new RoomError('请先重新连接房间',409);

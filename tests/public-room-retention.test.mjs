@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { SqliteD1 } from '../server/sqlite.mjs';
 import { cleanupPublicRooms } from '../server/public-room-cleanup.mjs';
-import { makeRoom,addMember,applyAction,ONLINE_MS } from '../lib/room-engine.ts';
-import { PUBLIC_ROOM_LIFETIME_MS } from '../lib/public-room-retention.ts';
+import { makeRoom,addMember,applyAction,ensureOpen,hasTableProgress,ONLINE_MS } from '../lib/room-engine.ts';
+import { PUBLIC_ROOM_LIFETIME_MS,PUBLIC_ROOM_LARGE_LIFETIME_MS } from '../lib/public-room-retention.ts';
 
-test('cleanup keeps rooms inside their one-day window, removes rooms past it, and never touches private work',async()=>{
- const db=new SqliteD1(':memory:',resolve('drizzle')),now=Date.now(),day=PUBLIC_ROOM_LIFETIME_MS;
- const seed=(id,{visibility='public',deadline=now+day,online=false,progress=false,merged=false}={})=>{
-  const room=makeRoom(id,'seaside-native-v2',108,now-day*2);room.visibility=visibility;room.expiresAt=deadline;
+const HOUR=60*60*1000,DAY=24*HOUR;
+
+test('cleanup keeps tables with progress after their lobby day, and reclaims the rest',async()=>{
+ const db=new SqliteD1(':memory:',resolve('drizzle')),now=Date.now();
+ const seed=(id,{visibility='public',deadline=now+DAY,online=false,progress=false,merged=false,playedAt}={})=>{
+  const room=makeRoom(id,'seaside-native-v2',108,now-DAY*2);room.visibility=visibility;room.expiresAt=deadline;
+  if(playedAt!==undefined)room.lastPlayedAt=playedAt;
   if(online)room.members=[{id:'player',name:'QA',lastSeen:now,joinedAt:now,digest:'token',color:'#fff'}];
   if(progress)room.puzzle.groups[0].locked=true;
   if(merged){room.puzzle.groups[0].pieces.push(...room.puzzle.groups[1].pieces);room.puzzle.groups.splice(1,1);}
@@ -19,28 +22,28 @@ test('cleanup keeps rooms inside their one-day window, removes rooms past it, an
   return room;
  };
  try{
-  seed('untouched',{deadline:now+day});
-  seed('placed-live',{progress:true,deadline:now+day-1});
-  seed('merged-live',{merged:true,deadline:now+day-1});
-  seed('played-past',{progress:true,deadline:now-1});
-  seed('merged-past',{merged:true,deadline:now-day});
-  seed('online-past',{progress:true,online:true,deadline:now-1});
-  seed('online-past-empty',{online:true,deadline:now-day});
-  seed('private',{visibility:'private',deadline:now-day*2});
-  seed('solo',{visibility:'solo',deadline:now-day*2});
+  seed('unplayed-past',{deadline:now-1});
+  seed('untouched',{deadline:now+DAY});
+  seed('played-past',{progress:true,deadline:now-1,playedAt:now-2*HOUR});
+  seed('merged-past',{merged:true,deadline:now-DAY,playedAt:now-3*HOUR});
+  seed('stale-progress',{progress:true,deadline:now-DAY*10,playedAt:now-DAY*31});
+  seed('online-past',{progress:true,online:true,deadline:now-1,playedAt:now-2*HOUR});
+  seed('online-stale',{progress:true,online:true,deadline:now-DAY*40,playedAt:now-DAY*40});
+  seed('private',{visibility:'private',deadline:now-DAY*2});
+  seed('solo',{visibility:'solo',deadline:now-DAY*2});
   db.sql.prepare('INSERT INTO puzzle_results VALUES(?,?,?,?,?,?,?,?)').run('played-past','team','seaside',108,2,1000,now,'[]');
-  assert.equal(await cleanupPublicRooms(db,now),3,'untouched, played-past and merged-past go');
+  assert.equal(await cleanupPublicRooms(db,now),3,'the empty tables and the idle one go; tables with progress stay');
   const ids=()=>db.sql.prepare('SELECT id FROM puzzle_rooms ORDER BY id').all().map(r=>r.id);
-  assert.deepEqual(ids(),['merged-live','online-past','online-past-empty','placed-live','private','solo']);
-  assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_room_directory WHERE room_id IN ('untouched','played-past','merged-past')").get().n,0);
-  assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_room_cursors WHERE room_id IN ('untouched','played-past','merged-past')").get().n,0);
+  assert.deepEqual(ids(),['merged-past','online-past','online-stale','played-past','private','solo'],'a table somebody played keeps its room past the lobby day');
+  assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_room_directory WHERE room_id IN ('unplayed-past','untouched','stale-progress')").get().n,0);
+  assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_room_cursors WHERE room_id IN ('unplayed-past','untouched','stale-progress')").get().n,0);
   assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_results WHERE room_id='played-past'").get().n,1,'finished results outlive their table');
-  assert.equal(await cleanupPublicRooms(db,now+day),4,'a day later every public table has reached its deadline');
+  assert.equal(await cleanupPublicRooms(db,now+DAY*31),4,'a month without play is what finally reclaims them');
   assert.deepEqual(ids(),['private','solo'],'only the private and solo rooms are left');
  }finally{db.close();}
 });
 
-test('the deadline is stamped once and playing again never extends it',()=>{
+test('the deadline is stamped once, never moves, and a large board gets half a day more',()=>{
  const now=Date.now(),room=makeRoom('r','seaside-native-v2',108,now);room.visibility='public';
  const player=addMember(room,'p','QA','token',now,undefined,'guest:qa');
  const deadline=now+PUBLIC_ROOM_LIFETIME_MS;
@@ -53,6 +56,11 @@ test('the deadline is stamped once and playing again never extends it',()=>{
  const back=addMember(room,'p2','QA','token2',now+ONLINE_MS+20000,undefined,'guest:qa');
  assert.equal(back.id,player.id);
  assert.equal(room.expiresAt,deadline,'coming back did not push the deadline either');
+ // A 500-piece table is rarely finished in one sitting, so it is shown for 36 hours.
+ const big=makeRoom('big','seaside-native-v2',500,now);big.visibility='public';
+ addMember(big,'p','QA','t',now,undefined,'guest:qa');
+ assert.equal(big.expiresAt,now+PUBLIC_ROOM_LARGE_LIFETIME_MS,'a 500-piece board gets half a day more');
+ assert.equal(room.expiresAt,deadline,'the small board kept its day');
  const privateRoom=makeRoom('private','seaside-native-v2',108,now);privateRoom.visibility='private';const p=addMember(privateRoom,'p','QA','t',now);
  const expiry=privateRoom.expiresAt;applyAction(privateRoom,p,{type:'heartbeat'},now+10000);assert.equal(privateRoom.expiresAt,expiry);
 });
@@ -67,6 +75,28 @@ test('a room created before the deadline existed keeps the earliest promise it a
  const stale=makeRoom('stale','seaside-native-v2',108,now-30*24*60*60*1000);stale.visibility='public';stale.expiresAt=now+30*24*60*60*1000;
  addMember(stale,'p','QA','token',now,undefined,'guest:qa');
  assert.equal(stale.publicDeadline,now+PUBLIC_ROOM_LIFETIME_MS,'an untouched legacy room gets one day from its first touch, not the old month');
+});
+
+test('a table past its lobby day can still be played while it has progress',()=>{
+ const now=Date.now(),past=now-HOUR;
+ const kept=makeRoom('kept','seaside-native-v2',108,now-DAY*2);kept.visibility='public';kept.expiresAt=past;kept.puzzle.groups[0].locked=true;
+ assert.equal(hasTableProgress(kept.puzzle),true);
+ assert.doesNotThrow(()=>ensureOpen(kept,now),'players can return to a table that has progress');
+ const member=addMember(kept,'p','QA','token',now,undefined,'guest:qa');
+ assert.ok(member);
+ assert.equal(kept.lastPlayedAt,now,'the return counts as play, which shows the table in the lobby again');
+ assert.equal(kept.expiresAt,past,'but the lobby deadline itself did not move');
+ const merged=makeRoom('merged','seaside-native-v2',108,now-DAY*2);merged.visibility='public';merged.expiresAt=past;
+ merged.puzzle.groups[0].pieces.push(...merged.puzzle.groups[1].pieces);merged.puzzle.groups.splice(1,1);
+ assert.equal(hasTableProgress(merged.puzzle),true,'a connected group is progress too');
+ assert.doesNotThrow(()=>ensureOpen(merged,now));
+ const empty=makeRoom('empty','seaside-native-v2',108,now-DAY*2);empty.visibility='public';empty.expiresAt=past;
+ assert.equal(hasTableProgress(empty.puzzle),false);
+ assert.throws(()=>ensureOpen(empty,now),error=>error.status===410,'a table with nothing on it still expires');
+ const privateRoom=makeRoom('private','seaside-native-v2',108,now-DAY*2);privateRoom.visibility='private';privateRoom.expiresAt=past;privateRoom.puzzle.groups[0].locked=true;
+ assert.throws(()=>ensureOpen(privateRoom,now),error=>error.status===410,'private rooms keep their own expiry');
+ const fresh=makeRoom('fresh','seaside-native-v2',108,now);fresh.visibility='public';
+ assert.doesNotThrow(()=>ensureOpen(fresh,now));
 });
 
 test('cleanup rolls back the room deletion if related-row cleanup fails',async()=>{

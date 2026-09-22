@@ -1,4 +1,4 @@
-import { touchPublicRoom } from './public-room-retention';
+import { PUBLIC_LOBBY_REVEAL_MS,touchPublicRoom } from './public-room-retention';
 import { maintainPublicRooms } from './public-room-maintenance';
 import { localDb } from './local-db';
 import { makeRoom, roomElapsedMs, ONLINE_MS, type Room, type RoomVisibility } from './room-engine';
@@ -54,10 +54,15 @@ export async function roomCards(ownerId?:string,onlyOwned=false){
  if(!ownerId&&!onlyOwned&&binding)return publicLobbyCache.read(binding,()=>queryRoomCards(database));
  return queryRoomCards(database,ownerId,onlyOwned);
 }
+// A room that has left the lobby is not gone. With progress on the table it stays in the puzzle
+// records of everyone who played it, and it shows in the lobby again while somebody plays it
+// (an hour after the play stops it hides again). A table with nothing on it is not kept.
+const keptAfterLobby="(d.visibility='public' AND EXISTS(SELECT 1 FROM json_each(r.data,'$.puzzle.groups') g WHERE json_extract(g.value,'$.locked')=1 OR json_array_length(json_extract(g.value,'$.pieces'))>1))";
+const lobbyReveal="(d.expires_at>? OR COALESCE(json_extract(r.data,'$.lastPlayedAt'),d.created_at)>?)";
 async function queryRoomCards(database:D1DatabaseSession,ownerId?:string,onlyOwned=false){
- const now=Date.now(),where=onlyOwned?"d.owner_id=? AND d.visibility IN ('private','public') AND d.slot IS NULL":ownerId?"(d.owner_id=? OR (d.visibility!='solo' AND (EXISTS (SELECT 1 FROM json_each(r.data,'$.participants') participant WHERE participant.key=?) OR EXISTS (SELECT 1 FROM json_each(r.data,'$.members') member WHERE json_extract(member.value,'$.accountId')=? OR json_extract(member.value,'$.guestId')=?))))":'d.visibility=\'public\' AND d.completed_at IS NULL';
- const query=database.prepare('SELECT '+summaryColumns+' FROM puzzle_room_directory d JOIN puzzle_rooms r ON r.id=d.room_id WHERE '+where+' AND NOT EXISTS(SELECT 1 FROM puzzle_room_moderation m WHERE m.room_id=r.id AND m.closed=1) AND d.expires_at>? ORDER BY lastPlayedAt DESC'+(ownerId?'':' LIMIT 24'));
- const result=await (onlyOwned?query.bind(now-ONLINE_MS,ownerId,now):ownerId?query.bind(now-ONLINE_MS,ownerId,ownerId,ownerId,ownerId,now):query.bind(now-ONLINE_MS,now)).all<CardRow>();
+ const now=Date.now(),where=onlyOwned?"d.owner_id=? AND d.visibility IN ('private','public') AND d.slot IS NULL AND d.expires_at>?":ownerId?"(d.owner_id=? OR (d.visibility!='solo' AND (EXISTS (SELECT 1 FROM json_each(r.data,'$.participants') participant WHERE participant.key=?) OR EXISTS (SELECT 1 FROM json_each(r.data,'$.members') member WHERE json_extract(member.value,'$.accountId')=? OR json_extract(member.value,'$.guestId')=?)))) AND (d.expires_at>? OR "+keptAfterLobby+")":"d.visibility='public' AND d.completed_at IS NULL AND "+lobbyReveal;
+ const query=database.prepare('SELECT '+summaryColumns+' FROM puzzle_room_directory d JOIN puzzle_rooms r ON r.id=d.room_id WHERE '+where+' AND NOT EXISTS(SELECT 1 FROM puzzle_room_moderation m WHERE m.room_id=r.id AND m.closed=1) ORDER BY lastPlayedAt DESC'+(ownerId?'':' LIMIT 24'));
+ const result=await (onlyOwned?query.bind(now-ONLINE_MS,ownerId,now):ownerId?query.bind(now-ONLINE_MS,ownerId,ownerId,ownerId,ownerId,now):query.bind(now-ONLINE_MS,now,now-PUBLIC_LOBBY_REVEAL_MS)).all<CardRow>();
  // Uploaded public rooms expose only safe image metadata. The card requests its
  // separate 480px preview; neither original nor preview bytes enter this JSON.
  return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>({...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
