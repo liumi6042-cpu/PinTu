@@ -1,5 +1,10 @@
 // Works with both D1 and the Node SQLite adapter. All eligibility checks run
 // against the latest stored row inside the same transaction as deletion.
+//
+// A public room is kept for at most one day from the moment it is created. That deadline lives
+// in expires_at and is never extended by playing again (lib/public-room-retention.ts), so the
+// sweep deletes public rooms whose stored deadline has passed. Rooms nobody has played, with no
+// connected or placed pieces, go as soon as the table empties.
 export async function cleanupPublicRooms(database,now=Date.now()){
   const orphans="SELECT d.room_id FROM puzzle_room_directory d WHERE d.visibility='public' AND NOT EXISTS(SELECT 1 FROM puzzle_rooms r WHERE r.id=d.room_id)";
   const result=await database.batch([
@@ -7,7 +12,7 @@ export async function cleanupPublicRooms(database,now=Date.now()){
       AND NOT EXISTS(SELECT 1 FROM json_each(data,'$.members') m WHERE json_extract(m.value,'$.lastSeen')>?)
       AND (NOT EXISTS(SELECT 1 FROM json_each(data,'$.puzzle.groups') g
         WHERE json_extract(g.value,'$.locked')=1 OR json_array_length(json_extract(g.value,'$.pieces'))>1)
-        OR COALESCE(json_extract(data,'$.publicLastSeenAt'),json_extract(data,'$.lastPlayedAt'),json_extract(data,'$.createdAt'))<=?)`).bind(now-22000,now-86400000),
+        OR expires_at<=?)`).bind(now-22000,now),
     database.prepare(`DELETE FROM puzzle_room_cursors WHERE room_id IN (${orphans})`),
     database.prepare(`DELETE FROM puzzle_room_moderation WHERE room_id IN (${orphans})`),
     database.prepare(`DELETE FROM puzzle_room_directory WHERE room_id IN (${orphans})`),

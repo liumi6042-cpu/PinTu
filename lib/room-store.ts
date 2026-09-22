@@ -1,7 +1,7 @@
 import { maintainPublicRooms } from './public-room-maintenance';
 import { MEMBER_ROOM_LIMIT,MEMBERSHIP_REQUIRED,canCreateMemberRoom } from './membership-policy';
 import { membershipFor } from './membership-store';
-import { touchPublicRoom } from './public-room-retention';
+import { restartPublicLifetime,touchPublicRoom } from './public-room-retention';
 import { recordRoomChange } from './room-sync';
 import { localDb } from './local-db';
 import { saveCompletion } from './lobby-store';
@@ -41,7 +41,7 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T){
   if(becomingPrivate){
    if(!room.ownerId||!canCreateMemberRoom(await membershipFor(room.ownerId),now))throw new RoomError(MEMBERSHIP_REQUIRED,403);
    room.expiresAt=Math.max(room.lastPlayedAt||room.createdAt,room.publicLastSeenAt||0)+30*86400000;
-  }else if(base.visibility!=='public'&&room.visibility==='public')touchPublicRoom(room,now);
+  }else if(base.visibility!=='public'&&room.visibility==='public'){restartPublicLifetime(room);touchPublicRoom(room,now);}
   const admission=becomingPrivate?` AND EXISTS(SELECT 1 FROM puzzle_memberships WHERE user_id=? AND plan='puzzle' AND status='active' AND starts_at<=? AND expires_at>?)
     AND (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL)<?`:'';
   const admissionValues=becomingPrivate?[room.ownerId!,now,now,room.ownerId!,now,MEMBER_ROOM_LIMIT]:[];

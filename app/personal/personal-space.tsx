@@ -120,7 +120,7 @@ export default function PersonalSpace() {
     {MEMBERSHIP_VISIBLE&&<button className="personal-choice" onClick={() => choose('create')}><img src={RESTORABLE_PHOTOS.find(p => p.id === 'alpine-village')!.thumbSrc} alt="" aria-hidden="true"/><div><span className="choice-label">WITH FRIENDS · {t('会员专属')}</span><h2>{t('创建私人房间')} <Crown size={24}/></h2><p>{t('订阅会员，创建仅凭邀请链接加入的私人拼图桌。')}</p><span className="choice-arrow">{t('查看会员权益')}<ArrowUpRight size={22}/></span></div></button>}</div>}
     {!PERSONAL_PLAY_VISIBLE&&<a className="secondary" href="/lobby">{t('去公开大厅')}<ArrowUpRight size={18}/></a>}
     <section className="recent-section"><div className="recent-heading"><h2>{t('我的桌面')} <small>{ongoing.length}</small></h2></div>
-      <p className="retention-note">{t('公开房间有人在拼时保留；无人且无进度时清理，已有进度保留约 24 小时。')}</p>
+      <p className="retention-note">{t('公开房间从创建起最多保留 24 小时，中途继续拼也不会延长；没有人拼过、也没有进度的房间会更早清理。')}</p>
       {ongoing.length ? <div className="recent-rooms">{ongoing.map(entry => card(entry))}</div> : !loading && <div className="recent-empty">{t('还没有未完成的公开拼图，去大厅选一张吧。')}</div>}
       {completed.length > 0 && <details className="completed-progress"><summary>{t('已完成的作品')} ({completed.length})</summary><div className="recent-rooms">{completed.map(entry => card(entry))}</div></details>}
     </section>
