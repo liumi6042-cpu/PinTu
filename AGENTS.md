@@ -1,5 +1,20 @@
 # 本项目图片库约定
 
+- 2026-09-22 **语言偏好进 cookie：选了中文的访客，入口与成对地址都送到中文版**（用户报「我这上面选择的是中文，怎么页面还是英文的」）。
+  - 根因：语言偏好只存在 localStorage，**服务端看不见** → 入口跳转把 `/` **写死**送到 `/lobby`（英文地址）→ 中文用户看到全英文大厅；
+    而切换器把「中文」显示为选中（`active` 用的是 preference，页面语言却由地址决定）→ **按钮态与页面自相矛盾**，看起来像"点了没用"。
+  - 修法（三层，缺一不可）：
+    1. **偏好写 cookie**（`puzzle-language=zh|en`，非 HttpOnly，`lib/language-detection.ts`）：`setLanguagePreference` 同步写入，
+       **包含从 localStorage 恢复时的一次性迁移**（老用户无需再点一次）；「自动」清除 cookie。
+    2. **middleware 分流**（`languageRedirect`，在入口跳转**之前**判定）：cookie 语言与地址语言不符时 307 到对应地址
+       （`/lobby`→`/zh/lobby`、`/zh`→`/`、`/`→`/zh`、图页同理），**保留查询串**（`?home=1` 一起带上）；
+       **无 cookie（爬虫/新访客）永不跳**；跳转响应带 `Vary: Cookie` + `private, no-store` + `noindex`（防止共享缓存把跳转发给别人）。
+    3. **切换器**：成对地址上按钮态**由地址决定**（`lib/site-paths.ts` 的 `activeLanguage`），非成对页仍跟随偏好；
+       「自动」在成对地址上按检测语言跳对应地址；Provider 里加**一次性客户端兜底**（`syncedOnce`），
+       处理「偏好存在于旧 localStorage、cookie 还没写」的首次访问（此后 middleware 接管，无需再跳）。
+  - 护栏：`tests/entrance-preference.test.mjs`（5 条：分流双向/无 cookie 不跳/非成对页不跳/按钮态/cookie 读写与迁移）；
+    真 HTTP 探针 6 组（无 cookie 全 200、zh 四处 307、en 反向、entered+zh 两步、`?home=1` 保留查询串）。
+
 - 2026-09-22 **公开房间生命周期 v2：大图 36 小时 + 过期后「隐身保留、再拼重现」**（用户要求；覆盖上一条的保留期与回收部分）。
   - **保留期分档**：108/300 片 = 创建起 **24 小时**；**500 片及以上 = 36 小时**（「大图多 12 小时」）。
     `publicRoomLifetime(puzzle)` 按 `pieceBand(cols*rows)` 判档（贴合出的 494 格归 500 档）；仍是**盖一次章、永不移动**。

@@ -10,3 +10,10 @@ export function hasChineseAddress(path: string) {
   const canonical = isChinesePath(path) ? englishPath(path) : path;
   return (PUBLIC_PAGE_PATHS as readonly string[]).includes(canonical) || /^\/puzzle\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(canonical);
 }
+// Which button the language switch lights up. On a page that exists at two addresses the
+// address itself is the truth — a Chinese-reading visitor on /lobby is reading English, so
+// "EN" is the lit one, and pressing 中文 moves them to the Chinese address. Pages without a
+// Chinese twin keep following the visitor's own choice.
+export function activeLanguage(path: string, preference: 'zh' | 'en' | 'auto') {
+  return hasChineseAddress(path) ? (isChinesePath(path) ? 'zh' : 'en') : preference;
+}

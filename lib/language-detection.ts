@@ -1,6 +1,21 @@
 export type Language = 'zh' | 'en';
 export type LanguagePreference = Language | 'auto';
 export const LANGUAGE_KEY = 'puzzle:language';
+// An explicit choice also travels as a cookie: the middleware has to know it before anything
+// renders, so a Chinese-reading visitor who chose Chinese is sent to the Chinese address
+// instead of the English one. Not HttpOnly — this is the visitor's own switch.
+export const LANGUAGE_COOKIE = 'puzzle-language';
+export function writeLanguageCookie(value: Language) {
+  if (typeof document === 'undefined') return;
+  try { document.cookie = `${LANGUAGE_COOKIE}=${value}; path=/; max-age=31536000; SameSite=Lax`; } catch {}
+}
+export function clearLanguageCookie() {
+  if (typeof document === 'undefined') return;
+  try { document.cookie = `${LANGUAGE_COOKIE}=; path=/; max-age=0; SameSite=Lax`; } catch {}
+}
+export function cookieLanguage(value: string | undefined): Language | null {
+  return value === 'zh' || value === 'en' ? value : null;
+}
 
 export function languagePreference(value: string | null): LanguagePreference {
   return value === 'zh' || value === 'en' ? value : 'auto';

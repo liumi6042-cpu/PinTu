@@ -1,5 +1,5 @@
 import english from '../content/locales/en.json' with { type:'json' };
-import { LANGUAGE_KEY, languagePreference, type LanguagePreference } from './language-detection';
+import { LANGUAGE_KEY, clearLanguageCookie, languagePreference, writeLanguageCookie, type LanguagePreference } from './language-detection';
 
 export type Language='zh'|'en';
 let language:Language='en';
@@ -16,6 +16,11 @@ function applyLanguage(value:Language){
 }
 export function setLanguagePreference(value:LanguagePreference,persist=true){
   if(persist&&typeof localStorage!=='undefined')try{localStorage.setItem(LANGUAGE_KEY,value);}catch{}
+  // Mirror the choice into the cookie the middleware reads, so a returning visitor lands on
+  // the address that matches what they picked. Restoring an older visitor's choice from local
+  // storage writes it too, which is how a choice made before this cookie existed reaches the
+  // server. "Auto" removes the cookie and hands the decision back to detection.
+  if(typeof document!=='undefined'){if(value==='auto')clearLanguageCookie();else writeLanguageCookie(value);}
   const changed=preference!==value||(value!=='auto'&&language!==value);
   preference=value;if(changed)preferenceRevision++;
   if(value!=='auto')applyLanguage(value);
