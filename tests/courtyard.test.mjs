@@ -18,6 +18,7 @@ test('concurrent rewards, exchange caps, idempotency, cloud version and valid gr
  const room={id:'c'.repeat(32),completedAt:Date.now()+1,puzzle:{cols:26,rows:19,imageId:'test-picture'},achievements:{contributors:{[user]:{count:5},[peer]:{count:5}}}};
  await Promise.all([settleGarden(room),settleGarden(room)]);let x=await gardenFor(user);assert.equal(x.state.progress,125);assert.equal(x.state.balance,2);
  await call('hatch');x=await gardenFor(user);assert.equal(x.state.progress,75);assert.equal(x.state.balance,5);
+ await assert.rejects(call('buy',{item:'constructor'}));await assert.rejects(call('theme-buy',{item:'__proto__'}));
  await call('buy',{item:'plant'});assert.equal((await gardenFor(user)).state.redeemed.plant,1);await assert.rejects(call('buy',{item:'plant'}));
  await assert.rejects(gardenAction(user,{action:'layout',version:0,requestId:'f'.repeat(32),layout:[]}));
  const op='d'.repeat(32),version=(await gardenFor(user)).version;await gardenAction(user,{action:'layout',requestId:op,version,layout:[]});await gardenAction(user,{action:'layout',requestId:op,version,layout:[]});assert.equal((await gardenFor(user)).version,version+1);
