@@ -42,6 +42,7 @@ export default function AccountGate({ children, intro = false, requireLogin = fa
         setError(e.message); }).finally(() => { if (alive)
         setReady(true); }); const expired = () => setAccount(null); window.addEventListener('puzzle:session-expired', expired); return () => { alive = false; window.removeEventListener('puzzle:session-expired', expired); }; }, []);
     useEffect(()=>{if(account&&requireLogin){const next=accountReturnTo(new URLSearchParams(window.location.search).get('returnTo'));if(next)window.location.replace(next);}},[account,requireLogin]);
+    useEffect(()=>{if(ready)window.dispatchEvent(new Event('puzzle:account-changed'));},[ready,account?.id]);
     async function logout() { await apiJson('/api/auth/logout', {}); setAccount(null); }
     if (showIntro)
         return <DreamIntro onEnter={() => setShowIntro(false)}/>;

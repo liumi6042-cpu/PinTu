@@ -1,3 +1,4 @@
+import CourtyardCompanion from './courtyard-companion';
 import type { Metadata } from 'next';
 import './globals.css';
 import './community.css';
@@ -45,5 +46,5 @@ export const metadata: Metadata = {
 export default async function RootLayout({children}:{children:React.ReactNode}) {
   const path=(await headers()).get('x-jigsaw-path') ?? '/';
   const lang=path==='/zh'||path.startsWith('/zh/')?'zh-CN':'en';
-  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}<FeedbackWidget/></LanguageProvider></body></html>;
+  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}<CourtyardCompanion/><FeedbackWidget/></LanguageProvider></body></html>;
 }
