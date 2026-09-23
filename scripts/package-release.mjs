@@ -16,7 +16,7 @@ const catalog=JSON.parse(readFileSync('content/puzzle-catalog.json','utf8'));
 const assets=runtimeAssets(catalog,JSON.parse(readFileSync('config/runtime-assets.json','utf8')));
 const files=selectRuntimeFiles(build,assets);
 const releases=resolve(root,'releases');mkdirSync(releases,{recursive:true});
-const stage=inside(releases,resolve(releases,'staging'));
+const stage=inside(releases,resolve(releases,'staging-'+Date.now()));
 if(existsSync(stage))rmSync(stage,{recursive:true,force:true});
 mkdirSync(stage);
 try{

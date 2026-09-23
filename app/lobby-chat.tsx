@@ -1,9 +1,10 @@
  'use client';
 import {useEffect,useRef,useState} from 'react';
 import {useAccount} from './account-gate';
-import {useLanguage} from './language-switch';
+import {usePathname} from 'next/navigation';
+import {isChinesePath} from '@/lib/site-paths';
 type Message={id:number;playerId:string;name:string;text:string;sentAt:number};
-export default function LobbyChat(){const {account}=useAccount(),zh=useLanguage()==='zh',c=(a:string,b:string)=>zh?a:b;
+export default function LobbyChat(){const {account}=useAccount(),zh=isChinesePath(usePathname()||''),c=(a:string,b:string)=>zh?a:b;
  const [open,setOpen]=useState(false),[messages,setMessages]=useState<Message[]>([]),[text,setText]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[hidden,setHidden]=useState<string[]>([]),[admin,setAdmin]=useState(false);const pending=useRef<{text:string;id:string}|null>(null),list=useRef<HTMLDivElement>(null),delay=useRef(4000);
  useEffect(()=>{setOpen(window.innerWidth>1000);try{const saved=JSON.parse(localStorage.getItem('jigsaw:lobby-muted')||'[]');if(Array.isArray(saved))setHidden(saved.filter(x=>typeof x==='string'));}catch{}},[]);
  async function request(body?:object){const r=await fetch('/api/lobby/chat',{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,cache:'no-store'});if(!r.ok){delay.current=Math.max(4000,Number(r.headers.get('Retry-After')||'4')*1000);throw Error(r.status===401?c('请先登录','Please sign in'):r.status===429?c('发送太快，请稍后再试','Please wait before sending again'):c('聊天暂时不可用','Chat is temporarily unavailable'));}return r.json() as Promise<{messages:Message[];canModerate:boolean}>;}
