@@ -1,6 +1,7 @@
 import {localDb} from './local-db';
 import {RoomError,type Room} from './room-engine';
 import {initialGarden,retireStarterFurniture,validateLayout,prices,themes} from './courtyard-model.mjs';
+import {baseHatchProgress} from './hatch-feedback';
 import {pieceBand} from './piece-policy';
 type Garden=Omit<ReturnType<typeof initialGarden>,'owned'|'redeemed'|'ledger'|'layout'> & {owned:Record<string,number>;redeemed:Record<string,number>;ledger:{reason:string;amount:number;at:string}[];layout:unknown[]};
 const day=(now:number)=>new Date(now).toISOString().slice(0,10);
@@ -47,12 +48,12 @@ export async function settleGarden(room:Room){
  if(!start||room.completedAt<start||await db.prepare('SELECT 1 FROM puzzle_courtyard_settled WHERE room_id=?').bind(room.id).first())return;
  const band=pieceBand(room.puzzle.cols*room.puzzle.rows)||108,threshold=band>=1000?10:band>=500?5:3;
  const eligible=Object.entries(room.achievements?.contributors||{}).filter(([,c])=>c.count>=threshold);
- const date=day(room.completedAt),base=band>=1000?75:band>=500?50:25;
+ const date=day(room.completedAt),base=baseHatchProgress(band);
  for(const [owner] of eligible){if(!/^[a-f0-9]{32}$/.test(owner)||!await db.prepare('SELECT 1 FROM puzzle_users WHERE id=?').bind(owner).first())continue;
  await update(owner,'room:'+room.id,'completion',async s=>{
- const from=Date.parse(date+'T00:00:00Z');let gain=base;if(!await db.prepare("SELECT 1 FROM puzzle_courtyard_events WHERE user_id=? AND kind='completion' AND created_at>=? AND created_at<?").bind(owner,from,from+86400000).first()){gain+=25;s.completionDay=date;}
- if(!await db.prepare("SELECT 1 FROM puzzle_courtyard_events WHERE user_id=? AND image_id=? AND kind='completion'").bind(owner,room.puzzle.imageId).first())gain+=25;
- if(eligible.length>=2)gain+=25;if(!s.firstDone){s.firstDone=true;s.balance++;addLedger(s,'首次完成',1);}s.progress+=gain;addLedger(s,'拼图进度 +'+gain+'%',0);
+ const from=Date.parse(date+'T00:00:00Z');let gain=base;if(!await db.prepare("SELECT 1 FROM puzzle_courtyard_events WHERE user_id=? AND kind='completion' AND created_at>=? AND created_at<?").bind(owner,from,from+86400000).first()){gain+=5;s.completionDay=date;}
+ if(!await db.prepare("SELECT 1 FROM puzzle_courtyard_events WHERE user_id=? AND image_id=? AND kind='completion'").bind(owner,room.puzzle.imageId).first())gain+=5;
+ if(!s.firstDone){s.firstDone=true;s.balance++;addLedger(s,'首次完成',1);}s.progress+=gain;addLedger(s,'拼图进度 +'+gain+'%',0);
  },room.puzzle.imageId,undefined,room.completedAt);
  }
  await db.prepare('INSERT OR IGNORE INTO puzzle_courtyard_settled VALUES(?,?)').bind(room.id,room.completedAt).run();

@@ -16,8 +16,9 @@ test('concurrent rewards, exchange caps, idempotency, cloud version and valid gr
  assert.equal((await gardenFor(user)).state.balance,0);
  const checks=await Promise.allSettled([call('checkin'),call('checkin')]);assert.equal(checks.filter(x=>x.status==='fulfilled').length,1);assert.equal((await gardenFor(user)).state.balance,1);
  const room={id:'c'.repeat(32),completedAt:Date.now()+1,puzzle:{cols:26,rows:19,imageId:'test-picture'},achievements:{contributors:{[user]:{count:5},[peer]:{count:5}}}};
- await Promise.all([settleGarden(room),settleGarden(room)]);let x=await gardenFor(user);assert.equal(x.state.progress,125);assert.equal(x.state.balance,2);
- await call('hatch');x=await gardenFor(user);assert.equal(x.state.progress,75);assert.equal(x.state.balance,5);
+ await Promise.all([settleGarden(room),settleGarden(room)]);let x=await gardenFor(user);assert.equal(x.state.progress,30);assert.equal(x.state.balance,2);
+ await assert.rejects(call('hatch'));await settleGarden({...room,id:'2'.repeat(32)});
+ await call('hatch');x=await gardenFor(user);assert.equal(x.state.progress,0);assert.equal(x.state.balance,5);
  await assert.rejects(call('buy',{item:'constructor'}));await assert.rejects(call('theme-buy',{item:'__proto__'}));
  await call('buy',{item:'plant'});assert.equal((await gardenFor(user)).state.redeemed.plant,1);await assert.rejects(call('buy',{item:'plant'}));
  await assert.rejects(gardenAction(user,{action:'layout',version:0,requestId:'f'.repeat(32),layout:[]}));
@@ -27,8 +28,9 @@ test('concurrent rewards, exchange caps, idempotency, cloud version and valid gr
  for(let i=1;i<10;i++)await call('buy',{item:'plant'});await assert.rejects(call('buy',{item:'plant'}));assert.equal((await gardenFor(user)).state.redeemed.plant,10);
  for(const type of Object.keys(defs)){let found=null;for(let y=250;y<870&&!found;y+=12)for(let x=150;x<1380;x+=24){let q=snap(type,x,y);try{validateLayout([{id:1,type,x:q.x,y:q.y}],{[type]:1});found=q;break;}catch{}}assert.ok(found,type+' has a valid footprint');}
  const low={...room,id:'e'.repeat(32),achievements:{contributors:{[user]:{count:4}}}};const before=(await gardenFor(user)).state.progress;await settleGarden(low);assert.equal((await gardenFor(user)).state.progress,before);
- const second={...room,id:'1'.repeat(32)};await settleGarden(second);assert.equal((await gardenFor(user)).state.progress,before+75);
- await call('hatch');await assert.rejects(call('hatch'));
+ const second={...room,id:'1'.repeat(32)};await settleGarden(second);assert.equal((await gardenFor(user)).state.progress,before+20);
+ const hatchBoundary=(await gardenFor(user)).state;hatchBoundary.progress=200;db.sql.prepare('UPDATE puzzle_courtyards SET data=? WHERE user_id=?').run(JSON.stringify(hatchBoundary),user);
+ await call('hatch');assert.equal((await gardenFor(user)).state.progress,100);await assert.rejects(call('hatch'));
  const fresh=initialGarden();assert.deepEqual(fresh.owned,{});assert.deepEqual(fresh.layout,[]);assert.deepEqual(fresh.themes,['wood']);assert.equal(fresh.activeTheme,'wood');
  const legacy={...fresh,balance:77,progress:45,owned:{plant:5,chair:1,lamp:2,lemon:1},redeemed:{plant:2,lemon:1},layout:[{id:1,type:'plant',x:1,y:2},{id:2,type:'plant',x:3,y:4},{id:3,type:'plant',x:5,y:6},{id:4,type:'chair',x:7,y:8},{id:5,type:'lemon',x:9,y:10}],themes:['wood','country']};delete legacy.inventoryVersion;
  db.sql.prepare('UPDATE puzzle_courtyards SET data=?,version=version+1 WHERE user_id=?').run(JSON.stringify(legacy),user);
