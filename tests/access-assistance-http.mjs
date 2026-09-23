@@ -28,6 +28,10 @@ try{
   // Catalog rooms are fitted to the picture, so the board is the grid the ticket
   // reported (512 for the 500 level on this 2:1 landscape), not the level count.
   assert.equal(ticket.room.puzzle.groups,undefined);const full=await request(path,undefined,account);assert.equal(full.status,200);assert.equal(full.data.puzzle.groups.length,ticket.room.puzzle.cols*ticket.room.puzzle.rows);
+  for(const [kind,limit] of [['underlay',pieces===500?4:6],['hint',pieces===500?8:12]]){
+   for(let i=0;i<limit;i++){const use=await request(path+'/assistance',{kind,requestId:id()},account);assert.equal(use.status,200,JSON.stringify(use.data));assert.equal(use.data.grants.filter(g=>g.kind===kind).length,i+1);expired(ticket.room.id,kind);}
+   assert.equal((await request(path+'/assistance',{kind,requestId:id()},account)).status,409);
+  }
   const guest={};const guestJoin=await request(path+'/join',{accountId:registered.data.account.id},guest);
   assert.equal(guestJoin.status,200,'joining a high-count room needs no account');
   assert.notEqual(guestJoin.data.room.members.find(m=>m.id===guestJoin.data.playerId).name,'Free account','an accountId in the JSON body must not grant account identity');
@@ -68,5 +72,5 @@ try{
  assert.equal((await request(oldPath+'/chat',{requestId:id(),text:'Existing guest continues'},oldActor)).status,200);
  await request('/api/auth/logout',{},account);
  assert.equal((await request('/api/rooms',{imageId:'mountain-lake-reflection-hd-v3',pieces:500,visibility:'public'},account)).status,401);
- console.log(JSON.stringify({free500And1000Account:true,guest108And300:true,creationRequiresAccount:true,guestJoinHighCount:true,forgedIdentityIgnored:true,expiredSessionRejected:true,oldGuestReconnectMovesChat:true,twoUnderlays30Seconds:true,referenceRemoved:true,threeHintsOfThree:true,identityQuotasAndRetries:true,puzzleStateUnaffected:true}));
+ console.log(JSON.stringify({free500And1000Account:true,guest108And300:true,creationRequiresAccount:true,guestJoinHighCount:true,forgedIdentityIgnored:true,expiredSessionRejected:true,oldGuestReconnectMovesChat:true,pieceCountQuotas500And1000:true,twoUnderlays30Seconds:true,referenceRemoved:true,threeHintsOfThree:true,identityQuotasAndRetries:true,puzzleStateUnaffected:true}));
 }finally{for(const roomId of rooms)db.prepare('DELETE FROM puzzle_rooms WHERE id=?').run(roomId);db.close();}

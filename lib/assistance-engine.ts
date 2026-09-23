@@ -11,7 +11,7 @@ export function makeAssistanceGrant(grants:AssistanceGrant[],kind:AssistanceKind
  const retry=grants.find(g=>g.requestId===requestId);
  if(retry){if(retry.kind!==kind)throw new Error('请求格式无效');return retry;}
  const active=activeAssistance(grants,kind,now);if(active)return active;
- if(!assistanceRemaining(grants,kind))throw new Error('本局次数已用完');
+ if(!assistanceRemaining(grants,kind,state.cols*state.rows))throw new Error('本局次数已用完');
  const pieceIds=kind==='hint'?hintPieces(state,excluded,grants.flatMap(g=>g.pieceIds)):[];
  if(kind==='hint'&&!pieceIds.length)throw new Error('暂时没有可提示的拼块，请稍后再试');
  return {requestId,kind,pieceIds,expiresAt:now+ASSISTANCE_POLICY[kind].durationSeconds*1000};

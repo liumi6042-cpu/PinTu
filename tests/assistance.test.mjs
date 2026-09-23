@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { SqliteD1 } from '../server/sqlite.mjs';
 import { createPuzzle } from '../lib/puzzle-engine.ts';
 import { hintPieces,makeAssistanceGrant,localAssistanceKey } from '../lib/assistance-engine.ts';
-import { activeAssistance,assistanceRemaining } from '../lib/assistance-policy.ts';
+import { activeAssistance,assistanceRemaining,assistanceLimit } from '../lib/assistance-policy.ts';
 
 const db=new SqliteD1(':memory:',resolve('drizzle'));
 globalThis.assistanceTestDb=db;
@@ -41,4 +41,25 @@ test('server atomic quotas, idempotent retries, identities, leases and cleanup',
  assert.equal(JSON.stringify(room),original);assert.equal(db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(room.id).data,original);
  db.sql.prepare('DELETE FROM puzzle_rooms WHERE id=?').run(room.id);assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM puzzle_assistance_grants').get().n,0);
 });
+test('piece bands extend existing use history and enforce every new server limit',async()=>{
+ for(const [cols,rows,underlay,hints] of [[12,9,2,3],[24,12,3,5],[19,26,4,8],[38,26,6,12],[100,50,6,12]]){
+  const count=cols*rows;assert.equal(assistanceLimit('underlay',count),underlay);assert.equal(assistanceLimit('hint',count),hints);
+  const puzzle={...state(),cols,rows},now=Date.now(),room={id:`tier${count}`,puzzle,leases:{},revision:0,expiresAt:now+86400000};
+  db.sql.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(room.id,0,JSON.stringify(room),room.expiresAt);
+  for(const [kind,limit,oldLimit] of [['underlay',underlay,2],['hint',hints,3]]){
+   const prior=Array.from({length:oldLimit},(_,i)=>({requestId:`old-${kind}-${i}`,kind,expiresAt:now-100+i,pieceIds:kind==='hint'?[i*3,i*3+1,i*3+2]:[]}));
+   for(const g of prior)db.sql.prepare('INSERT INTO puzzle_assistance_grants VALUES(?,?,?,?,?,?)').run(room.id,'existing',g.requestId,kind,g.expiresAt,JSON.stringify(g.pieceIds));
+   assert.equal(assistanceRemaining(prior,kind,count),limit-oldLimit,'old uses are counted, not reset');
+   for(let i=oldLimit;i<limit;i++){
+    const results=await Promise.all(Array.from({length:6},(_,j)=>grantRoomAssistance(room,'existing',kind,`new-${kind}-${i}-${j}`,now+i*30001)));
+    assert.ok(results.every(result=>result.filter(g=>g.kind===kind).length===i+1));
+   }
+   await assert.rejects(grantRoomAssistance(room,'existing',kind,'over-'+kind,now+(limit+1)*30001),/次数已用完/);
+   const history=await roomAssistance(room.id,'existing');assert.equal(history.filter(g=>g.kind===kind).length,limit);
+   assert.deepEqual(history.filter(g=>g.kind===kind&&g.requestId.startsWith('old-')),prior);
+   assert.equal((await grantRoomAssistance(room,'teammate',kind,'peer-'+kind,now)).filter(g=>g.kind===kind).length,1);
+  }
+ }
+});
+
 test.after(()=>{db.close();delete globalThis.assistanceTestDb;});

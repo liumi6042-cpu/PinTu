@@ -1,7 +1,7 @@
 import { localDb } from './local-db';
 import { RoomError,type Room } from './room-engine';
 import { makeAssistanceGrant } from './assistance-engine';
-import { ASSISTANCE_POLICY,type AssistanceGrant,type AssistanceKind } from './assistance-policy';
+import { assistanceLimit,type AssistanceGrant,type AssistanceKind } from './assistance-policy';
 
 export async function roomAssistance(roomId:string,identity:string){
  const rows=await localDb().prepare('SELECT request_id AS requestId,kind,expires_at AS expiresAt,piece_ids AS pieces FROM puzzle_assistance_grants WHERE room_id=? AND identity=? ORDER BY expires_at,request_id').bind(roomId,identity).all<Omit<AssistanceGrant,'pieceIds'>&{pieces:string}>();
@@ -16,6 +16,6 @@ export async function grantRoomAssistance(room:Room,identity:string,kind:Assista
  await localDb().prepare(`INSERT OR IGNORE INTO puzzle_assistance_grants(room_id,identity,request_id,kind,expires_at,piece_ids)
  SELECT ?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM puzzle_assistance_grants WHERE room_id=? AND identity=? AND kind=?)<?
  AND NOT EXISTS(SELECT 1 FROM puzzle_assistance_grants WHERE room_id=? AND identity=? AND kind=? AND expires_at>?)
- AND EXISTS(SELECT 1 FROM puzzle_rooms WHERE id=? AND expires_at>?)`).bind(room.id,identity,requestId,kind,grant.expiresAt,JSON.stringify(grant.pieceIds),room.id,identity,kind,ASSISTANCE_POLICY[kind].maxPerGame,room.id,identity,kind,now,room.id,now).run();
+ AND EXISTS(SELECT 1 FROM puzzle_rooms WHERE id=? AND expires_at>?)`).bind(room.id,identity,requestId,kind,grant.expiresAt,JSON.stringify(grant.pieceIds),room.id,identity,kind,assistanceLimit(kind,room.puzzle.cols*room.puzzle.rows),room.id,identity,kind,now,room.id,now).run();
  return roomAssistance(room.id,identity);
 }

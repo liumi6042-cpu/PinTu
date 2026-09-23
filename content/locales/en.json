@@ -1051,5 +1051,8 @@
   "金毛和花猫守在花径尽头，刺猬从叶子底下探出头。": "A golden retriever and a tabby cat keep the garden path while a hedgehog peeks out from the leaves.",
   "左半侧细节最密集，建议先从画面左上与左下入手。": "Detail is densest down the left half; start at the upper left.",
   "我的庭院": "My courtyard",
-  "前往庭院，查看孵化进度": "Visit your courtyard to check hatching progress"
+  "前往庭院，查看孵化进度": "Visit your courtyard to check hatching progress",
+  "次数随片数增加，每次标出最多 3 片及对应位置，持续 30 秒。": "More uses for larger puzzles. Each hint highlights up to three pieces and their positions for 30 seconds.",
+  "次数随片数增加，每次底图持续 30 秒。": "More uses for larger puzzles. Each underlay lasts 30 seconds.",
+  "「边缘」只显示含边缘的拼块组。底图/提示次数按片数分档：108片 2/3 次、300片 3/5 次、500片 4/8 次、1000片及以上 6/12 次。每次持续30秒，提示最多标出3片及对应位置。每局每人独立计算，刷新不会重置次数。": "Edges shows groups containing edge pieces. Underlay/hint uses: 108 pieces 2/3, 300 pieces 3/5, 500 pieces 4/8, and 1,000 or more pieces 6/12. Each lasts 30 seconds; hints mark up to three pieces and their positions. Allowances are per player per puzzle and do not reset on reload."
 }
