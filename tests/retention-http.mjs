@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-const origin=process.argv[2],file=process.argv[3];assert(origin&&file,'isolated origin and DB required');
-let cookie='';const req=async(path,body,status=200,auth=true)=>{const r=await fetch(origin+path,{method:body?'POST':'GET',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https',...(body?{'Content-Type':'application/json',Origin:'https://jigsawnook.online'}:{}),...(auth&&cookie?{Cookie:cookie}:{})},body:body?JSON.stringify(body):undefined});const data=await r.json();assert.equal(r.status,status,JSON.stringify(data));if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];return data;};
+const origin=process.argv[2],file=process.argv[3];assert(origin&&file,'isolated origin and DB required');assert(/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin),'localhost test origin only');
+let cookie='';const req=async(path,body,status=200,auth=true)=>{const r=await fetch(origin+path,{method:body?'POST':'GET',headers:{Host:'jigsawnook.online','CF-Connecting-IP':'192.0.2.51','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https',...(body?{'Content-Type':'application/json',Origin:'https://jigsawnook.online'}:{}),...(auth&&cookie?{Cookie:cookie}:{})},body:body?JSON.stringify(body):undefined});const data=await r.json();assert.equal(r.status,status,JSON.stringify(data));if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];return data;};
 const op=()=>crypto.randomUUID().replaceAll('-','');
 await req('/api/courtyard',null,401);await req('/api/lobby/chat',null);await req('/api/lobby/chat',{text:'hi',requestId:op()},401);
 const account=await req('/api/auth/register',{username:'garden_'+Date.now(),name:'Garden Test',password:op()},201);let garden=await req('/api/courtyard');
