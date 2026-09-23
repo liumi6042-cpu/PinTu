@@ -18,7 +18,8 @@ test('concurrent rewards, exchange caps, idempotency, cloud version and valid gr
  const room={id:'c'.repeat(32),completedAt:Date.now()+1,puzzle:{cols:26,rows:19,imageId:'test-picture'},achievements:{contributors:{[user]:{count:5},[peer]:{count:5}}}};
  await Promise.all([settleGarden(room),settleGarden(room)]);let x=await gardenFor(user);assert.equal(x.state.progress,30);assert.equal(x.state.balance,2);
  await assert.rejects(call('hatch'));await settleGarden({...room,id:'2'.repeat(32)});
- await call('hatch');x=await gardenFor(user);assert.equal(x.state.progress,0);assert.equal(x.state.balance,5);
+ await call('hatch');x=await gardenFor(user);assert.equal(x.state.progress,0);assert.equal(x.state.balance,2);assert.equal(Object.values(x.state.owned).reduce((a,b)=>a+b,0),1);assert.deepEqual(x.state.redeemed,{});
+ const saved=x.state; saved.balance=5;db.sql.prepare('UPDATE puzzle_courtyards SET data=? WHERE user_id=?').run(JSON.stringify(saved),user);
  await assert.rejects(call('buy',{item:'constructor'}));await assert.rejects(call('theme-buy',{item:'__proto__'}));
  await call('buy',{item:'plant'});assert.equal((await gardenFor(user)).state.redeemed.plant,1);await assert.rejects(call('buy',{item:'plant'}));
  await assert.rejects(gardenAction(user,{action:'layout',version:0,requestId:'f'.repeat(32),layout:[]}));
@@ -38,4 +39,10 @@ test('concurrent rewards, exchange caps, idempotency, cloud version and valid gr
  const migrated=await Promise.all(Array.from({length:6},()=>gardenFor(user)));for(const g of migrated){assert.equal(g.version,beforeVersion+1);assert.deepEqual(g.state.owned,{plant:2,lemon:1});assert.deepEqual(g.state.layout,legacy.layout.filter(i=>[1,2,5].includes(i.id)));assert.equal(g.state.balance,77);assert.equal(g.state.progress,45);assert.deepEqual(g.state.themes,legacy.themes);}
  await assert.rejects(gardenAction(user,{action:'layout',version:beforeVersion,requestId:'f1'.repeat(16),layout:[]}),/其他页面/);
  assert.equal((await gardenFor(user)).version,beforeVersion+1,'inventory upgrade runs exactly once');
+
+ const peerState=(await gardenFor(peer)).state;peerState.progress=150;peerState.owned=Object.fromEntries(Object.keys(defs).map(id=>[id,1]));peerState.redeemed=Object.fromEntries(Object.keys(defs).map(id=>[id,10]));peerState.balance=77;peerState.hatched=0;peerState.dailyHatches=0;peerState.day=new Date().toISOString().slice(0,10);
+ db.sql.prepare('UPDATE puzzle_courtyards SET data=? WHERE user_id=?').run(JSON.stringify(peerState),peer);
+ const peerVersion=(await gardenFor(peer)).version,hatchRequest={action:'hatch',requestId:'ab'.repeat(16),version:peerVersion,item:'wood'};
+ await Promise.all([gardenAction(peer,hatchRequest),gardenAction(peer,hatchRequest)]);const reward=(await gardenFor(peer));assert.equal(reward.version,peerVersion+1);assert.equal(reward.state.progress,100);assert.equal(reward.state.balance,77);assert.deepEqual(reward.state.redeemed,peerState.redeemed);assert.ok(Object.hasOwn(defs,reward.state.lastHatch.item));assert.equal(reward.state.lastHatch.requestId,hatchRequest.requestId);assert.equal(Object.values(reward.state.owned).reduce((a,b)=>a+b,0),Object.keys(defs).length+1);assert.equal(reward.state.owned[reward.state.lastHatch.item],2);
+ await gardenAction(peer,hatchRequest);assert.equal((await gardenFor(peer)).version,reward.version,'retry does not award a second item');assert.deepEqual((await gardenFor(peer)).state.owned,reward.state.owned,'newly hatched inventory survives reads');
  }finally{db.close();}});
