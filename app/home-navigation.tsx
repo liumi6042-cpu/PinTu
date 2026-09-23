@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { isChinesePath,zhPath } from '@/lib/site-paths';
 
 import { useEffect, useState } from 'react';
-import { Users, UserRound, Images, Crown } from 'lucide-react';
+import { Users, UserRound, Images, Crown, Puzzle } from 'lucide-react';
 import type { Account } from '@/lib/account-crypto';
 import { apiJson } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
@@ -30,6 +30,7 @@ export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:st
     }, []);
     return <nav className="home-navigation" aria-label={copy("主要导航")}>
   <a href={zh?'/zh/lobby':'/lobby'}><Users size={17}/>{copy("公开大厅")}</a>
+  <a href="/courtyard"><Puzzle size={17}/>{copy("我的庭院")}</a>
   <a href={zhHref(galleryHref)}><Images size={17}/>{copy('图库')}</a>
   <a href="/personal"><UserRound size={17}/>{copy(PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录')}</a>
   {MEMBERSHIP_VISIBLE&&<a href="/membership"><Crown size={17}/>{copy("会员")}</a>}
