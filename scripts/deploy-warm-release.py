@@ -7,6 +7,7 @@ import argparse, hashlib, json, os, pathlib, re, secrets, socket, sqlite3, subpr
 import tarfile, tempfile, time, urllib.request, urllib.error
 
 p = argparse.ArgumentParser()
+p.add_argument('--additive-migration-sha256')
 for name in ['release', 'previous', 'sha256', 'commit', 'old-unit']:
     p.add_argument('--' + name, required=True)
 p.add_argument('--from-port', type=int, required=True, choices=[3103, 3104])
@@ -53,7 +54,18 @@ for item in manifest['files']:
 assert not (app / 'public').exists()
 def migrations(root):
     return {f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in (root / 'drizzle').glob('*.sql')}
-assert migrations(app) == migrations(old), 'Warm coexistence requires unchanged migrations'
+old_migrations, new_migrations = migrations(old), migrations(app)
+added = set(new_migrations) - set(old_migrations)
+assert all(new_migrations.get(name) == digest for name,digest in old_migrations.items()), 'Existing migrations must never change'
+if added:
+    assert added == {'0012_courtyard_lobby_chat.sql'}, 'Only the reviewed courtyard additive migration is allowed'
+    assert args.additive_migration_sha256 == new_migrations['0012_courtyard_lobby_chat.sql'], 'Require exact reviewed migration digest'
+    sql = (app / 'drizzle/0012_courtyard_lobby_chat.sql').read_text()
+    statements = [part.strip() for part in sql.split(';') if part.strip()]
+    assert all(re.match(r'^(CREATE TABLE puzzle_(courtyard|lobby_chat)|CREATE INDEX (courtyard_image|lobby_chat_rate)|INSERT INTO puzzle_courtyard_settings)',part) for part in statements)
+else:
+    assert not args.additive_migration_sha256
+
 
 headers = {'Host': 'jigsawnook.online', 'X-Forwarded-Host': 'jigsawnook.online', 'X-Forwarded-Proto': 'https', 'CF-Connecting-IP': '192.0.2.43'}
 def request(port, path, body=None, actor=None):
@@ -114,7 +126,18 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         if actor is not None and head.get('Set-Cookie'): actor['cookie'] = head['Set-Cookie'].split(';')[0]
         return value
     try:
-        launch(old, 3139); launch(app, 3138)
+        launch(old, 3139)
+        qa_db = pathlib.Path(temporary) / 'data/puzzle.sqlite'
+        def original_fingerprints():
+            with sqlite3.connect(qa_db) as connection:
+                names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='app_migrations'") if not row[0].startswith(('puzzle_courtyard','puzzle_lobby_chat'))]
+                return {name:hashlib.sha256(repr(connection.execute('SELECT * FROM '+name+' ORDER BY rowid').fetchall()).encode()).hexdigest() for name in names}
+        fingerprints_before=original_fingerprints()
+        launch(app, 3138)
+        assert original_fingerprints()==fingerprints_before, 'Additive migration modified original data'
+        # The old runtime remains healthy against the upgraded database.
+        ready(3139)
+
         check(3138, True)
         old_picture = re.search(r'href="/puzzle/([a-z0-9-]+)"', get(3139, '/gallery')[1].decode()).group(1)
         for count in [3000, 5000]:
@@ -263,6 +286,6 @@ report = {'release': args.release, 'gitCommit': args.commit, 'activeUnit': new_u
           'rollback': str(old), 'previousUnit': args.old_unit, 'oldAppRequestsDrained': drained,
           'assetsChecked': len(manifest['runtimeAssets']), 'retainedHashedAssets': retained,
           'reusedImmutableAssets': reused, 'reusedImmutableBytes': reused_bytes,
-          'migrationChanges': False, 'isolatedCrossVersionTests': True, 'forcedClientRefresh': False}
+          'migrationChanges': bool(added), 'additiveMigrationSha256': args.additive_migration_sha256, 'isolatedCrossVersionTests': True, 'forcedClientRefresh': False}
 (release / 'deployment.json').write_text(json.dumps(report, indent=2) + '\n')
 print(json.dumps(report), flush=True)

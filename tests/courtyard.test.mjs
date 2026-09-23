@@ -1,0 +1,31 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {registerHooks} from 'node:module';
+import {mkdtempSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {resolve} from 'node:path';
+import {SqliteD1} from '../server/sqlite.mjs';
+const dir=mkdtempSync(resolve(tmpdir(),'courtyard-test-')),db=new SqliteD1(resolve(dir,'test.sqlite'),resolve('drizzle'));
+globalThis.__gardenEnv={PUZZLE_DB:db};
+registerHooks({resolve(s,c,next){if(s==='cloudflare:workers')return {url:'test:cloudflare',shortCircuit:true};if(s.startsWith('.')&&!/\.[cm]?[jt]s$/.test(s)){try{return next(s+'.ts',c);}catch{}}return next(s,c);},load(u,c,next){if(u==='test:cloudflare')return {format:'module',source:'export const env=globalThis.__gardenEnv;',shortCircuit:true};return next(u,c);}});
+const {gardenFor,gardenAction,settleGarden}=await import('../lib/courtyard-store.ts');
+const {defs,validateLayout,snap}=await import('../lib/courtyard-model.mjs');
+const user='a'.repeat(32),peer='b'.repeat(32);for(const id of [user,peer])db.sql.prepare('INSERT INTO puzzle_users(id,username,name,password_hash,salt,created_at) VALUES(?,?,?,?,?,?)').run(id,id,id,'x','x',Date.now());
+let n=0;const call=async(action,extra={})=>gardenAction(user,{action,version:(await gardenFor(user)).version,requestId:(++n).toString(16).padStart(32,'0'),...extra});
+test('concurrent rewards, exchange caps, idempotency, cloud version and valid grid footprints',async()=>{try{
+ assert.equal((await gardenFor(user)).state.balance,0);
+ const checks=await Promise.allSettled([call('checkin'),call('checkin')]);assert.equal(checks.filter(x=>x.status==='fulfilled').length,1);assert.equal((await gardenFor(user)).state.balance,1);
+ const room={id:'c'.repeat(32),completedAt:Date.now()+1,puzzle:{cols:26,rows:19,imageId:'test-picture'},achievements:{contributors:{[user]:{count:5},[peer]:{count:5}}}};
+ await Promise.all([settleGarden(room),settleGarden(room)]);let x=await gardenFor(user);assert.equal(x.state.progress,125);assert.equal(x.state.balance,2);
+ await call('hatch');x=await gardenFor(user);assert.equal(x.state.progress,75);assert.equal(x.state.balance,5);
+ await call('buy',{item:'plant'});assert.equal((await gardenFor(user)).state.redeemed.plant,1);await assert.rejects(call('buy',{item:'plant'}));
+ await assert.rejects(gardenAction(user,{action:'layout',version:0,requestId:'f'.repeat(32),layout:[]}));
+ const op='d'.repeat(32),version=(await gardenFor(user)).version;await gardenAction(user,{action:'layout',requestId:op,version,layout:[]});await gardenAction(user,{action:'layout',requestId:op,version,layout:[]});assert.equal((await gardenFor(user)).version,version+1);
+ await assert.rejects(call('layout',{layout:[{id:1,type:'plant',x:0,y:0}]}));
+ const state=(await gardenFor(user)).state;state.balance=1000;db.sql.prepare('UPDATE puzzle_courtyards SET data=? WHERE user_id=?').run(JSON.stringify(state),user);
+ for(let i=1;i<10;i++)await call('buy',{item:'plant'});await assert.rejects(call('buy',{item:'plant'}));assert.equal((await gardenFor(user)).state.redeemed.plant,10);
+ for(const type of Object.keys(defs)){let found=null;for(let y=250;y<870&&!found;y+=12)for(let x=150;x<1380;x+=24){let q=snap(type,x,y);try{validateLayout([{id:1,type,x:q.x,y:q.y}],{[type]:1});found=q;break;}catch{}}assert.ok(found,type+' has a valid footprint');}
+ const low={...room,id:'e'.repeat(32),achievements:{contributors:{[user]:{count:4}}}};const before=(await gardenFor(user)).state.progress;await settleGarden(low);assert.equal((await gardenFor(user)).state.progress,before);
+ const second={...room,id:'1'.repeat(32)};await settleGarden(second);assert.equal((await gardenFor(user)).state.progress,before+75);
+ await call('hatch');await assert.rejects(call('hatch'));
+ }finally{db.close();}});

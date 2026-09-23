@@ -10,6 +10,7 @@ import type { RoomCard } from '@/lib/lobby-types';
 import { apiJson,clockLabel } from '@/lib/community-client';
 import { useAddressCopy } from '@/lib/address-copy';
 import { useLanguage } from './language-switch';
+import LobbyChat from './lobby-chat';
 import CommunityShell from './community-shell';
 import ResumePuzzle from './resume-puzzle';
 import SearchIntroduction from './search-introduction';
@@ -78,5 +79,5 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
    </a></article>;
   })}</div>:<div className="community-empty"><Search size={30}/><h2>{copy(rooms.length?'还没有符合条件的桌面':'还没有公开房间，来开第一桌吧。')}</h2><button className="secondary" onClick={()=>{setFilter('all');setQuery('');}}>{copy('看看全部桌面')}</button></div>}
   <a href={createTableHref} className="create-table-link"><Plus size={20}/><span>{copy('创建公开房间')}</span><ArrowUpRight size={20}/></a>
- <SearchIntroduction kind="lobby"/></main></CommunityShell>;
+ <LobbyChat/><SearchIntroduction kind="lobby"/></main></CommunityShell>;
 }

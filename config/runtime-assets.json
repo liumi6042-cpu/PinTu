@@ -5,7 +5,23 @@
     "/favicon-96.png",
     "/apple-touch-icon.png",
     "/intro/hero-paper-coast-be03040892f1.webp",
-    "/f1c371032d00d04300ada03a4902ef52.txt"
+    "/f1c371032d00d04300ada03a4902ef52.txt",
+    "/courtyard/cloud.js",
+    "/courtyard/index.html",
+    "/courtyard/scene.js",
+    "/courtyard/assets/eggs-d4485ceef756.webp",
+    "/courtyard/assets/furniture-country-4a8a78047fa2.webp",
+    "/courtyard/assets/furniture-dd687198a215.webp",
+    "/courtyard/assets/furniture-mediterranean-2f0a1951c728.webp",
+    "/courtyard/assets/house-3bd9c76eb3c8.webp",
+    "/courtyard/assets/house-country-0ffdfa41559b.webp",
+    "/courtyard/assets/house-mediterranean-7563801d8e6c.webp",
+    "/courtyard/assets/plant-bamboo-85ac54a4efaf.webp",
+    "/courtyard/assets/plant-bougainvillea-dfba2038980e.webp",
+    "/courtyard/assets/plant-fern-91a761680cc9.webp",
+    "/courtyard/assets/plant-hydrangea-f8543fce28c1.webp",
+    "/courtyard/assets/plant-lavender-2cbf5b5ffd30.webp",
+    "/courtyard/assets/plant-olive-ff84729da049.webp"
   ],
   "description": "The packager also includes playSrc and thumbSrc for every published or archived project-generated puzzle. PNG originals stay in Git and never enter runtime uploads."
 }

@@ -44,6 +44,8 @@ const port=await freePort(3137);
   }
   assert.ok(ready,output);
   for(const path of ['/','/gallery','/lobby','/help','/api/locale']){const response=await get(path);assert.equal(response.status,200,path);await response.arrayBuffer();}
+  const retention=spawnSync(process.execPath,[resolve(project,'tests/retention-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  assert.equal(retention.status,0,retention.stdout+retention.stderr);console.log(retention.stdout.trim());
   const gallery=await (await get('/gallery')).text();for(const photo of published)assert.ok(gallery.includes(photo.id),photo.id);
   assert.equal((gallery.match(/type="radio"/g)||[]).length,4);
   for(const count of [108,300,500,1000])assert.ok(gallery.includes('value="'+count+'"'));

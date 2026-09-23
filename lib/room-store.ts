@@ -1,3 +1,4 @@
+import { settleGarden } from './courtyard-store';
 import { maintainPublicRooms } from './public-room-maintenance';
 import { MEMBER_ROOM_LIMIT,MEMBERSHIP_REQUIRED,canCreateMemberRoom } from './membership-policy';
 import { membershipFor } from './membership-store';
@@ -60,7 +61,7 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T){
   if(updated.meta.changes===1){
    // Room state and directory metadata commit together, including privacy changes and quota release.
    if(room.completedAt)await saveCompletion(room);
-   if(room.completedAt&&!wasComplete)await saveAchievementCompletion(room);
+   if(room.completedAt&&!wasComplete){await saveAchievementCompletion(room);try{await settleGarden(room);}catch{console.error('Courtyard reward pending recovery');}}
    else await saveAchievementActivity(room,previousDays);
    roomCache.put(room,serialized.length*2);
    return {room,result};

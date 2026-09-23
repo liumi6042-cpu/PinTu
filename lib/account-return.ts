@@ -1,5 +1,5 @@
 export const SOLO_LOGIN_REQUIRED = '个人拼图需要登录后才能游玩。';
-const destinations = new Set(['/personal/images', '/membership/manage', '/gallery?mode=create', '/personal?mode=create', '/gallery?mode=solo', '/personal?mode=solo', '/account/security', '/admin']);
+const destinations = new Set(['/courtyard','/lobby','/zh/lobby','/personal/images', '/membership/manage', '/gallery?mode=create', '/personal?mode=create', '/gallery?mode=solo', '/personal?mode=solo', '/account/security', '/admin']);
 
 export function accountReturnTo(value: string | null): string | null {
   if (!value) return null;
