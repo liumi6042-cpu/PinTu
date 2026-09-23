@@ -1,10 +1,19 @@
 import {localDb} from './local-db';
 import {RoomError,type Room} from './room-engine';
-import {initialGarden,validateLayout,prices,themes} from './courtyard-model.mjs';
+import {initialGarden,retireStarterFurniture,validateLayout,prices,themes} from './courtyard-model.mjs';
 import {pieceBand} from './piece-policy';
 type Garden=Omit<ReturnType<typeof initialGarden>,'owned'|'redeemed'|'ledger'|'layout'> & {owned:Record<string,number>;redeemed:Record<string,number>;ledger:{reason:string;amount:number;at:string}[];layout:unknown[]};
 const day=(now:number)=>new Date(now).toISOString().slice(0,10);
-export async function gardenFor(id:string){const db=localDb();await db.prepare('INSERT OR IGNORE INTO puzzle_courtyards(user_id,data) SELECT id,? FROM puzzle_users WHERE id=?').bind(JSON.stringify(initialGarden()),id).run();const row=await db.prepare('SELECT version,data FROM puzzle_courtyards WHERE user_id=?').bind(id).first<{version:number;data:string}>();if(!row)throw new RoomError('请先登录',401);return {version:row.version,state:JSON.parse(row.data) as Garden};}
+export async function gardenFor(id:string){
+ const db=localDb();await db.prepare('INSERT OR IGNORE INTO puzzle_courtyards(user_id,data) SELECT id,? FROM puzzle_users WHERE id=?').bind(JSON.stringify(initialGarden()),id).run();
+ for(let retry=0;retry<8;retry++){
+  const row=await db.prepare('SELECT version,data FROM puzzle_courtyards WHERE user_id=?').bind(id).first<{version:number;data:string}>();if(!row)throw new RoomError('请先登录',401);
+  const state=JSON.parse(row.data) as Garden;if(!retireStarterFurniture(state))return {version:row.version,state};
+  const result=await db.prepare('UPDATE puzzle_courtyards SET data=?,version=version+1 WHERE user_id=? AND version=?').bind(JSON.stringify(state),id,row.version).run();
+  if(result.meta.changes===1)return {version:row.version+1,state};
+ }
+ throw new RoomError('庭院正在同步，请稍后重试',409);
+}
 async function update(id:string,op:string,kind:string,transform:(state:Garden)=>Promise<void>|void,image:string|null=null,expected?:number,eventTime?:number){
  const db=localDb();for(let n=0;n<8;n++){
  if(await db.prepare('SELECT 1 FROM puzzle_courtyard_events WHERE user_id=? AND operation=?').bind(id,op).first())return gardenFor(id);

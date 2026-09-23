@@ -9,7 +9,7 @@ const dir=mkdtempSync(resolve(tmpdir(),'courtyard-test-')),db=new SqliteD1(resol
 globalThis.__gardenEnv={PUZZLE_DB:db};
 registerHooks({resolve(s,c,next){if(s==='cloudflare:workers')return {url:'test:cloudflare',shortCircuit:true};if(s.startsWith('.')&&!/\.[cm]?[jt]s$/.test(s)){try{return next(s+'.ts',c);}catch{}}return next(s,c);},load(u,c,next){if(u==='test:cloudflare')return {format:'module',source:'export const env=globalThis.__gardenEnv;',shortCircuit:true};return next(u,c);}});
 const {gardenFor,gardenAction,settleGarden}=await import('../lib/courtyard-store.ts');
-const {defs,validateLayout,snap}=await import('../lib/courtyard-model.mjs');
+const {defs,validateLayout,snap,initialGarden}=await import('../lib/courtyard-model.mjs');
 const user='a'.repeat(32),peer='b'.repeat(32);for(const id of [user,peer])db.sql.prepare('INSERT INTO puzzle_users(id,username,name,password_hash,salt,created_at) VALUES(?,?,?,?,?,?)').run(id,id,id,'x','x',Date.now());
 let n=0;const call=async(action,extra={})=>gardenAction(user,{action,version:(await gardenFor(user)).version,requestId:(++n).toString(16).padStart(32,'0'),...extra});
 test('concurrent rewards, exchange caps, idempotency, cloud version and valid grid footprints',async()=>{try{
@@ -29,4 +29,11 @@ test('concurrent rewards, exchange caps, idempotency, cloud version and valid gr
  const low={...room,id:'e'.repeat(32),achievements:{contributors:{[user]:{count:4}}}};const before=(await gardenFor(user)).state.progress;await settleGarden(low);assert.equal((await gardenFor(user)).state.progress,before);
  const second={...room,id:'1'.repeat(32)};await settleGarden(second);assert.equal((await gardenFor(user)).state.progress,before+75);
  await call('hatch');await assert.rejects(call('hatch'));
+ const fresh=initialGarden();assert.deepEqual(fresh.owned,{});assert.deepEqual(fresh.layout,[]);assert.deepEqual(fresh.themes,['wood']);assert.equal(fresh.activeTheme,'wood');
+ const legacy={...fresh,balance:77,progress:45,owned:{plant:5,chair:1,lamp:2,lemon:1},redeemed:{plant:2,lemon:1},layout:[{id:1,type:'plant',x:1,y:2},{id:2,type:'plant',x:3,y:4},{id:3,type:'plant',x:5,y:6},{id:4,type:'chair',x:7,y:8},{id:5,type:'lemon',x:9,y:10}],themes:['wood','country']};delete legacy.inventoryVersion;
+ db.sql.prepare('UPDATE puzzle_courtyards SET data=?,version=version+1 WHERE user_id=?').run(JSON.stringify(legacy),user);
+ const beforeVersion=db.sql.prepare('SELECT version FROM puzzle_courtyards WHERE user_id=?').get(user).version;
+ const migrated=await Promise.all(Array.from({length:6},()=>gardenFor(user)));for(const g of migrated){assert.equal(g.version,beforeVersion+1);assert.deepEqual(g.state.owned,{plant:2,lemon:1});assert.deepEqual(g.state.layout,legacy.layout.filter(i=>[1,2,5].includes(i.id)));assert.equal(g.state.balance,77);assert.equal(g.state.progress,45);assert.deepEqual(g.state.themes,legacy.themes);}
+ await assert.rejects(gardenAction(user,{action:'layout',version:beforeVersion,requestId:'f1'.repeat(16),layout:[]}),/其他页面/);
+ assert.equal((await gardenFor(user)).version,beforeVersion+1,'inventory upgrade runs exactly once');
  }finally{db.close();}});
