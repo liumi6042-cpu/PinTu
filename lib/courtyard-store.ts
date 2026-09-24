@@ -1,9 +1,10 @@
+import {cosmeticsOf,drawCosmetic,validStyle} from '../public/cosmetics/catalog.mjs';
 import {localDb} from './local-db';
 import {RoomError,type Room} from './room-engine';
 import {initialGarden,hatchFurniture,retireStarterFurniture,validateLayout,prices,themes} from './courtyard-model.mjs';
 import {baseHatchProgress} from './hatch-feedback';
 import {pieceBand} from './piece-policy';
-type Garden=Omit<ReturnType<typeof initialGarden>,'owned'|'redeemed'|'ledger'|'layout'> & {owned:Record<string,number>;redeemed:Record<string,number>;ledger:{reason:string;amount:number;at:string}[];layout:unknown[];lastHatch?:{item:string;requestId:string}};
+type Garden=Omit<ReturnType<typeof initialGarden>,'owned'|'redeemed'|'ledger'|'layout'> & {owned:Record<string,number>;redeemed:Record<string,number>;ledger:{reason:string;amount:number;at:string}[];layout:unknown[];cosmetics?:{bubbles:string[];cursors:string[];equipped:{bubble:string|null;cursor:string|null}};lastHatch?:{kind?:string;item:string;requestId:string}};
 const day=(now:number)=>new Date(now).toISOString().slice(0,10);
 export async function gardenFor(id:string){
  const db=localDb();await db.prepare('INSERT OR IGNORE INTO puzzle_courtyards(user_id,data) SELECT id,? FROM puzzle_users WHERE id=?').bind(JSON.stringify(initialGarden()),id).run();
@@ -34,7 +35,8 @@ export async function gardenAction(id:string,input:Record<string,unknown>){
  const item=String(input.item??'');
  switch(action){
  case 'checkin':if(s.checkinDay===today)throw new RoomError('今日已签到',409);s.checkinDay=today;s.checkins++;{const amount=s.checkins%7===0?4:1;s.balance+=amount;addLedger(s,'签到',amount);}break;
- case 'hatch':{const needed=s.hatched?100:50;if(s.progress<needed||s.dailyHatches>=2)throw new RoomError('进度不足或今日已孵满',409);s.progress-=needed;s.hatched++;s.dailyHatches++;const reward=hatchFurniture(s.owned);s.owned[reward]=(s.owned[reward]||0)+1;s.lastHatch={item:reward,requestId:op};s.eggStyle=(s.eggStyle+1+Math.floor(Math.random()*9))%10;addLedger(s,'孵化物品:'+reward,0);break;}
+ case 'hatch':{const needed=s.hatched?100:50;if(s.progress<needed||s.dailyHatches>=2)throw new RoomError('进度不足或今日已孵满',409);s.progress-=needed;s.hatched++;s.dailyHatches++;const cosmetic=drawCosmetic(s);if(cosmetic){s.cosmetics=cosmeticsOf(s);(cosmetic.kind==='bubble'?s.cosmetics.bubbles:s.cosmetics.cursors).push(cosmetic.item);s.lastHatch={...cosmetic,requestId:op};addLedger(s,'孵化装扮:'+cosmetic.kind+':'+cosmetic.item,0);}else{const reward=hatchFurniture(s.owned);s.owned[reward]=(s.owned[reward]||0)+1;s.lastHatch={kind:'furniture',item:reward,requestId:op};addLedger(s,'孵化物品:'+reward,0);}s.eggStyle=(s.eggStyle+1+Math.floor(Math.random()*9))%10;break;}
+ case 'equip':{const kind=input.kind;if(kind!=='bubble'&&kind!=='cursor')throw new RoomError('装扮类别无效');const c=cosmeticsOf(s);if(input.item!==null&&(!validStyle(input.item)||!(kind==='bubble'?c.bubbles:c.cursors).includes(input.item as string)))throw new RoomError('请先孵化解锁这款装扮',403);c.equipped[kind]=input.item===null?null:String(input.item);s.cosmetics=c;break;}
  case 'buy':{if(!Object.hasOwn(prices,item))throw new RoomError('物品不存在');const price=(prices as Record<string,number>)[item];if(!price)throw new RoomError('物品不存在');if((s.redeemed[item]||0)>=10)throw new RoomError('已达到10件兑换上限',409);if(s.balance<price)throw new RoomError('碎片不足',409);s.balance-=price;s.owned[item]=(s.owned[item]||0)+1;s.redeemed[item]=(s.redeemed[item]||0)+1;addLedger(s,'兑换:'+item,-price);break;}
  case 'theme-buy':{if(!Object.hasOwn(themes,item))throw new RoomError('外观不存在');const price=(themes as Record<string,number>)[item];if(!price||s.themes.includes(item))throw new RoomError('外观已拥有或不存在',409);if(s.balance<price)throw new RoomError('碎片不足',409);s.balance-=price;s.themes.push(item);addLedger(s,'外观:'+item,-price);break;}
  case 'theme-use':if(!s.themes.includes(item))throw new RoomError('请先兑换外观',403);s.activeTheme=item;break;

@@ -16,13 +16,15 @@ async function authorize(request:Request,context:Context){
   return {room,member,now};
 }
 async function positions(room:CursorRoom,now:number){
-  const data=await localDb().prepare(`SELECT c.player_id,c.x,c.y,c.updated_at,p.equipped AS badge FROM puzzle_room_cursors c
+  const data=await localDb().prepare(`SELECT c.player_id,c.x,c.y,c.updated_at,p.equipped AS badge,CASE WHEN COALESCE(s.status,'active')='active' AND EXISTS(SELECT 1 FROM json_each(g.data,'$.cosmetics.cursors') WHERE value=json_extract(g.data,'$.cosmetics.equipped.cursor')) THEN json_extract(g.data,'$.cosmetics.equipped.cursor') END AS cursorStyle FROM puzzle_room_cursors c
     JOIN json_each(?) m ON json_extract(m.value,'$.id')=c.player_id
     LEFT JOIN puzzle_achievement_profiles p ON p.owner_id=COALESCE(json_extract(m.value,'$.accountId'),json_extract(m.value,'$.guestId'))
-    WHERE c.room_id=? AND c.updated_at>? AND c.x IS NOT NULL AND c.y IS NOT NULL`).bind(JSON.stringify(room.members),room.id,now-CURSOR_TTL).all<{player_id:string;x:number;y:number;updated_at:number;badge:string|null}>();
+    LEFT JOIN puzzle_courtyards g ON g.user_id=json_extract(m.value,'$.accountId')
+    LEFT JOIN puzzle_account_security s ON s.user_id=g.user_id
+    WHERE c.room_id=? AND c.updated_at>? AND c.x IS NOT NULL AND c.y IS NOT NULL`).bind(JSON.stringify(room.members),room.id,now-CURSOR_TTL).all<{player_id:string;x:number;y:number;updated_at:number;badge:string|null;cursorStyle:string|null}>();
   const members=new Map(room.members.filter(m=>now-m.lastSeen<ONLINE_MS).map(m=>[m.id,m]));
   const cursors:SharedCursor[]=[];
-  for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,x:row.x,y:row.y,updatedAt:row.updated_at});}
+  for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,cursorStyle:row.cursorStyle,x:row.x,y:row.y,updatedAt:row.updated_at});}
   return json({cursors,serverTime:now});
 }
 export async function GET(request:Request,context:Context){try{const {room,now}=await authorize(request,context);return await positions(room,now);}catch(error){return failure(error);}}

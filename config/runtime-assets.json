@@ -22,7 +22,10 @@
     "/courtyard/assets/plant-hydrangea-f8543fce28c1.webp",
     "/courtyard/assets/plant-lavender-2cbf5b5ffd30.webp",
     "/courtyard/assets/plant-olive-ff84729da049.webp",
-    "/courtyard/assets/hatch-soft-b-13142e12cef2.wav"
+    "/courtyard/assets/hatch-soft-b-13142e12cef2.wav",
+    "/cosmetics/icons-v1.png",
+    "/cosmetics/bubbles-v1.png",
+    "/cosmetics/catalog.mjs"
   ],
   "description": "The packager also includes playSrc and thumbSrc for every published or archived project-generated puzzle. PNG originals stay in Git and never enter runtime uploads."
 }

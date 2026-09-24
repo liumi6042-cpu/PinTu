@@ -35,6 +35,7 @@ export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:st
   <a href="/personal"><UserRound size={17}/>{copy(PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录')}</a>
   {MEMBERSHIP_VISIBLE&&<a href="/membership"><Crown size={17}/>{copy("会员")}</a>}
   <a className="home-account-link" href={account?"/account/security":"/account"}>{account ? account.name : copy('登录（可选）')}</a>
+  {account&&<a href="/wardrobe">{copy("我的装扮")}</a>}
   <LanguageSwitch />
   <BookmarkSite />
  </nav>;

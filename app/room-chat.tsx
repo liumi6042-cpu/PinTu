@@ -1,4 +1,5 @@
 'use client';
+import {CosmeticBubble} from './cosmetic-preview';
 import { memo, useEffect, useRef, useState } from 'react';
 import { Ban, ChevronDown, MessageCircle, Send, X } from 'lucide-react';
 import { t, playerName } from '@/lib/i18n';
@@ -71,7 +72,7 @@ export default memo(function RoomChat({client,hidden=false}:{client:RoomClient;h
     {visible.map(message=><article className={'room-chat-message'+(message.playerId===client.ticket.playerId?' is-own':'')} key={message.id}>
      <div className="room-chat-author"><span className="room-chat-dot" style={{backgroundColor:message.color}}/><bdi>{playerName(message.name)}</bdi><time dateTime={new Date(message.sentAt).toISOString()}>{new Date(message.sentAt).toLocaleTimeString(language==='zh'?'zh-CN':'en-US',{hour:'2-digit',minute:'2-digit'})}</time>
       {message.playerId!==client.ticket.playerId&&<button title={t('屏蔽此玩家的聊天')} aria-label={t('屏蔽此玩家的聊天')+' · '+playerName(message.name)} onClick={()=>block([...new Set([...muted,message.playerId])].slice(-100))}><Ban size={12}/></button>}
-     </div><p dir="auto">{message.text}</p>
+     </div><CosmeticBubble id={message.bubble}>{message.text}</CosmeticBubble>
     </article>)}
    </div>
    {below&&<button className="room-chat-latest" onClick={scrollEnd}>{t('查看新消息')}<ChevronDown size={14}/></button>}

@@ -1,5 +1,5 @@
 export const CHAT_LIMIT=300, CHAT_HISTORY=100, CHAT_INTERVAL=2000, CHAT_PER_MINUTE=20;
-export type ChatMessage={id:number;playerId:string;name:string;color:string;text:string;sentAt:number};
+export type ChatMessage={id:number;playerId:string;name:string;color:string;text:string;sentAt:number;bubble?:string|null};
 export type ChatFeed={messages:ChatMessage[];cursor:number};
 export function chatText(value:unknown):string|null {
  if(typeof value!=='string'||value.length>CHAT_LIMIT*2+100)return null;

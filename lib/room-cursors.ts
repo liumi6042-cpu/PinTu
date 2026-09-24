@@ -2,7 +2,7 @@ import { WORLD } from './puzzle-engine';
 
 export const CURSOR_TTL = 10000, CURSOR_INTERVAL = 200;
 export type CursorPoint = { x: number; y: number };
-export type SharedCursor = CursorPoint & { playerId: string; name: string; color: string; badge?:string|null; updatedAt: number };
+export type SharedCursor = CursorPoint & { playerId: string; name: string; color: string; badge?:string|null;cursorStyle?:string|null; updatedAt: number };
 export type CursorInput = { clientId: string; seq: number; point: CursorPoint | null };
 export function cursorInput(input: unknown): CursorInput | null {
   if (!input || typeof input !== 'object') return null;

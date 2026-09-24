@@ -1,0 +1,5 @@
+# Cosmetic artwork
+
+Built-in imagegen created two production atlases from the user-approved two boards. Runtime files are public/cosmetics/icons-v1.png (12 object cursors, 4x3 transparent atlas) and public/cosmetics/bubbles-v1.png (12 blank hand-painted chat frames, 3x4 transparent atlas). No third-party downloaded art. Themes: leaf, flower, moon, puzzle, wave, maple, mushroom, bee, ginkgo, pinecone, feather, strawberry.
+
+Prompt set: preserve warm paper watercolor/gouache, fine brown outlines, soft shading and muted colors from approved references; create evenly spaced isolated objects and blank decorated chat frames; no arrows, lettering or cards; transparent alpha outside each object/frame. Final bubble image used an additional built-in background-extraction edit to preserve shapes and remove backdrop. Runtime canvas extracts atlas cells and makes centered 32px native cursor PNGs once per style, never per pointer event. Chat frames use nine-slice borders so long messages do not stretch corner art. Original generated copies remain in the Codex generated_images folder.
