@@ -621,5 +621,26 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "左半侧细节最密集，建议先从画面左上与左下入手。"
+  },
+  "cat-lantern-market-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先区分暖色灯笼和蓝色水面，再拼人物与建筑。"
+  },
+  "lantern-dance-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼蓝色河道与石桥，再按服饰颜色寻找舞会人物。"
+  },
+  "magic-treehouse-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出树干与晚霞，再沿楼梯、吊桥和灯笼逐步拼合。"
   }
 }

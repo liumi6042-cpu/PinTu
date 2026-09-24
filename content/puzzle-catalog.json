@@ -1225,5 +1225,41 @@
     "playSrc": "/puzzles/grass-green-study-07-play-32dcb9f5340b.webp",
     "thumbSrc": "/puzzles/grass-green-study-07-thumbnail-3c75966233a1.webp",
     "optimizedSrc": "/puzzles/grass-green-study-07-optimized-e8371ce33774.webp"
+  },
+  {
+    "id": "cat-lantern-market-v1",
+    "title": "猫咪市集",
+    "subtitle": "灯笼映亮夜市，猫咪与旅人相伴走过月下水巷。",
+    "category": "幻想",
+    "src": "/puzzles/cat-lantern-market-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/cat-lantern-market-v1-play-bba0ab3d10d5.webp",
+    "thumbSrc": "/puzzles/cat-lantern-market-v1-thumbnail-79f1d1b348ef.webp",
+    "optimizedSrc": "/puzzles/cat-lantern-market-v1-optimized-d91f042d75b8.webp"
+  },
+  {
+    "id": "lantern-dance-v1",
+    "title": "舞会",
+    "subtitle": "月光下的河畔舞会，花朵、乐声与彩灯点亮小镇。",
+    "category": "生活",
+    "src": "/puzzles/lantern-dance-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/lantern-dance-v1-play-c03bf21e4ec3.webp",
+    "thumbSrc": "/puzzles/lantern-dance-v1-thumbnail-61c1318e61e9.webp",
+    "optimizedSrc": "/puzzles/lantern-dance-v1-optimized-6ed8fdce9304.webp"
+  },
+  {
+    "id": "magic-treehouse-v1",
+    "title": "魔法树屋",
+    "subtitle": "古树间藏着面包店与魔法小铺，远方城堡沐浴在晚霞中。",
+    "category": "幻想",
+    "src": "/puzzles/magic-treehouse-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "playSrc": "/puzzles/magic-treehouse-v1-play-85f6d0e30084.webp",
+    "thumbSrc": "/puzzles/magic-treehouse-v1-thumbnail-c82398bad66f.webp",
+    "optimizedSrc": "/puzzles/magic-treehouse-v1-optimized-9087c7c19b15.webp"
   }
 ]

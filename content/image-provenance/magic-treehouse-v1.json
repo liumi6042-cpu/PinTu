@@ -1,0 +1,69 @@
+{
+  "id": "magic-treehouse-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-25 提供并要求上传到公开图库的 PNG 图片；原件未裁切、缩放或重编码。",
+    "providedOn": "2026-09-25",
+    "originalFile": "C:/Users/Administrator/Desktop/魔法树屋.png",
+    "originalSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供该图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-25"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-25",
+    "reviewer": "Codex visual review",
+    "observations": "已查看本次附图：画面为插画，无网页界面或按钮；图内招牌文字属于场景内容。"
+  },
+  "delivery": {
+    "sourceSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+    "play": {
+      "src": "/puzzles/magic-treehouse-v1-play-85f6d0e30084.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "85f6d0e30084c26fdbe0fceb5a374943f1609aebbeb5c7fdec66726a8c9f6108",
+      "bytes": 2752158,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/magic-treehouse-v1-thumbnail-c82398bad66f.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "c82398bad66f8839d3c5472aee09b63cd0f08921efe1e1d2e03371e91be01bed",
+      "bytes": 63556,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/magic-treehouse-v1-optimized-9087c7c19b15.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "9087c7c19b15201f737d25a6a480a09a33f58c835f4a5bc3824205a1821cd8e1",
+      "bytes": 591024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+      "inputSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}
