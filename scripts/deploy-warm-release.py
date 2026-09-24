@@ -140,7 +140,7 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
 
         check(3138, True)
         json_request(3138, '/api/courtyard', expected=401)
-        json_request(3138, '/api/lobby/chat')
+        json_request(3138, '/api/lobby/chat', expected=410)
         garden_actor={}
         json_request(3138, '/api/auth/register', {'username':'garden_'+secrets.token_hex(5),'name':'QA garden','password':secrets.token_hex(16)}, garden_actor, 201)
         garden=json_request(3138, '/api/courtyard', actor=garden_actor)
@@ -149,8 +149,8 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         assert claimed['state']['balance']==1
         assert json_request(3138, '/api/courtyard', claim, garden_actor)['state']['balance']==1
         message={'text':'Isolated lobby QA','requestId':secrets.token_hex(16)}
-        json_request(3138, '/api/lobby/chat', message, garden_actor)
-        assert any(m['text']==message['text'] for m in json_request(3138, '/api/lobby/chat')['messages'])
+        json_request(3138, '/api/lobby/chat', message, garden_actor, 410)
+        assert not json_request(3138, '/api/lobby/chat', expected=410)['messages']
         ready(3139)
         old_picture = re.search(r'href="/puzzle/([a-z0-9-]+)"', get(3139, '/gallery')[1].decode()).group(1)
         for count in [3000, 5000]:
