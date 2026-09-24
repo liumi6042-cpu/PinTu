@@ -49,7 +49,7 @@ try{
  // the fixed 12x9=108. The seat-identity check is what this room is for.
  const legacyGrid=gridForDimensions(guidance.width,guidance.height,108)??LEVELS.find(level=>level.count===108);
  assert.equal(legacy.status,201);rooms.push(legacy.data);assert.equal(legacy.data.room.puzzle.groups.length,legacyGrid.cols*legacyGrid.rows);assert.equal(legacy.data.room.members[0].name,firstName);
- for(const [visibility,status] of [['solo',401],['private',403]])assert.equal((await request('/api/rooms',{imageId:initial.imageId,pieces:108,visibility,guestSecret:secret,initialState:'seed-v1'})).status,status);
+ for(const [visibility,status] of [['solo',410],['private',403]])assert.equal((await request('/api/rooms',{imageId:initial.imageId,pieces:108,visibility,guestSecret:secret,initialState:'seed-v1'})).status,status);
  assert.equal((await request('/api/rooms',{imageId:initial.imageId,pieces:108,visibility:'public',guestSecret:'invalid',initialState:'seed-v1'})).status,400);
  const validCookie=cookie;cookie='puzzle_guest='+randomBytes(32).toString('hex');
  assert.equal((await request('/api/rooms/'+create.data.room.id,undefined,create.data.token)).status,401);cookie=validCookie;

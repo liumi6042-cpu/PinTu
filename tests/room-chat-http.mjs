@@ -37,7 +37,7 @@ try{
  const moved=await request(path,{type:'move',groupId:0,dx:133,dy:192,seq:1},a);assert.equal(moved.status,200);assert.equal(moved.data.puzzle.groups.find(group=>group.id===0).dx,133);
  assert.equal((await request(path,{type:'release',groupId:0},a)).status,200);
  const account=await request('/api/auth/register',{username:'chatqa_'+id().slice(0,10),name:'Chat account',password:randomBytes(18).toString('hex')});assert.equal(account.status,201,JSON.stringify(account.data));
- const solo=await create(account,'solo');assert.equal((await request('/api/rooms/'+solo.room.id+'/chat',undefined,solo)).status,403);
+ const template=await create(account),legacy=JSON.parse(db.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(template.room.id).data);legacy.id=id();legacy.visibility='solo';db.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(legacy.id,legacy.revision,JSON.stringify(legacy),legacy.expiresAt);rooms.push(legacy.id);const solo={...template,room:legacy};assert.equal((await request('/api/rooms/'+solo.room.id+'/chat',undefined,solo)).status,403);
  const now=Date.now();db.prepare("INSERT INTO puzzle_memberships(user_id,plan,status,starts_at,expires_at,cancel_at_period_end) VALUES(?,'puzzle','active',?,?,0)").run(account.data.account.id,now-1000,now+3600000);
  const privateRoom=await create(account,'private'),privateChat='/api/rooms/'+privateRoom.room.id+'/chat';
  assert.equal((await request(privateChat,undefined,b)).status,401);
