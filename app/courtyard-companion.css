@@ -13,3 +13,4 @@
 
 /* Match daily check-in placement, including fullscreen and small screens. */
 dialog.welcome-gift-panel{position:fixed;inset:0;margin:auto;width:380px;max-width:calc(100vw - 30px);max-height:85dvh;padding:32px;border-radius:22px;font-size:14px}dialog.welcome-gift-panel:not([open]){display:none}dialog.welcome-gift-panel h2{font-size:23px;line-height:1.4}dialog.welcome-gift-panel>svg{width:140px;height:140px}dialog.welcome-gift-panel .welcome-gift-close{background:transparent;border:0;padding:4px;margin:0}
+dialog.welcome-gift-panel{overflow-x:hidden}dialog.welcome-gift-panel>.welcome-gift-claim{margin-left:0;margin-right:0}
