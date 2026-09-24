@@ -12,13 +12,12 @@ import { ownedUserImage } from '@/lib/user-image-store';
 import { photoGuidance } from '@/lib/play-guidance';
 import { createPuzzle,createFittedPuzzle,LEVELS } from '@/lib/puzzle-engine';
 import type { Room } from '@/lib/room-engine';
-import { requireSoloAccount } from '@/lib/solo-account';
 import { countsForDimensions,gridForDimensions,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PAUSED,NEW_GAME_LEVELS } from '@/lib/piece-policy';
 import {checkPieceCreation} from '@/lib/room-piece-access';
 export async function POST(request:Request){
  try{
   const input=await body(request),now=Date.now();
-  if(input.visibility==='solo')await requireSoloAccount(request);
+  if(input.visibility==='solo')throw new RoomError('独自拼图已下线，请创建公开房间一起拼图。',410);
   // Visible rooms use an optional account or a persistent browser guest identity.
   if(input.guestSecret!==undefined&&(typeof input.guestSecret!=='string'||!/^[a-f0-9]{64}$/.test(input.guestSecret)))throw new RoomError('玩家身份无效');
   const registered=input.visibility!==undefined,player=await currentPlayer(request,true,input.guestSecret);

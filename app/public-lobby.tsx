@@ -10,6 +10,7 @@ import type { RoomCard } from '@/lib/lobby-types';
 import { apiJson,clockLabel } from '@/lib/community-client';
 import { useAddressCopy } from '@/lib/address-copy';
 import { useLanguage } from './language-switch';
+import LobbyCommunity from './lobby-community';
 import CommunityShell from './community-shell';
 import ResumePuzzle from './resume-puzzle';
 import SearchIntroduction from './search-introduction';
@@ -61,6 +62,7 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
  const summary=stats&&<><span><strong>{stats.completedToday}</strong> {copy('幅 · 今天完成')}</span><span><strong>{stats.completedTotal}</strong> {copy('幅 · 累计完成')}</span></>;
  return <CommunityShell active="lobby"><main className="community-main lobby-main">
   <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{copy('公开拼图大厅')}</h1><p>{copy('任何片数都能直接加入；只有创建 500 片及以上房间需要登录。')}</p></div><div className="lobby-summary"><span><strong>{rooms.length}</strong> {copy('个公开房间')}</span>{summary}</div></section>
+  <LobbyCommunity/>
   <ResumePuzzle/>
   {daily}
   <div className="public-create-row"><a className="primary" href={createTableHref}><Plus size={19}/>{copy('创建公开房间')}</a><button className="secondary" disabled={randomBusy} onClick={()=>void launchRandom()} title={copy('随机选图，按推荐片数创建公开房间')}><Shuffle size={18}/>{copy(randomBusy?'正在铺开桌面…':'随机开一桌')}</button><p>{copy('公开房间免费，500 片及以上首次入座需要登录。')}</p></div>{launchError&&<p className="form-error" role="alert">{copy(launchError)}</p>}<p className="public-retention-note">{copy('公开房间从创建起在大厅展示 24 小时（500 片及以上 36 小时），中途继续拼不会延长；到期后从大厅隐藏、仍可从拼图记录回来继续；无人且未拼合的房间会更早清理。')}</p>

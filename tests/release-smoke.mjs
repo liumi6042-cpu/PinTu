@@ -44,6 +44,14 @@ const port=await freePort(3137);
   }
   assert.ok(ready,output);
   for(const path of ['/','/gallery','/lobby','/help','/api/locale']){const response=await get(path);assert.equal(response.status,200,path);await response.arrayBuffer();}
+  for(const lobbyPath of ['/lobby','/zh/lobby']){
+    const html=await (await get(lobbyPath)).text();assert.ok(html.includes('397229653'));assert.ok(html.includes('lobby-qq'));
+  }
+  const post=async(body,cookie='')=>fetch('http://127.0.0.1:'+port+'/api/rooms',{method:'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https',Origin:'https://jigsawnook.online','Content-Type':'application/json',Cookie:cookie},body:JSON.stringify(body)});
+  for(const imageId of ['seaside-native-v2','custom-'+'a'.repeat(32)]){
+    const response=await post({visibility:'solo',imageId,pieces:108});assert.equal(response.status,410);assert.match((await response.json()).error,/独自拼图已下线/);
+  }
+  console.log('Lobby QQ banner present in both languages; catalogue and uploaded solo creation retired.');
   const cosmetics=spawnSync(process.execPath,[resolve(project,'tests/cosmetics-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(cosmetics.status,0,cosmetics.stdout+cosmetics.stderr);console.log(cosmetics.stdout.trim());
   const welcome=spawnSync(process.execPath,[resolve(project,'tests/welcome-gift-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});

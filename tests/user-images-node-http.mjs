@@ -16,7 +16,7 @@ try{
  const owner=await account(true),free=await account(false),stranger=await account(true),ownerId=owner.data.account.id;
  assert.equal((await call('/api/user-images',form())).status,401);
  const freeUpload=await call('/api/user-images',form(),free.cookie);assert.equal(freeUpload.status,201,'ordinary accounts can upload');
- assert.equal((await create(free,freeUpload.data.image.id,'solo')).status,201,'ordinary accounts can play their own pictures');
+ assert.equal((await create(free,freeUpload.data.image.id,'solo')).status,410,'custom solo play is retired');
  assert.equal((await create(free,freeUpload.data.image.id,'private')).status,403,'private rooms still require membership');
  assert.equal((await call('/api/user-images',form(),owner.cookie,'','https://unrelated.example')).status,403);
  assert.equal((await call('/api/user-images',form(bytes,'no'),owner.cookie)).status,400);
@@ -30,7 +30,7 @@ try{
  const ownBytes=await raw(image.src,undefined,owner.cookie);assert.equal(ownBytes.status,200);assert.equal(ownBytes.headers.get('Content-Type'),'image/webp');assert.match(ownBytes.headers.get('Cache-Control'),/private.*no-store/);assert.equal(ownBytes.headers.get('X-Content-Type-Options'),'nosniff');
  assert.equal((await create(owner,id,'public')).status,201,'uploaded pictures can be opened to the public lobby');
  const publicAttempts=await Promise.all(Array.from({length:5},()=>create(owner,id)));assert.equal(publicAttempts.filter(r=>r.status===201).length,3);assert.equal(publicAttempts.filter(r=>r.status===409).length,2);
- const solo=await create(owner,id,'solo');assert.equal(solo.status,201,'private-table quota does not consume custom solo slots');
+ const solo=await create(owner,id,'solo');assert.equal(solo.status,410,'solo mode cannot bypass the retired feature');
  const ticket=publicAttempts.find(r=>r.status===201).data,roomId=ticket.room.id,path='/api/rooms/'+roomId;
  assert.equal(ticket.room.customImage.id,id);
  assert.equal((await call('/api/user-images/'+id,{action:'delete'},owner.cookie)).status,409);
@@ -56,7 +56,7 @@ try{
  db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=? WHERE id=?').run(JSON.stringify(completed),completed.revision,roomId);
  assert.equal((await call(path,undefined,owner.cookie,ticket.token)).status,200);assert.equal(db.sql.prepare('SELECT COUNT(*) AS n FROM puzzle_results WHERE room_id=?').get(roomId).n,0);
  db.sql.prepare('UPDATE puzzle_memberships SET expires_at=? WHERE user_id=?').run(Date.now()-1000,ownerId);
- assert.equal((await call('/api/user-images',form(otherBytes),owner.cookie)).status,201,'uploads stay free after membership expires');assert.equal((await create(owner,id,'solo')).status,201);assert.equal((await create(owner,id,'private')).status,403);
+ assert.equal((await call('/api/user-images',form(otherBytes),owner.cookie)).status,201,'uploads stay free after membership expires');assert.equal((await create(owner,id,'solo')).status,410);assert.equal((await create(owner,id,'private')).status,403);
  assert.equal((await raw(privateUrl,undefined,friend.cookie)).status,200);assert.equal((await call(path+'/join',{},friend.cookie)).status,200);
  // Expired rooms stop serving the picture, and the image becomes deletable again.
  for(const room of rooms){db.sql.prepare('UPDATE puzzle_room_directory SET expires_at=? WHERE room_id=?').run(Date.now()-1000,room);db.sql.prepare('UPDATE puzzle_rooms SET expires_at=? WHERE id=?').run(Date.now()-1000,room);}

@@ -1055,5 +1055,16 @@
   "前往庭院，查看孵化进度": "Visit your courtyard to check hatching progress",
   "次数随片数增加，每次标出最多 3 片及对应位置，持续 30 秒。": "More uses for larger puzzles. Each hint highlights up to three pieces and their positions for 30 seconds.",
   "次数随片数增加，每次底图持续 30 秒。": "More uses for larger puzzles. Each underlay lasts 30 seconds.",
-  "「边缘」只显示含边缘的拼块组。底图/提示次数按片数分档：108片 2/3 次、300片 3/5 次、500片 4/8 次、1000片及以上 6/12 次。每次持续30秒，提示最多标出3片及对应位置。每局每人独立计算，刷新不会重置次数。": "Edges shows groups containing edge pieces. Underlay/hint uses: 108 pieces 2/3, 300 pieces 3/5, 500 pieces 4/8, and 1,000 or more pieces 6/12. Each lasts 30 seconds; hints mark up to three pieces and their positions. Allowances are per player per puzzle and do not reset on reload."
+  "「边缘」只显示含边缘的拼块组。底图/提示次数按片数分档：108片 2/3 次、300片 3/5 次、500片 4/8 次、1000片及以上 6/12 次。每次持续30秒，提示最多标出3片及对应位置。每局每人独立计算，刷新不会重置次数。": "Edges shows groups containing edge pieces. Underlay/hint uses: 108 pieces 2/3, 300 pieces 3/5, 500 pieces 4/8, and 1,000 or more pieces 6/12. Each lasts 30 seconds; hints mark up to three pieces and their positions. Allowances are per player per puzzle and do not reset on reload.",
+  "每个账号最多保存 10 张图片。图片不加入公开图库；你可以开公开房间和其他人一起拼，也可以开私人房间邀请朋友。": "Save up to 10 pictures per account. They do not enter the public gallery. Create a public table to play together, or invite friends to a private table.",
+  "我有权使用这张图片。我了解：私人房间只有我和受邀玩家能看到；如果开公开房间，这张图片会被其他玩家看到，但不会进入公开图库。": "I have permission to use this picture. In a private table, only I and invited players can see it. In a public table, other players can see it, but it will not enter the public gallery.",
+  "创建私人房间需要会员，公开房间免费。": "Private tables require membership. Public tables are free.",
+  "上传与公开房间免费。创建私人房间需要会员。房间保留时间以房间页面显示为准。": "Uploads and public tables are free. Private tables require membership. See each table for its retention period.",
+  "上传与公开房间免费，房间保留时间以房间页面显示为准。": "Uploads and public tables are free. See each table for its retention period.",
+  "独自拼图已下线，请创建公开房间一起拼图。": "Solo play is no longer available. Create a public table to play together.",
+  "一起拼图 · QQ 交流群": "Jigsaw Nook · QQ community",
+  "找拼友、聊拼图，欢迎加入我们的 QQ 群。": "Find puzzle friends and chat in our QQ group.",
+  "复制群号": "Copy group number",
+  "群号已复制": "Group number copied",
+  "复制失败，请长按或选中群号复制": "Could not copy. Select or long-press the number to copy it."
 }

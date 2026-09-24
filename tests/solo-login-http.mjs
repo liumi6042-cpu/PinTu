@@ -17,13 +17,18 @@ async function call(path,body,cookie='',token=''){
 try{
  const secret=randomBytes(32).toString('hex'),guestCookie='puzzle_guest='+secret,guestId='guest:'+hash(secret);identities.push(guestId);
  const input={imageId:'seaside-native-v2',pieces:108,visibility:'solo'};
- assert.equal((await call('/api/rooms',input)).status,401);
- assert.equal((await call('/api/rooms',{...input,isMember:true,accountId:id()},guestCookie)).status,401);
+ assert.equal((await call('/api/rooms',input)).status,410);
+ assert.equal((await call('/api/rooms',{...input,isMember:true,accountId:id()},guestCookie)).status,410);
  const account=await call('/api/auth/register',{username:'soloq_'+id().slice(0,12),name:'Solo QA',password:'FreeSolo-'+id()},guestCookie);
  assert.equal(account.status,201,JSON.stringify(account.data));users.push(account.data.account.id);identities.push(account.data.account.id);
  const signed=account.cookie+'; '+guestCookie;
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM puzzle_memberships WHERE user_id=?').get(account.data.account.id).n,0);
- const created=await call('/api/rooms',input,signed);assert.equal(created.status,201,JSON.stringify(created.data));rooms.push(created.data.room.id);
+ assert.equal((await call('/api/rooms',input,signed)).status,410);
+ // Existing account-owned solo progress remains readable even though new creation is retired.
+ const legacy=makeRoom(id(),'seaside-native-v2',108,Date.now()),legacyToken=id();legacy.visibility='solo';legacy.ownerId=account.data.account.id;
+ addMember(legacy,id(),'Legacy account',hash(legacyToken),Date.now(),account.data.account.id);
+ db.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(legacy.id,legacy.revision,JSON.stringify(legacy),legacy.expiresAt);rooms.push(legacy.id);
+ const created={data:{room:legacy,token:legacyToken}};
  const path='/api/rooms/'+created.data.room.id;
  assert.equal((await call(path+'/join',{},guestCookie)).status,401);
  assert.equal((await call(path,undefined,guestCookie,created.data.token)).status,401);
@@ -50,7 +55,7 @@ try{
  await call('/api/auth/logout',{},signed);
  assert.equal((await call(path,{type:'heartbeat'},signed,created.data.token)).status,401);
  assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(created.data.room.id).data).puzzle,saved);
- console.log('Solo sign-in HTTP passed: free account create/play, anonymous denial, legacy owner continuity, logout, private membership and guest public play.');
+ console.log('Solo sign-in HTTP passed: solo creation retired, existing account play, anonymous denial, legacy owner continuity, logout, private membership and guest public play.');
 }finally{
  for(const room of rooms){for(const table of ['puzzle_personal_hidden_rooms','puzzle_result_players','puzzle_achievement_settled','puzzle_achievement_facts','puzzle_room_cursors','puzzle_results','puzzle_room_directory'])db.prepare(`DELETE FROM ${table} WHERE room_id=?`).run(room);db.prepare('DELETE FROM puzzle_rooms WHERE id=?').run(room);}
  for(const identity of identities){for(const table of ['puzzle_achievement_profiles','puzzle_achievement_awards','puzzle_achievement_days'])db.prepare(`DELETE FROM ${table} WHERE owner_id=?`).run(identity);db.prepare('DELETE FROM puzzle_beta_seats WHERE identity=?').run(identity);}
