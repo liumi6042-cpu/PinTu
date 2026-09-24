@@ -25,8 +25,8 @@ export async function storeUserImage(owner:string,title:string,image:{bytes:Uint
 }
 export async function removeUserImage(owner:string,id:string){
  await ownedUserImage(owner,id);
- const result=await localDb().prepare(`DELETE FROM puzzle_user_images WHERE id=? AND owner_id=? AND NOT EXISTS(SELECT 1 FROM puzzle_room_directory WHERE image_id=? AND expires_at>?)`).bind(id,owner,id,Date.now()).run();
- if(result.meta.changes!==1)throw new RoomError('这张图片仍有保存中的拼图，请等房间过期后再删除。',409);
+ const result=await localDb().prepare(`DELETE FROM puzzle_user_images WHERE id=? AND owner_id=? AND NOT EXISTS(SELECT 1 FROM puzzle_room_directory WHERE image_id=? AND expires_at>? AND completed_at IS NULL)`).bind(id,owner,id,Date.now()).run();
+ if(result.meta.changes!==1)throw new RoomError('这张图片还有未完成的拼图，请在拼完或房间过期后再删除。',409);
 }
 // Called after verifying the requester owns the image or is an admitted room
 // participant. Bytes never travel in lobby listings or room sync snapshots.
