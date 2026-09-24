@@ -58,11 +58,11 @@ old_migrations, new_migrations = migrations(old), migrations(app)
 added = set(new_migrations) - set(old_migrations)
 assert all(new_migrations.get(name) == digest for name,digest in old_migrations.items()), 'Existing migrations must never change'
 if added:
-    assert added == {'0012_courtyard_lobby_chat.sql'}, 'Only the reviewed courtyard additive migration is allowed'
-    assert args.additive_migration_sha256 == new_migrations['0012_courtyard_lobby_chat.sql'], 'Require exact reviewed migration digest'
-    sql = (app / 'drizzle/0012_courtyard_lobby_chat.sql').read_text()
+    assert added == {'0013_welcome_gift.sql'}, 'Only the reviewed courtyard additive migration is allowed'
+    assert args.additive_migration_sha256 == new_migrations['0013_welcome_gift.sql'], 'Require exact reviewed migration digest'
+    sql = (app / 'drizzle/0013_welcome_gift.sql').read_text()
     statements = [part.strip() for part in sql.split(';') if part.strip()]
-    assert all(re.match(r'^(CREATE TABLE puzzle_(courtyard|lobby_chat)|CREATE INDEX (courtyard_image|lobby_chat_rate)|INSERT INTO puzzle_courtyard_settings)',part) for part in statements)
+    assert all(re.match(r'^CREATE TABLE puzzle_welcome_gifts ',part) for part in statements)
 else:
     assert not args.additive_migration_sha256
 
@@ -130,7 +130,7 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         qa_db = pathlib.Path(temporary) / 'data/puzzle.sqlite'
         def original_fingerprints():
             with sqlite3.connect(qa_db) as connection:
-                names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='app_migrations'") if not row[0].startswith(('puzzle_courtyard','puzzle_lobby_chat'))]
+                names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='app_migrations'") if not row[0].startswith(('puzzle_courtyard','puzzle_lobby_chat','puzzle_welcome_gifts'))]
                 return {name:hashlib.sha256(repr(connection.execute('SELECT * FROM '+name+' ORDER BY rowid').fetchall()).encode()).hexdigest() for name in names}
         fingerprints_before=original_fingerprints()
         launch(app, 3138)

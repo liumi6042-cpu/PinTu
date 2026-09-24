@@ -174,7 +174,10 @@ export class RoomClient {
           this.receive(result, true, false);
           // A polling response may arrive before this acknowledgement. Sound still
           // belongs to this successful local drop, never to general room updates.
-          if(!this.stopped&&successfulDrop(before,result.puzzle,task.id))this.table?.playConnectionSound?.('local');
+          if(!this.stopped&&successfulDrop(before,result.puzzle,task.id)){
+            this.table?.playConnectionSound?.('local');
+            if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('puzzle:successful-drop',{detail:{roomId:this.ticket.room.id}}));
+          }
           return;
         }
         if (task.latest) {
