@@ -1,8 +1,11 @@
 export const HATCH_SOUND_KEY='jigsaw:hatch-sound:v1';
 export const HATCH_SOUND_URL='/courtyard/assets/hatch-soft-b-13142e12cef2.wav';
 export function baseHatchProgress(band:number){return band>=1000?30:band>=500?20:band>=300?10:5;}
+// Keep fractional contributions stable across repeated additions and hatches.
+export const roundProgress=(value:number)=>Math.round(value*1000000)/1000000;
+export function contributionProgress(reward:number,count:number,total:number){return total>0&&count>0?roundProgress(reward*Math.min(count/total,1)):0;}
 export function earnedProgress(s:{progress:number;hatched:number}){return s.progress+(s.hatched>0?50+(s.hatched-1)*100:0);}
-export function freshProgress(previous:number|null,total:number,seen:number,silent=false){return previous===null||silent?0:Math.max(0,total-Math.max(previous,seen));}
+export function freshProgress(previous:number|null,total:number,seen:number,silent=false){return previous===null||silent?0:roundProgress(Math.max(0,total-Math.max(previous,seen)));}
 export function hatchSoundEnabled(){try{return localStorage.getItem(HATCH_SOUND_KEY)!=='off';}catch{return true;}}
 export function masterSoundVolume(){try{const s=JSON.parse(localStorage.getItem('together-puzzle:snap-sound:v1')||'null');return s?.enabled===false?0:typeof s?.volume==='number'?Math.max(0,Math.min(1,s.volume)):.25;}catch{return .25;}}
 // Decoded only after a user gesture, never on the drag path. No queued autoplay.

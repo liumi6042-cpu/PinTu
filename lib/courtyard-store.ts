@@ -2,7 +2,7 @@ import {cosmeticsOf,drawCosmetic,validStyle} from '../public/cosmetics/catalog.m
 import {localDb} from './local-db';
 import {RoomError,type Room} from './room-engine';
 import {initialGarden,hatchFurniture,retireStarterFurniture,validateLayout,prices,themes} from './courtyard-model.mjs';
-import {baseHatchProgress} from './hatch-feedback';
+import {baseHatchProgress,contributionProgress,roundProgress} from './hatch-feedback';
 import {pieceBand} from './piece-policy';
 type Garden=Omit<ReturnType<typeof initialGarden>,'owned'|'redeemed'|'ledger'|'layout'> & {owned:Record<string,number>;redeemed:Record<string,number>;ledger:{reason:string;amount:number;at:string}[];layout:unknown[];cosmetics?:{bubbles:string[];cursors:string[];equipped:{bubble:string|null;cursor:string|null}};lastHatch?:{kind?:string;item:string;requestId:string}};
 const day=(now:number)=>new Date(now).toISOString().slice(0,10);
@@ -35,7 +35,7 @@ export async function gardenAction(id:string,input:Record<string,unknown>){
  const item=String(input.item??'');
  switch(action){
  case 'checkin':if(s.checkinDay===today)throw new RoomError('今日已签到',409);s.checkinDay=today;s.checkins++;{const amount=s.checkins%7===0?4:1;s.balance+=amount;addLedger(s,'签到',amount);}break;
- case 'hatch':{const needed=s.hatched?100:50;if(s.progress<needed||s.dailyHatches>=2)throw new RoomError('进度不足或今日已孵满',409);s.progress-=needed;s.hatched++;s.dailyHatches++;const cosmetic=drawCosmetic(s);if(cosmetic){s.cosmetics=cosmeticsOf(s);(cosmetic.kind==='bubble'?s.cosmetics.bubbles:s.cosmetics.cursors).push(cosmetic.item);s.lastHatch={...cosmetic,requestId:op};addLedger(s,'孵化装扮:'+cosmetic.kind+':'+cosmetic.item,0);}else{const reward=hatchFurniture(s.owned);s.owned[reward]=(s.owned[reward]||0)+1;s.lastHatch={kind:'furniture',item:reward,requestId:op};addLedger(s,'孵化物品:'+reward,0);}s.eggStyle=(s.eggStyle+1+Math.floor(Math.random()*9))%10;break;}
+ case 'hatch':{const needed=s.hatched?100:50;if(s.progress<needed||s.dailyHatches>=2)throw new RoomError('进度不足或今日已孵满',409);s.progress=roundProgress(s.progress-needed);s.hatched++;s.dailyHatches++;const cosmetic=drawCosmetic(s);if(cosmetic){s.cosmetics=cosmeticsOf(s);(cosmetic.kind==='bubble'?s.cosmetics.bubbles:s.cosmetics.cursors).push(cosmetic.item);s.lastHatch={...cosmetic,requestId:op};addLedger(s,'孵化装扮:'+cosmetic.kind+':'+cosmetic.item,0);}else{const reward=hatchFurniture(s.owned);s.owned[reward]=(s.owned[reward]||0)+1;s.lastHatch={kind:'furniture',item:reward,requestId:op};addLedger(s,'孵化物品:'+reward,0);}s.eggStyle=(s.eggStyle+1+Math.floor(Math.random()*9))%10;break;}
  case 'equip':{const kind=input.kind;if(kind!=='bubble'&&kind!=='cursor')throw new RoomError('装扮类别无效');const c=cosmeticsOf(s);if(input.item!==null&&(!validStyle(input.item)||!(kind==='bubble'?c.bubbles:c.cursors).includes(input.item as string)))throw new RoomError('请先孵化解锁这款装扮',403);c.equipped[kind]=input.item===null?null:String(input.item);s.cosmetics=c;break;}
  case 'buy':{if(!Object.hasOwn(prices,item))throw new RoomError('物品不存在');const price=(prices as Record<string,number>)[item];if(!price)throw new RoomError('物品不存在');if((s.redeemed[item]||0)>=10)throw new RoomError('已达到10件兑换上限',409);if(s.balance<price)throw new RoomError('碎片不足',409);s.balance-=price;s.owned[item]=(s.owned[item]||0)+1;s.redeemed[item]=(s.redeemed[item]||0)+1;addLedger(s,'兑换:'+item,-price);break;}
  case 'theme-buy':{if(!Object.hasOwn(themes,item))throw new RoomError('外观不存在');const price=(themes as Record<string,number>)[item];if(!price||s.themes.includes(item))throw new RoomError('外观已拥有或不存在',409);if(s.balance<price)throw new RoomError('碎片不足',409);s.balance-=price;s.themes.push(item);addLedger(s,'外观:'+item,-price);break;}
@@ -48,14 +48,17 @@ export async function gardenAction(id:string,input:Record<string,unknown>){
 export async function settleGarden(room:Room){
  if(!room.completedAt)return;const db=localDb(),start=await db.prepare("SELECT value FROM puzzle_courtyard_settings WHERE key='started_at'").first<number>('value');
  if(!start||room.completedAt<start||await db.prepare('SELECT 1 FROM puzzle_courtyard_settled WHERE room_id=?').bind(room.id).first())return;
- const band=pieceBand(room.puzzle.cols*room.puzzle.rows)||108,threshold=band>=1000?10:band>=500?5:3;
- const eligible=Object.entries(room.achievements?.contributors||{}).filter(([,c])=>c.count>=threshold);
+ const band=pieceBand(room.puzzle.cols*room.puzzle.rows)||108;
+ // Include guests and departed players in the denominator: their work is not reassigned.
+ const eligible=Object.entries(room.achievements?.contributors||{}).filter(([,c])=>Number.isSafeInteger(c.count)&&c.count>0);
+ const total=eligible.reduce((sum,[,c])=>sum+c.count,0);
  const date=day(room.completedAt),base=baseHatchProgress(band);
- for(const [owner] of eligible){if(!/^[a-f0-9]{32}$/.test(owner)||!await db.prepare('SELECT 1 FROM puzzle_users WHERE id=?').bind(owner).first())continue;
+ for(const [owner,contribution] of eligible){if(!/^[a-f0-9]{32}$/.test(owner)||!await db.prepare('SELECT 1 FROM puzzle_users WHERE id=?').bind(owner).first())continue;
  await update(owner,'room:'+room.id,'completion',async s=>{
  const from=Date.parse(date+'T00:00:00Z');let gain=base;if(!await db.prepare("SELECT 1 FROM puzzle_courtyard_events WHERE user_id=? AND kind='completion' AND created_at>=? AND created_at<?").bind(owner,from,from+86400000).first()){gain+=5;s.completionDay=date;}
  if(!await db.prepare("SELECT 1 FROM puzzle_courtyard_events WHERE user_id=? AND image_id=? AND kind='completion'").bind(owner,room.puzzle.imageId).first())gain+=5;
- if(!s.firstDone){s.firstDone=true;s.balance++;addLedger(s,'首次完成',1);}s.progress+=gain;addLedger(s,'拼图进度 +'+gain+'%',0);
+ gain=contributionProgress(gain,contribution.count,total);
+ if(!s.firstDone){s.firstDone=true;s.balance++;addLedger(s,'首次完成',1);}s.progress=roundProgress(s.progress+gain);addLedger(s,'拼图进度 +'+gain+'%',0);
  },room.puzzle.imageId,undefined,room.completedAt);
  }
  await db.prepare('INSERT OR IGNORE INTO puzzle_courtyard_settled VALUES(?,?)').bind(room.id,room.completedAt).run();
