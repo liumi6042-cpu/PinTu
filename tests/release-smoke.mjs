@@ -52,6 +52,8 @@ const port=await freePort(3137);
     const response=await post({visibility:'solo',imageId,pieces:108});assert.equal(response.status,410);assert.match((await response.json()).error,/独自拼图已下线/);
   }
   console.log('Lobby QQ banner present in both languages; catalogue and uploaded solo creation retired.');
+  const journey=spawnSync(process.execPath,[resolve(project,'tests/journey-node-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
+  assert.equal(journey.status,0,journey.stdout+journey.stderr);console.log(journey.stdout.trim());
   const cosmetics=spawnSync(process.execPath,[resolve(project,'tests/cosmetics-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(cosmetics.status,0,cosmetics.stdout+cosmetics.stderr);console.log(cosmetics.stdout.trim());
   const welcome=spawnSync(process.execPath,[resolve(project,'tests/welcome-gift-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});

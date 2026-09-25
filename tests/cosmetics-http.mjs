@@ -3,7 +3,7 @@ import {DatabaseSync} from 'node:sqlite';
 const [origin,file]=process.argv.slice(2);assert(/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)&&/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle.sqlite$/.test(file),'isolated fixture only');
 const db=new DatabaseSync(file),id=()=>crypto.randomUUID().replaceAll('-','');
 async function req(actor,path,body,status=200){const r=await fetch(origin+path,{method:body?'POST':'GET',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https','CF-Connecting-IP':'192.0.2.89',Origin:'https://jigsawnook.online',...(body?{'Content-Type':'application/json'}:{}),Cookie:actor.cookie||'',...(actor.token?{Authorization:'Bearer '+actor.token}:{})},body:body?JSON.stringify(body):undefined});const data=await r.json();assert.equal(r.status,status,JSON.stringify(data));const cookie=r.headers.get('set-cookie')?.split(';')[0];if(cookie)actor.cookie=cookie;return data;}
-const total=s=>Object.values(s.owned).reduce((a,b)=>a+b,0)+(s.cosmetics?.bubbles?.length||0)+(s.cosmetics?.cursors?.length||0);
+const total=s=>Object.values(s.owned).reduce((a,b)=>a+b,0)+Object.values(s.flowerGarden?.owned||{}).reduce((a,b)=>a+b,0)+Object.values(s.flowerGarden?.seeds||{}).reduce((a,b)=>a+b,0)+Object.values(s.flowerGarden?.decorOwned||{}).reduce((a,b)=>a+b,0)+(s.cosmetics?.bubbles?.length||0)+(s.cosmetics?.cursors?.length||0);
 try{
  const a={},guest={},b={};for(const actor of [a,b]){const r=await req(actor,'/api/auth/register',{username:'wear_'+id().slice(0,12),name:'Wardrobe QA',password:id()},201);actor.id=r.account.id;}
  let g=await req(a,'/api/courtyard');const equip=(kind,item,version=g.version)=>({action:'equip',kind,item,version,requestId:id()});

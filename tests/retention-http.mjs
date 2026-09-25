@@ -8,7 +8,14 @@ const account=await req('/api/auth/register',{username:'garden_'+Date.now(),name
 assert.equal(garden.state.balance,0);const id=op();garden=await req('/api/courtyard',{action:'checkin',requestId:id,version:garden.version});assert.equal(garden.state.balance,1);
 const repeated=await req('/api/courtyard',{action:'checkin',requestId:id,version:0});assert.equal(repeated.state.balance,1);
 await req('/api/courtyard',{action:'buy',item:'plant',requestId:op(),version:garden.version},409);
-await req('/api/courtyard',{action:'layout',layout:[{id:1,type:'plant',x:0,y:0}],requestId:op(),version:garden.version},400);
+await req('/api/courtyard',{action:'layout',layout:[{id:1,type:'plant',x:0,y:0}],requestId:op(),version:garden.version},409);
+let flower=await req('/api/flower-garden');assert.equal(flower.state.items.length,4);assert.deepEqual(flower.state.decorOwned,{});
+await req('/api/flower-garden',{action:'move',id:1,u:-1,v:0,version:flower.state.version,requestId:op()},409);
+await req('/api/flower-garden',{action:'testCoins',version:flower.state.version,requestId:op()},409);
+await req('/api/flower-garden',{action:'buyDecor',type:'flowerArch',version:flower.state.version,requestId:op()},409);
+flower=await req('/api/flower-garden',{action:'plant',id:1,type:'f0',version:flower.state.version,requestId:op()});
+assert.equal(flower.state.items[0].crop.type,'f0');
+await req('/api/flower-garden',{action:'harvest',id:1,version:flower.state.version,requestId:op()},409);
 await req('/api/lobby/chat',{text:'disabled',requestId:op()},410);
 const closed=await req('/api/lobby/chat',null,410,false);assert.deepEqual(closed.messages,[]);
 const db=new DatabaseSync(file);db.prepare("UPDATE puzzle_account_security SET status='suspended' WHERE user_id=?").run(account.account.id);db.prepare("INSERT OR REPLACE INTO puzzle_account_security(user_id,status) VALUES(?,'suspended')").run(account.account.id);

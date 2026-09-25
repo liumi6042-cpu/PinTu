@@ -1,3 +1,4 @@
+import {prices} from '../lib/courtyard-model.mjs';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 const [origin,file]=process.argv.slice(2);assert(/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)&&/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle.sqlite$/.test(file),'isolated fixture only');
@@ -22,16 +23,15 @@ try{
  const initial=await req(guest,'/api/courtyard');
  const claims=await Promise.all(Array.from({length:5},()=>req(guest,gift,{action:'claim',item:'table'})));
  assert.ok(claims.every(r=>r.gift.item===pending.item&&r.gift.claimed));
- const after=await req(guest,'/api/courtyard');assert.equal(after.state.owned[pending.item],1);assert.equal(Object.values(after.state.owned).reduce((a,b)=>a+b,0),1);
- assert.deepEqual(after.state.redeemed,initial.state.redeemed);assert.equal(after.state.balance,initial.state.balance);assert.equal(after.state.progress,initial.state.progress);
+ const after=await req(guest,'/api/courtyard');assert.deepEqual(after.state.owned,{});assert.equal(claims[0].gift.fragments,prices[pending.item]);
+ assert.deepEqual(after.state.redeemed,initial.state.redeemed);assert.equal(after.state.balance,initial.state.balance+prices[pending.item]);assert.equal(after.state.progress,initial.state.progress);
  assert.equal(db.prepare("SELECT COUNT(*) n FROM puzzle_courtyard_events WHERE user_id=? AND operation='welcome-gift-v1'").get(guest.id).n,1);
  assert.equal(db.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(guest.room).data,before,'reward never writes puzzle state');
  const second={cookie:guestCookie};await register(second);await req(second,gift,{action:'claim'},409);
- await req(guest,gift,{action:'claim'});assert.equal((await req(guest,'/api/courtyard')).state.owned[pending.item],1);
- const signed=await register({});await create(signed);await snap(signed);const g=await req(signed,'/api/courtyard');g.state.owned={fern:2,cushion:1};
- db.prepare('UPDATE puzzle_courtyards SET data=?,version=version+1 WHERE user_id=?').run(JSON.stringify(g.state),signed.id);
- assert.equal((await req(signed,gift,offer(signed))).gift.item,'blueVase','prefer unowned');
- const accountClaim=await req(signed,gift,{action:'claim'});assert.equal(accountClaim.profile.state.owned.blueVase,1);assert.equal(accountClaim.profile.state.owned.fern,2);
+ await req(guest,gift,{action:'claim'});assert.equal((await req(guest,'/api/courtyard')).state.balance,after.state.balance);
+ const signed=await register({});await create(signed);await snap(signed);const g=await req(signed,'/api/courtyard');
+ const signedGift=(await req(signed,gift,offer(signed))).gift;const accountClaim=await req(signed,gift,{action:'claim'});
+ assert.equal(accountClaim.profile.state.balance,g.state.balance+prices[signedGift.item]);assert.deepEqual(accountClaim.profile.state.owned,{});
  db.prepare("INSERT OR REPLACE INTO puzzle_account_security(user_id,status) VALUES(?,'suspended')").run(signed.id);await req(signed,gift,{action:'claim'},401);
- console.log('Welcome gift: real snap eligibility, guest-to-account continuity, concurrent once-only claim, no cross-account reuse, inventory persistence, unowned preference, no balance/quota/puzzle changes passed.');
+ console.log('Welcome gift: real snap eligibility, guest-to-account continuity, concurrent once-only claim, no cross-account reuse, fragment conversion persistence, no quota/puzzle changes passed.');
 }finally{db.close();}
