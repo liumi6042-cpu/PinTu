@@ -24,6 +24,7 @@ export async function checkImageLibrary(root){
   for(const photo of catalog)if(!isPlayableOrigin(photo.origin))throw new Error(`禁止发布未登记来源的图片：${photo.id}`);
   const published=catalog.filter(photo=>isPlayableOrigin(photo.origin)&&photo.status==='published'),restorable=catalog.filter(photo=>isPlayableOrigin(photo.origin)&&RETAINED_STATUSES.includes(photo.status)),ids=new Set(),files=new Set();
   if(!published.length)throw new Error('图库至少需要一张已审核生成图');
+  for(const photo of published)if(!photo.publishedAt||!Number.isFinite(Date.parse(photo.publishedAt)))throw new Error(`缺少有效上架时间 publishedAt：${photo.id}`);
   for(const photo of restorable){
     if(!/^[a-z0-9-]+$/.test(photo.id)||ids.has(photo.id)||!/^\/puzzles\/[a-z0-9-]+\.png$/.test(photo.src))throw new Error('图库编号或路径无效');
     ids.add(photo.id);files.add(photo.src.slice('/puzzles/'.length));

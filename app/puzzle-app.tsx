@@ -38,7 +38,7 @@ import PuzzleOpening from './puzzle-opening';
 import { activeKey, saveKey, readLocalProgress, writeLocalProgress } from '@/lib/local-progress';
 import { randomPhoto } from '@/lib/random-photo';
 import type { RoomClient } from '@/lib/room-client';
-import { PHOTOS, RESTORABLE_PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
+import { PHOTOS, GALLERY_PHOTOS, RESTORABLE_PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
 import { englishCopy } from '@/lib/seo';
 import AccountGate from './account-gate';
 import { useRouter } from 'next/navigation';
@@ -78,7 +78,7 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
    if(guestPlay&&resumeKey){const previous=entries.find(entry=>entry.key===resumeKey);if(previous){setSession(structuredClone(previous.state));}else setEntryError('没有找到这份本机进度，请在原来的浏览器中继续。');}
   }catch{setSaveError(true);}setReady(true);
  },[guestPlay]);
- const photos=useMemo(()=>PHOTOS.filter(p=>supportsPieceCount(p.id,count)&&(!gallery||(category==='全部'||p.category===category)&&[p.title,p.category,p.subtitle,englishCopy(p.title),englishCopy(p.category),englishCopy(p.subtitle)].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))),[gallery,category,query,count]);
+ const photos=useMemo(()=>GALLERY_PHOTOS.filter(p=>supportsPieceCount(p.id,count)&&(!gallery||(category==='全部'||p.category===category)&&[p.title,p.category,p.subtitle,englishCopy(p.title),englishCopy(p.category),englishCopy(p.subtitle)].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))),[gallery,category,query,count]);
  const persist=useCallback((state:PuzzleState)=>{try{writeLocalProgress(localStorage,state);setSaveError(false);}catch{setSaveError(true);}},[]);
  // A catalog picture also plays on a board fitted to its own shape, so a 2:1
  // landscape no longer loses its left and right edges to the fixed 4:3 board.

@@ -12,6 +12,8 @@ export const RESTORABLE_PHOTOS=catalog.filter(photo=>PLAYABLE_ORIGINS.includes(p
 export const RESTORABLE_PHOTO_IDS=RESTORABLE_PHOTOS.map(photo=>photo.id);
 export const PHOTOS=RESTORABLE_PHOTOS.filter(photo=>photo.status==='published');
 export const PHOTO_IDS=PHOTOS.map(photo=>photo.id);
+// Gallery order is independent of daily selection and existing room identities.
+export const GALLERY_PHOTOS=[...PHOTOS].sort((a,b)=>Date.parse(b.publishedAt!)-Date.parse(a.publishedAt!));
 // True for artwork we generated ourselves; the gallery must not call a
 // user-provided picture "本站 AI 生成".
 export function isProjectAiGenerated(photo:{origin?:string}){return photo.origin==='project-ai-generated';}
