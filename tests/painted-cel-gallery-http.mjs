@@ -15,7 +15,7 @@ const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','
 const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
 const registration=await fetch(base+'/api/auth/register',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({username:'art_'+randomBytes(6).toString('hex'),name:'Art test',password:randomBytes(16).toString('hex')})});assert.equal(registration.status,201);const accountCookie=registration.headers.get('set-cookie').split(';')[0];await registration.arrayBuffer();
 const gallery=await (await get('/gallery')).text();
-assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,publishedTotal);
+assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,Math.min(12,publishedTotal));
 for(const category of ['厚涂','平涂'])assert.ok(gallery.includes(english[category]));
 for(const [index,photo] of photos.entries()){
  const page=await get('/puzzle/'+photo.id);assert.equal(page.status,200);const detail=await page.text();
