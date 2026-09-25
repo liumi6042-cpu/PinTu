@@ -1,0 +1,71 @@
+{
+  "id": "rooftop-neighborhood-festival-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "9350b41b99c31ef0",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "9350b41b99c31ef0",
+    "originalSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 10 张原图预览：屋顶花园、露天电影与乐队，让城市傍晚充满欢笑。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+    "play": {
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-play-a45c97fa96a1.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "a45c97fa96a19de1e88badb86d80983a5380a0f4c9aa849d63e3b302dc3f74b2",
+      "bytes": 2736820,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-5a83f9760734.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "5a83f9760734fae4c23d1789cb211b98b128acb65ec475e52343864ccd16d818",
+      "bytes": 69408,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-optimized-9b04303916b4.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "9b04303916b4d60045d3ff9cf98ccd907f5c876feb9b3e69a13b717a8b1b51fd",
+      "bytes": 598324,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+      "inputSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

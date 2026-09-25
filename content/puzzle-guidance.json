@@ -642,5 +642,75 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "先分出树干与晚霞，再沿楼梯、吊桥和灯笼逐步拼合。"
+  },
+  "riverside-park-festival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼河道和大片草地，再沿步道寻找彩色餐车与人物。"
+  },
+  "summer-night-matsuri-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出夜空与红色鸟居，再按灯笼和摊位颜色拼合。"
+  },
+  "orbital-market-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找港口招牌和飞船，再把彩色货摊与人物连接起来。"
+  },
+  "snow-village-fair-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼白色雪地与深绿树林，再沿木屋和滑冰场向内推进。"
+  },
+  "tropical-harbor-carnival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出蓝色海湾与棕榈树，再寻找船只和鲜艳摊位。"
+  },
+  "clockwork-invention-fair-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找飞艇、钟面和拱桥，再区分黄铜机械与人物。"
+  },
+  "enchanted-library-garden-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼书架与拱门的轮廓，再连接花园、楼梯和阅读角。"
+  },
+  "autumn-farm-festival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼红色谷仓和金色田野，再寻找南瓜、舞台与拖拉机。"
+  },
+  "underwater-city-fair-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出蓝色水域与透明穹顶，再拼珊瑚、鱼群和街市。"
+  },
+  "rooftop-neighborhood-festival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找电影幕布和屋顶边缘，再按不同平台拼合花园与乐队。"
   }
 }

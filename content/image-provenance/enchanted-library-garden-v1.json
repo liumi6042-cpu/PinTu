@@ -1,0 +1,71 @@
+{
+  "id": "enchanted-library-garden-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "f4c8ee7398d44558",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "f4c8ee7398d44558",
+    "originalSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 7 张原图预览：高高的书架环抱花园，让阅读、茶香与探索相遇。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+    "play": {
+      "src": "/puzzles/enchanted-library-garden-v1-play-7e889217c10a.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7e889217c10a36f771c316ad2fdda17f016d61fc2964b0d97f5f4d314aa5a0ef",
+      "bytes": 2559686,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/enchanted-library-garden-v1-thumbnail-1d560b5f7061.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "1d560b5f706149762999f062023b453e0cb50d41a7fcf2927ac4a4c44053ed7d",
+      "bytes": 65398,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/enchanted-library-garden-v1-optimized-ebcf66da3b83.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ebcf66da3b832529a21cd8fd0013d3df738194a52332b7080fd27c710cd52905",
+      "bytes": 520308,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "inputSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

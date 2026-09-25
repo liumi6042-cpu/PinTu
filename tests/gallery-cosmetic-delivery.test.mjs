@@ -7,7 +7,7 @@ import {cosmeticAsset,cosmeticUrl} from '../lib/cosmetic-art.ts';
 import {styles} from '../public/cosmetics/catalog.mjs';
 
 test('gallery puts new uploads first without changing daily selection order',()=>{
- assert.deepEqual(GALLERY_PHOTOS.slice(0,3).map(p=>p.id),['cat-lantern-market-v1','lantern-dance-v1','magic-treehouse-v1']);
+ assert.deepEqual(GALLERY_PHOTOS.slice(0,10).map(p=>p.id),["riverside-park-festival-v1", "summer-night-matsuri-v1", "orbital-market-v1", "snow-village-fair-v1", "tropical-harbor-carnival-v1", "clockwork-invention-fair-v1", "enchanted-library-garden-v1", "autumn-farm-festival-v1", "underwater-city-fair-v1", "rooftop-neighborhood-festival-v1"]);
  assert.notEqual(GALLERY_PHOTOS[0].id,PHOTOS[0].id);
  assert.deepEqual(new Set(GALLERY_PHOTOS.map(p=>p.id)),new Set(PHOTOS.map(p=>p.id)));
  for(let i=1;i<GALLERY_PHOTOS.length;i++)assert.ok(Date.parse(GALLERY_PHOTOS[i-1].publishedAt)>=Date.parse(GALLERY_PHOTOS[i].publishedAt));
