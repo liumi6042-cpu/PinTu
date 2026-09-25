@@ -60,6 +60,14 @@ const port=await freePort(3137);
   assert.equal(welcome.status,0,welcome.stdout+welcome.stderr);console.log(welcome.stdout.trim());
   const retention=spawnSync(process.execPath,[resolve(project,'tests/retention-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(retention.status,0,retention.stdout+retention.stderr);console.log(retention.stdout.trim());
+  for(const path of ['/courtyard','/flower-garden/index.html','/courtyard/index.html']){
+    const response=await get(path);assert.equal(response.status,200,path);
+    const html=await response.text();assert.ok(html.includes('正在开发'),path);
+    for(const tag of ['<iframe','<canvas','<footer','<button'])assert.ok(!html.includes(tag),path+' hides '+tag);
+  }
+  for(const path of ['/gallery','/lobby','/zh/gallery','/zh/lobby']){
+    const html=await (await get(path)).text();assert.ok(!html.includes('href="/courtyard"'),path+' hides courtyard navigation');
+  }
   const gallery=await (await get('/gallery')).text();for(const photo of published)assert.ok(gallery.includes(photo.id),photo.id);
   assert.equal((gallery.match(/type="radio"/g)||[]).length,4);
   for(const count of [108,300,500,1000])assert.ok(gallery.includes('value="'+count+'"'));

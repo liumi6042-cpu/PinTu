@@ -12,3 +12,6 @@ export function galleryEntry(mode?:string){
  if(mode==='public'||!PERSONAL_PLAY_VISIBLE)return {entryMode:'public' as const,guestPlay:false};
  return {entryMode:'solo' as const,guestPlay:true};
 }
+
+// Temporary presentation pause; stored gardens and reward accounting are retained.
+export const COURTYARD_VISIBLE = false;
