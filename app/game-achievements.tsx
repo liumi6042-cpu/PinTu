@@ -38,6 +38,6 @@ export function useGameAchievements(state:PuzzleState,client?:RoomClient){
 export function AchievementToast({ids,onClose,href}:{ids:AchievementId[];onClose:()=>void;href:string}){
   if(!ids.length)return null;return <aside className="achievement-toast" role="status" aria-live="polite"><AchievementBadge id={ids[0]}/><div><small>{t('新成就已收进纪念册')}</small><strong>{ids.map(id=>t(achievementById(id)!.name)).join(' · ')}</strong><a href={href} target="_blank" rel="noreferrer">{t('查看纪念册')}<ArrowUpRight size={14}/></a></div><button onClick={onClose} aria-label={t('关闭')}><X size={16}/></button></aside>;
 }
-export function CompletionAchievements({ids,href}:{ids:AchievementId[];href:string}){
-  return <div className="completion-achievements">{ids.length>0&&<><p>{t('这一局的新纪念')}</p><div>{ids.map(id=><span key={id}><AchievementBadge id={id}/><small>{t(achievementById(id)!.name)}</small></span>)}</div></>}<a href={href}>{t('打开我的拼图纪念册')}<ArrowUpRight size={15}/></a></div>;
+export function CompletionAchievements({ids}:{ids:AchievementId[]}){
+  return <div className="completion-achievements">{ids.length>0&&<><p>{t('这一局的新纪念')}</p><div>{ids.map(id=><span key={id}><AchievementBadge id={id}/><small>{t(achievementById(id)!.name)}</small></span>)}</div></>}</div>;
 }

@@ -1,3 +1,4 @@
+import './picture-discoveries.css';
 import './puzzle-journey.css';
 import CourtyardCompanion from './courtyard-companion';
 import type { Metadata } from 'next';
