@@ -1,8 +1,8 @@
+import DailyJoin from './daily-join';
 import { dailyPuzzle,dailyPuzzleDate } from '@/lib/daily-puzzle';
 import { recommendedPieces } from '@/lib/play-guidance';
 import { maximumPieces } from '@/lib/piece-policy';
 import { englishCopy } from '@/lib/seo';
-import { zhPath } from '@/lib/site-paths';
 
 // Rendered on the server so the day's picture is in the HTML a crawler reads, and
 // so two visitors on the same day can never be shown different pictures.
@@ -13,7 +13,6 @@ export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';va
   const photo=dailyPuzzle(),zh=locale==='zh',now=Date.now();
   const title=zh?photo.title:englishCopy(photo.title),subtitle=zh?photo.subtitle:englishCopy(photo.subtitle);
   const recommended=recommendedPieces(photo.id),maximum=maximumPieces(photo.id);
-  const href=(zh?zhPath('/gallery'):'/gallery')+'?mode=public&image='+photo.id;
   const note=zh?`${dailyPuzzleDate(now)} · 每天零点（北京时间）换一张，全站同一张。`:`${dailyPuzzleDate(now)} · A new picture each day at midnight Beijing time, the same for every visitor.`;
   if(variant==='strip')return <section className="daily-puzzle daily-puzzle-strip" aria-labelledby="daily-puzzle-heading">
     <p className="section-kicker">{zh?'今日拼图':'PUZZLE OF THE DAY'}</p>
@@ -23,7 +22,7 @@ export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';va
         <h2 id="daily-puzzle-heading">{title}</h2>
         <p>{subtitle}</p>
       </div>
-      <a className="daily-puzzle-action" href={href}>{zh?'现在开一桌':'Start a table'} →</a>
+      <DailyJoin zh={zh}/>
     </div>
     <p className="daily-puzzle-note">{note}</p>
   </section>;
@@ -36,7 +35,7 @@ export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';va
         <h3>{title}</h3>
         <p>{subtitle}</p>
         <p>{zh?`建议从 ${recommended} 片开始，这张图最高支持 ${maximum.toLocaleString('zh-CN')} 片。`:`Start with ${recommended} pieces. This picture supports up to ${maximum.toLocaleString('en-US')}.`}</p>
-        <a className="daily-puzzle-action" href={href}>{zh?'现在开一桌':'Start a table'} →</a>
+        <DailyJoin zh={zh}/>
       </div>
     </div>
     <p className="daily-puzzle-note">{note}</p>

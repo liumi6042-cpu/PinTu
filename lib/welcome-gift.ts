@@ -1,3 +1,4 @@
+import {prices} from './courtyard-model.mjs';
 import {localDb} from './local-db';
 import {gardenFor} from './courtyard-store';
 import {RoomError,type Room} from './room-engine';
@@ -24,8 +25,8 @@ export async function claimWelcomeGift(accountId:string,guestId?:string){
   const gift=await welcomeGift(accountId,guestId);if(!gift)throw new RoomError('请先成功拼合一次，解锁见面礼',409);
   if(gift.claimed_by)return {gift,profile:await gardenFor(accountId)};
   const profile=await gardenFor(accountId),s=profile.state,now=Date.now();
-  s.owned[gift.item]=(s.owned[gift.item]||0)+1;
-  s.ledger.unshift({reason:'拼图见面礼:'+gift.item,amount:0,at:new Date(now).toISOString()});s.ledger=s.ledger.slice(0,50);
+  if(s.flowerGarden){s.balance+=(prices as Record<string,number>)[gift.item]||0;}else s.owned[gift.item]=(s.owned[gift.item]||0)+1;
+  s.ledger.unshift({reason:(s.flowerGarden?'见面礼折算:':'拼图见面礼:')+gift.item,amount:s.flowerGarden?((prices as Record<string,number>)[gift.item]||0):0,at:new Date(now).toISOString()});s.ledger=s.ledger.slice(0,50);
   // One transaction: reserve a permanent per-account receipt, update inventory by
   // version, then consume this specific offer. A guest offer can fund one account only.
   const results=await db.batch([

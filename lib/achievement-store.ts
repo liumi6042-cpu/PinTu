@@ -6,12 +6,12 @@ import { RoomError,type Room } from './room-engine';
 
 export async function serverAchievementBook(owner:string){
   const db=localDb(),[facts,days,awards,profile]=await Promise.all([
-    db.prepare('SELECT room_id AS key,image_id AS imageId,pieces,mode,category,completed_at AS completedAt FROM puzzle_achievement_facts WHERE owner_id=? ORDER BY completed_at').bind(owner).all<AchievementFact>(),
+    db.prepare('SELECT f.room_id AS key,f.image_id AS imageId,f.pieces,f.mode,f.category,f.completed_at AS completedAt,(SELECT players_json FROM puzzle_results r WHERE r.room_id=f.room_id) AS partnersJson FROM puzzle_achievement_facts f WHERE f.owner_id=? ORDER BY f.completed_at').bind(owner).all<AchievementFact & {partnersJson:string|null}>(),
     db.prepare('SELECT day FROM puzzle_achievement_days WHERE owner_id=? ORDER BY day').bind(owner).all<{day:string}>(),
     db.prepare('SELECT badge_id,earned_at FROM puzzle_achievement_awards WHERE owner_id=?').bind(owner).all<{badge_id:AchievementId;earned_at:number}>(),
     db.prepare('SELECT equipped FROM puzzle_achievement_profiles WHERE owner_id=?').bind(owner).first<{equipped:AchievementId|null}>(),
   ]);
-  const book=emptyBook();book.facts=facts.results;book.days=days.results.map(d=>d.day);
+  const book=emptyBook();book.facts=facts.results.map(({partnersJson,...f})=>({...f,partners:partnersJson?JSON.parse(partnersJson):[]}));book.days=days.results.map(d=>d.day);
   for(const row of awards.results)if(achievementById(row.badge_id))book.earned[row.badge_id]=row.earned_at;
   book.equipped=profile?.equipped&&book.earned[profile.equipped]?profile.equipped:null;return book;
 }

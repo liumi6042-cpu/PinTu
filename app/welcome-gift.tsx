@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-type Gift={item:string;claimed:boolean};
+type Gift={item:string;claimed:boolean;fragments?:number};
 const art:Record<string,{zh:string;en:string;file:string;box:string;width:number;height:number}>={
  fern:{zh:'翠羽蕨',en:'Fern',file:'plant-fern-91a761680cc9.webp',box:'0 0 1024 1024',width:1024,height:1024},
  cushion:{zh:'坐垫',en:'Cushion',file:'furniture-dd687198a215.webp',box:'0 512 512 512',width:1536,height:1024},
@@ -46,8 +46,8 @@ export default function WelcomeGift({accountId,ready,zh,room,blocked,onClaim}:{a
   <button className="welcome-gift-badge" aria-expanded={open} onClick={()=>setOpen(!open)}><span aria-hidden="true">✦</span> {c(received?'已收下见面礼':'拼合成功 · 有份小礼物',received?'Gift received':'A little gift for your first connection')}</button>
   <dialog ref={dialog} className="daily-checkin-dialog welcome-gift-panel" aria-label={c('拼图见面礼','Your first puzzle gift')} onCancel={e=>{e.preventDefault();dismiss();}}><button className="welcome-gift-close" onClick={dismiss} aria-label={c('关闭','Close')}>×</button>
    <h2>{c(received?'小礼物已放入庭院库存':'为你的庭院添一份温暖',received?'Added to your courtyard inventory':'A little warmth for your courtyard')}</h2>
-   <svg viewBox={item.box} role="img" aria-label={name}><image href={'/courtyard/assets/'+item.file} width={item.width} height={item.height}/></svg><strong>{name} ×1</strong>
-   <p>{c(received?'可以继续拼图，闲下来再去摆放。':'谢谢你拼下第一步，这件小礼物送给你。',received?'Keep puzzling and place it whenever you like.':'Thank you for making your first connection. This little gift is yours.')}</p>
+   {gift.fragments?<strong>{gift.fragments} {c('碎片','fragments')}</strong>:<><svg viewBox={item.box} role="img" aria-label={name}><image href={'/courtyard/assets/'+item.file} width={item.width} height={item.height}/></svg><strong>{name} ×1</strong></>}
+   {gift.fragments&&<p>{c('原庭院见面礼已折算为碎片，可兑换花种和装饰。','Your original courtyard gift is converted to fragments for seeds and decor.')}</p>}<p>{c(received?'可以继续拼图，闲下来再去摆放。':'谢谢你拼下第一步，这件小礼物送给你。',received?'Keep puzzling and place it whenever you like.':'Thank you for making your first connection. This little gift is yours.')}</p>
    {received?<a href="/courtyard">{c('去庭院摆放','Place in courtyard')}</a>:accountId?<button className="welcome-gift-claim" disabled={busy} onClick={()=>void claim()}>{c(busy?'正在收下…':'收下礼物',busy?'Claiming…':'Claim gift')}</button>:<a href={'/account?returnTo='+encodeURIComponent(location.pathname)}>{c('登录收下这件礼物','Sign in to claim this gift')}</a>}
    <small>{c('每个账号一次 · 无需碎片 · 不占兑换次数','Once per account · Free · No exchange quota used')}</small>{error&&<p role="alert">{error}</p>}
    <button onClick={dismiss}>{c('稍后领取','Maybe later')}</button>

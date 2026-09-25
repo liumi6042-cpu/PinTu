@@ -24,7 +24,7 @@ export const ACHIEVEMENTS = [
   {id:'days-7',name:'常来坐坐',description:'在 7 个不同日期完成有效拼接，无需连续签到',icon:'sun',group:'日常',goal:7,metric:'days'},
 ] as const;
 export type AchievementId=typeof ACHIEVEMENTS[number]['id'];
-export type AchievementFact={key:string;imageId:string;pieces:number;mode:'solo'|'team'|'shared';completedAt:number;category:string};
+export type AchievementFact={partners?:string[];key:string;imageId:string;pieces:number;mode:'solo'|'team'|'shared';completedAt:number;category:string};
 export type AchievementBook={facts:AchievementFact[];days:string[];earned:Partial<Record<AchievementId,number>>;equipped:AchievementId|null};
 export const emptyBook=():AchievementBook=>({facts:[],days:[],earned:{},equipped:null});
 export const achievementById=(id:unknown)=>ACHIEVEMENTS.find(b=>b.id===id);

@@ -1,0 +1,21 @@
+import {SqliteD1} from '../server/sqlite.mjs';
+import {createHash,randomBytes} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const base=process.env.JOURNEY_TEST_ORIGIN||'http://127.0.0.1:3219';
+assert.equal(new URL(base).hostname,'127.0.0.1','Only an isolated local test server is allowed');
+const database=process.env.JOURNEY_TEST_DATABASE;assert.ok(database&&database.includes('journey-qa'), 'Provide the isolated journey-qa database path');
+async function call(path,body,actor){const r=await fetch(base+path,{method:body?'POST':'GET',headers:{...(body?{'content-type':'application/json',origin:base}:{}),...(actor?.cookie?{cookie:actor.cookie}:{}),...(actor?.token?{Authorization:'Bearer '+actor.token}:{})},body:body?JSON.stringify(body):undefined});const cookie=r.headers.get('set-cookie');if(actor&&cookie)actor.cookie=cookie.split(';')[0];return {status:r.status,data:await r.json()};}
+const a={},b={},picture='cat-lantern-market-v1';const made=await call('/api/rooms',{visibility:'public',imageId:picture,pieces:300},a);assert.equal(made.status,201);const id=made.data.room.id;a.token=made.data.token;
+const joined=await call('/api/rooms/'+id+'/join',{},b);assert.equal(joined.status,200);b.token=joined.data.token;const path='/api/rooms/'+id+'/next';assert.equal((await call(path,null,a)).status,409);
+const db=new SqliteD1(database,'drizzle');const room=JSON.parse(db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data);const owners=room.members.map(m=>m.guestId);room.puzzle.groups=[{id:0,pieces:Array.from({length:room.puzzle.cols*room.puzzle.rows},(_,i)=>i),dx:0,dy:0,locked:true}];room.completedAt=Date.now();room.startedAt=Date.now()-180000;room.participants=Object.fromEntries(room.members.map(m=>[m.guestId,m.name]));room.achievements={version:1,contributors:Object.fromEntries(owners.map(o=>[o,{count:100,days:['2026-09-26']}]))};room.revision++;
+db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=? WHERE id=?').run(JSON.stringify(room),room.revision,id);
+const first=await call(path,null,a);assert.equal(first.status,200);assert.equal(first.data.count,100);assert.equal(first.data.total,200);assert.equal((await call(path,null)).status,401);
+const choice=first.data.choices[1];assert.equal((await call(path,{action:'vote',imageId:'invalid'},a)).status,400);
+await Promise.all([call(path,{action:'vote',imageId:choice},a),call(path,{action:'vote',imageId:choice},b)]);
+const vote=await call(path,null,a);assert.equal(vote.data.votes[choice],2);
+const both=await Promise.all([call(path,{action:'start'},a),call(path,{action:'start'},b)]);assert.equal(both[0].status,200);assert.equal(both[1].status,200);assert.equal(both[0].data.nextRoomId,both[1].data.nextRoomId);assert.equal(both[0].data.selected,choice);
+const next=both[0].data.nextRoomId;assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM puzzle_rooms WHERE id=?').get(next).n,1);assert.equal((await call(path,{action:'start'},a)).data.nextRoomId,next);
+const nextA=await call('/api/rooms/'+next+'/join',{},a),nextB=await call('/api/rooms/'+next+'/join',{},b);assert.equal(nextA.status,200);assert.equal(nextB.status,200);assert.equal(nextB.data.room.members.length,2);
+const book=await call('/api/achievements',null,a);assert.equal(book.status,200);assert.equal(book.data.book.facts[0].partners.length,2);
+db.close();console.log('PASS: incomplete/unauthorized blocked, two votes, concurrent start exactly one room, retry stable, both join together, album partners persist.');

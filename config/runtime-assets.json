@@ -25,7 +25,25 @@
     "/courtyard/assets/hatch-soft-b-13142e12cef2.wav",
     "/cosmetics/icons-v1.png",
     "/cosmetics/bubbles-v1.png",
-    "/cosmetics/catalog.mjs"
+    "/cosmetics/catalog.mjs",
+    "/flower-garden/app.mjs",
+    "/flower-garden/catalog.mjs",
+    "/flower-garden/engine.mjs",
+    "/flower-garden/index.html",
+    "/flower-garden/style.css",
+    "/flower-garden/terrain.mjs",
+    "/flower-garden/assets/decor-clean.webp",
+    "/flower-garden/assets/eggs.webp",
+    "/flower-garden/assets/flower-arch-front-v2.webp",
+    "/flower-garden/assets/flower-arch-side-v3.webp",
+    "/flower-garden/assets/flowers1.webp",
+    "/flower-garden/assets/flowers2.webp",
+    "/flower-garden/assets/front-furniture.webp",
+    "/flower-garden/assets/grass-soft-v2.webp",
+    "/flower-garden/assets/pond-warm-v2.webp",
+    "/flower-garden/assets/side-furniture-v1.webp",
+    "/flower-garden/assets/soil.webp",
+    "/flower-garden/assets/woodland-decor-clean.webp"
   ],
   "description": "The packager also includes playSrc and thumbSrc for every published or archived project-generated puzzle. PNG originals stay in Git and never enter runtime uploads."
 }
