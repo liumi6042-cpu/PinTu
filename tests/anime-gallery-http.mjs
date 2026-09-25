@@ -15,7 +15,7 @@ const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
 const database=new DatabaseSync(resolve(filename));
 try{
  const gallery=await (await get('/gallery')).text(),sitemap=await (await get('/sitemap.xml')).text();
- assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,catalog.filter(photo=>photo.status==='published').length);
+ assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,Math.min(12,catalog.filter(photo=>photo.status==='published').length));
  for(const photo of pictures){
   assert.ok(!gallery.includes(photo.id));assert.ok(!sitemap.includes(photo.id));
   assert.equal((await get('/puzzle/'+photo.id)).status,404);

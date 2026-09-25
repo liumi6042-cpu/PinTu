@@ -128,3 +128,5 @@
 .member-room-gate .member-free-note{font-size:12px;margin-top:25px;}
 .personal-choice h2 svg{vertical-align:middle;}
 @media(max-width:600px){.member-room-gate{margin:30px auto;padding:25px 20px;}}
+
+.gallery-results{scroll-margin-top:24px}.gallery-pagination{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px;margin:30px auto 18px}.gallery-pagination button{min-width:42px;min-height:42px;padding:8px 13px;border:1px solid #cbb899;border-radius:12px;background:#faf5eb;color:#66513c;cursor:pointer}.gallery-pagination button[aria-current="page"]{background:#ad6446;color:#fff;border-color:#ad6446}.gallery-pagination button:disabled{opacity:.4;cursor:default}.gallery-pagination button:focus-visible{outline:2px solid #9d563b;outline-offset:3px}.gallery-pagination span{flex-basis:100%;text-align:center;font-size:13px;color:#897355;margin-top:7px}

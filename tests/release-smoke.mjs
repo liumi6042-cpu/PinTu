@@ -68,12 +68,12 @@ const port=await freePort(3137);
   for(const path of ['/gallery','/lobby','/zh/gallery','/zh/lobby']){
     const html=await (await get(path)).text();assert.ok(!html.includes('href="/courtyard"'),path+' hides courtyard navigation');
   }
-  const gallery=await (await get('/gallery')).text();for(const photo of published)assert.ok(gallery.includes(photo.id),photo.id);
+  const gallery=await (await get('/gallery')).text();assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,Math.min(12,published.length));
   assert.equal((gallery.match(/type="radio"/g)||[]).length,4);
   for(const count of [108,300,500,1000])assert.ok(gallery.includes('value="'+count+'"'));
   for(const count of [2000,5000])assert.ok(!gallery.includes('value="'+count+'"'));
   for(const removed of ['class="picture-guidance"','class="picture-advice"','class="detail-note"','gallery-picture-details','About this puzzle'])assert.ok(!gallery.includes(removed),removed);
-  for(const photo of published)assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
+  for(const photo of [...published].sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,12))assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
   const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
   const access=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/access-assistance-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
