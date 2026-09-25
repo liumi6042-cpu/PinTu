@@ -95,10 +95,10 @@ def check(port, all_assets=False):
         html = get(port, path)[1].decode()
         assert 'href="/membership"' not in html
         if path == '/gallery':
-            assert html.count('class="gallery-entry-card"') == manifest['publicPictures']
+            assert html.count('class="gallery-entry-card"') == min(12, manifest['publicPictures'])
             assert html.count('type="radio"') == 4
             for marker in ['mountain-lake-reflection-hd-v3', 'morning-meadow-tree-hd-v3', 'clear-sand-bay-hd-v3']:
-                assert marker in html
+                assert marker in get(port, '/puzzle/' + marker)[1].decode()
             for marker in ['class="picture-guidance"', 'class="picture-advice"', 'gallery-picture-details']:
                 assert marker not in html
         head = html.partition('</head>')[0]

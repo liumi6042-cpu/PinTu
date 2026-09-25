@@ -84,6 +84,7 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
  const [paging,setPaging]=useState({filter:'',page:1});
  const galleryTop=useRef<HTMLDivElement>(null);
  const pageFilter=JSON.stringify([category,query,count]),pageCount=Math.max(1,Math.ceil(photos.length/12));
+ useEffect(()=>{setPaging({filter:pageFilter,page:1});},[pageFilter]);
  const currentPage=paging.filter===pageFilter?Math.min(paging.page,pageCount):1;
  const pagePhotos=photos.slice((currentPage-1)*12,currentPage*12);
  const changePage=(page:number)=>{setPaging({filter:pageFilter,page:Math.max(1,Math.min(page,pageCount))});galleryTop.current?.scrollIntoView({block:'start',behavior:'instant'});};
