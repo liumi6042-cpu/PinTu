@@ -17,7 +17,7 @@ test('database transactions isolate accounts, prevent duplicate migration/hatchi
  const migrate=()=>update(id,'flower-garden-migration-v1','migration',s=>{migrateFlowerGarden(s,now);});
  await Promise.all([migrate(),migrate()]);
  let p=await gardenFor(id);assert.equal(p.state.balance,p.state.flowerMigration.amount);assert.equal((await gardenFor(other)).state.flowerGarden,undefined);
- const version=p.version,requestId='1'.repeat(32),hatch=()=>update(id,requestId,'hatch',s=>{applyFlowerAction(s,{action:'hatch',version,requestId},now,()=>.25);},null,version);
+ const version=p.version,requestId='1'.repeat(32),hatch=()=>update(id,requestId,'hatch',s=>{applyFlowerAction(s,{action:'hatch',version,requestId},now,()=>.2);},null,version);
  await Promise.all([hatch(),hatch()]);p=await gardenFor(id);assert.equal(p.state.hatched,1);assert.equal(p.state.progress,200);assert.equal(Object.values(p.state.flowerGarden.decorOwned).reduce((a,b)=>a+b,0),1);
  await assert.rejects(update(id,'2'.repeat(32),'stale',()=>{},null,version),/其他页面更新/);
  const room={id:'c'.repeat(32),completedAt:now+100,puzzle:{cols:20,rows:15,imageId:'garden-activity'},members:[],achievements:{contributors:{[id]:{count:49},guest_example:{count:51}}}};
