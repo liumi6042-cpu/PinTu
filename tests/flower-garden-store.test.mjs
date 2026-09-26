@@ -30,4 +30,12 @@ test('database transactions isolate accounts, prevent duplicate migration/hatchi
  await gardenAction(id,{action:'checkin',version:p.version,requestId:'4'.repeat(32)});
  p=await gardenFor(id);assert.equal(Object.values(p.state.flowerGarden.seeds).reduce((a,b)=>a+b,0),beforeSeeds+3);
  await assert.rejects(gardenAction(id,{action:'buy',item:'chair',version:p.version,requestId:'5'.repeat(32)}),/花园兑换/);
+ await update(other,'activity-fixture','fixture',s=>{migrateFlowerGarden(s,now);});
+ const cumulativeRoom=(key,count)=>({...room,id:key.repeat(32),puzzle:{...room.puzzle,imageId:'activity-'+key},achievements:{contributors:{[other]:{count},guest_example:{count:400-count}}}});
+ const first=cumulativeRoom('e',80);await Promise.all([settleGarden(first),settleGarden(first)]);
+ let second=await gardenFor(other);assert.equal(Object.values(second.state.flowerGarden.activity.contributions)[0],80);
+ await settleGarden(cumulativeRoom('f',69));second=await gardenFor(other);assert.equal(second.state.flowerGarden.activity.days.length,0);
+ await settleGarden(cumulativeRoom('9',1));second=await gardenFor(other);assert.equal(second.state.flowerGarden.activity.days.length,1);
+ const receipt='6'.repeat(32),claimSecond=()=>update(other,receipt,'activity',s=>{applyFlowerAction(s,{action:'activityClaim',version:second.version,requestId:receipt},now+200);},null,second.version);
+ await Promise.all([claimSecond(),claimSecond()]);assert.equal((await gardenFor(other)).state.flowerGarden.decorOwned.mossPath,12);
  }finally{db.close();}});

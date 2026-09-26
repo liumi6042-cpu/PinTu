@@ -30,10 +30,11 @@ export function inDecorSeries(item,series){return series==='all'||(series==='gar
 export const activityRewards=[['mossPath',12],['woodFence',10],['woodLantern',4],['woodBench',2],['birdBath',1],['teaTable',1],['flowerArch',2]].map(([type,count],i)=>({day:i+1,type,count}));
 export const cosmeticIds=['leaf','flower','moon','puzzle','wave','maple','mushroom','bee','ginkgo','pinecone','feather','strawberry'];
 export const cosmeticNames=['森间新芽','花间来信','月光晚安','拼图片刻','海盐微风','秋日暖茶','苔间蘑菇','蜂蜜来信','银杏拾光','松果小径','青羽手札','莓果午后'];
+export const activityConnectionGoal=150;
 export function activityState(s){return s.activity??={id:'woodland-seven-v1',startedAt:Date.now(),days:[],claimed:0,lastClaimDay:'',dismissed:false};}
 export function creditActivity(s,{completedAt,pieces,contribution,total,roomId}){
  const a=activityState(s);if(!Number.isFinite(completedAt)||completedAt<a.startedAt||pieces<300||!Number.isSafeInteger(contribution)||!Number.isSafeInteger(total)||total<1||contribution<1||contribution>total)return false;
  const day=new Date(completedAt).toISOString().slice(0,10);if(a.days.includes(day)||a.days.length>=7)return false;
- a.contributions??={};a.rooms??={};const key=roomId||[completedAt,contribution,total].join(':');if(a.rooms[key])return false;a.rooms[key]=true;a.contributions[day]=Math.min(100,(a.contributions[day]||0)+contribution);
- if(contribution/total<.5&&a.contributions[day]<100)return false;a.days.push(day);a.days.sort();return true;
+ a.contributions??={};a.rooms??={};const key=roomId||[completedAt,contribution,total].join(':');if(a.rooms[key])return false;a.rooms[key]=true;a.contributions[day]=Math.min(activityConnectionGoal,(a.contributions[day]||0)+contribution);
+ if(contribution/total<.5&&a.contributions[day]<activityConnectionGoal)return false;a.days.push(day);a.days.sort();return true;
 }
