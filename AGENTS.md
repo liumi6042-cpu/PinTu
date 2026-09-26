@@ -1,5 +1,7 @@
 # 本项目图片库约定
 
+- 2026-09-26 自动语言新规则（覆盖旧的 IP 优先规则）：用户明确要求中文浏览器优先，减少代理误判。手动语言仍最高优先级；Auto 下浏览器首选支持语言为中文，或可信 IP 检测为中文地区，即选中文。Provider 检测完成后同步成对页面地址，保留查询串与 hash；不重定向房间等非成对页面。异步结果必须检查偏好 revision，不能覆盖后来的手动选择。详见 `docs/language-discovery-20260926.md`。
+
 - 2026-09-25 图库按首次上架时间倒序显示。新图片必须填写 `content/puzzle-catalog.json` 的 `publishedAt`（带时区的 ISO 时间）；旧图更名、分类、压缩时不要改上架时间。历史时间从 Git 首次 published 记录回填。图库使用 `GALLERY_PHOTOS`，同批保持原顺序；`PHOTOS` 原顺序保留，避免影响每日选图。缺少上架时间会阻止图库校验通过。
 - 装扮使用 `public/cosmetics/delivery.json` 中哈希小图；原始两张 PNG 保留但新页面不加载。调整原件后运行 `scripts/prepare-cosmetic-delivery.py` 更新衍生图片、映射和发布白名单；不要恢复浏览器 canvas 裁图。
 
