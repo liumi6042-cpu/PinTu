@@ -1,4 +1,3 @@
-import { COURTYARD_VISIBLE } from '@/lib/feature-visibility';
 import './picture-discoveries.css';
 import './puzzle-journey.css';
 import CourtyardCompanion from './courtyard-companion';
@@ -50,5 +49,5 @@ export const metadata: Metadata = {
 export default async function RootLayout({children}:{children:React.ReactNode}) {
   const path=(await headers()).get('x-jigsaw-path') ?? '/';
   const lang=path==='/zh'||path.startsWith('/zh/')?'zh-CN':'en';
-  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}{COURTYARD_VISIBLE&&<CourtyardCompanion/>}{path!=='/courtyard'&&<FeedbackWidget/>}</LanguageProvider></body></html>;
+  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}{path!=='/courtyard'&&<CourtyardCompanion/>}{path!=='/courtyard'&&<FeedbackWidget/>}</LanguageProvider></body></html>;
 }

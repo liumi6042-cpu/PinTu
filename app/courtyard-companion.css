@@ -14,3 +14,5 @@
 /* Match daily check-in placement, including fullscreen and small screens. */
 dialog.welcome-gift-panel{position:fixed;inset:0;margin:auto;width:380px;max-width:calc(100vw - 30px);max-height:85dvh;padding:32px;border-radius:22px;font-size:14px}dialog.welcome-gift-panel:not([open]){display:none}dialog.welcome-gift-panel h2{font-size:23px;line-height:1.4}dialog.welcome-gift-panel>svg{width:140px;height:140px}dialog.welcome-gift-panel .welcome-gift-close{background:transparent;border:0;padding:4px;margin:0}
 dialog.welcome-gift-panel{overflow-x:hidden}dialog.welcome-gift-panel>.welcome-gift-claim{margin-left:0;margin-right:0}
+
+.companion-panel .companion-hatch{display:block;width:100%;margin:12px 0 6px;background:#ac6847;color:#fff}.companion-hatch:disabled{opacity:.55;cursor:default}.companion-hatch-result{margin-top:14px;padding:12px 8px;border-radius:12px;background:#f2eadc;text-align:center}.companion-hatch-result>strong{display:block;margin-bottom:10px}.companion-hatch-result .cosmetic-bubble{max-width:100%}
