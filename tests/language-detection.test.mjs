@@ -34,7 +34,9 @@ test('locale response trusts only sanitized ingress and is never publicly cached
 test('detection uses one same-origin request; network errors and unknown data retain fallback',async()=>{
   const signal=new AbortController().signal;let calls=0;
   const fetcher=async(url,options)=>{calls++;assert.equal(url,'/api/locale');assert.equal(options.cache,'no-store');assert.equal(options.credentials,'omit');assert.equal(options.signal,signal);return Response.json({language:'en',source:'ip'});};
-  assert.equal(await detectLanguage('zh',signal,fetcher),'en');assert.equal(calls,1);
+  assert.equal(await detectLanguage('zh',signal,fetcher),'zh');assert.equal(calls,1);
+  assert.equal(await detectLanguage('en',signal,fetcher),'en');
+  assert.equal(await detectLanguage('en',signal,async()=>Response.json({language:'zh',source:'ip'})),'zh');
   for(const fetcher of [async()=>{throw new Error('offline');},async()=>new Response('busy',{status:503}),async()=>new Response('bad json'),async()=>Response.json({language:null,source:'browser'}),async()=>Response.json({language:'fr',source:'ip'})]){
     assert.equal(await detectLanguage('zh',signal,fetcher),'zh');
   }

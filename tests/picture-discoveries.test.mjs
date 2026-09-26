@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {pictureDiscoveries,discoveryPieces,DiscoveryTracker} from '../lib/picture-discoveries.ts';
+import {pictureDiscoveries,discoveryPieces,DiscoveryTracker,discoveryBounds} from '../lib/picture-discoveries.ts';
 const detail=pictureDiscoveries['cat-lantern-market-v1'][0];
 const state=()=>({imageId:'cat-lantern-market-v1',cols:20,rows:20,groups:[]});
 const group=(pieces,locked=false)=>({id:pieces[0],pieces,locked,dx:100,dy:200});
@@ -20,4 +20,14 @@ test('crop mapping supports all piece counts and skips subjects cropped out by o
  assert.deepEqual(discoveryPieces(pictureDiscoveries['magic-treehouse-v1'][0],20,10),[]);
  const center={...detail,box:[.4,.4,.2,.2]};assert.ok(discoveryPieces(center,20,10).length);
  assert.deepEqual(new DiscoveryTracker({imageId:'unknown',cols:20,rows:20}).observe({groups:[]}),[]);
+});
+
+test('subject bounds follow assembled group movement and snap back on locking',()=>{
+ const s=state(),ids=discoveryPieces(detail,20,20);s.groups=[group(ids)];
+ const before=discoveryBounds(detail,s);assert.ok(before);
+ s.groups[0].dx+=70;s.groups[0].dy-=40;
+ const moved=discoveryBounds(detail,s);assert.equal(moved.x,before.x+70);assert.equal(moved.y,before.y-40);
+ s.groups[0].locked=true;const locked=discoveryBounds(detail,s);assert.equal(locked.x,moved.x-170);assert.equal(locked.y,moved.y-160);
+ s.groups=ids.map(id=>group([id]));assert.equal(discoveryBounds(detail,s),null);
+ s.groups=ids.map(id=>group([id],true));assert.deepEqual(discoveryBounds(detail,s),locked);
 });

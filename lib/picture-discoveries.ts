@@ -1,4 +1,5 @@
 import type {PuzzleState} from './puzzle-engine';
+import {boardFor} from './puzzle-engine';
 import {pictureCrop} from './puzzle-picture';
 export type Discovery={id:string;zh:string;en:string;box:[number,number,number,number]};
 // Bounds are in the original square image, verified against the published art.
@@ -39,4 +40,14 @@ export class DiscoveryTracker {
   }
   this.initialized=true;return found;
  }
+}
+
+// Locate the actual assembled subject, including groups not yet on the board.
+export function discoveryBounds(d:Discovery,state:Pick<PuzzleState,'cols'|'rows'|'groups'>){
+ const ids=discoveryPieces(d,state.cols,state.rows);if(!ids.length)return null;
+ const groups=ids.map(id=>state.groups.find(g=>g.pieces.includes(id)));if(groups.some(g=>!g))return null;
+ const allLocked=groups.every(g=>g!.locked),first=groups[0]!;
+ if(!allLocked&&(!groups.every(g=>g!.id===first.id)||first.pieces.length<2))return null;
+ const crop=pictureCrop(1,1,state.cols,state.rows),board=boardFor(state.cols,state.rows),[x,y,w,h]=d.box;
+ return {x:board.x+(x-crop.x)/crop.width*board.width+(allLocked?0:first.dx),y:board.y+(y-crop.y)/crop.height*board.height+(allLocked?0:first.dy),width:w/crop.width*board.width,height:h/crop.height*board.height};
 }

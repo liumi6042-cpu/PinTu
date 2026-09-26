@@ -10,7 +10,7 @@ export function useLanguage(){return useSyncExternalStore(subscribeLanguage,getL
 function useLanguagePreference(){return useSyncExternalStore(subscribeLanguage,getLanguagePreference,()=> 'auto' as const);}
 export function LanguageProvider({children}:{children:React.ReactNode}){
   const preference=useLanguagePreference();
-  const [ready,setReady]=useState(false);
+  const [ready,setReady]=useState(false),[detected,setDetected]=useState<{value:'zh'|'en';revision:number}|null>(null);
   const pathname=usePathname()||'/',router=useRouter(),syncedOnce=useRef(false);
   useEffect(()=>{
     restoreLanguagePreference();setReady(true);
@@ -36,13 +36,19 @@ export function LanguageProvider({children}:{children:React.ReactNode}){
     const fallback=browserLanguage(navigator.languages?.length?navigator.languages:[navigator.language]);
     let active=true;
     const timer=window.setTimeout(()=>{
-      controller.abort();if(active)applyDetectedLanguage(fallback,revision);
+      controller.abort();if(active&&getLanguagePreference()==='auto'&&getLanguageRevision()===revision){applyDetectedLanguage(fallback,revision);setDetected({value:fallback,revision});}
     },2500);
     void detectLanguage(fallback,controller.signal).then(value=>{
-      window.clearTimeout(timer);if(active&&!controller.signal.aborted)applyDetectedLanguage(value,revision);
+      window.clearTimeout(timer);if(active&&!controller.signal.aborted&&getLanguagePreference()==='auto'&&getLanguageRevision()===revision){applyDetectedLanguage(value,revision);setDetected({value,revision});}
     });
     return()=>{active=false;window.clearTimeout(timer);controller.abort();};
   },[ready,preference]);
+  useEffect(()=>{
+    if(!ready||preference!=='auto'||!detected||detected.revision!==getLanguageRevision()||!hasChineseAddress(pathname))return;
+    const english=isChinesePath(pathname)?englishPath(pathname):pathname;
+    const target=detected.value==='zh'?zhPath(english):english;
+    if(target!==pathname)router.replace(target+window.location.search+window.location.hash);
+  },[ready,preference,detected,pathname,router]);
   return children;
 }
 export default function LanguageSwitch(){
@@ -58,7 +64,7 @@ export default function LanguageSwitch(){
   // The lit button says what the page in front of the visitor actually is. On a paired
   // address the address decides — showing 中文 as selected while /lobby reads English was
   // exactly the disagreement visitors noticed. Elsewhere the visitor's own choice decides.
-  const active=activeLanguage(pathname,preference);
+  const active=preference==='auto'?'auto':activeLanguage(pathname,preference);
   const go=(next:'zh'|'en')=>{
     const target=next==='zh'?chineseTarget:(chinesePage?english:null);
     setLanguage(next);
@@ -68,12 +74,7 @@ export default function LanguageSwitch(){
   // address too: the page follows the detected language instead of staying behind.
   const auto=()=>{
     setLanguagePreference('auto');
-    if(!paired)return;
-    const fallback=browserLanguage(navigator.languages?.length?navigator.languages:[navigator.language]);
-    void detectLanguage(fallback,new AbortController().signal).then(value=>{
-      const target=value==='zh'?zhPath(english):english;
-      if(target!==pathname)router.push(target);
-    });
+
   };
-  return <div className="language-switch" role="group" aria-label={chinesePage?'语言':'Language'}><Languages size={15} aria-hidden="true"/><button type="button" aria-pressed={active==='auto'} title={chinesePage?'根据 IP 所在地区自动选择语言':'Choose language automatically by IP region'} onClick={auto}>{chinesePage?'自动':'Auto'}</button><button type="button" lang="zh-CN" aria-pressed={active==='zh'} onClick={()=>go('zh')}>中文</button><button type="button" lang="en" aria-pressed={active==='en'} onClick={()=>go('en')}>EN</button></div>;
+  return <div className="language-switch" role="group" aria-label={chinesePage?'语言':'Language'}><Languages size={15} aria-hidden="true"/><button type="button" aria-pressed={active==='auto'} title={chinesePage?'根据浏览器语言和 IP 地区自动选择':'Choose language by browser preference and IP region'} onClick={auto}>{chinesePage?'自动':'Auto'}</button><button type="button" lang="zh-CN" aria-pressed={active==='zh'} onClick={()=>go('zh')}>中文</button><button type="button" lang="en" aria-pressed={active==='en'} onClick={()=>go('en')}>EN</button></div>;
 }

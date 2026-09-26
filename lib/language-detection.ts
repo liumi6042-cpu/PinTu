@@ -56,7 +56,8 @@ export async function detectLanguage(fallback: Language, signal: AbortSignal, fe
     if (!response.ok) return fallback;
     const result: unknown = await response.json();
     if (!result || typeof result !== 'object' || !('source' in result) || !('language' in result)) return fallback;
-    return result.source === 'ip' && (result.language === 'zh' || result.language === 'en') ? result.language : fallback;
+    // A Chinese browser preference remains Chinese even behind an overseas proxy.
+    return fallback==='zh'?'zh':result.source === 'ip' && (result.language === 'zh' || result.language === 'en') ? result.language : fallback;
   } catch {
     return fallback;
   }
