@@ -1,0 +1,69 @@
+{
+  "id": "golden-alpine-valley-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_10-1.png",
+    "originalSha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：金黄白桦与红叶沿河谷铺开，远方雪峰映着晴空。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de",
+    "play": {
+      "src": "/puzzles/golden-alpine-valley-v1-play-646449f7d960.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "646449f7d960842096537243ff1f4c97cff7f7cfd486d6742e057575ee47f742",
+      "bytes": 2804080,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/golden-alpine-valley-v1-thumbnail-e6dc52bd3e54.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "e6dc52bd3e54b1c967b154effd30e071fb4f40f56b339ef7f0954c4f94bc5e02",
+      "bytes": 79382,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/golden-alpine-valley-v1-optimized-72dc0bea3c48.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "72dc0bea3c484fcd961aa591007e48e590f0f717a483c76c4015353601c7718e",
+      "bytes": 615628,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de",
+      "inputSha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

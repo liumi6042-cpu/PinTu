@@ -1,0 +1,69 @@
+{
+  "id": "lavender-evening-fields-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_26-3.png",
+    "originalSha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：薰衣草与向日葵交织成花海，石屋在晚霞中静候归人。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193",
+    "play": {
+      "src": "/puzzles/lavender-evening-fields-v1-play-1e5547ff73c8.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "1e5547ff73c859f644e7fd27ee985a03b50ca2534b74b8798d2652a1474ec201",
+      "bytes": 2666104,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/lavender-evening-fields-v1-thumbnail-c5a5ca0a83ba.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "c5a5ca0a83ba57b09488750452e885fe545ed4ceae72399b379c8b753a89650b",
+      "bytes": 71620,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/lavender-evening-fields-v1-optimized-46b079f1405d.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "46b079f1405deeec4162d29cd9c88127a938c0f127139f62d49758fa7d6ce335",
+      "bytes": 559010,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193",
+      "inputSha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "id": "winter-lake-cabin-glow-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_34-8.png",
+    "originalSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：冰湖映出橙红晚霞，松林小屋的灯火温暖了雪山黄昏。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+    "play": {
+      "src": "/puzzles/winter-lake-cabin-glow-v1-play-c14c4b1e2cb7.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "c14c4b1e2cb7121112a7287f201ec9a23988eabb234f0e279cbf51d64119e946",
+      "bytes": 2449248,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/winter-lake-cabin-glow-v1-thumbnail-f6ded2e7cc41.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "f6ded2e7cc4157df48544894f71dec2dbe5071a8d9a96a81f054c25c4096f4b3",
+      "bytes": 67764,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/winter-lake-cabin-glow-v1-optimized-66bb3073ca40.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "66bb3073ca4061c9af7f524501016953a9f2fe986f888307286ed1d045541325",
+      "bytes": 477002,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+      "inputSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

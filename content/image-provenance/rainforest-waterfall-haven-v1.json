@@ -1,0 +1,69 @@
+{
+  "id": "rainforest-waterfall-haven-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_39-10.png",
+    "originalSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：层叠飞瀑汇入碧潭，热带繁花与藤蔓环抱林间小屋。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+    "play": {
+      "src": "/puzzles/rainforest-waterfall-haven-v1-play-ce215b9fa66e.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "ce215b9fa66e50a426cd874101765ac84d586c3d408b270a2d6db9c7b6278888",
+      "bytes": 2654238,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/rainforest-waterfall-haven-v1-thumbnail-2dee811487d0.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "2dee811487d0c470546313266df1985c9149c1367dced8ff54d2e8b751457c22",
+      "bytes": 71820,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/rainforest-waterfall-haven-v1-optimized-788a4ce49ed9.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "788a4ce49ed9b2fd49a54bcadaff0779a58f8bbee992bb3a3e1a13e37e3bdf2e",
+      "bytes": 547262,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "inputSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

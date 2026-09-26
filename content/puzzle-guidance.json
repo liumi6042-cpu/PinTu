@@ -712,5 +712,75 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "先找电影幕布和屋顶边缘，再按不同平台拼合花园与乐队。"
+  },
+  "golden-alpine-valley-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出白色雪峰与金黄树林，再沿蓝色河流连接两岸。"
+  },
+  "sunset-cliff-lighthouse-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼灯塔和海岸轮廓，再按天空、海水与花丛分区。"
+  },
+  "lavender-evening-fields-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找紫色花田与黄色向日葵，再连接石墙和弯曲小路。"
+  },
+  "alpine-turquoise-reflections-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼雪山轮廓和岸边花朵，再对照倒影连接湖面。"
+  },
+  "red-canyon-river-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先区分红岩与蓝色河流，再按岩层纹理和仙人掌定位。"
+  },
+  "misty-terrace-dawn-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找竹屋和田埂，再沿梯田水面的弧线逐层拼合。"
+  },
+  "spring-stream-stone-bridge-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼石桥与溪流，再按花朵颜色区分两岸花丛。"
+  },
+  "winter-lake-cabin-glow-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼暖黄色窗户和深色松树，再沿冰面裂纹连接倒影。"
+  },
+  "reed-marsh-sunset-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼木栈道与地平线，再按芦苇和水面倒影分区。"
+  },
+  "rainforest-waterfall-haven-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼白色瀑布和红色花朵，再沿岩石边缘连接碧潭。"
   }
 }
