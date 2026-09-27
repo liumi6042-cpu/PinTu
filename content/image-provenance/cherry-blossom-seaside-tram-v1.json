@@ -1,0 +1,69 @@
+{
+  "id": "cherry-blossom-seaside-tram-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-27",
+    "originalFile": "codex-clipboard-e42343a2-f163-4323-9231-4333632646cf.png",
+    "originalSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这四张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-27"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-27",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：绿电车穿过樱花海岸，长椅上的猫咪伴着春光小憩。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+    "play": {
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-play-25c711accea6.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "25c711accea6e65573e946221c47691bc56d836084120d961cf6d081c0238f0a",
+      "bytes": 2816960,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-thumbnail-c2466bfe8a0b.webp",
+      "width": 480,
+      "height": 270,
+      "sha256": "c2466bfe8a0bdd8b962ab61f9ca0048835cd4d7baa2a1661ae943ac7b298d4db",
+      "bytes": 65944,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-optimized-4c937684842b.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "4c937684842b6d7c0899df2d7f34313e52590daafbce265489f614c8a65275bb",
+      "bytes": 602582,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "inputSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

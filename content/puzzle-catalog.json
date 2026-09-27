@@ -1623,5 +1623,57 @@
     "playSrc": "/puzzles/rainforest-waterfall-haven-v1-play-ce215b9fa66e.webp",
     "thumbSrc": "/puzzles/rainforest-waterfall-haven-v1-thumbnail-2dee811487d0.webp",
     "optimizedSrc": "/puzzles/rainforest-waterfall-haven-v1-optimized-788a4ce49ed9.webp"
+  },
+  {
+    "id": "whale-sunken-city-v1",
+    "title": "鲸游古城",
+    "subtitle": "巨鲸游过海底古城，珊瑚与鱼群簇拥沉睡的石柱。",
+    "category": "幻想",
+    "src": "/puzzles/whale-sunken-city-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "publishedAt": "2026-09-27T22:54:41+08:00",
+    "playSrc": "/puzzles/whale-sunken-city-v1-play-1c1264e5adb9.webp",
+    "thumbSrc": "/puzzles/whale-sunken-city-v1-thumbnail-57dd00cd1926.webp",
+    "optimizedSrc": "/puzzles/whale-sunken-city-v1-optimized-3fcebda4055a.webp"
+  },
+  {
+    "id": "snowy-sunset-train-v1",
+    "title": "暮雪列车",
+    "subtitle": "红色列车停靠雪山小站，暖灯照亮晚霞下的站台。",
+    "category": "风景",
+    "src": "/puzzles/snowy-sunset-train-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "publishedAt": "2026-09-27T22:54:41+08:00",
+    "playSrc": "/puzzles/snowy-sunset-train-v1-play-73493f422074.webp",
+    "thumbSrc": "/puzzles/snowy-sunset-train-v1-thumbnail-1dbea8d3ebbf.webp",
+    "optimizedSrc": "/puzzles/snowy-sunset-train-v1-optimized-db3fc700542e.webp"
+  },
+  {
+    "id": "starlit-lakeside-camp-v1",
+    "title": "星河露营",
+    "subtitle": "银河倒映湖面，房车与篝火旁的小狗安然入睡。",
+    "category": "生活",
+    "src": "/puzzles/starlit-lakeside-camp-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "publishedAt": "2026-09-27T22:54:41+08:00",
+    "playSrc": "/puzzles/starlit-lakeside-camp-v1-play-d533badcb6ce.webp",
+    "thumbSrc": "/puzzles/starlit-lakeside-camp-v1-thumbnail-47398ef7ac00.webp",
+    "optimizedSrc": "/puzzles/starlit-lakeside-camp-v1-optimized-9cfedc5a5edb.webp"
+  },
+  {
+    "id": "cherry-blossom-seaside-tram-v1",
+    "title": "樱海电车",
+    "subtitle": "绿电车穿过樱花海岸，长椅上的猫咪伴着春光小憩。",
+    "category": "风景",
+    "src": "/puzzles/cherry-blossom-seaside-tram-v1.png",
+    "origin": "user-provided",
+    "status": "published",
+    "publishedAt": "2026-09-27T22:54:41+08:00",
+    "playSrc": "/puzzles/cherry-blossom-seaside-tram-v1-play-25c711accea6.webp",
+    "thumbSrc": "/puzzles/cherry-blossom-seaside-tram-v1-thumbnail-c2466bfe8a0b.webp",
+    "optimizedSrc": "/puzzles/cherry-blossom-seaside-tram-v1-optimized-4c937684842b.webp"
   }
 ]

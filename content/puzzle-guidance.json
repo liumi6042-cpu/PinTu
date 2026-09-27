@@ -782,5 +782,33 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "先拼白色瀑布和红色花朵，再沿岩石边缘连接碧潭。"
+  },
+  "whale-sunken-city-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼巨鲸和石像，再沿石柱与珊瑚分区连接。"
+  },
+  "snowy-sunset-train-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼红色车厢和站台，再连接雪山轮廓与铁轨。"
+  },
+  "starlit-lakeside-camp-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼房车、篝火和小狗，再按湖面与星空分区。"
+  },
+  "cherry-blossom-seaside-tram-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼绿色电车与长椅上的猫，再沿铁轨连接樱花和海岸。"
   }
 }

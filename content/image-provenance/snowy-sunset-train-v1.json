@@ -1,0 +1,69 @@
+{
+  "id": "snowy-sunset-train-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-27",
+    "originalFile": "codex-clipboard-d5a71ef7-afde-411b-b650-e46f469ed4d4.png",
+    "originalSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这四张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-27"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-27",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：红色列车停靠雪山小站，暖灯照亮晚霞下的站台。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+    "play": {
+      "src": "/puzzles/snowy-sunset-train-v1-play-73493f422074.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "73493f4220744af904f48679790b44469a612d413a6dfee01c631a15885b9311",
+      "bytes": 2574760,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/snowy-sunset-train-v1-thumbnail-1dbea8d3ebbf.webp",
+      "width": 480,
+      "height": 270,
+      "sha256": "1dbea8d3ebbf41f806975a05c5474c441e0662433526423f06fa5cfda0cccede",
+      "bytes": 57640,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/snowy-sunset-train-v1-optimized-db3fc700542e.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "db3fc700542e961f9bef9e7ee3619f1f724b3a39e3c3bf42ea9dbf8bed4f46fc",
+      "bytes": 522104,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+      "inputSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}
