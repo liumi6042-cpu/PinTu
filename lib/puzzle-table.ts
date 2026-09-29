@@ -42,7 +42,7 @@ export class PuzzleTable {
     this.picture.getContext('2d')!.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,this.picture.width,this.picture.height);
     this.pieces=piecesFor(state.cols,state.rows,state.seed);this.paths=this.pieces.map(p=>new Path2D(pathFor(p,state.cols,state.rows)));
     if(canvas.parentElement)this.feedback=new ConnectionGlowRenderer(canvas.parentElement,state,this.pieces,()=>this.camera);
-    if(this.pieces.length>=300)this.sprites=new PuzzleSprites(this.picture,this.pieces,this.paths,state.cols,state.rows);
+    this.sprites=new PuzzleSprites(this.picture,this.pieces,this.paths,state.cols,state.rows);
     this.resize=new ResizeObserver(()=>this.resizeCanvas());this.resize.observe(canvas);
     const opts={signal:this.abort.signal};
     canvas.addEventListener('pointerdown',this.down,opts);canvas.addEventListener('pointermove',this.move,opts);canvas.addEventListener('pointerup',this.up,opts);canvas.addEventListener('pointercancel',this.cancel,opts);canvas.addEventListener('lostpointercapture',this.cancel,opts);
@@ -257,7 +257,10 @@ export class PuzzleTable {
   private renderGroup(c:CanvasRenderingContext2D,g:Group,view?:RenderView){
     if(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id)))return;
     const {x,y,z}=view?.camera??this.camera,width=view?.width??this.width,height=view?.height??this.height,dpr=view?.dpr??Math.min(devicePixelRatio||1,2),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
-    const useSprites=!!this.sprites&&z*dpr<=this.sprites.scale;
+    // During gestures, reuse pre-clipped pieces even at high zoom. Re-clipping
+    // the full source per piece per frame makes large connected groups stutter.
+    // The settled frame still uses the source whenever the atlas is too small.
+    const useSprites=!!this.sprites&&(!!this.drag||!!this.pan||!!this.pinch||z*dpr<=this.sprites.scale);
     const left=-x/z,right=(width-x)/z,top=-y/z,bottom=(height-y)/z,owner=this.remoteOwners[g.id];
     for(const id of g.pieces){
       const p=this.pieces[id],path=this.paths[id],px=this.board.x+p.col*w+g.dx,py=this.board.y+p.row*h+g.dy;
