@@ -60,7 +60,12 @@ export class PuzzleTable {
     const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     for(let i=this.state.groups.length-1;i>=0;i--){const g=this.state.groups[i];if(g.locked||(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id))))continue;
       for(const id of g.pieces){const p=this.pieces[id],lx=x-this.board.x-p.col*w-g.dx,ly=y-this.board.y-p.row*h-g.dy,pad=Math.min(w,h)*.24;
-        if(lx>=-pad&&lx<=w+pad&&ly>=-pad&&ly<=h+pad&&this.hit.isPointInPath(this.paths[id],lx,ly))return g;}
+        if(lx>=-pad&&lx<=w+pad&&ly>=-pad&&ly<=h+pad){
+          // Pattern cursors use a centered hotspot, unlike the native arrow tip.
+          // Give them a forgiving rectangular hit area around the piece while
+          // keeping the native cursor's precise outline selection unchanged.
+          if(this.canvas.dataset.cosmeticCursor||this.hit.isPointInPath(this.paths[id],lx,ly))return g;
+        }}
     }
   }
   private down=(e:PointerEvent)=>{

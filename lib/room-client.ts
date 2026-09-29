@@ -140,7 +140,10 @@ export class RoomClient {
     } catch (error) { this.fail(error); }
     finally { if (!this.stopped) this.pollTimer = setTimeout(() => void this.poll(), Math.max(this.retryAt-Date.now(),this.connected ? roomPollDelay(this.drags.size > 0 || Object.keys(this.snapshot.leases).length > 0, this.idlePolls, typeof document !== 'undefined' && document.hidden) : Math.min(4000, 800 * this.failures))); }
   }
-  private moving(id: number) { const task = this.drags.get(id); return !!task && !task.ending; }
+  // Keep a group reserved until its drop/release request is acknowledged. A
+  // second drag of the same group during that window can otherwise be replaced
+  // by the older server response and visibly flash back to the previous offset.
+  private moving(id: number) { return this.drags.has(id); }
   acquire(id: number): Promise<boolean> {
     if (!this.connected || this.organizing || this.active || this.drags.size >= 8 || this.moving(id)) return Promise.resolve(false);
     let grant!: (ok: boolean) => void; let finish!: () => void;
