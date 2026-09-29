@@ -143,7 +143,12 @@ export class RoomClient {
   // Keep a group reserved until its drop/release request is acknowledged. A
   // second drag of the same group during that window can otherwise be replaced
   // by the older server response and visibly flash back to the previous offset.
-  private moving(id: number) { return this.drags.has(id); }
+  // A drop stays in the map until the server acknowledges it so an older
+  // snapshot cannot overwrite the local position. It must not, however, make
+  // the same group feel stuck when the player immediately picks it up again.
+  // The new drag replaces the ending task and waits for its request chain to
+  // finish before claiming the group, preserving server ordering.
+  private moving(id: number) { const task = this.drags.get(id); return !!task && !task.ending; }
   acquire(id: number): Promise<boolean> {
     if (!this.connected || this.organizing || this.active || this.drags.size >= 8 || this.moving(id)) return Promise.resolve(false);
     let grant!: (ok: boolean) => void; let finish!: () => void;

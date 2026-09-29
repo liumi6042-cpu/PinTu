@@ -76,3 +76,10 @@ test('client waits for a pending drop, prevents overlap, and preserves the multi
  client.request=async()=>snapshot(room,100200);await client.organize();
  client.drags.set(10,{ending:null,canceled:false});await assert.rejects(client.organize(),/放下/);
 });
+
+test('an acknowledged-later drop does not block picking up the same group again',()=>{
+ const {room,players:[a]}=fixture();const client=new RoomClient({token:'test',playerId:a.id,room:snapshot(room,100000)});
+ const pending={ending:{type:'drop',dx:0,dy:0},canceled:false,finished:Promise.resolve()};
+ client.drags.set(8,pending);
+ assert.equal(client.moving(8),false,'a group waiting for drop acknowledgement can be acquired again');
+});
