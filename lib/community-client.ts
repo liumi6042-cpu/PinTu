@@ -6,7 +6,7 @@ export async function apiJson<T>(path:string,body?:unknown):Promise<T>{
  if(creation)body={...(body as Record<string,unknown>),guestSecret:await guestCreationSecret(),initialState:INITIAL_STATE_FORMAT};
  const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
  const data=await response.json().catch(()=>({error:'暂时无法连接，请重试'})) as {error?:string};
- if(!response.ok){throw new Error(data.error||'暂时无法连接，请重试');}
+ if(!response.ok){const error=Object.assign(new Error(data.error||'暂时无法连接，请重试'),{status:response.status});throw error;}
  if(creation){const ticket=expandCreatedTicket(data as unknown as RoomTicket|SeedRoomTicket);rememberCreatedTicket(ticket);return ticket as T;}
  return data as T;
 }

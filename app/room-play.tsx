@@ -18,14 +18,17 @@ const noop = () => { };
 export default function RoomPlay({ roomId }: {
     roomId: string;
 }) {
-    useLanguage();
-    const [client, setClient] = useState<RoomClient | null>(null), [error, setError] = useState(''), [attempt, setAttempt] = useState(0);
+    const language = useLanguage();
+    const [client, setClient] = useState<RoomClient | null>(null), [error, setError] = useState(''), [missing, setMissing] = useState(false), [countdown, setCountdown] = useState(5), [attempt, setAttempt] = useState(0);
     const admission=useRef<{roomId:string;attempt:number;promise:Promise<RoomTicket>}|null>(null);
     useEffect(() => { let canceled = false; setError('');
+      setMissing(false);setCountdown(5);
       if(!admission.current||admission.current.roomId!==roomId||admission.current.attempt!==attempt)admission.current={roomId,attempt,promise:joinPuzzle(roomId)};
       void admission.current.promise.then(ticket => { if (!canceled)
         setClient(new RoomClient(ticket)); }).catch(error => { if (!canceled)
-        { if(error instanceof Error && error.message === SOLO_LOGIN_REQUIRED) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
+        { if(error instanceof Error && error.message === SOLO_LOGIN_REQUIRED) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } const status=(error as {status?:number})?.status; if(status===404||(status===410&&error instanceof Error&&error.message.includes('房间已过期'))){setMissing(true);return;} setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
+    const lobbyHref = language === 'zh' ? '/zh/lobby' : '/lobby';
+    useEffect(() => { if(!missing)return; const started=Date.now(),timer=window.setInterval(()=>{const left=5-Math.floor((Date.now()-started)/1000);if(left<=0){window.clearInterval(timer);window.location.assign(lobbyHref);}else setCountdown(left);},200); return () => window.clearInterval(timer); }, [missing,lobbyHref]);
     if (client) {
         const photo = client.snapshot.customImage?customPhoto(client.snapshot.customImage,client.snapshot.id):RESTORABLE_PHOTOS.find(p => p.id === client.state.imageId);
         // Another table, straight away: a different picture at the same size, so a finished
@@ -49,5 +52,5 @@ export default function RoomPlay({ roomId }: {
         if (photo)
             return <Game state={client.state} photo={photo} persist={noop} leave={() => { client.leave(); window.location.assign(client.snapshot.visibility === 'public' ? '/lobby' : '/personal'); }} restart={noop} saveError={false} collaboration={client} onNext={client.snapshot.visibility === 'public' ? startNextTable : undefined}/>;
     }
-    return <main className="room-join-page"><div className="room-join-heading"><a href="/lobby" className="back-button"><ArrowLeft size={18}/>{t("返回大厅")}</a><LanguageSwitch/></div><section className="join-card"><Puzzle size={38} className={error ? '' : 'loading-icon'}/><h1>{t(error ? '还没能入座' : '正在为你留一个位置…')}</h1>{t(error ? <><p role="alert" className="form-error">{t(error)}</p><button className="primary" onClick={() => setAttempt(n => n + 1)}><RefreshCw size={18}/>{t("重新连接")}</button></> : <p className="muted">{t("正在连接这张拼图桌面")}</p>)}</section></main>;
+    return <main className="room-join-page"><div className="room-join-heading"><a href={lobbyHref} className="back-button"><ArrowLeft size={18}/>{t("返回大厅")}</a><LanguageSwitch/></div><section className={'join-card'+(missing?' room-missing-card':'')}><Puzzle size={38} className={error||missing ? '' : 'loading-icon'}/><h1>{t(missing ? '此房间已经不存在' : error ? '还没能入座' : '正在为你留一个位置…')}</h1>{missing?<><p role="alert" className="form-error">{t("这个链接对应的房间已结束或已被清理。")}</p><p className="room-missing-countdown">{t("%s 秒后自动进入公开大厅").replace('%s',String(countdown))}</p><button className="primary" onClick={()=>window.location.assign(lobbyHref)}>{t("立即进入公开大厅")}</button></>:t(error ? <><p role="alert" className="form-error">{t(error)}</p><button className="primary" onClick={() => setAttempt(n => n + 1)}><RefreshCw size={18}/>{t("重新连接")}</button></> : <p className="muted">{t("正在连接这张拼图桌面")}</p>)}</section></main>;
 }
