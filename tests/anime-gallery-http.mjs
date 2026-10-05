@@ -8,7 +8,10 @@ assert.match(base,/^http:\/\/127\.0\.0\.1:31\d\d$/,'Run only against the disposa
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
 assert.match(filename??'',/[\\/]jigsaw-release-test-[^\\/]+[\\/]data[\\/]puzzle\.sqlite$/);
 const circled=['cel-sunset-train-v1','painted-crimson-rose-v1','painted-amber-autumn-v1','cel-rooftop-breeze-v1'];
-const pictures=catalog.filter(photo=>photo.category==='动漫'||circled.includes(photo.id));
+// Only archived artwork belongs to this compatibility suite. New published
+// anime and daily-only artwork are valid playable entries and must remain in
+// the public catalogue.
+const pictures=catalog.filter(photo=>(photo.category==='动漫'||circled.includes(photo.id))&&photo.status==='archived');
 assert.equal(pictures.length,9);assert.ok(pictures.every(photo=>photo.status==='archived'));
 const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'};
 const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
