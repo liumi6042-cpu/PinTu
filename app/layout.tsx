@@ -22,6 +22,7 @@ import './bookmark-site.css';
 import { headers } from 'next/headers';
 import { LanguageProvider } from './language-switch';
 import FeedbackWidget from './feedback-widget';
+import { CHECKIN_VISIBLE, HATCHING_VISIBLE } from '@/lib/feature-visibility';
 export const metadata: Metadata = {
   applicationName: 'Jigsaw Nook',
   metadataBase: new URL('https://jigsawnook.online'),
@@ -49,5 +50,6 @@ export const metadata: Metadata = {
 export default async function RootLayout({children}:{children:React.ReactNode}) {
   const path=(await headers()).get('x-jigsaw-path') ?? '/';
   const lang=path==='/zh'||path.startsWith('/zh/')?'zh-CN':'en';
-  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}{path!=='/courtyard'&&<CourtyardCompanion/>}{path!=='/courtyard'&&<FeedbackWidget/>}</LanguageProvider></body></html>;
+  const retentionVisible=CHECKIN_VISIBLE||HATCHING_VISIBLE;
+  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}{retentionVisible&&path!=='/courtyard'&&<CourtyardCompanion/>}{path!=='/courtyard'&&<FeedbackWidget/>}</LanguageProvider></body></html>;
 }

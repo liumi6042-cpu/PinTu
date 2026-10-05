@@ -15,3 +15,11 @@ export function galleryEntry(mode?:string){
 
 // Temporary presentation pause; stored gardens and reward accounting are retained.
 export const COURTYARD_VISIBLE = false;
+
+// 2026-10-06 presentation pause for secondary retention systems. These flags
+// only remove user-facing entry points; the existing APIs, inventories, and
+// equipped bubble/cursor rendering remain available for backwards compatibility.
+export const CHECKIN_VISIBLE = false;
+export const HATCHING_VISIBLE = false;
+export const WARDROBE_VISIBLE = false;
+export const DECORATION_VISIBLE = false;
