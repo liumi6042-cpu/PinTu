@@ -26,7 +26,14 @@
 .daily-puzzle{max-width:1120px;margin:0 auto;padding:8px 28px 56px;color:var(--paper-ink);}
 .daily-puzzle h2{font-family:var(--font-serif,serif);font-weight:400;font-size:30px;line-height:1.3;margin:10px 0 24px;}
 .daily-puzzle-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:32px;align-items:center;background:var(--paper-card-bottom);border:1px solid var(--paper-line);border-radius:14px;padding:24px;}
-.daily-puzzle-card img{width:100%;height:auto;border-radius:10px;display:block;}
+.daily-puzzle-card>div{min-width:0;}
+.daily-puzzle-card .daily-puzzle-join{display:grid;grid-template-columns:minmax(180px,.9fr) minmax(0,1.1fr);gap:18px;align-items:start;margin-top:18px;}
+.daily-puzzle-image-button{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;text-align:left;}
+.daily-puzzle-image-button img{width:100%;height:auto;aspect-ratio:5/4;object-fit:cover;border-radius:10px;display:block;transition:transform .18s ease,box-shadow .18s ease;}
+.daily-puzzle-image-button:hover img,.daily-puzzle-image-button:focus-visible img{transform:translateY(-2px);box-shadow:0 8px 22px #5d483522;}
+.daily-puzzle-join .piece-picker{margin:0;}
+.daily-puzzle-join .daily-puzzle-action{grid-column:1/-1;justify-self:start;}
+.daily-puzzle-join [role=alert]{grid-column:1/-1;}
 .daily-puzzle-card h3{font-family:var(--font-serif,serif);font-weight:400;font-size:22px;margin:0 0 10px;}
 .daily-puzzle-card p{color:var(--paper-muted);line-height:1.8;margin:0 0 12px;}
 .daily-puzzle-action{display:inline-block;color:var(--paper-clay);text-underline-offset:4px;}
@@ -44,7 +51,14 @@
    is one row: a full card here would push the tables below the fold. */
 .daily-puzzle-strip{max-width:none;margin:0 0 34px;padding:0;}
 .daily-puzzle-strip-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--paper-card-bottom);border:1px solid var(--paper-line);border-radius:12px;padding:14px 18px;}
-.daily-puzzle-strip-row>img{width:112px;height:90px;object-fit:cover;border-radius:8px;flex:0 0 auto;display:block;}
+.daily-puzzle-strip-row .daily-puzzle-join{display:grid;grid-template-columns:180px minmax(250px,1fr);gap:14px;align-items:start;flex:0 0 auto;}
+.daily-puzzle-strip-row .daily-puzzle-image-button{grid-column:1;grid-row:1/3;}
+.daily-puzzle-strip-row .daily-puzzle-image-button img{width:180px;height:120px;object-fit:cover;border-radius:8px;}
+.daily-puzzle-strip-row .daily-puzzle-join .piece-picker{grid-column:2;order:1;}
+.daily-puzzle-strip-row .daily-puzzle-join .daily-puzzle-action{grid-column:2;order:2;white-space:nowrap;}
+.daily-puzzle-strip-row .daily-puzzle-join .piece-picker .piece-options{display:flex;flex-wrap:wrap;gap:6px;}
+.daily-puzzle-strip-row .daily-puzzle-join .piece-picker .piece-option{padding:5px 8px;}
+.daily-puzzle-strip-row .daily-puzzle-join .piece-picker p{display:none;}
 .daily-puzzle-strip-copy{flex:1 1 260px;min-width:0;}
 .daily-puzzle-strip-copy h2{font-family:var(--font-serif,serif);font-weight:400;font-size:19px;line-height:1.4;margin:0 0 4px;color:var(--paper-ink);}
 .daily-puzzle-strip-copy p{color:var(--paper-muted);font-size:13px;line-height:1.6;margin:0;}
@@ -55,7 +69,8 @@
 @media (max-width:720px){
   .daily-puzzle-strip{margin-bottom:24px;}
   .daily-puzzle-strip-row{gap:14px;padding:12px 14px;}
-  .daily-puzzle-strip-row>img{width:84px;height:68px;}
+  .daily-puzzle-strip-row .daily-puzzle-join{grid-template-columns:120px minmax(180px,1fr);}
+  .daily-puzzle-strip-row .daily-puzzle-image-button img{width:120px;height:90px;}
   .daily-puzzle-strip-copy h2{font-size:17px;}
   .daily-puzzle-strip-copy p{line-height:1.5;}
   .daily-puzzle-strip .daily-puzzle-note{margin-top:6px;font-size:12px;}

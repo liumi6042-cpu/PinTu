@@ -11,9 +11,13 @@ export const RESTORABLE_PHOTOS=catalog.filter(photo=>PLAYABLE_ORIGINS.includes(p
 }));
 export const RESTORABLE_PHOTO_IDS=RESTORABLE_PHOTOS.map(photo=>photo.id);
 export const PHOTOS=RESTORABLE_PHOTOS.filter(photo=>photo.status==='published');
+// Daily artwork remains playable and restorable, but is intentionally kept out of
+// the ordinary picture library. The lobby is the only public entry point for it.
+export const DAILY_PHOTOS=PHOTOS.filter(photo=>photo.dailyOnly===true);
+export const GALLERY_VISIBLE_PHOTOS=PHOTOS.filter(photo=>photo.galleryVisible!==false);
 export const PHOTO_IDS=PHOTOS.map(photo=>photo.id);
 // Gallery order is independent of daily selection and existing room identities.
-export const GALLERY_PHOTOS=[...PHOTOS].sort((a,b)=>Date.parse(b.publishedAt!)-Date.parse(a.publishedAt!));
+export const GALLERY_PHOTOS=[...GALLERY_VISIBLE_PHOTOS].sort((a,b)=>Date.parse(b.publishedAt!)-Date.parse(a.publishedAt!));
 // True for artwork we generated ourselves; the gallery must not call a
 // user-provided picture "本站 AI 生成".
 export function isProjectAiGenerated(photo:{origin?:string}){return photo.origin==='project-ai-generated';}
@@ -26,5 +30,5 @@ export function latestPublishedPhoto(id:string){
 // These selections seed public tables; random play uses every published photo.
 export const FEATURED_PHOTO_IDS=['lemon-still-life','sleepy-cat','sailboat-bay','tulip-vase','whale-moon','orange-bicycle','seaside','alpine-village'].map(id=>id+'-native-v2');
 export const FEATURED_PHOTOS=FEATURED_PHOTO_IDS.map(id=>PHOTOS.find(photo=>photo.id===id)!).filter(Boolean);
-export const CATEGORIES=['全部',...new Set(PHOTOS.map(photo=>photo.category))];
+export const CATEGORIES=['全部',...new Set(GALLERY_VISIBLE_PHOTOS.map(photo=>photo.category))];
 export const RETIRED_PHOTO_IDS=['skate','gold','red'];

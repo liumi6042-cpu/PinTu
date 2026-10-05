@@ -1,4 +1,4 @@
-import { PHOTOS } from './puzzle-catalog';
+import { GALLERY_VISIBLE_PHOTOS } from './puzzle-catalog';
 import { pieceBand, supportsPieceCount } from './piece-policy';
 import { recommendedPieces } from './play-guidance';
 import { randomPhoto } from './random-photo';
@@ -9,13 +9,13 @@ import { randomPhoto } from './random-photo';
 export function nextTableChoice(
   finished: { imageId: string; cols: number; rows: number },
   options: {
-    photos?: typeof PHOTOS;
+    photos?: typeof GALLERY_VISIBLE_PHOTOS;
     supports?: (imageId: string, pieces: number) => boolean;
     recommended?: (imageId: string) => number;
     random?: () => number;
   } = {},
 ) {
-  const photos = options.photos ?? PHOTOS;
+  const photos = options.photos ?? GALLERY_VISIBLE_PHOTOS;
   const supports = options.supports ?? supportsPieceCount;
   const recommended = options.recommended ?? recommendedPieces;
   const band = pieceBand(finished.cols * finished.rows);

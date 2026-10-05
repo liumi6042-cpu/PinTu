@@ -1,7 +1,7 @@
 'use client';
 import { useEffect,useMemo,useState,useRef } from 'react';
 import { ArrowUpRight,Users,Clock3,Search,RefreshCw,Plus,Shuffle,ImagePlus } from 'lucide-react';
-import { PHOTOS,RESTORABLE_PHOTOS } from '@/lib/puzzle-catalog';
+import { GALLERY_VISIBLE_PHOTOS,RESTORABLE_PHOTOS } from '@/lib/puzzle-catalog';
 import { randomPhoto } from '@/lib/random-photo';
 import { recommendedPieces } from '@/lib/play-guidance';
 import { saveTicket,type RoomTicket } from '@/lib/room-client';
@@ -22,11 +22,17 @@ import {puzzleImageSource} from '@/lib/puzzle-image-source';
 import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
 import {accountLoginUrl,publicPuzzleReturnTo} from '@/lib/account-return';
 import {customPhoto} from '@/lib/custom-images';
+import LobbyFirstVisit from './lobby-first-visit';
 
 // `daily` is a server-rendered slot, the same one the home page uses, so the day's
 // picture is in the lobby's HTML rather than appearing only after the client asks for
 // it — and the lobby shows it as a single row, because the tables are what people came for.
-export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode;initialStats?:{completedToday:number;completedTotal:number}|null}){
+function AnimatedCount({value}:{value:number}){
+ const [shown,setShown]=useState(value),previous=useRef(value);
+ useEffect(()=>{const from=previous.current,to=value;previous.current=to;if(from===to){setShown(to);return;}let frame=0;const start=performance.now();const step=(time:number)=>{const progress=Math.min(1,(time-start)/420);setShown(Math.round(from+(to-from)*(1-Math.pow(1-progress,3))));if(progress<1)frame=requestAnimationFrame(step);};frame=requestAnimationFrame(step);return()=>cancelAnimationFrame(frame);},[value]);
+ return <strong>{shown.toLocaleString()}</strong>;
+}
+export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode;initialStats?:{completedToday:number;completedTotal:number;completedPiecesTotal:number}|null}){
  const language=useLanguage();
  // Creating a public table should keep a Chinese visitor on the Chinese gallery.
  const zh=isChinesePath(usePathname()||''),copy=useAddressCopy(),createTableHref=zh?'/zh/gallery?mode=public':'/gallery?mode=public';
@@ -35,17 +41,18 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
  useEffect(()=>{mounted.current=true;markLobbyVisited();return()=>{mounted.current=false;};},[]);
  async function launchRandom(){
   if(launchLock.current)return;launchLock.current=true;setRandomBusy(true);setLaunchError('');
-  const photo=randomPhoto(PHOTOS);preloadPuzzleImage(puzzleImageSource(photo,recommendedPieces(photo.id)));
+  const photo=randomPhoto(GALLERY_VISIBLE_PHOTOS);preloadPuzzleImage(puzzleImageSource(photo,recommendedPieces(photo.id)));
   try{const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:photo.id,pieces:recommendedPieces(photo.id),visibility:'public'});if(!mounted.current)return;saveTicket(ticket);router.push('/room/'+ticket.room.id);}
   catch(e){if(mounted.current&&e instanceof Error&&e.message===PIECE_LOGIN_REQUIRED){window.location.assign(accountLoginUrl(publicPuzzleReturnTo(photo.id,recommendedPieces(photo.id))));return;}launchLock.current=false;if(mounted.current){setRandomBusy(false);setLaunchError(e instanceof Error?e.message:'暂时无法开始');}}
  }
  const [rooms,setRooms]=useState<RoomCard[]>([]),[ready,setReady]=useState(false),[error,setError]=useState('');
- const [stats,setStats]=useState<{completedToday:number;completedTotal:number}|null>(initialStats??null);
+ const [stats,setStats]=useState<{completedToday:number;completedTotal:number;completedPiecesTotal:number}|null>(initialStats??null);
  const [query,setQuery]=useState(''),[filter,setFilter]=useState('all'),[now,setNow]=useState(Date.now),[offset,setOffset]=useState(0);
+ const enterRooms=()=>{setFilter('open');window.setTimeout(()=>document.getElementById('lobby-tables')?.scrollIntoView({behavior:'smooth',block:'start'}),0);};
  useEffect(()=>{
   let alive=true,timer:ReturnType<typeof setTimeout>;
   async function refresh(){
-   try{if(!document.hidden){const result=await apiJson<{rooms:RoomCard[];stats?:{completedToday:number;completedTotal:number};serverTime:number}>('/api/lobby');if(alive){setRooms(result.rooms);setStats(result.stats??null);setOffset(result.serverTime-Date.now());setNow(Date.now());setError('');}}}
+   try{if(!document.hidden){const result=await apiJson<{rooms:RoomCard[];stats?:{completedToday:number;completedTotal:number;completedPiecesTotal:number};serverTime:number}>('/api/lobby');if(alive){setRooms(result.rooms);setStats(result.stats??null);setOffset(result.serverTime-Date.now());setNow(Date.now());setError('');}}}
    catch(e){if(alive)setError(e instanceof Error?e.message:'大厅暂时无法刷新');}
    finally{if(alive){setReady(true);timer=setTimeout(refresh,3500);}}
   }
@@ -59,18 +66,18 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
  }),[rooms,query,filter,language]);
  // How much the site has finished: today's count rolls over at midnight Beijing time, the
  // same boundary the day's picture uses. Both numbers come from finished rooms only.
- const summary=stats&&<><span><strong>{stats.completedToday}</strong> {copy('幅 · 今天完成')}</span><span><strong>{stats.completedTotal}</strong> {copy('幅 · 累计完成')}</span></>;
- return <CommunityShell active="lobby"><main className="community-main lobby-main">
+ const summary=stats&&<><span><AnimatedCount value={stats.completedToday}/> {copy('幅 · 今天完成')}</span><span><AnimatedCount value={stats.completedTotal}/> {copy('幅 · 累计完成')}</span><span><AnimatedCount value={stats.completedPiecesTotal}/> {copy('片 · 全站累计')}</span></>;
+ return <CommunityShell active="lobby"><LobbyFirstVisit zh={zh} onEnterRooms={enterRooms}/><main className="community-main lobby-main">
   <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{copy('公开拼图大厅')}</h1><p>{copy('任何片数都能直接加入；只有创建 500 片及以上房间需要登录。')}</p></div><div className="lobby-summary"><span><strong>{rooms.length}</strong> {copy('个公开房间')}</span>{summary}</div></section>
   <LobbyCommunity/>
   <ResumePuzzle/>
   {daily}
   <div className="public-create-row"><a className="primary" href={createTableHref}><Plus size={19}/>{copy('创建公开房间')}</a><button className="secondary" disabled={randomBusy} onClick={()=>void launchRandom()} title={copy('随机选图，按推荐片数创建公开房间')}><Shuffle size={18}/>{copy(randomBusy?'正在铺开桌面…':'随机开一桌')}</button><p>{copy('公开房间免费；创建 500 片及以上房间需登录，加入不限。')}</p></div>{launchError&&<p className="form-error" role="alert">{copy(launchError)}</p>}<p className="public-retention-note">{copy('公开房间从创建起在大厅展示 24 小时（500 片及以上 36 小时），中途继续拼不会延长；到期后从大厅隐藏、仍可从拼图记录回来继续；无人且未拼合的房间会更早清理。')}</p>
-  <div className="lobby-filters"><div className="filter-tabs">{[{id:'all',name:'所有拼图'},{id:'active',name:'有人在拼'},{id:'open',name:'可以加入'}].map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{copy(item.name)}</button>)}</div><label className="lobby-search"><Search size={18}/><input aria-label={copy('搜索公开拼图')} placeholder={copy('搜索喜欢的画面')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
+  <div className="lobby-filters" id="lobby-tables"><div className="filter-tabs">{[{id:'all',name:'所有拼图'},{id:'active',name:'有人在拼'},{id:'open',name:'可以加入'}].map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{copy(item.name)}</button>)}</div><label className="lobby-search"><Search size={18}/><input aria-label={copy('搜索公开拼图')} placeholder={copy('搜索喜欢的画面')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
   {error&&<p className="form-error" role="alert">{copy(error)}</p>}
   {!ready?<div className="community-empty"><RefreshCw className="loading-icon" size={28}/><p>{copy('正在铺开公开桌面…')}</p></div>:visible.length?<div className="public-grid public-tiled-grid">{visible.map((room,index)=>{
    const catalogPhoto=RESTORABLE_PHOTOS.find(p=>p.id===room.imageId),uploadedPhoto=room.customImage?customPhoto(room.customImage,room.id):null;
-   const photo=catalogPhoto||uploadedPhoto,uploadOnly=!catalogPhoto&&!!room.customTitle,title=catalogPhoto?catalogPhoto.title:room.title,category=catalogPhoto?catalogPhoto.category:'玩家上传';
+   const photo=catalogPhoto||uploadedPhoto,uploadOnly=!catalogPhoto&&!!room.customTitle,title=room.customTitle?room.title:(catalogPhoto?catalogPhoto.title:room.title),category=catalogPhoto?catalogPhoto.category:'玩家上传';
    const progress=Math.round(room.placed/room.pieces*100),full=room.players>=8;
    const elapsed=room.startedAt===null?0:Math.max(0,Math.floor((now+offset-room.startedAt)/1000));
    const joinLabel=copy(full?'已满员':room.acceptingNew===false?'老朋友继续':'加入拼图');

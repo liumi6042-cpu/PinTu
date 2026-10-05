@@ -9,6 +9,10 @@ import type { RoomCard } from './lobby-types';
 import { env } from 'cloudflare:workers';
 import { PublicLobbyCache } from './public-lobby-cache';
 const publicLobbyCache=new PublicLobbyCache();
+function publicRoomTitle(title:string){
+ const match=title.match(/^机器人练习桌\s*·\s*(.+)$/);
+ return match?.[1]?.trim()||title;
+}
 export function newPlayableRoom(id:string,imageId:string,pieces:number,visibility:RoomVisibility,ownerId?:string,now=Date.now()){
  const room=makeRoom(id,imageId,pieces,now);room.visibility=visibility;room.ownerId=ownerId;room.startedAt=null;room.participants={};touchPublicRoom(room,now);return room;
 }
@@ -65,6 +69,6 @@ async function queryRoomCards(database:D1DatabaseSession,ownerId?:string,onlyOwn
  const result=await (onlyOwned?query.bind(now-ONLINE_MS,ownerId,now):ownerId?query.bind(now-ONLINE_MS,ownerId,ownerId,ownerId,ownerId,now):query.bind(now-ONLINE_MS,now,now-PUBLIC_LOBBY_REVEAL_MS)).all<CardRow>();
  // Uploaded public rooms expose only safe image metadata. The card requests its
  // separate 480px preview; neither original nor preview bytes enter this JSON.
- return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>({...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:row.title,imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
+ return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>({...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:publicRoomTitle(row.title),imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
 }
 export async function managedRooms(ownerId:string){return roomCards(ownerId,true);}

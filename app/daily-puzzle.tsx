@@ -17,12 +17,11 @@ export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';va
   if(variant==='strip')return <section className="daily-puzzle daily-puzzle-strip" aria-labelledby="daily-puzzle-heading">
     <p className="section-kicker">{zh?'今日拼图':'PUZZLE OF THE DAY'}</p>
     <div className="daily-puzzle-strip-row">
-      <img src={photo.thumbSrc} alt="" width={112} height={90} loading="lazy" decoding="async"/>
       <div className="daily-puzzle-strip-copy">
         <h2 id="daily-puzzle-heading">{title}</h2>
         <p>{subtitle}</p>
       </div>
-      <DailyJoin zh={zh}/>
+      <DailyJoin zh={zh} photo={photo} title={title} compact showImage/>
     </div>
     <p className="daily-puzzle-note">{note}</p>
   </section>;
@@ -30,12 +29,11 @@ export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';va
     <p className="section-kicker">{zh?'今日拼图':'PUZZLE OF THE DAY'}</p>
     <h2 id="daily-puzzle-heading">{zh?'今天，就拼这一幅':'One picture, picked for today'}</h2>
     <div className="daily-puzzle-card">
-      <img src={photo.thumbSrc} alt={title} width={480} height={384} loading="lazy" decoding="async"/>
       <div>
         <h3>{title}</h3>
         <p>{subtitle}</p>
         <p>{zh?`建议从 ${recommended} 片开始，这张图最高支持 ${maximum.toLocaleString('zh-CN')} 片。`:`Start with ${recommended} pieces. This picture supports up to ${maximum.toLocaleString('en-US')}.`}</p>
-        <DailyJoin zh={zh}/>
+        <DailyJoin zh={zh} photo={photo} title={title} showImage/>
       </div>
     </div>
     <p className="daily-puzzle-note">{note}</p>

@@ -2,7 +2,7 @@
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUpRight, Play, Clock3, Monitor, Server, Crown, BookOpen, Trash2, Undo2 } from 'lucide-react';
+import { ArrowUpRight, Play, Clock3, Monitor, Server, Crown, BookOpen, Trash2, Undo2, BarChart3 } from 'lucide-react';
 import type { RoomCard } from '@/lib/lobby-types';
 import { customPhoto } from '@/lib/custom-images';
 import { RESTORABLE_PHOTOS } from '@/lib/puzzle-catalog';
@@ -15,12 +15,14 @@ import PuzzleApp from '../puzzle-app';
 import { useAccount } from '../account-gate';
 import { accountLoginUrl } from '@/lib/account-return';
 import { PERSONAL_PLAY_VISIBLE,MEMBERSHIP_VISIBLE } from '@/lib/feature-visibility';
+import type { PersonalStats } from '@/lib/personal-stats';
 
 export default function PersonalSpace() {
   const language = useLanguage();
   const { account } = useAccount();
   const [mode, setMode] = useState<'solo' | 'create' | null>(null);
   const [rooms, setRooms] = useState<RoomCard[]>([]), [local, setLocal] = useState<LocalProgress[]>([]);
+  const [stats, setStats] = useState<PersonalStats | null>(null);
   const [error, setError] = useState(''), [localError, setLocalError] = useState('');
   const [busy, setBusy] = useState(''), [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<ResumeProgress | null>(null), [deleteError, setDeleteError] = useState('');
@@ -40,8 +42,9 @@ export default function PersonalSpace() {
       } catch (e) { if (alive && request === roomsRequest.current) setError(e instanceof Error ? e.message : '连接失败'); }
       finally { if (alive && request === roomsRequest.current) setLoading(false); }
     };
-    loadLocal(); void loadRooms();
-    const onFocus = () => { loadLocal(); void loadRooms(); };
+    const loadStats = async () => { try { const data = await apiJson<{ stats: PersonalStats }>('/api/my-stats'); if (alive) setStats(data.stats); } catch { /* stats are supplemental */ } };
+    loadLocal(); void loadRooms(); void loadStats();
+    const onFocus = () => { loadLocal(); void loadRooms(); void loadStats(); };
     window.addEventListener('focus', onFocus); window.addEventListener('storage', loadLocal);
     return () => { alive = false; window.removeEventListener('focus', onFocus); window.removeEventListener('storage', loadLocal); };
   }, []);
@@ -113,6 +116,11 @@ export default function PersonalSpace() {
     {error && <p role="alert" className="form-error">{t(error)}</p>}{localError && <p role="alert" className="form-error">{t(localError)}</p>}
     {removed && <div className="record-undo" role="status"><span>{t('已删除记录')} · {removed.entry.customTitle ? removed.entry.title : t(removed.entry.title)}</span><button className="text-button" disabled={!!busy} onClick={() => void undoDelete()}><Undo2 size={16}/>{t(busy === 'undo' ? '正在恢复…' : '撤销删除')}</button></div>}
     {loading && <p className="muted">{t('正在寻找上次的桌面…')}</p>}
+    {stats && <section className="personal-stat-board" aria-label={t('我的拼图统计')}>
+      <div className="personal-stat-header"><div><p className="section-kicker">PUZZLE JOURNAL</p><h2>{t('我的拼图统计')}</h2><p>{t('每次完成的拼合都会记录在这里。')}</p></div><BarChart3 size={30}/></div>
+      <div className="personal-stat-total"><strong>{stats.totalCompletedPieces.toLocaleString()}</strong><span>{t('累计拼合片数')} · {stats.totalCompletedPictures} {t('幅')}</span></div>
+      <div className="personal-stat-bands">{stats.bands.map(band => <div className="personal-stat-band" key={band.pieces}><strong>{band.pictures}</strong><span>{band.pieces} {t('片')} · {t('完成幅数')}</span></div>)}</div>
+    </section>}
     {latest && <section className="resume-highlight" aria-label={t('继续上次拼图')}>{card(latest, true)}</section>}
     <a className="achievement-entry" href="/achievements"><BookOpen size={32}/><div><h2>{t("我的拼图纪念册")}</h2><p>{t("收集纪念徽章，看看下一枚离你还有多远。")}</p></div><ArrowUpRight size={24}/></a>
     {MEMBERSHIP_VISIBLE&&<a className="membership-personal-entry" href="/membership/manage"><Crown size={18}/>{t("我的会员与自建房间")}<ArrowUpRight size={16}/></a>}

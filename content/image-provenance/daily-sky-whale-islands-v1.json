@@ -1,0 +1,69 @@
+{
+  "id": "daily-sky-whale-islands-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入每日一图内容的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-03",
+    "originalFile": "codex-clipboard-a2dc0d5e-ec40-4c4c-9e22-0814cea15613.png",
+    "originalSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这三张图片存入图库并作为大厅每日一图公开拼图，授权用于本站宣传与游玩。",
+    "authorizedOn": "2026-10-03"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-03",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：晚霞云海中的飞鲸与浮岛城堡，画面无网页界面、按钮或文字覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+    "play": {
+      "src": "/puzzles/daily-sky-whale-islands-v1-play-6b70189968e4.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "6b70189968e4ed682596ae67a2ef284cf334ceb35965fefc192a36b10f08bfab",
+      "bytes": 2003600,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/daily-sky-whale-islands-v1-thumbnail-3ae6da19d07e.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "3ae6da19d07e99c6d7182fc568e7bdf3769e5c4feb4665b8cd7611c8a81b3a96",
+      "bytes": 44116,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/daily-sky-whale-islands-v1-optimized-9294728dd8dc.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "9294728dd8dc623162c16db6b2370c193896e403e67b9b6da6548ae27406e7b5",
+      "bytes": 280238,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "inputSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

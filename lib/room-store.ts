@@ -7,7 +7,7 @@ import { recordRoomChange } from './room-sync';
 import { localDb } from './local-db';
 import { saveCompletion } from './lobby-store';
 import { RoomError, type Room } from './room-engine';
-import { normalizePuzzle } from './puzzle-engine';
+import { normalizePuzzle, placedCount } from './puzzle-engine';
 import { RESTORABLE_PHOTO_IDS } from './puzzle-catalog';
 import { roomAchievementDays,saveAchievementActivity,saveAchievementCompletion } from './achievement-store';
 import { RoomReadCache } from './room-read-cache';
@@ -53,6 +53,14 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T){
     title=COALESCE((SELECT json_extract(data,'$.title') FROM puzzle_rooms WHERE id=?),title),
     visibility=COALESCE((SELECT json_extract(data,'$.visibility') FROM puzzle_rooms WHERE id=?),visibility),
     completed_at=(SELECT json_extract(data,'$.completedAt') FROM puzzle_rooms WHERE id=?) WHERE room_id=?`).bind(id,id,id,id,id));
+  // Keep the room's highest placed-piece total in a history table.  This command
+  // is part of the same batch as the room write, so a cleanup cannot race the
+  // history update and completed rooms remain counted after their JSON is gone.
+  commands.push(database.prepare(`INSERT INTO puzzle_piece_progress (room_id,placed_count,updated_at) VALUES (?,?,?)
+    ON CONFLICT(room_id) DO UPDATE SET
+      placed_count=MAX(puzzle_piece_progress.placed_count,excluded.placed_count),
+      updated_at=CASE WHEN excluded.placed_count>puzzle_piece_progress.placed_count
+        THEN excluded.updated_at ELSE puzzle_piece_progress.updated_at END`).bind(id,placedCount(room.puzzle),now));
   const [updated]=await database.batch(commands);
   if(becomingPrivate&&updated.meta.changes!==1){
    if(!canCreateMemberRoom(await membershipFor(room.ownerId!),Date.now()))throw new RoomError(MEMBERSHIP_REQUIRED,403);

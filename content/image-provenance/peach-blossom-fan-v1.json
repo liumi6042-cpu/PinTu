@@ -1,0 +1,69 @@
+{
+  "id": "peach-blossom-fan-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-6f7d3847-1a50-4230-a18c-b9209adad3a5.png",
+    "originalSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：古风少女手持桃花团扇，背景含亭台、湖泊、瀑布与春日山水。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+    "play": {
+      "src": "/puzzles/peach-blossom-fan-v1-play-9ffa70212265.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "9ffa702122657f9f57be7db525451725cfcabac511b1d1ddacfb0dee070da50a",
+      "bytes": 1975566,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/peach-blossom-fan-v1-thumbnail-60094937426c.webp",
+      "width": 480,
+      "height": 270,
+      "sha256": "60094937426cad2f426f83dbd5e69bd55eef83f1312b583c84c8ba0a6c76521d",
+      "bytes": 41454,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/peach-blossom-fan-v1-optimized-2e43ae7eeb29.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "2e43ae7eeb29897a33950ab15ef9fd18b00926d1896775ab0437bc75d2dd3c38",
+      "bytes": 295408,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "inputSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

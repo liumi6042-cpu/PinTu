@@ -19,6 +19,7 @@ function stop(){stopMonitor?.();activeGateway?.close();activeServer?.kill('SIGTE
 const origin = `http://${localAddress()}:${port}`;
 const env = { ...process.env, CI: 'true', WRANGLER_SEND_METRICS: 'false', WRANGLER_HIDE_BANNER: 'true',
   PUZZLE_LOCAL_BUILD: '1',
+  PORT: String(upstreamPort),
   WRANGLER_WRITE_LOGS: 'false', MINIFLARE_REGISTRY_PATH: path.join(root,'.wrangler/registry'),
   PATH: `${path.dirname(process.execPath)}${path.delimiter}${process.env.PATH || ''}` };
 const wrangler = path.join(root,'node_modules/wrangler/bin/wrangler.js');
@@ -65,6 +66,10 @@ async function main() {
   await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0006_free_beta.sql']);
   await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0008_personal_room_records.sql']);
   await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0009_user_images.sql']);
+  await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0010_free_assistance.sql']);
+  await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0011_room_chat.sql']);
+  await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','drizzle/0014_piece_progress.sql']);
+  await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','scripts/upgrade-local-late-tables.sql']);
   // Node applies migration 0007 once through its ledger. Local startup uses an idempotent metadata backfill.
   await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','scripts/upgrade-public-retention.sql']);
   await run([wrangler,'d1','execute','PUZZLE_DB','--local','--config','wrangler.local.json','--file','scripts/backfill-result-players.sql']);

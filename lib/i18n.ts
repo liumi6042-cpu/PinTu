@@ -81,8 +81,11 @@ const extras:Record<string,string>={
   '公开拼图大厅':'Public puzzle lobby','点击图片，加入拼图':'Click a picture to join',
   '拼图计时':'Puzzle time','在线人数':'Players online','已满员':'Full',
   '正在游玩':'Playing now','个公开房间':'public rooms',
+  '正在拼图':'Placing pieces','思考中':'Thinking','机器人会持续尝试拼合':'This bot keeps trying pieces at a human pace',
   // What the lobby shows instead of a live player count: how much the site has finished.
   '幅 · 今天完成':'completed today','幅 · 累计完成':'completed in total',
+  '片 · 全站累计':'pieces completed across the site','我的拼图统计':'My puzzle stats','每次完成的拼合都会记录在这里。':'Every completed connection is recorded here.',
+  '累计拼合片数':'pieces placed in completed puzzles','完成幅数':'completed puzzles',
   '所有拼图':'All puzzles','个人游玩':'Solo play','去创建房间':'Create a room',
   '无需登录 · 最多 8 人一起拼':'No sign-in · Up to 8 players',
   '按玩家实际参与操作统计。':'Counts players who actually moved pieces.',

@@ -810,5 +810,61 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "先拼绿色电车与长椅上的猫，再沿铁轨连接樱花和海岸。"
+  },
+  "cloud-dragon-ascension-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 4,
+    "preferredCount": 300,
+    "reason": "先拼旅人与神龙，再沿石柱、瀑布和云海分区连接。"
+  },
+  "moonlit-nine-tail-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼白发与花灯，再按九尾、竹影和夜色分区。"
+  },
+  "lantern-fox-pair-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼两位角色和灯笼，再沿街景灯火向四周展开。"
+  },
+  "neon-cherry-swordswoman-v1": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 4,
+    "preferredCount": 300,
+    "reason": "先拼人物轮廓和蓝光长刃，再连接霓虹楼宇、樱花与雨面倒影。"
+  },
+  "peach-blossom-fan-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼人物与团扇，再沿桃花、亭台和远山瀑布分区。"
+  },
+  "daily-moonlit-cherry-umbrella-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼月亮、透明伞与人物轮廓，再沿樱花和湖面倒影分区。"
+  },
+  "daily-lantern-lake-violin-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找琴手、花灯与小舟，再连接水面倒影和远处灯火。"
+  },
+  "daily-sky-whale-islands-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼巨鲸和浮岛城堡，再沿云海与飞鸟分区连接。"
   }
 }

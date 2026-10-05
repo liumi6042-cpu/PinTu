@@ -2,7 +2,6 @@
 import PictureDiscoveries from './picture-discoveries';
 import CompletionJourney from './completion-journey';
 'use client';
-import CompletionCourtyardInvite from './completion-courtyard-invite';
 import { useAddressCopy } from '@/lib/address-copy';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
@@ -40,7 +39,7 @@ import PuzzleOpening from './puzzle-opening';
 import { activeKey, saveKey, readLocalProgress, writeLocalProgress } from '@/lib/local-progress';
 import { randomPhoto } from '@/lib/random-photo';
 import type { RoomClient } from '@/lib/room-client';
-import { PHOTOS, GALLERY_PHOTOS, RESTORABLE_PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
+import { PHOTOS, GALLERY_PHOTOS, GALLERY_VISIBLE_PHOTOS, RESTORABLE_PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
 import { englishCopy } from '@/lib/seo';
 import AccountGate from './account-gate';
 import { useRouter } from 'next/navigation';
@@ -107,7 +106,7 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
  },[entryMode,guestPlay,start,saved,roomName,membership.data?.summary.canCreate,membership.loading,membership.error,router]);
  const leave=()=>{launchLock.current=false;setCreating(false);if(session){persist(session);setSaved(s=>({...s,[saveKey(session.imageId,session.cols*session.rows)]:structuredClone(session)}));}try{localStorage.removeItem(activeKey);}catch{}const url=new URL(window.location.href);url.searchParams.delete('resume');window.history.replaceState(null,'',url.pathname+url.search);setSession(null);};
  const stateRef=useRef({session,count});stateRef.current={session,count};
- useEffect(()=>registerPuzzleTools({read:()=>({screen:stateRef.current.session?'playing':gallery?'gallery':'collection',puzzles:PHOTOS.map(({id,title})=>({id,title})),pieceCounts:LEVELS.map(l=>l.count),current:stateRef.current.session?{imageId:stateRef.current.session.imageId,pieces:stateRef.current.session.cols*stateRef.current.session.rows,placed:placedCount(stateRef.current.session),elapsed:stateRef.current.session.elapsed}:null}),start:async(imageId,pieces)=>{const p=PHOTOS.find(p=>p.id===imageId);if(!p||!LEVELS.some(l=>l.count===pieces))throw new Error('请选择列表内的图片和片数');if(stateRef.current.session)throw new Error('请先从当前拼图返回选图页');await beginPuzzle(p,pieces);return{screen:guestPlay?'playing':'room',imageId,pieces};}}),[beginPuzzle,guestPlay,gallery]);
+ useEffect(()=>registerPuzzleTools({read:()=>({screen:stateRef.current.session?'playing':gallery?'gallery':'collection',puzzles:GALLERY_VISIBLE_PHOTOS.map(({id,title})=>({id,title})),pieceCounts:LEVELS.map(l=>l.count),current:stateRef.current.session?{imageId:stateRef.current.session.imageId,pieces:stateRef.current.session.cols*stateRef.current.session.rows,placed:placedCount(stateRef.current.session),elapsed:stateRef.current.session.elapsed}:null}),start:async(imageId,pieces)=>{const p=GALLERY_VISIBLE_PHOTOS.find(p=>p.id===imageId);if(!p||!LEVELS.some(l=>l.count===pieces))throw new Error('请选择列表内的图片和片数');if(stateRef.current.session)throw new Error('请先从当前拼图返回选图页');await beginPuzzle(p,pieces);return{screen:guestPlay?'playing':'room',imageId,pieces};}}),[beginPuzzle,guestPlay,gallery]);
  if(entryMode==='create'&&(!membership.data?.summary.canCreate||membership.loading||membership.error))return <main className="collection collection-simple"><header className="site-header"><a href="/" className="collection-brand-link"><Brand/></a><HomeNavigation/></header>{membership.loading?<p className="muted">{copy('正在读取会员状态…')}</p>:<>{membership.error&&<p className="form-error" role="alert">{copy(membership.error)}<button onClick={membership.reload}>{copy('重试')}</button></p>}{membership.data?.summary.status==='active'&&!membership.data.summary.canCreate&&<p className="form-error">{copy('已有 3 个进行中的私人房间，请先完成其中一局')}</p>}<MemberRoomGate/></>}</main>;
  if(session)return <Game key={`${session.imageId}-${session.cols}-${session.seed}`} state={session} photo={RESTORABLE_PHOTOS.find(p=>p.id===session.imageId)!} persist={persist} leave={leave} saveError={saveError} restart={()=>{const state=restartPuzzle(session);persist(state);setSession(state);}}/>;
  if(creating&&opening&&!guestPlay)return <PuzzleOpening photo={opening.photo} pieces={opening.pieces}/>;

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { beijingDayStart, completionStats } from '../lib/completion-stats.ts';
 
 // A fake D1-style database: records the bound parameter so the test can prove which day was asked for.
-function fakeDatabase(today, total, calls) {
+function fakeDatabase(today, total, pieces, calls) {
+  if (!calls) { calls = pieces; pieces = 0; }
   return {
     prepare(sql) {
       assert.match(sql, /FROM puzzle_results/);
@@ -12,7 +13,7 @@ function fakeDatabase(today, total, calls) {
           return {
             all: async () => {
               calls.push(values);
-              return { results: [{ today, total }] };
+            return { results: [{ today, total, pieces }] };
             },
           };
         },
@@ -34,26 +35,26 @@ test('the day boundary is midnight in Beijing', () => {
 
 test('today is counted from the Beijing day start and the total has no boundary', async () => {
   const calls = [], now = Date.UTC(2026, 8, 21, 15, 0);
-  const stats = await completionStats(now, fakeDatabase(7, 1234, calls));
-  assert.deepEqual(stats, { completedToday: 7, completedTotal: 1234 });
+  const stats = await completionStats(now, fakeDatabase(7, 1234, 9876, calls));
+  assert.deepEqual(stats, { completedToday: 7, completedTotal: 1234, completedPiecesTotal: 9876 });
   assert.deepEqual(calls, [[beijingDayStart(now)]]);
 });
 
 test('the numbers are memoised briefly, and recomputed when the day turns over', async () => {
   const calls = [];
-  const database = fakeDatabase(3, 50, calls);
+  const database = fakeDatabase(3, 50, 4000, calls);
   const now = Date.UTC(2026, 8, 21, 15, 0);
   await completionStats(now, database);
   // A lobby polls every few seconds; a finished puzzle is rare, so the second poll must not query.
-  await completionStats(now + 5000, database);
+  await completionStats(now + 4000, database);
   assert.equal(calls.length, 1);
   // After the cache expires it asks again.
-  await completionStats(now + 31000, database);
+  await completionStats(now + 6000, database);
   assert.equal(calls.length, 2);
   // Crossing midnight always asks again, even inside the cache window.
   const afterMidnight = Date.UTC(2026, 8, 21, 16, 5);
   const fresh = fakeDatabase(0, 51, calls);
-  assert.deepEqual(await completionStats(afterMidnight, fresh), { completedToday: 0, completedTotal: 51 });
+  assert.deepEqual(await completionStats(afterMidnight, fresh), { completedToday: 0, completedTotal: 51, completedPiecesTotal: 0 });
   assert.equal(calls.length, 3);
 });
 

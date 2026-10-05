@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { PHOTOS } from './puzzle-catalog';
+import { GALLERY_VISIBLE_PHOTOS } from './puzzle-catalog';
 import { maximumPieces } from './piece-policy';
 import english from '../content/locales/en.json' with { type: 'json' };
 import { englishPath,isChinesePath,zhPath } from './site-paths';
@@ -26,7 +26,7 @@ export const ZH_PUBLIC_PAGES: Record<keyof typeof PUBLIC_PAGES, { title: string;
 };
 export function isPublicSearchPage(path: string) {
   const canonical = isChinesePath(path) ? englishPath(path) : path;
-  return Object.hasOwn(PUBLIC_PAGES, canonical) || PHOTOS.some(photo => puzzlePath(photo.id) === canonical);
+  return Object.hasOwn(PUBLIC_PAGES, canonical) || GALLERY_VISIBLE_PHOTOS.some(photo => puzzlePath(photo.id) === canonical);
 }
 export const hasChineseVersion = (path: string) => isPublicSearchPage(zhPath(path));
 function alternateLanguages(path: string, canonical: string) {
@@ -35,7 +35,7 @@ function alternateLanguages(path: string, canonical: string) {
   const english2 = isChinesePath(canonical) ? englishPath(canonical) : canonical;
   return { en: SITE_URL + english2, 'zh-CN': SITE_URL + zhPath(english2), 'x-default': SITE_URL + english2 };
 }
-export function publicMetadata(path: string, title: string, description: string, image = PHOTOS[0].thumbSrc, siteName = SITE_NAME): Metadata {
+export function publicMetadata(path: string, title: string, description: string, image = GALLERY_VISIBLE_PHOTOS[0].thumbSrc, siteName = SITE_NAME): Metadata {
   const fullTitle = `${title} | ${siteName}`, chinese = isChinesePath(path);
   return { title: { absolute: fullTitle }, description, alternates: { canonical: SITE_URL + path, languages: alternateLanguages(path, path) },
     robots: { index: true, follow: true, 'max-image-preview': 'large' },
@@ -46,12 +46,13 @@ export function publicMetadata(path: string, title: string, description: string,
 export function pageMetadata(path: keyof typeof PUBLIC_PAGES) { const page = PUBLIC_PAGES[path]; return publicMetadata(path, page.title, page.description); }
 // The Chinese title leads with the artwork name — that is the only part of the page
 // that is unique to this picture — and the generic phrase follows it.
-export function zhPuzzleMetadata(photo: { id: string; title: string; subtitle: string; thumbSrc: string }) {
+export function zhPuzzleMetadata(photo: { id: string; title: string; subtitle: string; thumbSrc: string; galleryVisible?: boolean }) {
   const pieces = maximumPieces(photo.id).toLocaleString('zh-CN');
-  return publicMetadata(zhPath(puzzlePath(photo.id)), `${photo.title} — 免费在线拼图`, `${photo.subtitle} 在浏览器里直接拼这张图，最高可选 ${pieces} 片，也可以开一桌和朋友一起拼。`, photo.thumbSrc, ZH_SITE_NAME);
+  const metadata = publicMetadata(zhPath(puzzlePath(photo.id)), `${photo.title} — 免费在线拼图`, `${photo.subtitle} 在浏览器里直接拼这张图，最高可选 ${pieces} 片，也可以开一桌和朋友一起拼。`, photo.thumbSrc, ZH_SITE_NAME);
+  return photo.galleryVisible === false ? { ...metadata, robots: { index: false, follow: false } } : metadata;
 }
-export function zhPageMetadata(path: keyof typeof ZH_PUBLIC_PAGES) { const page = ZH_PUBLIC_PAGES[path]; return publicMetadata(zhPath(path), page.title, page.description, PHOTOS[0].thumbSrc, ZH_SITE_NAME); }
+export function zhPageMetadata(path: keyof typeof ZH_PUBLIC_PAGES) { const page = ZH_PUBLIC_PAGES[path]; return publicMetadata(zhPath(path), page.title, page.description, GALLERY_VISIBLE_PHOTOS[0].thumbSrc, ZH_SITE_NAME); }
 // Published project artwork only; never room IDs or private uploads.
-export const englishSearchPaths = () => [...Object.keys(PUBLIC_PAGES), ...PHOTOS.map(photo => puzzlePath(photo.id))];
+export const englishSearchPaths = () => [...Object.keys(PUBLIC_PAGES), ...GALLERY_VISIBLE_PHOTOS.map(photo => puzzlePath(photo.id))];
 export const searchPaths = () => { const paths = englishSearchPaths(); return [...paths, ...paths.map(zhPath)]; };
 export function jsonLd(value: unknown) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
