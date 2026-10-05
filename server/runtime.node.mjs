@@ -22,7 +22,16 @@ Object.defineProperty(env, 'PUZZLE_DB', { get() {
     const botTimer=setInterval(()=>{
       const port=process.env.PORT||3000;
       const secret=process.env.PUZZLE_BOT_SECRET||'local-preview-bot-secret';
-      void fetch(`http://127.0.0.1:${port}/api/internal/bots/tick`,{method:'POST',headers:{'x-puzzle-bot-secret':secret}}).catch(()=>{});
+      // Keep the health loop on loopback, but present the canonical public origin
+      // so hosted middleware can apply its normal HTTPS/host guard.
+      const publicOrigin=process.env.PUZZLE_PUBLIC_ORIGIN;
+      const headers=new Headers({'x-puzzle-bot-secret':secret});
+      if(publicOrigin){
+        const origin=new URL(publicOrigin);
+        headers.set('host',origin.host);
+        headers.set('x-forwarded-proto',origin.protocol.replace(':',''));
+      }
+      void fetch(`http://127.0.0.1:${port}/api/internal/bots/tick`,{method:'POST',headers}).catch(()=>{});
     },5000);
     botTimer.unref();
   }

@@ -5,6 +5,7 @@ import { useLanguage } from './language-switch';
 import { usePathname } from 'next/navigation';
 import { hasChineseAddress,isChinesePath } from '@/lib/site-paths';
 import { apiJson } from '@/lib/community-client';
+import { COURTYARD_VISIBLE, HATCHING_VISIBLE, WARDROBE_VISIBLE } from '@/lib/feature-visibility';
 const sections={
  help:[
  ['我的庭院','My courtyard','登录后可签到、获得拼图孵化进度和兑换庭院物品。布置后请点击保存到账号。','Sign in to check in, earn hatching progress from puzzles and redeem courtyard items. Select Save to account after arranging furniture.'],
@@ -42,7 +43,7 @@ export default function ServiceDocument({kind}:{kind:keyof typeof sections}){
  const title=kind==='help'?(en?'Help & saves':'帮助与存档'):kind==='privacy'?(en?'Privacy information':'隐私说明'):(en?'Terms of use':'服务条款');
  return <CommunityShell active="personal"><main className="service-main"><h1>{title}</h1>
  {kind!=='help'&&(!info?.policiesReviewed||!info.operator||!info.support)&&<p className="service-notice">{en?'Test draft — operator details and launch review are not yet complete.':'测试草稿：经营者信息和上线前审核尚未完成。'}</p>}
- {sections[kind].map(([zh,enTitle,text,enText])=><section key={zh} className="service-card"><h2>{en?enTitle:zh}</h2><p>{en?enText:text}</p></section>)}
+ {sections[kind].filter(([zh])=>!(kind==='help'&&zh==='我的庭院'&&!COURTYARD_VISIBLE&&!HATCHING_VISIBLE&&!WARDROBE_VISIBLE)).map(([zh,enTitle,text,enText])=><section key={zh} className="service-card"><h2>{en?enTitle:zh}</h2><p>{en?enText:text}</p></section>)}
  {info?.operator&&<p>{en?'Operator: ':'经营者：'}{info.operator}</p>}{info?.support&&<p>{en?'Support: ':'客服：'}<a href={'mailto:'+info.support}>{info.support}</a></p>}
  <a href="/account/security">{en?'Account & security':'账号与安全'}</a> · <a href="/feedback">{en?'Problem feedback':'问题反馈'}</a>
  </main></CommunityShell>;
