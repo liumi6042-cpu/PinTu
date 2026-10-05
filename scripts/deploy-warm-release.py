@@ -58,11 +58,15 @@ old_migrations, new_migrations = migrations(old), migrations(app)
 added = set(new_migrations) - set(old_migrations)
 assert all(new_migrations.get(name) == digest for name,digest in old_migrations.items()), 'Existing migrations must never change'
 if added:
-    assert added == {'0013_welcome_gift.sql'}, 'Only the reviewed courtyard additive migration is allowed'
-    assert args.additive_migration_sha256 == new_migrations['0013_welcome_gift.sql'], 'Require exact reviewed migration digest'
-    sql = (app / 'drizzle/0013_welcome_gift.sql').read_text()
-    statements = [part.strip() for part in sql.split(';') if part.strip()]
-    assert all(re.match(r'^CREATE TABLE puzzle_welcome_gifts ',part) for part in statements)
+    # The current production release already contains 0013.  The piece-history
+    # table is deliberately additive and has no foreign key to rooms, so room
+    # cleanup cannot erase the site-wide progress counter.
+    assert added == {'0014_piece_progress.sql'}, 'Only the reviewed piece-progress additive migration is allowed'
+    assert args.additive_migration_sha256 == new_migrations['0014_piece_progress.sql'], 'Require exact reviewed migration digest'
+    sql = (app / 'drizzle/0014_piece_progress.sql').read_text().upper()
+    assert 'DROP TABLE' not in sql and 'ALTER TABLE' not in sql and 'DELETE FROM' not in sql
+    assert re.search(r'^CREATE TABLE IF NOT EXISTS PUZZLE_PIECE_PROGRESS ', sql, re.MULTILINE)
+    assert re.search(r'^CREATE INDEX IF NOT EXISTS PUZZLE_PIECE_PROGRESS_UPDATED_IDX ', sql, re.MULTILINE)
 else:
     assert not args.additive_migration_sha256
 
@@ -130,7 +134,7 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         qa_db = pathlib.Path(temporary) / 'data/puzzle.sqlite'
         def original_fingerprints():
             with sqlite3.connect(qa_db) as connection:
-                names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='app_migrations'") if not row[0].startswith(('puzzle_courtyard','puzzle_lobby_chat','puzzle_welcome_gifts'))]
+                names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='app_migrations'") if not row[0].startswith(('puzzle_courtyard','puzzle_lobby_chat','puzzle_welcome_gifts','puzzle_piece_progress'))]
                 return {name:hashlib.sha256(repr(connection.execute('SELECT * FROM '+name+' ORDER BY rowid').fetchall()).encode()).hexdigest() for name in names}
         fingerprints_before=original_fingerprints()
         launch(app, 3138)
