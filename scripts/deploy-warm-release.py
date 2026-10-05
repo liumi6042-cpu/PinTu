@@ -66,7 +66,7 @@ if added:
     sql = (app / 'drizzle/0014_piece_progress.sql').read_text().upper()
     assert 'DROP TABLE' not in sql and 'ALTER TABLE' not in sql and 'DELETE FROM' not in sql
     assert re.search(r'^CREATE TABLE IF NOT EXISTS PUZZLE_PIECE_PROGRESS ', sql, re.MULTILINE)
-    assert re.search(r'^CREATE INDEX IF NOT EXISTS PUZZLE_PIECE_PROGRESS_UPDATED_IDX ', sql, re.MULTILINE)
+    assert re.search(r'^CREATE INDEX IF NOT EXISTS PUZZLE_PIECE_PROGRESS_UPDATED_IDX\b', sql, re.MULTILINE)
 else:
     assert not args.additive_migration_sha256
 
