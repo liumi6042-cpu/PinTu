@@ -1,0 +1,81 @@
+{
+  "id": "golden-sand-dunes-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/golden-sand-dunes-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-e668fb49-e5b3-407d-97ac-7b80a2174b7f.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+    "play": {
+      "src": "/puzzles/golden-sand-dunes-native-v2-play-54dd8775f62c.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "54dd8775f62cf2154a21e81d920eeff3f6d0306b82a71c707c5ca433af5c8799",
+      "bytes": 1634816,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/golden-sand-dunes-native-v2-thumbnail-47662e08216d.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "47662e08216d48d608d33a4556e6cfb953a217be00b9363c90ef6f24312c31ad",
+      "bytes": 13960,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/golden-sand-dunes-native-v2-optimized-d2fc1961d7a6.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "d2fc1961d7a607f6a34d634e83b7bcabf1787c7fc8fcf70ce7e2a1fa2257eb88",
+      "bytes": 172224,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+      "inputSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

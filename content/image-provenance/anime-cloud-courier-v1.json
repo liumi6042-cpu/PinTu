@@ -1,0 +1,81 @@
+{
+  "id": "anime-cloud-courier-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/anime-cloud-courier-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a09ef4-4bb5-7963-9fd0-5cdf4fbd16f1/exec-ed5db333-5317-4331-8564-21fbc9afe646.png",
+    "sourceMetadata": "content/artwork/anime-20260914/anime-cloud-courier-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated image. No interpolation, composite assembly or AI upscaling. New games follow the current 108–1000 piece policy.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Full image inspected: clear original anime characters and scene, no visible lettering, signature, logos or watermarks.",
+      "Faces, hands, limbs and animal or prop shapes inspected; main subjects remain visible in central game crops. Scene detail is moderate, with readable large color shapes."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+    "play": {
+      "src": "/puzzles/anime-cloud-courier-v1-play-9ad629944b49.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "9ad629944b499dca9177c9bf1fee5b5603615f62d659a838d903488ee8e26a3e",
+      "bytes": 2141434,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/anime-cloud-courier-v1-thumbnail-719d468e46dd.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "719d468e46dda090be2d1994345ce7398cfe840bcf1fef025fcdba6a4701d081",
+      "bytes": 52560,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/anime-cloud-courier-v1-optimized-f276ebe07916.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "f276ebe0791665b08e463eb8b74fee90ef2d55f0617f6421830d2fda6a2d8459",
+      "bytes": 372624,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+      "inputSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

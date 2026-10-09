@@ -1,0 +1,89 @@
+{
+  "id": "painted-amber-autumn-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/painted-amber-autumn-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "painted-moonlit-portrait-v1",
+        "path": "public/puzzles/painted-moonlit-portrait-v1.png",
+        "sha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+        "purpose": "rendering-style-only"
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-c6874b08-1844-42ec-b6cb-a13c169f4854.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/painted-amber-autumn-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3",
+    "play": {
+      "src": "/puzzles/painted-amber-autumn-v1-play-f8c3607e6a53.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "f8c3607e6a53a9de48d55121cb9bd9311000b73d484d5244690ca9c021730aec",
+      "bytes": 1915960,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-amber-autumn-v1-thumbnail-e952cf375372.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "e952cf3753725b9d6a7459cc735e79137589e0b0bd17b71df649feff07409fae",
+      "bytes": 44314,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/painted-amber-autumn-v1-optimized-a24055b07928.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "a24055b0792803acc7f1a770635413c371c4311683350b982f9d7a4a74e7c254",
+      "bytes": 288914,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3",
+      "inputSha256": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

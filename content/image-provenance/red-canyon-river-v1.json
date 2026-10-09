@@ -1,0 +1,69 @@
+{
+  "id": "red-canyon-river-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_29-5.png",
+    "originalSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：碧蓝河流绕过层层红岩，夕照点亮峡谷与仙人掌花。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+    "play": {
+      "src": "/puzzles/red-canyon-river-v1-play-f9f7d7f87f58.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "f9f7d7f87f58f75cd171997de5a36249d93b4e7471a6b44bc3da4e2f598dba80",
+      "bytes": 2551544,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/red-canyon-river-v1-thumbnail-f2ed0f8be756.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "f2ed0f8be756406efe2844a46337dd3cab04c10ff353ba120d0ed992cf813033",
+      "bytes": 67696,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/red-canyon-river-v1-optimized-37447e85115c.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "37447e85115c12b12a9a30a0b06045297f119ae383896aeda81358d1af7f11ae",
+      "bytes": 509868,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+      "inputSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

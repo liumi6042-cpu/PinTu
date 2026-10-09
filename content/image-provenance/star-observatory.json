@@ -1,0 +1,94 @@
+{
+  "id": "star-observatory",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "内置 image_gen 生成结果与原文件记录",
+    "promptPath": "content/image-prompts/star-observatory.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a08187-a550-76b0-996a-9013ea47c8bc\\exec-5792576c-2e9d-4183-b45a-243bfc6bca79.png",
+    "sourceMetadata": "../artwork/gallery-expansion-20260908/manifest.json"
+  },
+  "requestedResolution": {
+    "width": 4096,
+    "height": 3072,
+    "delivered": false
+  },
+  "resolutionNote": "提示词请求高原生分辨率，但工具实际返回 1448×1086；保留真实原件，不插值放大。2000 片时每片主体约有 27×27 个源像素，高倍放大仍受原始细节限制。",
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "twoThousandPieces": "50×40 正方形主体，居中等比裁切为 5:4，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: ornate telescope, bronze instruments, deep-blue celestial scene and stone floor provide varied landmarks. Decorative motifs appear non-lettered. No obvious readable text, logo, watermark, frame or puzzle seam visible in generated original preview. A seated cat is also present.",
+      "主代理逐张查看原始生成图，未发现明显文字、商标、水印、受保护角色或拼图缝线。"
+    ],
+    "minorDeviations": [
+      "实际原生尺寸低于请求值；背景远景的细节比前景更柔和。"
+    ],
+    "scope": "视觉检查与来源记录不构成独占版权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+    "play": {
+      "src": "/puzzles/star-observatory-play-adaaa23caa19.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "adaaa23caa195c318480d16a5c80af0a08332b9abfe9343c1e590aee558cc1ba",
+      "bytes": 2658516,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/star-observatory-thumbnail-2e6e5cb3ac62.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "2e6e5cb3ac62c1666ad8613b800ea51de6723da741795b767ed2bcc5134dafe1",
+      "bytes": 67128,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/star-observatory-optimized-d1237d3774db.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "d1237d3774db25b361da186e6d56152def04bcbf7605ed6b1beb4037aaeb4b71",
+      "bytes": 562188,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "inputSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

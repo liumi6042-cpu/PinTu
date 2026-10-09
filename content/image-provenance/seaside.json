@@ -1,0 +1,79 @@
+{
+  "id": "seaside",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+  "nativeResolution": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-07",
+    "dateBasis": "先前项目生成记录及原件文件日期；未保存精确调用时间",
+    "promptPath": null,
+    "legacyPromptUnavailable": true,
+    "referenceImages": [],
+    "originalFile": "../design/playable-assets/seaside-village.png"
+  },
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "fiveThousandPieces": "居中等比裁切为 2:1；不拉伸"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": "已查看生成原图，未发现明显水印、签名、可读品牌标志或可辨认的受保护角色。此为视觉筛查，不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+    "play": {
+      "src": "/puzzles/seaside-play-ca7174e77276.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "ca7174e7727683be785fd3b8da00fd8af76ec3617367e344cccbdc1b2c25fbca",
+      "bytes": 2547368,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/seaside-thumbnail-ed9549cc365d.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "ed9549cc365d77bb80874ca1f38e3d2f06ff4e0b04ecb41b38ab9ea613dcd09d",
+      "bytes": 71014,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/seaside-optimized-daee3d7abdfb.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "daee3d7abdfb910a290d3b9b22f417d3a53feb0707df925be0b18a0c3ea88747",
+      "bytes": 480002,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+      "inputSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

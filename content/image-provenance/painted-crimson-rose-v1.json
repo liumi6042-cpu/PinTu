@@ -1,0 +1,89 @@
+{
+  "id": "painted-crimson-rose-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "4e33aee441f7adc7a4f78adab4dd20b7199852049ca980e0b3a5819808dc0d1f",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/painted-crimson-rose-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "painted-moonlit-portrait-v1",
+        "path": "public/puzzles/painted-moonlit-portrait-v1.png",
+        "sha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+        "purpose": "rendering-style-only"
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-e976ff7e-34c9-4053-a9b3-3fca8e442a6d.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/painted-crimson-rose-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "4e33aee441f7adc7a4f78adab4dd20b7199852049ca980e0b3a5819808dc0d1f",
+    "play": {
+      "src": "/puzzles/painted-crimson-rose-v1-play-ade1a541912c.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "ade1a541912cbb33e137dca92751bf954e3b299086b0c266f437be87aeb2fea0",
+      "bytes": 1812770,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-crimson-rose-v1-thumbnail-2620e1a3f70d.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "2620e1a3f70d593065878b4394cc3f3f13db923c2d932809507db65e8c00f6f7",
+      "bytes": 36340,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/painted-crimson-rose-v1-optimized-fc4f00bf9557.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "fc4f00bf9557a8a98a18f3bb3a97fdfbe41f726a2c58d0e9a58f71c88fb24c5b",
+      "bytes": 230632,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "4e33aee441f7adc7a4f78adab4dd20b7199852049ca980e0b3a5819808dc0d1f",
+      "inputSha256": "4e33aee441f7adc7a4f78adab4dd20b7199852049ca980e0b3a5819808dc0d1f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

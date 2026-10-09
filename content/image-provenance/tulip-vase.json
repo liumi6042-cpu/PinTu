@@ -1,0 +1,82 @@
+{
+  "id": "tulip-vase",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "509cb41c13a164bd1afe293a0a922d7c12b4b81d8cd5037fba8ae9b9148f8892",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/tulip-vase.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-2215-7932-b966-9a5070e03827\\exec-15430552-48f7-48fb-a301-a77ee97189e1.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-a.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: exactly five tulips—two coral, two yellow, one cream—in one terracotta vase, with broad green leaves. Very simple large cup petals, clear silhouettes and separated stems against blush wall and pale blue table. Broad light and shadows add gentle clues. No visible text, logos, watermarks, frames or puzzle seams.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "509cb41c13a164bd1afe293a0a922d7c12b4b81d8cd5037fba8ae9b9148f8892",
+    "play": {
+      "src": "/puzzles/tulip-vase-play-728aaedbe835.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "728aaedbe8355cda067570aaaf29e877470489e7d21a4048eb47f0d1b29917f8",
+      "bytes": 1337346,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/tulip-vase-thumbnail-fcb40404fae3.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "fcb40404fae342116611abdedc24864910f357928de9ce28343b32923ebebaf8",
+      "bytes": 12568,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/tulip-vase-optimized-d09d1fe5f14e.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "d09d1fe5f14e753a7615730a3a83eea1644688adffa5236e685820c0ba24050c",
+      "bytes": 70904,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "509cb41c13a164bd1afe293a0a922d7c12b4b81d8cd5037fba8ae9b9148f8892",
+      "inputSha256": "509cb41c13a164bd1afe293a0a922d7c12b4b81d8cd5037fba8ae9b9148f8892",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

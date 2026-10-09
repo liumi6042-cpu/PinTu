@@ -1,0 +1,30 @@
+{
+  "id": "hero-paper-coast-v2",
+  "usage": "intro-scenery-only",
+  "origin": "project-ai-generated",
+  "file": "public/intro/hero-paper-coast-v2.png",
+  "width": 1672,
+  "height": 941,
+  "sha256": "658bf4ccb677162d212b90fba4fef7e7bece05dff72a66d30668b8ef9985698f",
+  "nativeResolution": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "promptPath": "content/image-prompts/hero-paper-coast-v2.txt",
+    "referenceImages": [
+      {
+        "file": "codex-clipboard-a71ac4dd-6e1d-436f-9079-971bcfbbfce9.png",
+        "role": "User selected the left panel of the earlier project-generated concept as the entrance reference."
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a08087-5ed0-77f0-a186-d3a43d269f10/exec-a703c046-dd76-4d4e-a1b4-0a7930ac2034.png"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": "已查看原图：暖纸张拱门、海岸画、前景胶片与左侧留白符合用户参考；没有网页文字、按钮、明显水印、商标或角色。只作为首屏布景，不加入可玩图片目录。"
+  }
+}

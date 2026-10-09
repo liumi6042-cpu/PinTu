@@ -1,0 +1,94 @@
+{
+  "id": "tulip-windmill",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "内置 image_gen 生成结果与原文件记录",
+    "promptPath": "content/image-prompts/tulip-windmill.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a08187-a550-76b0-996a-9013ea47c8bc\\exec-1b52c2f0-bf76-4e36-9d24-0ec1df32d581.png",
+    "sourceMetadata": "../artwork/gallery-expansion-20260908/manifest.json"
+  },
+  "requestedResolution": {
+    "width": 4096,
+    "height": 3072,
+    "delivered": false
+  },
+  "resolutionNote": "提示词请求高原生分辨率，但工具实际返回 1448×1086；保留真实原件，不插值放大。2000 片时每片主体约有 27×27 个源像素，高倍放大仍受原始细节限制。",
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "twoThousandPieces": "50×40 正方形主体，居中等比裁切为 5:4，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: distinct tulip color bands, stream, bridge and windmill landmarks; crisp foreground petals. No obvious readable text, logo, watermark, frame or puzzle seam visible in generated original preview. A moderate cloud-filled upper sky region remains, with branches and windmill breaking it up.",
+      "主代理逐张查看原始生成图，未发现明显文字、商标、水印、受保护角色或拼图缝线。"
+    ],
+    "minorDeviations": [
+      "实际原生尺寸低于请求值；背景远景的细节比前景更柔和。"
+    ],
+    "scope": "视觉检查与来源记录不构成独占版权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+    "play": {
+      "src": "/puzzles/tulip-windmill-play-96d1fb95e025.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "96d1fb95e0256fa3f86b46d34dc622701b7859b7b815fd45fceca6cd0ed7afbe",
+      "bytes": 2723112,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/tulip-windmill-thumbnail-116adeb7c698.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "116adeb7c698e44394de3f1896bae5db7a668d91f8b294aefe15d4e3367bd3a1",
+      "bytes": 77360,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/tulip-windmill-optimized-f329d9b4ade4.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "f329d9b4ade47f4478c5b500d24305dd10055077a9f08a17248fa56949ee938c",
+      "bytes": 575010,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+      "inputSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

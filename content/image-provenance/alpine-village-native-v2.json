@@ -1,0 +1,81 @@
+{
+  "id": "alpine-village-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "02f63878ababc5dfcb7174dfe9edf14e1653285955c1aa16e631fdeff984e42f",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/alpine-village-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-ec1db6cc-a995-4cff-9740-efdb4fa98c3b.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "02f63878ababc5dfcb7174dfe9edf14e1653285955c1aa16e631fdeff984e42f",
+    "play": {
+      "src": "/puzzles/alpine-village-native-v2-play-d52aa8abe4ae.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "d52aa8abe4aee2e53ffdc3ec25851a76b0762bd84e1ec296fc19b22965372db3",
+      "bytes": 2209534,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/alpine-village-native-v2-thumbnail-1d1c2dce9ede.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "1d1c2dce9ede16b940dff4c11d5b8eaf97b1830ac09b997d89ba20d32db25feb",
+      "bytes": 33836,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/alpine-village-native-v2-optimized-85b0351fbc78.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "85b0351fbc7896c64857d502251d9e83c5fc4eb1a4dd429cbc857232a7f524ad",
+      "bytes": 392752,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "02f63878ababc5dfcb7174dfe9edf14e1653285955c1aa16e631fdeff984e42f",
+      "inputSha256": "02f63878ababc5dfcb7174dfe9edf14e1653285955c1aa16e631fdeff984e42f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "id": "snow-village-fair-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "361bf8da04d7ce11",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "361bf8da04d7ce11",
+    "originalSha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 4 张原图预览：雪山缆车下，滑冰场与温暖的小木屋迎接冬日来客。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
+    "play": {
+      "src": "/puzzles/snow-village-fair-v1-play-99b40d59e880.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "99b40d59e880779bddc0dfb2b2c61d1f76857311affa1aa8261a52b21afc6162",
+      "bytes": 2668734,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/snow-village-fair-v1-thumbnail-a97041fe9e48.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "a97041fe9e48c3d71978e057ba2463ddcc026f99b3316bb3bbef75fd17d083f2",
+      "bytes": 72736,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/snow-village-fair-v1-optimized-034682537977.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "0346825379774e0faca34dfef2c875f79daedab0c8ccff1747faf80ed6bd1752",
+      "bytes": 552322,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
+      "inputSha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

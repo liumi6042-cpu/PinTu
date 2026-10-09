@@ -1,0 +1,21 @@
+.language-switch{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;border:1px solid #bca48380;border-radius:22px;padding:3px;background:#fff7e5b3;color:#69513c;font-family:system-ui,sans-serif;letter-spacing:0;}
+.language-switch>svg{margin:0 4px 0 7px;display:block!important;}
+.language-switch button{border:0;border-radius:18px;min-height:32px;padding:5px 9px;background:transparent;color:inherit;font-size:13px;line-height:1.4;}
+.language-switch button[aria-pressed=true]{background:#955c40;color:#fff8ed;}
+.language-switch button:focus-visible{outline:2px solid #955c40;outline-offset:3px;}
+.community-tools{display:flex;align-items:center;gap:14px;}
+.optional-login{font-size:14px;white-space:nowrap;color:#835239;}
+.account-language{position:absolute;right:5%;top:30px;}
+.room-join-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;}
+.home-navigation{flex-wrap:wrap;}
+html[lang=en] .paper-entrance{font-family:Georgia,'Times New Roman',serif;}
+html[lang=en] .entrance-copy h1{white-space:normal;font-size:clamp(32px,3.1vw,50px);line-height:1.22;letter-spacing:-.5px;max-width:570px;}
+html[lang=en] .entrance-subtitle{letter-spacing:0;font-size:18px;max-width:460px;}
+html[lang=en] .entrance-play-note{max-width:390px;line-height:1.5;}
+html[lang=en] .entrance-enter{font-size:17px;letter-spacing:0;}
+html[lang=en] .entrance-piece-grip{font-size:14px;letter-spacing:0;}
+html[lang=en] .entrance-piece-label{font-size:14px;}
+html[lang=en] .entrance-slot-label{font-size:13px;}
+html[lang=en] .game-title h1{letter-spacing:0;}
+@media(max-width:1040px){.community-tools{gap:10px;}html[lang=en] .entrance-copy h1{max-width:690px;}}
+@media(max-width:620px){.community-tools{margin-left:auto;}.account-status{display:none;}.game-header{flex-wrap:wrap;}.game-header .game-stats{gap:8px;}.game-header .language-switch>svg{display:none!important;}.game-header .language-switch button{padding:4px 7px;min-height:30px;}html[lang=en] .entrance-copy h1{font-size:33px;margin-inline:auto;}html[lang=en] .entrance-subtitle{font-size:15px;}html[lang=en] .entrance-play-note{font-size:12px;}html[lang=en] .entrance-slot-label{font-size:11px;padding-inline:8px;}html[lang=en] .entrance-piece-label{font-size:12px;}html[lang=en] .entrance-piece-label>span{font-size:10px;}html[lang=en] .home-navigation{gap:3px;}html[lang=en] .home-navigation a{font-size:12px;}.account-language{right:20px;top:20px;}.account-brand{top:70px;}.account-page{padding-top:130px;}}

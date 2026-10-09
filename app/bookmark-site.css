@@ -1,0 +1,25 @@
+.bookmark-site-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex-shrink:0;white-space:nowrap;min-height:40px;padding:8px 11px;border:1px solid #c9b693;border-radius:24px;background:#faf6ec80;color:#75573b;font:inherit;font-size:14px;cursor:pointer;}
+.bookmark-site-button:hover{background:#efe4d1;color:#5a3e2b;}
+.bookmark-site-button:focus-visible,.bookmark-dialog button:focus-visible,.bookmark-reminder button:focus-visible{outline:2px solid #9c5d3e;outline-offset:3px;}
+.bookmark-dialog{width:min(440px,calc(100% - 32px));max-width:440px!important;max-height:calc(100dvh - 40px);overflow:auto;padding:30px!important;gap:12px;background:#f7f0e3!important;color:#463929!important;border:1px solid #d3bea0;box-shadow:0 24px 70px #33250e30;}
+.bookmark-dialog [data-slot='dialog-title']{font-family:Georgia,'Songti SC','SimSun',serif;font-size:25px;font-weight:400;line-height:1.4;padding-right:12px;}
+.bookmark-dialog [data-slot='dialog-description']{font-size:14px;line-height:1.7;color:#786a56;}
+.bookmark-dialog-icon{color:#aa6546;}
+.bookmark-dialog-close,.bookmark-reminder-close{display:grid;place-items:center;position:absolute;right:10px;top:10px;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#796951;cursor:pointer;}
+.bookmark-shortcut{display:flex;justify-content:center;align-items:center;gap:12px;padding:16px 0 6px;color:#9b694a;}
+.bookmark-shortcut kbd{font-family:inherit;font-size:20px;padding:8px 15px;background:#fffaf1;border:1px solid #d4c1a0;border-bottom-width:3px;border-radius:10px;color:#55432f;}
+.bookmark-instruction{font-size:16px;line-height:1.7;margin:6px 0;color:#594a39;}
+.bookmark-url-label{font-size:14px;color:#776751;}
+.bookmark-url{display:flex;border:1px solid #d1bea0;border-radius:10px;background:#fffaf2;overflow:hidden;}
+.bookmark-url input{min-width:0;width:100%;padding:11px;border:0;background:transparent;color:#624b36;font-size:14px;outline-offset:-3px;}
+.bookmark-url button{border:0;border-left:1px solid #e2d5c0;min-width:44px;background:transparent;color:#8e593d;display:grid;place-items:center;cursor:pointer;}
+.bookmark-copy-status{font-size:13px;line-height:1.65;min-height:22px;color:#80725d;margin:0;}
+.bookmark-dialog-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.bookmark-dialog-actions button,.bookmark-reminder-actions button{border:0;border-radius:22px;min-height:40px;padding:9px 15px;font:inherit;font-size:14px;background:transparent;color:#816548;cursor:pointer;}
+.bookmark-dialog-actions .bookmark-confirm,.bookmark-reminder-actions button:first-child{background:#a86243;color:#fff9ef;}
+.bookmark-reminder{position:fixed;z-index:35;left:max(22px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));width:min(370px,calc(100% - 44px));display:flex;align-items:flex-start;gap:14px;padding:22px 34px 15px 20px;background:#fbf5e9f5;border:1px solid #d5bf9c;box-shadow:0 9px 32px #4c361620;border-radius:17px;color:#604b34;}
+.bookmark-reminder>svg{flex-shrink:0;margin-top:3px;color:#aa6546;}
+.bookmark-reminder p{font-size:16px;line-height:1.6;margin:0 0 4px;}
+.bookmark-reminder span{font-size:14px;line-height:1.65;color:#80715a;}
+.bookmark-reminder-actions{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;}
+@media(max-width:720px){.bookmark-reminder{left:16px;bottom:calc(80px + env(safe-area-inset-bottom));width:calc(100% - 32px);max-width:370px;}.bookmark-dialog{padding:25px 21px!important;}.bookmark-site-button{padding:8px 10px;}}

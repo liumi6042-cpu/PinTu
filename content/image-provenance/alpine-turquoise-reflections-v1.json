@@ -1,0 +1,69 @@
+{
+  "id": "alpine-turquoise-reflections-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_27-4.png",
+    "originalSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：清澈湖水倒映雪山与松林，岸边野花迎着晨光盛开。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+    "play": {
+      "src": "/puzzles/alpine-turquoise-reflections-v1-play-8c0300168766.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "8c0300168766cc312fd6fa092f91c63170fa503e424751171fd026e8ffc33cbc",
+      "bytes": 2584088,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/alpine-turquoise-reflections-v1-thumbnail-68ee1b368644.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "68ee1b368644b7a974ffb605dc9dde476ea32de6a9d108d2465f758b3f5a71a3",
+      "bytes": 72484,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/alpine-turquoise-reflections-v1-optimized-0f752cf9eac4.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "0f752cf9eac414a1ccdec452482db4f807240cdc5237e98f8f6144b67d28fd23",
+      "bytes": 522310,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "inputSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

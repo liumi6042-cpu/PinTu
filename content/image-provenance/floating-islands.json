@@ -1,0 +1,94 @@
+{
+  "id": "floating-islands",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "内置 image_gen 生成结果与原文件记录",
+    "promptPath": "content/image-prompts/floating-islands.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a08187-a550-76b0-996a-9013ea47c8bc\\exec-d77b3499-4cd9-4269-9b13-7dc722faf5a0.png",
+    "sourceMetadata": "../artwork/gallery-expansion-20260908/manifest.json"
+  },
+  "requestedResolution": {
+    "width": 4096,
+    "height": 3072,
+    "delivered": false
+  },
+  "resolutionNote": "提示词请求高原生分辨率，但工具实际返回 1448×1086；保留真实原件，不插值放大。2000 片时每片主体约有 27×27 个源像素，高倍放大仍受原始细节限制。",
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "twoThousandPieces": "50×40 正方形主体，居中等比裁切为 5:4，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: distinct floating islands, rocky ledges, waterfalls, airships and architecture; no obvious readable text, logo, watermark, frame or puzzle seam visible in generated original preview.",
+      "主代理逐张查看原始生成图，未发现明显文字、商标、水印、受保护角色或拼图缝线。"
+    ],
+    "minorDeviations": [
+      "实际原生尺寸低于请求值；背景远景的细节比前景更柔和。"
+    ],
+    "scope": "视觉检查与来源记录不构成独占版权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+    "play": {
+      "src": "/puzzles/floating-islands-play-cc2bf3f201d6.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "cc2bf3f201d643f8b9100780de595c6cda834dc65d6faa1321033e271188d97a",
+      "bytes": 2835106,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/floating-islands-thumbnail-837a5c15defc.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "837a5c15defc7527e727d602cdaad07f89963b0c0b9eac003e835e9db02db40d",
+      "bytes": 80190,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/floating-islands-optimized-209ed26d6529.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "209ed26d65291719257f0e970519e0c9ff15926aeab7a2a4bafd8045537006c5",
+      "bytes": 620930,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+      "inputSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

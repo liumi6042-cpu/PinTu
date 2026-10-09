@@ -1,0 +1,82 @@
+{
+  "id": "lone-pine-snow",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与批次记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/lone-pine-snow.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a084d8-cb18-77c3-bed5-dd5cd77f9fdb\\exec-9642e858-7c7a-42a4-bc98-b09f026b50ee.png",
+    "sourceMetadata": "../artwork/nature-gallery-20260909/manifest.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；未放大。写实摄影感自然风景，非真实地点实拍；高倍放大仍受原生像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "status: pass; review_method: Visual inspection of generated image; subject: Exactly one pine, undulating snow, and a blue-cast shadow; no forest or other visible trees.; photorealism: Realistic winter daylight, subtle granular snow texture, and natural pine silhouette.; composition: Clear tree and long shadow shapes; snow contours preserve light/texture variation.; constraints: No visible people, buildings, boats, text, logos, watermark, frame, or puzzle seams.; notes: Low snow-covered mountain ridges are present in the distance.",
+      "主代理复核画面构图、自然光与可辨认轮廓，未发现明显人物、建筑、文字、水印或拼图缝线。"
+    ],
+    "scope": "视觉检查与生成记录不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa",
+    "play": {
+      "src": "/puzzles/lone-pine-snow-play-1c7e911f9c54.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "1c7e911f9c54252ddf484dc1be5a80c90bfbd2e48d95258fad590baef81409ad",
+      "bytes": 1747626,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/lone-pine-snow-thumbnail-4249c2e1f234.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "4249c2e1f234cf41705b4cce85859047e9b4f2cca5098cebaa48ec92c8490904",
+      "bytes": 28736,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/lone-pine-snow-optimized-083ae5be3e49.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "083ae5be3e49fb02a270008177e25cc455c9aafe4a66325740b5c8ee6a8527f1",
+      "bytes": 223984,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa",
+      "inputSha256": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

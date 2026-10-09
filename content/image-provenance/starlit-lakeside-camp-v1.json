@@ -1,0 +1,69 @@
+{
+  "id": "starlit-lakeside-camp-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-27",
+    "originalFile": "codex-clipboard-29b66fb2-0f82-455e-80a2-877d3784f0ec.png",
+    "originalSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这四张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-27"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-27",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：银河倒映湖面，房车与篝火旁的小狗安然入睡。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+    "play": {
+      "src": "/puzzles/starlit-lakeside-camp-v1-play-d533badcb6ce.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "d533badcb6ce4f394d0518c7c753b893b9e9fdd8efd9fd33d62d2ac4d9ad14d6",
+      "bytes": 2515792,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/starlit-lakeside-camp-v1-thumbnail-47398ef7ac00.webp",
+      "width": 480,
+      "height": 270,
+      "sha256": "47398ef7ac002da5659579920548d87400d0fef8b85a3257e2699b29cff10f08",
+      "bytes": 52028,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/starlit-lakeside-camp-v1-optimized-9cfedc5a5edb.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "9cfedc5a5edba0b0d50ac69cb7a0d9e5f77e304bd293c70b3739c3fe918ff690",
+      "bytes": 492638,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "inputSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

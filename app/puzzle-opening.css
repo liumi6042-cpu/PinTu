@@ -1,0 +1,57 @@
+/* Keep the brief launch screen self-contained, apart from the room join form. */
+.puzzle-opening {
+ min-height:100vh;
+ min-height:100svh;
+ display:flex;
+ flex-direction:column;
+ padding:0 clamp(16px,4vw,40px);
+ background:var(--paper);
+ color:var(--paper-ink);
+}
+.puzzle-opening-nav {width:100%;max-width:1120px;margin:0 auto;padding:20px 0;}
+.puzzle-opening-back {
+ display:inline-flex;align-items:center;gap:8px;min-height:44px;
+ padding:0 10px;margin-left:-10px;border-radius:12px;
+ color:var(--paper-muted);font-size:14px;text-decoration:none;
+}
+.puzzle-opening-back:hover {background:#cbbc9f26;color:var(--paper-link);}
+.puzzle-opening-back:focus-visible {outline:2px solid var(--paper-link);outline-offset:3px;}
+.puzzle-opening-stage {flex:1;display:grid;place-items:center;padding:16px 0 clamp(32px,8vh,80px);}
+.puzzle-opening-card {
+ width:min(100%,480px);min-width:0;padding:12px 12px 0;
+ border:1px solid #d9ccb7;border-radius:24px;background:var(--paper-raised);
+ box-shadow:0 18px 48px -24px #6d523c35,0 2px 6px #6d523c08;
+}
+.puzzle-opening-frame {overflow:hidden;aspect-ratio:2/1;border-radius:14px;background:#e9dfce;}
+.puzzle-opening-picture {display:block;width:100%;height:100%;object-fit:cover;}
+.puzzle-opening-details {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 12px 22px;}
+.puzzle-opening-details h1 {
+ min-width:0;margin:0;overflow-wrap:anywhere;
+ font-family:'Songti SC','SimSun',Georgia,serif;font-weight:400;
+ font-size:clamp(22px,3vw,28px);line-height:1.4;letter-spacing:.02em;
+}
+.puzzle-opening-count {
+ flex-shrink:0;white-space:nowrap;padding:6px 11px;border:1px solid #dcd0bc;
+ border-radius:999px;color:var(--paper-muted);font-size:12px;line-height:1.5;
+ font-variant-numeric:tabular-nums;
+}
+.puzzle-opening-status {
+ display:flex;align-items:center;justify-content:center;gap:9px;
+ margin:0 12px;padding:17px 0 20px;border-top:1px solid #ded3c0;
+ color:var(--paper-link);font-size:13px;line-height:1.5;
+}
+.puzzle-opening-status svg {flex-shrink:0;animation:opening-breathe 1.8s ease-in-out infinite;}
+@keyframes opening-breathe {0%,100%{opacity:1;}50%{opacity:.4;}}
+@media(max-width:480px) {
+ .puzzle-opening-nav {padding:12px 0;}
+ .puzzle-opening-card {padding:10px 10px 0;border-radius:20px;}
+ .puzzle-opening-details {gap:10px;padding:20px 6px;}
+ .puzzle-opening-status {margin:0 6px;padding:16px 0 18px;}
+}
+@media(max-height:600px) and (min-width:640px) {
+ .puzzle-opening-nav {padding:8px 0;}
+ .puzzle-opening-stage {padding:12px 0 24px;}
+ .puzzle-opening-card {max-width:420px;}
+ .puzzle-opening-details {padding-top:18px;padding-bottom:18px;}
+}
+@media(prefers-reduced-motion:reduce) {.puzzle-opening-status svg {animation:none;}}

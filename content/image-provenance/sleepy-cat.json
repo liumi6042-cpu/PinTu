@@ -1,0 +1,82 @@
+{
+  "id": "sleepy-cat",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/sleepy-cat.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-2215-7932-b966-9a5070e03827\\exec-075d4b6a-ab7b-4df3-8c7e-cb9074eb97f6.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-a.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: one clearly readable sleeping ginger cat on a blue cushion by a simple sunlit window. Large orange and blue regions plus cream geometric window light; broad striped markings provide localized puzzle clues. Fur edge and brushwork are somewhat detailed but subject arrangement is very simple. No visible text, logos, watermarks, frames or puzzle seams.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279",
+    "play": {
+      "src": "/puzzles/sleepy-cat-play-57213fc195a7.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "57213fc195a72eb7c5524c0f2f8dff47dd643d752c32dc4c8cac8498c9717569",
+      "bytes": 1671222,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/sleepy-cat-thumbnail-c49d7e4d1010.webp",
+      "width": 480,
+      "height": 384,
+      "sha256": "c49d7e4d10106628098c14e095c8719e9388d4c4bd40e2a4ce5f4b6f9601f36f",
+      "bytes": 24108,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/sleepy-cat-optimized-3522daec8e39.webp",
+      "width": 1402,
+      "height": 1122,
+      "sha256": "3522daec8e3923ac7e88c75cf0d04be395d4b556e5fc9569088e90b395116382",
+      "bytes": 156494,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279",
+      "inputSha256": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

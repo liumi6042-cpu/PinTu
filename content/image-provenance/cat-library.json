@@ -1,0 +1,91 @@
+{
+  "id": "cat-library",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "原始内置 image_gen 调用记录",
+    "promptPath": "content/image-prompts/cat-library.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a080fa-6610-7d90-b30d-90660058d2c0\\exec-c89a7667-a244-4a4a-8d23-cfc9159e4dba.png",
+    "sourceMetadata": "../artwork/puzzle-four-samples-2026-09-08/cat-library.metadata.json"
+  },
+  "crops": {
+    "sourceAspectRatio": "2:1",
+    "threeThousandPieces": "60×50 正方形主体，居中等比裁切为 6:5，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single 2:1 warm library panorama with three separate living cats, carved shelves, rugs, plants, stained glass, tea set and brass lamp.",
+      "Cats appear anatomically coherent at native viewing size; the small cat forms under the table are decorative figurines.",
+      "No readable book titles, logo, watermark, external border, grid or jigsaw seams observed."
+    ],
+    "minorDeviations": [
+      "The added clock at upper left has small dial numerals, so the strict no-text request is not fully satisfied.",
+      "Some decorative book-spine marks resemble tiny glyphs, although no coherent book title is readable.",
+      "The nearest foreground cushion and rug edge are slightly softer than the central room."
+    ],
+    "scope": "已逐张查看原始生成结果；未发现明显品牌、水印或受保护角色。保留细节偏差记录，视觉筛查不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+    "play": {
+      "src": "/puzzles/cat-library-play-0807df1a38a1.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "0807df1a38a1b1aea8e3957a2a1970c4c88c2ba267976aec89e86593b8c5e91e",
+      "bytes": 2562108,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-library-thumbnail-d2661e89cd92.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "d2661e89cd92c740f992c9cb53ac05ed19d8f1517f3b0e7007b12f455bdd1af6",
+      "bytes": 46694,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cat-library-optimized-f8cd932c094b.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "f8cd932c094bb930d4565ab8e08db7efc041bb55879b8f9a8164d11d9927d5db",
+      "bytes": 527378,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+      "inputSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

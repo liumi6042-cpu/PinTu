@@ -1,0 +1,81 @@
+{
+  "id": "clear-sand-bay-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/clear-sand-bay-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-7795b16e-7060-43ca-b2e5-7c34a2adb8dd.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+    "play": {
+      "src": "/puzzles/clear-sand-bay-native-v2-play-69dfac64dbbe.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "69dfac64dbbe7c4c3dc9bcdd70f8654305c65ef8ca3a2047d419c26d8b4bdd6e",
+      "bytes": 2301930,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/clear-sand-bay-native-v2-thumbnail-a19a624dc4c7.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "a19a624dc4c7a94361de841a140f02aa368d0be46f288a9b1da3676dc61ecdaf",
+      "bytes": 32704,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/clear-sand-bay-native-v2-optimized-bacaad35fb44.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "bacaad35fb44ef3afbc13c2efda410611e1d5cec64e7d3b535c18533bb746854",
+      "bytes": 428410,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "inputSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

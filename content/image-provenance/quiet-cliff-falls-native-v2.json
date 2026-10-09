@@ -1,0 +1,81 @@
+{
+  "id": "quiet-cliff-falls-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/quiet-cliff-falls-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-bf1cc545-e844-44c6-a7dc-79e3f0b51d21.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+    "play": {
+      "src": "/puzzles/quiet-cliff-falls-native-v2-play-c3adb310954c.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "c3adb310954c97f69a5dec4db33a73ef30745f0dce513763268ceaedcad0a5a3",
+      "bytes": 2371284,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/quiet-cliff-falls-native-v2-thumbnail-626d33828104.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "626d3382810429c55ac8fab919f20f8617ba04cb5137ff38f9aae4ced3a2165f",
+      "bytes": 42696,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/quiet-cliff-falls-native-v2-optimized-a8b12b63d281.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "a8b12b63d281402388e983e00dd6a25105a1c5d48b1588b96a9b6ef1271b5487",
+      "bytes": 462802,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+      "inputSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

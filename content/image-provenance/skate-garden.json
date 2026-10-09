@@ -1,0 +1,79 @@
+{
+  "id": "skate-garden",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+  "nativeResolution": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "本次 image_gen 调用日期",
+    "promptPath": "content/image-prompts/skate-garden.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-fae509ed-bf7b-418e-ab60-f103fd531a0f.png"
+  },
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "fiveThousandPieces": "居中等比裁切为 2:1；不拉伸"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": "已查看生成原图，未发现明显水印、签名、可读品牌标志或可辨认的受保护角色。此为视觉筛查，不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+    "play": {
+      "src": "/puzzles/skate-garden-play-884a5d26624c.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "884a5d26624c8db4079eccd2f3a093fb75ae9ad16edec6c8e9aeb20c423805b8",
+      "bytes": 2577748,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/skate-garden-thumbnail-a0176a1a6279.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "a0176a1a62799e3b463b18978a126d1d414bb48be9642bdfb847cbcf05491f87",
+      "bytes": 70648,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/skate-garden-optimized-5969ded60f60.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "5969ded60f60806f35f62f3553fe72cc89fbd1fd2db2c454bddab4a1d49e67c9",
+      "bytes": 503520,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "inputSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

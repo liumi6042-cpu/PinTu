@@ -1,0 +1,16 @@
+{
+  "platform": "taptap-h5",
+  "auth": {
+    "mode": "host-bridge",
+    "credentialExchange": "server-side"
+  },
+  "ads": {
+    "enabled": false,
+    "placements": [
+      "extra-hint",
+      "reference-image",
+      "hatching-boost",
+      "completion-reward"
+    ]
+  }
+}

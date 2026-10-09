@@ -1,0 +1,81 @@
+{
+  "id": "painted-glasshouse-workbench-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Previous built-in imagegen tool result and saved preview metadata",
+    "promptPath": "content/image-prompts/painted-glasshouse-workbench-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-4cb7ed18-3d33-4a83-9b52-9a7f970c6726.png",
+    "sourceMetadata": "content/artwork/painted-scenes-20260914/painted-glasshouse-workbench-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024, no upscaling or compositing; new games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User explicitly requested publication of the four preview images. Inspected primary faces, hands, animal anatomy and distinct compositions.",
+      "No reference-image inputs: web research informed new textual descriptions of subjects and environments. No website image pixels are used in this asset."
+    ],
+    "scope": "Visual review and provenance are not a guarantee of exclusive rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609",
+    "play": {
+      "src": "/puzzles/painted-glasshouse-workbench-v1-play-239bfa06b10a.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "239bfa06b10a89b47f584f2580247360922e7ea03a8b0351312e5a03edfc8d21",
+      "bytes": 2176820,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-glasshouse-workbench-v1-thumbnail-e389c52f9521.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "e389c52f95210aa7bd58ff978f968e9399bed8a0d9780881d79f1efb88bd2717",
+      "bytes": 54444,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/painted-glasshouse-workbench-v1-optimized-81f63049cb3a.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "81f63049cb3aa189877cb32024b9682ef15a8a00b18373527f08b3601c50aa90",
+      "bytes": 406288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609",
+      "inputSha256": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

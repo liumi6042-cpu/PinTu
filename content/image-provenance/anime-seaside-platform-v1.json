@@ -1,0 +1,81 @@
+{
+  "id": "anime-seaside-platform-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/anime-seaside-platform-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-25e95b3c-d969-4dba-9ea8-80b7128f838d.png",
+    "sourceMetadata": "content/artwork/anime-20260914/anime-seaside-platform-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated image. No interpolation, composite assembly or AI upscaling. New games follow the current 108–1000 piece policy.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Full image inspected: clear original anime characters and scene, no visible lettering, signature, logos or watermarks.",
+      "Faces, hands, limbs and animal or prop shapes inspected; main subjects remain visible in central game crops. Scene detail is moderate, with readable large color shapes."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913",
+    "play": {
+      "src": "/puzzles/anime-seaside-platform-v1-play-c6222b0eb55c.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "c6222b0eb55c07299d4651838b06f8098ebeca0e1c2945805d0025363b3e59f5",
+      "bytes": 1708856,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/anime-seaside-platform-v1-thumbnail-587c82def48e.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "587c82def48e66a4039acfb6ffccdbf290b6c3f72256c472d242572e08268860",
+      "bytes": 36626,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/anime-seaside-platform-v1-optimized-b8fdb66c6a2a.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "b8fdb66c6a2a6c6dd99bca5969ed650a6c994c44b24f2a08f8069552387ec67d",
+      "bytes": 226230,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913",
+      "inputSha256": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

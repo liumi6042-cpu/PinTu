@@ -1,0 +1,81 @@
+{
+  "id": "anime-cat-shop-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/anime-cat-shop-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a09ef4-4bb5-7963-9fd0-5cdf4fbd16f1/exec-d04a2de5-0309-4ada-9ad3-b8ea47a642d4.png",
+    "sourceMetadata": "content/artwork/anime-20260914/anime-cat-shop-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated image. No interpolation, composite assembly or AI upscaling. New games follow the current 108–1000 piece policy.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Full image inspected: clear original anime characters and scene, no visible lettering, signature, logos or watermarks.",
+      "Faces, hands, limbs and animal or prop shapes inspected; main subjects remain visible in central game crops. Scene detail is moderate, with readable large color shapes."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+    "play": {
+      "src": "/puzzles/anime-cat-shop-v1-play-c020abe18244.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "c020abe18244699a29f91b9cdbabfd376e3bad46627ce0e946849d5166cf1ebf",
+      "bytes": 1579852,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/anime-cat-shop-v1-thumbnail-a4b861b7839c.webp",
+      "width": 480,
+      "height": 320,
+      "sha256": "a4b861b7839c77c70571419f0a66384050697449b06ff5a46479cc5b71b76252",
+      "bytes": 33688,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/anime-cat-shop-v1-optimized-15e468dd27fc.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "15e468dd27fcf74cadfee99e8ea7daaddf10c973e03440200265778b8f7a6d7b",
+      "bytes": 201702,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+      "inputSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "id": "lantern-dance-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-25 提供并要求上传到公开图库的 PNG 图片；原件未裁切、缩放或重编码。",
+    "providedOn": "2026-09-25",
+    "originalFile": "C:/Users/Administrator/Desktop/舞会.png",
+    "originalSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供该图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-25"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-25",
+    "reviewer": "Codex visual review",
+    "observations": "已查看本次附图：画面为插画，无网页界面或按钮；图内招牌文字属于场景内容。"
+  },
+  "delivery": {
+    "sourceSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+    "play": {
+      "src": "/puzzles/lantern-dance-v1-play-c03bf21e4ec3.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c03bf21e4ec32c6445ea77f15a3a41b5b4c49af030465e280b923767467c3283",
+      "bytes": 2724164,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/lantern-dance-v1-thumbnail-61c1318e61e9.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "61c1318e61e9d49ccdefd90ec35f3e4a16aabdc47e7851cec403ac132c11cf4b",
+      "bytes": 71224,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/lantern-dance-v1-optimized-6ed8fdce9304.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "6ed8fdce9304b547b4f022c6789bacfc3eda1a5016f40b88806ae62389897688",
+      "bytes": 555180,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+      "inputSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

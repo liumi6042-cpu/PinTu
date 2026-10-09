@@ -1,0 +1,273 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, readFile, writeFile, copyFile, cp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, relative, isAbsolute } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { checkImageLibrary } from '../scripts/check-image-library.mjs';
+import { PHOTOS, RESTORABLE_PHOTOS, PHOTO_IDS, FEATURED_PHOTOS, RETIRED_PHOTO_IDS, CATEGORIES } from '../lib/puzzle-catalog.ts';
+import { makeRoom } from '../lib/room-engine.ts';
+
+const root=fileURLToPath(new URL('..',import.meta.url));
+const readJson=async path=>JSON.parse(await readFile(path,'utf8'));
+const saveJson=(path,value)=>writeFile(path,JSON.stringify(value));
+
+async function fixture(t,id='winter-village'){
+  const base=tmpdir(),dir=await mkdtemp(join(base,'puzzle-provenance-test-'));
+  t.after(async()=>{
+    const child=relative(base,dir);
+    assert.ok(child.startsWith('puzzle-provenance-test-')&&!child.includes('..')&&!isAbsolute(child));
+    await rm(dir,{recursive:true,force:true});
+  });
+  for(const path of ['content/image-provenance','content/image-prompts','public/puzzles'])await mkdir(join(dir,path),{recursive:true});
+  const photo={...(await readJson(join(root,'content/puzzle-catalog.json'))).find(photo=>photo.id===id),status:'published'};
+  await saveJson(join(dir,'content/puzzle-catalog.json'),[photo]);
+  for(const path of ['content/image-provenance/'+id+'.json','content/image-prompts/'+id+'.txt','public/puzzles/'+id+'.png', 'public'+photo.playSrc, 'public'+photo.thumbSrc,'public'+photo.optimizedSrc,...(photo.standardSrc?['public'+photo.standardSrc,'public'+photo.optimizedStandardSrc]:[])])
+    await copyFile(join(root,path),join(dir,path));
+  if(photo.standardSrc)await cp(join(root,'content/artwork/gallery-hd',id),join(dir,'content/artwork/gallery-hd',id),{recursive:true});
+  const record=await readJson(join(root,'content/image-provenance',id+'.json'));
+  if(record.generation.referenceImages.some(ref=>ref.origin==='user-provided-style-reference')){
+    await cp(join(root,'content/artwork/painted-cel-20260914/style-references'),join(dir,'content/artwork/painted-cel-20260914/style-references'),{recursive:true});
+    await copyFile(join(root,'content/artwork/painted-cel-20260914/approved-style-references.json'),join(dir,'content/artwork/painted-cel-20260914/approved-style-references.json'));
+  }
+  return dir;
+}
+
+test('all playable assets have matching original files, provenance and review records',async()=>{
+  assert.deepEqual(await checkImageLibrary(root),{published:PHOTOS.length});
+  const catalog=await readJson(join(root,'content/puzzle-catalog.json'));
+  const published=catalog.filter(photo=>['project-ai-generated','user-provided'].includes(photo.origin)&&photo.status==='published');
+  assert.deepEqual(PHOTOS.map(photo=>photo.id),published.map(photo=>photo.id));
+  // Both origins are published; keep them counted separately so a new picture of
+  // either kind shows up as itself rather than as an unexplained off-by-one.
+  const generated=PHOTOS.filter(photo=>photo.origin==='project-ai-generated');
+  const provided=PHOTOS.filter(photo=>photo.origin==='user-provided');
+  assert.equal(generated.length,39,'the thirty-three retained images plus four approved paintings and two new original cel illustrations are published');
+  assert.ok(provided.length>=1,'user-provided pictures are published alongside generated ones');
+  assert.equal(PHOTOS.length,generated.length+provided.length);
+  assert.equal(generated.filter(photo=>photo.category==='厚涂').length,6);
+  assert.equal(generated.filter(photo=>photo.category==='平涂').length,3);
+  for(const id of ['cel-sunset-train-v1','painted-crimson-rose-v1','painted-amber-autumn-v1','cel-rooftop-breeze-v1']){
+    assert.equal(RESTORABLE_PHOTOS.find(photo=>photo.id===id)?.status,'archived');
+    assert.ok(!PHOTO_IDS.includes(id));assert.throws(()=>makeRoom('withdrawn-painting',id,108,100000));
+  }
+  assert.ok(!CATEGORIES.includes('动漫'));
+  const removedAnime=RESTORABLE_PHOTOS.filter(photo=>photo.category==='动漫');
+  assert.equal(removedAnime.length,5,'withdrawn pictures remain available to existing rooms');
+  for(const photo of removedAnime){assert.equal(photo.status,'archived');assert.ok(!PHOTO_IDS.includes(photo.id));assert.throws(()=>makeRoom('withdrawn-anime',photo.id,108,100000));}
+  assert.equal(FEATURED_PHOTOS.length,8);assert.equal(new Set(FEATURED_PHOTOS.map(photo=>photo.id)).size,8);
+  assert.ok(FEATURED_PHOTOS.every(photo=>PHOTO_IDS.includes(photo.id)));
+  for(const id of PHOTO_IDS)assert.equal(makeRoom('catalog-test',id,108,100000).puzzle.imageId,id);
+  for(const id of RETIRED_PHOTO_IDS)assert.throws(()=>makeRoom('retired-test',id,108,100000));
+});
+
+test('an external-source catalog entry blocks publication',async t=>{
+  const dir=await fixture(t),path=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(path);
+  catalog[0].origin='external-demo';await saveJson(path,catalog);
+  await assert.rejects(checkImageLibrary(dir),/禁止发布未登记来源的图片/);
+});
+
+test('an unreviewed asset blocks publication',async t=>{
+  const dir=await fixture(t),path=join(dir,'content/image-provenance/winter-village.json'),record=await readJson(path);
+  record.review.status='pending';await saveJson(path,record);
+  await assert.rejects(checkImageLibrary(dir),/审核记录缺失/);
+});
+
+test('a new artwork cannot use the legacy missing-prompt exception',async t=>{
+  const dir=await fixture(t),path=join(dir,'content/image-provenance/winter-village.json'),record=await readJson(path);
+  record.generation.promptPath=null;record.generation.legacyPromptUnavailable=true;await saveJson(path,record);
+  await assert.rejects(checkImageLibrary(dir),/缺少原始提示词/);
+});
+
+test('substituting an asset without updating its original record is rejected',async t=>{
+  const dir=await fixture(t);
+  await copyFile(join(root,'public/puzzles/amber-cabinet.png'),join(dir,'public/puzzles/winter-village.png'));
+  await assert.rejects(checkImageLibrary(dir),/图片与原始记录不一致/);
+});
+
+test('unregistered files cannot be served from the puzzle directory',async t=>{
+  const dir=await fixture(t);
+  await writeFile(join(dir,'public/puzzles/external-demo.jpg'),'unapproved fixture');
+  await assert.rejects(checkImageLibrary(dir),/未登记或未审核素材/);
+});
+
+
+test('a changed delivery image cannot bypass provenance checks',async t=>{
+  const dir=await fixture(t),photo=RESTORABLE_PHOTOS.find(p=>p.id==='winter-village');
+  await writeFile(join(dir,'public'+photo.playSrc),'broken webp');
+  await assert.rejects(checkImageLibrary(dir),/衍生图片哈希不一致/);
+});
+
+test('user style references require the exact approved provenance and immutable reference bytes',async t=>{
+  const id='painted-moonlit-portrait-v1',dir=await fixture(t,id),path=join(dir,'content/image-provenance',id+'.json'),original=await readJson(path);
+  assert.deepEqual(await checkImageLibrary(dir),{published:1});
+  for(const [key,value] of [['origin','project-ai-generated'],['purpose','direct-copy'],['authorization','assumed'],['path','../unrelated.png'],['sha256','0'.repeat(64)]]){
+    const edited=structuredClone(original);edited.generation.referenceImages[0][key]=value;await saveJson(path,edited);
+    await assert.rejects(checkImageLibrary(dir),/图片参考来源或用途未获登记/);
+  }
+  await saveJson(path,original);
+  await writeFile(join(dir,original.generation.referenceImages[0].path),'changed reference');
+  await assert.rejects(checkImageLibrary(dir),/生成参考图哈希不一致/);
+});
+
+test('HD project references, native regions and standard delivery are independently verified',async t=>{
+  const id='mountain-lake-reflection-hd-v3',dir=await fixture(t,id),path=join(dir,'content/image-provenance',id+'.json'),original=await readJson(path);
+  assert.deepEqual(await checkImageLibrary(dir),{published:1});
+  const external=structuredClone(original);external.generation.referenceImages[0].origin='external';await saveJson(path,external);
+  await assert.rejects(checkImageLibrary(dir),/图片参考来源或用途未获登记/);
+  const changed=structuredClone(original);changed.composite.parts[0].sha256='0'.repeat(64);await saveJson(path,changed);
+  await assert.rejects(checkImageLibrary(dir),/拼接分区来源不一致/);
+  const standard=structuredClone(original);standard.delivery.standard.downsampled=false;await saveJson(path,standard);
+  await assert.rejects(checkImageLibrary(dir),/小片数图片交付记录无效/);
+});
+
+test('optimized delivery validates source linkage, exact pixels, quality, hash and byte metadata',async t=>{
+  const id='winter-village',dir=await fixture(t,id),path=join(dir,'content/image-provenance',id+'.json'),original=await readJson(path);
+  assert.deepEqual(await checkImageLibrary(dir),{published:1});
+  const cases=[
+    ['quality',80,/压缩交付记录无效/],
+    ['lossless',true,/压缩交付记录无效/],
+    ['upscaled',true,/压缩交付记录无效/],
+    ['sourceSha256','0'.repeat(64),/压缩交付原件关联无效/],
+    ['inputSha256','0'.repeat(64),/压缩交付原件关联无效/],
+    ['width',original.width+1,/不得改变来源像素尺寸/],
+    ['bytes',original.delivery.optimized.bytes+1,/哈希或字节不一致/],
+  ];
+  for(const [key,value,pattern] of cases){
+    const record=structuredClone(original);record.delivery.optimized[key]=value;await saveJson(path,record);
+    await assert.rejects(checkImageLibrary(dir),pattern,key);
+  }
+  const encoding=structuredClone(original);encoding.delivery.optimized.encoding.effort=2;await saveJson(path,encoding);
+  await assert.rejects(checkImageLibrary(dir),/压缩交付编码记录无效/);
+  await saveJson(path,original);
+  await writeFile(join(dir,'public'+original.delivery.optimized.src),'changed optimized data');
+  await assert.rejects(checkImageLibrary(dir),/压缩交付哈希或字节不一致/);
+});
+
+test('optimized VP8 verification rejects lossless substitution, animation and forged canvas dimensions even with valid hashes',async t=>{
+  const id='lemon-still-life-native-v2',dir=await fixture(t,id),recordPath=join(dir,'content/image-provenance',id+'.json'),original=await readJson(recordPath);
+  const catalogPath=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(catalogPath),data=await readFile(join(dir,'public'+original.delivery.optimized.src));
+  const frameAt=data.indexOf(Buffer.from('VP8 '),12);assert.ok(frameAt>=12);
+  async function substitute(bytes,pattern){
+    const record=structuredClone(original),nextCatalog=structuredClone(catalog),item=record.delivery.optimized;
+    item.sha256=createHash('sha256').update(bytes).digest('hex');item.bytes=bytes.length;
+    item.src=`/puzzles/${id}-optimized-${item.sha256.slice(0,12)}.webp`;nextCatalog[0].optimizedSrc=item.src;
+    await writeFile(join(dir,'public'+item.src),bytes);await saveJson(recordPath,record);await saveJson(catalogPath,nextCatalog);
+    await assert.rejects(checkImageLibrary(dir),pattern);
+  }
+  await substitute(await readFile(join(dir,'public'+original.delivery.play.src)),/静态 VP8 有损/);
+  const animated=Buffer.concat([data,Buffer.from('ANIM\x00\x00\x00\x00','binary')]);animated.writeUInt32LE(animated.length-8,4);
+  await substitute(animated,/静态 VP8 有损/);
+  const malformed=Buffer.from(data);malformed.writeUInt32LE(data.length+100,4);
+  await substitute(malformed,/静态 VP8 有损/);
+  const invalidFrame=Buffer.from(data);invalidFrame[frameAt+8+3]=0;
+  await substitute(invalidFrame,/静态 VP8 有损/);
+  const actualResize=Buffer.from(data);actualResize.writeUInt16LE(original.width+1,frameAt+8+6);
+  await substitute(actualResize,/不得改变来源像素尺寸/);
+  const vp8x=Buffer.alloc(18);vp8x.write('VP8X',0,'ascii');vp8x.writeUInt32LE(10,4);vp8x.writeUIntLE(original.width-1,12,3);vp8x.writeUIntLE(original.height-1,15,3);
+  const forged=Buffer.concat([actualResize.subarray(0,12),vp8x,actualResize.subarray(12)]);forged.writeUInt32LE(forged.length-8,4);
+  await substitute(forged,/静态 VP8 有损/);
+  const oversized=Buffer.alloc(2*1024*1024+1);data.copy(oversized);oversized.writeUInt32LE(oversized.length-8,4);
+  await substitute(oversized,/超过体积预算/);
+});
+
+test('compact HD delivery is tied to exact standard pixels and its own source hash and budget',async t=>{
+  const id='mountain-lake-reflection-hd-v3',dir=await fixture(t,id),recordPath=join(dir,'content/image-provenance',id+'.json'),original=await readJson(recordPath);
+  const catalogPath=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(catalogPath);
+  for(const [key,value,pattern] of [
+    ['inputSha256',original.sha256,/原件关联无效/],
+    ['downsampled',false,/压缩小图交付记录无效/],
+    ['maximumPieces',5000,/压缩小图交付记录无效/],
+    ['quality',88,/压缩交付记录无效/],
+    ['height',original.delivery.compact.height-1,/不得改变来源像素尺寸/],
+  ]){
+    const record=structuredClone(original);record.delivery.compact[key]=value;await saveJson(recordPath,record);
+    await assert.rejects(checkImageLibrary(dir),pattern,key);
+  }
+  const record=structuredClone(original),item=record.delivery.compact,data=Buffer.alloc(700*1024+1);
+  item.bytes=data.length;item.sha256=createHash('sha256').update(data).digest('hex');item.src=`/puzzles/${id}-compact-${item.sha256.slice(0,12)}.webp`;
+  catalog[0].optimizedStandardSrc=item.src;
+  await saveJson(recordPath,record);await saveJson(catalogPath,catalog);await writeFile(join(dir,'public'+item.src),data);
+  await assert.rejects(checkImageLibrary(dir),/超过体积预算/);
+});
+
+test('adding optimized delivery does not relax the original play lossless requirement',async t=>{
+  const id='winter-village',dir=await fixture(t,id),recordPath=join(dir,'content/image-provenance',id+'.json'),record=await readJson(recordPath);
+  record.delivery.play.lossless=false;await saveJson(recordPath,record);
+  await assert.rejects(checkImageLibrary(dir),/游玩图片必须无损并保留原生尺寸/);
+});
+
+// A user-provided picture has no prompt and no generation tool, and demanding
+// one would only invite a fabricated record. It must instead state where it came
+// from and on what basis it may be published.
+async function userProvidedFixture(t){
+  const dir=await fixture(t),catalogPath=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(catalogPath);
+  const recordPath=join(dir,'content/image-provenance/winter-village.json'),source=await readJson(recordPath);
+  const record={id:'winter-village',origin:'user-provided',width:source.width,height:source.height,sha256:source.sha256,
+    nativeResolution:true,delivery:source.delivery,
+    source:{description:'用户提供的照片，作为图库素材使用。',providedOn:'2026-09-17'},
+    rights:{basis:'user-owned',statement:'提供者确认拥有该图片的使用权并同意在本站公开。'},
+    review:{status:'reviewed',reviewedOn:'2026-09-17',reviewer:'Codex visual review',observations:'已查看原图，无文字、水印或商标。'}};
+  catalog[0].origin='user-provided';catalog[0].category='用户提供';
+  await saveJson(catalogPath,catalog);await saveJson(recordPath,record);
+  // The prompt archive is not part of this origin and must not be required.
+  await rm(join(dir,'content/image-prompts/winter-village.txt'),{force:true});
+  return {dir,catalogPath,recordPath};
+}
+
+test('a user-provided picture publishes without a prompt or generation record',async t=>{
+  const {dir}=await userProvidedFixture(t);
+  assert.deepEqual(await checkImageLibrary(dir),{published:1});
+});
+
+test('a user-provided picture must state its source and its right to be published',async t=>{
+  const {dir,recordPath}=await userProvidedFixture(t),original=await readJson(recordPath);
+  for(const [label,edit,pattern] of [
+    ['missing description',r=>{r.source.description='';},/缺少图片来源说明/],
+    ['missing source block',r=>{delete r.source;},/缺少图片来源说明/],
+    ['missing rights basis',r=>{r.rights.basis='';},/缺少使用授权说明/],
+    ['missing rights statement',r=>{r.rights.statement='  ';},/缺少使用授权说明/],
+    ['missing rights block',r=>{delete r.rights;},/缺少使用授权说明/],
+  ]){
+    const record=structuredClone(original);edit(record);await saveJson(recordPath,record);
+    await assert.rejects(checkImageLibrary(dir),pattern,label);
+  }
+});
+
+test('a user-provided picture cannot carry a fabricated AI generation record',async t=>{
+  const {dir,recordPath}=await userProvidedFixture(t),record=await readJson(recordPath);
+  record.generation={provider:'OpenAI',tool:'image_gen',model:null,generatedDate:'2026-09-17',promptPath:null,referenceImages:[]};
+  await saveJson(recordPath,record);
+  await assert.rejects(checkImageLibrary(dir),/不得伪造生成记录/);
+});
+
+test('a user-provided picture still requires a real PNG original and derived delivery',async t=>{
+  const {dir,recordPath}=await userProvidedFixture(t),original=await readJson(recordPath);
+  // Origin and rights do not excuse a substituted original.
+  await copyFile(join(root,'public/puzzles/amber-cabinet.png'),join(dir,'public/puzzles/winter-village.png'));
+  await assert.rejects(checkImageLibrary(dir),/图片与原始记录不一致/);
+  await copyFile(join(root,'public/puzzles/winter-village.png'),join(dir,'public/puzzles/winter-village.png'));
+  // Nor a broken derived asset.
+  const record=structuredClone(original);await saveJson(recordPath,record);
+  await writeFile(join(dir,'public'+record.delivery.play.src),'broken webp');
+  await assert.rejects(checkImageLibrary(dir),/衍生图片哈希不一致/);
+});
+
+test('a user-provided picture cannot smuggle files into the puzzle directory',async t=>{
+  const {dir}=await userProvidedFixture(t);
+  await writeFile(join(dir,'public/puzzles/side-loaded.png'),'unregistered');
+  await assert.rejects(checkImageLibrary(dir),/未登记或未审核素材/);
+});
+
+test('the build validator accepts both origins through one shared decision',async()=>{
+  const { isPlayableOrigin, PLAYABLE_ORIGINS, isPublishedPlayable, isRetained }=await import('../scripts/image-origin.mjs');
+  assert.deepEqual(PLAYABLE_ORIGINS,['project-ai-generated','user-provided']);
+  assert.ok(isPlayableOrigin('project-ai-generated')&&isPlayableOrigin('user-provided'));
+  for(const bad of [undefined,null,'','external','user-provided-style-reference','PROJECT-AI-GENERATED'])
+    assert.ok(!isPlayableOrigin(bad),String(bad));
+  assert.ok(isPublishedPlayable({origin:'user-provided',status:'published'}));
+  assert.ok(!isPublishedPlayable({origin:'user-provided',status:'archived'}));
+  assert.ok(isRetained({origin:'user-provided',status:'archived'}));
+  assert.ok(!isRetained({origin:'external',status:'published'}));
+});

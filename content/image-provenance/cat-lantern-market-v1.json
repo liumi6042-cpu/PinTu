@@ -1,0 +1,69 @@
+{
+  "id": "cat-lantern-market-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-25 提供并要求上传到公开图库的 PNG 图片；原件未裁切、缩放或重编码。",
+    "providedOn": "2026-09-25",
+    "originalFile": "C:/Users/Administrator/Desktop/猫咪市集.png",
+    "originalSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供该图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-25"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-25",
+    "reviewer": "Codex visual review",
+    "observations": "已查看本次附图：画面为插画，无网页界面或按钮；图内招牌文字属于场景内容。"
+  },
+  "delivery": {
+    "sourceSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+    "play": {
+      "src": "/puzzles/cat-lantern-market-v1-play-bba0ab3d10d5.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bba0ab3d10d57d2a15c255e1f2800817b50a0348a2aeac3f18a05b1e98cc33b1",
+      "bytes": 2523128,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-lantern-market-v1-thumbnail-79f1d1b348ef.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "79f1d1b348efef03c195c636f4361ff55b73397b548228361c29c5fc4ac1b36a",
+      "bytes": 58632,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cat-lantern-market-v1-optimized-d91f042d75b8.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d91f042d75b8fdcf3a9468818cafea630afa7a52f7da12999033777a83b26a2a",
+      "bytes": 502152,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+      "inputSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

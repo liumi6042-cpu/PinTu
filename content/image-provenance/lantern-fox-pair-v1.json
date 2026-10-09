@@ -1,0 +1,69 @@
+{
+  "id": "lantern-fox-pair-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-96608e3b-f6f2-4fef-8cbd-1a68fc41c50d.png",
+    "originalSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：白狐与棕狐角色共提花灯，背景是热闹的东方夜市灯火。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+    "play": {
+      "src": "/puzzles/lantern-fox-pair-v1-play-882b590a8a78.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "882b590a8a78ea3d731116b00e4a6e4c8626d623795a43ef44d75a0c5e0f2839",
+      "bytes": 1757710,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/lantern-fox-pair-v1-thumbnail-50ed6e40a0a9.webp",
+      "width": 480,
+      "height": 270,
+      "sha256": "50ed6e40a0a9321a6a3d61338081182be8a356989334dc1bcd4bf9d669ef5658",
+      "bytes": 33176,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/lantern-fox-pair-v1-optimized-a4f5339c4b63.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "a4f5339c4b639ea666997ce4551c001f0162ed143a470c98d15ccb3f15072fbf",
+      "bytes": 238780,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "inputSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

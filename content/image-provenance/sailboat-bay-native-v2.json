@@ -1,0 +1,81 @@
+{
+  "id": "sailboat-bay-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "1eea734d9fba2be254778180d53d8d1105f76f3d0d97bc646e2b4eba9a446a1c",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/sailboat-bay-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-479b97b2-d083-4398-be67-fa5851d132a4.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "1eea734d9fba2be254778180d53d8d1105f76f3d0d97bc646e2b4eba9a446a1c",
+    "play": {
+      "src": "/puzzles/sailboat-bay-native-v2-play-c17b488b5cea.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "c17b488b5cead4cbe025c977eed49c68337403eeb6b13f5cbcd3f21ca9fc5e3c",
+      "bytes": 2041256,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/sailboat-bay-native-v2-thumbnail-216af1686bcf.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "216af1686bcff5af523353f010489b2edcddd9965e65c10b4a81b9b7d4496424",
+      "bytes": 31768,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/sailboat-bay-native-v2-optimized-51652d90180b.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "51652d90180b8409a76f10c3efe22f41f9e5cb12bd04634fd9ad0f0a24628f04",
+      "bytes": 336208,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "1eea734d9fba2be254778180d53d8d1105f76f3d0d97bc646e2b4eba9a446a1c",
+      "inputSha256": "1eea734d9fba2be254778180d53d8d1105f76f3d0d97bc646e2b4eba9a446a1c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

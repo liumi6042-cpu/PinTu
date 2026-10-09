@@ -1,0 +1,69 @@
+{
+  "id": "reed-marsh-sunset-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_37-9.png",
+    "originalSha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：木栈道穿过芦苇湿地，落日把蜿蜒水面染成金红。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0",
+    "play": {
+      "src": "/puzzles/reed-marsh-sunset-v1-play-328ffa652d3d.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "328ffa652d3dffdfb431f00ab50905d951438685fe25f985aa2b969730e432a3",
+      "bytes": 2444754,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/reed-marsh-sunset-v1-thumbnail-f831f3028c64.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "f831f3028c64c515091b8e2de92127b36e07a1e6628b6b952057e4b5bc688615",
+      "bytes": 60102,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/reed-marsh-sunset-v1-optimized-30e9d7162f59.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "30e9d7162f592aa48f3e83d955bdd22fb6eb16251c36c499efc13b0b0d40e0ec",
+      "bytes": 472398,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0",
+      "inputSha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

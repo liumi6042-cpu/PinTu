@@ -1,0 +1,69 @@
+{
+  "id": "cloud-dragon-ascension-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-6524fbf8-2be5-48ad-95cc-30580a46a12f.png",
+    "originalSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：云海群峰、古老石柱、执杖旅人与巨大神龙构成东方幻想场景。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+    "play": {
+      "src": "/puzzles/cloud-dragon-ascension-v1-play-f014dbe20562.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "f014dbe20562251041f1357c3097232ab164b390c02c8774126152a2bada8952",
+      "bytes": 2397486,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/cloud-dragon-ascension-v1-thumbnail-c1652068653c.webp",
+      "width": 480,
+      "height": 270,
+      "sha256": "c1652068653cd121eb46293518ba4d03afff70e7baed61090adf19de7db11953",
+      "bytes": 49472,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/cloud-dragon-ascension-v1-optimized-68a47ee2076e.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "68a47ee2076ee2760b6cb516d6e2d0b2d09dae1cbd3b991d39caff9d5df7fd01",
+      "bytes": 463664,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "inputSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

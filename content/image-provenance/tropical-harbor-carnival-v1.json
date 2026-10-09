@@ -1,0 +1,71 @@
+{
+  "id": "tropical-harbor-carnival-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "faaaf13fbf4caa6b",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "faaaf13fbf4caa6b",
+    "originalSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 5 张原图预览：棕榈树、彩色摊位与港口船只，共享明亮的海岛时光。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+    "play": {
+      "src": "/puzzles/tropical-harbor-carnival-v1-play-bbe22bccad8b.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bbe22bccad8b04e49a0de40fbb5b594e677e3ad8ad2141bfaf2819918fb2b654",
+      "bytes": 3030514,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/tropical-harbor-carnival-v1-thumbnail-1f7675d1f866.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "1f7675d1f866de402b5fc4435eeb0b30ab0a84438420997f41e97c274132e809",
+      "bytes": 82300,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/tropical-harbor-carnival-v1-optimized-031294a0d198.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "031294a0d198d34ef1d373d21c078bd14613cd785b477f02702e8f742a718369",
+      "bytes": 709060,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+      "inputSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

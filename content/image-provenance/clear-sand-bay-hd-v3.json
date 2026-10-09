@@ -1,0 +1,175 @@
+{
+  "id": "clear-sand-bay-hd-v3",
+  "origin": "project-ai-generated",
+  "width": 3147,
+  "height": 1574,
+  "sha256": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d",
+  "nativeResolution": false,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in tool outputs and local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/clear-sand-bay-hd-v3.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-left-guide.png",
+        "sha256": "863582db3c9029a3efd32354e2ab216b37ea379cc7e4b4567a4365e5d63797a3"
+      },
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-right-guide.png",
+        "sha256": "9a75d339099f785d654c594a8f6ec601938000f2e375a3e8a23d75e7932147a2"
+      },
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-left-guide.png",
+        "sha256": "2bb468fb640a91084f652f53d11ad435bce858760f61c713422dadcfa71d8ab3"
+      },
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-right-guide.png",
+        "sha256": "65d7f83ebc19b03bef9ceffe705ff380b9b8b738c530bc45f9f9bdabd81a036a"
+      }
+    ],
+    "compositionGuide": {
+      "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/composition-guide.png",
+      "sha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "projectImageId": "clear-sand-bay-native-v2"
+    },
+    "sourceMetadata": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/generation-record.json"
+  },
+  "composite": {
+    "method": "four-overlapping-project-generated-regions",
+    "parts": [
+      {
+        "id": "top-left",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-left-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "60bbef3aae0fc9ddef3bd2b73e711d40a00198c19ee18ab7615938dae88c4d34"
+      },
+      {
+        "id": "top-right",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-right-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "a83f638b15f5a4ad6979e36b2905f68936f35516e74e70943c7932bf2dbf2b6f"
+      },
+      {
+        "id": "bottom-left",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-left-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "455ad8dd581f1e338ae7885889cbd14fc4cd2b0b24ad55fca28f4dd5d46537b9"
+      },
+      {
+        "id": "bottom-right",
+        "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-right-native.png",
+        "width": 1774,
+        "height": 887,
+        "sha256": "1dadcb36078be947e44b552986b388a963c5a0f346200fb2531f8a975b970886"
+      }
+    ],
+    "assemblyRecord": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/manifest.json",
+    "finalUpscaling": false
+  },
+  "resolutionNote": "Four AI-regenerated overlapping regions assembled at native tile scale, with color correction and feathered seams. Composite output is not one native model output; no final interpolation enlargement. Fine details are AI-generated, not recovered photographic detail.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Full composition and generated regions visually inspected. Continuous natural landscape with consistent major contours; no visible panel borders, text, logos or watermarks.",
+      "Original dimensions, region provenance and final SHA verified. Lossless WebP decoded pixels match the assembled PNG."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d",
+    "play": {
+      "src": "/puzzles/clear-sand-bay-hd-v3-play-803dc00989a8.webp",
+      "width": 3147,
+      "height": 1574,
+      "sha256": "803dc00989a81f4aeb8ee4adc176891f9c2c8b997da353086fa1a923aaa65f48",
+      "bytes": 7637334,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "standard": {
+      "src": "/puzzles/clear-sand-bay-hd-v3-standard-5ef347066062.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "5ef34706606276063154c4b265b4f9aeef415ad36a9cfd43221dc56278aa7c06",
+      "bytes": 2528836,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 1000
+    },
+    "thumbnail": {
+      "src": "/puzzles/clear-sand-bay-hd-v3-thumbnail-eee0dd03149c.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "eee0dd03149cd8693d3d5a18842ed7d70b96e4dcd01d713f93be8cef34d58ffa",
+      "bytes": 36248,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/clear-sand-bay-hd-v3-optimized-e2ceeefda1cd.webp",
+      "width": 3147,
+      "height": 1574,
+      "sha256": "e2ceeefda1cd2df50a1fa46620a9086d87096671ffd5670833af15ed7599b9a8",
+      "bytes": 1806762,
+      "format": "webp",
+      "lossless": false,
+      "quality": 88,
+      "upscaled": false,
+      "sourceSha256": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d",
+      "inputSha256": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/clear-sand-bay-hd-v3-compact-6191306c291b.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "6191306c291b533c0507544b29e874777bd8a296ad7a2c0be48f234b431d624f",
+      "bytes": 573510,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d",
+      "inputSha256": "5ef34706606276063154c4b265b4f9aeef415ad36a9cfd43221dc56278aa7c06",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      },
+      "downsampled": true,
+      "maximumPieces": 1000
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "id": "spring-stream-stone-bridge-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_32-7.png",
+    "originalSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：繁花簇拥溪边石桥，湖畔村庄与雪山共享春日晴光。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+    "play": {
+      "src": "/puzzles/spring-stream-stone-bridge-v1-play-751e163dfa09.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "751e163dfa09b03a4de0b1e4482cfa3311fcfd930e731fb7781ee03353591b81",
+      "bytes": 2863982,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/spring-stream-stone-bridge-v1-thumbnail-288915d05201.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "288915d05201bc65807790ee7124c2b32614aff3cbc330b356de554134447890",
+      "bytes": 81414,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/spring-stream-stone-bridge-v1-optimized-e9fa7d00788d.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "e9fa7d00788d86c355693a131c3869fd258073ecaea0a8763604f3ce5574f0a1",
+      "bytes": 634714,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "inputSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

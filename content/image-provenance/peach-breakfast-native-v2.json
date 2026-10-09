@@ -1,0 +1,81 @@
+{
+  "id": "peach-breakfast-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/peach-breakfast-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-c5be9eb6-e611-4fde-83bf-fab103074228.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+    "play": {
+      "src": "/puzzles/peach-breakfast-native-v2-play-3e08b520b58c.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "3e08b520b58ce5d3c8c4586261f4f34ddf350898fdc8fe36c96446be1d3bc794",
+      "bytes": 1632014,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/peach-breakfast-native-v2-thumbnail-08303e3534ca.webp",
+      "width": 480,
+      "height": 240,
+      "sha256": "08303e3534ca9729c9f40940916e93c32df9a5f4ae14a06d075b1eb825925b8e",
+      "bytes": 22654,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/peach-breakfast-native-v2-optimized-00f127b51434.webp",
+      "width": 1774,
+      "height": 887,
+      "sha256": "00f127b51434b12d82a57a31d89dea0eb60db4095c53b7d165991917692ec0da",
+      "bytes": 197610,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+      "inputSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

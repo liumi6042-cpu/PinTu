@@ -1,0 +1,79 @@
+{
+  "id": "vermilion-garden",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+  "nativeResolution": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "本次 image_gen 调用日期",
+    "promptPath": "content/image-prompts/vermilion-garden.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-bf5402c5-ed24-4dda-aee8-e8c169c742c1.png"
+  },
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "fiveThousandPieces": "居中等比裁切为 2:1；不拉伸"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": "已查看生成原图，未发现明显水印、签名、可读品牌标志或可辨认的受保护角色。此为视觉筛查，不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+    "play": {
+      "src": "/puzzles/vermilion-garden-play-b54e890e0a58.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "b54e890e0a58b5167d67a45c55c7a5710b9be64eec913ba496942f589fdb8c00",
+      "bytes": 2665484,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/vermilion-garden-thumbnail-a5c77e092a92.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "a5c77e092a9282ea85e9c700c1c894ac20801db7f178d8a97dced62aeb817f56",
+      "bytes": 72426,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/vermilion-garden-optimized-13a666b25e35.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "13a666b25e3591bcc310ea80b50474fcf165383a7f5bfbe81647985d234e7f0b",
+      "bytes": 568980,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "inputSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "id": "daily-moonlit-cherry-umbrella-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入每日一图内容的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-03",
+    "originalFile": "codex-clipboard-d927acde-79ca-421d-8164-84b3e8ab7369.png",
+    "originalSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这三张图片存入图库并作为大厅每日一图公开拼图，授权用于本站宣传与游玩。",
+    "authorizedOn": "2026-10-03"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-03",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：樱花湖畔的夜景人物撑透明伞，画面无网页界面、按钮或文字覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+    "play": {
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-play-a5682fe203b6.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "a5682fe203b630e5ca42116cb7d52b8c27e8302d62461dcafa18d16ef5302260",
+      "bytes": 2249402,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-thumbnail-336cece91850.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "336cece9185085fd17e632115cb394177e61a787767583b952f1961cb16d48ae",
+      "bytes": 55750,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-optimized-e433b1b96d84.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e433b1b96d8421edc6cafa7270ff54634a3002d3e0c52bcf837ee3c13648e40d",
+      "bytes": 392374,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "inputSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

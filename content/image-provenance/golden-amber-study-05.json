@@ -1,0 +1,69 @@
+{
+  "id": "golden-amber-study-05",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-20 提供的作品：由提供者在 ChatGPT 中生成后交给本站。原始文件即为 PNG（1448×1086），入库时未做任何裁切、缩放或重编码。",
+    "providedOn": "2026-09-20",
+    "originalFile": "C:/Users/Administrator/Desktop/Codex 图像 2026年9月20日 20_12_18-3.png",
+    "originalSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有该图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-20"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-20",
+    "reviewer": "提供者确认（provider confirmation）",
+    "observations": "提供者于 2026-09-20 确认画面中不含水印、签名、网页界面文字或按钮、以及可辨认商标。本条为提供者自述，本站未做逐像素人工复核。"
+  },
+  "delivery": {
+    "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+    "play": {
+      "src": "/puzzles/golden-amber-study-05-play-126940c8a987.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "126940c8a987d051108f01016ea51755368b6fb87f0019c13ca7b48d6daf6ad1",
+      "bytes": 2452474,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false
+    },
+    "thumbnail": {
+      "src": "/puzzles/golden-amber-study-05-thumbnail-1f93f481f000.webp",
+      "width": 480,
+      "height": 360,
+      "sha256": "1f93f481f000f6aeb0e4424d7021bfe08dcbf12a192b8adba7011102d01f4ff3",
+      "bytes": 69958,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false
+    },
+    "optimized": {
+      "src": "/puzzles/golden-amber-study-05-optimized-0c7ebaf3f6ca.webp",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "0c7ebaf3f6ca45a25a1f1ce6b8e9262cee4e9375833548ecabde3b87f3933b7c",
+      "bytes": 512856,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "inputSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}
