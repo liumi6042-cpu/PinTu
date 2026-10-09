@@ -53,7 +53,7 @@ try{
  const hint=page.getByRole('button',{name:/^提示 · 看广告/}),underlay=page.getByRole('button',{name:/^底图 · 看广告/});
  await hint.click();await page.getByRole('alert').getByText('广告暂未开放，请继续正常拼图',{exact:true}).waitFor();
  assert.equal(await hint.isEnabled(),true);checks.push('普通浏览器无平台 SDK 时，提示保持锁定并说明原因');
- await page.evaluate(()=>{window.__adMode='closed';window.__watchCount=0;window.tap={createRewardedVideoAd:()=>{let close,error;return {load:async()=>{},show:async()=>{window.__watchCount++;queueMicrotask(()=>{if(window.__adMode==='failed')error(new Error('isolated failure'));else close({isEnded:window.__adMode==='completed'});});},onClose:fn=>{close=fn;},onError:fn=>{error=fn;},offClose:()=>{},offError:()=>{},destroy:()=>{}};}};});
+ await page.evaluate(()=>{window.__adMode='closed';window.__watchCount=0;window.tap={createRewardedVideoAd:()=>{let close,error;return {load:async()=>{},show:async()=>{window.__watchCount++;setTimeout(()=>{if(window.__adMode==='failed')error(new Error('isolated failure'));else close({isEnded:window.__adMode==='completed'});},0);},onClose:fn=>{close=fn;},onError:fn=>{error=fn;},offClose:()=>{},offError:()=>{},destroy:()=>{}};}};});
  await hint.click();await page.getByRole('alert').getByText(/需要完整观看广告/).waitFor();
  assert.equal(await hint.isEnabled(),true);checks.push('模拟提前关闭广告，提示不解锁');
  await page.evaluate(()=>{window.__adMode='failed';});await underlay.click();await page.getByRole('alert').getByText('广告暂时无法播放，请稍后再试',{exact:true}).waitFor();

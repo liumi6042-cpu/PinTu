@@ -7,6 +7,7 @@ import {checkImageLibrary} from './check-image-library.mjs';
 const root=process.cwd();
 await checkImageLibrary(root);
 const source=JSON.parse(readFileSync('h5/source-version.json','utf8'));
+const game=JSON.parse(readFileSync('config/taptap-game.json','utf8'));
 const assets=runtimeAssets(JSON.parse(readFileSync('content/puzzle-catalog.json','utf8')),JSON.parse(readFileSync('config/runtime-assets.json','utf8')));
 const stage=resolve('work/h5-shell-public');mkdirSync(stage,{recursive:true});
 writeFileSync('h5/asset-manifest.json',JSON.stringify(assets,null,2)+'\n');
@@ -28,7 +29,7 @@ const assetManifest=JSON.parse(readFileSync(resolve(output,'.vite/manifest.json'
 const selected=new Set(['index.html','config.js',...assets.filter(url=>url.startsWith('/favicon')||url.startsWith('/apple-touch')).map(url=>url.slice(1))]);
 for(const entry of Object.values(assetManifest))for(const name of [entry.file,...(entry.css||[]),...(entry.assets||[])])selected.add(name);
 for(const path of selected){const file=resolve(output,path);if(!file.startsWith(output+sep)||!existsSync(file))throw Error('Missing H5 output: '+path);files.push({path,bytes:statSync(file).size});}
-const manifest={...source,zipRoot:'jigsaw-nook/',screenOrientation:1,builtAt:new Date().toISOString(),apiBase,files:files.length,bytes:files.reduce((n,x)=>n+x.bytes,0),adGateImplemented:true,adRewardsEnabled:false,adPolicy:{hint:"one complete rewarded video per 30-second activation",underlay:"one complete rewarded video per 30-second activation"}};
+const manifest={...source,zipRoot:'jigsaw-nook/',screenOrientation:1,builtAt:new Date().toISOString(),apiBase,files:files.length,bytes:files.reduce((n,x)=>n+x.bytes,0),adGateImplemented:true,adRewardsConfigured:Boolean(game.rewardedAdUnitId&&game.h5AdvertisingToolAuthorizationComplete),appId:game.appId,rewardedAdUnitId:game.rewardedAdUnitId,adRuntimeConfigEndpoint:apiBase+'/config',adPolicy:{hint:"one complete rewarded video per 30-second activation",underlay:"one complete rewarded video per 30-second activation"}};
 writeFileSync(resolve(output,'h5-build.json'),JSON.stringify(manifest,null,2)+'\n');
 mkdirSync('releases',{recursive:true});
 const archive=resolve('releases/jigsaw-nook-taptap-h5.zip');

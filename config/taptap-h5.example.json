@@ -8,9 +8,9 @@
     "taptapAccountBinding": false
   },
   "ads": {
-    "enabled": false,
+    "enabled": true,
     "runtime": "tap.createRewardedVideoAd",
-    "rewardedAdUnitId": "",
+    "rewardedAdUnitId": "1054324",
     "placements": [
       "hint",
       "underlay"

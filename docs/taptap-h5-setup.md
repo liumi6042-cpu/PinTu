@@ -1,71 +1,73 @@
 # TapTap H5 接入与交付说明
 
-## 当前版本
+## 当前版本（2026-10-09）
 
-独立H5以原站线上20261006-05为基准，保留82张在架图片。原网站工程、机器人试错修改、原站SQL迁移及数据库没有改写。旧`/taptap`SSR入口和`__JIGSAW_H5_BRIDGE__`占位不属于这次静态ZIP的实际运行方式。
+独立H5以原站线上20261006-05为基准，保留82张在架图片。原网站工程、机器人试错修改、原站SQL迁移及数据库没有改写。旧 `/taptap` SSR入口和 `__JIGSAW_H5_BRIDGE__` 占位不属于这个静态包的实际运行方式。
 
-自托管入口为`https://jigsawnook.online/taptap-play/#/zh/lobby`。平台ZIP为`releases/jigsaw-nook-taptap-h5.zip`，最外层仅一个jigsaw-nook游戏目录，其内含index.html，静态JS/CSS使用相对地址；API固定指向`https://jigsawnook.online/h5`，图片通过同一网关连接原站资源。只有游戏客户端放入TapTap包，服务器运行包不能上传到H5包体入口。
+自托管入口：https://jigsawnook.online/taptap-play/#/zh/lobby 。服务器独立release为20261009-02。
 
-## 两端同房
+平台游戏963283（一起拼拼拼），开发者485306；官方工具已校验归属并授权。竖屏H5开发版本280927、底层上传包76237已上传并绑定草稿主包，最小运行库2.4.0。官方查询确认草稿/未发布，is_releasing=false。本次未提交审核或发布。
 
-普通Web和H5经原HTTP增量轮询协议连接原后端。原账号可在两端分别登录；不同来源的游客身份分别生成。两端同房不等于自动绑定TapTap账号。本次无需WebSocket、无需复制正式数据库。
+官方试玩入口：https://www.taptap.cn/qrcode/miniapp?id=tapmcln4cmjeaus1ft&type=develop&version_id=280927 。使用TapTap手机App扫码进行真实运行测试。
 
-H5网关的连接凭证存入浏览器localStorage，原站Cookie只保存在服务端。限定精确来源，不使用`*`。平台测试时从真实请求核对TapTap Origin，将它加入`H5_ALLOWED_ORIGINS`后重启独立服务；不凭猜测填写域名，不允许null来源。
+平台ZIP：`releases/jigsaw-nook-taptap-h5.zip`，367500字节，SHA256 `bba74e0449c4622f9831edf42acc471e3e07ab96a346da2f07eafc64c54426fb`。仅一个顶层游戏目录jigsaw-nook，其内有index.html；相对路径JS/CSS，API固定指向 `https://jigsawnook.online/h5`，图片经网关连接原站资源。正式数据库、密钥与服务器运行包不放入平台ZIP。
 
-## 广告
+服务器包：`releases/jigsaw-nook-h5-server.tar.gz`，382251字节，SHA256 `68126ef06a05dd901f41a562d23f1516c5d8ac7fd2ba9d576bddcb757d1fba30`。只包含当前网关与静态构建。
 
-用户规则：每次提示/底图先完整观看一条广告，获得对应功能的一次30秒使用。广告时长由平台决定；不存在网页自行计时30秒即可跳过广告的逻辑。
+## 两端同房与待验证来源
 
-官方API是`tap.createRewardedVideoAd({adUnitId})`，宿主提供全局tap。普通浏览器没有宿主广告SDK，按钮明确显示广告暂未开放。只有`isEnded===true`才申请帮助；失败/提前关闭不解锁。
+普通Web和H5经原HTTP增量轮询协议连接原后端。原账号可在两端分别登录；不同来源游客身份分别生成。两端同房不等于自动绑定TapTap账号。无需WebSocket、无需复制正式数据库。
 
-服务端独立表保证会话、房间、功能、票据和请求ID绑定，以及一次性消耗、重试幂等。当前完成事件由客户端报告，并不是平台签名的SSV证明；因此只能用于这次非付费帮助，不能直接扩展为付费商品或可交易权益。
+H5连接凭证存于浏览器localStorage，原站Cookie仅在服务端保存。CORS使用精确来源，不允许通配符或null。当前允许自托管域名 `https://jigsawnook.online`；TapTap实际Origin还未收到和验证。平台扫码测试后，检查独立服务日志中 `h5_origin_denied`，核对真实请求来源，再将确定的精确Origin加入 `H5_ALLOWED_ORIGINS` 并仅重启H5服务。若平台使用null来源，需要另行设计经过验证的受限接入方式，不能直接放开。
 
-正式开启步骤：
-1. 用户已提供后台网址 https://developer.taptap.cn/v3/485306/app/963283；地址中的游戏条目编号为963283，开发者编号为485306。编号来源是用户提供的网址，尚未通过登录后的平台API验证。AppID不是版本号，765478合集编号也不是本游戏AppID。
-2. 在该游戏“商店 → 小游戏广告”确认已开通，并取得激励视频广告位ID。
-3. 服务器环境设置`H5_REWARDED_AD_UNIT`及`H5_AD_ASSISTANCE_ENABLED=true`。
-4. TapTap测试环境验证实际广告播放、完整观看、提前关闭、失败、重试、横竖屏和网络来源；普通网页不能替代此测试。
+临时诊断 `H5_LOG_BLOCKED_ORIGINS=true` 只记录被拒的规范Origin，按来源10分钟去重，最多64项；不记录IP、房间、账号、凭证或请求正文。确认平台来源后关闭该诊断。
 
-正式开通前应补齐经营者、客服、广告及相关隐私资料。目前保留原站草稿提示，不虚构已审核状态。上传或工具上传可能进入审核，制作包体不代表已提交审核。
+## 广告接入
 
-官方依据：[广告接入指南](https://developer.taptap.cn/minigameapidoc/quick-start/mcp-guide/ad-integration-guide/)、[激励视频与完成回调](https://developer.taptap.cn/minigameapidoc/dev/tutorial/open-capabilities/ad/rewarded-video-ad/)、[TapTap隐私政策](https://www.taptap.cn/doc/privacy-policy)。
+官方H5 MCP已确认广告服务生效并自动匹配竖屏激励视频广告位 **1054324**。独立服务器已设置 `H5_REWARDED_AD_UNIT=1054324` 与 `H5_AD_ASSISTANCE_ENABLED=true`，公网 `/h5/config` 已核对。
 
-## 自托管部署
+每次提示或底图须完整看一条广告，解锁对应功能一次30秒使用。广告本身时长由平台决定，不使用网页倒计时替代广告。
 
-独立运行目录`/srv/sites/jigsaw-h5/current`，独立会话数据`/srv/sites/jigsaw-h5/shared/h5-sessions.sqlite`，服务`jigsaw-h5.service`监听127.0.0.1:3291。配置样例位于`deploy/h5/`，服务仅新增对应路径，原站应用未重启。当前正式服务器为64.90.2.134；旧SSH别名webhosting-main仍指向186.241.106.176，部署时必须显式核对目标。旧服务器上本次新增的H5服务已停止，代理配置已恢复。
+按官方返回的集成指南使用宿主 `tap.createRewardedVideoAd({adUnitId})`：每个运行环境/广告位保持一个实例，启动预加载不展示广告；用户操作后show，失败时load并最多重试一次。完整结束回调 `isEnded===true` 才申请帮助；提前关闭、加载失败、播放失败、重复点击不会解锁。普通浏览器缺少TapTap宿主SDK，保持帮助锁定。真实手机广告播放尚未验证。
 
-服务器使用Node24原生SQLite，无第三方运行依赖。H5_UPSTREAM目前指向原站监听口127.0.0.1:3104，H5_UPSTREAM_ORIGIN固定为原域名HTTPS。原站将来切换应用监听口时，应同步这个配置并重启H5服务；图库更新也应重新生成H5目录与白名单。
+服务端独立表绑定会话、房间、功能、票据与请求ID，原子消耗一次票据，重试不重复授权、不延长30秒。当前完成事件由客户端报告，属于SDK回调，并不是平台签名SSV证明；不能直接用于付费商品或可交易权益。
 
-nginx覆写`X-Jigsaw-Client-IP`，网关仅信任loopback代理，按真实来源限流。原站Cookie和H5会话数据库必须保持服务器私有，不加入ZIP或源码。
+手机验收顺序：
+1. TapTap App扫码进入版本280927；若大厅报连接错误，先核对真实Origin。
+2. 与原Web进入同一公开房间，确认双方成员、拼块移动及聊天同步。
+3. 完整观看激励视频，核对提示/底图仅解锁一次且30秒后结束。
+4. 提前关闭、播放失败及连续点击均不发奖励；再次完整观看可再用一次。
 
-回退：恢复独立release中`nginx.before.conf`到原站nginx配置，`nginx -t`通过后reload，再停止`jigsaw-h5.service`。不回滚原站数据库，不覆盖原站current，不删除玩家房间。
+只有上述真实测试通过，才能将 `realDevicePlaybackVerified` 与 `platformNetworkOriginVerified` 标为true。包体预检、自动测试及广告开通都不等于审核通过。
+
+官方参考：[广告接入指南](https://developer.taptap.cn/minigameapidoc/quick-start/mcp-guide/ad-integration-guide/)、[激励视频与完成回调](https://developer.taptap.cn/minigameapidoc/dev/tutorial/open-capabilities/ad/rewarded-video-ad/)。具体实例生命周期依据本次已授权官方MCP返回的指南。
+
+## 部署与回退
+
+实际生产主机64.90.2.134。SSH别名webhosting-main仍指向旧服务器186.241.106.176，必须显式指定HostName并核对原站current。旧服务器本次新增的H5服务已停止，代理配置已恢复。
+
+独立目录 `/srv/sites/jigsaw-h5/current` 指向release20261009-02；数据保存在 `/srv/sites/jigsaw-h5/shared/h5-sessions.sqlite`，配置 `/etc/webapps/jigsaw-h5.env`。`jigsaw-h5.service` 监听127.0.0.1:3291，使用Node24原生SQLite，无第三方运行依赖。
+
+H5_UPSTREAM指向原站127.0.0.1:3104，H5_UPSTREAM_ORIGIN为原域名HTTPS。原站仍运行20261006-05，未重启，原nginx和原服务定义哈希已核对未变化。原站切换监听口时应同步H5配置；图库更新应重建目录白名单。
+
+更新回退：恢复20261009-02内root可读的 `h5-env.before` 到独立环境文件，将独立current原子切回20261009-01，并只重启jigsaw-h5.service。原站current、数据库和玩家房间不用回滚。平台主包若需回退，可用官方CLI CAS将280927替换回280802，操作前查询当前槽位。初次代理部署回退才需要使用20261009-01内nginx.before.conf；普通H5更新不改nginx。
 
 ## 已验证
 
-- TypeScript通过，82张在架图片校验通过。
-- 网关/广告自动测试6项通过。
-- 隔离真实HTTP15项通过：双端同步、鉴权、聊天、指针、账号、私房和上传图片。
-- 隔离浏览器13项通过：子目录导航、图库、跨域Canvas、同房、刷新、390px手机、广告模拟完成/关闭/失败以及原Web帮助规则。
-- 新增H5代码定向oxlint通过。全量原源码仍有沿用基准版本的lint错误，本次未趁机重构这些文件。
-- 公网5项验收通过：独立入口、手机显示、广告说明、拒绝未授权来源，且原Web与H5大厅房间ID一致；没有创建正式测试房间或账号。
-- 真实TapTap环境、真实广告位与提审尚未验证。
+- TypeScript与新增代码定向oxlint通过；82张在架图片校验通过。
+- 网关/帮助测试3项、广告SDK生命周期测试6项，共9项通过。
+- 隔离HTTP15项通过：双端同步、碰撞、鉴权、聊天、指针、账号、私房与上传图片权限。
+- 隔离浏览器13项通过：图库、跨域Canvas、同房、刷新、390px手机、模拟广告完成/关闭/失败及原Web帮助规则。
+- 官方ZIP预检无违规项或警告；上传、主包绑定、竖屏版本和未发布状态已验证。
+- 公网广告配置已验证。公网手机页面与房间列表只读验收证据存于 `work/h5-production/results.json`。
+- TapTap真实Origin与真实广告播放仍待手机测试。全量原源码沿用基准版本lint错误，本次未重构无关文件。
 
-详细证据在本机`work/h5-http-test/results.json`、`work/h5-browser/results.json`及截图。测试只使用隔离数据；线上验收使用只读接口。
+重跑隔离验收：先 `npm run build:server`，再 `npm run test:h5:acceptance`。脚本管理并关闭隔离后端/网关，测试数据仅在本项目work目录；3211/3220端口须空闲。不得将隔离测试指向正式后端。
 
-## 重跑隔离验收
+## 官方工具风险记录
 
-先执行`npm run build:server`生成独立测试后端，再运行`npm run test:h5:acceptance`。验收脚本在同一次运行中管理后端与网关，结束后自动停止，不依赖聊天工具的后台进程存活。端口3211/3220必须空闲。运行数据仅保存在本项目work/h5-http-test。
+官方CLI网页登录与H5 MCP手机扫码为两套已完成授权。不要打印或复制凭证。
 
-## 已提供的游戏信息
+此前H5 MCP的 `update_app_info` 仅传竖屏字段却实际调用 `/level/v1/submit`，意外触发reviewing且未保存方向。已立即通过官方CLI撤回并验证draft。本次通过新版CLI上传竖屏开发包、绑定草稿主包，成功使官方广告查询读到方向1并匹配真实广告位。
 
-2026-10-09收到当前游戏后台地址，已记录到`config/taptap-game.json`。应用编号963283不等于激励视频广告位ID。正式广告仍关闭，等待广告开通状态和对应激励视频广告位，再进行平台测试。后台页面需要登录，公开网页读取工具无法查看其内容；未声称已经登录或检查广告状态。
-
-## 当前授权状态（2026-10-09）
-
-网页登录已完成官方TapTap CLI授权，并通过应用选择和游戏列表校验了963283属于485306，名称为一起拼拼拼。CLI能查询未发布游戏资料，目前能力列表不包含广告配置查询。H5广告MCP是另一套授权，官方文档要求TapTap手机App扫码；此前仅检查了网页登录页，不能据此保证全程网页版授权。H5广告MCP尚未授权，也未取得真实广告位，正式奖励仍关闭。不要反复把扫码链接当成已验证的纯网页方案。
-
-## 平台开发版本（2026-10-09）
-
-用户确认竖屏并授权上传开发测试版本。官方CLI上传创建H5版本280802，底层上传包76184，列表确认screen_orientation=1、is_releasing=false。当前主包槽为空，绑定需用户另行确认。新版CLI校验要求ZIP根仅含一个游戏文件夹；包体已改为jigsaw-nook/index.html，并通过无警告预检。
-
-重要工具风险：H5 MCP的update_app_info实际调用/level/v1/submit；本次仅传竖屏字段却触发reviewing，且字段仍为0。已立即用官方CLI撤回，核对状态恢复draft/未发布。不要再用这个工具做普通草稿方向设置，也不能用MCP upload_h5_game代替仅上传测试版本。广告开通已通过官方接口验证，但check_ads_status仍读取旧应用字段0，尚未自动匹配广告位。
+不要使用 `update_app_info` 做普通草稿方向设置，也不要用会自动提审的旧 `upload_h5_game` 替代仅上传开发版本。未经明确授权不调用审核、发布或经营协议确认操作。

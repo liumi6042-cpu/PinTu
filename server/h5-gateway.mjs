@@ -45,7 +45,17 @@ export function createH5Gateway(options){
   db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS h5_sessions(token_hash TEXT PRIMARY KEY,cookies TEXT NOT NULL,expires_at INTEGER NOT NULL);');
   db.exec('CREATE TABLE IF NOT EXISTS h5_ad_watches(token TEXT PRIMARY KEY,session_key TEXT NOT NULL,context TEXT NOT NULL,kind TEXT NOT NULL,request_id TEXT NOT NULL,auth_hash TEXT NOT NULL,expires_at INTEGER NOT NULL,used INTEGER NOT NULL DEFAULT 0); CREATE UNIQUE INDEX IF NOT EXISTS h5_ad_request ON h5_ad_watches(session_key,context,request_id); CREATE TABLE IF NOT EXISTS h5_help(session_key TEXT NOT NULL,context TEXT NOT NULL,request_id TEXT NOT NULL,kind TEXT NOT NULL,grant_json TEXT NOT NULL,expires_at INTEGER NOT NULL,PRIMARY KEY(session_key,context,request_id));');
   const adsEnabled=options.adAssistanceEnabled===true&&Boolean(options.rewardedAdUnitId);
-  const tickets=new Map(),limits=new Map();
+  const tickets=new Map(),limits=new Map(),deniedOrigins=new Map();
+  const logDeniedOrigin=source=>{
+    if(!options.logBlockedOrigins)return;
+    let origin;
+    if(source==='null')origin='null';
+    else try{const parsed=new URL(source);if(source.length>256||parsed.origin!==source||!['http:','https:'].includes(parsed.protocol))return;origin=parsed.origin;}catch{return;}
+    const now=Date.now(),previous=deniedOrigins.get(origin);if(previous&&now-previous<600000)return;
+    for(const [key,time]of deniedOrigins)if(now-time>=600000)deniedOrigins.delete(key);
+    if(deniedOrigins.size>=64)return;
+    deniedOrigins.set(origin,now);console.warn(JSON.stringify({event:'h5_origin_denied',origin}));
+  };
   const saved=db.prepare('SELECT cookies,expires_at FROM h5_sessions WHERE token_hash=?');
   const insert=db.prepare('INSERT INTO h5_sessions VALUES(?,?,?)');
   const update=db.prepare('UPDATE h5_sessions SET cookies=? WHERE token_hash=?');
@@ -134,7 +144,7 @@ export function createH5Gateway(options){
   const server=createServer(async(request,response)=>{
     try{
       const url=new URL(request.url,'http://gateway.invalid'),source=request.headers.origin;
-      if(source&&(!origins.has(source)||source==='null')){json(response,403,{error:'来源未获允许'});return;}
+      if(source&&(!origins.has(source)||source==='null')){logDeniedOrigin(source);json(response,403,{error:'来源未获允许'});return;}
       if(source){response.setHeader('Access-Control-Allow-Origin',source);response.setHeader('Vary','Origin');}
       if(request.method==='OPTIONS'){
         if(!source){json(response,403,{error:'来源未获允许'});return;}
@@ -252,7 +262,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
     upstreamOrigin:process.env.H5_UPSTREAM_ORIGIN,
     allowedOrigins:(process.env.H5_ALLOWED_ORIGINS||'http://127.0.0.1:3211,http://localhost:3211').split(',').map(x=>x.trim()).filter(Boolean),
     databasePath:process.env.H5_SESSION_DB||resolve('data/h5-sessions.sqlite'),
-    adAssistanceEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true',trustLoopbackProxy:process.env.H5_TRUST_LOOPBACK_PROXY==='true',staticDir:resolve('outputs/h5'),assetPaths:JSON.parse(readFileSync(resolve('h5/asset-manifest.json'),'utf8')),rewardedAdUnitId:process.env.H5_REWARDED_AD_UNIT||'',
+    logBlockedOrigins:process.env.H5_LOG_BLOCKED_ORIGINS==='true',adAssistanceEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true',trustLoopbackProxy:process.env.H5_TRUST_LOOPBACK_PROXY==='true',staticDir:resolve('outputs/h5'),assetPaths:JSON.parse(readFileSync(resolve('h5/asset-manifest.json'),'utf8')),rewardedAdUnitId:process.env.H5_REWARDED_AD_UNIT||'',
   });
   server.listen(port,host,()=>console.log('H5 preview: http://'+host+':'+port+'/#/zh/lobby'));
 }
