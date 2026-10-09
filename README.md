@@ -4,7 +4,7 @@
 
 - 独立入口：https://jigsawnook.online/taptap-play/#/zh/lobby
 - 原网页：https://jigsawnook.online/zh/lobby
-- 平台包：`releases/jigsaw-nook-taptap-h5.zip`，ZIP根目录有`index.html`。
+- 平台包：`releases/jigsaw-nook-taptap-h5.zip`，ZIP最外层为`jigsaw-nook/`，其内有`index.html`。
 - 自托管运行包：`releases/jigsaw-nook-h5-server.tar.gz`，只含网关和当前静态构建。
 
 两个前端经原有HTTP增量同步协议使用同一后端、账号服务和房间数据。网关仅保存H5连接凭证与帮助记录，不复制原站房间数据库。图库资源由网关从原站获取；客户端包不包含运行数据库、账号、聊天或密钥。

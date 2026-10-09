@@ -4,7 +4,7 @@
 
 独立H5以原站线上20261006-05为基准，保留82张在架图片。原网站工程、机器人试错修改、原站SQL迁移及数据库没有改写。旧`/taptap`SSR入口和`__JIGSAW_H5_BRIDGE__`占位不属于这次静态ZIP的实际运行方式。
 
-自托管入口为`https://jigsawnook.online/taptap-play/#/zh/lobby`。平台ZIP为`releases/jigsaw-nook-taptap-h5.zip`，根目录含index.html，静态JS/CSS使用相对地址；API固定指向`https://jigsawnook.online/h5`，图片通过同一网关连接原站资源。只有游戏客户端放入TapTap包，服务器运行包不能上传到H5包体入口。
+自托管入口为`https://jigsawnook.online/taptap-play/#/zh/lobby`。平台ZIP为`releases/jigsaw-nook-taptap-h5.zip`，最外层仅一个jigsaw-nook游戏目录，其内含index.html，静态JS/CSS使用相对地址；API固定指向`https://jigsawnook.online/h5`，图片通过同一网关连接原站资源。只有游戏客户端放入TapTap包，服务器运行包不能上传到H5包体入口。
 
 ## 两端同房
 
@@ -63,3 +63,9 @@ nginx覆写`X-Jigsaw-Client-IP`，网关仅信任loopback代理，按真实来�
 ## 当前授权状态（2026-10-09）
 
 网页登录已完成官方TapTap CLI授权，并通过应用选择和游戏列表校验了963283属于485306，名称为一起拼拼拼。CLI能查询未发布游戏资料，目前能力列表不包含广告配置查询。H5广告MCP是另一套授权，官方文档要求TapTap手机App扫码；此前仅检查了网页登录页，不能据此保证全程网页版授权。H5广告MCP尚未授权，也未取得真实广告位，正式奖励仍关闭。不要反复把扫码链接当成已验证的纯网页方案。
+
+## 平台开发版本（2026-10-09）
+
+用户确认竖屏并授权上传开发测试版本。官方CLI上传创建H5版本280802，底层上传包76184，列表确认screen_orientation=1、is_releasing=false。当前主包槽为空，绑定需用户另行确认。新版CLI校验要求ZIP根仅含一个游戏文件夹；包体已改为jigsaw-nook/index.html，并通过无警告预检。
+
+重要工具风险：H5 MCP的update_app_info实际调用/level/v1/submit；本次仅传竖屏字段却触发reviewing，且字段仍为0。已立即用官方CLI撤回，核对状态恢复draft/未发布。不要再用这个工具做普通草稿方向设置，也不能用MCP upload_h5_game代替仅上传测试版本。广告开通已通过官方接口验证，但check_ads_status仍读取旧应用字段0，尚未自动匹配广告位。

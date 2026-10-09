@@ -28,11 +28,14 @@ const assetManifest=JSON.parse(readFileSync(resolve(output,'.vite/manifest.json'
 const selected=new Set(['index.html','config.js',...assets.filter(url=>url.startsWith('/favicon')||url.startsWith('/apple-touch')).map(url=>url.slice(1))]);
 for(const entry of Object.values(assetManifest))for(const name of [entry.file,...(entry.css||[]),...(entry.assets||[])])selected.add(name);
 for(const path of selected){const file=resolve(output,path);if(!file.startsWith(output+sep)||!existsSync(file))throw Error('Missing H5 output: '+path);files.push({path,bytes:statSync(file).size});}
-const manifest={...source,builtAt:new Date().toISOString(),apiBase,files:files.length,bytes:files.reduce((n,x)=>n+x.bytes,0),adGateImplemented:true,adRewardsEnabled:false,adPolicy:{hint:"one complete rewarded video per 30-second activation",underlay:"one complete rewarded video per 30-second activation"}};
+const manifest={...source,zipRoot:'jigsaw-nook/',screenOrientation:1,builtAt:new Date().toISOString(),apiBase,files:files.length,bytes:files.reduce((n,x)=>n+x.bytes,0),adGateImplemented:true,adRewardsEnabled:false,adPolicy:{hint:"one complete rewarded video per 30-second activation",underlay:"one complete rewarded video per 30-second activation"}};
 writeFileSync(resolve(output,'h5-build.json'),JSON.stringify(manifest,null,2)+'\n');
 mkdirSync('releases',{recursive:true});
 const archive=resolve('releases/jigsaw-nook-taptap-h5.zip');
-const packed=spawnSync(TAR,['-a','-cf',archive,'-C',output,...files.map(file=>file.path),'h5-build.json'],{stdio:'inherit',windowsHide:true});
+const zipStage=resolve('work/h5-platform-zip'),gameRoot=resolve(zipStage,'jigsaw-nook');
+mkdirSync(gameRoot,{recursive:true});
+for(const path of [...files.map(file=>file.path),'h5-build.json']){const target=resolve(gameRoot,path);if(!target.startsWith(gameRoot+sep))throw Error('Unsafe H5 ZIP path');mkdirSync(dirname(target),{recursive:true});copyFileSync(resolve(output,path),target);}
+const packed=spawnSync(TAR,['-a','-cf',archive,'-C',zipStage,...files.map(file=>'jigsaw-nook/'+file.path),'jigsaw-nook/h5-build.json'],{stdio:'inherit',windowsHide:true});
 if(packed.status!==0||packed.error)throw Error('H5 ZIP failed');
 const digest=createHash('sha256').update(readFileSync(archive)).digest('hex');
 writeFileSync('releases/jigsaw-nook-taptap-h5.sha256',digest+'  jigsaw-nook-taptap-h5.zip\n');
