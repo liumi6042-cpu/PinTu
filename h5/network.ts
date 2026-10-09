@@ -1,10 +1,11 @@
+import { gatewayRequest } from './transport';
 import { assetUrl, h5Config } from './config';
 let pending: Promise<string> | undefined;
 const nativeFetch = globalThis.fetch.bind(globalThis);
 function storageKey() { return 'jigsaw:h5-session:'+h5Config().apiBase; }
 async function createSession(signal?: AbortSignal) {
   try { const value=localStorage.getItem(storageKey());if(value&&/^[a-f0-9]{64}$/.test(value))return value; } catch { /* Session works in memory when storage is unavailable. */ }
-  const response=await nativeFetch(h5Config().apiBase+'/session',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',credentials:'omit',signal});
+  const response=await gatewayRequest(h5Config().apiBase+'/session',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',credentials:'omit',signal});
   if(!response.ok)throw Error('暂时无法连接，请重试');
   const {token}=await response.json() as {token:string};
   if(!/^[a-f0-9]{64}$/.test(token))throw Error('Invalid H5 session');
@@ -18,7 +19,7 @@ const mediaCache=new Map<string,{url:string;until:number}>();
 export async function privateImageUrl(path:string) {
   const cached=mediaCache.get(path);if(cached&&cached.until>Date.now())return cached.url;
   const token=await session();
-  const response=await nativeFetch(h5Config().apiBase+'/media-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Jigsaw-H5-Session':token},body:JSON.stringify({path}),credentials:'omit'});
+  const response=await gatewayRequest(h5Config().apiBase+'/media-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Jigsaw-H5-Session':token},body:JSON.stringify({path}),credentials:'omit'});
   if(!response.ok)throw Error('图片暂时无法读取，请重试');
   const data=await response.json() as {url:string;expiresAt:number};
   const url=new URL(data.url,h5Config().apiBase+'/').href;
@@ -50,7 +51,7 @@ export async function apiFetch(input:RequestInfo|URL,init?:RequestInit):Promise<
   if(!path.startsWith('/api/'))return nativeFetch(assetUrl(path),init);
   const token=await session(init?.signal??undefined),headers=new Headers(init?.headers);
   headers.set('X-Jigsaw-H5-Session',token);
-  const response=await nativeFetch(h5Config().apiBase+path,{...init,headers,credentials:'omit'});
+  const response=await gatewayRequest(h5Config().apiBase+path,{...init,headers,credentials:'omit'});
   if(response.headers.get('X-Jigsaw-H5-Session-Expired')==='1') {
     pending=undefined;try{localStorage.removeItem(storageKey());}catch{}
     throw Error('连接凭证已过期，请刷新后重新加入房间');
@@ -60,12 +61,12 @@ export async function apiFetch(input:RequestInfo|URL,init?:RequestInit):Promise<
   return response;
 }
 export async function gatewayConfig() {
-  const response=await nativeFetch(h5Config().apiBase+'/config',{credentials:'omit',signal:AbortSignal.timeout(8000)});
+  const response=await gatewayRequest(h5Config().apiBase+'/config',{credentials:'omit',signal:AbortSignal.timeout(8000)});
   if(!response.ok)throw Error('广告暂未开放');return response.json() as Promise<{rewardedAdUnitId?:string;adRewardEnabled:boolean}>;
 }
 
 export async function gatewayFetch(path:string,init?:RequestInit){
  const token=await session(init?.signal??undefined),headers=new Headers(init?.headers);headers.set('X-Jigsaw-H5-Session',token);
- const response=await nativeFetch(h5Config().apiBase+path,{...init,headers,credentials:'omit'});
+ const response=await gatewayRequest(h5Config().apiBase+path,{...init,headers,credentials:'omit'});
  return response;
 }

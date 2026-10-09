@@ -1,3 +1,4 @@
+import { OrientationEffect } from './display-controls';
 import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
 import { LanguageProvider } from '../app/language-switch';
@@ -50,7 +51,7 @@ function Page() {
   if(plain.startsWith('/puzzle/')){const photo=latestPublishedPhoto(plain.split('/')[2]);if(photo)return <PuzzleIntroduction photo={photo}/>;}
   return <main className="h5-route-error"><h1>{zh?'页面暂不可用':'Page unavailable'}</h1><a href={zh?'/zh/lobby':'/lobby'}>{zh?'返回大厅':'Back to lobby'}</a></main>;
 }
-function App(){const path=usePathname();return <LanguageProvider><Page/>{path!=='/courtyard'&&<FeedbackWidget/>}</LanguageProvider>;}
+function App(){const path=usePathname();return <LanguageProvider><OrientationEffect/><Page/>{path!=='/courtyard'&&<FeedbackWidget/>}</LanguageProvider>;}
 installNavigation();
 createRoot(document.getElementById('root')!).render(<App/>);
 import './ad-integration';

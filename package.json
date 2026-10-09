@@ -20,7 +20,7 @@
     "format": "oxfmt",
     "build:h5": "node scripts/build-h5.mjs",
     "h5:serve": "node server/h5-gateway.mjs",
-    "test:h5": "node --test tests/h5-gateway.test.mjs tests/h5-ad-assistance.test.mjs && node --import ./tests/ts-register.mjs --test tests/h5-ads.test.mjs",
+    "test:h5": "node --test tests/h5-gateway.test.mjs tests/h5-ad-assistance.test.mjs && node --import ./tests/ts-register.mjs --test tests/h5-ads.test.mjs tests/h5-transport.test.mjs tests/h5-orientation.test.mjs",
     "release:h5-server": "node scripts/package-h5-server.mjs",
     "test:h5:acceptance": "node tests/h5-isolated-run.mjs"
   },

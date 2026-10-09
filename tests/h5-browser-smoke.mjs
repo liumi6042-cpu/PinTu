@@ -21,7 +21,12 @@ const gateway=createH5Gateway({upstream:'http://127.0.0.1:3220',allowedOrigins:[
 preview.gatewayUrl=await listen(gateway);
 const browser=await chromium.launch({channel:'msedge',headless:true}),errors=[],checks=[];
 try{
- const ctx=await browser.newContext({viewport:{width:1280,height:850}});await ctx.route(preview.gatewayUrl+'/h5/assets/puzzles/*-thumbnail-*',route=>route.abort('blockedbyclient'));const page=await ctx.newPage();
+ const ctx=await browser.newContext({viewport:{width:1280,height:850}});
+ await ctx.route(preview.gatewayUrl+'/h5/assets/puzzles/*-thumbnail-*',route=>route.abort('blockedbyclient'));
+ for(const path of ['api/**','session','config','rewarded/**','media-ticket'])await ctx.route(preview.gatewayUrl+'/h5/'+path,route=>route.abort('blockedbyclient'));
+ await ctx.exposeBinding('__nativeGatewayRequest',async(_source,payload)=>{assert.ok(payload.url.startsWith(preview.gatewayUrl+'/h5/'));const r=await fetch(payload.url,{method:payload.method,headers:{...payload.header,Origin:clientOrigin},body:payload.data});return {statusCode:r.status,data:await r.text(),header:Object.fromEntries(r.headers)};});
+ await ctx.addInitScript(()=>{window.tap={request(options){let aborted=false;window.__nativeGatewayRequest({url:options.url,method:options.method,header:options.header,data:options.data}).then(result=>{if(!aborted)options.success(result);},error=>{if(!aborted)options.fail({errMsg:error.message});});return {abort(){aborted=true;}};}};});
+ const page=await ctx.newPage();
  page.on('pageerror',error=>errors.push(error.message));
  await page.goto(clientBase+'#/zh/lobby');
  await page.getByText('先看看大厅',{exact:true}).click();
@@ -48,13 +53,13 @@ try{
  await webPage.goto('http://127.0.0.1:3220/room/'+ticket.room.id);
  await webPage.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);
  await page.waitForTimeout(1600);
- assert.ok((await page.locator('body').innerText()).includes('2/8')||(await page.locator('body').innerText()).includes('2 / 8'));checks.push('Web 和跨来源 H5 浏览器进入同一房间并显示两位玩家');
+ assert.ok((await page.locator('body').innerText()).includes('2/8')||(await page.locator('body').innerText()).includes('2 / 8'));checks.push('浏览器请求被阻断时，TapTap官方请求适配完成入座与双端同房');
  const pixel=await page.locator('canvas').first().evaluate(canvas=>[...canvas.getContext('2d').getImageData(10,10,1,1).data]);
  assert.equal(pixel.length,4);checks.push('跨来源拼图图片可绘制并读取 Canvas');
  const hint=page.getByRole('button',{name:/^提示 · 看广告/}),underlay=page.getByRole('button',{name:/^底图 · 看广告/});
  await hint.click();await page.getByRole('alert').getByText('广告暂未开放，请继续正常拼图',{exact:true}).waitFor();
  assert.equal(await hint.isEnabled(),true);checks.push('普通浏览器无平台 SDK 时，提示保持锁定并说明原因');
- await page.evaluate(()=>{window.__adMode='closed';window.__watchCount=0;window.tap={createRewardedVideoAd:()=>{let close,error;return {load:async()=>{},show:async()=>{window.__watchCount++;setTimeout(()=>{if(window.__adMode==='failed')error(new Error('isolated failure'));else close({isEnded:window.__adMode==='completed'});},0);},onClose:fn=>{close=fn;},onError:fn=>{error=fn;},offClose:()=>{},offError:()=>{},destroy:()=>{}};}};});
+ await page.evaluate(()=>{window.__adMode='closed';window.__watchCount=0;window.tap={...window.tap,createRewardedVideoAd:()=>{let close,error;return {load:async()=>{},show:async()=>{window.__watchCount++;setTimeout(()=>{if(window.__adMode==='failed')error(new Error('isolated failure'));else close({isEnded:window.__adMode==='completed'});},0);},onClose:fn=>{close=fn;},onError:fn=>{error=fn;},offClose:()=>{},offError:()=>{},destroy:()=>{}};}};});
  await hint.click();await page.getByRole('alert').getByText(/需要完整观看广告/).waitFor();
  assert.equal(await hint.isEnabled(),true);checks.push('模拟提前关闭广告，提示不解锁');
  await page.evaluate(()=>{window.__adMode='failed';});await underlay.click();await page.getByRole('alert').getByText('广告暂时无法播放，请稍后再试',{exact:true}).waitFor();
@@ -69,7 +74,7 @@ try{
  await page.reload();
  await page.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);checks.push('刷新后持久 H5 会话正常重新入座');
  const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),mobilePage=await mobile.newPage();
- mobilePage.on('pageerror',error=>errors.push(error.message));
+ await mobile.addInitScript(()=>{window.tap={setDeviceOrientation(options){options.success();},onAccelerometerChange(){},offAccelerometerChange(){}};});mobilePage.on('pageerror',error=>errors.push(error.message));
  await mobilePage.goto(clientBase+'#/zh/lobby');
  await mobilePage.getByText('先看看大厅',{exact:true}).click();
  await mobilePage.waitForTimeout(1800);
@@ -82,6 +87,13 @@ assert.ok(widths.scroll<=widths.client+1,JSON.stringify(widths));checks.push('39
  await mobilePage.waitForURL('**/#/room/*');
  await mobilePage.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);
  checks.push('手机今日拼图开局保留 H5 路由');
+ for(const size of [{width:320,height:740},{width:390,height:844},{width:844,height:390}]){
+  await mobilePage.setViewportSize(size);await mobilePage.waitForTimeout(400);
+  const bounds=await mobilePage.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,height:innerHeight,canvas:document.querySelector('canvas').getBoundingClientRect().toJSON(),tools:document.querySelector('.table-tools').getBoundingClientRect().toJSON(),zoom:document.querySelector('.zoom-controls').getBoundingClientRect().toJSON()}));
+  assert.ok(bounds.scroll<=bounds.width+1,JSON.stringify(bounds));assert.ok(bounds.canvas.width>0&&Math.abs(bounds.canvas.height-bounds.height)<=1,JSON.stringify(bounds));assert.ok(bounds.zoom.bottom<=bounds.height&&bounds.zoom.right<=bounds.width&&bounds.zoom.left>=0,JSON.stringify(bounds));assert.equal(await mobilePage.getByRole('button',{name:'返回大厅',exact:true}).isVisible(),true);assert.ok(bounds.tools.left>=-1&&bounds.tools.right<=bounds.width+1&&bounds.tools.top>=0&&bounds.tools.bottom<=bounds.height);assert.ok(bounds.zoom.top>=bounds.tools.bottom||bounds.zoom.left>=bounds.tools.right,JSON.stringify(bounds));
+  await mobilePage.screenshot({path:`work/h5-browser/room-${size.width}x${size.height}.png`});
+ }
+ checks.push('320px、390px竖屏与844px横屏中画布重排、工具与缩放区不重叠');
  assert.deepEqual(errors,[]);
  const report={testedAt:new Date().toISOString(),isolated:true,crossOrigin:true,checks,passed:checks.length,errors};
  writeFileSync('work/h5-browser/results.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));

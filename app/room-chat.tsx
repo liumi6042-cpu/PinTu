@@ -10,7 +10,7 @@ import type { RoomClient } from '@/lib/room-client';
 
 const empty:ChatState={messages:[],loaded:false,error:'',sending:false};
 export default memo(function RoomChat({client,hidden=false}:{client:RoomClient;hidden?:boolean}){
- const language=useLanguage(),[open,setOpen]=useState(true),[state,setState]=useState<ChatState>(empty);
+ const language=useLanguage(),[open,setOpen]=useState(()=>typeof window!=='undefined'&&window.innerWidth>900&&window.innerHeight>600),[state,setState]=useState<ChatState>(empty);
  const [draft,setDraft]=useState(''),[sendError,setSendError]=useState(''),[unread,setUnread]=useState(0),[below,setBelow]=useState(false);
  const [muted,setMuted]=useState<string[]>([]),mutedRef=useRef<string[]>([]),openRef=useRef(false),seen=useRef(0),initialized=useRef(false);
  const channel=useRef<ChatClient|null>(null),button=useRef<HTMLButtonElement>(null),closeButton=useRef<HTMLButtonElement>(null),input=useRef<HTMLTextAreaElement>(null),list=useRef<HTMLDivElement>(null),atBottom=useRef(true);
