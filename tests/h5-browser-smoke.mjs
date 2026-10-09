@@ -10,6 +10,7 @@ const close=server=>new Promise(resolve=>server.close(resolve));
 mkdirSync('work/h5-browser',{recursive:true});
 const preview={gatewayUrl:""};
 const staticServer=createServer((req,res)=>{
+ res.setHeader('Cross-Origin-Embedder-Policy','require-corp');res.setHeader('Cross-Origin-Opener-Policy','same-origin');
  if(req.url==='/games/jigsaw/config.js'){res.writeHead(200,{'Content-Type':'text/javascript'});res.end('window.JIGSAW_H5_CONFIG='+JSON.stringify({apiBase:preview.gatewayUrl+'/h5'})+';');return;}
  const path=new URL(req.url,'http://test.invalid').pathname,filename=path==='/games/jigsaw/'?'index.html':path.replace(/^\/games\/jigsaw\//,''),file=resolve('outputs/h5',filename);
  if(!file.startsWith(resolve('outputs/h5')+'\\')){res.writeHead(404);res.end();return;}
@@ -34,7 +35,7 @@ try{
  assert.ok((await page.locator('body').innerText()).includes('图库'));checks.push('子目录安全的 H5 路由与图库正常');
  try{await page.waitForFunction(()=>[...document.images].length>0&&[...document.images].every(img=>img.complete&&img.naturalWidth>0),null,{timeout:15000});}catch(error){console.log(JSON.stringify(await page.locator('img').evaluateAll(images=>images.filter(img=>!img.complete||!img.naturalWidth).map(img=>({src:img.src,loading:img.loading,complete:img.complete}))),null,2));throw error;}
  const galleryImages=await page.locator('img').evaluateAll(images=>images.map(img=>({src:img.src,ok:img.complete&&img.naturalWidth>0})));
- assert.ok(galleryImages.length>0);assert.ok(galleryImages.every(img=>img.ok));checks.push('跨来源图库图片全部成功加载');
+ assert.ok(galleryImages.length>0);assert.ok(galleryImages.every(img=>img.ok));assert.equal(await page.evaluate(()=>crossOriginIsolated),true);assert.ok(await page.locator('img').evaluateAll(images=>images.every(img=>img.crossOrigin==='anonymous')));checks.push('严格跨来源隔离下图库图片全部成功加载');
  const cookie='puzzle_guest='+randomBytes(32).toString('hex');
  const response=await fetch('http://127.0.0.1:3220/api/rooms',{method:'POST',headers:{Origin:'http://127.0.0.1:3220','Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({imageId:'lemon-still-life-native-v2',pieces:108,visibility:'public',title:'浏览器双端验收'})});
  assert.equal(response.status,201);const ticket=await response.json();

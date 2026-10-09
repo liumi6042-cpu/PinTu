@@ -11,6 +11,9 @@ export default defineConfig({
     transform(source,id){
       if(!/\.[jt]sx?(?:\?|$)/.test(id)||(!id.startsWith(root+'/app/')&&!id.startsWith(root+'/lib/')&&!id.startsWith(root+'/components/')))return;
       let code=source;const imports:string[]=[];
+      // Isolated TapTap hosts reject no-cors preview images. Match the puzzle
+      // canvas loader's anonymous CORS mode without changing the original site.
+      code=code.replace(/<img(?=[\s/>])/g,'<img crossOrigin="anonymous"');
       if(/\bfetch\s*\(|=\s*fetch\b/.test(code)){code=code.replace(/(?<![\w.])fetch\s*\(/g,'__h5Fetch(').replace(/=\s*fetch\b/g,'= __h5Fetch');imports.push("import { apiFetch as __h5Fetch } from '"+root+"/h5/network';");}
       const names=new Set<string>();
       if(code.includes('window.history.replaceState(')) {code=code.replaceAll('window.history.replaceState(', 'replaceRouteHistory(');names.add('replaceRouteHistory');}
