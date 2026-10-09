@@ -19,7 +19,7 @@ import { isChinesePath } from '@/lib/site-paths';
 // the interface language: a Chinese visitor reading the English page automatically
 // gets Chinese chrome, and mixing the two put a Chinese artwork name inside an
 // English sentence.
-export default function ResumePuzzle(){
+export default function ResumePuzzle({compact=false}:{compact?:boolean}){
   const zh=isChinesePath(usePathname()||'');
   const [entry,setEntry]=useState<ResumeProgress|null>(null);
   useEffect(()=>{
@@ -33,6 +33,9 @@ export default function ResumePuzzle(){
   },[]);
   if(!entry)return null;
   const left=Math.max(0,entry.pieces-entry.placed),title=zh?entry.title:englishCopy(entry.title);
+  if(compact)return <a className="h5-quick-action h5-resume-action" href={'/room/'+entry.id} aria-label={zh?'接着拼 · '+title:'Continue · '+title} title={title}>
+    <Puzzle size={18} aria-hidden="true"/><span>{zh?'接着拼':'Continue'}</span><ArrowRight size={16} aria-hidden="true"/>
+  </a>;
   return <section className="resume-puzzle" aria-label={zh?'继续未完成的拼图':'Continue an unfinished puzzle'}>
     <div className="resume-puzzle-inner">
       <span className="resume-puzzle-icon" aria-hidden="true"><Puzzle size={20}/></span>

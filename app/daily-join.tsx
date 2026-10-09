@@ -1,5 +1,6 @@
 'use client';
-import {useState} from 'react';
+import {useRef,useState} from 'react';
+import {CalendarDays} from 'lucide-react';
 import {apiJson} from '@/lib/community-client';
 import {saveTicket,type RoomTicket} from '@/lib/room-client';
 import {dailyPuzzle} from '@/lib/daily-puzzle';
@@ -9,19 +10,25 @@ import type { PHOTOS } from '@/lib/puzzle-catalog';
 
 type DailyPhoto = typeof PHOTOS[number];
 
-export default function DailyJoin({zh, photo, title, compact=false, showImage=false}:{zh:boolean;photo?:DailyPhoto;title?:string;compact?:boolean;showImage?:boolean}){
- const [busy,setBusy]=useState(false),[error,setError]=useState(''),[pieces,setPieces]=useState(300);
+export default function DailyJoin({zh, photo, title, compact=false, showImage=false, oneTap=false}:{zh:boolean;photo?:DailyPhoto;title?:string;compact?:boolean;showImage?:boolean;oneTap?:boolean}){
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[pieces,setPieces]=useState(oneTap?108:300),launchLock=useRef(false);
  const chosen=photo??dailyPuzzle();
  async function join(){
-  if(busy)return;setBusy(true);setError('');
+  if(launchLock.current)return;launchLock.current=true;setBusy(true);setError('');
   try{
    const {rooms}=await apiJson<{rooms:RoomCard[]}>('/api/lobby');
    const open=rooms.filter(r=>r.imageId===chosen.id&&r.pieces===pieces&&!r.completed&&r.players<8&&r.acceptingNew!==false).sort((a,b)=>b.players-a.players||b.placed-a.placed)[0];
    if(open){location.assign('/room/'+open.id);return;}
    const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:chosen.id,pieces,visibility:'public'});
    saveTicket(ticket);location.assign('/room/'+ticket.room.id);
-  }catch(e){setError(zh?(e instanceof Error?e.message:'暂时无法加入，请重试'):'Could not join. Please try again.');setBusy(false);}
+  }catch(e){setError(zh?(e instanceof Error?e.message:'暂时无法加入，请重试'):'Could not join. Please try again.');launchLock.current=false;setBusy(false);}
  }
+ if(oneTap)return <div className="h5-daily-shortcut">
+  <button className="h5-quick-action h5-daily-action" type="button" disabled={busy} onClick={()=>void join()}>
+   <CalendarDays size={18} aria-hidden="true"/><span>{zh?(busy?'正在进入…':'每日拼图'):(busy?'Joining…':'Daily puzzle')}</span><small>{zh?'108片':'108 pcs'}</small>
+  </button>
+  {error&&<p className="form-error" role="alert">{error}</p>}
+ </div>;
  return <div className={'daily-puzzle-join'+(compact?' is-compact':'')}>
   {showImage&&<button className="daily-puzzle-image-button" type="button" onClick={()=>void join()} disabled={busy} aria-label={title ? `${title} · ${zh?'选择片数并开始拼图':'choose pieces and start'}` : undefined}><img src={chosen.thumbSrc} alt={title||chosen.title} width={480} height={384} loading="lazy" decoding="async"/></button>}
   <PiecePicker count={pieces} onChange={setPieces} disabled={busy} roomCreation/>

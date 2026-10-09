@@ -32,7 +32,7 @@ function Page() {
   const path=usePathname(),search=currentSearch(),q=new URLSearchParams(search),zh=path==='/zh'||path.startsWith('/zh/'),plain=path.replace(/^\/zh(?=\/|$)/,'')||'/';
   useEffect(()=>{document.documentElement.lang=zh?'zh-CN':'en';},[zh]);
   if(plain==='/'||plain==='/taptap'||plain==='/leaderboard')return <Redirect to={zh?'/zh/lobby':'/lobby'}/>;
-  if(plain==='/lobby')return <AccountGate><PublicLobby daily={<DailyPuzzle locale={zh?'zh':'en'} variant="strip"/>}/></AccountGate>;
+  if(plain==='/lobby')return <AccountGate><PublicLobby compact daily={<DailyPuzzle locale={zh?'zh':'en'} variant="quick"/>}/></AccountGate>;
   if(plain==='/gallery') {
     const photo=latestPublishedPhoto(q.get('image')||''),pieces=Number(q.get('pieces'));
     return <PuzzleApp key={path+search} gallery initialQuery={photo?.title} initialPieces={[108,300,500,1000].includes(pieces)?pieces:undefined} {...galleryEntry(q.get('mode')??undefined)}/>;

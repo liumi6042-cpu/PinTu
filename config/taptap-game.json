@@ -20,14 +20,14 @@
   "screenOrientationLabel": "portrait",
   "screenOrientationPersisted": true,
   "unexpectedReviewWithdrawn": true,
-  "h5VersionId": "281321",
-  "h5UploadPackageId": "76421",
-  "screenOrientationVerificationSource": "Official CLI uploaded portrait (1) version 281321; runtime orientation selection is separate",
+  "h5VersionId": "281461",
+  "h5UploadPackageId": "76488",
+  "screenOrientationVerificationSource": "Official CLI uploaded portrait (1) version 281461; runtime orientation selection is separate",
   "mainPackageBound": true,
-  "h5TestUrl": "https://www.taptap.cn/qrcode/miniapp?id=tapmcln4cmjeaus1ft&type=develop&version_id=281321",
-  "mainPackageBindingVerificationSource": "Official CLI CAS replaced H5 281145 with 281321; draft status independently verified",
+  "h5TestUrl": "https://www.taptap.cn/qrcode/miniapp?id=tapmcln4cmjeaus1ft&type=develop&version_id=281461",
+  "mainPackageBindingVerificationSource": "Official CLI CAS replaced H5 281321 with 281461; draft status independently verified",
   "realDevicePlaybackVerified": true,
-  "selfHostedRelease": "20261009-05",
+  "selfHostedRelease": "20261009-06",
   "platformNetworkOriginVerified": true,
   "platformNetworkOriginObserved": "https://ma-h5-al.tapimg.com",
   "platformNetworkOriginSource": "Actual TapTap device request denied-Origin log at 2026-10-09 14:21:11 UTC; exact origin allowed in H5 gateway",
@@ -35,7 +35,7 @@
   "realDevicePlaybackVerificationSource": "User report in this chat on 2026-10-09: ads and room entry work",
   "realDeviceRewardGrantVerified": false,
   "realDeviceEarlyCloseVerified": false,
-  "previewImageFix": "134 existing public preview files packaged with the frontend; URLs resolved from bundled module URL. Remote thumbnail requests deliberately blocked in browser regression tests. Version 281145 pending user device confirmation.",
+  "previewImageFix": "134 existing public preview files packaged with the frontend; URLs resolved from bundled module URL. Remote thumbnail requests deliberately blocked in browser regression tests. User confirmed previews in 281145.",
   "previewImageDeviceVerification": "User confirmed packaged preview images display on TapTap in version 281145",
   "roomEntryDeviceVerified": false,
   "nativeRequestDeviceVerified": false,
@@ -45,5 +45,16 @@
     "portrait",
     "landscape"
   ],
-  "runtimeOrientationDeviceVerified": false
+  "runtimeOrientationDeviceVerified": false,
+  "compactLobby": {
+    "dailyRequestedPieces": 108,
+    "oneTapDailyEntry": true,
+    "resumeKeepsOriginalRoom": true,
+    "verifiedViewports": [
+      "320x740",
+      "390x844",
+      "844x390"
+    ],
+    "deviceVerified": false
+  }
 }

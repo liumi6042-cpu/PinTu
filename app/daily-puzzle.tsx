@@ -9,9 +9,10 @@ import { englishCopy } from '@/lib/seo';
 //
 // `strip` is the lobby's version of the same pick: the lobby is a list of tables, and
 // the full card there would push the tables people came for below the fold.
-export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';variant?:'full'|'strip'}) {
+export default function DailyPuzzle({locale,variant='full'}:{locale:'zh'|'en';variant?:'full'|'strip'|'quick'}) {
   const photo=dailyPuzzle(),zh=locale==='zh',now=Date.now();
   const title=zh?photo.title:englishCopy(photo.title),subtitle=zh?photo.subtitle:englishCopy(photo.subtitle);
+  if(variant==='quick')return <DailyJoin zh={zh} photo={photo} title={title} oneTap/>;
   const recommended=recommendedPieces(photo.id),maximum=maximumPieces(photo.id);
   const note=zh?`${dailyPuzzleDate(now)} · 每天零点（北京时间）换一张，全站同一张。`:`${dailyPuzzleDate(now)} · A new picture each day at midnight Beijing time, the same for every visitor.`;
   if(variant==='strip')return <section className="daily-puzzle daily-puzzle-strip" aria-labelledby="daily-puzzle-heading">

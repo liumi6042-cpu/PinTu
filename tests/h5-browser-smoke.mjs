@@ -29,12 +29,12 @@ try{
  const page=await ctx.newPage();
  page.on('pageerror',error=>errors.push(error.message));
  await page.goto(clientBase+'#/zh/lobby');
- await page.getByText('先看看大厅',{exact:true}).click();
+ await page.getByRole('button',{name:'每日拼图 108片',exact:true}).waitFor();
  await page.getByRole('button',{name:'广告福利',exact:true}).click();
  await page.getByRole('dialog').getByText(/使用提示或底图前/).waitFor();
  await page.getByRole('button',{name:'继续拼图',exact:true}).click();checks.push('广告入口未配置时可关闭，不影响正常游玩');
  await page.screenshot({path:'work/h5-browser/lobby-desktop.png',fullPage:true});
- await page.locator('.daily-puzzle img').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('.daily-puzzle img')?.naturalWidth>0);assert.equal(new URL(await page.locator('.daily-puzzle img').getAttribute('src')).origin,clientOrigin);checks.push('远程缩略图被阻断时今日拼图预览仍显示');await page.getByRole('link',{name:'图库',exact:true}).click();
+ assert.equal(await page.locator('.daily-puzzle,.lobby-heading,.public-retention-note').count(),0);checks.push('H5大厅移除日拼大卡和重复介绍，保留一键108片入口');await page.getByRole('link',{name:'图库',exact:true}).click();
  await page.waitForURL('**/#/zh/gallery');
  await page.waitForTimeout(1200);
  assert.ok((await page.locator('body').innerText()).includes('图库'));checks.push('子目录安全的 H5 路由与图库正常');
@@ -75,18 +75,53 @@ try{
  await page.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);checks.push('刷新后持久 H5 会话正常重新入座');
  const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),mobilePage=await mobile.newPage();
  await mobile.addInitScript(()=>{window.tap={setDeviceOrientation(options){options.success();},onAccelerometerChange(){},offAccelerometerChange(){}};});mobilePage.on('pageerror',error=>errors.push(error.message));
+ const lobbyFixture=await (await fetch('http://127.0.0.1:3220/api/lobby')).json();
+ const resumeRoom=lobbyFixture.rooms.find(room=>room.id===ticket.room.id);assert.ok(resumeRoom);
+ await mobilePage.route('**/h5/api/my-rooms',route=>route.fulfill({json:{rooms:[{...resumeRoom,placed:1,lastPlayedAt:Date.now()}]}}));
  await mobilePage.goto(clientBase+'#/zh/lobby');
- await mobilePage.getByText('先看看大厅',{exact:true}).click();
+ await mobilePage.getByRole('button',{name:'每日拼图 108片',exact:true}).waitFor();
+ const resume=mobilePage.getByRole('link',{name:/^接着拼 · /});await resume.waitFor();assert.equal(await resume.getAttribute('href'),'/room/'+ticket.room.id);assert.ok((await resume.boundingBox()).height<=50);
  await mobilePage.waitForTimeout(1800);
  const widths=await mobilePage.evaluate(()=>({scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth}));
  await mobilePage.screenshot({path:'work/h5-browser/lobby-mobile.png',fullPage:true});
 if(widths.scroll>widths.client+1)console.log(JSON.stringify(await mobilePage.locator('body *').evaluateAll(nodes=>nodes.map(n=>({tag:n.tagName,cls:n.className,rect:n.getBoundingClientRect().toJSON()})).filter(n=>n.rect.right>391&&n.rect.width>5).slice(0,20)),null,2));
 assert.ok(widths.scroll<=widths.client+1,JSON.stringify(widths));checks.push('390px 手机大厅无横向溢出');
  await mobilePage.screenshot({path:'work/h5-browser/lobby-mobile.png',fullPage:true});
- await mobilePage.getByRole('button',{name:'云海鲸歌 · 选择片数并开始拼图',exact:true}).last().click();
- await mobilePage.waitForURL('**/#/room/*');
- await mobilePage.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);
- checks.push('手机今日拼图开局保留 H5 路由');
+ for(const size of [{width:320,height:740},{width:390,height:844},{width:844,height:390}]){
+  await mobilePage.setViewportSize(size);await mobilePage.waitForTimeout(150);
+  const layout=await mobilePage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,actions:[...document.querySelectorAll('.h5-quick-action')].map(el=>el.getBoundingClientRect().toJSON()),roomsTop:document.querySelector('.public-grid')?.getBoundingClientRect().top}));
+  assert.ok(layout.scroll<=layout.width+1,JSON.stringify(layout));assert.ok(layout.actions.every(r=>r.height>=44&&r.height<=50&&r.left>=0&&r.right<=layout.width),JSON.stringify(layout));assert.ok(layout.roomsTop<500,JSON.stringify(layout));
+  await mobilePage.screenshot({path:'work/h5-browser/compact-lobby-'+size.width+'x'+size.height+'.png'});
+ }
+ checks.push('带续拼入口的320/390竖屏和844横屏大厅：按钮44px以上、无溢出，房间列表位于500px以内');
+ await mobilePage.setViewportSize({width:390,height:844});
+ const lobbyPattern='**/h5/api/lobby';
+ // An empty public list deterministically exercises creation, even when the isolated DB has older rooms.
+ await mobilePage.route(lobbyPattern,route=>route.fulfill({json:{rooms:[],serverTime:Date.now()}}));
+ let creates=0;mobilePage.on('request',request=>{if(request.method()==='POST'&&new URL(request.url()).pathname==='/h5/api/rooms')creates++;});
+ const createdResponse=mobilePage.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname==='/h5/api/rooms');
+ await mobilePage.getByRole('button',{name:'每日拼图 108片',exact:true}).evaluate(button=>{button.click();button.click();});
+ const created=await createdResponse;assert.equal(created.status(),201);assert.equal(created.request().postDataJSON().pieces,108);const dailyTicket=await created.json();
+ // The shared engine fits square pieces to the artwork; the public room card records the requested count band.
+ await mobilePage.waitForURL('**/#/room/'+dailyTicket.room.id);
+ await mobilePage.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);assert.equal(creates,1);
+ checks.push('每日按钮连续点击只创建一个108片公开房间，保存入座凭据并进入H5拼图');
+ await mobilePage.unroute(lobbyPattern);
+ const updatedLobby=await (await fetch('http://127.0.0.1:3220/api/lobby')).json();
+ const dailyRoom=updatedLobby.rooms.find(room=>room.id===dailyTicket.room.id);assert.ok(dailyRoom);assert.equal(dailyRoom.pieces,108);
+ await mobilePage.route(lobbyPattern,route=>route.fulfill({json:{rooms:[{...dailyRoom,id:'full-room',players:8},{...dailyRoom,id:'different-piece-count',pieces:300},{...dailyRoom,id:'completed-room',completed:true},{...dailyRoom,id:'closed-room',acceptingNew:false},dailyRoom],serverTime:Date.now()}}));
+ await mobilePage.goto(clientBase+'#/zh/lobby');await mobilePage.getByRole('button',{name:'每日拼图 108片',exact:true}).click();
+ await mobilePage.waitForURL('**/#/room/'+dailyTicket.room.id);await mobilePage.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);assert.equal(creates,1);
+ checks.push('已有今日108片可加入房间时直接复用，跳过满员、完成、暂停加入和300片房间');
+ await mobilePage.unroute(lobbyPattern);
+ await mobilePage.route(lobbyPattern,route=>route.fulfill({json:{rooms:[],serverTime:Date.now()}}));
+ const createPattern='**/h5/api/rooms';await mobilePage.route(createPattern,route=>route.fulfill({status:503,json:{error:'日拼测试：暂时无法进入'}}));
+ await mobilePage.goto(clientBase+'#/zh/lobby');await mobilePage.getByRole('button',{name:'每日拼图 108片',exact:true}).click();
+ await mobilePage.getByRole('alert').filter({hasText:'日拼测试：暂时无法进入'}).waitFor();assert.equal(await mobilePage.getByRole('button',{name:'每日拼图 108片',exact:true}).isEnabled(),true);
+ await mobilePage.unroute(createPattern);await mobilePage.getByRole('button',{name:'每日拼图 108片',exact:true}).click();
+ await mobilePage.waitForURL('**/#/room/*');await mobilePage.waitForFunction(()=>JSON.parse(document.documentElement.dataset.puzzleGameStatus||'{}').ready===true);
+ checks.push('每日拼图创建失败显示错误并恢复按钮，手动重试成功进入房间');
+ await mobilePage.unroute(lobbyPattern);
  for(const size of [{width:320,height:740},{width:390,height:844},{width:844,height:390}]){
   await mobilePage.setViewportSize(size);await mobilePage.waitForTimeout(400);
   const bounds=await mobilePage.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,height:innerHeight,canvas:document.querySelector('canvas').getBoundingClientRect().toJSON(),tools:document.querySelector('.table-tools').getBoundingClientRect().toJSON(),zoom:document.querySelector('.zoom-controls').getBoundingClientRect().toJSON()}));
