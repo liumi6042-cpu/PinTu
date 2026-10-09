@@ -4,7 +4,16 @@
   "developerId": "485306",
   "developerUrl": "https://developer.taptap.cn/v3/485306/app/963283",
   "identifierSource": "user-provided developer-console URL",
-  "consoleAuthenticatedVerification": false,
+  "consoleAuthenticatedVerification": true,
   "rewardedAdUnitId": "",
-  "advertisingEnabled": false
+  "advertisingEnabled": false,
+  "advertisingServiceStatus": "enabled",
+  "advertisingPreparationStatus": "completed",
+  "advertisingStatusSource": "user-provided developer-console screenshot on 2026-10-09",
+  "advertisingNote": "Platform service is enabled; deployed game rewards remain disabled until an authenticated ad configuration query and platform test.",
+  "verifiedGameTitle": "一起拼拼拼",
+  "consoleVerificationSource": "Authenticated official TapTap CLI app selection and game list on 2026-10-09",
+  "cliAuthorizationComplete": true,
+  "h5AdvertisingToolAuthorizationComplete": false,
+  "h5AdvertisingAuthorizationNote": "Official H5 MCP documents TapTap App QR authorization. Browser-only completion has not been verified; successful CLI browser authorization does not authorize the H5 MCP."
 }
