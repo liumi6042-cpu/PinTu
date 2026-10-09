@@ -10,6 +10,7 @@ const stage=resolve('work/h5-server-release');mkdirSync(stage,{recursive:true});
 const assets=JSON.parse(readFileSync('outputs/h5/.vite/manifest.json','utf8'));
 const files=['server/h5-gateway.mjs','h5/asset-manifest.json','outputs/h5/index.html','outputs/h5/config.js','outputs/h5/favicon.ico','outputs/h5/favicon-96.png','outputs/h5/favicon.svg','outputs/h5/apple-touch-icon.png','outputs/h5/h5-build.json'];
 for(const entry of Object.values(assets))for(const name of [entry.file,...(entry.css||[]),...(entry.assets||[])])files.push('outputs/h5/'+name);
+const previews=JSON.parse(readFileSync('h5/preview-assets.json','utf8'));for(const url of previews)files.push('outputs/h5'+url);
 const manifest=[];
 for(const path of files){const target=resolve(stage,path);if(!target.startsWith(stage+sep))throw Error('Unsafe output path');mkdirSync(dirname(target),{recursive:true});copyFileSync(resolve(path),target);const bytes=readFileSync(target);manifest.push({path,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')});}
 writeFileSync(resolve(stage,'release.json'),JSON.stringify({service:'jigsaw-h5',...build,files:manifest},null,2)+'\n');

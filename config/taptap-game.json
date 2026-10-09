@@ -20,14 +20,14 @@
   "screenOrientationLabel": "portrait",
   "screenOrientationPersisted": true,
   "unexpectedReviewWithdrawn": true,
-  "h5VersionId": "281092",
-  "h5UploadPackageId": "76305",
-  "screenOrientationVerificationSource": "Official CLI uploaded portrait (1) version 281092; same orientation as prior bound package",
+  "h5VersionId": "281145",
+  "h5UploadPackageId": "76338",
+  "screenOrientationVerificationSource": "Official CLI uploaded portrait (1) version 281145",
   "mainPackageBound": true,
-  "h5TestUrl": "https://www.taptap.cn/qrcode/miniapp?id=tapmcln4cmjeaus1ft&type=develop&version_id=281092",
-  "mainPackageBindingVerificationSource": "Official CLI select-package completed replacement of H5 version 280927 with 281092; draft status independently verified",
+  "h5TestUrl": "https://www.taptap.cn/qrcode/miniapp?id=tapmcln4cmjeaus1ft&type=develop&version_id=281145",
+  "mainPackageBindingVerificationSource": "Official CLI CAS replaced H5 281092 with 281145; draft status independently verified",
   "realDevicePlaybackVerified": true,
-  "selfHostedRelease": "20261009-03",
+  "selfHostedRelease": "20261009-04",
   "platformNetworkOriginVerified": true,
   "platformNetworkOriginObserved": "https://ma-h5-al.tapimg.com",
   "platformNetworkOriginSource": "Actual TapTap device request denied-Origin log at 2026-10-09 14:21:11 UTC; exact origin allowed in H5 gateway",
@@ -35,5 +35,6 @@
   "realDevicePlaybackVerificationSource": "User report in this chat on 2026-10-09: ads and room entry work",
   "realDeviceRewardGrantVerified": false,
   "realDeviceEarlyCloseVerified": false,
-  "previewImageFix": "All H5 JSX image previews use anonymous CORS; regression tested under COEP require-corp and COOP same-origin. Version 281092 pending user device preview confirmation."
+  "previewImageFix": "134 existing public preview files packaged with the frontend; URLs resolved from bundled module URL. Remote thumbnail requests deliberately blocked in browser regression tests. Version 281145 pending user device confirmation.",
+  "previewImageDeviceVerification": "User reports previews still broken in 281092; anonymous CORS alone did not solve actual phone behavior. Exact host cause unverified."
 }

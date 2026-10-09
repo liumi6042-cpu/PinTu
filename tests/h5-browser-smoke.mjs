@@ -21,7 +21,7 @@ const gateway=createH5Gateway({upstream:'http://127.0.0.1:3220',allowedOrigins:[
 preview.gatewayUrl=await listen(gateway);
 const browser=await chromium.launch({channel:'msedge',headless:true}),errors=[],checks=[];
 try{
- const ctx=await browser.newContext({viewport:{width:1280,height:850}}),page=await ctx.newPage();
+ const ctx=await browser.newContext({viewport:{width:1280,height:850}});await ctx.route(preview.gatewayUrl+'/h5/assets/puzzles/*-thumbnail-*',route=>route.abort('blockedbyclient'));const page=await ctx.newPage();
  page.on('pageerror',error=>errors.push(error.message));
  await page.goto(clientBase+'#/zh/lobby');
  await page.getByText('先看看大厅',{exact:true}).click();
@@ -29,13 +29,13 @@ try{
  await page.getByRole('dialog').getByText(/使用提示或底图前/).waitFor();
  await page.getByRole('button',{name:'继续拼图',exact:true}).click();checks.push('广告入口未配置时可关闭，不影响正常游玩');
  await page.screenshot({path:'work/h5-browser/lobby-desktop.png',fullPage:true});
- await page.getByRole('link',{name:'图库',exact:true}).click();
+ await page.locator('.daily-puzzle img').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('.daily-puzzle img')?.naturalWidth>0);assert.equal(new URL(await page.locator('.daily-puzzle img').getAttribute('src')).origin,clientOrigin);checks.push('远程缩略图被阻断时今日拼图预览仍显示');await page.getByRole('link',{name:'图库',exact:true}).click();
  await page.waitForURL('**/#/zh/gallery');
  await page.waitForTimeout(1200);
  assert.ok((await page.locator('body').innerText()).includes('图库'));checks.push('子目录安全的 H5 路由与图库正常');
  try{await page.waitForFunction(()=>[...document.images].length>0&&[...document.images].every(img=>img.complete&&img.naturalWidth>0),null,{timeout:15000});}catch(error){console.log(JSON.stringify(await page.locator('img').evaluateAll(images=>images.filter(img=>!img.complete||!img.naturalWidth).map(img=>({src:img.src,loading:img.loading,complete:img.complete}))),null,2));throw error;}
  const galleryImages=await page.locator('img').evaluateAll(images=>images.map(img=>({src:img.src,ok:img.complete&&img.naturalWidth>0})));
- assert.ok(galleryImages.length>0);assert.ok(galleryImages.every(img=>img.ok));assert.equal(await page.evaluate(()=>crossOriginIsolated),true);assert.ok(await page.locator('img').evaluateAll(images=>images.every(img=>img.crossOrigin==='anonymous')));checks.push('严格跨来源隔离下图库图片全部成功加载');
+ assert.ok(galleryImages.length>0);assert.ok(galleryImages.every(img=>img.ok));assert.equal(await page.evaluate(()=>crossOriginIsolated),true);assert.ok(await page.locator('img').evaluateAll(images=>images.every(img=>img.crossOrigin==='anonymous')));assert.ok(galleryImages.every(img=>new URL(img.src).origin===clientOrigin));checks.push('远程缩略图被阻断时，严格隔离下图库仍从包内加载');
  const cookie='puzzle_guest='+randomBytes(32).toString('hex');
  const response=await fetch('http://127.0.0.1:3220/api/rooms',{method:'POST',headers:{Origin:'http://127.0.0.1:3220','Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({imageId:'lemon-still-life-native-v2',pieces:108,visibility:'public',title:'浏览器双端验收'})});
  assert.equal(response.status,201);const ticket=await response.json();

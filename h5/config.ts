@@ -1,3 +1,5 @@
+import previewAssets from './preview-assets.json';
+const packagedPreviews=new Set(previewAssets);
 export type H5Config = { apiBase: string; assetBase?: string; rewardedAdUnitId?: string; adRewardEnabled?: boolean };
 declare global { interface Window { JIGSAW_H5_CONFIG?: H5Config } }
 export function h5Config(): H5Config {
@@ -8,6 +10,8 @@ export function h5Config(): H5Config {
   return { ...raw, apiBase: url.href.replace(/\/$/, '') };
 }
 export function assetUrl(path: string) {
+  // Resolve from the bundled module, independent of the host document's base URL.
+  if(packagedPreviews.has(path))return new URL(path.slice(1),new URL('../',import.meta.url)).href;
   return /^\/(?:puzzles|cosmetics|intro|courtyard|flower-garden|artwork|sounds|icons|favicon|apple-touch)/.test(path)
     ? new URL(path.slice(1),h5Config().assetBase||h5Config().apiBase+'/assets/').href : path;
 }
