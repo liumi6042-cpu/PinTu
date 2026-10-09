@@ -18,9 +18,9 @@
 
 普通Web和H5经原HTTP增量轮询协议连接原后端。原账号可在两端分别登录；不同来源游客身份分别生成。两端同房不等于自动绑定TapTap账号。无需WebSocket、无需复制正式数据库。
 
-H5连接凭证存于浏览器localStorage，原站Cookie仅在服务端保存。CORS使用精确来源，不允许通配符或null。当前允许自托管域名 `https://jigsawnook.online`；TapTap实际Origin还未收到和验证。平台扫码测试后，检查独立服务日志中 `h5_origin_denied`，核对真实请求来源，再将确定的精确Origin加入 `H5_ALLOWED_ORIGINS` 并仅重启H5服务。若平台使用null来源，需要另行设计经过验证的受限接入方式，不能直接放开。
+H5连接凭证存于浏览器localStorage，原站Cookie仅在服务端保存。CORS使用精确来源，不允许通配符或null。当前允许自托管域名 `https://jigsawnook.online` 与实际TapTap测试来源 `https://ma-h5-al.tapimg.com`。用户首次真机测试发现图片和房间无法加载；14:21:11 UTC的独立网关日志确认该TapTap来源被拒。已将这个精确来源加入配置并仅重启H5服务，无需更换测试包或二维码。其他测试/正式平台来源须继续从真实请求核对后再追加。若平台使用null来源，需要另行设计经过验证的受限接入方式，不能直接放开。
 
-临时诊断 `H5_LOG_BLOCKED_ORIGINS=true` 只记录被拒的规范Origin，按来源10分钟去重，最多64项；不记录IP、房间、账号、凭证或请求正文。确认平台来源后关闭该诊断。
+临时诊断 `H5_LOG_BLOCKED_ORIGINS=true` 只记录被拒的规范Origin，按来源10分钟去重，最多64项；不记录IP、房间、账号、凭证或请求正文。手机复测确认连接后关闭该诊断。
 
 ## 广告接入
 
@@ -38,7 +38,7 @@ H5连接凭证存于浏览器localStorage，原站Cookie仅在服务端保存。
 3. 完整观看激励视频，核对提示/底图仅解锁一次且30秒后结束。
 4. 提前关闭、播放失败及连续点击均不发奖励；再次完整观看可再用一次。
 
-只有上述真实测试通过，才能将 `realDevicePlaybackVerified` 与 `platformNetworkOriginVerified` 标为true。包体预检、自动测试及广告开通都不等于审核通过。
+真实广告测试通过才能将 `realDevicePlaybackVerified` 标为true；手机复测确认图片及房间连接后，才能将 `platformNetworkOriginVerified` 标为true。包体预检、自动测试及广告开通都不等于审核通过。
 
 官方参考：[广告接入指南](https://developer.taptap.cn/minigameapidoc/quick-start/mcp-guide/ad-integration-guide/)、[激励视频与完成回调](https://developer.taptap.cn/minigameapidoc/dev/tutorial/open-capabilities/ad/rewarded-video-ad/)。具体实例生命周期依据本次已授权官方MCP返回的指南。
 
@@ -59,8 +59,8 @@ H5_UPSTREAM指向原站127.0.0.1:3104，H5_UPSTREAM_ORIGIN为原域名HTTPS。�
 - 隔离HTTP15项通过：双端同步、碰撞、鉴权、聊天、指针、账号、私房与上传图片权限。
 - 隔离浏览器13项通过：图库、跨域Canvas、同房、刷新、390px手机、模拟广告完成/关闭/失败及原Web帮助规则。
 - 官方ZIP预检无违规项或警告；上传、主包绑定、竖屏版本和未发布状态已验证。
-- 公网广告配置已验证。公网手机页面与房间列表只读验收证据存于 `work/h5-production/results.json`。
-- TapTap真实Origin与真实广告播放仍待手机测试。全量原源码沿用基准版本lint错误，本次未重构无关文件。
+- 公网广告配置已验证。公网手机页面与房间列表只读验收证据存于 `work/h5-production/results.json`。`https://ma-h5-al.tapimg.com` 来源下会话、大厅同房列表、房间POST预检、82张图库缩略图及2张拼图图片读取均已通过；保留精确来源限制。
+- 已观察并放行真实TapTap测试Origin；手机复测连接与真实广告播放仍待完成。全量原源码沿用基准版本lint错误，本次未重构无关文件。
 
 重跑隔离验收：先 `npm run build:server`，再 `npm run test:h5:acceptance`。脚本管理并关闭隔离后端/网关，测试数据仅在本项目work目录；3211/3220端口须空闲。不得将隔离测试指向正式后端。
 

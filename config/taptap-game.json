@@ -28,5 +28,7 @@
   "mainPackageBindingVerificationSource": "Official CLI select-package completed replacement of H5 version 280802 with 280927; draft status independently verified",
   "realDevicePlaybackVerified": false,
   "selfHostedRelease": "20261009-02",
-  "platformNetworkOriginVerified": false
+  "platformNetworkOriginVerified": false,
+  "platformNetworkOriginObserved": "https://ma-h5-al.tapimg.com",
+  "platformNetworkOriginSource": "Actual TapTap device request denied-Origin log at 2026-10-09 14:21:11 UTC; exact origin allowed in H5 gateway"
 }
