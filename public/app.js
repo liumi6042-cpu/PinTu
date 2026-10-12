@@ -1,3 +1,5 @@
+import {planBulkAssets, applyBulkAssets} from './bulk-assets.js';
+
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
 const toastNode = document.querySelector('#toast');
@@ -5,12 +7,13 @@ const TARGETS = { pc: 'PC 网页', 'mobile-shared': '共享小游戏' };
 const STATUS = { published: '在架', archived: '归档', draft: '草稿' };
 const FIELD_NAMES = { name: '名称', title: '标题', subtitle: '副标题', description: '说明', styleGroupId: '画风分组', subjectTags: '题材标签', status: '展示状态', galleryVisible: '图库可见', dailyOnly: '每日专用', category: '原分类', imageIds: '图片与顺序', coverImageId: '封面', price: '金币价格', decorationId: '奖励装饰', packId: '关联图包', milestones: '里程碑', added: '新增', removed: '移除', packOrder: '图包顺序', albumOrder: '图鉴顺序' };
 const ENTITY_NAMES = { draft: '草稿', style: '画风', asset: '素材', pack: '图包', album: '图鉴', target: '内容目标' };
-const AUDIT_NAMES = { 'import-baseline': '导入内容基线', 'initialize-admin': '创建管理员', login: '管理员登录', logout: '管理员退出', 'create-draft': '创建草稿', 'save-draft': '保存草稿', 'reimport-source': '重新导入来源', 'generate-candidate': '生成本地候选', 'save-snapshot': '保存规划快照', 'restore-version': '从版本恢复草稿' };
+const AUDIT_NAMES = { 'import-baseline': '导入内容基线', 'initialize-admin': '创建管理员', login: '管理员登录', logout: '管理员退出', 'create-draft': '创建草稿', 'save-draft': '保存草稿', 'reimport-source': '同步原项目内容', 'generate-candidate': '生成游戏更新文件', 'save-snapshot': '保存完整备份', 'restore-version': '从版本恢复草稿' };
 const state = {
   session: null, bootstrap: null, draft: null, target: 'mobile-shared', page: 'assets',
   dirty: false, busy: false, selected: new Set(), packId: null, albumId: null,
   filters: { query: '', style: '', tag: '', origin: '', direction: '', status: '', review: '' },
   analysis: null, picker: null, version: null, fileIndex: 0,
+  pendingBulk: null, lastBulk: null, versionAdvancedOpen: false,
 };
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const attr = esc;
@@ -106,6 +109,7 @@ async function loadDraft(id) {
   if (state.draft.draft) state.draft = state.draft.draft;
   state.analysis = null;
   state.selected.clear();
+  state.lastBulk = null; state.pendingBulk = null;
   state.packId = null; state.albumId = null;
   markSaved();
 }
@@ -131,7 +135,7 @@ function renderAuth(error = '') {
       <label class="field"><b>管理员用户名</b><input name="username" required autocomplete="username" minlength="2" maxlength="40" autofocus></label>
       <label class="field"><b>密码</b><input name="password" type="password" maxlength="128" required ${setup ? 'minlength="10"' : ''} autocomplete="${setup ? 'new-password' : 'current-password'}"></label>
       ${setup ? '<label class="field"><b>再次输入密码</b><input name="confirmPassword" type="password" maxlength="128" minlength="10" required autocomplete="new-password"></label>' : ''}
-      <button class="primary" type="submit">${setup ? '创建并进入工作室' : '进入工作室'}</button><p class="muted text-small space-top">图包整理先保存为草稿。生成候选不会自动部署到游戏。</p>
+      <button class="primary" type="submit">${setup ? '创建并进入工作室' : '进入工作室'}</button><p class="muted text-small space-top">图包整理先保存为草稿。准备更新文件不会自动部署到游戏。</p>
     </form></section></main>`;
   document.querySelector('#auth-form').addEventListener('submit', event => {
     event.preventDefault();
@@ -150,7 +154,7 @@ function renderAuth(error = '') {
 
 function render() {
   if (!state.session?.authenticated) { renderAuth(); return; }
-  const pages = [['assets', '▦', '素材库'], ['packs', '▤', '图包'], ['albums', '▧', '图鉴'], ['publish', '↗', '发布与版本']];
+  const pages = [['assets', '▦', '素材库'], ['packs', '▤', '图包'], ['albums', '▧', '图鉴'], ['publish', '↗', '检查与备份']];
   app.innerHTML = `<div class="shell"><aside class="sidebar"><div class="brand"><div class="brand-mark">✳</div><strong>内容工作室</strong><span>拼图的素材与收藏</span></div><nav class="nav" aria-label="主要导航">${pages.map(([id, icon, name]) => `<button data-action="page" data-page="${id}" class="${state.page === id ? 'active' : ''}" ${state.page === id ? 'aria-current="page"' : ''}><span class="nav-icon">${icon}</span>${name}</button>`).join('')}</nav><div class="sidebar-note">素材身份保持稳定<br>画风分组 · 题材标签<br><br>微信与 TapTap 共用<br>「共享小游戏」内容配置</div></aside>
     <main class="main"><header class="topbar"><div class="target-switch" aria-label="内容目标">${Object.entries(TARGETS).map(([id, name]) => `<button data-action="target" data-target="${id}" class="${state.target === id ? 'active' : ''}" aria-pressed="${state.target === id}">${name}</button>`).join('')}</div><div class="draft-control"><label class="sr-only" for="draft-select">当前草稿</label><select id="draft-select" data-action="draft-select">${(state.bootstrap?.drafts || []).map(item => `<option value="${attr(item.id)}" ${state.draft?.id === item.id ? 'selected' : ''}>${esc(item.name)}</option>`).join('')}</select><button data-action="new-draft" class="small">新草稿</button><span id="save-state" class="dirty ${state.dirty ? '' : 'saved'}">${state.dirty ? '有未保存编辑' : '已保存'}</span><button class="primary small" data-action="save" ${!state.dirty ? 'disabled' : ''}>保存草稿</button><button data-action="logout" class="quiet small" title="退出管理员账号">退出</button></div></header><div class="main-content" id="page-content">${state.draft ? renderPage() : '<div class="empty"><h2>创建你的第一份内容草稿</h2><p>系统会从现有游戏导入完整内容基线。</p><button data-action="new-draft" class="primary space-top">创建草稿</button></div>'}</div></main></div>`;
 }
@@ -196,7 +200,7 @@ function assetCard(asset, { picker = false } = {}) {
   const meta = managed(asset.id), target = targetAsset(asset.id);
   const selected = picker ? state.picker.selected.has(asset.id) : state.selected.has(asset.id);
   const status = target.status || 'draft';
-  return `<article class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="asset-id" title="${attr(asset.id)}">${esc(asset.id)}</div><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${status}">${esc(STATUS[status] || status)}</span>${!picker && (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
+  return `<article class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="asset-id" title="${attr(asset.id)}">${esc(asset.id)}</div><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${status}">${esc(STATUS[status] || status)}</span>${!picker && target.galleryVisible === false ? `<span class="chip hidden">图库隐藏</span>` : ''}${!picker && (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
 }
 
 function renderAssets() {
@@ -208,8 +212,43 @@ function renderAssets() {
   return heading('素材库', `${assets().length} 幅素材共用同一来源；当前编辑 ${labelTarget(state.target)} 的展示状态。`, '<button data-action="styles">管理画风</button>') +
     `<div class="filters"><label>搜索素材<input data-filter="query" value="${attr(state.filters.query)}" placeholder="图片 ID、标题或题材"></label><label>画风<select data-filter="style">${options([['__none', '待分类'], ...styles().map(style => [style.id, style.name])], state.filters.style, '全部画风')}</select></label><label>题材<select data-filter="tag">${options(tags.map(tag => [tag, tag]), state.filters.tag, '全部题材')}</select></label><label>来源<select data-filter="origin">${options(origins.map(value => [value, originName(value)]), state.filters.origin)}</select></label><label>方向<select data-filter="direction">${options(directions.map(value => [value, directionName(value)]), state.filters.direction)}</select></label><label>状态<select data-filter="status">${options(Object.entries(STATUS), state.filters.status)}</select></label><label>审核<select data-filter="review">${options(reviews.map(value => [value, reviewName(value)]), state.filters.review)}</select></label></div>
     <div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-all" ${filtered.length && filtered.every(asset => state.selected.has(asset.id)) ? 'checked' : ''}> 选择筛选结果</label><span class="muted">显示 ${filtered.length} 幅 · ${state.selected.size} 幅已选</span></div>
-    ${state.selected.size ? `<div class="batchbar"><strong>整理 ${state.selected.size} 幅素材</strong><select id="batch-style" aria-label="批量画风">${styleOptions('')}</select><button class="small" data-action="batch-style">设置画风</button><input id="batch-tags" aria-label="批量题材标签" placeholder="题材标签，用逗号分隔"><button class="small" data-action="batch-tags">追加标签</button><button class="small" data-action="batch-replace-tags">替换标签</button><button class="quiet small" data-action="clear-selection">清空选择</button></div>` : ''}
-    ${filtered.length ? `<div class="asset-grid">${filtered.map(asset => assetCard(asset)).join('')}</div>` : '<div class="empty">没有符合筛选条件的素材。<p>可以修改关键词或清空部分筛选。</p></div>'}`;
+    ${renderBulkBar()}
+    ${filtered.length ? `<div class="asset-grid ${state.selected.size ? 'with-selection' : ''}">${filtered.map(asset => assetCard(asset)).join('')}</div>` : '<div class="empty">没有符合筛选条件的素材。<p>可以修改关键词或清空部分筛选。</p></div>'}`;
+}
+
+const BULK_NAMES = {archive:'归档所选（下架）',restore:'恢复上架',hide:'在图库隐藏',show:'在图库显示'};
+function renderBulkBar() {
+  if (!state.selected.size) return '';
+  return `<section class="batchbar" aria-label="所选素材管理"><div class="batch-head"><strong>已选 ${state.selected.size} 幅</strong><span>操作目标：${esc(labelTarget(state.target))}</span><button class="quiet small push-right" data-action="clear-selection">取消选择</button></div><div class="actions">${Object.entries(BULK_NAMES).map(([action,name])=>`<button class="small ${action==='archive'?'danger':''}" data-action="bulk-manage" data-bulk="${action}">${name}</button>`).join('')}<button class="small" data-action="undo-bulk" ${state.lastBulk?'':'disabled'}>撤销上次批量修改</button><button class="primary small" data-action="save" ${state.dirty?'':'disabled'}>保存草稿</button></div><details class="batch-extra"><summary>批量设置画风与题材标签</summary><div class="batch-controls"><select id="batch-style" aria-label="批量画风">${styleOptions('')}</select><button class="small" data-action="batch-style">设置画风</button><input id="batch-tags" aria-label="批量题材标签" placeholder="题材标签，用逗号分隔"><button class="small" data-action="batch-tags">追加标签</button><button class="small" data-action="batch-replace-tags">替换标签</button></div></details><small>归档会保留原件与旧房间引用。这些操作先存为草稿，检查并应用游戏更新后才影响玩家。</small></section>`;
+}
+
+function openBulkAction(action) {
+  try {
+    const plan=planBulkAssets(doc(),state.selected,state.target,action);
+    if (!plan.changes.length) { toast('所选素材已是该状态，无需修改。'); return; }
+    state.pendingBulk={draftId:state.draft.id,target:state.target,action,ids:plan.ids};
+    openModal(BULK_NAMES[action],`<p>将 <strong>${plan.changes.length} 幅</strong>素材应用到 <strong>${esc(labelTarget(plan.target))}</strong> 的当前草稿。${plan.unchangedCount?`另有 ${plan.unchangedCount} 幅已是该状态。`:''}</p><div class="notice"><ul class="analysis-list">${plan.warnings.map(message=>`<li>${esc(message)}</li>`).join('')}</ul></div><details><summary>查看所选图片</summary><ul class="analysis-list">${plan.changes.map(item=>`<li>${esc(item.title)} · ${esc(item.id)}</li>`).join('')}</ul></details><p class="muted text-small">归档素材仍可在“归档”筛选中查看和恢复。</p><div class="modal-footer"><button data-action="close-modal">取消</button><button class="primary" data-action="confirm-bulk">确认修改草稿</button></div>`);
+  } catch(error) { toast(error.message,true); }
+}
+
+function applyPendingBulk() {
+  const pending=state.pendingBulk;
+  if(!pending||pending.draftId!==state.draft.id||pending.target!==state.target){toast('当前草稿或目标已变化，请重新选择。',true);return;}
+  const plan=applyBulkAssets(doc(),pending.ids,pending.target,pending.action);
+  state.lastBulk={...plan,draftId:state.draft.id};state.pendingBulk=null;
+  dirty();closeModal();render();toast(`已修改 ${plan.changes.length} 幅素材，请保存草稿。`);
+}
+
+function undoBulkAction() {
+  const plan=state.lastBulk;if(!plan||plan.draftId!==state.draft.id)return;
+  let restored=0,skipped=0;
+  for(const change of plan.changes){
+    const config=managed(change.id).targets?.[plan.target];
+    const fields=['status','galleryVisible'].filter(key=>change.before[key]!==change.after[key]);
+    if(!config||fields.some(key=>config[key]!==change.after[key])){skipped++;continue;}
+    for(const key of fields)config[key]=change.before[key];restored++;
+  }
+  state.lastBulk=null;if(restored)dirty();render();toast(`已撤销 ${restored} 幅${skipped?`；${skipped} 幅后来又被修改，已保留后续编辑`:''}。`);
 }
 
 function renderEntities(type) {
@@ -237,7 +276,7 @@ function renderEntityEditor(type, entity, index) {
     </div>${isPack ? `<div class="cover-row">${entity.coverImageId ? `<img src="${imageUrl(entity.coverImageId)}" alt="${attr(titleFor(entity.coverImageId))}">` : ''}<div><strong>图包封面</strong><div class="muted text-small">${entity.coverImageId ? esc(titleFor(entity.coverImageId)) : '尚未选择'}</div><small>独立设置，不会改变图片排序。</small></div><button class="small push-right" data-action="pick" data-type="${type}" data-index="${index}" data-mode="cover" ${entity.imageIds.length ? '' : 'disabled'}>选择封面</button></div>` : ''}
     <section class="section"><div class="section-heading"><h3>图片与顺序 · ${entity.imageIds.length} 幅</h3><button data-action="pick" data-type="${type}" data-index="${index}" data-mode="members" class="small">选择图片</button></div>${entity.imageIds.length ? entity.imageIds.map((id, order) => imageRow(id, order, type, index, entity.imageIds.length)).join('') : '<div class="empty">从素材库选择图片开始整理。</div>'}</section>
     ${!isPack ? `<section class="section"><div class="section-heading"><h3>里程碑奖励</h3><button class="small" data-action="add-milestone" data-index="${index}">添加里程碑</button></div><p class="muted text-small">既有目标与奖励定义需保持稳定。新的规则可先保留为规划。</p>${(entity.milestones || []).map((milestone, row) => `<div class="milestone-row"><label class="field">完成张数<input ${bindAttr([...base, 'milestones', row, 'target'])} data-number="true" type="number" min="1" step="1" value="${milestone.target}"></label><label class="field">奖励金币<input ${bindAttr([...base, 'milestones', row, 'coins'])} data-number="true" type="number" min="0" step="1" value="${milestone.coins}"></label><label class="field">奖励装饰 ID<input ${bindAttr([...base, 'milestones', row, 'decorationId'])} data-null="true" value="${attr(milestone.decorationId)}"></label><button class="danger small" data-action="remove-milestone" data-index="${index}" data-row="${row}" aria-label="移除此里程碑">×</button></div>`).join('') || '<p class="muted">尚无里程碑奖励。</p>'}</section>` : ''}
-    <div class="notice warning section-notice">图片成员、旧奖励、独立封面或上下架的调整可能需要运行时兼容。请到「发布与版本」查看具体阻断项。</div></section>`;
+    <div class="notice warning section-notice">图片成员、旧奖励、独立封面或上下架的调整可能需要运行时兼容。请到「检查与备份」查看具体阻断项。</div></section>`;
 }
 
 function imageRow(id, order, type, index, count) {
@@ -248,21 +287,21 @@ function renderPublish() {
   const analysis = state.analysis;
   const inspected = Boolean(analysis);
   const candidateAllowed = inspected && (analysis.compatibleTargets || []).includes(state.target);
-  return heading('发布与版本', '生成本地规划快照或目标候选；游戏内容由原项目的发布流程接入。', '<button data-action="reimport">重新导入来源</button><button class="primary" data-action="analyze">保存并检查差异</button>') +
-    `<div class="notice">本地「生成候选」不会上线，不会覆盖游戏源码或玩家数据。包含兼容阻断的规划仍可保存为完整快照。</div><div class="publish-layout"><div class="stack"><section class="panel"><div class="section-heading"><h2>差异与兼容</h2><small>草稿版本 ${state.draft.revision}</small></div>${analysis ? renderAnalysis(analysis) : '<div class="empty">先保存并检查差异。<p>服务端会核对图片资源、历史身份、图包权益与奖励规则。</p></div>'}</section><section class="panel"><h2>版本记录</h2>${renderVersions()}</section></div><div class="stack"><section class="panel"><h2>生成本地版本</h2><form id="publish-form"><label class="field space-bottom"><b>版本标签</b><input name="label" required maxlength="100" placeholder="例如：纸艺分组整理 · 第一轮"></label><label class="field space-bottom"><b>操作原因</b><textarea name="reason" required minlength="4" maxlength="500" placeholder="记录这次整理的目的与影响"></textarea></label><label class="field space-bottom"><b>再次验证管理员密码</b><input name="password" type="password" maxlength="128" required autocomplete="current-password"></label><div class="actions"><button type="submit" name="kind" value="snapshot" ${inspected ? '' : 'disabled'}>保存完整规划快照</button><button type="submit" name="kind" value="candidate" class="primary" ${candidateAllowed ? '' : 'disabled'}>生成${labelTarget(state.target)}候选</button></div><p class="muted text-small publish-note">${!inspected ? '先点击「保存并检查差异」，审阅后再生成版本。' : !candidateAllowed ? '当前目标存在兼容阻断，可保存完整规划快照继续整理。' : '候选仅包含当前目标的兼容内容，不会静默排除变更。'}</p></form></section><section class="panel"><h2>操作审计</h2>${renderAudit()}</section></div></div>`;
+  return heading('检查与备份', '平时保存草稿即可；一轮整理完成后，在这里查看改动并留下版本备份。', '<button data-action="reimport">同步原项目最新内容</button><button class="primary" data-action="analyze">保存并查看改动</button>') +
+    `<ol class="workflow-guide"><li><b>1 · 整理并保存草稿</b><span>图片、图包和图鉴的修改保存在后台，可继续编辑。</span></li><li><b>2 · 查看改动与检查结果</b><span>确认改了什么，检查已有购买、图鉴进度和图片引用。</span></li><li><b>3 · 保存版本备份</b><span>留住这一轮完整整理结果，以后可恢复为新草稿。</span></li></ol><div class="notice">草稿和版本备份保存在本机。需要让游戏采用新内容时，再准备更新文件并由原游戏发布流程应用。</div><div class="publish-layout"><div class="stack"><section class="panel"><div class="section-heading"><h2>修改预览与检查结果</h2><small>草稿版本 ${state.draft.revision}</small></div>${analysis ? renderAnalysis(analysis) : '<div class="empty">点击上方“保存并查看改动”。<p>这里会列出与原项目导入内容的差别，以及更新前需要解决的问题。</p></div>'}</section><section class="panel"><h2>版本备份与更新文件</h2><p class="muted text-small">恢复会建立新草稿，保留当前草稿和历史记录。游戏内容在更新文件应用后才会改变。</p>${renderVersions()}</section></div><div class="stack"><section class="panel"><h2>保存这一轮整理</h2><form id="publish-form"><label class="field space-bottom"><b>版本名称</b><input name="label" required maxlength="100" placeholder="例如：纸艺分组整理 · 第一轮"></label><label class="field space-bottom"><b>本次整理说明</b><textarea name="reason" required minlength="4" maxlength="500" placeholder="例如：整理纸艺分组，归档暂不使用的图片"></textarea></label><label class="field space-bottom"><b>再次验证管理员密码</b><input name="password" type="password" maxlength="128" required autocomplete="current-password"></label><button type="submit" name="kind" value="snapshot" class="primary" ${inspected ? '' : 'disabled'}>保存版本备份</button><p class="muted text-small publish-note">${!inspected ? '先查看改动，再保存这一轮备份。' : '备份包含 PC 和小游戏的完整草稿；有待解决的问题也可以先备份。'}</p><details class="update-options"><summary>需要更新游戏时：准备更新文件</summary><p class="muted text-small">当前目标：${esc(labelTarget(state.target))}。通过检查后生成供原游戏发布流程使用的文件，应用后才会对玩家生效。</p><button type="submit" name="kind" value="candidate" ${candidateAllowed ? '' : 'disabled'}>准备${state.target==='pc'?' PC 网页':'小游戏'}更新文件</button><p class="muted text-small publish-note">${!inspected ? '先保存并查看改动。' : !candidateAllowed ? '当前目标还有需要解决的问题；可先保存版本备份继续整理。' : '会再次校验图片审核与交付文件，并完整保留本目标的修改。'}</p></details></form></section><section class="panel"><h2>操作记录</h2>${renderAudit()}</section></div></div>`;
 }
 
 function renderAnalysis(analysis) {
   const blockers = analysis.blockers || [], warnings = analysis.warnings || [], changes = analysis.changes || [];
-  return `${blockers.length ? `<div class="notice error"><strong>${blockers.length} 项兼容阻断</strong><ul class="analysis-list">${blockers.map(item => `<li><strong>${esc(labelTarget(item.target))} · ${esc(item.id || item.code)}</strong><br>${esc(item.message)}</li>`).join('')}</ul></div>` : '<div class="notice">未发现兼容阻断。生成候选时还会校验原件、审核和交付文件。</div>'}
+  return `${blockers.length ? `<div class="notice error"><strong>${blockers.length} 项更新前需要解决的问题</strong><ul class="analysis-list">${blockers.map(item => `<li><strong>${esc(labelTarget(item.target))} · ${esc(item.id || item.code)}</strong><br>${esc(item.message)}</li>`).join('')}</ul></div>` : '<div class="notice">当前检查未发现影响历史内容的问题。准备更新文件时还会校验原件、审核和交付文件。</div>'}
     ${warnings.length ? `<div class="notice warning"><strong>需要留意</strong><ul class="analysis-list">${warnings.map(item => `<li>${esc(labelTarget(item.target))} · ${esc(item.message)}</li>`).join('')}</ul></div>` : ''}
-    <p class="muted text-small">可生成目标候选：${(analysis.compatibleTargets || []).map(labelTarget).join('、') || '暂无'} · ${changes.length} 项差异</p>
-    ${changes.length ? `<div class="table-wrap"><table><thead><tr><th>目标 / 内容</th><th>字段</th><th>当前基线</th><th>草稿</th></tr></thead><tbody>${changes.map(change => `<tr><td>${esc(labelTarget(change.target))}<br><small>${esc(ENTITY_NAMES[change.entityType] || change.entityType)} · ${esc(change.id)}</small></td><td>${esc(FIELD_NAMES[change.field] || change.field)}</td><td class="diff-value">${esc(textValue(change.before))}</td><td class="diff-value">${esc(textValue(change.after))}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">当前草稿与导入基线一致。</p>'}`;
+    <p class="muted text-small">可准备更新文件：${(analysis.compatibleTargets || []).map(labelTarget).join('、') || '暂无'} · ${changes.length} 项改动</p>
+    ${changes.length ? `<div class="table-wrap"><table><thead><tr><th>目标 / 内容</th><th>修改项</th><th>原项目导入内容</th><th>整理后的草稿</th></tr></thead><tbody>${changes.map(change => `<tr><td>${esc(labelTarget(change.target))}<br><small>${esc(ENTITY_NAMES[change.entityType] || change.entityType)} · ${esc(change.id)}</small></td><td>${esc(FIELD_NAMES[change.field] || change.field)}</td><td class="diff-value">${esc(textValue(change.before))}</td><td class="diff-value">${esc(textValue(change.after))}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">当前草稿与原项目导入内容一致。</p>'}`;
 }
 
 function renderVersions() {
   const versions = state.bootstrap?.versions || [];
-  return versions.length ? versions.map(version => `<article class="version-row"><div class="version-top"><div><strong>${esc(version.label || version.id)}</strong><small>${date(version.createdAt)} · ${version.kind === 'snapshot' ? '规划快照' : `${esc(labelTarget(version.target))}候选`}</small></div><span class="chip">本地版本</span></div><p>${esc(typeof version.summary === 'string' ? version.summary : version.reason || (version.summary ? textValue(version.summary) : version.id))}</p><div class="actions"><button class="small" data-action="version" data-id="${attr(version.id)}">查看导出</button><a class="download-link" href="/api/versions/${encodeURIComponent(version.id)}/download" download>下载版本</a><button class="small" data-action="restore" data-id="${attr(version.id)}">恢复为新草稿</button></div></article>`).join('') : '<p class="muted">尚无版本。完整规划快照会保留两个目标的全部草稿。</p>';
+  return versions.length ? versions.map(version => `<article class="version-row"><div class="version-top"><div><strong>${esc(version.label || version.id)}</strong><small>${date(version.createdAt)} · ${version.kind === 'snapshot' ? '完整备份' : `${esc(labelTarget(version.target))}更新文件`}</small></div><span class="chip">${version.kind==='snapshot'?'可恢复':'待应用'}</span></div><p>${esc(version.reason || '本轮内容整理')}</p><div class="actions"><button class="small" data-action="version" data-id="${attr(version.id)}">查看版本</button><a class="download-link" href="/api/versions/${encodeURIComponent(version.id)}/download" download>${version.kind==='snapshot'?'下载备份':'下载更新文件'}</a><button class="small" data-action="restore" data-id="${attr(version.id)}">恢复为新草稿</button></div></article>`).join('') : '<p class="muted">尚无版本备份。日常修改先保存草稿，完成一轮整理后再留一份备份。</p>';
 }
 
 function renderAudit() {
@@ -271,7 +310,7 @@ function renderAudit() {
     const action = row.action || row.event || row.type || '操作';
     const label = row.label || state.bootstrap.drafts.find(draft => draft.id === row.target)?.name || state.bootstrap.versions.find(version => version.id === row.target)?.label || '';
     return `<div class="audit-row">${esc(AUDIT_NAMES[action] || action)}${label ? ` · ${esc(label)}` : ''}<span>${date(row.createdAt || row.timestamp || row.at)} · ${esc(row.username || row.actor?.username || (row.actor === 'system' ? '系统' : row.actor) || '')}</span>${row.reason ? `<span>${esc(row.reason)}</span>` : ''}</div>`;
-  }).join('') : '<p class="muted">保存、候选生成与版本恢复会记录到这里。</p>';
+  }).join('') : '<p class="muted">保存、准备更新文件与版本恢复会记录到这里。</p>';
 }
 
 function openModal(title, content) {
@@ -328,15 +367,15 @@ function openRestore(id) {
 }
 
 function openReimport() {
-  openModal('重新导入来源', `<form id="reimport-form" class="stack compact"><div class="notice">先保存当前草稿，再读取原项目最新内容。服务端合并草稿与来源的独立改动；遇到冲突会拒绝覆盖并保留编辑。</div><label class="field"><b>操作原因</b><textarea name="reason" required minlength="4" maxlength="500" placeholder="例如：同步原项目新增的已审核图片"></textarea></label><label class="field"><b>再次验证密码</b><input name="password" type="password" maxlength="128" required autocomplete="current-password"></label><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">保存并导入最新来源</button></div></form>`);
+  openModal('同步原项目内容', `<form id="reimport-form" class="stack compact"><div class="notice">先保存当前草稿，再读取原项目最新内容。服务端合并草稿与来源的独立改动；遇到冲突会拒绝覆盖并保留编辑。</div><label class="field"><b>操作原因</b><textarea name="reason" required minlength="4" maxlength="500" placeholder="例如：同步原项目新增的已审核图片"></textarea></label><label class="field"><b>再次验证密码</b><input name="password" type="password" maxlength="128" required autocomplete="current-password"></label><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">保存并导入最新来源</button></div></form>`);
 }
 
 function showVersion() {
   const { version } = state.version;
   const files = [...(state.version.files || [])];
-  if (version.kind === 'snapshot' && state.version.document) files.unshift({ path: '完整规划草稿（版本内）', content: state.version.document });
+  if (version.kind === 'snapshot' && state.version.document) files.unshift({ path: '完整备份内容', content: state.version.document });
   const file = files[state.fileIndex];
-  openModal(version.label || version.id, `<div class="notice">${version.kind === 'snapshot' ? '完整规划快照' : `${esc(labelTarget(version.target))}发布候选`} · ${date(version.createdAt)}<br>仅供本地审阅与原项目发布流程接入。</div><details><summary>版本记录</summary><pre class="pre">${esc(JSON.stringify(version, null, 2))}</pre></details><h3 class="space-top">导出文件</h3><div class="file-tabs">${files.map((item, index) => `<button class="${state.fileIndex === index ? 'active' : ''}" data-action="file" data-index="${index}">${esc(item.path)}</button>`).join('')}</div>${file ? `<pre class="pre file-content">${esc(typeof file.content === 'string' ? file.content : JSON.stringify(file.content, null, 2))}</pre>` : '<p class="muted">此版本没有目标适配文件。</p>'}<div class="modal-footer"><a href="/api/versions/${encodeURIComponent(version.id)}/download" download>下载完整版本</a><button data-action="close-modal">关闭</button></div>`);
+  openModal(version.label || version.id, `<dl class="detail-facts"><dt>保存时间</dt><dd>${date(version.createdAt)}</dd><dt>本次整理说明</dt><dd>${esc(version.reason || "未填写")}</dd><dt>版本用途</dt><dd>${version.kind === "snapshot" ? "PC 与小游戏的完整内容备份，可恢复为新草稿。" : `${esc(labelTarget(version.target))}更新文件，等待原游戏发布流程应用。`}</dd></dl><details class="version-advanced" ${state.versionAdvancedOpen ? "open" : ""}><summary>高级：查看备份内容、更新文件与详细记录</summary><details><summary>版本详细记录</summary><pre class="pre">${esc(JSON.stringify(version, null, 2))}</pre></details><div class="file-tabs">${files.map((item, index) => `<button class="${state.fileIndex === index ? "active" : ""}" data-action="file" data-index="${index}">${esc(item.path)}</button>`).join("")}</div>${file ? `<pre class="pre file-content">${esc(typeof file.content === "string" ? file.content : JSON.stringify(file.content, null, 2))}</pre>` : "<p class=muted>此版本没有目标更新文件。</p>"}</details><div class="modal-footer"><a href="/api/versions/${encodeURIComponent(version.id)}/download" download>${version.kind === "snapshot" ? "下载备份" : "下载更新文件"}</a><button data-action="close-modal">关闭</button></div>`);
 }
 
 function parseTags(value) { return [...new Set(String(value).split(/[,，、\n]/).map(tag => tag.trim()).filter(Boolean))]; }
@@ -365,7 +404,7 @@ document.addEventListener('click', event => {
   const action = button.dataset.action;
   if (action === 'retry') { location.reload(); }
   else if (action === 'page') { state.page = button.dataset.page; render(); }
-  else if (action === 'target') { state.target = button.dataset.target; state.selected.clear(); state.packId = null; state.albumId = null; render(); }
+  else if (action === 'target') { state.target = button.dataset.target; state.selected.clear(); state.lastBulk = null; state.packId = null; state.albumId = null; render(); }
   else if (action === 'save') busy(async () => { await saveDraft(); render(); });
   else if (action === 'new-draft') openModal('新建内容草稿', `<form id="new-draft-form" class="stack compact"><label class="field"><b>草稿名称</b><input name="name" required maxlength="100" placeholder="例如：按画风整理 · 第一轮"></label>${state.draft ? '<label class="check-field"><input name="copy" type="checkbox" checked>复制当前内容（包含本窗口未保存编辑）</label>' : ''}<div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button class="primary" type="submit">创建草稿</button></div></form>`);
   else if (action === 'logout') {
@@ -379,7 +418,10 @@ document.addEventListener('click', event => {
   else if (action === 'delete-style') {
     doc().styles = styles().filter(style => style.id !== button.dataset.id); dirty(); openStyles();
   }
-  else if (action === 'clear-selection') { state.selected.clear(); render(); }
+  else if (action === 'clear-selection') { state.selected.clear(); state.lastBulk = null; render(); }
+  else if (action === 'bulk-manage') openBulkAction(button.dataset.bulk);
+  else if (action === 'confirm-bulk') applyPendingBulk();
+  else if (action === 'undo-bulk') undoBulkAction();
   else if (action === 'batch-style') {
     const value = document.querySelector('#batch-style').value || null;
     state.selected.forEach(id => { managed(id).styleGroupId = value; }); dirty(); render();
@@ -424,8 +466,8 @@ document.addEventListener('click', event => {
     state.analysis = await api(`/api/drafts/${encodeURIComponent(state.draft.id)}/analyze`, { method: 'POST', body: { revision: state.draft.revision } });
     render(); toast('差异与兼容检查已完成。');
   });
-  else if (action === 'version') busy(async () => { state.version = await api(`/api/versions/${encodeURIComponent(button.dataset.id)}`); state.fileIndex = 0; showVersion(); });
-  else if (action === 'file') { state.fileIndex = Number(button.dataset.index); showVersion(); }
+  else if (action === 'version') busy(async () => { state.version = await api(`/api/versions/${encodeURIComponent(button.dataset.id)}`); state.fileIndex = 0; state.versionAdvancedOpen = false; showVersion(); });
+  else if (action === 'file') { state.fileIndex = Number(button.dataset.index); state.versionAdvancedOpen = true; showVersion(); }
   else if (action === 'restore') openRestore(button.dataset.id);
   else if (action === 'reimport') openReimport();
 });
@@ -504,22 +546,22 @@ document.addEventListener('submit', event => {
     state.bootstrap = await api('/api/bootstrap'); await loadDraft(draft.id); closeModal(); render(); toast('新草稿已创建。');
   });
   else if (form.id === 'publish-form') {
-    if (!state.analysis) { toast('请先保存并检查差异，审阅后再生成版本。', true); return; }
+    if (!state.analysis) { toast('请先保存并查看改动，审阅后再生成版本。', true); return; }
     const kind = event.submitter?.value || 'snapshot';
     busy(async () => {
       await saveDraft({ quiet: true });
       state.analysis = await api(`/api/drafts/${encodeURIComponent(state.draft.id)}/analyze`, { method: 'POST', body: { revision: state.draft.revision } });
       if (kind === 'candidate' && (!(state.analysis.compatibleTargets || []).includes(state.target) || (state.analysis.blockers || []).some(item => !item.target || item.target === 'shared' || item.target === state.target))) {
-        render(); toast('当前目标存在兼容阻断，已保留草稿。请检查阻断原因，或保存完整规划快照。', true); return;
+        render(); toast('当前目标还有更新前需要解决的问题，已保留草稿。请查看需要解决的问题，或保存版本备份。', true); return;
       }
       await api(`/api/drafts/${encodeURIComponent(state.draft.id)}/publish`, { method: 'POST', body: { revision: state.draft.revision, password: data.get('password'), reason: data.get('reason'), label: data.get('label'), target: kind === 'candidate' ? state.target : null, kind } });
-      await refreshRecords(); render(); toast(kind === 'snapshot' ? '完整规划快照已保存。' : `${labelTarget(state.target)}本地候选已生成，等待原项目接入。`);
+      await refreshRecords(); render(); toast(kind === 'snapshot' ? '版本备份已保存。' : `${labelTarget(state.target)}游戏更新文件已生成，等待原游戏发布流程应用。`);
     });
   }
   else if (form.id === 'restore-form') busy(async () => {
     if (state.dirty && !confirm('恢复后将打开新草稿。当前未保存编辑会放弃，确定继续？')) return;
     const result = await api(`/api/versions/${encodeURIComponent(form.dataset.id)}/restore`, { method: 'POST', body: { name: data.get('name'), password: data.get('password'), reason: data.get('reason') } });
-    state.bootstrap = await api('/api/bootstrap'); await loadDraft((result.draft || result).id); closeModal(); render(); toast('已恢复为新草稿，尚未生成候选或部署。');
+    state.bootstrap = await api('/api/bootstrap'); await loadDraft((result.draft || result).id); closeModal(); render(); toast('已恢复为新草稿，游戏内容在更新文件应用后才会改变。');
   });
   else if (form.id === 'reimport-form') busy(async () => {
     await saveDraft({ quiet: true });
@@ -537,8 +579,3 @@ window.addEventListener('keydown', event => {
   }
 });
 initialize().catch(error => { app.innerHTML = `<main class="initial-loading"><h2>暂时无法打开工作室</h2><p>${esc(error.message)}</p><button data-action="retry">重试</button></main>`; });
-
-
-
-
-
