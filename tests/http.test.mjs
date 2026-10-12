@@ -149,7 +149,7 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     unknownField.assets[imageId].sha256 = 'must-not-override-source-facts';
     expectStatus(await save(unknownField), 400);
     const badReference = structuredClone(draft.document);
-    badReference.targets['mobile-shared'].packs[0].imageIds.push('missing-image-for-validation');
+    badReference.targets['mobile-shared'].albums[0].imageIds.push('missing-image-for-validation');
     expectStatus(await save(badReference), 400);
     const beforeSave = draftResult(expectStatus(await request(`/api/drafts/${draft.id}`), 200));
     assert.equal(beforeSave.revision, initialRevision);
@@ -256,8 +256,8 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     for (const asset of app.source.assets.filter(asset => asset.lifecycle === 'pending')) assert.ok(exportedCandidate.files.every(file => !file.content.includes(asset.id)), 'pending artwork must stay out of public runtime candidates');
     const beforePlanning = structuredClone(draft.document);
     const planned = structuredClone(draft.document);
-    planned.targets['mobile-shared'].packs[0].price += 1;
-    planned.targets['mobile-shared'].packs[0].imageIds.pop();
+    planned.targets['mobile-shared'].albums[0].price += 1;
+    planned.targets['mobile-shared'].albums[0].imageIds.pop();
     draft = draftResult(expectStatus(await save(planned), 200));
     const analysis = expectStatus(await request(`/api/drafts/${draft.id}/analyze`, {method: 'POST', body: {revision: draft.revision}}), 200);
     const codes = analysis.blockers.map(item => item.code);
@@ -276,7 +276,7 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.notEqual(restored.id, draft.id);
     assert.deepEqual(restored.document, {...beforePlanning, name: 'HTTP 恢复草稿'});
     const oldDraft = draftResult(expectStatus(await request(`/api/drafts/${draft.id}`), 200));
-    assert.equal(oldDraft.document.targets['mobile-shared'].packs[0].price, planned.targets['mobile-shared'].packs[0].price);
+    assert.equal(oldDraft.document.targets['mobile-shared'].albums[0].price, planned.targets['mobile-shared'].albums[0].price);
     assert.equal((await bootstrap()).versions.length, savedCount + 1);
   });
 

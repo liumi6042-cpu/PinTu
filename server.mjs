@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {createStore,problem} from './store.mjs';
 import {createAuth} from './auth.mjs';
 import {readSource,previewFile,verifyDelivery} from './source.mjs';
-import {validateDraft,analyzeDraft,buildCandidate} from './model.mjs';
+import {validateDraft,analyzeDraft,buildCandidate,normalizeDraft} from './model.mjs';
 import {mergeDraft} from './merge.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
@@ -21,7 +21,8 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
  // Older saved drafts remain intact. Present new source entries through the
  // existing three-way merge and persist only when the administrator saves.
- function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return draft;return {...draft,document:validateDraft(mergeDraft(store.baseline(draft.sourceFingerprint),draft.document,source.baseline),source),sourceNeedsMerge:true};}
+ function mergeSourceDraft(draft,document=draft.document){return validateDraft(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),source),normalizeDraft(document,source),source.baseline),source);}
+ function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};return {...draft,document:mergeSourceDraft(draft),sourceNeedsMerge:true};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
  const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
@@ -49,7 +50,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    if(path==='/api/versions'&&method==='GET')return response(res,200,{versions:store.listVersions()});
    if(path==='/api/drafts'&&method==='POST'){
     const input=inputFields(await jsonBody(req),['name','fromDraftId']);let document=structuredClone(source.baseline),fingerprint=source.fingerprint;
-    if(input.fromDraftId!==undefined){if(!ID.test(input.fromDraftId))throw problem(400,'原草稿无效');const base=store.draft(input.fromDraftId);document=base.document;fingerprint=base.sourceFingerprint;}
+    if(input.fromDraftId!==undefined){if(!ID.test(input.fromDraftId))throw problem(400,'原草稿无效');const base=currentDraft(input.fromDraftId);document=base.document;fingerprint=source.fingerprint;}
     document.name=title(input.name,'新的内容草稿');return response(res,201,{draft:store.createDraft(document,fingerprint,current.username)});
    }
    const imageMatch=/^\/api\/images\/([a-z0-9-]+)$/.exec(path);
@@ -64,7 +65,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
     if(!operation&&method==='GET')return response(res,200,currentDraft(id));
     if(!operation&&method==='PUT'){
      const input=inputFields(await jsonBody(req),['revision','document']),saved=store.draft(id),rev=revision(input.revision);
-     if(saved.sourceFingerprint!==source.fingerprint){const doc=validateDraft(mergeDraft(store.baseline(saved.sourceFingerprint),input.document,source.baseline),source);return response(res,200,store.reimport(id,rev,doc,source,current.username,'保存时合并新登记的素材，保留原草稿编辑'));}
+     if(saved.sourceFingerprint!==source.fingerprint){const doc=mergeSourceDraft(saved,input.document);return response(res,200,store.reimport(id,rev,doc,source,current.username,'保存时合并相册内容与新登记素材，保留已有编辑'));}
      const doc=validateDraft(input.document,source);return response(res,200,store.saveDraft(id,rev,doc,current.username));
     }
     if(operation&&method==='POST'){
@@ -74,7 +75,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
       const why=reason(input.reason);auth.verifyPassword(current,input.password);const latest=providedSource??readSource(projectRoot);
       checkHistorical(latest);
       if(Object.keys(draft.document.assets).some(id=>!latest.baseline.assets[id]))throw problem(409,'来源删除了历史图片 ID；请先在原项目恢复归档条目后再导入','HISTORICAL_ID_MISSING');
-      const merged=validateDraft(mergeDraft(store.baseline(draft.sourceFingerprint),draft.document,latest.baseline),latest);
+      const merged=validateDraft(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),latest),normalizeDraft(draft.document,latest),latest.baseline),latest);
       const updated=store.reimport(id,draft.revision,merged,latest,current.username,why);source=latest;return response(res,200,{draft:updated});
      }
      const analysis=analyzeDraft(draft.document,source);

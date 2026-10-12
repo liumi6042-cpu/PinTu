@@ -71,10 +71,10 @@ test('a private registry joins the CMS while keeping both runtime catalogs and c
 test('new artwork cannot be published or referenced by either runtime target before its adapter is ready', t => {
   const f = fixture(t, true), source = readSource(f.root), pendingId = f.asset.id;
   for (const target of ['pc', 'mobile-shared']) {
-    for (const scenario of ['published', 'archived', 'pack', 'album']) {
+    for (const scenario of ['published', 'archived', 'album']) {
       const document = structuredClone(source.baseline);
       if (['published', 'archived'].includes(scenario)) document.assets[pendingId].targets[target].status = scenario;
-      else document.targets[target][scenario === 'pack' ? 'packs' : 'albums'][0].imageIds.push(pendingId);
+      else document.targets[target].albums[0].imageIds.push(pendingId);
       validateDraft(document, source);
       const analysis = analyzeDraft(document, source);
       assert.ok(analysis.blockers.some(issue => issue.target === target && issue.code === 'NEW_ASSET_RUNTIME_IMPORT_REQUIRED'));

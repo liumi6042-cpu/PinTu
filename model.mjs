@@ -1,4 +1,6 @@
 import {TARGETS} from './source.mjs';
+import {normalizeDraft, toLegacyDraft, buildAlbumConfiguration, effectiveImageVisibility, plannedImageVisibility} from './album-model.mjs';
+export {normalizeDraft, buildAlbumConfiguration, effectiveImageVisibility, plannedImageVisibility} from './album-model.mjs';
 
 const clone = value => structuredClone(value);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -39,7 +41,7 @@ function styleRef(value, available, label) {if (value === null) return null; val
 function decoration(value, available, label) {if (value === null) return null; value = id(value, label); if (!available.has(value)) fail(label + '未登记。'); return value;}
 
 /** Planning drafts may contain breaking reorganizations. Structural errors may not. */
-export function validateDraft(document, source) {
+function validateLegacyDraft(document, source) {
   object(document, '草稿', ['name', 'styles', 'assets', 'targets']);
   const styles = list(document.styles, '画风分组', 100).map((item, index) => {
     object(item, '画风分组 ' + index, ['id', 'name']);
@@ -78,9 +80,8 @@ export function validateDraft(document, source) {
     const packs = list(config.packs, '图包', 200).map(item => {
       object(item, '图包', ['id', 'title', 'description', 'imageIds', 'coverImageId', 'status', 'styleGroupId', 'price', 'decorationId']);
       const images = imageIds(item.imageIds, '图包图片');
-      if (!images.length) fail('图包至少需要一张图片。');
-      const cover = id(item.coverImageId, '图包封面');
-      if (!images.includes(cover)) fail('图包封面必须属于该图包。');
+      const cover = item.coverImageId === null && !images.length ? null : id(item.coverImageId, '图包封面');
+      if (images.length && !images.includes(cover)) fail('图包封面必须属于该图包。');
       return {id: id(item.id, '图包 ID'), title: text(item.title, '图包标题', 180), description: text(item.description, '图包说明', 1500, true),
         imageIds: images, coverImageId: cover, status: enumValue(item.status, '图包状态', ['published', 'archived', 'draft']),
         styleGroupId: styleRef(item.styleGroupId, styleIds, '图包画风'),
@@ -97,7 +98,6 @@ export function validateDraft(document, source) {
       const milestones = list(item.milestones, '图鉴里程碑', 100).map(milestone => {
         object(milestone, '里程碑', ['target', 'coins', 'decorationId']);
         const target = integer(milestone.target, '里程碑目标', 1);
-        if (target > images.length) fail('里程碑目标超过图鉴图片总数。');
         return {target, coins: integer(milestone.coins, '里程碑金币'), decorationId: decoration(milestone.decorationId, decorations, '里程碑装饰')};
       });
       if (new Set(milestones.map(item => item.target)).size !== milestones.length) fail('图鉴里程碑目标不能重复。');
@@ -117,8 +117,8 @@ function dailyPool(document, source, target) {
 }
 
 /** Every requested change is retained in the diff; blockers are per target. */
-export function analyzeDraft(input, source) {
-  const document = validateDraft(input, source), before = source.baseline;
+function analyzeLegacyDraft(input, source) {
+  const document = validateLegacyDraft(input, source), before = source.baseline;
   const changes = [], blockers = [], warnings = [];
   const issue = (into, target, code, id, message) => {
     if (!into.some(item => item.target === target && item.code === code && item.id === id)) into.push({target, code, id, message});
@@ -245,9 +245,9 @@ function publicProvenance(source, target) {
 }
 
 /** Candidate output is inert: caller stores it in a private immutable version. */
-export function buildCandidate(input, source, target) {
+function buildLegacyCandidate(input, source, target) {
   if (!TARGETS.includes(target)) throw Object.assign(new Error('未知内容目标。'), {status: 400});
-  const document = validateDraft(input, source), analysis = analyzeDraft(document, source);
+  const document = validateLegacyDraft(input, source), analysis = analyzeLegacyDraft(document, source);
   if (!analysis.compatibleTargets.includes(target)) throw Object.assign(new Error('该目标存在兼容阻断，不能生成运行候选。'), {status: 409, code: 'CANDIDATE_BLOCKED', blockers: analysis.blockers.filter(item => item.target === target)});
   const catalog = source._private.catalogs[target].map(original => {
     const entry = clone(original), asset = document.assets[entry.id], config = asset.targets[target];
@@ -286,4 +286,137 @@ export function buildCandidate(input, source, target) {
     warnings: analysis.warnings.filter(item => item.target === target),
     assetPipeline: target === 'mobile-shared' ? 'scripts/package-mobile-assets.mjs (reviewed catalog and manifest)' : 'existing PC image validation and delivery',
     includesOriginalImages: false, includesPlayerData: false}};
+}
+
+/** Strict canonical album validation; legacy snapshots are converted in memory. */
+export function validateDraft(input, source) {
+  const converted = input?.schemaVersion === undefined ? normalizeDraft(validateLegacyDraft(input, source), source) : clone(input);
+  object(converted, '内容方案', ['schemaVersion', 'name', 'styles', 'assets', 'targets']);
+  if (converted.schemaVersion !== 2) fail('不支持的相册内容版本。');
+  // Reuse the bounded metadata and immutable source-ID validation without making
+  // a second editable pack/collection representation.
+  const metadata = validateLegacyDraft({name: converted.name, styles: converted.styles, assets: converted.assets,
+    targets: Object.fromEntries(TARGETS.map(target => [target, {packs: [], albums: []}]))}, source);
+  const sourceIds = new Set(source.assets.map(asset => asset.id)), styleIds = new Set(metadata.styles.map(style => style.id));
+  const decorations = new Set(source._private.collection.decorations.map(item => item.id));
+  object(converted.targets, '内容目标', TARGETS);
+  const targets = {};
+  for (const target of TARGETS) {
+    const targetDocument = object(converted.targets[target], '相册目标 ' + target, ['albums']);
+    const ownership = new Map();
+    const albums = list(targetDocument.albums, '相册', 300).map(item => {
+      object(item, '相册', ['id', 'title', 'description', 'imageIds', 'coverImageId', 'styleGroupId', 'visible', 'purchasable', 'price', 'decorationId', 'milestones']);
+      const albumId = id(item.id, '相册 ID');
+      const images = list(item.imageIds, '相册图片', sourceIds.size).map(value => id(value, '图片引用'));
+      if (new Set(images).size !== images.length) fail('同一相册的图片不能重复。');
+      for (const imageId of images) {
+        if (!sourceIds.has(imageId)) fail('相册引用未登记图片。');
+        if (ownership.has(imageId)) fail('同一目标的图片只能属于一个相册：' + imageId + '（' + ownership.get(imageId) + ' / ' + albumId + '）。');
+        ownership.set(imageId, albumId);
+      }
+      const coverImageId = item.coverImageId === null ? null : id(item.coverImageId, '相册封面');
+      if (images.length && !images.includes(coverImageId)) fail('相册封面必须属于相册。');
+      if (!images.length && coverImageId !== null) fail('空相册的封面必须为空。');
+      const purchasable = bool(item.purchasable, '购买包开关'), price = integer(item.price, '相册金币价格');
+      if (purchasable && price < 1) fail('购买包价格至少为 1 金币。');
+      if (!purchasable && price !== 0) fail('免费相册价格必须为 0。');
+      const milestones = list(item.milestones, '相册奖励', 100).map(milestone => {
+        object(milestone, '相册奖励', ['target', 'coins', 'decorationId']);
+        return {target: integer(milestone.target, '完成图片数', 1), coins: integer(milestone.coins, '奖励金币'),
+          decorationId: decoration(milestone.decorationId, decorations, '相册奖励装饰')};
+      });
+      if (new Set(milestones.map(milestone => milestone.target)).size !== milestones.length) fail('相册奖励的完成图片数不能重复。');
+      return {id: albumId, title: text(item.title, '相册名称', 180), description: text(item.description, '相册说明', 1500, true),
+        imageIds: images, coverImageId, styleGroupId: styleRef(item.styleGroupId, styleIds, '相册画风'),
+        visible: bool(item.visible, '相册显示开关'), purchasable, price,
+        decorationId: decoration(item.decorationId, decorations, '相册完成装饰'), milestones};
+    });
+    if (new Set(albums.map(album => album.id)).size !== albums.length) fail('同一目标的相册 ID 不能重复。');
+    targets[target] = {albums};
+  }
+  return {schemaVersion: 2, name: metadata.name, styles: metadata.styles, assets: metadata.assets, targets};
+}
+
+function legacySource(source) {
+  const view = {...source, baseline: source._private.legacyBaseline};
+  Object.defineProperty(view, '_private', {value: source._private});
+  return view;
+}
+
+/** Album planning is always savable; unsafe game changes remain explicit. */
+export function analyzeDraft(input, source) {
+  const document = validateDraft(input, source), before = validateDraft(source.baseline, source);
+  const legacy = analyzeLegacyDraft(toLegacyDraft(document, source), legacySource(source));
+  const changes = [], blockers = [...legacy.blockers], warnings = [...legacy.warnings];
+  const change = (target, entityType, id, field, a, b) => {
+    if (!equal(a, b)) changes.push({target, entityType, id, field, before: a ?? null, after: b ?? null});
+  };
+  const issue = (items, target, code, id, message) => {
+    if (!items.some(item => item.target === target && item.code === code && item.id === id)) items.push({target, code, id, message});
+  };
+  const block = (target, code, id, message) => issue(blockers, target, code, id, message);
+  const warn = (target, code, id, message) => issue(warnings, target, code, id, message);
+  const entities = (target, type, original, next) => {
+    for (const id of new Set([...original.map(item => item.id), ...next.map(item => item.id)])) {
+      const a = original.find(item => item.id === id), b = next.find(item => item.id === id);
+      if (!a || !b) change(target, type, id, a ? 'removed' : 'added', a, b);
+      else for (const field of Object.keys(a)) if (field !== 'id') change(target, type, id, field, a[field], b[field]);
+    }
+  };
+  change('shared', 'draft', 'draft', 'name', before.name, document.name);
+  entities('shared', 'style', before.styles, document.styles);
+  for (const asset of source.assets) {
+    const a = before.assets[asset.id], b = document.assets[asset.id];
+    for (const field of ['title', 'subtitle', 'styleGroupId', 'subjectTags']) change('shared', 'asset', asset.id, field, a[field], b[field]);
+    for (const target of TARGETS) for (const field of Object.keys(a.targets[target])) change(target, 'asset', asset.id, field, a.targets[target][field], b.targets[target][field]);
+  }
+  for (const target of TARGETS) {
+    const original = before.targets[target].albums, next = document.targets[target].albums;
+    const originallyPaid = new Set(original.filter(album => album.purchasable).flatMap(album => album.imageIds));
+    entities(target, 'album', original, next);
+    change(target, 'target', target, 'albumOrder', original.map(album => album.id), next.map(album => album.id));
+    if (!equal(original.map(album => album.id), next.map(album => album.id))) block(target, 'ALBUM_RUNTIME_ADAPTER_REQUIRED', 'album-order', '相册新增、删除或排序已保存在管理方案中；现有游戏需要相册配置接入后才能使用。');
+    const sourceById = new Map(source.assets.map(asset => [asset.id, asset]));
+    for (const album of next) {
+      const old = original.find(item => item.id === album.id);
+      if (!old || Object.keys(album).some(field => !['id', 'styleGroupId'].includes(field) && !equal(old[field], album[field])))
+        block(target, 'ALBUM_RUNTIME_ADAPTER_REQUIRED', album.id, '相册成员、显隐、购买设置或展示内容已保存为规划；需要游戏读取统一相册配置后生效。');
+      if (album.purchasable && album.imageIds.some(imageId => !originallyPaid.has(imageId) && sourceById.get(imageId).lifecycle !== 'pending'))
+        block(target, 'FREE_IMAGE_BECOMES_PAID', album.id, '购买相册包含原免费图片，规划已保留；游戏接入前需要保证玩家原有选图权益。');
+      if (album.milestones.some(milestone => milestone.target > album.imageIds.length)) block(target, 'ALBUM_REWARDS_REQUIRE_ADAPTER', album.id,
+        '相册成员少于旧奖励要求，奖励配置已保留；需明确历史奖励兼容后接入游戏。');
+      for (const imageId of album.imageIds) {
+        const asset = sourceById.get(imageId);
+        if (asset.lifecycle === 'pending') block(target, 'NEW_ASSET_RUNTIME_IMPORT_REQUIRED', imageId, '图片已分配到相册；新图需要完成游戏素材接入后才能在玩家端使用。');
+        if (album.visible && asset.lifecycle !== 'pending' && asset.targets[target].status === 'archived') block(target, 'ALBUM_ARCHIVED_IMAGE_ADAPTER_REQUIRED', imageId,
+          '历史归档图片已分配到可见相册；重新接入游戏时需要审核上架记录与历史资源兼容。');
+        if (album.visible && asset.targets[target].dailyOnly) warn(target, 'DAILY_IMAGE_HAS_SEPARATE_ENTRY', imageId, '这张图片保留现有每日拼图入口；普通相册接入需要单独处理每日规则。');
+      }
+    }
+    for (const album of original) if (!next.some(item => item.id === album.id)) block(target, 'ALBUM_HISTORY_ID_REQUIRED', album.id,
+      '已有相册 ID 关联历史进度与奖励；隐藏可保留记录，删除接入游戏需要迁移方案。');
+  }
+  return {changes, blockers, warnings, compatibleTargets: TARGETS.filter(target => !blockers.some(item => item.target === target))};
+}
+
+/** Canonical albums accompany legacy files only when the latter remain safe. */
+export function buildCandidate(input, source, target) {
+  if (!TARGETS.includes(target)) throw Object.assign(new Error('未知内容目标。'), {status: 400});
+  const document = validateDraft(input, source), analysis = analyzeDraft(document, source);
+  if (!analysis.compatibleTargets.includes(target)) throw Object.assign(new Error('该目标需要游戏相册或素材接入，不能生成现有游戏更新文件。'),
+    {status: 409, code: 'CANDIDATE_BLOCKED', blockers: analysis.blockers.filter(item => item.target === target)});
+  const candidate = buildLegacyCandidate(toLegacyDraft(document, source), legacySource(source), target);
+  const configuration = buildAlbumConfiguration(document, source, target);
+  candidate.files.push({path: 'content/content-albums.json', content: JSON.stringify({...configuration,
+    effectiveGalleryImageIds: [...effectiveImageVisibility(document, source, target)], requiresRuntimeAdapter: true}, null, 2) + '\n'});
+  const metadataFile = candidate.files.find(file => file.path === 'content/content-admin-metadata.json');
+  const metadata = JSON.parse(metadataFile.content);
+  metadata.schema = 'jigsaw-content-metadata/v2'; delete metadata.packs;
+  metadata.albums = Object.fromEntries(document.targets[target].albums.map(album => [album.id, {styleGroupId: album.styleGroupId}]));
+  metadataFile.content = JSON.stringify(metadata, null, 2) + '\n';
+  candidate.metadata.schema = 'jigsaw-content-candidate/v2';
+  candidate.metadata.albumConfiguration = 'content/content-albums.json';
+  candidate.metadata.albumRuntimeApplied = false;
+  candidate.metadata.changedFields = analysis.changes.filter(item => item.target === target || item.target === 'shared').length;
+  return candidate;
 }

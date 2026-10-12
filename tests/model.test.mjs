@@ -4,7 +4,8 @@ import {readSource, previewFile} from '../source.mjs';
 import {validateDraft, analyzeDraft, buildCandidate} from '../model.mjs';
 
 const source = readSource();
-const draft = () => structuredClone(source.baseline);
+// Exercise old saved draft input as well as the canonical tests in album-model.
+const draft = () => structuredClone(source._private.legacyBaseline);
 const retainedAssets = source.assets.filter(asset => asset.lifecycle === 'retained');
 const pendingAssets = source.assets.filter(asset => asset.lifecycle === 'pending');
 const firstId = retainedAssets[0].id;
@@ -82,6 +83,7 @@ test('old mobile rights, price, award, independent cover and availability change
 test('free-to-paid conversion and independent album rewards remain planning-only', () => {
   const value = draft(), mobile = value.targets['mobile-shared'];
   const free = mobile.albums.find(item => item.id === 'everyday-gallery').imageIds.slice(0, 3);
+  mobile.albums.find(item => item.id === 'everyday-gallery').imageIds = mobile.albums.find(item => item.id === 'everyday-gallery').imageIds.filter(id => !free.includes(id));
   mobile.packs.push({id: 'new-style-pack', title: '新画风', description: '', imageIds: free, coverImageId: free[0], status: 'draft', styleGroupId: null, price: 20, decorationId: null});
   assert.ok(codes(value).includes('FREE_IMAGE_BECOMES_PAID'));
   const award = draft(); award.targets['mobile-shared'].albums[0].milestones[0].coins++;

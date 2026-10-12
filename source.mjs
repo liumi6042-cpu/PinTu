@@ -5,6 +5,7 @@ import {planMobileAssets} from '../jigsaw-nook-taptap/scripts/package-mobile-ass
 import {checkImageLibrary as checkMobileImageLibrary} from '../jigsaw-nook-taptap/scripts/check-image-library.mjs';
 import {checkImageLibrary as checkPcImageLibrary} from '../puzzle-play/scripts/check-image-library.mjs';
 import {readPendingAssets, pendingPreviewFile} from './pending.mjs';
+import {normalizeDraft} from './album-model.mjs';
 
 export const TARGETS = ['pc', 'mobile-shared'];
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -68,6 +69,7 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
   const root = realpathSync(projectRoot);
   const roots = {pc: realpathSync(join(root, 'puzzle-play')), 'mobile-shared': realpathSync(join(root, 'jigsaw-nook-taptap'))};
   const inputs = [];
+  inputs.push({path: 'content-admin/schema/albums-v2', sha256: hash('jigsaw-content-albums/v2;one-album-per-image;unassigned-hidden')});
   const read = (target, path, parse = true) => {
     const bytes = readFileSync(safeFile(roots[target], path));
     inputs.push({path: target + '/' + path, sha256: hash(bytes)});
@@ -156,19 +158,21 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
     packId: null, styleGroupId: null, milestones: []});
   const pcPacks = series.map(item => ({id: item.id, title: item.zh, description: '', imageIds: [...item.pictures],
     coverImageId: item.pictures[0], status: 'published', styleGroupId: null, price: null, decorationId: null}));
-  const baseline = {name: '初始内容草稿', styles: clone(styles),
+  const legacyBaseline = {name: '初始内容草稿', styles: clone(styles),
     assets: Object.fromEntries(assets.map(asset => [asset.id, {title: asset.title, subtitle: asset.subtitle,
       styleGroupId: asset.lifecycle === 'pending' ? asset.styleGroupId : null, subjectTags: asset.lifecycle === 'pending' ? [...asset.subjectTags] : [], targets: clone(asset.targets)}])),
     targets: {pc: {packs: pcPacks, albums: pcPacks.map(pack => ({id: pack.id, title: pack.title, description: '', imageIds: [...pack.imageIds], packId: pack.id, styleGroupId: null, milestones: []}))},
       'mobile-shared': {packs: mobilePacks, albums: mobileAlbums}}};
+  const baseline = normalizeDraft(legacyBaseline);
   const targetStats = Object.fromEntries(TARGETS.map(target => [target, countTarget(catalogs[target])]));
   const stats = {...targetStats['mobile-shared'], total: assets.length, retained: mobileCatalog.length, pending: pending.assets.length, directions: {landscape: 0, portrait: 0, square: 0}, origins: {},
-    targets: targetStats, mobilePacks: mobilePacks.length, mobileAlbums: mobileAlbums.length, pcPacks: pcPacks.length};
+    targets: targetStats, mobilePacks: mobilePacks.length, mobileAlbums: mobileAlbums.length, pcPacks: pcPacks.length,
+    albumCounts: Object.fromEntries(TARGETS.map(target => [target, baseline.targets[target].albums.length]))};
   for (const asset of assets) {stats.directions[asset.direction]++; stats.origins[asset.origin] = (stats.origins[asset.origin] ?? 0) + 1;}
   const fingerprint = hash(JSON.stringify(inputs.sort((a, b) => a.path.localeCompare(b.path))));
   const source = {fingerprint, assets, stats, baseline};
   // Keep original paths/records out of accidental JSON responses and version blobs.
-  Object.defineProperty(source, '_private', {value: {root, roots, catalogs, records, guidance, collection, series, journeyText, manifests, inputs, pending}, enumerable: false});
+  Object.defineProperty(source, '_private', {value: {root, roots, catalogs, records, guidance, collection, series, journeyText, manifests, inputs, pending, legacyBaseline}, enumerable: false});
   return source;
 }
 
