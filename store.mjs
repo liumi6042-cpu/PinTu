@@ -20,11 +20,16 @@ export function createStore(dataDir,source){
  CREATE TABLE IF NOT EXISTS content_audit(id TEXT PRIMARY KEY,actor TEXT NOT NULL,action TEXT NOT NULL,target TEXT NOT NULL,reason TEXT NOT NULL,created_at INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS content_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS content_source_baselines(fingerprint TEXT PRIMARY KEY,document TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS daily_appearances(target TEXT NOT NULL,date TEXT NOT NULL,image_id TEXT NOT NULL,album_id TEXT NOT NULL,activated_at INTEGER NOT NULL,config_digest TEXT NOT NULL,plan_snapshot TEXT NOT NULL,PRIMARY KEY(target,date));
+ CREATE TABLE IF NOT EXISTS daily_enrollments(image_id TEXT PRIMARY KEY,first_appearance_date TEXT NOT NULL,enrolled_at INTEGER NOT NULL,album_id TEXT NOT NULL);
  `);
  function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
  function audit(actor,action,target,reason=''){db.prepare('INSERT INTO content_audit VALUES(?,?,?,?,?,?)').run(newId(),actor,action,target,reason,Date.now());}
  function selectDraft(id){const result=draftView(db.prepare('SELECT * FROM content_drafts WHERE id=?').get(id));if(!result)throw problem(404,'草稿不存在','DRAFT_NOT_FOUND');return result;}
+ function frozenPlans(){const first=new Map();for(const row of db.prepare('SELECT plan_snapshot FROM daily_appearances ORDER BY date,target').all()){const plan=JSON.parse(row.plan_snapshot);if(!first.has(plan.imageId))first.set(plan.imageId,plan);}return [...first.values()];}
+ function protectDailyPlans(document){for(const locked of frozenPlans())if(!(document.dailyPlans??[]).some(plan=>['id','imageId','date','albumId'].every(key=>plan[key]===locked[key])))throw problem(409,'已实际出场的首发计划不能修改或删除：'+locked.imageId,'DAILY_PLAN_LOCKED');}
  function addDraft(document,fingerprint,actor,reason='',action='create-draft'){
+  protectDailyPlans(document);
   const id=newId(),now=Date.now();
   db.prepare('INSERT INTO content_drafts VALUES(?,?,?,?,?,?)').run(id,document.name,1,fingerprint,JSON.stringify(document),now);
   db.prepare('INSERT INTO content_meta VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run('active-draft',id);
@@ -46,10 +51,35 @@ export function createStore(dataDir,source){
   draft:selectDraft,
   historicalIds(){const ids=new Set();for(const row of db.prepare('SELECT document FROM content_source_baselines').all())for(const id of Object.keys(JSON.parse(row.document).assets))ids.add(id);return [...ids];},
   baseline(fingerprint){const row=db.prepare('SELECT document FROM content_source_baselines WHERE fingerprint=?').get(fingerprint);if(!row)throw problem(409,'缺少该草稿的原始导入基线，请先保留规划快照并人工合并','BASELINE_MISSING');return JSON.parse(row.document);},
+  dailyAppearances:()=>db.prepare('SELECT target,date,image_id AS imageId,album_id AS albumId,activated_at AS activatedAt FROM daily_appearances ORDER BY date,target').all(),
+  dailyEnrollments:()=>db.prepare('SELECT image_id AS imageId,first_appearance_date AS firstAppearanceDate,enrolled_at AS enrolledAt,album_id AS albumId FROM daily_enrollments ORDER BY first_appearance_date,image_id').all(),
+  dailyFrozenPlans:frozenPlans,
+  // The receipt facts, ownership change and one-time enrollment are committed
+  // together against the saved revision. Browser edits use the same CAS guard.
+  reconcileDaily(id,revision,document,fingerprint,appearances,enrollments,now){return transaction(()=>{
+   const current=selectDraft(id);
+   if(this.activeDraftId()!==id)throw problem(409,'当前工作内容已切换，请重试','REVISION_CONFLICT');
+   if(current.revision!==revision)throw problem(409,'整理期间工作内容已更新，请重试','REVISION_CONFLICT');
+   if(current.sourceFingerprint!==fingerprint)throw problem(409,'来源已变化，请先合并工作内容','SOURCE_CHANGED');
+   for(const fact of appearances){
+    const old=db.prepare('SELECT image_id,album_id FROM daily_appearances WHERE target=? AND date=?').get(fact.target,fact.date);
+    if(old&&(old.image_id!==fact.imageId||old.album_id!==fact.albumId))throw problem(409,'该日已有不同的实际出场记录','DAILY_APPEARANCE_CONFLICT');
+    if(!old){db.prepare('INSERT INTO daily_appearances VALUES(?,?,?,?,?,?,?)').run(fact.target,fact.date,fact.imageId,fact.albumId,fact.activatedAt,fact.configDigest,JSON.stringify(fact.plan));audit('daily-system','confirm-daily-appearance',fact.imageId,'确认北京时间 '+fact.date+' 实际出场');}
+   }
+   protectDailyPlans(document);
+   const changed=JSON.stringify(current.document)!==JSON.stringify(document);
+   if(changed){
+    const result=db.prepare('UPDATE content_drafts SET name=?,document=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?').run(document.name,JSON.stringify(document),now,id,revision);
+    if(!result.changes)throw problem(409,'整理期间工作内容已更新，请重试','REVISION_CONFLICT');
+    audit('daily-system','sync-daily-content',id,'依据实际出场档案锁定首发计划并自动收录到预选相册');
+   }
+   for(const enrolled of enrollments){const result=db.prepare('INSERT OR IGNORE INTO daily_enrollments VALUES(?,?,?,?)').run(enrolled.imageId,enrolled.firstAppearanceDate,enrolled.enrolledAt,enrolled.albumId);if(result.changes)audit('daily-system','enroll-daily-image',enrolled.imageId,'首次出场 '+enrolled.firstAppearanceDate+'，收录至 '+enrolled.albumId);}
+   return selectDraft(id);
+  });},
   createDraft(document,fingerprint,actor){return transaction(()=>addDraft(document,fingerprint,actor));},
   importPendingDraft(fromId,revision,document,latest,reason){return transaction(()=>{if(selectDraft(fromId).revision!==revision)throw problem(409,'原草稿已变化，请重新合并','REVISION_CONFLICT');db.prepare('INSERT OR IGNORE INTO content_source_baselines VALUES(?,?)').run(latest.fingerprint,JSON.stringify(latest.baseline));return addDraft(document,latest.fingerprint,'local-content-import',reason,'import-pending-assets');});},
-  saveDraft(id,revision,document,actor){return transaction(()=>{selectDraft(id);const result=db.prepare('UPDATE content_drafts SET name=?,document=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?').run(document.name,JSON.stringify(document),Date.now(),id,revision);if(!result.changes)throw problem(409,'草稿已在其他窗口更新；请保留当前编辑，重新加载后合并','REVISION_CONFLICT');audit(actor,'save-draft',id);return selectDraft(id);});},
-  reimport(id,revision,document,latest,actor,why){return transaction(()=>{const result=db.prepare('UPDATE content_drafts SET name=?,document=?,source_fingerprint=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?').run(document.name,JSON.stringify(document),latest.fingerprint,Date.now(),id,revision);if(!result.changes)throw problem(409,'草稿已变化，请重新加载后再合并','REVISION_CONFLICT');db.prepare('INSERT OR IGNORE INTO content_source_baselines VALUES(?,?)').run(latest.fingerprint,JSON.stringify(latest.baseline));audit(actor,'reimport-source',id,why);return selectDraft(id);});},
+  saveDraft(id,revision,document,actor){return transaction(()=>{const current=selectDraft(id);if(current.revision!==revision)throw problem(409,'草稿已在其他窗口更新；请保留当前编辑，重新加载后合并','REVISION_CONFLICT');protectDailyPlans(document);const result=db.prepare('UPDATE content_drafts SET name=?,document=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?').run(document.name,JSON.stringify(document),Date.now(),id,revision);if(!result.changes)throw problem(409,'草稿已在其他窗口更新；请保留当前编辑，重新加载后合并','REVISION_CONFLICT');audit(actor,'save-draft',id);return selectDraft(id);});},
+  reimport(id,revision,document,latest,actor,why){return transaction(()=>{protectDailyPlans(document);const result=db.prepare('UPDATE content_drafts SET name=?,document=?,source_fingerprint=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?').run(document.name,JSON.stringify(document),latest.fingerprint,Date.now(),id,revision);if(!result.changes)throw problem(409,'草稿已变化，请重新加载后再合并','REVISION_CONFLICT');db.prepare('INSERT OR IGNORE INTO content_source_baselines VALUES(?,?)').run(latest.fingerprint,JSON.stringify(latest.baseline));audit(actor,'reimport-source',id,why);return selectDraft(id);});},
   listVersions:()=>db.prepare('SELECT * FROM content_versions ORDER BY created_at DESC,id').all().map(versionView),
   version(id){const row=db.prepare('SELECT * FROM content_versions WHERE id=?').get(id);if(!row)throw problem(404,'版本不存在','VERSION_NOT_FOUND');return {version:versionView(row),document:JSON.parse(row.document),files:JSON.parse(row.files)};},
   publish(draft,options,files,analysis,actor){return transaction(()=>{
@@ -63,7 +93,7 @@ export function createStore(dataDir,source){
    const id=newId();db.prepare('INSERT INTO content_versions VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(id,options.label,options.kind,options.target,Date.now(),draft.sourceFingerprint,JSON.stringify(draft.document),JSON.stringify(files),JSON.stringify(summary),options.reason,sha256);
    audit(actor,options.kind==='candidate'?'generate-candidate':'save-snapshot',id,options.reason);return versionView(db.prepare('SELECT * FROM content_versions WHERE id=?').get(id));
   });},
-  restore(id,name,actor,reason){const saved=this.version(id);const document=structuredClone(saved.document);document.name=name;return transaction(()=>addDraft(document,saved.version.sourceFingerprint,actor,reason,'restore-version'));},
+  restore(id,name,actor,reason,restoredDocument){const saved=this.version(id);const document=structuredClone(restoredDocument??saved.document);document.name=name;return transaction(()=>addDraft(document,saved.version.sourceFingerprint,actor,reason,'restore-version'));},
   listAudit:()=>db.prepare('SELECT actor,action,target,reason,created_at AS createdAt FROM content_audit ORDER BY created_at DESC,id LIMIT 100').all(),
   close:()=>db.close()
  };

@@ -1,4 +1,5 @@
 import { createDragPayload, parseDragPayload } from './album-drag.js';
+import { dailyImageState, tomorrowDate } from './daily-state.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
@@ -15,7 +16,7 @@ const AUDIT_NAMES = { 'import-baseline': '导入内容基线', 'initialize-admin
 const state = {
   session: null, bootstrap: null, draft: null, target: 'shared', exportTarget: 'mobile-shared', page: 'albums',
   dirty: false, busy: false, selected: new Set(), albumId: null,
-  filters: { query: '', style: '', tag: '', origin: '', direction: '', review: '', lifecycle: '' },
+  filters: { query: '', style: '', tag: '', origin: '', direction: '', review: '', lifecycle: '', daily: '' },
   analysis: null, picker: null, version: null, fileIndex: 0,
   versionAdvancedOpen: false,
   historyOpen: false, settings: null, dragGesture: null, suppressClickUntil: 0, suppressClickPoint: null,
@@ -34,8 +35,10 @@ const albumDisplayChips = album => `<span class="chip ${album.showOnPc ? '' : 'h
 const albumFor = id => (targetDoc().albums || []).find(album => album.imageIds.includes(id));
 const styles = () => doc()?.styles || [];
 const styleName = id => styles().find(style => style.id === id)?.name || '待分类';
+const dailyFor = id => dailyImageState({imageId:id,plans:doc()?.dailyPlans || [],appearances:state.bootstrap?.daily?.appearances || [],enrollments:state.bootstrap?.daily?.enrollments || [],isLegacy:targetAsset(id).dailyOnly});
+const dailyReadiness = id => state.bootstrap?.daily?.readiness?.find(item => item.imageId === id);
 const titleFor = id => managed(id).title || assetById(id)?.title || id;
-const integrationLabel = asset => asset.lifecycle === 'pending' ? '待接入游戏' : targetAsset(asset.id).status === 'archived' ? '待重新接入游戏' : targetAsset(asset.id).dailyOnly ? '每日专用' : '';
+const integrationLabel = asset => asset.lifecycle === 'pending' ? '待接入游戏' : targetAsset(asset.id).status === 'archived' ? '待重新接入游戏' : '';
 const imageUrl = (id, kind = 'thumbnail') => `/api/images/${encodeURIComponent(id)}?kind=${kind}`;
 const date = value => value ? new Date(value).toLocaleString('zh-CN', { hour12: false, timeZone: 'Asia/Shanghai' }) : '—';
 const textValue = value => typeof value === 'string' ? value : JSON.stringify(value ?? null);
@@ -110,7 +113,26 @@ async function saveDraft({ quiet = false } = {}) {
   const audit = await api('/api/audit').catch(() => null);
   if (audit) state.bootstrap.audit = audit.audit || [];
   if (!quiet) toast('相册整理已保存。');
+  await refreshDaily().catch(() => {});
   return state.draft;
+}
+
+async function refreshDaily() {
+  if (!state.session?.authenticated || !state.draft) return;
+  const result = await api('/api/daily/status');
+  const factsChanged = JSON.stringify(state.bootstrap.daily || {}) !== JSON.stringify(result.daily || {});
+  state.bootstrap.daily = result.daily || {};
+  if (result.draftRevision !== state.draft.revision) {
+    if (state.dirty) {
+      if (state.dailyConflictRevision !== result.draftRevision) toast('每日图片已自动收录。本窗口未保存编辑已保留，保存前请重新载入合并。', true);
+      state.dailyConflictRevision = result.draftRevision;
+      return;
+    }
+    const albumId = state.albumId;
+    await loadDraft(state.draft.id);
+    state.albumId = doc().albums.some(album => album.id === albumId) ? albumId : null;
+    if (!modal.open) render();
+  } else if (factsChanged && !state.dirty && !modal.open) render();
 }
 
 async function loadDraft(id) {
@@ -206,14 +228,15 @@ function filteredAssets({ query = state.filters.query, picker = false } = {}) {
     if (filter.origin && asset.origin !== filter.origin) return false;
     if (filter.direction && asset.direction !== filter.direction) return false;
     if (filter.review && asset.reviewStatus !== filter.review) return false;
+    if (filter.daily && (filter.daily === 'any' ? dailyFor(asset.id).code === 'none' : dailyFor(asset.id).code !== filter.daily)) return false;
     return true;
   });
 }
 
 function assetCard(asset, { picker = false } = {}) {
-  const meta = managed(asset.id), album = albumFor(asset.id);
+  const meta = managed(asset.id), album = albumFor(asset.id), daily = dailyFor(asset.id);
   const selected = picker ? state.picker.selected.has(asset.id) : state.selected.has(asset.id);
-  return `<article ${picker ? '' : `draggable="false" data-drag-image="${attr(asset.id)}"`} class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" draggable="false" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img draggable="false" loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${album && albumShown(album) ? '' : 'hidden'}">${album ? `${esc(album.title)}${albumShown(album) ? '' : ' · 隐藏'}` : '未分配 · 仅后台'}</span>${integrationLabel(asset) ? `<span class="chip draft">${esc(integrationLabel(asset))}</span>` : ''}${picker ? '' : (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
+  return `<article ${picker ? '' : `draggable="false" data-drag-image="${attr(asset.id)}"`} class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" draggable="false" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img draggable="false" loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${album && albumShown(album) ? '' : 'hidden'}">${album ? `${esc(album.title)}${albumShown(album) ? '' : ' · 隐藏'}` : '未分配 · 仅后台'}</span>${integrationLabel(asset) ? `<span class="chip draft">${esc(integrationLabel(asset))}</span>` : ''}${daily.label ? `<span class="chip daily-${attr(daily.code)}" title="${attr(daily.detail)}">${esc(daily.label)}${daily.plan ? ` · ${esc(daily.plan.date)}` : ''}</span>` : ''}${picker ? '' : (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
 }
 
 function renderAssets({ embedded = false } = {}) {
@@ -223,7 +246,7 @@ function renderAssets({ embedded = false } = {}) {
   const directions = [...new Set(assets().map(asset => asset.direction).filter(Boolean))];
   const reviews = [...new Set(assets().map(asset => asset.reviewStatus).filter(Boolean))];
   return (embedded ? '' : heading(state.page === 'unassigned' ? '未分配图片' : '全部图片', state.page === 'unassigned' ? '这里的图片只在后台保留。选择图片放进相册，再由相册控制显示与购买。' : '选择图片加入相册。画风与题材标签继续用于查找和整理。', '<button data-action="styles">管理画风</button>')) +
-    `<div class="filters library-filters"><label>搜索图片<input data-filter="query" value="${attr(state.filters.query)}" placeholder="标题或题材关键词"></label><label>画风<select data-filter="style">${options([['__none', '待分类'], ...styles().map(style => [style.id, style.name])], state.filters.style, '全部画风')}</select></label><label>题材<select data-filter="tag">${options(tags.map(tag => [tag, tag]), state.filters.tag, '全部题材')}</select></label><label>方向<select data-filter="direction">${options(directions.map(value => [value, directionName(value)]), state.filters.direction)}</select></label></div><details class="library-advanced"><summary>更多筛选</summary><div class="filters compact-filters"><label>素材阶段<select data-filter="lifecycle">${options([['pending','新图 · 待接入游戏'],['retained','游戏现有素材']], state.filters.lifecycle)}</select></label><label>来源<select data-filter="origin">${options(origins.map(value => [value, originName(value)]), state.filters.origin)}</select></label><label>审核<select data-filter="review">${options(reviews.map(value => [value, reviewName(value)]), state.filters.review)}</select></label></div></details>
+    `<div class="filters library-filters"><label>搜索图片<input data-filter="query" value="${attr(state.filters.query)}" placeholder="标题或题材关键词"></label><label>画风<select data-filter="style">${options([['__none', '待分类'], ...styles().map(style => [style.id, style.name])], state.filters.style, '全部画风')}</select></label><label>题材<select data-filter="tag">${options(tags.map(tag => [tag, tag]), state.filters.tag, '全部题材')}</select></label><label>方向<select data-filter="direction">${options(directions.map(value => [value, directionName(value)]), state.filters.direction)}</select></label></div><details class="library-advanced"><summary>更多筛选</summary><div class="filters compact-filters"><label>每日状态<select data-filter="daily">${options([['any','全部每日图片'],['scheduled','已排期'],['today','今日每日'],['appeared','已出场 · 待收录'],['enrolled','已收录'],['awaiting','待游戏确认'],['legacy','每日 · 待排期']], state.filters.daily)}</select></label><label>素材阶段<select data-filter="lifecycle">${options([['pending','新图 · 待接入游戏'],['retained','游戏现有素材']], state.filters.lifecycle)}</select></label><label>来源<select data-filter="origin">${options(origins.map(value => [value, originName(value)]), state.filters.origin)}</select></label><label>审核<select data-filter="review">${options(reviews.map(value => [value, reviewName(value)]), state.filters.review)}</select></label></div></details>
     <div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-all" ${filtered.length && filtered.every(asset => state.selected.has(asset.id)) ? 'checked' : ''}> 选择筛选结果</label><span class="muted">显示 ${filtered.length} 幅 · ${state.selected.size} 幅已选</span></div>
     ${renderBulkBar()}
     ${filtered.length ? `<div class="asset-grid ${state.selected.size ? 'with-selection' : ''}">${filtered.map(asset => assetCard(asset)).join('')}</div>` : '<div class="empty">没有符合筛选条件的素材。<p>可以修改关键词或清空部分筛选。</p></div>'}`;
@@ -380,11 +403,19 @@ confirmation.addEventListener('click', event => {
 confirmation.addEventListener('cancel', event => { event.preventDefault(); finishConfirmation(false); });
 confirmation.addEventListener('close', () => { if (!confirmation.open && resolveConfirmation) finishConfirmation(false); });
 
+function renderDailySettings(id) {
+  const daily = dailyFor(id), plan = daily.plan, current = albumFor(id);
+  const best = current && albumShown(current) ? current : doc().albums.find(album => albumShown(album) && !album.purchasable && album.styleGroupId === managed(id).styleGroupId);
+  const selected = plan?.albumId || best?.id || '';
+  const readiness = dailyReadiness(id);
+  return `<details class="section daily-settings" ${plan || targetAsset(id).dailyOnly || daily.enrollment ? 'open' : ''}><summary>每日首发${daily.label ? ` · ${esc(daily.label)}` : ''}</summary><p class="muted text-small">选好首发日期和相册。游戏确认出场后，次日北京时间 00:00 自动收录，完成记录保留。</p><label class="check-field"><input type="checkbox" name="dailyEnabled" ${plan ? 'checked' : ''} ${daily.locked ? 'disabled' : ''}> 安排每日首发并自动收录</label><div class="daily-fields"><label class="field"><b>每日首发日期</b><input type="date" name="dailyDate" value="${attr(plan?.date || tomorrowDate())}" min="${attr(plan && plan.date < tomorrowDate() ? plan.date : tomorrowDate())}" ${!plan || daily.locked ? 'disabled' : ''} required></label><label class="field"><b>收录相册</b><select name="dailyAlbumId" ${!plan || daily.locked ? 'disabled' : ''} required>${options(doc().albums.map(album => [album.id,`${album.title}${!albumShown(album) ? ' · 两端隐藏' : ''}${album.purchasable ? ' · 购买包' : ''}`]),selected,'选择相册')}</select></label></div><p class="daily-fact">${esc(daily.detail || '尚未安排每日首发。')}</p>${readiness && !readiness.ready ? `<p class="muted text-small">${esc(readiness.reason || '素材待接入游戏，排期先保存在后台。')}</p>` : ''}${daily.locked ? '<p class="muted text-small">已出场记录已锁定。收录后仍可在相册中移动图片。</p>' : '<p class="muted text-small">应用修改后点击顶部“保存”。保存排期后，游戏需启用这份安排才会出场。</p>'}</details>`;
+}
+
 function openAsset(id) {
   const asset = assetById(id), meta = managed(id), album = albumFor(id);
   if (!asset) return;
   const body = `<form id="asset-form" data-id="${attr(id)}"><div class="asset-detail"><div><img class="detail-preview" src="${imageUrl(id, 'preview')}" alt="${attr(titleFor(id))}"><dl class="detail-facts"><dt>所在共用相册</dt><dd>${album ? `${esc(album.title)} · ${albumDisplayLabel(album)}${album.purchasable ? ' · 购买包' : ''}` : '未分配 · 只在后台保留'}</dd><dt>保存尺寸 / 方向</dt><dd>${esc(asset.width || '?')} × ${esc(asset.height || '?')} · ${esc(directionName(asset.direction))}</dd>${asset.lifecycle === 'pending' ? `<dt>原始生成尺寸</dt><dd>${esc(asset.nativeResolution?.width)} × ${esc(asset.nativeResolution?.height)}${asset.resolutionNote ? `<p class="muted">${esc(asset.resolutionNote)}</p>` : ''}</dd><dt>素材阶段</dt><dd>待接入游戏，可先放进相册整理</dd>` : ''}</dl></div><div class="stack compact"><label class="field"><b>图片标题</b><input name="title" value="${attr(meta.title || asset.title)}" required maxlength="180"></label><label class="field"><b>副标题</b><input name="subtitle" value="${attr(meta.subtitle || '')}" maxlength="500"></label><label class="field"><b>画风</b><select name="styleGroupId">${styleOptions(meta.styleGroupId)}</select></label><label class="field"><b>题材标签</b><input name="subjectTags" value="${attr((meta.subjectTags || []).join('，'))}" placeholder="例如：山海、城市、花卉"><small>用中文或英文逗号分隔。</small></label><p class="muted text-small">图片是否显示、是否收费，统一在所属相册中设置。</p></div></div><details class="section"><summary>来源、授权与审核记录（只读）</summary><dl class="detail-facts"><dt>稳定图片 ID</dt><dd>${esc(id)}</dd><dt>来源 / 审核</dt><dd>${esc(originName(asset.origin))} · ${esc(reviewName(asset.reviewStatus))}</dd><dt>来源说明</dt><dd>${esc(asset.sourceDescription || '未记录')}</dd><dt>授权说明</dt><dd>${esc(asset.rightsStatement || '未记录')}</dd></dl><pre class="pre">${esc(JSON.stringify({ review: asset.review, delivery: asset.delivery }, null, 2))}</pre></details><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">应用修改</button></div></form>`;
-  openModal('素材详情', body);
+  openModal('素材详情', body.replace('<details class="section">', `${renderDailySettings(id)}<details class="section">`));
 }
 
 function openStyles() {
@@ -683,6 +714,17 @@ document.addEventListener('submit', event => {
   event.preventDefault();
   const data = new FormData(form);
   if (form.id === 'asset-form') {
+    const daily = dailyFor(form.dataset.id);
+    if (!daily.locked) {
+      const remaining = (doc().dailyPlans || []).filter(plan => plan.imageId !== form.dataset.id);
+      if (data.get('dailyEnabled') === 'on') {
+        const date = String(data.get('dailyDate') || ''), albumId = String(data.get('dailyAlbumId') || '');
+        if (!date || !doc().albums.some(album => album.id === albumId)) { toast('请选择每日首发日期和收录相册。', true); return; }
+        if (remaining.some(plan => plan.date === date)) { toast('这一天已经安排了另一张每日图片，请选择其他日期。', true); return; }
+        remaining.push({id:form.dataset.id,imageId:form.dataset.id,date,albumId});
+      }
+      doc().dailyPlans = remaining;
+    }
     const meta = managed(form.dataset.id);
     Object.assign(meta, { title: String(data.get('title')).trim(), subtitle: String(data.get('subtitle')).trim(), styleGroupId: data.get('styleGroupId') || null, subjectTags: parseTags(data.get('subjectTags')) });
     dirty(); closeModal(); render();
@@ -734,6 +776,10 @@ document.addEventListener('submit', event => {
 
 modal.addEventListener('click', event => { if (event.target === modal && (event.offsetX < 0 || event.offsetX > modal.clientWidth || event.offsetY < 0 || event.offsetY > modal.clientHeight)) closeModal(); });
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
+modal.addEventListener('change', event => {
+  if (event.target.name !== 'dailyEnabled') return;
+  for (const field of event.target.form.querySelectorAll('[name="dailyDate"],[name="dailyAlbumId"]')) field.disabled = !event.target.checked;
+});
 window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
 window.addEventListener('keydown', event => {
   if (event.key === 'Escape' && state.dragGesture) { clearDragFeedback(); event.preventDefault(); return; }
@@ -743,3 +789,7 @@ window.addEventListener('keydown', event => {
   }
 });
 initialize().catch(error => { app.innerHTML = `<main class="initial-loading"><h2>暂时无法打开工作室</h2><p>${esc(error.message)}</p><button data-action="retry">重试</button></main>`; });
+setInterval(() => {
+  if (!state.session?.authenticated || state.busy || modal.open || confirmation.open || state.dragGesture) return;
+  refreshDaily().catch(() => {});
+}, 45000);

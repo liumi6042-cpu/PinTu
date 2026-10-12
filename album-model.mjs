@@ -86,7 +86,11 @@ function legacyToAlbumDraft(input, source) {
 
 /** Collapse the former device copies only after checking the old PC workspace. */
 export function normalizeDraft(input, source) {
-  if (input?.schemaVersion === ALBUM_SCHEMA_VERSION) return clone(input);
+  if (input?.schemaVersion === ALBUM_SCHEMA_VERSION) {
+    const document = clone(input);
+    if (!Object.hasOwn(document, 'dailyPlans')) document.dailyPlans = [];
+    return document;
+  }
   if (!input || ![undefined, 2].includes(input.schemaVersion)) conflict('未知内容版本，无法转换为共享相册。');
   const document = input.schemaVersion === 2 ? clone(input) : legacyToAlbumDraft(input, source);
   const original = source?._private?.legacyBaseline
@@ -99,7 +103,7 @@ export function normalizeDraft(input, source) {
     ...album, showOnPc: visible, showOnMobile: visible,
   }));
   delete document.targets;
-  return {...document, schemaVersion: ALBUM_SCHEMA_VERSION, albums};
+  return {...document, schemaVersion: ALBUM_SCHEMA_VERSION, albums, dailyPlans: []};
 }
 
 const displayField = target => target === 'pc' ? 'showOnPc' : target === 'mobile-shared' ? 'showOnMobile' : null;
@@ -130,7 +134,7 @@ export function buildAlbumConfiguration(input, source, target) {
   if (target !== undefined && !TARGETS.includes(target)) throw Object.assign(new Error('未知内容目标。'), {status: 400});
   return {schema: 'jigsaw-content-albums/v3', sourceFingerprint: source.fingerprint,
     ...(target === undefined ? {} : {target}), sharedAlbums: true, oneAlbumPerImage: true, unassignedImagesVisible: false,
-    albums: clone(document.albums)};
+    albums: clone(document.albums), dailyPlans: clone(document.dailyPlans)};
 }
 
 /** Inert legacy export adapter. Album changes still require runtime support. */

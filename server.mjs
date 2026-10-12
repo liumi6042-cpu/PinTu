@@ -7,6 +7,7 @@ import {createAuth} from './auth.mjs';
 import {readSource,previewFile,verifyDelivery} from './source.mjs';
 import {validateDraft,analyzeDraft,buildCandidate,normalizeDraft} from './model.mjs';
 import {mergeDraft} from './merge.mjs';
+import {createDailyCoordinator} from './daily.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
 function inputFields(input,fields){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!fields.includes(k)))throw problem(400,'请求中包含无效字段');return input;}
@@ -17,14 +18,17 @@ async function jsonBody(req){if(!/^application\/json(?:;|$)/i.test(req.headers['
 function response(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 const ID=/^[a-f0-9]{32}$/;
 
-export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource}={}){
+export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
+ const daily=createDailyCoordinator({store,getSource:()=>source,validateDocument:validateDraft,bridgeDir,appearanceDir,now});
+ daily.sync();
+ const dailyTimer=setInterval(()=>{try{daily.sync();}catch{/* A later request retries without replacing a concurrent edit. */}},30_000);dailyTimer.unref();
  // Older saved drafts remain intact. Present new source entries through the
  // existing three-way merge and persist only when the administrator saves.
  function mergeSourceDraft(draft,document=draft.document){return validateDraft(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),source),normalizeDraft(document,source),source.baseline),source);}
  function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};return {...draft,document:mergeSourceDraft(draft),sourceNeedsMerge:true};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
- const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/style.css','style.css']]);
+ const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/daily-state.js','daily-state.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; form-action 'self'");
@@ -45,13 +49,14 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    const current=auth.requireSession(req);
    if(method!=='GET')auth.verifyCsrf(req,current);
    if(path==='/api/logout'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,200,auth.logout(req,res));}
-   if(path==='/api/bootstrap'&&method==='GET')return response(res,200,{source:{fingerprint:source.fingerprint,stats:source.stats,assets:source.assets},drafts:store.listDrafts(),versions:store.listVersions(),audit:store.listAudit(),activeDraftId:store.activeDraftId()});
+   if(path==='/api/bootstrap'&&method==='GET'){const status=daily.sync();return response(res,200,{source:{fingerprint:source.fingerprint,stats:source.stats,assets:source.assets},drafts:store.listDrafts(),versions:store.listVersions(),audit:store.listAudit(),activeDraftId:store.activeDraftId(),daily:status});}
+   if(path==='/api/daily/status'&&method==='GET'){const status=daily.sync();return response(res,200,{daily:status,draftRevision:store.draft(store.activeDraftId()).revision});}
    if(path==='/api/audit'&&method==='GET')return response(res,200,{audit:store.listAudit()});
    if(path==='/api/versions'&&method==='GET')return response(res,200,{versions:store.listVersions()});
    if(path==='/api/drafts'&&method==='POST'){
     const input=inputFields(await jsonBody(req),['name','fromDraftId']);let document=structuredClone(source.baseline),fingerprint=source.fingerprint;
     if(input.fromDraftId!==undefined){if(!ID.test(input.fromDraftId))throw problem(400,'原草稿无效');const base=currentDraft(input.fromDraftId);document=base.document;fingerprint=source.fingerprint;}
-    document.name=title(input.name,'新的内容草稿');return response(res,201,{draft:store.createDraft(document,fingerprint,current.username)});
+    document.name=title(input.name,'新的内容草稿');daily.assertChanges(store.draft(store.activeDraftId()).document,document);const created=store.createDraft(document,fingerprint,current.username);daily.sync();return response(res,201,{draft:created});
    }
    const imageMatch=/^\/api\/images\/([a-z0-9-]+)$/.exec(path);
    if(imageMatch&&method==='GET'){
@@ -64,9 +69,10 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
     const [,id,operation]=draftMatch;
     if(!operation&&method==='GET')return response(res,200,currentDraft(id));
     if(!operation&&method==='PUT'){
-     const input=inputFields(await jsonBody(req),['revision','document']),saved=store.draft(id),rev=revision(input.revision);
-     if(saved.sourceFingerprint!==source.fingerprint){const doc=mergeSourceDraft(saved,input.document);return response(res,200,store.reimport(id,rev,doc,source,current.username,'保存时合并相册内容与新登记素材，保留已有编辑'));}
-     const doc=validateDraft(input.document,source);return response(res,200,store.saveDraft(id,rev,doc,current.username));
+     const input=inputFields(await jsonBody(req),['revision','document']);daily.sync();const saved=store.draft(id),rev=revision(input.revision);
+     if(saved.revision!==rev)throw problem(409,'工作内容已更新；请保留当前编辑，重新加载后合并','REVISION_CONFLICT');
+     if(saved.sourceFingerprint!==source.fingerprint){const doc=mergeSourceDraft(saved,input.document);daily.assertChanges(saved.document,doc);const updated=store.reimport(id,rev,doc,source,current.username,'保存时合并相册内容与新登记素材，保留已有编辑');daily.sync();return response(res,200,updated);}
+     const doc=validateDraft(input.document,source);daily.assertChanges(saved.document,doc);const updated=store.saveDraft(id,rev,doc,current.username);daily.sync();return response(res,200,updated);
     }
     if(operation&&method==='POST'){
      const input=inputFields(await jsonBody(req),operation==='analyze'?['revision']:operation==='reimport'?['revision','password','reason']:['revision','password','reason','label','target','kind']);
@@ -76,7 +82,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
       checkHistorical(latest);
       if(Object.keys(draft.document.assets).some(id=>!latest.baseline.assets[id]))throw problem(409,'来源删除了历史图片 ID；请先在原项目恢复归档条目后再导入','HISTORICAL_ID_MISSING');
       const merged=validateDraft(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),latest),normalizeDraft(draft.document,latest),latest.baseline),latest);
-      const updated=store.reimport(id,draft.revision,merged,latest,current.username,why);source=latest;return response(res,200,{draft:updated});
+      daily.assertChanges(draft.document,merged,false);const updated=store.reimport(id,draft.revision,merged,latest,current.username,why);source=latest;daily.sync();return response(res,200,{draft:updated});
      }
      const analysis=analyzeDraft(draft.document,source);
      if(operation==='analyze')return response(res,200,analysis);
@@ -111,14 +117,15 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
     }
     if(method==='POST'&&operation==='restore'){
      const input=inputFields(await jsonBody(req),['password','reason','name']),why=reason(input.reason);auth.verifyPassword(current,input.password);
-     return response(res,201,{draft:store.restore(id,title(input.name,'从历史版本恢复的草稿'),current.username,why)});
+     const saved=store.version(id),restored=saved.version.sourceFingerprint===source.fingerprint?validateDraft(saved.document,source):mergeSourceDraft({sourceFingerprint:saved.version.sourceFingerprint,document:saved.document});
+     daily.assertChanges(store.draft(store.activeDraftId()).document,restored);const result=store.restore(id,title(input.name,'从历史版本恢复的草稿'),current.username,why,restored);daily.sync();return response(res,201,{draft:result});
     }
    }
    throw problem(404,'此页面或内容不存在','NOT_FOUND');
   }catch(e){const status=Number.isInteger(e.status)&&e.status>=400&&e.status<=599?e.status:500;response(res,status,{error:status===500?'后台未能完成操作，请重试':e.message,code:e.code??'SERVER_ERROR',...(e.analysis?{analysis:e.analysis}:{})});}
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;
- return {server,store,get source(){return source;},close:()=>new Promise((done,reject)=>server.close(error=>{store.close();error?reject(error):done();}))};
+ return {server,store,daily,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
 }
 
 if(process.argv[1]&&realpathSync(process.argv[1])===realpathSync(fileURLToPath(import.meta.url))){

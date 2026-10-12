@@ -28,6 +28,7 @@ function versionTwoDraft() {
     coverImageId: ordinary[0], visible: true});
   delete pc.at(-1).showOnPc; delete pc.at(-1).showOnMobile;
   delete document.albums;
+  delete document.dailyPlans;
   return {...document, schemaVersion: 2, targets: {pc: {albums: pc}, 'mobile-shared': {albums: mobile}}};
 }
 

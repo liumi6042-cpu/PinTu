@@ -1,5 +1,6 @@
 import {TARGETS} from './source.mjs';
 import {normalizeDraft, toLegacyDraft, buildAlbumConfiguration, effectiveImageVisibility, plannedImageVisibility, albumDisplayedOn} from './album-model.mjs';
+import {validateDailyPlans} from './daily.mjs';
 export {normalizeDraft, buildAlbumConfiguration, effectiveImageVisibility, plannedImageVisibility} from './album-model.mjs';
 
 const clone = value => structuredClone(value);
@@ -8,11 +9,11 @@ const fail = message => {throw Object.assign(new Error(message), {status: 400, c
 const idPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const forbidden = new Set(['__proto__', 'prototype', 'constructor']);
 
-function object(value, label, allowed) {
+function object(value, label, allowed, optional = []) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) fail(label + '必须是对象。');
   const keys = Object.keys(value);
   if (keys.some(key => forbidden.has(key) || !allowed.includes(key))) fail(label + '包含不允许的字段。');
-  if (allowed.some(key => !Object.hasOwn(value, key))) fail(label + '缺少必填字段。');
+  if (allowed.some(key => !optional.includes(key) && !Object.hasOwn(value, key))) fail(label + '缺少必填字段。');
   return value;
 }
 function text(value, label, maximum, allowEmpty = false) {
@@ -290,7 +291,7 @@ function buildLegacyCandidate(input, source, target) {
 
 /** Strict canonical album validation; legacy snapshots are converted in memory. */
 function validateAlbumDraft(converted, source, version) {
-  object(converted, '内容方案', ['schemaVersion', 'name', 'styles', 'assets', version === 2 ? 'targets' : 'albums']);
+  object(converted, '内容方案', ['schemaVersion', 'name', 'styles', 'assets', version === 2 ? 'targets' : 'albums', ...(version === 3 ? ['dailyPlans'] : [])], ['dailyPlans']);
   if (converted.schemaVersion !== version) fail('不支持的相册内容版本。');
   // Reuse the bounded metadata and immutable source-ID validation without making
   // a second editable pack/collection representation.
@@ -335,7 +336,8 @@ function validateAlbumDraft(converted, source, version) {
     validatedGroups[target] = {albums};
   }
   return {schemaVersion: version, name: metadata.name, styles: metadata.styles, assets: metadata.assets,
-    ...(version === 2 ? {targets: validatedGroups} : {albums: validatedGroups.shared.albums})};
+    ...(version === 2 ? {targets: validatedGroups} : {albums: validatedGroups.shared.albums,
+      dailyPlans: validateDailyPlans(Object.hasOwn(converted, 'dailyPlans') ? converted.dailyPlans : [], sourceIds, new Set(validatedGroups.shared.albums.map(album => album.id)))})};
 }
 
 export function validateDraft(input, source) {
@@ -380,6 +382,9 @@ export function analyzeDraft(input, source) {
     for (const target of TARGETS) for (const field of Object.keys(a.targets[target])) change(target, 'asset', asset.id, field, a.targets[target][field], b.targets[target][field]);
   }
   entities('shared', 'album', before.albums, document.albums);
+  entities('shared', 'daily-plan', before.dailyPlans, document.dailyPlans);
+  if (document.dailyPlans.length) for (const target of TARGETS) block(target, 'DAILY_PLAN_RUNTIME_ADAPTER_REQUIRED', 'daily-plans',
+    '每日首发计划已保存；需要已发布游戏读取排期并记录实际出场，次日才能自动收录。');
   change('shared', 'albums', 'albums', 'albumOrder', before.albums.map(album => album.id), document.albums.map(album => album.id));
   block('pc', 'SHARED_ALBUM_RUNTIME_ADAPTER_REQUIRED', 'shared-albums',
     '共享相册已统一保存；PC 仍使用原画册及选图规则，需要接入共享相册、购买和历史进度规则后才能生成游戏更新文件。');
