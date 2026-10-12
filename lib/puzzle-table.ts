@@ -1,4 +1,4 @@
-import { boardFor, normalizePuzzle, WORLD, piecesFor, pathFor, moveGroup, dropGroup, raiseGroup, placedCount, visibleGroup, shuffleLoose, snapTolerance, type PuzzleState, type Group } from './puzzle-engine';
+import { boardFor, normalizePuzzle, worldFor, piecesFor, pathFor, moveGroup, dropGroup, raiseGroup, placedCount, visibleGroup, shuffleLoose, snapTolerance, type PuzzleState, type Group } from './puzzle-engine';
 import { PuzzleSprites } from './puzzle-sprites';
 import { pictureCrop, drawPiecePicture } from './puzzle-picture';
 import { t,subscribeLanguage } from './i18n';
@@ -108,7 +108,7 @@ export class PuzzleTable {
   private keepOnTable(id:number){const g=this.state.groups.find(g=>g.id===id);if(!g||g.locked)return;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     const minX=Math.min(...g.pieces.map(id=>this.board.x+this.pieces[id].col*w)),maxX=Math.max(...g.pieces.map(id=>this.board.x+(this.pieces[id].col+1)*w));
     const minY=Math.min(...g.pieces.map(id=>this.board.y+this.pieces[id].row*h)),maxY=Math.max(...g.pieces.map(id=>this.board.y+(this.pieces[id].row+1)*h));
-    g.dx=Math.max(18-minX,Math.min(WORLD.width-18-maxX,g.dx));g.dy=Math.max(18-minY,Math.min(WORLD.height-18-maxY,g.dy));
+    g.dx=Math.max(18-minX,Math.min(worldFor(this.state).width-18-maxX,g.dx));g.dy=Math.max(18-minY,Math.min(worldFor(this.state).height-18-maxY,g.dy));
   }
   private wheel=(e:WheelEvent)=>{e.preventDefault();if(this.drag||this.paused)return;this.zoom(Math.exp(-e.deltaY*.0014),this.point(e));};
   private keydown=(e:KeyboardEvent)=>{
@@ -126,7 +126,7 @@ export class PuzzleTable {
   };
   private clamp(z:number){const max=Math.max(3,Math.min(16,96/Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)));return Math.max(.15,Math.min(max,z));}
   zoom(factor:number,point={x:this.width/2,y:this.height/2}){const w=this.world(point),z=this.clamp(this.camera.z*factor);this.camera={x:point.x-w.x*z,y:point.y-w.y*z,z};this.draw();this.update();}
-  fit(completed=false){const bounds=completed?this.board:{x:0,y:0,...WORLD},z=Math.min(this.width/bounds.width,this.height/bounds.height)*(completed?.76:.94);this.camera={x:(this.width-bounds.width*z)/2-bounds.x*z,y:(this.height-bounds.height*z)/2-bounds.y*z,z};this.draw();this.update();}
+  fit(completed=false){const bounds=completed?this.board:{x:0,y:0,...worldFor(this.state)},z=Math.min(this.width/bounds.width,this.height/bounds.height)*(completed?.76:.94);this.camera={x:(this.width-bounds.width*z)/2-bounds.x*z,y:(this.height-bounds.height*z)/2-bounds.y*z,z};this.draw();this.update();}
   setEdges(v:boolean){this.release();this.edges=v;this.draw();}
   setPaused(v:boolean){this.release();this.paused=v;}
   shuffle(){if(this.network){this.notice('多人模式保留大家正在整理的桌面，请直接拖动散片');return;}this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}

@@ -7,6 +7,36 @@ import { CursorClient } from '../lib/cursor-client.ts';
 import { requiresRoomMembership, canCreateMemberRoom } from '../lib/membership-policy.ts';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
+test('stationary cursors remain visible and survive cleanup while their player is online',()=>{
+  const db=new DatabaseSync(':memory:'),now=1_000_000;
+  try{
+    db.exec(readFileSync(new URL('../drizzle/0002_room_cursors.sql',import.meta.url),'utf8'));
+    db.exec(`CREATE TABLE puzzle_rooms(id TEXT,data TEXT);
+      CREATE TABLE puzzle_achievement_profiles(owner_id TEXT,equipped TEXT);
+      CREATE TABLE puzzle_courtyards(user_id TEXT,data TEXT);
+      CREATE TABLE puzzle_account_security(user_id TEXT,status TEXT);`);
+    const members=[{id:'online',name:'在线',lastSeen:now},{id:'offline',lastSeen:now-22001},{id:'hidden',lastSeen:now}];
+    db.prepare('INSERT INTO puzzle_rooms VALUES (?,?)').run('room',JSON.stringify({members}));
+    const insert=db.prepare('INSERT INTO puzzle_room_cursors VALUES (?,?,?,?,?,?,?)');
+    for(const id of ['online','offline'])insert.run('room',id,'client',1,20,30,now-300000);
+    insert.run('room','hidden','client',2,null,null,now-300000);
+    insert.run('missing-room','orphan','client',1,40,50,now-300000);
+    const source=readFileSync(new URL('../app/api/rooms/[id]/cursors/route.ts',import.meta.url),'utf8');
+    const query=source.match(/prepare\(`(SELECT c\.player_id[\s\S]*?)`\)/)[1];
+    const cursors=db.prepare(query).all(JSON.stringify(members),'room',now-22000);
+    assert.deepEqual(cursors.map(c=>c.player_id),['online']);
+    assert.equal(cursors[0].updated_at,now-300000,'last movement need not be recent');
+    const cleanup=source.match(/prepare\(`(DELETE FROM puzzle_room_cursors[\s\S]*?)`\)/)[1];
+    db.prepare(cleanup).run(now-60000,now-22000);
+    assert.deepEqual(db.prepare('SELECT player_id FROM puzzle_room_cursors ORDER BY player_id').all().map(c=>c.player_id),['hidden','online']);
+    members[0].lastSeen=now-22001;
+    assert.deepEqual(db.prepare(query).all(JSON.stringify(members),'room',now-22000),[]);
+    db.prepare('UPDATE puzzle_rooms SET data=? WHERE id=?').run(JSON.stringify({members}),'room');
+    db.prepare(cleanup).run(now-60000,now-22000);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM puzzle_room_cursors WHERE player_id='online'").get().n,0);
+  }finally{db.close();}
+});
+
 test('LAN HTTP crypto without randomUUID can create distinct cursor sessions and publish updates',async()=>{
   const descriptor=Object.getOwnPropertyDescriptor(globalThis,'crypto');
   const originalCrypto=globalThis.crypto,originalFetch=globalThis.fetch,sent=[],clients=[];

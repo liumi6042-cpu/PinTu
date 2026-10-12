@@ -9,6 +9,7 @@ import { playerName } from '@/lib/i18n';
 import { useLanguage } from './language-switch';
 import { CursorClient } from '@/lib/cursor-client';
 import { cursorWorld, cursorScreen, type SharedCursor } from '@/lib/room-cursors';
+import { worldFor } from '@/lib/puzzle-engine';
 import type { PuzzleTable } from '@/lib/puzzle-table';
 import type { RoomClient } from '@/lib/room-client';
 
@@ -43,7 +44,7 @@ export default function RoomCursors({client,canvas,getTable,hidden=false}:{
     const pointer=(event:PointerEvent)=>{
       const table=getTable();
       if(!table||hiddenRef.current||document.hidden){connection.point(null);return;}
-      connection.point(cursorWorld({x:event.clientX,y:event.clientY},element.getBoundingClientRect(),table.camera));
+      connection.point(cursorWorld({x:event.clientX,y:event.clientY},element.getBoundingClientRect(),table.camera,worldFor(table.state)));
     };
     const hide=()=>connection.point(null);
     const touchEnd=(event:PointerEvent)=>{if(event.pointerType==='touch')hide();};
@@ -59,7 +60,7 @@ export default function RoomCursors({client,canvas,getTable,hidden=false}:{
         const amount=reduced.matches?1:1-Math.exp(-dt/65);
         position.x+=(position.tx-position.x)*amount;position.y+=(position.ty-position.y)*amount;
         const screen=cursorScreen(position,table.camera);
-        node.style.opacity=reduced.matches?'1':String(Math.max(0,Math.min(1,(10000-(Date.now()-position.updatedAt))/3000)));
+        node.style.opacity='1';
         node.style.visibility=!hiddenRef.current&&screen.x>=0&&screen.y>=0&&screen.x<=table.width&&screen.y<=table.height?'visible':'hidden';
         node.style.transform=`translate3d(${screen.x}px,${screen.y}px,0)`;
       }

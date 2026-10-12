@@ -50,6 +50,10 @@ export async function POST(request:Request){
     if(grid&&(grid.cols!==level.cols||grid.rows!==level.rows))room.puzzle=createFittedPuzzle(input.imageId,grid.cols,grid.rows);
    }
   }
+  // An already-open old client still reconstructs seed-v1 using the old slots.
+  // Keep its creation compatible; new clients request seed-v2 instead.
+  if(input.initialState==='seed-v1')room.puzzle=room.puzzle.scatterVersion===2
+   ? createFittedPuzzle(room.puzzle.imageId,room.puzzle.cols,room.puzzle.rows,room.puzzle.seed,1):room.puzzle;
   if(room.visibility!=='solo') {room.title=roomTitle(input.title,true)||room.title;await ensureBetaSeat(player!.id,now);}
   const token=newId(),member=addMember(room,newId(),name,await digestToken(token),now,player?.accountId,player?.guestId);
   // Membership applies to private rooms only. A public upload room is as free as
@@ -57,8 +61,8 @@ export async function POST(request:Request){
   // spends a member slot; a private or solo upload still needs the image owner.
   if(memberRoom||(room.customImage&&room.visibility==='private'))await insertMemberRoom(room,player!.accountId!);else await insertPlayableRoom(room);
   const {groups:_groups,...initialPuzzle}=room.puzzle;
-  const ticket=input.initialState===INITIAL_STATE_FORMAT
-   ? {token,playerId:member.id,initialState:INITIAL_STATE_FORMAT,room:{...snapshotMetadata(room,now),puzzle:initialPuzzle}} satisfies SeedRoomTicket
+  const ticket=input.initialState===INITIAL_STATE_FORMAT||input.initialState==='seed-v1'
+   ? {token,playerId:member.id,initialState:input.initialState==='seed-v1'?'seed-v1':INITIAL_STATE_FORMAT,room:{...snapshotMetadata(room,now),puzzle:initialPuzzle}} satisfies SeedRoomTicket
    : {token,playerId:member.id,room:snapshot(room,now)};
   const response=json(ticket,201);return player?withPlayerCookie(response,player):response;
  }catch(error){return failure(error);}

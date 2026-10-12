@@ -2,9 +2,9 @@ import { createPuzzle, createFittedPuzzle, knownGrid, fittedGrid, type PuzzleSta
 import type { RoomSnapshot } from './room-engine';
 import type { RoomTicket } from './room-client';
 
-export const INITIAL_STATE_FORMAT='seed-v1';
+export const INITIAL_STATE_FORMAT='seed-v2';
 export type SeedRoomTicket={
- token:string;playerId:string;initialState:typeof INITIAL_STATE_FORMAT;
+ token:string;playerId:string;initialState:typeof INITIAL_STATE_FORMAT|'seed-v1';
  room:Omit<RoomSnapshot,'puzzle'>&{puzzle:Omit<PuzzleState,'groups'>};
 };
 
@@ -12,7 +12,7 @@ export type SeedRoomTicket={
 // authoritative groups/deltas, so the seed can never reset saved progress.
 export function expandCreatedTicket(ticket:RoomTicket|SeedRoomTicket):RoomTicket{
  if(!('initialState' in ticket))return ticket;
- if(ticket.initialState!==INITIAL_STATE_FORMAT)throw new Error('暂时无法开始');
+ if(ticket.initialState!==INITIAL_STATE_FORMAT&&ticket.initialState!=='seed-v1')throw new Error('暂时无法开始');
  const seed=ticket.room.puzzle;
  if(seed.version!==1||seed.layout!=='square'||!Number.isInteger(seed.seed)||seed.seed<0||seed.seed>0xffffffff||seed.elapsed!==0||ticket.room.revision!==0)throw new Error('暂时无法开始');
  // Catalog rooms are created from a fixed level but their board is fitted to the
@@ -22,7 +22,8 @@ export function expandCreatedTicket(ticket:RoomTicket|SeedRoomTicket):RoomTicket
  // with the same split the server uses on creation: a known fixed grid goes
  // through createPuzzle, a fitted one through createFittedPuzzle, and anything
  // else stays rejected.
- const puzzle=knownGrid(seed.cols,seed.rows)?createPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed):fittedGrid(seed.cols,seed.rows)?createFittedPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed):(()=>{throw new Error('暂时无法开始');})();
+ const scatterVersion=seed.scatterVersion===2?2:1;
+ const puzzle=knownGrid(seed.cols,seed.rows)?createPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed,scatterVersion):fittedGrid(seed.cols,seed.rows)?createFittedPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed,scatterVersion):(()=>{throw new Error('暂时无法开始');})();
  return {token:ticket.token,playerId:ticket.playerId,room:{...ticket.room,puzzle}};
 }
 

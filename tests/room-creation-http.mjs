@@ -41,7 +41,12 @@ try{
  const fitted=gridForDimensions(guidance.width,guidance.height,300);
  const expectedGrid=fitted??LEVELS.find(level=>level.count===300);
  assert.equal(full.status,200);assert.equal(initial.cols,expectedGrid.cols);assert.equal(initial.rows,expectedGrid.rows);
- assert.deepEqual(full.data.puzzle,createFittedPuzzle(initial.imageId,initial.cols,initial.rows,initial.seed));
+ assert.deepEqual(full.data.puzzle,createFittedPuzzle(initial.imageId,initial.cols,initial.rows,initial.seed,1));
+ const spacious=await request('/api/rooms',{imageId:initial.imageId,pieces:300,visibility:'public',guestSecret:secret,initialState:'seed-v2'});
+ assert.equal(spacious.status,201);rooms.push(spacious.data);
+ assert.equal(spacious.data.initialState,'seed-v2');assert.equal(spacious.data.room.puzzle.scatterVersion,2);
+ const spaciousFull=await request('/api/rooms/'+spacious.data.room.id,undefined,spacious.data.token);
+ assert.deepEqual(spaciousFull.data.puzzle,createFittedPuzzle(initial.imageId,initial.cols,initial.rows,spacious.data.room.puzzle.seed,2));
  const firstName=create.data.room.members[0].name;
  // A candidate cannot replace an established cookie identity.
  const legacy=await request('/api/rooms',{imageId:initial.imageId,pieces:108,visibility:'public',guestSecret:randomBytes(32).toString('hex')});

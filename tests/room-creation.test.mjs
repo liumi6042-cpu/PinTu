@@ -10,7 +10,7 @@ function fixture(level=LEVELS.at(-1),seed=42){
  const puzzle=createPuzzle(imageId,level.cols,level.rows,seed);
  const {groups,...initial}=puzzle;
  const metadata={id,visibility:'public',revision:0,serverTime:100,expiresAt:86400100,members:[],leases:{},startedAt:null};
- return {full:{token,playerId,room:{...metadata,puzzle}},small:{token,playerId,initialState:'seed-v1',room:{...metadata,puzzle:initial}}};
+ return {full:{token,playerId,room:{...metadata,puzzle}},small:{token,playerId,initialState:'seed-v2',room:{...metadata,puzzle:initial}}};
 }
 test('compact fresh creation reproduces all piece positions through 5000, without transmitting groups',()=>{
  for(const level of LEVELS)for(const seed of [0,42,0xffffffff]){
@@ -29,7 +29,7 @@ test('a fitted seed grid expands like a fixed one, and odd grids stay rejected',
  const fitted=createFittedPuzzle(imageId,24,12,42);
  const {groups,...initial}=fitted;
  const metadata={id,visibility:'public',revision:0,serverTime:100,expiresAt:86400100,members:[],leases:{},startedAt:null};
- const ticket={token,playerId,initialState:'seed-v1',room:{...metadata,puzzle:initial}};
+ const ticket={token,playerId,initialState:'seed-v2',room:{...metadata,puzzle:initial}};
  assert.deepEqual(expandCreatedTicket(ticket),{token,playerId,room:{...metadata,puzzle:fitted}});
  for(const [cols,rows] of [[3,3],[1,300],[60,60]])assert.throws(()=>expandCreatedTicket({...ticket,room:{...ticket.room,puzzle:{...initial,cols,rows}}}));
 });
@@ -54,7 +54,7 @@ test('create plus immediate room entry uses one request; returning stored ticket
  const storage=setup(t),calls=[],{full,small}=fixture();
  t.mock.method(globalThis,'fetch',async(path,init)=>{
   calls.push(path);
-  if(path==='/api/rooms'){const body=JSON.parse(init.body);assert.equal(body.guestSecret,'a'.repeat(64));assert.equal(body.initialState,'seed-v1');return Response.json(small,{status:201});}
+  if(path==='/api/rooms'){const body=JSON.parse(init.body);assert.equal(body.guestSecret,'a'.repeat(64));assert.equal(body.initialState,'seed-v2');return Response.json(small,{status:201});}
   assert.equal(init.headers.Authorization,'Bearer '+token);return Response.json(full.room);
  });
  assert.deepEqual(await apiJson('/api/rooms',{imageId,pieces:5000,visibility:'public'}),full);

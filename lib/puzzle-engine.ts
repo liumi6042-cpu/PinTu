@@ -1,8 +1,14 @@
 export type Piece = { id: number; row: number; col: number; edges: number[]; border: boolean };
 export type Group = { id: number; pieces: number[]; dx: number; dy: number; locked: boolean };
-export type PuzzleState = { version: 1; layout?:'square'; imageId: string; cols: number; rows: number; seed: number; groups: Group[]; elapsed: number };
+export type PuzzleState = { version: 1; layout?:'square'; scatterVersion?:2; imageId: string; cols: number; rows: number; seed: number; groups: Group[]; elapsed: number };
 export const BOARD = { x: 360, y: 260, width: 800, height: 600 };
 export const WORLD = { width: 1520, height: 1120 };
+export const SPACIOUS_WORLD = { width: 1900, height: 1420 };
+export function worldFor(state:Pick<PuzzleState,'scatterVersion'>&Partial<Pick<PuzzleState,'cols'|'rows'>>){
+  if(state.scatterVersion!==2)return WORLD;
+  // Retired 12-piece boards have unusually large pieces when explicitly restarted.
+  return (state.cols??0)*(state.rows??0)>0&&(state.cols??0)*(state.rows??0)<=12?{width:2200,height:1600}:SPACIOUS_WORLD;
+}
 export function boardFor(cols:number,rows:number) {
   const unit=Math.min(BOARD.width/cols,BOARD.height/rows),width=cols*unit,height=rows*unit;
   return {x:BOARD.x+(BOARD.width-width)/2,y:BOARD.y+(BOARD.height-height)/2,width,height};
@@ -47,36 +53,40 @@ export function pathFor(piece:Piece,cols:number,rows:number):string {
     out+=` L ${p(.32,0)} C ${p(.4,0)} ${p(.44,0)} ${p(.42,.16)} C ${p(.30,.70)} ${p(.36,1)} ${p(.50,1)} C ${p(.64,1)} ${p(.70,.70)} ${p(.58,.16)} C ${p(.56,0)} ${p(.60,0)} ${p(.68,0)} L ${p(1,0)}`;
   });return out+' Z';
 }
-function slots(cols:number,rows:number,seed:number) {
+function slots(cols:number,rows:number,seed:number,scatterVersion:1|2=2) {
   const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows, rand=random(seed),result:{x:number;y:number}[]=[];
-  for(let y=h*.68;y<WORLD.height-h*.6;y+=h*1.20) for(let x=w*.68;x<WORLD.width-w*.6;x+=w*1.20) {
-    if(x>board.x-w*.55&&x<board.x+board.width+w*.55&&y>board.y-h*.55&&y<board.y+board.height+h*.55)continue;
-    result.push({x:x+(rand()-.5)*w*.05,y:y+(rand()-.5)*h*.05});
+  // Both outward tabs together need 46% more room than the square body.
+  // New layouts keep a visible gap even after the small position jitter.
+  const spacious=scatterVersion===2,world=worldFor({scatterVersion:spacious?2:undefined,cols,rows});
+  const pitch=spacious?1.62:1.20,margin=spacious?.76:.68,boardMargin=spacious?.78:.55,jitter=spacious?.02:.05;
+  for(let y=h*margin;y<world.height-h*(spacious?.76:.6);y+=h*pitch) for(let x=w*margin;x<world.width-w*(spacious?.76:.6);x+=w*pitch) {
+    if(x>board.x-w*boardMargin&&x<board.x+board.width+w*boardMargin&&y>board.y-h*boardMargin&&y<board.y+board.height+h*boardMargin)continue;
+    result.push({x:x+(rand()-.5)*w*jitter,y:y+(rand()-.5)*h*jitter});
   }
   for(let i=result.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
   return result;
 }
-function scatteredGroups(cols:number,rows:number,seed:number):Group[] {
-  const board=boardFor(cols,rows),points=slots(cols,rows,seed),w=board.width/cols,h=board.height/rows;
+function scatteredGroups(cols:number,rows:number,seed:number,scatterVersion:1|2=2):Group[] {
+  const board=boardFor(cols,rows),points=slots(cols,rows,seed,scatterVersion),w=board.width/cols,h=board.height/rows;
   if(points.length<cols*rows)throw new Error('桌面没有足够的散片位置');
   return Array.from({length:cols*rows},(_,id)=>{
     const point=points[id%points.length];return {id,pieces:[id],dx:point.x-w/2-board.x-(id%cols)*w,dy:point.y-h/2-board.y-Math.floor(id/cols)*h,locked:false};
   });
 }
-export function createPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0):PuzzleState {
+export function createPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0,scatterVersion:1|2=2):PuzzleState {
   if(!LEVELS.some(l=>l.cols===cols&&l.rows===rows)) throw new Error('不支持的拼图片数');
-  return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed)};
+  return {version:1,layout:'square',...(scatterVersion===2?{scatterVersion:2 as const}:{}),imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed,scatterVersion)};
 }
 // Member uploads use a grid fitted to the picture instead of a fixed board, so a
 // portrait photo keeps its top and bottom. Only new games take this path: saved
 // rooms and local progress are still restored through SAVED_LEVELS below, and a
 // dynamic grid is never accepted by restorePuzzle, which reads a stored grid only.
 export const MAX_FITTED_PIECES=1000;
-export function createFittedPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0):PuzzleState {
+export function createFittedPuzzle(imageId:string,cols:number,rows:number,seed=Date.now()>>>0,scatterVersion:1|2=2):PuzzleState {
   if(!Number.isInteger(cols)||!Number.isInteger(rows)||cols<2||rows<2)throw new Error('不支持的拼图片数');
   const total=cols*rows;
   if(total<12||total>MAX_FITTED_PIECES)throw new Error('不支持的拼图片数');
-  return {version:1,layout:'square',imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed)};
+  return {version:1,layout:'square',...(scatterVersion===2?{scatterVersion:2 as const}:{}),imageId,cols,rows,seed,elapsed:0,groups:scatteredGroups(cols,rows,seed,scatterVersion)};
 }
 // A grid already stored in a room or a local save is always playable, whether it
 // came from the fixed levels or from a fitted upload. Validation of new games is
@@ -86,7 +96,7 @@ export function knownGrid(cols:number,rows:number){return savedGrids.some(l=>l.c
 export function fittedGrid(cols:number,rows:number){return Number.isInteger(cols)&&Number.isInteger(rows)&&cols>=2&&rows>=2&&cols*rows>=12&&cols*rows<=MAX_FITTED_PIECES;}
 export function restartPuzzle(state:PuzzleState,seed=Date.now()>>>0):PuzzleState {
   if(!knownGrid(state.cols,state.rows)&&!fittedGrid(state.cols,state.rows))throw new Error('不支持的拼图片数');
-  return {version:1,layout:'square',imageId:state.imageId,cols:state.cols,rows:state.rows,seed,elapsed:0,groups:scatteredGroups(state.cols,state.rows,seed)};
+  return {version:1,layout:'square',scatterVersion:2,imageId:state.imageId,cols:state.cols,rows:state.rows,seed,elapsed:0,groups:scatteredGroups(state.cols,state.rows,seed)};
 }
 export function adjacent(a:number,b:number,cols:number) {return Math.abs(a-b)===cols || (Math.floor(a/cols)===Math.floor(b/cols)&&Math.abs(a-b)===1);}
 export function raiseGroup(state:PuzzleState,id:number) {const i=state.groups.findIndex(g=>g.id===id);if(i<0||state.groups[i].locked)return;state.groups.push(...state.groups.splice(i,1));}
@@ -123,14 +133,14 @@ export function placedCount(state:PuzzleState) {return state.groups.filter(g=>g.
 export function visibleGroup(group:Group,pieces:Piece[],edgesOnly:boolean) {return group.locked||!edgesOnly||group.pieces.some(id=>pieces[id].border);}
 export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0,blocked:ReadonlySet<number>=new Set()) {
   if(!knownGrid(state.cols,state.rows)&&!fittedGrid(state.cols,state.rows))throw new Error('不支持的拼图片数');
-  const fresh=scatteredGroups(state.cols,state.rows,seed);let changed=0;
+  const fresh=scatteredGroups(state.cols,state.rows,seed,state.scatterVersion===2?2:1);let changed=0;
   for(const g of state.groups) if(!g.locked&&g.pieces.length===1&&!blocked.has(g.id)) {const pos=fresh[g.pieces[0]];g.dx=pos.dx;g.dy=pos.dy;changed++;}
   return changed;
 }
 export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {
   try {
     const v=JSON.parse(raw) as PuzzleState;
-    if(v.version!==1||(v.layout!==undefined&&v.layout!=='square')||!imageIds.includes(v.imageId)||(!knownGrid(v.cols,v.rows)&&!fittedGrid(v.cols,v.rows))||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
+    if(v.version!==1||(v.layout!==undefined&&v.layout!=='square')||(v.scatterVersion!==undefined&&v.scatterVersion!==2)||!imageIds.includes(v.imageId)||(!knownGrid(v.cols,v.rows)&&!fittedGrid(v.cols,v.rows))||!Number.isInteger(v.seed)||v.seed<0||v.seed>0xffffffff||!Number.isFinite(v.elapsed)||v.elapsed<0||!Array.isArray(v.groups)||v.groups.length===0)return null;
     const ids=new Set<number>(),groups=new Set<number>();
     for(const g of v.groups) {
       if(!Number.isInteger(g.id)||groups.has(g.id)||!Array.isArray(g.pieces)||!g.pieces.length||!Number.isFinite(g.dx)||!Number.isFinite(g.dy)||Math.abs(g.dx)>20000||Math.abs(g.dy)>20000||typeof g.locked!=='boolean'||g.locked&&(g.dx!==0||g.dy!==0))return null;
