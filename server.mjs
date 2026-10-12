@@ -25,7 +25,8 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
  const dailyTimer=setInterval(()=>{try{daily.sync();}catch{/* A later request retries without replacing a concurrent edit. */}},30_000);dailyTimer.unref();
  // Older saved drafts remain intact. Present new source entries through the
  // existing three-way merge and persist only when the administrator saves.
- function mergeSourceDraft(draft,document=draft.document){return validateDraft(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),source),normalizeDraft(document,source),source.baseline),source);}
+ function preparedDocument(document,previous,latest=source){return validateDraft(daily.resolveDates(normalizeDraft(document,latest),previous),latest);}
+ function mergeSourceDraft(draft,document=draft.document){return preparedDocument(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),source),normalizeDraft(document,source),source.baseline),draft.document);}
  function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};return {...draft,document:mergeSourceDraft(draft),sourceNeedsMerge:true};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
  const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/daily-state.js','daily-state.js'],['/style.css','style.css']]);
@@ -56,7 +57,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    if(path==='/api/drafts'&&method==='POST'){
     const input=inputFields(await jsonBody(req),['name','fromDraftId']);let document=structuredClone(source.baseline),fingerprint=source.fingerprint;
     if(input.fromDraftId!==undefined){if(!ID.test(input.fromDraftId))throw problem(400,'原草稿无效');const base=currentDraft(input.fromDraftId);document=base.document;fingerprint=source.fingerprint;}
-    document.name=title(input.name,'新的内容草稿');daily.assertChanges(store.draft(store.activeDraftId()).document,document);const created=store.createDraft(document,fingerprint,current.username);daily.sync();return response(res,201,{draft:created});
+    const previous=store.draft(store.activeDraftId()).document;document.name=title(input.name,'新的内容草稿');document=preparedDocument(document,document);daily.assertChanges(previous,document);const created=store.createDraft(document,fingerprint,current.username);daily.sync();return response(res,201,{draft:created});
    }
    const imageMatch=/^\/api\/images\/([a-z0-9-]+)$/.exec(path);
    if(imageMatch&&method==='GET'){
@@ -72,7 +73,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
      const input=inputFields(await jsonBody(req),['revision','document']);daily.sync();const saved=store.draft(id),rev=revision(input.revision);
      if(saved.revision!==rev)throw problem(409,'工作内容已更新；请保留当前编辑，重新加载后合并','REVISION_CONFLICT');
      if(saved.sourceFingerprint!==source.fingerprint){const doc=mergeSourceDraft(saved,input.document);daily.assertChanges(saved.document,doc);const updated=store.reimport(id,rev,doc,source,current.username,'保存时合并相册内容与新登记素材，保留已有编辑');daily.sync();return response(res,200,updated);}
-     const doc=validateDraft(input.document,source);daily.assertChanges(saved.document,doc);const updated=store.saveDraft(id,rev,doc,current.username);daily.sync();return response(res,200,updated);
+     const doc=preparedDocument(input.document,saved.document);daily.assertChanges(saved.document,doc);const updated=store.saveDraft(id,rev,doc,current.username);daily.sync();return response(res,200,updated);
     }
     if(operation&&method==='POST'){
      const input=inputFields(await jsonBody(req),operation==='analyze'?['revision']:operation==='reimport'?['revision','password','reason']:['revision','password','reason','label','target','kind']);
@@ -81,7 +82,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
       const why=reason(input.reason);auth.verifyPassword(current,input.password);const latest=providedSource??readSource(projectRoot);
       checkHistorical(latest);
       if(Object.keys(draft.document.assets).some(id=>!latest.baseline.assets[id]))throw problem(409,'来源删除了历史图片 ID；请先在原项目恢复归档条目后再导入','HISTORICAL_ID_MISSING');
-      const merged=validateDraft(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),latest),normalizeDraft(draft.document,latest),latest.baseline),latest);
+      const merged=preparedDocument(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),latest),normalizeDraft(draft.document,latest),latest.baseline),draft.document,latest);
       daily.assertChanges(draft.document,merged,false);const updated=store.reimport(id,draft.revision,merged,latest,current.username,why);source=latest;daily.sync();return response(res,200,{draft:updated});
      }
      const analysis=analyzeDraft(draft.document,source);
@@ -117,8 +118,9 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
     }
     if(method==='POST'&&operation==='restore'){
      const input=inputFields(await jsonBody(req),['password','reason','name']),why=reason(input.reason);auth.verifyPassword(current,input.password);
-     const saved=store.version(id),restored=saved.version.sourceFingerprint===source.fingerprint?validateDraft(saved.document,source):mergeSourceDraft({sourceFingerprint:saved.version.sourceFingerprint,document:saved.document});
-     daily.assertChanges(store.draft(store.activeDraftId()).document,restored);const result=store.restore(id,title(input.name,'从历史版本恢复的草稿'),current.username,why,restored);daily.sync();return response(res,201,{draft:result});
+     const saved=store.version(id),previous=store.draft(store.activeDraftId()).document;
+     const restored=saved.version.sourceFingerprint===source.fingerprint?preparedDocument(saved.document,saved.document):mergeSourceDraft({sourceFingerprint:saved.version.sourceFingerprint,document:saved.document});
+     daily.assertChanges(previous,restored);const result=store.restore(id,title(input.name,'从历史版本恢复的草稿'),current.username,why,restored);daily.sync();return response(res,201,{draft:result});
     }
    }
    throw problem(404,'此页面或内容不存在','NOT_FOUND');

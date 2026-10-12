@@ -20,19 +20,63 @@ export function validDailyDate(value) {
 export const beijingDate = (now = Date.now()) => new Date(now + CHINA_OFFSET).toISOString().slice(0, 10);
 export const nextBeijingDate = (now = Date.now()) => beijingDate(now + DAY);
 
+const planFields = ['id', 'imageId', 'date', 'albumId'];
+const samePlan = (a, b) => planFields.every(field => a[field] === b[field]);
+function checkPlanFields(plan, allowAutomaticPlaceholder = false) {
+  if (!plain(plan) || planFields.some(field => !Object.hasOwn(plan, field))
+    || Object.keys(plan).some(field => ![...planFields, 'autoDate'].includes(field))) invalid('每日首发计划包含缺失或无效字段。');
+  if (Object.hasOwn(plan, 'autoDate') && typeof plan.autoDate !== 'boolean') invalid('自动安排日期必须是勾选值。');
+  if (!(allowAutomaticPlaceholder && plan.autoDate === true && plan.date === null) && !validDailyDate(plan.date))
+    invalid('每日首发日期必须是真实的 YYYY-MM-DD 日期。');
+}
+
+// Allocation happens before canonical validation, but never changes a saved
+// automatic slot. Only newly enabled automatic plans enter the free-date queue.
+export function resolveAutomaticDailyDates(document, previous = {}, frozenPlans = [], now = Date.now()) {
+  const next = copy(document);
+  if (!plain(next)) invalid('内容方案必须是对象。');
+  if (!Object.hasOwn(next, 'dailyPlans')) return next;
+  const plans = next.dailyPlans;
+  if (!Array.isArray(plans) || plans.length > Object.keys(next.assets ?? {}).length) invalid('每日首发计划必须是有界数组。');
+  for (let index = 0; index < plans.length; index++) if (!Object.hasOwn(plans, index)) invalid('每日首发计划不能包含空洞。');
+  for (const plan of plans) checkPlanFields(plan, true);
+  const oldByImage = new Map((previous.dailyPlans ?? []).map(plan => [plan.imageId, plan]));
+  const frozenByImage = new Map(frozenPlans.map(plan => [plan.imageId, plan]));
+  const pending = [], occupied = new Set(frozenPlans.map(plan => plan.date));
+  for (const plan of plans) {
+    const old = oldByImage.get(plan.imageId), frozen = frozenByImage.get(plan.imageId);
+    if (plan.autoDate === true) {
+      if (frozen) {
+        if (plan.date !== null && plan.date !== frozen.date) throw problem(409, '已实际出场的首发计划不能修改或删除：' + frozen.imageId, 'DAILY_PLAN_LOCKED');
+        plan.date = frozen.date;
+      }
+      else if (old?.autoDate === true && validDailyDate(old.date)) plan.date = old.date;
+      else {pending.push(plan); continue;}
+    }
+    occupied.add(plan.date);
+  }
+  let date = nextBeijingDate(now);
+  for (const plan of pending) {
+    while (occupied.has(date)) date = nextBeijingDate(Date.parse(date + 'T00:00:00+08:00'));
+    if (!validDailyDate(date)) invalid('可安排的每日首发日期已超出支持范围。');
+    plan.date = date; occupied.add(date);
+  }
+  return next;
+}
+
 export function validateDailyPlans(value, imageIds, albumIds) {
   if (!Array.isArray(value) || value.length > imageIds.size) invalid('每日首发计划必须是有界数组。');
   for (let index = 0; index < value.length; index++) if (!Object.hasOwn(value, index)) invalid('每日首发计划不能包含空洞。');
   const images = new Set(), dates = new Set();
   return value.map(plan => {
-    if (!plain(plan) || Object.keys(plan).sort().join(',') !== 'albumId,date,id,imageId') invalid('每日首发计划包含缺失或无效字段。');
+    checkPlanFields(plan);
     if (typeof plan.imageId !== 'string' || !IMAGE_ID.test(plan.imageId) || !imageIds.has(plan.imageId) || plan.id !== plan.imageId) invalid('每日首发计划的图片引用无效。');
-    if (!validDailyDate(plan.date)) invalid('每日首发日期必须是真实的 YYYY-MM-DD 日期。');
     if (typeof plan.albumId !== 'string' || !albumIds.has(plan.albumId)) invalid('每日首发计划的预选相册不存在。');
     if (images.has(plan.imageId)) invalid('每张图片只能安排一次每日首发。');
     if (dates.has(plan.date)) invalid('每天只能安排一张每日首发图片。');
     images.add(plan.imageId); dates.add(plan.date);
-    return {id: plan.imageId, imageId: plan.imageId, date: plan.date, albumId: plan.albumId};
+    return {id: plan.imageId, imageId: plan.imageId, date: plan.date, albumId: plan.albumId,
+      ...(Object.hasOwn(plan, 'autoDate') ? {autoDate: plan.autoDate} : {})};
   });
 }
 
@@ -128,7 +172,7 @@ function readConfirmedReceipts(appearanceDir, bridgeDir, source, now) {
 export function assertDailyPlanChanges(previous, document, frozenPlans, now = Date.now(), checkNewDates = true) {
   const plans = document.dailyPlans ?? [];
   for (const locked of frozenPlans) {
-    if (!plans.some(plan => same(plan, locked))) throw problem(409, '已实际出场的首发计划不能修改或删除：' + locked.imageId, 'DAILY_PLAN_LOCKED');
+    if (!plans.some(plan => samePlan(plan, locked))) throw problem(409, '已实际出场的首发计划不能修改或删除：' + locked.imageId, 'DAILY_PLAN_LOCKED');
   }
   if (checkNewDates) for (const plan of plans) {
     const old = (previous.dailyPlans ?? []).find(item => item.imageId === plan.imageId);
@@ -161,7 +205,9 @@ export function createDailyCoordinator({store, getSource, validateDocument, brid
       const next = copy(document);
       for (const locked of lockedByImage.values()) {
         const index = next.dailyPlans.findIndex(plan => plan.imageId === locked.imageId);
-        if (index < 0) next.dailyPlans.push(copy(locked)); else next.dailyPlans[index] = copy(locked);
+        const current = index < 0 ? locked : next.dailyPlans[index];
+        const restored = {...copy(locked), ...(Object.hasOwn(current, 'autoDate') ? {autoDate: current.autoDate} : {})};
+        if (index < 0) next.dailyPlans.push(restored); else next.dailyPlans[index] = restored;
       }
       const enrollmentIds = new Set(store.dailyEnrollments().map(item => item.imageId)), enrollments = [];
       for (const plan of lockedByImage.values()) {
@@ -186,5 +232,7 @@ export function createDailyCoordinator({store, getSource, validateDocument, brid
   }
   return {sync, status, assertChanges(previous, document, checkNewDates = true) {
     assertDailyPlanChanges(previous, document, store.dailyFrozenPlans(), now(), checkNewDates);
+  }, resolveDates(document, previous) {
+    return resolveAutomaticDailyDates(document, previous, store.dailyFrozenPlans(), now());
   }};
 }

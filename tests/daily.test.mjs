@@ -7,12 +7,13 @@ import {readSource} from '../source.mjs';
 import {validateDraft} from '../model.mjs';
 import {normalizeDraft, buildAlbumConfiguration} from '../album-model.mjs';
 import {createStore} from '../store.mjs';
-import {assertDailyPlanChanges, beijingDate, buildDailyConfiguration, configurationDigest, createDailyCoordinator, dailyReadiness} from '../daily.mjs';
+import {assertDailyPlanChanges, beijingDate, buildDailyConfiguration, configurationDigest, createDailyCoordinator, dailyReadiness, resolveAutomaticDailyDates} from '../daily.mjs';
 import {createAdminServer} from '../server.mjs';
 
 const source = readSource(), copy = value => structuredClone(value);
 const dailyImage = source.assets.find(asset => asset.lifecycle === 'retained' && asset.targets['mobile-shared'].status === 'published' && asset.targets['mobile-shared'].dailyOnly).id;
 const secondImage = source.assets.find(asset => asset.lifecycle === 'retained' && asset.targets['mobile-shared'].status === 'published' && !asset.targets['mobile-shared'].dailyOnly).id;
+const thirdImage = source.assets.find(asset => asset.lifecycle === 'retained' && asset.targets['mobile-shared'].status === 'published' && ![dailyImage, secondImage].includes(asset.id)).id;
 const emptyAlbum = id => ({id, title: '预选相册', description: '保持设置', imageIds: [], coverImageId: null, styleGroupId: null,
   showOnPc: false, showOnMobile: false, purchasable: false, price: 0, decorationId: null, milestones: []});
 const plan = (imageId = dailyImage, date = '2030-05-02', albumId = 'daily-destination') => ({id: imageId, imageId, date, albumId});
@@ -51,6 +52,42 @@ test('optional v3 plans round-trip and reject invalid dates, duplicate days and 
   }
   assert.throws(() => assertDailyPlanChanges(old, {...draft, dailyPlans: [plan(dailyImage, '2030-05-01')]}, [], Date.parse('2030-05-01T01:00:00+08:00')), error => error.code === 'DAILY_PLAN_DATE_PAST');
   assert.doesNotThrow(() => assertDailyPlanChanges(draft, draft, [], Date.parse('2030-05-03T00:00:00+08:00')), 'unchanged expired plans remain savable');
+});
+
+test('automatic plans take free Beijing dates after all manual slots without selecting other images', () => {
+  const draft = document(); draft.dailyPlans = [
+    {...plan(dailyImage, null), autoDate: true}, {...plan(secondImage, '2030-05-09'), autoDate: true}, plan(thirdImage)];
+  const resolved = resolveAutomaticDailyDates(draft, document(), [], Date.parse('2030-05-01T15:59:59Z'));
+  assert.deepEqual(resolved.dailyPlans.map(item => item.date), ['2030-05-03', '2030-05-04', '2030-05-02']);
+  assert.equal(resolved.dailyPlans.length, 3); assert.equal(draft.dailyPlans[0].date, null, 'allocation does not mutate browser input');
+  assert.deepEqual(validateDraft(resolved, source).dailyPlans, resolved.dailyPlans);
+  assert.deepEqual(buildDailyConfiguration(resolved, source).entries.map(entry => Object.keys(entry).sort()),
+    Array.from({length: 3}, () => ['albumId', 'date', 'imageId']), 'the public bridge schema stays unchanged');
+});
+
+test('saved automatic dates remain stable when expired; cancellation frees its slot without moving other plans', () => {
+  const at = Date.parse('2030-05-01T12:00:00+08:00'), previous = document();
+  previous.dailyPlans = [{...plan(), autoDate: true}, {...plan(secondImage, '2030-05-04'), autoDate: true}];
+  const retry = copy(previous); retry.dailyPlans[0].date = null;
+  assert.deepEqual(resolveAutomaticDailyDates(retry, previous, [], Date.parse('2030-05-03T12:00:00+08:00')).dailyPlans, previous.dailyPlans);
+  const canceled = copy(previous); canceled.dailyPlans = [canceled.dailyPlans[1], {...plan(thirdImage, null), autoDate: true}];
+  const after = resolveAutomaticDailyDates(canceled, previous, [], at);
+  assert.deepEqual(after.dailyPlans.map(item => item.date), ['2030-05-04', '2030-05-02']);
+  const manual = document(); manual.dailyPlans = [plan(dailyImage, '2030-05-09')];
+  const switched = copy(manual); switched.dailyPlans[0].autoDate = true;
+  assert.equal(resolveAutomaticDailyDates(switched, manual, [], at).dailyPlans[0].date, '2030-05-02');
+});
+
+test('automatic mode has strict fields and frozen plans compare their immutable core fields', () => {
+  const draft = document(); draft.dailyPlans = [{...plan(), autoDate: true}];
+  assert.deepEqual(validateDraft(draft, source).dailyPlans, draft.dailyPlans);
+  assert.doesNotThrow(() => assertDailyPlanChanges(draft, draft, [plan()]));
+  for (const invalid of ['true', 1, null]) assert.throws(() => validateDraft({...draft, dailyPlans: [{...plan(), autoDate: invalid}]}, source), error => error.code === 'INVALID_DRAFT');
+  for (const invalid of [{...plan(), date: null}, {...plan(), autoDate: true, date: '2030-02-29'}, {...plan(), autoDate: true, extra: 'field'}])
+    assert.throws(() => resolveAutomaticDailyDates({...draft, dailyPlans: [invalid]}, document()), error => error.code === 'INVALID_DRAFT');
+  for (const invalid of [{...plan('not-an-image'), autoDate: true, date: null}, {...plan(dailyImage, null, 'missing-album'), autoDate: true}])
+    assert.throws(() => validateDraft(resolveAutomaticDailyDates({...draft, dailyPlans: [invalid]}, document()), source), error => error.code === 'INVALID_DRAFT');
+  assert.throws(() => resolveAutomaticDailyDates({...draft, dailyPlans: [{...plan(dailyImage, '2030-05-03'), autoDate: true}]}, draft, [plan()]), error => error.code === 'DAILY_PLAN_LOCKED');
 });
 
 test('bridge excludes unusable plans and every private source field', () => {
@@ -100,6 +137,19 @@ test('actual appearance waits for Beijing next day, preserves metadata and enrol
   assert.equal(f.store.draft(before.id).revision, manualRevision); assert.deepEqual(f.store.draft(before.id).document, validateDraft(manual, source)); assert.equal(f.store.dailyEnrollments().length, 1);
 });
 
+test('confirmed automatic plans retain their mode through receipt sync and next-day enrollment', t => {
+  const f = fixture(t), draft = document(); draft.dailyPlans = [{...plan(), autoDate: true}];
+  f.save(draft); f.coordinator.sync(); f.setNow('2030-05-02T10:00:00+08:00'); f.receipt();
+  f.coordinator.sync(); let saved = f.store.draft(f.store.activeDraftId());
+  assert.deepEqual(saved.document.dailyPlans, draft.dailyPlans);
+  assert.doesNotThrow(() => f.coordinator.assertChanges(saved.document, saved.document));
+  const revision = saved.revision; f.coordinator.sync(); f.coordinator.sync();
+  assert.equal(f.store.draft(saved.id).revision, revision, 'missing autoDate in a receipt does not rewrite saved plans');
+  f.setNow('2030-05-03T00:00:00+08:00'); f.coordinator.sync(); saved = f.store.draft(saved.id);
+  assert.equal(saved.document.dailyPlans[0].autoDate, true); assert.equal(f.store.dailyEnrollments().length, 1);
+  f.coordinator.sync(); assert.equal(f.store.draft(saved.id).revision, saved.revision);
+});
+
 test('untrusted receipts and changed sources cannot trigger enrollment; late trusted receipt freezes its original plan', t => {
   const f = fixture(t), draft = document(); draft.dailyPlans = [plan()]; f.save(draft); f.coordinator.sync();
   f.setNow('2030-05-02T10:00:00+08:00'); f.receipt({configDigest: 'a'.repeat(64)}); f.coordinator.sync(); assert.equal(f.store.dailyAppearances().length, 0);
@@ -130,7 +180,10 @@ test('daily status remains authenticated and server guards past plans and frozen
   const current = app.store.draft(app.store.activeDraftId()), draft = document(); draft.dailyPlans = [plan(dailyImage, '2030-05-01')];
   const oldVersion = app.store.publish(current, {kind: 'snapshot', target: null, label: '未排期备份', reason: '聚焦验证'}, [], {changes: [], blockers: [], warnings: [], compatibleTargets: []}, 'test');
   let result = await request('/api/drafts/' + current.id, 'PUT', {revision: current.revision, document: draft}); assert.equal(result.payload.code, 'DAILY_PLAN_DATE_PAST');
-  draft.dailyPlans = [plan()]; result = await request('/api/drafts/' + current.id, 'PUT', {revision: current.revision, document: draft}); assert.equal(result.status, 200, JSON.stringify(result.payload));
+  draft.dailyPlans = [{...plan(dailyImage, null), autoDate: true}]; result = await request('/api/drafts/' + current.id, 'PUT', {revision: current.revision, document: draft}); assert.equal(result.status, 200, JSON.stringify(result.payload));
+  assert.deepEqual(result.payload.document.dailyPlans, [{...plan(), autoDate: true}]);
+  const stale = await request('/api/drafts/' + current.id, 'PUT', {revision: current.revision, document: draft}); assert.equal(stale.payload.code, 'REVISION_CONFLICT');
+  result = await request('/api/drafts/' + current.id, 'PUT', {revision: result.payload.revision, document: draft}); assert.equal(result.status, 200); assert.deepEqual(result.payload.document.dailyPlans, [{...plan(), autoDate: true}]);
   const configured = JSON.parse(readFileSync(join(root, 'bridge/configuration.json'), 'utf8')); at = Date.parse('2030-05-02T10:00:00+08:00'); mkdirSync(join(root, 'appearances'), {recursive: true});
   writeFileSync(join(root, 'appearances/2030-05-02.json'), JSON.stringify({schema: 'jigsaw-daily-appearance/v1', target: 'mobile-shared', date: '2030-05-02', imageId: dailyImage, albumId: 'daily-destination', activatedAt: at, configDigest: configured.configDigest, planned: true}));
   const status = await request('/api/daily/status'); assert.equal(status.status, 200); assert.equal(status.payload.daily.appearances.length, 1);
