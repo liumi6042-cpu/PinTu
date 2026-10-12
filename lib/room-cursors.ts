@@ -1,6 +1,10 @@
 import { WORLD } from './puzzle-engine';
 
 export const CURSOR_INTERVAL = 200;
+// Hidden browser tabs can batch timers once per minute. Allow two heartbeat
+// windows for pointer presence, while the room's seats/drag leases keep their
+// existing shorter timeout. Explicit leave/stop still removes the cursor now.
+export const CURSOR_ONLINE_MS = 120000;
 export type CursorPoint = { x: number; y: number };
 export type SharedCursor = CursorPoint & { playerId: string; name: string; color: string; badge?:string|null;cursorStyle?:string|null; updatedAt: number };
 export type CursorInput = { clientId: string; seq: number; point: CursorPoint | null };

@@ -17,8 +17,9 @@ export class CursorClient {
     if(this.stopped)return;
     if(this.hidden()){
       if(this.timer)clearTimeout(this.timer);this.timer=null;
-      // Publish one tombstone before sleeping, including when a position is in flight.
-      this.point(null);this.receive([]);
+      // Keep the last published position for teammates. Only local reads sleep;
+      // switching tabs does not mean the player left the room.
+      this.receive([]);
     }else this.schedule(0);
   };
   constructor(roomId:string,token:string,playerId:string,
@@ -31,18 +32,18 @@ export class CursorClient {
     this.schedule(0);
   }
   point(point:CursorPoint|null){
-    if(this.hidden())point=null;
+    if(this.hidden())return;
     if(this.stopped || (!point&&!this.visible&&this.pending===undefined))return;
     this.visible=point!==null;this.pending=point;this.lastMotion=Date.now();
     this.schedule(Math.max(0,CURSOR_INTERVAL-(performance.now()-this.sentAt)));
   }
   private schedule(delay:number){
     if(this.timer)clearTimeout(this.timer);this.timer=null;
-    if(this.stopped||this.running||(this.hidden()&&this.pending!==null))return;
+    if(this.stopped||this.running||this.hidden())return;
     this.timer=setTimeout(()=>{this.timer=null;void this.exchange();},Math.max(delay,this.retryAt-Date.now()));
   }
   private async exchange(){
-    if(this.stopped||(this.hidden()&&this.pending!==null))return;
+    if(this.stopped||this.hidden())return;
     if(!this.ready()){this.receive([]);this.schedule(1500);return;}
     this.running=true;this.sentAt=performance.now();
     const point=this.pending;this.pending=undefined;let active=false;

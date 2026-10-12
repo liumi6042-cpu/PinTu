@@ -21,7 +21,6 @@ export default function RoomCursors({client,canvas,getTable,hidden=false}:{
   const positions=useRef(new Map<string,{x:number;y:number;tx:number;ty:number;updatedAt:number}>());
   const hiddenRef=useRef(hidden);hiddenRef.current=hidden;
   const channel=useRef<CursorClient|null>(null);
-  useEffect(()=>{if(hidden)channel.current?.point(null);},[hidden]);
   useEffect(()=>{const element=canvas.current;if(!element)return;let alive=true,revision=0;
     const clear=()=>{delete element.dataset.cosmeticCursor;element.style.removeProperty('--cosmetic-cursor');};
     const refresh=async()=>{const n=++revision;clear();if(!window.matchMedia('(pointer:fine)').matches)return;try{const r=await fetch('/api/courtyard',{cache:'no-store'});if(!r.ok)return;const data=await r.json() as {state:Parameters<typeof cosmeticsOf>[0]};const id=cosmeticsOf(data.state).equipped.cursor;if(!validStyle(id))return;const url=await cosmeticUrl('cursor',id);if(alive&&n===revision){element.style.setProperty('--cosmetic-cursor',`url("${url}") 16 16, auto`);element.dataset.cosmeticCursor=id;}}catch{}};
@@ -43,15 +42,11 @@ export default function RoomCursors({client,canvas,getTable,hidden=false}:{
     channel.current=connection;connection.start();
     const pointer=(event:PointerEvent)=>{
       const table=getTable();
-      if(!table||hiddenRef.current||document.hidden){connection.point(null);return;}
-      connection.point(cursorWorld({x:event.clientX,y:event.clientY},element.getBoundingClientRect(),table.camera,worldFor(table.state)));
+      if(!table||hiddenRef.current||document.hidden)return;
+      const point=cursorWorld({x:event.clientX,y:event.clientY},element.getBoundingClientRect(),table.camera,worldFor(table.state));
+      if(point)connection.point(point);
     };
-    const hide=()=>connection.point(null);
-    const touchEnd=(event:PointerEvent)=>{if(event.pointerType==='touch')hide();};
-    const visibility=()=>{if(document.hidden)hide();};
     element.addEventListener('pointermove',pointer);element.addEventListener('pointerdown',pointer);
-    element.addEventListener('pointerleave',hide);element.addEventListener('pointercancel',hide);element.addEventListener('pointerup',touchEnd);
-    window.addEventListener('blur',hide);document.addEventListener('visibilitychange',visibility);
     const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');let frame=0,previousTime=performance.now();
     const paint=(time:number)=>{
       const table=getTable(),dt=Math.min(100,time-previousTime);previousTime=time;
@@ -69,8 +64,6 @@ export default function RoomCursors({client,canvas,getTable,hidden=false}:{
     return()=>{
       alive=false;connection.stop();channel.current=null;cancelAnimationFrame(frame);positions.current.clear();
       element.removeEventListener('pointermove',pointer);element.removeEventListener('pointerdown',pointer);
-      element.removeEventListener('pointerleave',hide);element.removeEventListener('pointercancel',hide);element.removeEventListener('pointerup',touchEnd);
-      window.removeEventListener('blur',hide);document.removeEventListener('visibilitychange',visibility);
     };
   },[client,canvas,getTable]);
   return <div className="shared-cursors" aria-hidden="true">{cursors.map(cursor=><div className="shared-cursor" key={cursor.playerId} ref={node=>{if(node)nodes.current.set(cursor.playerId,node);else nodes.current.delete(cursor.playerId);}}>

@@ -237,7 +237,9 @@ for source in (old / 'dist/client/_next/static').rglob('*'):
         target.parent.mkdir(parents=True, exist_ok=True); os.link(source, target); retained += 1
 
 unit_path = pathlib.Path('/etc/systemd/system/jigsaw-web@.service')
-template = pathlib.Path('/etc/systemd/system/jigsaw-web.service').read_text()
+# The replacement host already has the reviewed instance template and no legacy unit.
+# Reuse it verbatim; only older hosts derive the template from their legacy unit.
+template = unit_path.read_text() if unit_path.exists() else pathlib.Path('/etc/systemd/system/jigsaw-web.service').read_text()
 template = template.replace('WorkingDirectory=/srv/sites/jigsaw/current', 'WorkingDirectory=/srv/sites/jigsaw/slots/%i').replace('Environment=PORT=3103', 'Environment=PORT=%i')
 assert 'WorkingDirectory=/srv/sites/jigsaw/slots/%i' in template and 'Environment=PORT=%i' in template
 assert '[Install]' in template and 'WantedBy=multi-user.target' in template

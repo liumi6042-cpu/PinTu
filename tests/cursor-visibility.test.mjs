@@ -39,32 +39,32 @@ test('background cursor reads sleep, foreground wakes once, and stop removes the
  env.visibility(false);await env.advance(30000);assert.equal(env.calls.length,3);
 });
 
-test('hide waits for an in-flight position, sends one newer tombstone, and never overlaps requests',async t=>{
+test('background preserves an in-flight position and sleeps without sending a hide message',async t=>{
  const env=environment(t);let finishPosition;
  env.fetchWith(()=>new Promise(resolve=>{finishPosition=resolve;}));
  env.client.start();env.client.point({x:40,y:50});await env.advance(0);
  assert.equal(env.calls.length,1);assert.deepEqual(env.calls[0].body.point,{x:40,y:50});
  env.visibility(true);env.client.point(null);await env.advance(250);
- assert.equal(env.calls.length,1,'hide is queued behind the active position');
+ assert.equal(env.calls.length,1,'background does not interrupt or replace the active position');
  env.fetchWith(async()=>Response.json({cursors:[],serverTime:Date.now()}));
  finishPosition(Response.json({cursors:[{playerId:'friend',x:2,y:3,updatedAt:Date.now()}],serverTime:Date.now()}));
  await settle();await env.advance(0);
- assert.equal(env.calls.length,2);assert.equal(env.calls[1].method,'POST');assert.equal(env.calls[1].body.point,null);
- assert.ok(env.calls[1].body.seq>env.calls[0].body.seq);
+ assert.equal(env.calls.length,1,'no null position is sent when switching tabs');
  assert.ok(env.received.every(cursors=>cursors.length===0),'late replies do not redisplay cursors in the background');
- await env.advance(30000);assert.equal(env.calls.length,2);
+ await env.advance(30000);assert.equal(env.calls.length,1);
  env.visibility(false);env.visibility(false);await env.advance(0);
- assert.equal(env.calls.length,3);assert.equal(env.calls[2].method,'GET');
+ assert.equal(env.calls.length,2);assert.equal(env.calls[1].method,'GET');
  assert.equal(env.maximumInFlight,1);
 });
 
-test('foreground movement still coalesces at 200 ms and an acknowledged hide is not resent on stop',async t=>{
+test('foreground movement coalesces and only stopping the room sends the hide message',async t=>{
  const env=environment(t);env.client.start();env.client.point({x:1,y:1});await env.advance(0);
  for(let i=2;i<=20;i++)env.client.point({x:i,y:i});
  await env.advance(199);assert.equal(env.calls.length,1);
  await env.advance(1);assert.equal(env.calls.length,2);assert.deepEqual(env.calls[1].body.point,{x:20,y:20});
  assert.equal(env.calls[1].time-env.calls[0].time,200);
- env.visibility(true);await env.advance(200);assert.equal(env.calls.at(-1).body.point,null);
- const total=env.calls.length;env.client.stop();assert.equal(env.calls.length,total,'an acknowledged hide is not resent on stop');
+ env.visibility(true);await env.advance(200);assert.deepEqual(env.calls.at(-1).body.point,{x:20,y:20});
+ const total=env.calls.length;env.client.stop();await settle();assert.equal(env.calls.length,total+1);
+ assert.equal(env.calls.at(-1).body.point,null,'exiting still removes the published position');
  assert.equal(env.maximumInFlight,1);
 });

@@ -3,7 +3,7 @@ import { worldFor } from '@/lib/puzzle-engine';
 import { body, failure, getDigest, json,readRoom } from '@/lib/room-store';
 import { checkRoomAccount } from '@/lib/room-account';
 import { ONLINE_MS, RoomError, type Member, type Room, type RoomVisibility } from '@/lib/room-engine';
-import { cursorInput, type SharedCursor } from '@/lib/room-cursors';
+import { CURSOR_ONLINE_MS, cursorInput, type SharedCursor } from '@/lib/room-cursors';
 type Context={params:Promise<{id:string}>};
 type CursorRoom={id:string;expiresAt:number;visibility?:RoomVisibility;members:Member[];puzzle:Room['puzzle']};
 async function authorize(request:Request,context:Context){
@@ -22,8 +22,8 @@ async function positions(room:CursorRoom,now:number){
     LEFT JOIN puzzle_achievement_profiles p ON p.owner_id=COALESCE(json_extract(m.value,'$.accountId'),json_extract(m.value,'$.guestId'))
     LEFT JOIN puzzle_courtyards g ON g.user_id=json_extract(m.value,'$.accountId')
     LEFT JOIN puzzle_account_security s ON s.user_id=g.user_id
-    WHERE c.room_id=? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>? AND c.x IS NOT NULL AND c.y IS NOT NULL`).bind(JSON.stringify(room.members),room.id,now-ONLINE_MS).all<{player_id:string;x:number;y:number;updated_at:number;badge:string|null;cursorStyle:string|null}>();
-  const members=new Map(room.members.filter(m=>now-m.lastSeen<ONLINE_MS).map(m=>[m.id,m]));
+    WHERE c.room_id=? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0 AND c.x IS NOT NULL AND c.y IS NOT NULL`).bind(JSON.stringify(room.members),room.id,now-CURSOR_ONLINE_MS).all<{player_id:string;x:number;y:number;updated_at:number;badge:string|null;cursorStyle:string|null}>();
+  const members=new Map(room.members.filter(m=>m.lastSeen>0&&now-m.lastSeen<CURSOR_ONLINE_MS).map(m=>[m.id,m]));
   const cursors:SharedCursor[]=[];
   for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,cursorStyle:row.cursorStyle,x:row.x,y:row.y,updatedAt:row.updated_at});}
   return json({cursors,serverTime:now});
@@ -40,6 +40,7 @@ export async function POST(request:Request,context:Context){try{
   if(input.seq%50===0)commands.push(database.prepare(`DELETE FROM puzzle_room_cursors WHERE updated_at<?
     AND NOT EXISTS(SELECT 1 FROM puzzle_rooms r,json_each(r.data,'$.members') m
       WHERE r.id=puzzle_room_cursors.room_id AND json_extract(m.value,'$.id')=puzzle_room_cursors.player_id
-      AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>?)`).bind(now-60000,now-ONLINE_MS));
+      AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>?
+      AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0)`).bind(now-60000,now-CURSOR_ONLINE_MS));
   await database.batch(commands);return await positions(room,now);
 }catch(error){return failure(error);}}
