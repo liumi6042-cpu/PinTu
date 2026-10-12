@@ -122,8 +122,19 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.ok(csrfToken);
     const state = await bootstrap();
     assert.ok(state.source.assets.length > 0);
-    imageId = state.source.assets[0].id;
+    const retained = state.source.assets.filter(asset => asset.lifecycle === 'retained'), pending = state.source.assets.filter(asset => asset.lifecycle === 'pending');
+    assert.equal(retained.length, 134, 'the historical runtime library remains unchanged');
+    assert.equal(state.source.stats.pending, pending.length);
+    assert.equal(state.source.assets.length, retained.length + pending.length);
+    imageId = retained[0].id;
     draft = draftResult(expectStatus(await request(`/api/drafts/${state.activeDraftId}`), 200));
+    for (const asset of pending) {
+      const config = draft.document.assets[asset.id];
+      assert.equal(config.styleGroupId, asset.styleGroupId);
+      assert.deepEqual(config.subjectTags, asset.subjectTags);
+      assert.equal(asset.publishedAt, null);
+      for (const target of ['pc', 'mobile-shared']) assert.deepEqual(config.targets[target], {status: 'draft', galleryVisible: false, dailyOnly: false, category: 'illustration'});
+    }
     baselineDocument = structuredClone(draft.document);
   });
 
@@ -242,6 +253,7 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.ok(exportedCandidate.files.length > 0);
     assert.equal(exportedCandidate.document, undefined, 'public candidate downloads must not include a private CMS draft');
     assert.ok(exportedCandidate.files.every(file => !/image-provenance|\.sqlite|player|password|secret/i.test(file.path)));
+    for (const asset of app.source.assets.filter(asset => asset.lifecycle === 'pending')) assert.ok(exportedCandidate.files.every(file => !file.content.includes(asset.id)), 'pending artwork must stay out of public runtime candidates');
     const beforePlanning = structuredClone(draft.document);
     const planned = structuredClone(draft.document);
     planned.targets['mobile-shared'].packs[0].price += 1;

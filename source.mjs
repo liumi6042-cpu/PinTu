@@ -4,6 +4,7 @@ import {join, resolve, relative, sep} from 'node:path';
 import {planMobileAssets} from '../jigsaw-nook-taptap/scripts/package-mobile-assets.mjs';
 import {checkImageLibrary as checkMobileImageLibrary} from '../jigsaw-nook-taptap/scripts/check-image-library.mjs';
 import {checkImageLibrary as checkPcImageLibrary} from '../puzzle-play/scripts/check-image-library.mjs';
+import {readPendingAssets, pendingPreviewFile} from './pending.mjs';
 
 export const TARGETS = ['pc', 'mobile-shared'];
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -112,7 +113,7 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
     const record = records['mobile-shared'][photo.id];
     const delivery = Object.fromEntries(Object.entries(record.delivery ?? {}).filter(([, item]) => item && typeof item === 'object' && item.format === 'webp').map(([kind, item]) => [kind, {width: item.width, height: item.height, bytes: item.bytes, sha256: item.sha256, format: 'webp', lossless: item.lossless}]));
     const generation = record.generation;
-    return {id: photo.id, title: photo.title, subtitle: photo.subtitle ?? '', category: photo.category,
+    return {id: photo.id, title: photo.title, subtitle: photo.subtitle ?? '', category: photo.category, lifecycle: 'retained',
       origin: photo.origin, reviewStatus: record.review?.status ?? 'unknown', width: record.width,
       height: record.height, direction: record.width > record.height ? 'landscape' : record.width < record.height ? 'portrait' : 'square',
       publishedAt: photo.publishedAt ?? null, review: clone(record.review ?? {}),
@@ -120,6 +121,29 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
       rightsStatement: record.rights?.statement ?? (record.commercialUse?.basis === 'provider-output-terms' ? '依生成服务商输出条款记录；未保证独占权。' : '请查看来源记录的授权依据。'),
       delivery, targets: {pc: targetConfig(pcById.get(photo.id)), 'mobile-shared': targetConfig(photo)}};
   });
+  const pending = readPendingAssets(root), historicalIds = new Set(assets.map(asset => asset.id));
+  if (pending.fingerprint) inputs.push({path: 'content-admin/work/pending-assets/registry.json', sha256: pending.fingerprint});
+  for (const record of pending.assets) {
+    if (historicalIds.has(record.id)) throw error('待整理素材与历史图片 ID 冲突：' + record.id, 409);
+    if (record.styleGroupId !== null && !styles.some(style => style.id === record.styleGroupId)) throw error('待整理素材引用未登记画风：' + record.id, 409);
+    const target = {status: 'draft', galleryVisible: false, dailyOnly: false, category: 'illustration'};
+    const native = record.generation.native;
+    const resolutionNote = record.export.isUpscaled
+      ? `原始生成 ${native.width}×${native.height}；保存为 ${record.source.width}×${record.source.height} 的放大成品。放大尺寸不代表新增原生细节。`
+      : `原始生成 ${native.width}×${native.height}；按保存原件尺寸 ${record.source.width}×${record.source.height} 登记。`;
+    const delivery = Object.fromEntries(['thumbnail', 'play', 'optimized'].map(kind => {
+      const item = record.delivery[kind];
+      return [kind, {width: item.width, height: item.height, bytes: item.bytes, sha256: item.sha256, format: 'webp', lossless: item.lossless}];
+    }));
+    assets.push({id: record.id, title: record.title, subtitle: record.subtitle, category: 'illustration', lifecycle: 'pending',
+      origin: record.origin, reviewStatus: record.review.status, width: record.source.width, height: record.source.height,
+      direction: record.source.width > record.source.height ? 'landscape' : record.source.width < record.source.height ? 'portrait' : 'square',
+      publishedAt: null, review: clone(record.review), nativeResolution: {width: native.width, height: native.height}, resolutionNote,
+      sourceThreadId: record.generation.threadId, sourceDescription: '由用户指定生成会话导入后台待整理素材。' + resolutionNote,
+      rightsStatement: '用户已授权本次导入和整理，生成来源与风格参考记录已保留。',
+      styleGroupId: record.styleGroupId, subjectTags: [...record.subjectTags], delivery,
+      targets: {pc: clone(target), 'mobile-shared': clone(target)}});
+  }
   const mobilePacks = collection.packs.map(pack => ({id: pack.id, title: pack.title, description: pack.description,
     imageIds: [...pack.imageIds], coverImageId: pack.imageIds[0], status: 'published', styleGroupId: null,
     price: pack.price, decorationId: pack.decorationId ?? null}));
@@ -134,17 +158,17 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
     coverImageId: item.pictures[0], status: 'published', styleGroupId: null, price: null, decorationId: null}));
   const baseline = {name: '初始内容草稿', styles: clone(styles),
     assets: Object.fromEntries(assets.map(asset => [asset.id, {title: asset.title, subtitle: asset.subtitle,
-      styleGroupId: null, subjectTags: [], targets: clone(asset.targets)}])),
+      styleGroupId: asset.lifecycle === 'pending' ? asset.styleGroupId : null, subjectTags: asset.lifecycle === 'pending' ? [...asset.subjectTags] : [], targets: clone(asset.targets)}])),
     targets: {pc: {packs: pcPacks, albums: pcPacks.map(pack => ({id: pack.id, title: pack.title, description: '', imageIds: [...pack.imageIds], packId: pack.id, styleGroupId: null, milestones: []}))},
       'mobile-shared': {packs: mobilePacks, albums: mobileAlbums}}};
   const targetStats = Object.fromEntries(TARGETS.map(target => [target, countTarget(catalogs[target])]));
-  const stats = {...targetStats['mobile-shared'], directions: {landscape: 0, portrait: 0, square: 0}, origins: {},
+  const stats = {...targetStats['mobile-shared'], total: assets.length, retained: mobileCatalog.length, pending: pending.assets.length, directions: {landscape: 0, portrait: 0, square: 0}, origins: {},
     targets: targetStats, mobilePacks: mobilePacks.length, mobileAlbums: mobileAlbums.length, pcPacks: pcPacks.length};
   for (const asset of assets) {stats.directions[asset.direction]++; stats.origins[asset.origin] = (stats.origins[asset.origin] ?? 0) + 1;}
   const fingerprint = hash(JSON.stringify(inputs.sort((a, b) => a.path.localeCompare(b.path))));
   const source = {fingerprint, assets, stats, baseline};
   // Keep original paths/records out of accidental JSON responses and version blobs.
-  Object.defineProperty(source, '_private', {value: {root, roots, catalogs, records, guidance, collection, series, journeyText, manifests, inputs}, enumerable: false});
+  Object.defineProperty(source, '_private', {value: {root, roots, catalogs, records, guidance, collection, series, journeyText, manifests, inputs, pending}, enumerable: false});
   return source;
 }
 
@@ -152,7 +176,9 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
 export function previewFile(source, id, kind = 'thumbnail') {
   if (!['thumbnail', 'preview'].includes(kind)) throw error('不支持的图片预览类型。');
   if (typeof id !== 'string' || !/^[a-z0-9-]+$/.test(id)) throw error('非法图片 ID。');
-  const data = source._private, photo = data.catalogs['mobile-shared'].find(item => item.id === id);
+  const data = source._private;
+  if (data.pending?.byId.has(id)) return pendingPreviewFile(data.pending, id, kind);
+  const photo = data.catalogs['mobile-shared'].find(item => item.id === id);
   if (!photo) throw error('图片未登记。', 404);
   const deliveryKind = kind === 'thumbnail' ? 'thumbnail' : photo.optimizedSrc ? 'optimized' : 'play';
   const url = kind === 'thumbnail' ? photo.thumbSrc : photo.optimizedSrc ?? photo.playSrc;
@@ -174,7 +200,9 @@ export async function verifyDelivery(source) {
     checkMobileImageLibrary(data.roots['mobile-shared']), checkPcImageLibrary(data.roots.pc),
   ]);
   const plan = planMobileAssets(data.roots['mobile-shared']);
-  if (plan.photos.length !== source.assets.length) throw error('公开分发清单未保留全部历史图片。', 409);
+  if (plan.photos.length !== source.assets.filter(asset => asset.lifecycle !== 'pending').length) throw error('公开分发清单未保留全部历史图片。', 409);
+  const latestPending = readPendingAssets(data.root);
+  if (latestPending.fingerprint !== data.pending?.fingerprint) throw error('待整理素材登记在校验期间已变化，请重新同步。', 409);
   const pcFiles = [];
   for (const asset of plan.assets) {
     const file = safeFile(data.roots.pc, 'public/' + asset.path), bytes = readFileSync(file);
@@ -194,7 +222,7 @@ export async function verifyDelivery(source) {
   return {fileCount: plan.assets.length, totalBytes: plan.assets.reduce((sum, item) => sum + item.bytes, 0),
     publishedImages: plan.photos.filter(photo => photo.status === 'published').length,
     archivedImages: plan.photos.filter(photo => photo.status === 'archived').length,
-    pcVerifiedFiles: pcFiles.length, pipeline: 'scripts/check-image-library.mjs + scripts/package-mobile-assets.mjs#planMobileAssets',
+    pcVerifiedFiles: pcFiles.length, pendingVerifiedImages: latestPending.assets.length, pipeline: 'scripts/check-image-library.mjs + scripts/package-mobile-assets.mjs#planMobileAssets + private pending registry validation',
     reviews: {pc: pcReview, 'mobile-shared': mobileReview},
     files: plan.assets.map(({source: _source, ...item}) => item)};
 }

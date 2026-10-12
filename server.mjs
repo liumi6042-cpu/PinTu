@@ -19,6 +19,9 @@ const ID=/^[a-f0-9]{32}$/;
 
 export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource}={}){
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
+ // Older saved drafts remain intact. Present new source entries through the
+ // existing three-way merge and persist only when the administrator saves.
+ function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return draft;return {...draft,document:validateDraft(mergeDraft(store.baseline(draft.sourceFingerprint),draft.document,source.baseline),source),sourceNeedsMerge:true};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
  const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
@@ -58,9 +61,11 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    const draftMatch=/^\/api\/drafts\/([a-f0-9]{32})(?:\/(analyze|publish|reimport))?$/.exec(path);
    if(draftMatch){
     const [,id,operation]=draftMatch;
-    if(!operation&&method==='GET')return response(res,200,store.draft(id));
+    if(!operation&&method==='GET')return response(res,200,currentDraft(id));
     if(!operation&&method==='PUT'){
-     const input=inputFields(await jsonBody(req),['revision','document']);const doc=validateDraft(input.document,source);return response(res,200,store.saveDraft(id,revision(input.revision),doc,current.username));
+     const input=inputFields(await jsonBody(req),['revision','document']),saved=store.draft(id),rev=revision(input.revision);
+     if(saved.sourceFingerprint!==source.fingerprint){const doc=validateDraft(mergeDraft(store.baseline(saved.sourceFingerprint),input.document,source.baseline),source);return response(res,200,store.reimport(id,rev,doc,source,current.username,'保存时合并新登记的素材，保留原草稿编辑'));}
+     const doc=validateDraft(input.document,source);return response(res,200,store.saveDraft(id,rev,doc,current.username));
     }
     if(operation&&method==='POST'){
      const input=inputFields(await jsonBody(req),operation==='analyze'?['revision']:operation==='reimport'?['revision','password','reason']:['revision','password','reason','label','target','kind']);

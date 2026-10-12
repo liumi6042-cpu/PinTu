@@ -5,7 +5,9 @@ import {validateDraft, analyzeDraft, buildCandidate} from '../model.mjs';
 
 const source = readSource();
 const draft = () => structuredClone(source.baseline);
-const firstId = source.assets[0].id;
+const retainedAssets = source.assets.filter(asset => asset.lifecycle === 'retained');
+const pendingAssets = source.assets.filter(asset => asset.lifecycle === 'pending');
+const firstId = retainedAssets[0].id;
 const codes = value => analyzeDraft(value, source).blockers.map(item => item.code);
 const invalid = value => assert.throws(() => validateDraft(value, source), error => error.status === 400);
 
@@ -14,8 +16,20 @@ test('real source baseline has no fabricated classification or compatibility cha
   assert.deepEqual(analysis.changes, []);
   assert.deepEqual(analysis.blockers, []);
   assert.deepEqual(analysis.compatibleTargets, ['pc', 'mobile-shared']);
-  assert.equal(source.assets.length, 134);
-  assert.ok(Object.values(source.baseline.assets).every(item => item.styleGroupId === null && item.subjectTags.length === 0));
+  assert.equal(retainedAssets.length, 134, 'historical playable and archived IDs remain stable');
+  for (const target of ['pc', 'mobile-shared']) assert.equal(source._private.catalogs[target].length, 134);
+  assert.equal(source.assets.length, retainedAssets.length + pendingAssets.length);
+  assert.equal(source.stats.retained, retainedAssets.length);
+  assert.equal(source.stats.pending, pendingAssets.length);
+  assert.equal(source.stats.total, source.assets.length);
+  assert.ok(retainedAssets.every(asset => source.baseline.assets[asset.id].styleGroupId === null && source.baseline.assets[asset.id].subjectTags.length === 0));
+  for (const asset of pendingAssets) {
+    const record = source._private.pending.byId.get(asset.id), config = source.baseline.assets[asset.id];
+    assert.equal(config.styleGroupId, record.styleGroupId);
+    assert.deepEqual(config.subjectTags, record.subjectTags);
+    assert.equal(asset.publishedAt, null);
+    for (const target of ['pc', 'mobile-shared']) assert.deepEqual(config.targets[target], {status: 'draft', galleryVisible: false, dailyOnly: false, category: 'illustration'});
+  }
   assert.equal(JSON.stringify(source).includes('originalFile'), false);
 });
 
@@ -103,6 +117,7 @@ test('candidates preserve catalog ordering, historical identity and original imm
   assert.deepEqual(catalog, source._private.catalogs['mobile-shared']);
   const collection = JSON.parse(candidate.files.find(item => item.path === 'lib/mobile-collection-catalog.json').content);
   assert.deepEqual(collection, source._private.collection);
+  for (const asset of pendingAssets) assert.ok(candidate.files.every(file => !file.content.includes(asset.id)), 'private pending artwork must not enter runtime content');
   const summary = candidate.files.find(item => item.path === 'content/reviewed-delivery-summary.json').content;
   assert.equal(summary.includes('originalFile'), false);
   assert.equal(summary.includes('sourceDescription'), false);

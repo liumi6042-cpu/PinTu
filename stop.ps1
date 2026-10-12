@@ -4,8 +4,11 @@ if (-not (Test-Path -LiteralPath $pidPath)) { Write-Output '没有本工具启�
 $adminProcessId = [int](Get-Content -LiteralPath $pidPath -Raw)
 $adminProcess = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $adminProcessId)
 if ($null -eq $adminProcess) { Remove-Item -LiteralPath $pidPath; Write-Output '后台已停止。'; exit }
-$expectedEntry = Join-Path $PSScriptRoot 'server.mjs'
-if ($adminProcess.Name -ne 'node.exe' -or -not $adminProcess.CommandLine.Contains($expectedEntry)) { throw '进程记录与此后台不匹配，为避免误停其他程序，未执行停止。' }
+$nodeExe = (Get-Command node -ErrorAction Stop).Source
+$physicalAdminRoot = (& $nodeExe -p 'require("node:fs").realpathSync(process.argv[1])' $PSScriptRoot).Trim()
+$expectedEntry = Join-Path $physicalAdminRoot 'server.mjs'
+$compatibilityEntry = Join-Path $PSScriptRoot 'server.mjs'
+if ($adminProcess.Name -ne 'node.exe' -or (-not $adminProcess.CommandLine.Contains($expectedEntry) -and -not $adminProcess.CommandLine.Contains($compatibilityEntry))) { throw '进程记录与此后台不匹配，为避免误停其他程序，未执行停止。' }
 try {
     Stop-Process -Id $adminProcessId -ErrorAction Stop
 } catch {

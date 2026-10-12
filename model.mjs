@@ -139,11 +139,16 @@ export function analyzeDraft(input, source) {
   for (const asset of source.assets) {
     const a = before.assets[asset.id], b = document.assets[asset.id];
     for (const field of ['title', 'subtitle', 'styleGroupId', 'subjectTags']) change('shared', 'asset', asset.id, field, a[field], b[field]);
-    if (a.title !== b.title || a.subtitle !== b.subtitle) for (const target of TARGETS) block(target, 'LOCALE_ADAPTER_REQUIRED', asset.id,
+    if (asset.lifecycle !== 'pending' && (a.title !== b.title || a.subtitle !== b.subtitle)) for (const target of TARGETS) block(target, 'LOCALE_ADAPTER_REQUIRED', asset.id,
       '图片标题或副标题修改需要同步现有中英文展示映射；草稿可保存，首期候选先阻断该目标。');
     for (const target of TARGETS) {
       const old = a.targets[target], next = b.targets[target];
       for (const field of Object.keys(old)) change(target, 'asset', asset.id, field, old[field], next[field]);
+      if (asset.lifecycle === 'pending') {
+        if (next.status !== 'draft' || next.galleryVisible || next.dailyOnly) block(target, 'NEW_ASSET_RUNTIME_IMPORT_REQUIRED', asset.id,
+          '新素材目前仅在后台待整理。需要完成目标目录、尺寸引导、语言及交付接入后才能进入游戏更新文件；请保留待整理状态。');
+        continue;
+      }
       if (old.category !== next.category) block(target, 'EXISTING_CATEGORY_CHANGED', asset.id, '旧分类参与成就与历史内容判断；请使用新画风分组和题材标签。');
       if (old.dailyOnly !== next.dailyOnly) block(target, 'DAILY_ONLY_CHANGED', asset.id, '每日专用标记需保持历史选图规则，首期不可改变。');
       if (next.status === 'draft') block(target, 'HISTORY_RETENTION_REQUIRED', asset.id, '历史图片只能保留上架或归档；草稿状态会移出旧房间可恢复清单。');
@@ -152,6 +157,11 @@ export function analyzeDraft(input, source) {
     }
   }
   for (const target of TARGETS) {
+    const pendingIds = new Set(source.assets.filter(asset => asset.lifecycle === 'pending').map(asset => asset.id));
+    for (const entity of [...document.targets[target].packs, ...document.targets[target].albums]) {
+      for (const id of entity.imageIds) if (pendingIds.has(id)) block(target, 'NEW_ASSET_RUNTIME_IMPORT_REQUIRED', id,
+        '图包或图鉴引用后台待整理素材（' + entity.id + '）；新素材完成游戏目录、尺寸引导、语言及交付接入前只能保留为规划。');
+    }
     if (!equal(dailyPool(before, source, target), dailyPool(document, source, target))) block(target, 'DAILY_ROTATION_CHANGED', 'daily-puzzle', '本次变更改变每日图片轮转顺序或成员，将影响历史日章；需单独兼容方案。');
     compareEntities(target, 'pack', before.targets[target].packs, document.targets[target].packs);
     compareEntities(target, 'album', before.targets[target].albums, document.targets[target].albums);
@@ -254,7 +264,7 @@ export function buildCandidate(input, source, target) {
   json('content/puzzle-guidance.json', source._private.guidance[target]);
   json('content/content-admin-metadata.json', {schema: 'jigsaw-content-metadata/v1', sourceFingerprint: source.fingerprint,
     scope: 'Management style groups and subject tags; game display adapter is not installed automatically.',
-    styles: document.styles, assets: Object.fromEntries(source.assets.map(asset => [asset.id, {styleGroupId: document.assets[asset.id].styleGroupId, subjectTags: document.assets[asset.id].subjectTags}])),
+    styles: document.styles, assets: Object.fromEntries(source.assets.filter(asset => asset.lifecycle !== 'pending').map(asset => [asset.id, {styleGroupId: document.assets[asset.id].styleGroupId, subjectTags: document.assets[asset.id].subjectTags}])),
     packs: Object.fromEntries(document.targets[target].packs.map(pack => [pack.id, {styleGroupId: pack.styleGroupId}])),
     albums: Object.fromEntries(document.targets[target].albums.map(album => [album.id, {styleGroupId: album.styleGroupId}]))});
   json('content/reviewed-delivery-summary.json', {schema: 'jigsaw-reviewed-delivery/v1', sourceFingerprint: source.fingerprint, assets: publicProvenance(source, target)});

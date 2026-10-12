@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
-$adminRoot = $PSScriptRoot
 $adminUrl = 'http://127.0.0.1:3214'
 $nodeExe = (Get-Command node -ErrorAction Stop).Source
+$adminRoot = (& $nodeExe -p 'require("node:fs").realpathSync(process.argv[1])' $PSScriptRoot).Trim()
 $adminWork = Join-Path $adminRoot 'work'
 New-Item -ItemType Directory -Path $adminWork -Force | Out-Null
 $running = $false
