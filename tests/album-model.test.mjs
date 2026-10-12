@@ -5,18 +5,19 @@ import {validateDraft, analyzeDraft, buildCandidate} from '../model.mjs';
 import {normalizeDraft, plannedImageVisibility, effectiveImageVisibility, buildAlbumConfiguration} from '../album-model.mjs';
 
 const source = readSource(), draft = () => structuredClone(source.baseline);
-const mobile = value => value.targets['mobile-shared'];
+const mobile = value => ({albums: value.albums});
 const codes = value => analyzeDraft(value, source).blockers.map(item => item.code);
 const invalid = value => assert.throws(() => validateDraft(value, source), error => error.status === 400);
 const emptyAlbum = id => ({id, title: '待整理相册', description: '', imageIds: [], coverImageId: null,
-  styleGroupId: null, visible: true, purchasable: false, price: 0, decorationId: null, milestones: []});
+  styleGroupId: null, showOnPc: true, showOnMobile: true, purchasable: false, price: 0, decorationId: null, milestones: []});
 
 test('legacy mirrors collapse without changing memberships, IDs, prices or reward keys', () => {
   const old = structuredClone(source._private.legacyBaseline), saved = structuredClone(old);
   const normalized = normalizeDraft(old, source);
   assert.deepEqual(old, saved, 'conversion must preserve the original stored document');
-  assert.equal(normalized.schemaVersion, 2);
-  assert.deepEqual(Object.keys(mobile(normalized)), ['albums']);
+  assert.equal(normalized.schemaVersion, 3);
+  assert.equal(Object.hasOwn(normalized, 'targets'), false);
+  assert.equal(normalized.albums.length, 4);
   for (const pack of old.targets['mobile-shared'].packs) {
     const album = mobile(normalized).albums.find(album => album.id === pack.id);
     const oldAlbum = old.targets['mobile-shared'].albums.find(album => album.id === pack.id);
@@ -27,13 +28,13 @@ test('legacy mirrors collapse without changing memberships, IDs, prices or rewar
     assert.deepEqual(album.milestones, oldAlbum.milestones);
   }
   for (const target of ['pc', 'mobile-shared']) {
-    const assigned = normalized.targets[target].albums.flatMap(album => album.imageIds);
+    const assigned = normalized.albums.flatMap(album => album.imageIds);
     assert.equal(new Set(assigned).size, assigned.length);
     const originalGallery = source._private.catalogs[target].filter(photo => photo.status === 'published' && photo.galleryVisible !== false && !photo.dailyOnly).map(photo => photo.id);
     assert.deepEqual([...effectiveImageVisibility(normalized, source, target)].sort(), originalGallery.sort());
   }
   assert.deepEqual(analyzeDraft(normalized, source).changes, []);
-  assert.deepEqual(analyzeDraft(normalized, source).blockers, []);
+  assert.deepEqual(analyzeDraft(normalized, source).blockers.map(item => [item.target, item.code]), [['pc', 'SHARED_ALBUM_RUNTIME_ADAPTER_REQUIRED']]);
 });
 
 test('legacy edits migrate once; divergent mirror edits need an explicit merge', () => {
@@ -50,7 +51,7 @@ test('only visible albums contribute images; unassigned pictures remain private 
   const first = group.imageIds.shift(); group.coverImageId = group.imageIds[0];
   assert.equal(plannedImageVisibility(value, source, 'mobile-shared').has(first), false);
   const before = effectiveImageVisibility(value, source, 'mobile-shared');
-  group.visible = false;
+  group.showOnMobile = false;
   const hidden = effectiveImageVisibility(value, source, 'mobile-shared');
   assert.equal(before.size - hidden.size, group.imageIds.length);
   assert.equal(hidden.size, 18);
@@ -97,7 +98,7 @@ test('empty albums and reduced memberships retain old rewards as editable planni
   const savedMilestones = structuredClone(album.milestones);
   album.imageIds = []; album.coverImageId = null;
   mobile(value).albums.push(emptyAlbum('empty-album'));
-  assert.deepEqual(validateDraft(value, source).targets['mobile-shared'].albums[0].milestones, savedMilestones);
+  assert.deepEqual(validateDraft(value, source).albums[0].milestones, savedMilestones);
   assert.ok(codes(value).includes('ALBUM_REWARDS_REQUIRE_ADAPTER'));
   assert.ok(codes(value).includes('ALBUM_RUNTIME_ADAPTER_REQUIRED'));
 });

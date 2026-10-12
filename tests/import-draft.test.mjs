@@ -23,10 +23,11 @@ test('new source entries preserve saved drafts and edits from an open older brow
   assert.equal(setup.status,200);const auth=await setup.json(),cookie=setup.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');
   const loadResponse=await fetch(origin+'/api/drafts/'+saved.id,{headers:{cookie}});assert.equal(loadResponse.status,200);const loaded=await loadResponse.json();
   assert.equal(loaded.sourceNeedsMerge,true);assert.ok(loaded.document.assets[id]);assert.deepEqual(loaded.document.assets[first].subjectTags,['已经整理']);
+  assert.equal(loaded.document.schemaVersion,3);assert.equal(loaded.document.targets,undefined);assert.equal(loaded.document.albums.length,4);
   assert.equal(app.store.draft(saved.id).sourceFingerprint,base.fingerprint,'read does not overwrite saved draft');
-  const openBrowser=structuredClone(saved.document);openBrowser.assets[first].subjectTags.push('浏览器未保存编辑');
+  const openBrowser=structuredClone(saved.document);openBrowser.assets[first].subjectTags.push('浏览器未保存编辑');openBrowser.albums[0].showOnPc=false;
   const response=await fetch(origin+'/api/drafts/'+saved.id,{method:'PUT',headers:{cookie,origin,'content-type':'application/json','x-csrf-token':auth.csrfToken},body:JSON.stringify({revision:saved.revision,document:openBrowser})});
-  assert.equal(response.status,200);const result=await response.json();assert.equal(result.sourceFingerprint,incoming.fingerprint);assert.ok(result.document.assets[id]);assert.deepEqual(result.document.assets[first].subjectTags,['已经整理','浏览器未保存编辑']);
+  assert.equal(response.status,200);const result=await response.json();assert.equal(result.sourceFingerprint,incoming.fingerprint);assert.ok(result.document.assets[id]);assert.deepEqual(result.document.assets[first].subjectTags,['已经整理','浏览器未保存编辑']);assert.equal(result.document.albums[0].showOnPc,false);assert.equal(result.document.albums[0].showOnMobile,true);
   const next=structuredClone(result.document);next.name='新图整理';const copy=app.store.importPendingDraft(result.id,result.revision,next,incoming,'用户要求导入新图');
   assert.notEqual(copy.id,result.id);assert.equal(app.store.draft(result.id).document.name,result.document.name);assert.equal(copy.document.name,'新图整理');
  }finally{await app.close();assert.equal(dirname(await realpath(dataDir)),parent);await rm(dataDir,{recursive:true});}

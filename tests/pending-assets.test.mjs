@@ -60,12 +60,13 @@ test('a private registry joins the CMS while keeping both runtime catalogs and c
   const document = structuredClone(source.baseline);
   document.assets[pending.id].title = '重新整理的新标题';
   document.assets[pending.id].subjectTags.push('春天');
-  assert.deepEqual(analyzeDraft(document, source).blockers, []);
-  for (const target of ['pc', 'mobile-shared']) {
-    const candidate = buildCandidate(document, source, target);
-    assert.equal(candidate.files.some(file => file.content.includes(pending.id)), false);
-    assert.deepEqual(JSON.parse(candidate.files.find(file => file.path === 'content/puzzle-catalog.json').content), source._private.catalogs[target]);
-  }
+  const analysis = analyzeDraft(document, source);
+  assert.ok(analysis.blockers.some(issue => issue.target === 'pc' && issue.code === 'SHARED_ALBUM_RUNTIME_ADAPTER_REQUIRED'));
+  assert.equal(analysis.blockers.some(issue => issue.target === 'mobile-shared'), false);
+  assert.throws(() => buildCandidate(document, source, 'pc'), error => error.code === 'CANDIDATE_BLOCKED');
+  const candidate = buildCandidate(document, source, 'mobile-shared');
+  assert.equal(candidate.files.some(file => file.content.includes(pending.id)), false);
+  assert.deepEqual(JSON.parse(candidate.files.find(file => file.path === 'content/puzzle-catalog.json').content), source._private.catalogs['mobile-shared']);
 });
 
 test('new artwork cannot be published or referenced by either runtime target before its adapter is ready', t => {
@@ -74,7 +75,7 @@ test('new artwork cannot be published or referenced by either runtime target bef
     for (const scenario of ['published', 'archived', 'album']) {
       const document = structuredClone(source.baseline);
       if (['published', 'archived'].includes(scenario)) document.assets[pendingId].targets[target].status = scenario;
-      else document.targets[target].albums[0].imageIds.push(pendingId);
+      else document.albums[0].imageIds.push(pendingId);
       validateDraft(document, source);
       const analysis = analyzeDraft(document, source);
       assert.ok(analysis.blockers.some(issue => issue.target === target && issue.code === 'NEW_ASSET_RUNTIME_IMPORT_REQUIRED'));

@@ -1,6 +1,6 @@
 // Album ownership is the sole editable source of gallery and collection content.
 // Legacy asset target flags remain in documents only to preserve old snapshots.
-export const ALBUM_SCHEMA_VERSION = 2;
+export const ALBUM_SCHEMA_VERSION = 3;
 const TARGETS = ['pc', 'mobile-shared'];
 const clone = value => structuredClone(value);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -22,12 +22,11 @@ function mergeField(album, pack, originalAlbum, originalPack, field) {
 }
 
 /** Pure conversion. Saved legacy documents and version blobs are never mutated. */
-export function normalizeDraft(input, source) {
-  if (input?.schemaVersion === ALBUM_SCHEMA_VERSION) return clone(input);
+function legacyToAlbumDraft(input, source) {
   if (!input || input.schemaVersion !== undefined) conflict('未知内容版本，无法转换为相册。');
   const document = clone(input);
   const legacyBaseline = source?._private?.legacyBaseline ?? (source?.baseline?.schemaVersion === undefined ? source?.baseline : null);
-  document.schemaVersion = ALBUM_SCHEMA_VERSION;
+  document.schemaVersion = 2;
   for (const target of TARGETS) {
     const old = document.targets[target], original = legacyBaseline?.targets[target];
     const packs = old.packs ?? [], oldAlbums = old.albums ?? [];
@@ -85,11 +84,36 @@ export function normalizeDraft(input, source) {
   return document;
 }
 
+/** Collapse the former device copies only after checking the old PC workspace. */
+export function normalizeDraft(input, source) {
+  if (input?.schemaVersion === ALBUM_SCHEMA_VERSION) return clone(input);
+  if (!input || ![undefined, 2].includes(input.schemaVersion)) conflict('未知内容版本，无法转换为共享相册。');
+  const document = input.schemaVersion === 2 ? clone(input) : legacyToAlbumDraft(input, source);
+  const original = source?._private?.legacyBaseline
+    ?? (source?.baseline?.schemaVersion === undefined ? source?.baseline : null)
+    ?? (input.schemaVersion === undefined ? input : null);
+  if (!original) conflict('缺少旧 PC 相册基线，无法确认独立编辑是否已经保留。');
+  const originalPc = legacyToAlbumDraft(original).targets.pc.albums;
+  if (!equal(document.targets.pc.albums, originalPc)) conflict('PC 相册存在独立修改，请先合并到共享相册后继续；原记录仍保留。');
+  const albums = document.targets['mobile-shared'].albums.map(({visible, ...album}) => ({
+    ...album, showOnPc: visible, showOnMobile: visible,
+  }));
+  delete document.targets;
+  return {...document, schemaVersion: ALBUM_SCHEMA_VERSION, albums};
+}
+
+const displayField = target => target === 'pc' ? 'showOnPc' : target === 'mobile-shared' ? 'showOnMobile' : null;
+export function albumDisplayedOn(album, target) {
+  const field = displayField(target);
+  if (!field) throw Object.assign(new Error('未知内容目标。'), {status: 400});
+  return album[field];
+}
+
 /** Management plans include pending and previously archived artwork. */
 export function plannedImageVisibility(input, source, target) {
   const document = normalizeDraft(input, source);
   const dailyOnly = new Set(source.assets.filter(asset => asset.targets[target].dailyOnly).map(asset => asset.id));
-  return new Set(document.targets[target].albums.filter(album => album.visible).flatMap(album => album.imageIds).filter(id => !dailyOnly.has(id)));
+  return new Set(document.albums.filter(album => albumDisplayedOn(album, target)).flatMap(album => album.imageIds).filter(id => !dailyOnly.has(id)));
 }
 
 /** Existing games can currently use only already published retained artwork. */
@@ -103,9 +127,10 @@ export const runtimeImageVisibility = effectiveImageVisibility;
 
 export function buildAlbumConfiguration(input, source, target) {
   const document = normalizeDraft(input, source);
-  return {schema: 'jigsaw-content-albums/v2', sourceFingerprint: source.fingerprint,
-    target, oneAlbumPerImage: true, unassignedImagesVisible: false,
-    albums: clone(document.targets[target].albums)};
+  if (target !== undefined && !TARGETS.includes(target)) throw Object.assign(new Error('未知内容目标。'), {status: 400});
+  return {schema: 'jigsaw-content-albums/v3', sourceFingerprint: source.fingerprint,
+    ...(target === undefined ? {} : {target}), sharedAlbums: true, oneAlbumPerImage: true, unassignedImagesVisible: false,
+    albums: clone(document.albums)};
 }
 
 /** Inert legacy export adapter. Album changes still require runtime support. */
@@ -113,19 +138,21 @@ export function toLegacyDraft(input, source) {
   const document = normalizeDraft(input, source), legacy = clone(source._private.legacyBaseline);
   legacy.name = document.name; legacy.styles = clone(document.styles); legacy.assets = clone(document.assets);
   for (const target of TARGETS) {
-    const albums = document.targets[target].albums;
+    const albums = document.albums;
     const runtimeVisible = effectiveImageVisibility(document, source, target);
     for (const asset of source.assets) {
       const config = legacy.assets[asset.id].targets[target];
       // Daily pictures remain on their existing independent selection path.
       if (!config.dailyOnly && asset.lifecycle !== 'pending' && config.status === 'published') config.galleryVisible = runtimeVisible.has(asset.id);
     }
-    const packAlbums = target === 'mobile-shared' ? albums.filter(album => album.purchasable)
-      : albums.filter(album => album.id !== 'free-gallery');
+    // Existing PC themes have different progress and reward IDs. Keep their
+    // original receipt until the shared-album runtime adapter migrates them.
+    if (target === 'pc') continue;
+    const packAlbums = albums.filter(album => album.purchasable);
     const packs = packAlbums.map(album => ({id: album.id, title: album.title, description: album.description,
-      imageIds: clone(album.imageIds), coverImageId: album.coverImageId, status: album.visible ? 'published' : 'archived',
+      imageIds: clone(album.imageIds), coverImageId: album.coverImageId, status: albumDisplayedOn(album, target) ? 'published' : 'archived',
       styleGroupId: album.styleGroupId, price: target === 'pc' ? null : album.price, decorationId: album.decorationId}));
-    legacy.targets[target] = {packs, albums: albums.filter(album => target !== 'pc' || album.id !== 'free-gallery').map(album => ({
+    legacy.targets[target] = {packs, albums: albums.map(album => ({
       id: album.id, title: album.title, description: album.description, imageIds: clone(album.imageIds),
       packId: packs.some(pack => pack.id === album.id) ? album.id : null, styleGroupId: album.styleGroupId,
       milestones: clone(album.milestones)}))};

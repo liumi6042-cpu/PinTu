@@ -6,7 +6,7 @@ import {join,resolve} from 'node:path';
 import {readSource} from '../source.mjs';
 import {createStore} from '../store.mjs';
 import {mergeDraft} from '../merge.mjs';
-import {validateDraft} from '../model.mjs';
+import {validateDraft,normalizeDraft} from '../model.mjs';
 
 const root=realpathSync(resolve(import.meta.dirname,'../..'));
 const source=readSource(root),pending=source.assets.filter(asset=>asset.lifecycle==='pending');
@@ -15,7 +15,7 @@ const work=join(root,'content-admin/work'),store=createStore(work,source);
 try{
  const original=store.draft(store.activeDraftId());
  if(original.sourceFingerprint===source.fingerprint&&pending.every(asset=>original.document.assets[asset.id]))throw new Error('当前草稿已包含该批素材，请勿重复导入。');
- const document=mergeDraft(store.baseline(original.sourceFingerprint),original.document,source.baseline);
+ const document=mergeDraft(normalizeDraft(store.baseline(original.sourceFingerprint),source),normalizeDraft(original.document,source),source.baseline);
  document.name=`新图整理 · ${new Date().toISOString().slice(0,10)}（${pending.length}张）`;
  const validated=validateDraft(document,source),backupDir=join(work,'backups');
  mkdirSync(backupDir,{recursive:true});

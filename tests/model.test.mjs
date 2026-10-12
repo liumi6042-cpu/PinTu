@@ -15,8 +15,8 @@ const invalid = value => assert.throws(() => validateDraft(value, source), error
 test('real source baseline has no fabricated classification or compatibility changes', () => {
   const analysis = analyzeDraft(draft(), source);
   assert.deepEqual(analysis.changes, []);
-  assert.deepEqual(analysis.blockers, []);
-  assert.deepEqual(analysis.compatibleTargets, ['pc', 'mobile-shared']);
+  assert.deepEqual(analysis.blockers.map(item => [item.target, item.code]), [['pc', 'SHARED_ALBUM_RUNTIME_ADAPTER_REQUIRED']]);
+  assert.deepEqual(analysis.compatibleTargets, ['mobile-shared']);
   assert.equal(retainedAssets.length, 134, 'historical playable and archived IDs remain stable');
   for (const target of ['pc', 'mobile-shared']) assert.equal(source._private.catalogs[target].length, 134);
   assert.equal(source.assets.length, retainedAssets.length + pendingAssets.length);
@@ -40,8 +40,8 @@ test('management styles/tags are normalized, safely exportable, and not game-act
   value.assets[firstId].subjectTags = [' 风景 ', '海边', '风景'];
   const normalized = validateDraft(value, source);
   assert.deepEqual(normalized.assets[firstId].subjectTags, ['风景', '海边']);
-  assert.deepEqual(analyzeDraft(normalized, source).compatibleTargets, ['pc', 'mobile-shared']);
-  const candidate = buildCandidate(normalized, source, 'pc');
+  assert.deepEqual(analyzeDraft(normalized, source).compatibleTargets, ['mobile-shared']);
+  const candidate = buildCandidate(normalized, source, 'mobile-shared');
   const metadata = JSON.parse(candidate.files.find(item => item.path === 'content/content-admin-metadata.json').content);
   assert.deepEqual(metadata.assets[firstId], {styleGroupId: 'paper-collage', subjectTags: ['风景', '海边']});
   assert.equal(candidate.metadata.runtimeApplied, false);
@@ -75,7 +75,7 @@ test('old mobile rights, price, award, independent cover and availability change
   for (const [mutate, expected] of scenarios) {
     const value = draft(); mutate(value);
     assert.ok(codes(value).includes(expected), expected);
-    assert.ok(analyzeDraft(value, source).compatibleTargets.includes('pc'));
+    assert.ok(analyzeDraft(value, source).blockers.some(item => item.target === 'pc' && item.code === 'SHARED_ALBUM_RUNTIME_ADAPTER_REQUIRED'));
     assert.throws(() => buildCandidate(value, source, 'mobile-shared'), error => error.status === 409);
   }
 });
@@ -101,10 +101,9 @@ test('old daily selection/category and title locale mappings are protected', () 
   assert.ok(codes(title).includes('LOCALE_ADAPTER_REQUIRED'));
 });
 
-test('PC theme editing is an explicit adapter blocker', () => {
+test('independent legacy PC editing requires an explicit merge instead of silent loss', () => {
   const value = draft(); value.targets.pc.packs[0].title = '新的画册';
-  assert.ok(codes(value).includes('PC_THEME_ADAPTER_REQUIRED'));
-  assert.ok(analyzeDraft(value, source).compatibleTargets.includes('mobile-shared'));
+  assert.throws(() => validateDraft(value, source), error => error.code === 'ALBUM_MIGRATION_CONFLICT');
 });
 
 test('pack-only reordering cannot silently reorder the requested album configuration', () => {

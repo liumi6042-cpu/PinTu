@@ -69,7 +69,7 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
   const root = realpathSync(projectRoot);
   const roots = {pc: realpathSync(join(root, 'puzzle-play')), 'mobile-shared': realpathSync(join(root, 'jigsaw-nook-taptap'))};
   const inputs = [];
-  inputs.push({path: 'content-admin/schema/albums-v2', sha256: hash('jigsaw-content-albums/v2;one-album-per-image;unassigned-hidden')});
+  inputs.push({path: 'content-admin/schema/albums-v3', sha256: hash('jigsaw-content-albums/v3;shared-albums;show-on-pc;show-on-mobile;one-album-per-image;unassigned-hidden')});
   const read = (target, path, parse = true) => {
     const bytes = readFileSync(safeFile(roots[target], path));
     inputs.push({path: target + '/' + path, sha256: hash(bytes)});
@@ -167,7 +167,8 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
   const targetStats = Object.fromEntries(TARGETS.map(target => [target, countTarget(catalogs[target])]));
   const stats = {...targetStats['mobile-shared'], total: assets.length, retained: mobileCatalog.length, pending: pending.assets.length, directions: {landscape: 0, portrait: 0, square: 0}, origins: {},
     targets: targetStats, mobilePacks: mobilePacks.length, mobileAlbums: mobileAlbums.length, pcPacks: pcPacks.length,
-    albumCounts: Object.fromEntries(TARGETS.map(target => [target, baseline.targets[target].albums.length]))};
+    sharedAlbums: baseline.albums.length,
+    albumCounts: {pc: baseline.albums.filter(album => album.showOnPc).length, 'mobile-shared': baseline.albums.filter(album => album.showOnMobile).length}};
   for (const asset of assets) {stats.directions[asset.direction]++; stats.origins[asset.origin] = (stats.origins[asset.origin] ?? 0) + 1;}
   const fingerprint = hash(JSON.stringify(inputs.sort((a, b) => a.path.localeCompare(b.path))));
   const source = {fingerprint, assets, stats, baseline};

@@ -128,6 +128,9 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.equal(state.source.assets.length, retained.length + pending.length);
     imageId = retained[0].id;
     draft = draftResult(expectStatus(await request(`/api/drafts/${state.activeDraftId}`), 200));
+    assert.equal(draft.document.schemaVersion, 3);
+    assert.equal(draft.document.targets, undefined, 'album ownership is shared rather than duplicated by target');
+    assert.equal(draft.document.albums.length, 4);
     for (const asset of pending) {
       const config = draft.document.assets[asset.id];
       assert.equal(config.styleGroupId, asset.styleGroupId);
@@ -149,7 +152,7 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     unknownField.assets[imageId].sha256 = 'must-not-override-source-facts';
     expectStatus(await save(unknownField), 400);
     const badReference = structuredClone(draft.document);
-    badReference.targets['mobile-shared'].albums[0].imageIds.push('missing-image-for-validation');
+    badReference.albums[0].imageIds.push('missing-image-for-validation');
     expectStatus(await save(badReference), 400);
     const beforeSave = draftResult(expectStatus(await request(`/api/drafts/${draft.id}`), 200));
     assert.equal(beforeSave.revision, initialRevision);
@@ -163,7 +166,9 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.deepEqual(draft.document.assets[imageId].subjectTags, ['海岸', '家庭']);
     expectStatus(await save(baselineDocument, initialRevision), 409);
     const analysis = expectStatus(await request(`/api/drafts/${draft.id}/analyze`, {method: 'POST', body: {revision: draft.revision}}), 200);
-    assert.equal(analysis.blockers.length, 0);
+    assert.ok(analysis.blockers.some(issue => issue.target === 'pc' && issue.code === 'SHARED_ALBUM_RUNTIME_ADAPTER_REQUIRED'));
+    assert.equal(analysis.blockers.some(issue => issue.target === 'mobile-shared'), false);
+    assert.deepEqual(analysis.compatibleTargets, ['mobile-shared']);
     assert.ok(analysis.changes.length > 0);
   });
 
@@ -246,6 +251,11 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.equal(download.schema, 'jigsaw-content-admin/export-v1');
     assert.deepEqual(download.document, draft.document);
     assert.equal(download.version.kind, 'snapshot');
+    const beforeBlockedCandidate = (await bootstrap()).versions.length;
+    const pcCandidate = await publish({kind: 'candidate', target: 'pc'});
+    expectStatus(pcCandidate, 422);
+    assert.ok(pcCandidate.body.analysis.blockers.some(issue => issue.target === 'pc' && issue.code === 'SHARED_ALBUM_RUNTIME_ADAPTER_REQUIRED'));
+    assert.equal((await bootstrap()).versions.length, beforeBlockedCandidate);
     const candidate = await publish({kind: 'candidate', target: 'mobile-shared', label: '安全小游戏候选'});
     assert.ok([200, 201].includes(candidate.status), JSON.stringify(candidate.body));
     const candidateId = (candidate.body.version ?? candidate.body).id;
@@ -256,8 +266,8 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     for (const asset of app.source.assets.filter(asset => asset.lifecycle === 'pending')) assert.ok(exportedCandidate.files.every(file => !file.content.includes(asset.id)), 'pending artwork must stay out of public runtime candidates');
     const beforePlanning = structuredClone(draft.document);
     const planned = structuredClone(draft.document);
-    planned.targets['mobile-shared'].albums[0].price += 1;
-    planned.targets['mobile-shared'].albums[0].imageIds.pop();
+    planned.albums[0].price += 1;
+    planned.albums[0].imageIds.pop();
     draft = draftResult(expectStatus(await save(planned), 200));
     const analysis = expectStatus(await request(`/api/drafts/${draft.id}/analyze`, {method: 'POST', body: {revision: draft.revision}}), 200);
     const codes = analysis.blockers.map(item => item.code);
@@ -276,7 +286,7 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.notEqual(restored.id, draft.id);
     assert.deepEqual(restored.document, {...beforePlanning, name: 'HTTP 恢复草稿'});
     const oldDraft = draftResult(expectStatus(await request(`/api/drafts/${draft.id}`), 200));
-    assert.equal(oldDraft.document.targets['mobile-shared'].albums[0].price, planned.targets['mobile-shared'].albums[0].price);
+    assert.equal(oldDraft.document.albums[0].price, planned.albums[0].price);
     assert.equal((await bootstrap()).versions.length, savedCount + 1);
   });
 
