@@ -1,3 +1,5 @@
+import { createDragPayload, parseDragPayload } from './album-drag.js';
+
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
 const toastNode = document.querySelector('#toast');
@@ -16,7 +18,7 @@ const state = {
   filters: { query: '', style: '', tag: '', origin: '', direction: '', review: '', lifecycle: '' },
   analysis: null, picker: null, version: null, fileIndex: 0,
   versionAdvancedOpen: false,
-  historyOpen: false,
+  historyOpen: false, settings: null, dragGesture: null, suppressClickUntil: 0, suppressClickPoint: null,
 };
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const attr = esc;
@@ -158,9 +160,10 @@ function renderAuth(error = '') {
 }
 
 function render() {
+  if (state.dragGesture) clearDragFeedback();
   if (!state.session?.authenticated) { renderAuth(); return; }
   const unassigned = assets().filter(asset => !albumFor(asset.id)).length;
-  const tabs = [['albums', `相册 · ${(targetDoc().albums || []).length}`], ['assets', `全部图片 · ${assets().length}`], ['unassigned', `未分配 · ${unassigned}`]];
+  const tabs = [['albums', `相册与未分配 · ${unassigned}`], ['assets', `全部图片 · ${assets().length}`]];
   app.innerHTML = `<div class="album-shell"><header class="topbar"><div class="workspace-brand"><span class="brand-mark">✳</span><strong>相册工作室</strong></div><div class="target-switch" aria-label="内容目标">${Object.entries(TARGETS).map(([id, name]) => `<button data-action="target" data-target="${id}" class="${state.target === id ? 'active' : ''}" aria-pressed="${state.target === id}">${name}</button>`).join('')}</div><div class="draft-control"><span id="save-state" class="dirty ${state.dirty ? '' : 'saved'}">${state.dirty ? '有未保存编辑' : '已保存'}</span><button class="primary" data-action="save" ${!state.dirty ? 'disabled' : ''}>保存</button><button data-action="more" class="quiet">更多 ···</button></div></header><main class="album-main"><nav class="workspace-tabs" aria-label="相册工作台">${tabs.map(([id, name]) => `<button data-action="page" data-page="${id}" class="${state.page === id ? 'active' : ''}" ${state.page === id ? 'aria-current="page"' : ''}>${name}</button>`).join('')}</nav><div class="main-content" id="page-content">${state.draft ? renderPage() : '<div class="empty">暂时没有可整理的内容，请重新载入。</div>'}</div></main>${state.historyOpen ? renderHistoryDrawer() : ''}</div>`;
 }
 
@@ -191,7 +194,7 @@ function filteredAssets({ query = state.filters.query, picker = false } = {}) {
     const meta = managed(asset.id);
     if (needle && ![asset.id, meta.title, asset.title, meta.subtitle, ...(meta.subjectTags || [])].some(value => String(value || '').toLocaleLowerCase().includes(needle))) return false;
     if (picker) return true;
-    if (state.page === 'unassigned' && albumFor(asset.id)) return false;
+    if ((state.page === 'unassigned' || (state.page === 'albums' && !state.albumId)) && albumFor(asset.id)) return false;
     const filter = state.filters;
     if (filter.lifecycle && asset.lifecycle !== filter.lifecycle) return false;
     if (filter.style === '__none' && meta.styleGroupId) return false;
@@ -207,16 +210,16 @@ function filteredAssets({ query = state.filters.query, picker = false } = {}) {
 function assetCard(asset, { picker = false } = {}) {
   const meta = managed(asset.id), album = albumFor(asset.id);
   const selected = picker ? state.picker.selected.has(asset.id) : state.selected.has(asset.id);
-  return `<article class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${album?.visible ? '' : 'hidden'}">${album ? `${esc(album.title)}${album.visible ? '' : ' · 隐藏'}` : '未分配 · 仅后台'}</span>${integrationLabel(asset) ? `<span class="chip draft">${esc(integrationLabel(asset))}</span>` : ''}${picker ? '' : (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
+  return `<article ${picker ? '' : `draggable="false" data-drag-image="${attr(asset.id)}"`} class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" draggable="false" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img draggable="false" loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${album?.visible ? '' : 'hidden'}">${album ? `${esc(album.title)}${album.visible ? '' : ' · 隐藏'}` : '未分配 · 仅后台'}</span>${integrationLabel(asset) ? `<span class="chip draft">${esc(integrationLabel(asset))}</span>` : ''}${picker ? '' : (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
 }
 
-function renderAssets() {
+function renderAssets({ embedded = false } = {}) {
   const filtered = filteredAssets();
   const tags = [...new Set(Object.values(doc().assets).flatMap(asset => asset.subjectTags || []))].sort();
   const origins = [...new Set(assets().map(asset => asset.origin).filter(Boolean))];
   const directions = [...new Set(assets().map(asset => asset.direction).filter(Boolean))];
   const reviews = [...new Set(assets().map(asset => asset.reviewStatus).filter(Boolean))];
-  return heading(state.page === 'unassigned' ? '未分配图片' : '全部图片', state.page === 'unassigned' ? '这里的图片只在后台保留。选择图片放进相册，再由相册控制显示与购买。' : '选择图片加入相册。画风与题材标签继续用于查找和整理。', '<button data-action="styles">管理画风</button>') +
+  return (embedded ? '' : heading(state.page === 'unassigned' ? '未分配图片' : '全部图片', state.page === 'unassigned' ? '这里的图片只在后台保留。选择图片放进相册，再由相册控制显示与购买。' : '选择图片加入相册。画风与题材标签继续用于查找和整理。', '<button data-action="styles">管理画风</button>')) +
     `<div class="filters library-filters"><label>搜索图片<input data-filter="query" value="${attr(state.filters.query)}" placeholder="标题或题材关键词"></label><label>画风<select data-filter="style">${options([['__none', '待分类'], ...styles().map(style => [style.id, style.name])], state.filters.style, '全部画风')}</select></label><label>题材<select data-filter="tag">${options(tags.map(tag => [tag, tag]), state.filters.tag, '全部题材')}</select></label><label>方向<select data-filter="direction">${options(directions.map(value => [value, directionName(value)]), state.filters.direction)}</select></label></div><details class="library-advanced"><summary>更多筛选</summary><div class="filters compact-filters"><label>素材阶段<select data-filter="lifecycle">${options([['pending','新图 · 待接入游戏'],['retained','游戏现有素材']], state.filters.lifecycle)}</select></label><label>来源<select data-filter="origin">${options(origins.map(value => [value, originName(value)]), state.filters.origin)}</select></label><label>审核<select data-filter="review">${options(reviews.map(value => [value, reviewName(value)]), state.filters.review)}</select></label></div></details>
     <div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-all" ${filtered.length && filtered.every(asset => state.selected.has(asset.id)) ? 'checked' : ''}> 选择筛选结果</label><span class="muted">显示 ${filtered.length} 幅 · ${state.selected.size} 幅已选</span></div>
     ${renderBulkBar()}
@@ -228,23 +231,55 @@ function renderBulkBar() {
   return `<section class="batchbar" aria-label="所选图片管理"><div class="batch-head"><strong>已选 ${state.selected.size} 幅</strong><span>${esc(labelTarget(state.target))}</span><button class="quiet small push-right" data-action="clear-selection">取消选择</button></div><div class="actions"><select id="assign-album" aria-label="选择相册">${options((targetDoc().albums || []).map(album => [album.id, album.title]), '', '选择相册')}</select><button class="primary small" data-action="assign-selected">放入相册</button><button class="small danger" data-action="unassign-selected">移出相册</button></div><details class="batch-extra"><summary>批量设置画风与题材标签</summary><div class="batch-controls"><select id="batch-style" aria-label="批量画风">${styleOptions('')}</select><button class="small" data-action="batch-style">设置画风</button><input id="batch-tags" aria-label="批量题材标签" placeholder="题材标签，用逗号分隔"><button class="small" data-action="batch-tags">追加标签</button><button class="small" data-action="batch-replace-tags">替换标签</button></div></details><small>一张图片在当前目标中只属于一个相册。移出后只在后台保留。</small></section>`;
 }
 
+function albumCard(album) {
+  const cover = album.coverImageId || album.imageIds[0];
+  return `<article class="album-card ${album.visible ? '' : 'is-hidden'}" data-drop-album="${attr(album.id)}" aria-label="拖入相册 ${attr(album.title)}"><button class="album-card-open" data-action="album-open" data-id="${attr(album.id)}" aria-label="打开相册 ${attr(album.title)}"><div class="album-cover">${cover ? `<img draggable="false" loading="lazy" src="${imageUrl(cover)}" alt="${attr(album.title)}">` : '<span>▧</span>'}<span class="album-count">${album.imageIds.length} 幅</span></div><div class="album-card-info"><h2>${esc(album.title)}</h2><div class="chips"><span class="chip ${album.visible ? '' : 'hidden'}">${album.visible ? '显示' : '隐藏'}</span><span class="chip">${album.purchasable ? `${album.price} 金币` : '免费'}</span></div></div></button><div class="album-card-actions"><small class="drop-hint">拖到这里</small><button class="small" data-action="album-settings" data-id="${attr(album.id)}" aria-label="设置相册 ${attr(album.title)}">设置</button></div></article>`;
+}
+
 function renderAlbums() {
   const list = targetDoc().albums || [];
   const index = list.findIndex(album => album.id === state.albumId);
   if (index >= 0) return renderAlbumEditor(list[index], index);
   state.albumId = null;
-  return heading('我的相册', '每个相册就是一本图鉴。开启购买包后，这个相册也作为收费图包。', '<button class="primary" data-action="new-album">新建相册</button>') +
-    `<div class="album-rule"><span>放入相册</span><span>→</span><span>设置显示或隐藏</span><span>→</span><span>需要收费时开启购买包</span><small>未分配的图片默认只在后台保留。</small></div>` +
-    (list.length ? `<div class="album-grid">${list.map(album => `<article class="album-card ${album.visible ? '' : 'is-hidden'}"><button class="album-card-open" data-action="album-open" data-id="${attr(album.id)}" aria-label="整理相册 ${attr(album.title)}"><div class="album-cover">${album.coverImageId || album.imageIds[0] ? `<img loading="lazy" src="${imageUrl(album.coverImageId || album.imageIds[0])}" alt="${attr(album.title)}">` : '<span>▧</span>'}<span class="album-count">${album.imageIds.length} 幅</span></div><div class="album-card-info"><h2>${esc(album.title)}</h2><p>${esc(album.description || '打开相册，添加和整理图片。')}</p><div class="chips"><span class="chip ${album.visible ? '' : 'hidden'}">${album.visible ? '显示' : '隐藏'}</span><span class="chip">${album.purchasable ? `购买包 · ${album.price} 金币` : '免费相册'}</span>${album.styleGroupId ? `<span class="chip">${esc(styleName(album.styleGroupId))}</span>` : ''}</div></div></button><div class="album-card-actions"><button class="small quiet" data-action="album-visible" data-id="${attr(album.id)}">${album.visible ? '隐藏相册' : '显示相册'}</button><button class="small" data-action="album-open" data-id="${attr(album.id)}">整理相册 →</button></div></article>`).join('')}</div>` : '<div class="empty"><h2>创建第一个相册</h2><p>从全部图片或未分配图片中选择内容，放进相册。</p><button class="primary space-top" data-action="new-album">新建相册</button></div>') +
-    '<p class="muted workspace-footnote">相册设置保存后保留在后台，应用游戏更新后玩家可见。新导入的图片会标注“待接入游戏”。</p>';
+  const unassigned = assets().filter(asset => !albumFor(asset.id)).length;
+  return heading('相册与未分配', '拖动图片到相册；多选后可整批拖入。点击相册查看内部图片，设置单独打开。') +
+    `<div class="album-board"><aside class="album-destinations" aria-label="相册拖入区"><div class="section-heading"><h2>我的相册 · ${list.length}</h2><button class="primary small" data-action="new-album">新建相册</button></div>${list.length ? `<div class="album-grid">${list.map(albumCard).join('')}</div>` : '<div class="empty"><p>先新建一个相册，再把图片拖进来。</p></div>'}</aside><section class="unassigned-panel" aria-label="未分配图片"><div class="section-heading"><h2>未分配图片 · ${unassigned}</h2><span class="muted text-small">拖入相册后归入该册</span></div>${renderAssets({ embedded: true })}</section></div><p class="muted workspace-footnote">未分配的图片只在后台保留。整理后点击顶部“保存”；新图的游戏接入提示继续保留。</p>`;
 }
 
 function renderAlbumEditor(album, index) {
-  const base = ['targets', state.target, 'albums', index];
   const selected = album.imageIds.filter(id => state.selected.has(id));
-  const cover = album.coverImageId || album.imageIds[0];
-  return `<div class="album-editor-heading"><button class="quiet" data-action="album-back">← 所有相册</button><div class="actions"><span class="chip ${album.visible ? '' : 'hidden'}">${album.visible ? '显示' : '隐藏'}</span><span class="chip">${album.purchasable ? `${album.price} 金币购买包` : '免费相册'}</span></div></div>` + heading(esc(album.title), `${album.imageIds.length} 幅图片 · 相册同时决定图库与图鉴归属。`) +
-    `<div class="album-editor-layout"><aside class="panel album-settings"><div class="album-settings-cover">${cover ? `<img src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button class="small" data-action="pick" data-type="albums" data-index="${index}" data-mode="cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${bindAttr([...base, 'title'])} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${bindAttr([...base, 'description'])} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${bindAttr([...base, 'styleGroupId'])} data-null="true">${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>显示相册</b><small>关闭后，此相册和图片在游戏中隐藏。</small></div><input type="checkbox" ${bindAttr([...base, 'visible'])} ${album.visible ? 'checked' : ''}></label><label class="setting-switch"><div><b>设为购买包</b><small>开启后，相册需要金币购买。</small></div><input type="checkbox" data-album-purchase="${index}" ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${bindAttr([...base, 'price'])} data-number="true" type="number" min="1" max="100000000" step="1" value="${attr(album.price)}" required></label>` : ''}<details class="album-advanced"><summary>收藏奖励</summary><label class="field"><b>装饰奖励</b><input ${bindAttr([...base, 'decorationId'])} data-null="true" value="${attr(album.decorationId)}" maxlength="100"></label><div class="section-heading space-top"><h3>里程碑</h3><button class="small" data-action="add-milestone" data-index="${index}">添加</button></div>${(album.milestones || []).map((milestone, row) => `<div class="milestone-row"><label class="field">完成张数<input ${bindAttr([...base, 'milestones', row, 'target'])} data-number="true" type="number" min="1" step="1" value="${milestone.target}"></label><label class="field">奖励金币<input ${bindAttr([...base, 'milestones', row, 'coins'])} data-number="true" type="number" min="0" step="1" value="${milestone.coins}"></label><label class="field">装饰奖励<input ${bindAttr([...base, 'milestones', row, 'decorationId'])} data-null="true" value="${attr(milestone.decorationId)}"></label><button class="danger small" data-action="remove-milestone" data-index="${index}" data-row="${row}" aria-label="移除此里程碑">×</button></div>`).join('') || '<p class="muted text-small">暂未设置里程碑。</p>'}</details><button class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div></aside><section class="panel album-members"><div class="section-heading"><h2>相册图片 · ${album.imageIds.length}</h2><button class="primary small" data-action="pick" data-type="albums" data-index="${index}" data-mode="members">添加 / 选择图片</button></div>${album.imageIds.length ? `<div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-album-all" ${selected.length === album.imageIds.length ? 'checked' : ''}> 全选相册图片</label><button class="small danger" data-action="remove-album-selected" data-index="${index}" ${selected.length ? '' : 'disabled'}>移出所选 · ${selected.length}</button></div><div class="album-image-list">${album.imageIds.map((id, order) => `<div class="album-image-row"><input type="checkbox" data-select="${attr(id)}" aria-label="选择 ${attr(titleFor(id))}" ${state.selected.has(id) ? 'checked' : ''}>${imageRow(id, order, 'albums', index, album.imageIds.length)}</div>`).join('')}</div>` : '<div class="empty">这个相册还没有图片。<p>点击“添加 / 选择图片”，从素材库中挑选。</p></div>'}<p class="muted text-small space-top">箭头调整图片顺序；移出相册后，图片会回到未分配。封面单独选择。</p></section></div>`;
+  return `<div class="album-editor-heading"><button class="quiet" data-action="album-back">← 相册与未分配</button><div class="actions"><span class="chip ${album.visible ? '' : 'hidden'}">${album.visible ? '显示' : '隐藏'}</span><span class="chip">${album.purchasable ? `${album.price} 金币购买包` : '免费相册'}</span><button data-action="album-settings" data-id="${attr(album.id)}">相册设置</button></div></div>` + heading(esc(album.title), `${album.imageIds.length} 幅图片 · ${esc(album.description || '点击图片查看大图与标签。')}`) +
+    `<section class="album-members"><div class="section-heading"><h2>相册图片</h2><button class="primary small" data-action="pick" data-type="albums" data-index="${index}" data-mode="members">添加 / 选择图片</button></div>${album.imageIds.length ? `<div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-album-all" ${selected.length === album.imageIds.length ? 'checked' : ''}> 全选相册图片</label><button class="small danger" data-action="remove-album-selected" data-index="${index}" ${selected.length ? '' : 'disabled'}>移出所选 · ${selected.length}</button></div><div class="asset-grid album-member-grid">${album.imageIds.map((id, order) => `<div class="album-member-tile">${assetCard(assetById(id))}<div class="member-order"><small>第 ${order + 1} 张</small><div class="actions"><button class="small" data-action="move-image" data-type="albums" data-index="${index}" data-order="${order}" data-delta="-1" ${order === 0 ? 'disabled' : ''} aria-label="上移 ${attr(titleFor(id))}">↑</button><button class="small" data-action="move-image" data-type="albums" data-index="${index}" data-order="${order}" data-delta="1" ${order === album.imageIds.length - 1 ? 'disabled' : ''} aria-label="下移 ${attr(titleFor(id))}">↓</button><button class="small danger" data-action="remove-image" data-type="albums" data-index="${index}" data-order="${order}">移出</button></div></div></div>`).join('')}</div>` : '<div class="empty">这个相册还没有图片。<p>返回主页拖入图片，或点击“添加 / 选择图片”。</p></div>'}<p class="muted text-small space-top">箭头调整顺序；移出后回到未分配。封面、显示与购买在“相册设置”中修改。</p></section>`;
+}
+
+function openAlbumSettings(id) {
+  const album = targetDoc().albums.find(item => item.id === id);
+  if (!album) return;
+  state.settings = { id, target: state.target, album: structuredClone(album) };
+  renderAlbumSettings();
+}
+
+function renderAlbumSettings() {
+  if (!state.settings) return;
+  const album = state.settings.album, cover = album.coverImageId || album.imageIds[0];
+  const field = name => `data-settings-field="${name}"`;
+  openModal('相册设置', `<form id="album-settings-form" class="album-settings-form"><div class="album-settings-cover">${cover ? `<img draggable="false" src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button type="button" class="small" data-action="settings-cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${field('title')} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${field('description')} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${field('styleGroupId')}>${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>显示相册</b><small>关闭后相册与图片隐藏。</small></div><input type="checkbox" ${field('visible')} ${album.visible ? 'checked' : ''}></label><label class="setting-switch"><div><b>设为购买包</b><small>开启后需要金币购买。</small></div><input type="checkbox" ${field('purchasable')} ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${field('price')} type="number" min="1" max="100000000" step="1" value="${album.price}" required></label>` : ''}<details class="album-advanced"><summary>收藏奖励</summary><label class="field"><b>装饰奖励</b><input ${field('decorationId')} value="${attr(album.decorationId)}" maxlength="100"></label><div class="section-heading space-top"><h3>里程碑</h3><button type="button" class="small" data-action="settings-add-milestone">添加</button></div>${album.milestones.map((milestone, row) => `<div class="milestone-row"><label class="field">完成张数<input data-settings-row="${row}" data-settings-key="target" type="number" min="1" step="1" required value="${milestone.target}"></label><label class="field">奖励金币<input data-settings-row="${row}" data-settings-key="coins" type="number" min="0" step="1" required value="${milestone.coins}"></label><label class="field">装饰奖励<input data-settings-row="${row}" data-settings-key="decorationId" value="${attr(milestone.decorationId)}"></label><button type="button" class="danger small" data-action="settings-remove-milestone" data-row="${row}" aria-label="移除此里程碑">×</button></div>`).join('') || '<p class="muted text-small">暂未设置里程碑。</p>'}</details><button type="button" class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">应用设置</button></div><p class="muted text-small settings-save-note">应用后点击主界面“保存”，保留本次整理。</p></form>`);
+}
+
+function updateSettingsField(element) {
+  if (!state.settings) return;
+  if (element.dataset.settingsField) {
+    const field = element.dataset.settingsField;
+    const value = element.type === 'checkbox' ? element.checked : element.type === 'number' ? Number(element.value) : element.value;
+    state.settings.album[field] = ['styleGroupId', 'decorationId'].includes(field) ? value || null : value;
+    if (field === 'purchasable') {
+      state.settings.album.price = value ? Math.max(1, state.settings.album.price || 180) : 0;
+      renderAlbumSettings();
+    }
+  } else if (element.dataset.settingsRow !== undefined) {
+    const item = state.settings.album.milestones[Number(element.dataset.settingsRow)];
+    if (item) item[element.dataset.settingsKey] = element.type === 'number' ? Number(element.value) : element.value || null;
+  }
 }
 
 async function confirmMoving(ids, destination) {
@@ -306,10 +341,18 @@ function renderAudit() {
 }
 
 function openModal(title, content) {
+  modal.classList.toggle('album-settings-dialog', title === '相册设置');
   modal.innerHTML = `<header class="modal-head"><h2 id="modal-title">${esc(title)}</h2><button data-action="close-modal" class="quiet" aria-label="关闭弹窗">×</button></header><div class="modal-body">${content}</div>`;
   if (!modal.open) modal.showModal();
 }
-function closeModal() { finishConfirmation(false); if (modal.open) modal.close(); state.picker = null; }
+function closeModal({ returnToSettings = true } = {}) {
+  finishConfirmation(false);
+  if (returnToSettings && state.session?.authenticated && state.picker?.fromSettings && state.settings) {
+    state.picker = null; renderAlbumSettings(); return;
+  }
+  if (modal.open) modal.close();
+  state.picker = null; state.settings = null;
+}
 
 function confirmAction(message) {
   finishConfirmation(false);
@@ -346,15 +389,15 @@ function openStyles() {
   openModal('画风分组', `<p class="muted">画风作为主分组，题材作为标签。修改后点击主界面的“保存”。</p>${styles().map((style, index) => `<div class="style-row"><input aria-label="画风名称" ${bindAttr(['styles', index, 'name'])} value="${attr(style.name)}" maxlength="60"><small>${countUsage(style.id)} 处引用</small><button class="small danger" data-action="delete-style" data-id="${attr(style.id)}" ${countUsage(style.id) ? 'disabled title="需先取消所有引用"' : ''}>删除</button></div>`).join('')}<form id="style-form" class="style-add"><input name="name" required maxlength="60" placeholder="新增画风，例如：纸艺"><button class="primary" type="submit">新增画风</button></form><div class="modal-footer"><button data-action="finish-styles">完成</button></div>`);
 }
 
-function openPicker(type, index, mode) {
-  const entity = targetDoc()[type][index];
-  state.picker = { type, index, mode, query: '', style: '', selected: new Set(mode === 'cover' ? (entity.coverImageId ? [entity.coverImageId] : []) : entity.imageIds) };
+function openPicker(type, index, mode, fromSettings = false) {
+  const entity = fromSettings ? state.settings.album : targetDoc()[type][index];
+  state.picker = { type, index, mode, fromSettings, query: '', style: '', selected: new Set(mode === 'cover' ? (entity.coverImageId ? [entity.coverImageId] : []) : entity.imageIds) };
   renderPicker();
 }
 
 function renderPicker() {
   const picker = state.picker;
-  const entity = targetDoc()[picker.type][picker.index];
+  const entity = picker.fromSettings ? state.settings.album : targetDoc()[picker.type][picker.index];
   const candidates = filteredAssets({ query: picker.query, picker: true }).filter(asset => (picker.mode !== 'cover' || entity.imageIds.includes(asset.id)) && (!picker.style || managed(asset.id).styleGroupId === picker.style));
   openModal(picker.mode === 'cover' ? '选择相册封面' : `为「${entity.title}」选择图片`, `<div class="picker-filters"><label class="field"><b>搜索图片</b><input id="picker-search" placeholder="标题或题材标签" value="${attr(picker.query)}"></label><label class="field"><b>画风</b><select id="picker-style">${styleOptions(picker.style, '全部画风')}</select></label></div><div class="toolbar picker-toolbar"><span class="picker-count">${candidates.length} 幅可选 · ${picker.selected.size} 幅已选</span><small>${picker.mode === 'cover' ? '封面从相册成员中选择。' : '每张图片只属于一个相册，已归属的图片将移动到这里。'}</small></div>${picker.mode === 'members' ? `<label class="check-field"><input type="checkbox" id="picker-select-all" ${candidates.length && candidates.every(asset => picker.selected.has(asset.id)) ? 'checked' : ''}> 选择当前筛选结果</label>` : ''}<div class="asset-grid picker-grid">${candidates.map(asset => assetCard(asset, { picker: true })).join('') || '<p class="muted">没有符合搜索条件的图片。</p>'}</div><div class="modal-footer"><button data-action="close-modal">取消</button><button class="primary" data-action="picker-apply" ${picker.mode === 'cover' && !picker.selected.size ? 'disabled' : ''}>应用选择</button></div>`);
 }
@@ -407,6 +450,72 @@ async function refreshRecords() {
   state.bootstrap.audit = Array.isArray(results[1]) ? results[1] : results[1].audit || [];
 }
 
+function clearDragFeedback() {
+  const gesture = state.dragGesture;
+  if (gesture?.card.hasPointerCapture?.(gesture.pointerId)) gesture.card.releasePointerCapture(gesture.pointerId);
+  state.dragGesture = null;
+  document.body.classList.remove('is-dragging-images');
+  document.querySelectorAll('.drop-active, .drag-source').forEach(card => card.classList.remove('drop-active', 'drag-source'));
+  document.querySelector('#drag-indicator')?.remove(); document.querySelector('#drag-ghost')?.remove();
+}
+
+async function applyDraggedImages(payload, target, albumId) {
+  if (state.target !== target || state.busy || modal.open || confirmation.open) return;
+  const ids = parseDragPayload(payload, { target, knownIds: assets().map(asset => asset.id) });
+  const destination = targetDoc().albums.find(album => album.id === albumId);
+  if (!ids.length || !destination || !await confirmMoving(ids, destination)) return;
+  if (state.target !== target || !targetDoc().albums.includes(destination)) return;
+  moveIntoAlbum(ids, destination); state.selected.clear(); dirty(); render();
+  toast(`已将 ${ids.length} 张图片放入「${destination.title}」，请保存。`);
+}
+
+document.addEventListener('pointerdown', event => {
+  const card = event.target.closest('[data-drag-image]');
+  if (!card || event.button !== 0 || !event.isPrimary || event.target.closest('input, select, textarea, .asset-check') || state.busy || modal.open || confirmation.open) return;
+  const payload = createDragPayload({ imageId: card.dataset.dragImage, selectedIds: state.selected, knownIds: assets().map(asset => asset.id), target: state.target });
+  if (!payload) return;
+  state.dragGesture = { card, payload, target: state.target, pointerId: event.pointerId, x: event.clientX, y: event.clientY, active: false };
+});
+
+document.addEventListener('pointermove', event => {
+  const gesture = state.dragGesture;
+  if (!gesture || gesture.pointerId !== event.pointerId) return;
+  if (!gesture.active && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) < 7) return;
+  event.preventDefault();
+  if (!gesture.active) {
+    gesture.active = true; gesture.card.setPointerCapture?.(event.pointerId);
+    const ids = parseDragPayload(gesture.payload, { target: gesture.target, knownIds: assets().map(asset => asset.id) });
+    document.body.classList.add('is-dragging-images'); gesture.card.classList.add('drag-source');
+    const indicator = document.createElement('div'); indicator.id = 'drag-indicator'; indicator.textContent = `将 ${ids.length} 张图片拖到相册`; document.body.append(indicator);
+    const ghost = document.createElement('div'); ghost.id = 'drag-ghost';
+    ghost.innerHTML = `<img draggable="false" src="${imageUrl(gesture.card.dataset.dragImage)}" alt=""><span>${ids.length} 张图片</span>`; document.body.append(ghost);
+  }
+  const ghost = document.querySelector('#drag-ghost');
+  ghost.style.left = `${event.clientX + 14}px`; ghost.style.top = `${event.clientY + 14}px`;
+  const destination = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-drop-album]');
+  document.querySelectorAll('.drop-active').forEach(card => { if (card !== destination) card.classList.remove('drop-active'); });
+  destination?.classList.add('drop-active');
+}, { passive: false });
+
+document.addEventListener('pointerup', async event => {
+  const gesture = state.dragGesture;
+  if (!gesture || gesture.pointerId !== event.pointerId) return;
+  const destination = gesture.active && document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-drop-album]');
+  clearDragFeedback();
+  if (!gesture.active) return;
+  event.preventDefault(); state.suppressClickUntil = Date.now() + 350; state.suppressClickPoint = { x: event.clientX, y: event.clientY };
+  if (destination) await applyDraggedImages(gesture.payload, gesture.target, destination.dataset.dropAlbum);
+});
+
+document.addEventListener('pointercancel', () => clearDragFeedback());
+document.addEventListener('dragstart', event => { if (event.target.closest('[data-drag-image]')) event.preventDefault(); });
+document.addEventListener('click', event => {
+  const point = state.suppressClickPoint;
+  if (Date.now() < state.suppressClickUntil && point && Math.hypot(event.clientX - point.x, event.clientY - point.y) < 4) { event.preventDefault(); event.stopImmediatePropagation(); }
+  state.suppressClickUntil = 0; state.suppressClickPoint = null;
+}, true);
+window.addEventListener('blur', () => clearDragFeedback());
+
 document.addEventListener('click', async event => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled || button.tagName === 'SELECT' || button.tagName === 'INPUT') return;
@@ -419,13 +528,20 @@ document.addEventListener('click', async event => {
   else if (action === 'open-history') { closeModal(); state.historyOpen = true; render(); }
   else if (action === 'close-history') { state.historyOpen = false; render(); }
   else if (action === 'album-open') { state.albumId = button.dataset.id; state.page = 'albums'; state.selected.clear(); render(); }
+  else if (action === 'album-settings') openAlbumSettings(button.dataset.id);
+  else if (action === 'settings-cover') openPicker('albums', targetDoc().albums.findIndex(album => album.id === state.settings.id), 'cover', true);
+  else if (action === 'settings-add-milestone') {
+    state.settings.album.milestones.push({ target: Math.max(1, state.settings.album.imageIds.length), coins: 0, decorationId: null });
+    renderAlbumSettings();
+  }
+  else if (action === 'settings-remove-milestone') { state.settings.album.milestones.splice(Number(button.dataset.row), 1); renderAlbumSettings(); }
   else if (action === 'album-back') { state.albumId = null; state.selected.clear(); render(); }
   else if (action === 'album-visible') { const album = targetDoc().albums.find(item => item.id === button.dataset.id); if (album) { album.visible = !album.visible; dirty(); render(); } }
   else if (action === 'new-album') openModal('新建相册', '<form id="new-album-form" class="stack compact"><label class="field"><b>相册名称</b><input name="title" required maxlength="180" placeholder="例如：纸艺小世界" autofocus></label><p class="muted text-small">创建后选择图片，再设置显示与购买。</p><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button class="primary" type="submit">创建相册</button></div></form>');
   else if (action === 'delete-album') {
     const album = targetDoc().albums.find(item => item.id === button.dataset.id);
     if (!album || !await confirmAction(`移除「${album.title}」？其中 ${album.imageIds.length} 幅图片将回到未分配，只在后台保留。`)) return;
-    targetDoc().albums = targetDoc().albums.filter(item => item.id !== album.id); state.albumId = null; state.selected.clear(); dirty(); render();
+    targetDoc().albums = targetDoc().albums.filter(item => item.id !== album.id); state.albumId = null; state.selected.clear(); closeModal({ returnToSettings: false }); dirty(); render();
   }
   else if (action === 'assign-selected') {
     const id = document.querySelector('#assign-album').value;
@@ -469,14 +585,15 @@ document.addEventListener('click', async event => {
   else if (action === 'pick') openPicker(button.dataset.type, Number(button.dataset.index), button.dataset.mode);
   else if (action === 'pick-image') togglePick(button.dataset.id);
   else if (action === 'picker-apply') {
-    const picker = state.picker, entity = targetDoc()[picker.type][picker.index];
+    const picker = state.picker, entity = picker.fromSettings ? state.settings.album : targetDoc()[picker.type][picker.index];
     if (picker.mode === 'cover') entity.coverImageId = [...picker.selected][0] || null;
     else {
       const ids = [...picker.selected]; if (!await confirmMoving(ids, entity)) return;
       entity.imageIds = entity.imageIds.filter(id => picker.selected.has(id));
       moveIntoAlbum(ids, entity);
     }
-    dirty(); closeModal(); render();
+    if (picker.fromSettings) { state.picker = null; renderAlbumSettings(); }
+    else { dirty(); closeModal(); render(); }
   }
   else if (action === 'move-image' || action === 'remove-image') {
     const entity = targetDoc()[button.dataset.type][Number(button.dataset.index)], order = Number(button.dataset.order);
@@ -503,6 +620,7 @@ document.addEventListener('click', async event => {
 
 document.addEventListener('change', event => {
   const element = event.target;
+  if (element.dataset.settingsField || element.dataset.settingsRow !== undefined) { updateSettingsField(element); return; }
   if (element.dataset.bind) {
     setBound(element);
     const path = JSON.parse(element.dataset.bind);
@@ -542,6 +660,7 @@ document.addEventListener('change', event => {
 let searchTimer;
 document.addEventListener('input', event => {
   const element = event.target;
+  if ((element.dataset.settingsField || element.dataset.settingsRow !== undefined) && element.type !== 'checkbox' && element.tagName !== 'SELECT') { updateSettingsField(element); return; }
   if (element.dataset.bind && element.tagName !== 'SELECT' && element.type !== 'checkbox') setBound(element);
   if (element.dataset.filter === 'query') {
     clearTimeout(searchTimer);
@@ -558,7 +677,7 @@ document.addEventListener('input', event => {
 document.addEventListener('submit', event => {
   const form = event.target;
   if (form.id === 'auth-form') return;
-  if (!['asset-form', 'style-form', 'new-album-form', 'publish-form', 'restore-form', 'reimport-form'].includes(form.id)) return;
+  if (!['asset-form', 'album-settings-form', 'style-form', 'new-album-form', 'publish-form', 'restore-form', 'reimport-form'].includes(form.id)) return;
   event.preventDefault();
   const data = new FormData(form);
   if (form.id === 'asset-form') {
@@ -566,11 +685,19 @@ document.addEventListener('submit', event => {
     Object.assign(meta, { title: String(data.get('title')).trim(), subtitle: String(data.get('subtitle')).trim(), styleGroupId: data.get('styleGroupId') || null, subjectTags: parseTags(data.get('subjectTags')) });
     dirty(); closeModal(); render();
   }
+  else if (form.id === 'album-settings-form') {
+    const settings = state.settings;
+    const album = settings?.target === state.target && targetDoc().albums.find(item => item.id === settings.id);
+    if (!album) { closeModal(); toast('相册已变化，请重新打开设置。', true); return; }
+    for (const field of ['title', 'description', 'styleGroupId', 'coverImageId', 'visible', 'purchasable', 'price', 'decorationId', 'milestones']) album[field] = structuredClone(settings.album[field]);
+    album.title = album.title.trim(); album.price = album.purchasable ? album.price : 0;
+    dirty(); closeModal(); render(); toast('相册设置已应用，请保存。');
+  }
   else if (form.id === 'new-album-form') {
     const title = String(data.get('title')).trim();
     if (!title) return;
     const entity = { id: `album-${crypto.randomUUID().slice(0, 8)}`, title, description: '', imageIds: [], coverImageId: null, styleGroupId: null, visible: true, purchasable: false, price: 0, decorationId: null, milestones: [] };
-    targetDoc().albums.push(entity); state.page = 'albums'; state.albumId = entity.id; state.selected.clear(); dirty(); closeModal(); render();
+    targetDoc().albums.push(entity); state.page = 'albums'; state.albumId = null; state.selected.clear(); dirty(); closeModal(); render(); openAlbumSettings(entity.id);
   }
   else if (form.id === 'style-form') {
     const name = String(data.get('name')).trim();
@@ -604,9 +731,10 @@ document.addEventListener('submit', event => {
 });
 
 modal.addEventListener('click', event => { if (event.target === modal && (event.offsetX < 0 || event.offsetX > modal.clientWidth || event.offsetY < 0 || event.offsetY > modal.clientHeight)) closeModal(); });
-modal.addEventListener('cancel', () => { state.picker = null; });
+modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
 window.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && state.dragGesture) { clearDragFeedback(); event.preventDefault(); return; }
   if (confirmation.open) return;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && state.session?.authenticated) {
     event.preventDefault(); busy(async () => { await saveDraft(); render(); });
