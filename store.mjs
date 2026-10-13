@@ -23,11 +23,25 @@ export function createStore(dataDir,source){
  CREATE TABLE IF NOT EXISTS daily_appearances(target TEXT NOT NULL,date TEXT NOT NULL,image_id TEXT NOT NULL,album_id TEXT NOT NULL,activated_at INTEGER NOT NULL,config_digest TEXT NOT NULL,plan_snapshot TEXT NOT NULL,PRIMARY KEY(target,date));
  CREATE TABLE IF NOT EXISTS daily_enrollments(image_id TEXT PRIMARY KEY,first_appearance_date TEXT NOT NULL,enrolled_at INTEGER NOT NULL,album_id TEXT NOT NULL);
  `);
+ // Existing v1 facts use the original table. An empty album stores a library
+ // appearance without rebuilding that durable history table.
+ if(!db.prepare('PRAGMA table_info(daily_appearances)').all().some(column=>column.name==='source'))db.exec("ALTER TABLE daily_appearances ADD COLUMN source TEXT NOT NULL DEFAULT 'scheduled'");
  function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
  function audit(actor,action,target,reason=''){db.prepare('INSERT INTO content_audit VALUES(?,?,?,?,?,?)').run(newId(),actor,action,target,reason,Date.now());}
  function selectDraft(id){const result=draftView(db.prepare('SELECT * FROM content_drafts WHERE id=?').get(id));if(!result)throw problem(404,'草稿不存在','DRAFT_NOT_FOUND');return result;}
- function frozenPlans(){const first=new Map();for(const row of db.prepare('SELECT plan_snapshot FROM daily_appearances ORDER BY date,target').all()){const plan=JSON.parse(row.plan_snapshot);if(!first.has(plan.imageId))first.set(plan.imageId,plan);}return [...first.values()];}
- function protectDailyPlans(document){for(const locked of frozenPlans())if(!(document.dailyPlans??[]).some(plan=>['id','imageId','date','albumId'].every(key=>plan[key]===locked[key])))throw problem(409,'已实际出场的首发计划不能修改或删除：'+locked.imageId,'DAILY_PLAN_LOCKED');}
+ const automatic=plan=>plan?.autoPublish===true||plan?.autoDate===true;
+ function frozenPlans(){
+  const first=new Map(),active=db.prepare("SELECT document FROM content_drafts WHERE id=(SELECT value FROM content_meta WHERE key='active-draft')").get();
+  const savedPlans=active?JSON.parse(active.document).dailyPlans??[]:[];
+  for(const row of db.prepare('SELECT plan_snapshot FROM daily_appearances ORDER BY date,target').all()){
+   let plan=JSON.parse(row.plan_snapshot);if(!plan)continue;
+   const saved=savedPlans.find(item=>item.imageId===plan.imageId);
+   if(!automatic(plan)&&automatic(saved)&&saved.albumId===plan.albumId&&(saved.date===plan.date||saved.date===null))plan={id:plan.imageId,imageId:plan.imageId,date:null,albumId:plan.albumId,autoPublish:true};
+   if(!first.has(plan.imageId))first.set(plan.imageId,plan);
+  }
+  return [...first.values()];
+ }
+ function protectDailyPlans(document){for(const locked of frozenPlans())if(!(document.dailyPlans??[]).some(plan=>['id','imageId','date','albumId'].every(key=>plan[key]===locked[key])&&automatic(plan)===automatic(locked)))throw problem(409,'已实际出场的首发计划不能修改或删除：'+locked.imageId,'DAILY_PLAN_LOCKED');}
  function addDraft(document,fingerprint,actor,reason='',action='create-draft'){
   protectDailyPlans(document);
   const id=newId(),now=Date.now();
@@ -51,7 +65,7 @@ export function createStore(dataDir,source){
   draft:selectDraft,
   historicalIds(){const ids=new Set();for(const row of db.prepare('SELECT document FROM content_source_baselines').all())for(const id of Object.keys(JSON.parse(row.document).assets))ids.add(id);return [...ids];},
   baseline(fingerprint){const row=db.prepare('SELECT document FROM content_source_baselines WHERE fingerprint=?').get(fingerprint);if(!row)throw problem(409,'缺少该草稿的原始导入基线，请先保留规划快照并人工合并','BASELINE_MISSING');return JSON.parse(row.document);},
-  dailyAppearances:()=>db.prepare('SELECT target,date,image_id AS imageId,album_id AS albumId,activated_at AS activatedAt FROM daily_appearances ORDER BY date,target').all(),
+  dailyAppearances:()=>db.prepare("SELECT target,date,image_id AS imageId,NULLIF(album_id,'') AS albumId,activated_at AS activatedAt,source,plan_snapshot FROM daily_appearances ORDER BY date,target").all().map(({plan_snapshot,...fact})=>({...fact,planned:JSON.parse(plan_snapshot)!==null})),
   dailyEnrollments:()=>db.prepare('SELECT image_id AS imageId,first_appearance_date AS firstAppearanceDate,enrolled_at AS enrolledAt,album_id AS albumId FROM daily_enrollments ORDER BY first_appearance_date,image_id').all(),
   dailyFrozenPlans:frozenPlans,
   // The receipt facts, ownership change and one-time enrollment are committed
@@ -63,8 +77,8 @@ export function createStore(dataDir,source){
    if(current.sourceFingerprint!==fingerprint)throw problem(409,'来源已变化，请先合并工作内容','SOURCE_CHANGED');
    for(const fact of appearances){
     const old=db.prepare('SELECT image_id,album_id FROM daily_appearances WHERE target=? AND date=?').get(fact.target,fact.date);
-    if(old&&(old.image_id!==fact.imageId||old.album_id!==fact.albumId))throw problem(409,'该日已有不同的实际出场记录','DAILY_APPEARANCE_CONFLICT');
-    if(!old){db.prepare('INSERT INTO daily_appearances VALUES(?,?,?,?,?,?,?)').run(fact.target,fact.date,fact.imageId,fact.albumId,fact.activatedAt,fact.configDigest,JSON.stringify(fact.plan));audit('daily-system','confirm-daily-appearance',fact.imageId,'确认北京时间 '+fact.date+' 实际出场');}
+    if(old&&(old.image_id!==fact.imageId||old.album_id!==(fact.albumId??'')))throw problem(409,'该日已有不同的实际出场记录','DAILY_APPEARANCE_CONFLICT');
+    if(!old){db.prepare('INSERT INTO daily_appearances(target,date,image_id,album_id,activated_at,config_digest,plan_snapshot,source) VALUES(?,?,?,?,?,?,?,?)').run(fact.target,fact.date,fact.imageId,fact.albumId??'',fact.activatedAt,fact.configDigest,JSON.stringify(fact.plan),fact.source??'scheduled');audit('daily-system','confirm-daily-appearance',fact.imageId,'确认北京时间 '+fact.date+' 实际出场');}
    }
    protectDailyPlans(document);
    const changed=JSON.stringify(current.document)!==JSON.stringify(document);

@@ -1,5 +1,5 @@
 import { createDragPayload, parseDragPayload } from './album-drag.js';
-import { dailyImageState, tomorrowDate, nextOpenDailyDate } from './daily-state.js';
+import { dailyImageState, tomorrowDate, nextOpenDailyDate, automaticDailyPlan } from './daily-state.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
@@ -236,7 +236,7 @@ function filteredAssets({ query = state.filters.query, picker = false } = {}) {
 function assetCard(asset, { picker = false } = {}) {
   const meta = managed(asset.id), album = albumFor(asset.id), daily = dailyFor(asset.id);
   const selected = picker ? state.picker.selected.has(asset.id) : state.selected.has(asset.id);
-  return `<article ${picker ? '' : `draggable="false" data-drag-image="${attr(asset.id)}"`} class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" draggable="false" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img draggable="false" loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${album && albumShown(album) ? '' : 'hidden'}">${album ? `${esc(album.title)}${albumShown(album) ? '' : ' · 隐藏'}` : '未分配 · 仅后台'}</span>${integrationLabel(asset) ? `<span class="chip draft">${esc(integrationLabel(asset))}</span>` : ''}${daily.label ? `<span class="chip daily-${attr(daily.code)}" title="${attr(daily.detail)}">${esc(daily.label)}${daily.plan ? ` · ${esc(daily.plan.date)}` : ''}</span>` : ''}${picker ? '' : (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
+  return `<article ${picker ? '' : `draggable="false" data-drag-image="${attr(asset.id)}"`} class="asset-card ${selected ? 'selected' : ''}"><label class="asset-check"><input type="${picker && state.picker.mode === 'cover' ? 'radio' : 'checkbox'}" ${picker ? 'name="picker-item"' : ''} aria-label="选择 ${attr(titleFor(asset.id))}" data-${picker ? 'pick' : 'select'}="${attr(asset.id)}" ${selected ? 'checked' : ''}></label><button class="asset-thumb" draggable="false" data-action="${picker ? 'pick-image' : 'asset-detail'}" data-id="${attr(asset.id)}" aria-label="${picker ? '选择' : '查看'} ${attr(titleFor(asset.id))}"><img draggable="false" loading="lazy" src="${imageUrl(asset.id)}" alt="${attr(titleFor(asset.id))}"></button><div class="asset-info"><strong title="${attr(titleFor(asset.id))}">${esc(titleFor(asset.id))}</strong><div class="chips"><span class="chip">${esc(styleName(meta.styleGroupId))}</span><span class="chip ${album && albumShown(album) ? '' : 'hidden'}">${album ? `${esc(album.title)}${albumShown(album) ? '' : ' · 隐藏'}` : '未分配 · 仅后台'}</span>${integrationLabel(asset) ? `<span class="chip draft">${esc(integrationLabel(asset))}</span>` : ''}${daily.label ? `<span class="chip daily-${attr(daily.code)}" title="${attr(daily.detail)}">${esc(daily.label)}${daily.plan?.date && !automaticDailyPlan(daily.plan) ? ` · ${esc(daily.plan.date)}` : ''}</span>` : ''}${picker ? '' : (meta.subjectTags || []).slice(0, 2).map(tag => `<span class="chip">${esc(tag)}</span>`).join('')}</div></div></article>`;
 }
 
 function renderAssets({ embedded = false } = {}) {
@@ -246,7 +246,7 @@ function renderAssets({ embedded = false } = {}) {
   const directions = [...new Set(assets().map(asset => asset.direction).filter(Boolean))];
   const reviews = [...new Set(assets().map(asset => asset.reviewStatus).filter(Boolean))];
   return (embedded ? '' : heading(state.page === 'unassigned' ? '未分配图片' : '全部图片', state.page === 'unassigned' ? '这里的图片只在后台保留。选择图片放进相册，再由相册控制显示与购买。' : '选择图片加入相册。画风与题材标签继续用于查找和整理。', '<button data-action="styles">管理画风</button>')) +
-    `<div class="filters library-filters"><label>搜索图片<input data-filter="query" value="${attr(state.filters.query)}" placeholder="标题或题材关键词"></label><label>画风<select data-filter="style">${options([['__none', '待分类'], ...styles().map(style => [style.id, style.name])], state.filters.style, '全部画风')}</select></label><label>题材<select data-filter="tag">${options(tags.map(tag => [tag, tag]), state.filters.tag, '全部题材')}</select></label><label>方向<select data-filter="direction">${options(directions.map(value => [value, directionName(value)]), state.filters.direction)}</select></label></div><details class="library-advanced"><summary>更多筛选</summary><div class="filters compact-filters"><label>每日状态<select data-filter="daily">${options([['any','全部每日图片'],['scheduled','已排期'],['today','今日每日'],['appeared','已出场 · 待收录'],['enrolled','已收录'],['awaiting','待游戏确认'],['legacy','默认每日轮换']], state.filters.daily)}</select></label><label>素材阶段<select data-filter="lifecycle">${options([['pending','新图 · 待接入游戏'],['retained','游戏现有素材']], state.filters.lifecycle)}</select></label><label>来源<select data-filter="origin">${options(origins.map(value => [value, originName(value)]), state.filters.origin)}</select></label><label>审核<select data-filter="review">${options(reviews.map(value => [value, reviewName(value)]), state.filters.review)}</select></label></div></details>
+    `<div class="filters library-filters"><label>搜索图片<input data-filter="query" value="${attr(state.filters.query)}" placeholder="标题或题材关键词"></label><label>画风<select data-filter="style">${options([['__none', '待分类'], ...styles().map(style => [style.id, style.name])], state.filters.style, '全部画风')}</select></label><label>题材<select data-filter="tag">${options(tags.map(tag => [tag, tag]), state.filters.tag, '全部题材')}</select></label><label>方向<select data-filter="direction">${options(directions.map(value => [value, directionName(value)]), state.filters.direction)}</select></label></div><details class="library-advanced"><summary>更多筛选</summary><div class="filters compact-filters"><label>每日状态<select data-filter="daily">${options([['any','全部每日图片'],['automatic','待自动发布'],['scheduled','指定日期'],['today','今日每日'],['appeared','已出场 · 待收录'],['enrolled','已收录'],['awaiting','待游戏确认'],['library','曾从相册随机选中'],['legacy','原每日图片']], state.filters.daily)}</select></label><label>素材阶段<select data-filter="lifecycle">${options([['pending','新图 · 待接入游戏'],['retained','游戏现有素材']], state.filters.lifecycle)}</select></label><label>来源<select data-filter="origin">${options(origins.map(value => [value, originName(value)]), state.filters.origin)}</select></label><label>审核<select data-filter="review">${options(reviews.map(value => [value, reviewName(value)]), state.filters.review)}</select></label></div></details>
     <div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-all" ${filtered.length && filtered.every(asset => state.selected.has(asset.id)) ? 'checked' : ''}> 选择筛选结果</label><span class="muted">显示 ${filtered.length} 幅 · ${state.selected.size} 幅已选</span></div>
     ${renderBulkBar()}
     ${filtered.length ? `<div class="asset-grid ${state.selected.size ? 'with-selection' : ''}">${filtered.map(asset => assetCard(asset)).join('')}</div>` : '<div class="empty">没有符合筛选条件的素材。<p>可以修改关键词或清空部分筛选。</p></div>'}`;
@@ -408,21 +408,24 @@ function renderDailySettings(id) {
   const best = current && albumShown(current) ? current : doc().albums.find(album => albumShown(album) && !album.purchasable && album.styleGroupId === managed(id).styleGroupId);
   const selected = plan?.albumId || best?.id || '';
   const readiness = dailyReadiness(id);
-  const automatic = plan ? plan.autoDate === true : true;
-  const plannedDate = plan?.date || nextOpenDailyDate(doc().dailyPlans || [], {excludeId:id});
-  return `<details class="section daily-settings" data-daily-locked="${daily.locked}" ${plan || targetAsset(id).dailyOnly || daily.enrollment ? 'open' : ''}><summary>每日首发${daily.label ? ` · ${esc(daily.label.replace(/^每日 · /,''))}` : ''}</summary><p class="muted text-small">加入首发队列，预选收录相册。游戏确认出场后，次日北京时间 00:00 自动收录。没有首发排期的日子，沿用默认每日轮换。</p><label class="check-field"><input type="checkbox" name="dailyEnabled" ${plan ? 'checked' : ''} ${daily.locked ? 'disabled' : ''}> 安排每日首发并自动收录</label><label class="check-field daily-auto-switch"><input type="checkbox" name="dailyAutoDate" ${automatic ? 'checked' : ''} ${!plan || daily.locked ? 'disabled' : ''}> 自动安排日期</label><div class="daily-fields"><label class="field"><b>每日首发日期</b><input type="date" name="dailyDate" aria-label="每日首发日期" value="${attr(plannedDate)}" min="${attr(plan && plan.date < tomorrowDate() ? plan.date : tomorrowDate())}" ${!plan || daily.locked || automatic ? 'disabled' : ''} required><small class="daily-date-hint">${automatic ? plan?.autoDate ? '系统已安排，刷新不会改变日期。' : '从明天起安排到首个空闲日期，保存后确认。' : '手动指定日期；已有安排的日期不能重复。'}</small></label><label class="field"><b>收录相册</b><select name="dailyAlbumId" aria-label="收录相册" ${!plan || daily.locked ? 'disabled' : ''} required>${options(doc().albums.map(album => [album.id,`${album.title}${!albumShown(album) ? ' · 两端隐藏' : ''}${album.purchasable ? ' · 购买包' : ''}`]),selected,'选择相册')}</select></label></div><p class="daily-fact">${esc(daily.detail || '尚未安排每日首发。')}</p>${readiness && !readiness.ready ? `<p class="muted text-small">${esc(readiness.reason || '素材待接入游戏，排期先保存在后台。')}</p>` : ''}${daily.locked ? '<p class="muted text-small">已出场记录已锁定。收录后仍可在相册中移动图片。</p>' : '<p class="muted text-small">应用修改后点击顶部“保存”。保存排期后，游戏需启用这份安排才会出场。</p>'}</details>`;
+  const automatic = plan ? automaticDailyPlan(plan) : true;
+  const plannedDate = automatic ? '' : plan?.date || nextOpenDailyDate(doc().dailyPlans || [], {excludeId:id});
+  return `<details class="section daily-settings" data-daily-locked="${daily.locked}" ${plan || targetAsset(id).dailyOnly || daily.enrollment ? 'open' : ''}><summary>每日首发${daily.label ? ` · ${esc(daily.label.replace(/^每日 · /,''))}` : ''}</summary><p class="muted text-small">指定日期的首发优先。当天没有指定图片时，随机发布一张尚未出场的自动图片；全部发布后，从所有相册随机选图。通过每日入口创建，无需解锁购买包。</p><label class="check-field"><input type="checkbox" name="dailyEnabled" ${plan ? 'checked' : ''} ${daily.locked ? 'disabled' : ''}> 安排每日首发并自动收录</label><label class="check-field daily-auto-switch"><input type="checkbox" name="dailyAutoPublish" ${automatic ? 'checked' : ''} ${!plan || daily.locked ? 'disabled' : ''}> 自动发布</label><p class="muted text-small daily-mode-hint">${automatic ? '不占日期，等待每日随机选中。' : '手动指定日期；自动发布图片不会占用这些日期。'}</p><div class="daily-fields ${automatic ? 'automatic' : ''}"><label class="field daily-manual-date" ${automatic ? 'hidden' : ''}><b>每日首发日期</b><input type="date" name="dailyDate" aria-label="每日首发日期" value="${attr(plannedDate)}" min="${attr(plan?.date && plan.date < tomorrowDate() ? plan.date : tomorrowDate())}" ${!plan || daily.locked || automatic ? 'disabled' : ''} required><small>从明天起选择日期，每天最多一张指定首发。</small></label><label class="field"><b>收录相册</b><select name="dailyAlbumId" aria-label="收录相册" ${!plan || daily.locked ? 'disabled' : ''} required>${options(doc().albums.map(album => [album.id,`${album.title}${!albumShown(album) ? ' · 两端隐藏' : ''}${album.purchasable ? ' · 购买包' : ''}`]),selected,'选择相册')}</select><small>首发实际出场后，次日北京时间 00:00 自动放入这里。</small></label></div><p class="daily-fact">${esc(daily.detail || '勾选后可预选收录相册。')}</p>${readiness && !readiness.ready ? `<p class="muted text-small">${esc(readiness.reason || '素材待接入游戏，安排先保存在后台。')}</p>` : ''}${daily.locked ? '<p class="muted text-small">已出场记录已锁定。收录后仍可在相册中移动图片。</p>' : '<p class="muted text-small">应用修改后点击顶部“保存”。游戏启用这份安排后生效。</p>'}</details>`;
 }
 
 function updateDailyControls(form) {
   const section = form.querySelector('.daily-settings');
   if (!section || section.dataset.dailyLocked === 'true') return;
-  const enabled = form.elements.dailyEnabled.checked, automatic = form.elements.dailyAutoDate.checked;
-  form.elements.dailyAutoDate.disabled = !enabled;
+  const enabled = form.elements.dailyEnabled.checked, automatic = form.elements.dailyAutoPublish.checked;
+  form.elements.dailyAutoPublish.disabled = !enabled;
   form.elements.dailyAlbumId.disabled = !enabled;
   form.elements.dailyDate.disabled = !enabled || automatic;
   const plan = dailyFor(form.dataset.id).plan;
-  if (automatic) form.elements.dailyDate.value = plan?.autoDate ? plan.date : nextOpenDailyDate(doc().dailyPlans || [], {excludeId:form.dataset.id});
-  section.querySelector('.daily-date-hint').textContent = automatic ? plan?.autoDate ? '系统已安排，刷新不会改变日期。' : '从明天起安排到首个空闲日期，保存后确认。' : '手动指定日期；已有安排的日期不能重复。';
+  if (automatic) form.elements.dailyDate.value = '';
+  else if (!form.elements.dailyDate.value) form.elements.dailyDate.value = !automaticDailyPlan(plan) && plan?.date || nextOpenDailyDate(doc().dailyPlans || [], {excludeId:form.dataset.id});
+  section.querySelector('.daily-manual-date').hidden = automatic;
+  section.querySelector('.daily-fields').classList.toggle('automatic', automatic);
+  section.querySelector('.daily-mode-hint').textContent = automatic ? '不占日期，等待每日随机选中。' : '手动指定日期；自动发布图片不会占用这些日期。';
 }
 
 function openAsset(id) {
@@ -732,12 +735,12 @@ document.addEventListener('submit', event => {
     if (!daily.locked) {
       const remaining = (doc().dailyPlans || []).filter(plan => plan.imageId !== form.dataset.id);
       if (data.get('dailyEnabled') === 'on') {
-        const automatic = data.get('dailyAutoDate') === 'on';
-        const date = automatic ? daily.plan?.autoDate ? daily.plan.date : nextOpenDailyDate(remaining) : String(data.get('dailyDate') || '');
+        const automatic = data.get('dailyAutoPublish') === 'on';
+        const date = automatic ? null : String(data.get('dailyDate') || '');
         const albumId = String(data.get('dailyAlbumId') || '');
-        if (!date || !doc().albums.some(album => album.id === albumId)) { toast('请选择每日首发日期和收录相册。', true); return; }
-        if (remaining.some(plan => plan.date === date)) { toast('这一天已经安排了另一张每日图片，请选择其他日期。', true); return; }
-        remaining.push({id:form.dataset.id,imageId:form.dataset.id,date,albumId,...(automatic ? {autoDate:true} : {})});
+        if ((!automatic && !date) || !doc().albums.some(album => album.id === albumId)) { toast(automatic ? '请选择收录相册。' : '请选择每日首发日期和收录相册。', true); return; }
+        if (!automatic && remaining.some(plan => !automaticDailyPlan(plan) && plan.date === date)) { toast('这一天已经指定了另一张首发图片，请选择其他日期。', true); return; }
+        remaining.push({id:form.dataset.id,imageId:form.dataset.id,date,albumId,...(automatic ? {autoPublish:true} : {})});
       }
       doc().dailyPlans = remaining;
     }
@@ -793,7 +796,8 @@ document.addEventListener('submit', event => {
 modal.addEventListener('click', event => { if (event.target === modal && (event.offsetX < 0 || event.offsetX > modal.clientWidth || event.offsetY < 0 || event.offsetY > modal.clientHeight)) closeModal(); });
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 modal.addEventListener('change', event => {
-  if (!['dailyEnabled','dailyAutoDate'].includes(event.target.name)) return;
+  if (!['dailyEnabled','dailyAutoPublish'].includes(event.target.name)) return;
+  if (event.target.name === 'dailyEnabled' && event.target.checked) event.target.form.elements.dailyAutoPublish.checked = true;
   updateDailyControls(event.target.form);
 });
 window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
