@@ -11,4 +11,6 @@ const sharedTaskRewards=resolve('../content-admin/work/task-rewards/configuratio
 if(!env.MOBILE_TASK_REWARDS_CONFIG&&existsSync(sharedTaskRewards))env.MOBILE_TASK_REWARDS_CONFIG=sharedTaskRewards;
 const sharedGameSettings=resolve('../content-admin/work/game-settings/configuration.json');
 if(!env.MOBILE_GAME_SETTINGS_CONFIG&&existsSync(sharedGameSettings))env.MOBILE_GAME_SETTINGS_CONFIG=sharedGameSettings;
+const sharedAlbums=resolve('../content-admin/work/albums/configuration.json');
+if(!env.MOBILE_ALBUMS_CONFIG&&existsSync(sharedAlbums))env.MOBILE_ALBUMS_CONFIG=sharedAlbums;
 const result=spawnSync(process.execPath,['server/h5-gateway.mjs'],{cwd:root,env,stdio:'inherit',windowsHide:true});if(result.error)throw result.error;process.exitCode=result.status??1;

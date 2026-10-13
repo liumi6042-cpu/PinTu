@@ -2,6 +2,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createMobileTasks} from './mobile-tasks.mjs';
 import {createTaskRewardSettings} from './task-reward-settings.mjs';
 import {createGameSettings} from './game-settings.mjs';
+import {createAlbumContent} from './album-content.mjs';
 import {createMobileCollection} from './mobile-collection.mjs';
 import {createMobileSocial} from './mobile-social.mjs';
 import chatPhrases from '../config/social-phrases.json' with {type:'json'};
@@ -42,6 +43,8 @@ export function createMobileService(options={}){
  let operationTaskRewards=taskRewardConfiguration.read();
  const gameConfiguration=options.gameSettings??createGameSettings({configurationPath:options.gameConfigurationPath});
  let operationGameSettings=gameConfiguration.read();
+ const albumConfiguration=options.albumContent??createAlbumContent({configurationPath:options.albumConfigurationPath,photos:engine.RESTORABLE_PHOTOS,readSettings:()=>operationGameSettings});
+ let operationAlbums=albumConfiguration.read();
  const filename=options.databasePath??':memory:';
  if(filename!==':memory:')mkdirSync(dirname(resolve(filename)),{recursive:true,mode:0o700});
  const db=new DatabaseSync(filename);if(filename!==':memory:')chmodSync(filename,0o600);
@@ -61,9 +64,9 @@ export function createMobileService(options={}){
  const saveProfile=p=>db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(p.id,JSON.stringify(p));
  const tasks=createMobileTasks({db,readProfile,saveProfile,readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings});
  const dailyContent=options.dailyContent??null;
- const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??engine.GALLERY_VISIBLE_PHOTOS,dailyContent,readSettings:()=>operationGameSettings});
+ const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:options.albumTarget??'mobile-shared'});
  if(!options.deferDailyStart)dailyContent?.start();
- const galleryPhotos=now=>dailyContent?.galleryPhotos(now)??engine.GALLERY_VISIBLE_PHOTOS;
+ const galleryPhotos=now=>collection.galleryPhotos(now);
  const readRoom=roomId=>{const row=db.prepare('SELECT data,closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!row||row.closed_at)fail(404,'ROOM_NOT_FOUND','房间不存在或已关闭');return JSON.parse(row.data);};
  const saveRoom=room=>db.prepare('INSERT INTO mobile_rooms VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET completed_at=excluded.completed_at,closed_at=excluded.closed_at,data=excluded.data').run(room.id,room.ownerId,room.visibility,room.mobilePieces,room.createdAt,room.completedAt,room.closedAt??null,JSON.stringify(room));
  const social=createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom:authorize,roomCard:card,blockedWords:options.socialBlockedWords});
@@ -280,6 +283,7 @@ export function createMobileService(options={}){
    if(!input||typeof input!=='object'||Array.isArray(input))fail(400,'INVALID_JSON','请求格式无效');
    operationTaskRewards=taskRewardConfiguration.read();
    operationGameSettings=gameConfiguration.read();
+   operationAlbums=albumConfiguration.read();
    db.exec('BEGIN IMMEDIATE');
    try{const p=readProfile(request.identity,now);saveProfile(p);social.touch(p.id,now);const data=route(request,p,input,url,now);saveProfile(p);db.exec('COMMIT');return {status:request.method==='POST'&&url.pathname==='/api/rooms'?201:200,data};}
    catch(error){db.exec('ROLLBACK');throw error;}

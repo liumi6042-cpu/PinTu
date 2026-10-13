@@ -71,13 +71,13 @@ export function createDailyContent({configurationPath,appearanceDir,photos,fallb
   try{mkdirSync(directory,{recursive:true});writeFileSync(join(directory,date+'.json'),JSON.stringify(value)+'\n',{flag:'wx'});}catch(error){if(error.code==='EEXIST'){const existing=receipt(date,clock);if(existing)return existing;}throw Object.assign(new Error('每日出场记录未能保存。'),{status:503,code:'DAILY_APPEARANCE_UNAVAILABLE',cause:error});}
   tickError=null;return value;
  }
- function albumEntries(clock=now()){
+ function albumEntries(clock=now(),target='mobile-shared'){
   const config=configuration(),today=dailyContentDate(clock),first=new Map();
   for(const fact of facts(clock))if(fact.planned&&!first.has(fact.imageId))first.set(fact.imageId,fact);
   const groups=new Map();
   for(const fact of first.values()){
    const album=config.albumById.get(fact.albumId);
-   if(fact.date>=today||!album?.showOnMobile)continue;
+   if(fact.date>=today||!(target==='pc'?album?.showOnPc:album?.showOnMobile))continue;
    if(!groups.has(album.id))groups.set(album.id,{album,imageIds:[]});
    groups.get(album.id).imageIds.push(fact.imageId);
   }
@@ -87,10 +87,13 @@ export function createDailyContent({configurationPath,appearanceDir,photos,fallb
   const config=configuration();
   return new Set([...config.entries,...config.automaticCandidates].map(entry=>entry.imageId).concat(facts(clock).filter(fact=>fact.planned).map(fact=>fact.imageId)));
  }
+ function releasedImageIds(clock=now()){
+  const today=dailyContentDate(clock);return new Set(facts(clock).filter(fact=>fact.planned&&fact.date<today).map(fact=>fact.imageId));
+ }
  function galleryPhotos(clock=now()){
   const managed=managedImageIds(clock),visible=new Set(albumEntries(clock).flatMap(entry=>entry.imageIds));
   return [...photoById.values()].filter(photo=>visible.has(photo.id)||photo.status==='published'&&photo.galleryVisible!==false&&!managed.has(photo.id));
  }
  function start(){if(timer)return;tick(now());timer=setInterval(()=>{try{tick(now());}catch(error){tickError=error;console.error('每日配置暂不可用：'+error.message);}},30000);timer.unref();}
- return {tick,start,select(clock=now()){const fact=tick(clock);if(tickError)throw tickError;return photoById.get(fact.imageId);},albumEntries,managedImageIds,galleryPhotos,targetAlbums:()=>configuration().albums,collectiblePhotos:()=>[...photoById.values()],close(){if(timer)clearInterval(timer);timer=null;}};
+ return {tick,start,select(clock=now()){const fact=tick(clock);if(tickError)throw tickError;return photoById.get(fact.imageId);},albumEntries,managedImageIds,releasedImageIds,galleryPhotos,targetAlbums:()=>configuration().albums,collectiblePhotos:()=>[...photoById.values()],close(){if(timer)clearInterval(timer);timer=null;}};
 }
