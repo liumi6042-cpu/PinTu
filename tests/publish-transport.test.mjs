@@ -25,11 +25,20 @@ test('transport rejects arbitrary remote roots, shell-like hosts, remote health 
  assert.equal(validatePublishTransportConfig({...config,remoteRoot:'/srv/test-content'},{allowedRemoteRoots:['/srv/test-content']}).remoteRoot,'/srv/test-content');
 });
 
+test('health headers accept only a strict host and forwarded protocol',()=>{
+ const withHeaders=headers=>({...config,targets:[{...config.targets[0],healthHeaders:headers},config.targets[1]]});
+ assert.deepEqual(validatePublishTransportConfig(withHeaders({host:'jigsawnook.online:443','x-forwarded-proto':'https'})).targets[0].healthHeaders,{Host:'jigsawnook.online:443','X-Forwarded-Proto':'https'});
+ assert.equal(Object.hasOwn(validatePublishTransportConfig(config).targets[1],'healthHeaders'),false);
+ for(const headers of [null,[],{Authorization:'fixture'},{Cookie:'fixture'},{constructor:'https'},{Host:'example.com\r\nCookie: fixture'},{Host:'bad host'},{Host:'https://example.com'},{Host:'-bad.example'},{Host:'example.com:65536'},{Host:'example.com',host:'second.example'},{'X-Forwarded-Proto':'https\r\nCookie: fixture'},{'X-Forwarded-Proto':'ftp'}])assert.throws(()=>validatePublishTransportConfig(withHeaders(headers)),{code:'INVALID_PUBLISH_CONFIG'});
+});
+
 test('transport uploads only declared public release files and requires both current-version receipts',async t=>{
- const release=await fixture(t),calls=[];
+ const release=await fixture(t),calls=[];let activationRequest;
+ const withHeaders={...config,targets:[{...config.targets[0],healthHeaders:{Host:'jigsawnook.online','X-Forwarded-Proto':'https'}},config.targets[1]]};
  const receipt={schema:'jigsaw-content-publish-receipt/v1',releaseId:release.manifest.releaseId,ok:true,targets:[{id:'web',ok:true,contentReleaseId:release.manifest.releaseId},{id:'mobile',ok:true,contentReleaseId:release.manifest.releaseId}]};
- const result=await publishRelease(release,config,{runProcess:async(command,args)=>{calls.push({command,args});return {code:0,stdout:command==='ssh'&&args.at(-1).startsWith('python3')?JSON.stringify(receipt):'',stderr:''};}});
+ const result=await publishRelease(release,withHeaders,{runProcess:async(command,args)=>{calls.push({command,args});if(command==='scp')activationRequest=JSON.parse(await readFile(args.find(value=>value.endsWith('activation-request.json')),'utf8'));return {code:0,stdout:command==='ssh'&&args.at(-1).startsWith('python3')?JSON.stringify(receipt):'',stderr:''};}});
  assert.deepEqual(result,receipt);assert.deepEqual(calls.map(item=>item.command),['ssh','scp','ssh']);
+ assert.deepEqual(activationRequest.targets[0].healthHeaders,withHeaders.targets[0].healthHeaders);assert.equal(Object.hasOwn(activationRequest.targets[1],'healthHeaders'),false);
  const scp=calls[1].args;assert.equal(scp.includes('--'),true);assert.equal(scp.filter(value=>value.endsWith('.json')).length,6);
  assert.equal(scp.some(value=>value.endsWith('.sqlite')),false);assert.equal(scp.some(value=>value.includes('game.db')),false);
  assert.equal(calls.every(item=>item.args.includes('StrictHostKeyChecking=yes')),true);

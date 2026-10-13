@@ -18,6 +18,21 @@ function healthUrl(value){
  if(url.protocol!=='http:'||!['127.0.0.1','[::1]','localhost'].includes(url.hostname)||url.username||url.password||url.hash||url.search)throw fail('INVALID_PUBLISH_CONFIG','健康检查必须使用服务器本机 HTTP 地址。');
  return url.href;
 }
+function healthHeaders(value){
+ if(value===undefined)return undefined;
+ if(!value||typeof value!=='object'||Array.isArray(value))throw fail('INVALID_PUBLISH_CONFIG','健康检查请求头配置无效。');
+ const headers={};
+ for(const [name,header] of Object.entries(value)){
+  const lower=name.toLowerCase(),key=lower==='host'?'Host':lower==='x-forwarded-proto'?'X-Forwarded-Proto':null;
+  if(!key||Object.hasOwn(headers,key)||typeof header!=='string')throw fail('INVALID_PUBLISH_CONFIG','健康检查只允许 Host 与 X-Forwarded-Proto 请求头。');
+  if(key==='Host'){
+   const parts=header.split(':'),hostname=parts[0],port=parts[1];
+   if(parts.length>2||hostname.length>253||!hostname.split('.').every(label=>/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/.test(label))||(port!==undefined&&(!/^[0-9]{1,5}$/.test(port)||Number(port)<1||Number(port)>65535)))throw fail('INVALID_PUBLISH_CONFIG','健康检查 Host 必须是有效域名及可选端口。');
+  }else if(!['http','https'].includes(header))throw fail('INVALID_PUBLISH_CONFIG','健康检查转发协议只能是 http 或 https。');
+  headers[key]=header;
+ }
+ return headers;
+}
 
 /** Configuration is loaded by the server from a private local file, never from a browser request. */
 export function validatePublishTransportConfig(input,{allowedRemoteRoots=[...ROOT_ALLOWLIST]}={}){
@@ -34,7 +49,8 @@ export function validatePublishTransportConfig(input,{allowedRemoteRoots=[...ROO
  const normalizedTargets=targets.map(item=>{
   const command=item.preflightCommand;
   if(!Array.isArray(command)||command.length<1||command.length>16||command.some(part=>typeof part!=='string'||part.length===0||part.length>1024||/[\0\r\n]/.test(part))||!command[0].startsWith('/'))throw fail('INVALID_PUBLISH_CONFIG','每个目标都需要明确的服务器本机校验命令。');
-  return {id:item.id,healthUrl:healthUrl(item.healthUrl),preflightCommand:[...command]};
+  const headers=healthHeaders(item.healthHeaders);
+  return {id:item.id,healthUrl:healthUrl(item.healthUrl),preflightCommand:[...command],...(headers===undefined?{}:{healthHeaders:headers})};
  });
  const timeoutMs=input.timeoutMs??180000;
  if(!Number.isInteger(timeoutMs)||timeoutMs<1000||timeoutMs>240000)throw fail('INVALID_PUBLISH_CONFIG','发布超时时间必须在 1 秒到 4 分钟之间。');

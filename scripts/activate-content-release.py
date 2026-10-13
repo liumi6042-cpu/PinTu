@@ -99,6 +99,26 @@ def atomic_bytes(path, data):
             os.unlink(temporary)
 
 
+def validate_health_headers(value):
+    if value is None:
+        return {}
+    require(isinstance(value, dict), 'INVALID_ACTIVATION_REQUEST', '健康检查请求头配置无效。')
+    headers = {}
+    for name, header in value.items():
+        key = {'host': 'Host', 'x-forwarded-proto': 'X-Forwarded-Proto'}.get(name.lower()) if isinstance(name, str) else None
+        require(key is not None and key not in headers and isinstance(header, str), 'INVALID_ACTIVATION_REQUEST', '健康检查只允许 Host 与 X-Forwarded-Proto 请求头。')
+        if key == 'Host':
+            parts = header.split(':')
+            hostname = parts[0]
+            valid_hostname = len(hostname) <= 253 and all(re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?', label) for label in hostname.split('.'))
+            valid_port = len(parts) == 1 or (len(parts) == 2 and re.fullmatch(r'[0-9]{1,5}', parts[1]) and 1 <= int(parts[1]) <= 65535)
+            require(valid_hostname and valid_port, 'INVALID_ACTIVATION_REQUEST', '健康检查 Host 必须是有效域名及可选端口。')
+        else:
+            require(header in ('http', 'https'), 'INVALID_ACTIVATION_REQUEST', '健康检查转发协议只能是 http 或 https。')
+        headers[key] = header
+    return headers
+
+
 def validate_targets(targets):
     require(isinstance(targets, list) and len(targets) == 2, 'INVALID_ACTIVATION_REQUEST', '必须同时校验两个目标。')
     seen = set()
@@ -111,6 +131,9 @@ def validate_targets(targets):
         except (KeyError, TypeError, ValueError):
             raise ActivationError('INVALID_ACTIVATION_REQUEST', '目标健康检查地址无效。')
         require(url.scheme == 'http' and url.hostname in ('127.0.0.1', '::1', 'localhost') and not url.username and not url.password and not url.query and not url.fragment and (port is None or 0 < port < 65536), 'INVALID_ACTIVATION_REQUEST', '健康检查只允许服务器本机地址。')
+        if 'healthHeaders' in target:
+            require(isinstance(target['healthHeaders'], dict), 'INVALID_ACTIVATION_REQUEST', '健康检查请求头配置无效。')
+        validate_health_headers(target.get('healthHeaders'))
         command = target.get('preflightCommand')
         require(isinstance(command, list) and 1 <= len(command) <= 16 and all(isinstance(part, str) and 0 < len(part) <= 1024 and not any(char in part for char in '\x00\r\n') for part in command) and command[0].startswith('/'), 'INVALID_ACTIVATION_REQUEST', '目标预检命令无效。')
 
@@ -124,7 +147,8 @@ def check_health(targets, expected, timeout_seconds, opener=None):
         for target in targets:
             receipt = {'id': target['id'], 'ok': False, 'contentReleaseId': None}
             try:
-                with opener.open(target['healthUrl'], timeout=min(3, max(0.1, deadline - time.monotonic()))) as response:
+                request = urllib.request.Request(target['healthUrl'], headers=validate_health_headers(target.get('healthHeaders')))
+                with opener.open(request, timeout=min(3, max(0.1, deadline - time.monotonic()))) as response:
                     payload = response.read(65537)
                     if response.status == 200 and len(payload) <= 65536:
                         health = json.loads(payload)

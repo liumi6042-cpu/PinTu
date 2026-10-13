@@ -1,4 +1,5 @@
 import hashlib
+import io
 import importlib.util
 import json
 from pathlib import Path
@@ -129,6 +130,29 @@ class ActivatorTests(unittest.TestCase):
         with self.assertRaises(MODULE.ActivationError) as failure:
             MODULE.activate(self.root, stage, self.request('next', hashlib.sha256(data).hexdigest()), self.healthy, self.runner)
         self.assertEqual(failure.exception.code, 'PRIVATE_RELEASE_FILE')
+
+    def test_health_requests_forward_only_validated_optional_headers(self):
+        self.targets[0]['healthHeaders'] = {'Host': 'jigsawnook.online', 'X-Forwarded-Proto': 'https'}
+        MODULE.validate_targets(self.targets)
+        requests = []
+        def open_request(request, timeout):
+            requests.append(request)
+            response = io.BytesIO(json.dumps({'ok': True, 'contentReleaseId': 'next'}).encode())
+            response.status = 200
+            return response
+        result = MODULE.check_health(self.targets, 'next', 0.1, types.SimpleNamespace(open=open_request))
+        self.assertTrue(all(item['ok'] for item in result))
+        self.assertEqual(requests[0].get_header('Host'), 'jigsawnook.online')
+        self.assertEqual(requests[0].get_header('X-forwarded-proto'), 'https')
+        self.assertEqual(requests[1].header_items(), [])
+
+    def test_invalid_health_headers_are_rejected_before_activation(self):
+        for headers in [None, [], {'Authorization': 'fixture'}, {'Cookie': 'fixture'}, {'Host': 'example.com\r\nCookie: fixture'}, {'Host': 'bad host'}, {'Host': 'https://example.com'}, {'Host': '-bad.example'}, {'Host': 'example.com:65536'}, {'Host': 'example.com', 'host': 'second.example'}, {'X-Forwarded-Proto': 'https\r\nCookie: fixture'}, {'X-Forwarded-Proto': 'ftp'}]:
+            with self.subTest(headers=headers):
+                self.targets[0]['healthHeaders'] = headers
+                with self.assertRaises(MODULE.ActivationError) as failure:
+                    MODULE.validate_targets(self.targets)
+                self.assertEqual(failure.exception.code, 'INVALID_ACTIVATION_REQUEST')
 
 
 if __name__ == '__main__':
