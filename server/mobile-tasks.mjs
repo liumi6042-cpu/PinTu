@@ -1,6 +1,7 @@
 import {randomBytes} from 'node:crypto';
 import {applyExperience,energyCap} from './mobile-economy.mjs';
 import {DEFAULT_TASK_REWARD_SETTINGS,tenGridReward} from './task-reward-settings.mjs';
+import {DEFAULT_GAME_SETTINGS} from './game-settings.mjs';
 
 export const INVITATION_SHARE_DAILY_LIMIT=3;
 export const INVITATION_SHARE_REWARD=Object.freeze({energy:20,xp:10});
@@ -22,7 +23,7 @@ export const mobileTaskDay=now=>new Date(now+8*3600000).toISOString().slice(0,10
 const reject=(status,code,message)=>{throw Object.assign(new Error(message),{status,code});};
 
 /** Called only from the service's IMMEDIATE transaction, with verified identities. */
-export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>false,readSettings=()=>DEFAULT_TASK_REWARD_SETTINGS}){
+export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>false,readSettings=()=>DEFAULT_TASK_REWARD_SETTINGS,readGameSettings=()=>DEFAULT_GAME_SETTINGS}){
  db.exec(`
  CREATE TABLE IF NOT EXISTS mobile_task_events(owner TEXT NOT NULL,room_id TEXT NOT NULL,request_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(owner,room_id,request_id));
  CREATE INDEX IF NOT EXISTS mobile_task_activity ON mobile_task_events(room_id,created_at,owner);
@@ -82,7 +83,7 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
   const settings=readSettings(),day=mobileTaskDay(now),count=Number(db.prepare('SELECT COUNT(*) n FROM mobile_invitation_shares WHERE owner=? AND day=?').get(p.id,day).n);
   if(count>=settings.invitationShare.dailyLimit)return {energy:0,xp:0,levels:0,alreadyRewarded:true};
   db.prepare('INSERT INTO mobile_invitation_shares VALUES(?,?,?,?,?)').run(p.id,day,count+1,input.requestId,now);
-  const {energy,xp}=settings.invitationShare,levels=applyExperience(p,xp,now);p.energy+=energy;if(p.energy>=energyCap(p.level))p.energyAt=now;
+  const gameSettings=readGameSettings(),{energy,xp}=settings.invitationShare,levels=applyExperience(p,xp,now,gameSettings);p.energy+=energy;if(p.energy>=energyCap(p.level,gameSettings))p.energyAt=now;
   p.lastReward={type:'invitation-share',energy,xp,levels,giftsAdded:0,gift:0,energySpent:0,autoUsed:false,at:now};
   return {energy,xp,levels,alreadyRewarded:false};
  }
@@ -131,11 +132,12 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
   if(effect==='full-energy'&&input.quantity!==1)reject(400,'INVALID_GIFT_QUANTITY','补满体力包每次只能开启1份');
   const gifts=db.prepare('SELECT id,energy,xp FROM mobile_task_gifts WHERE owner=? AND kind=? AND opened_at IS NULL ORDER BY created_at,id LIMIT ?').all(p.id,input.kind,input.quantity);
   if(gifts.length!==input.quantity)reject(409,'GIFT_EMPTY','剩余礼包数量不足，请刷新后重试');
-  if(effect==='full-energy'&&p.energy>=energyCap(p.level))reject(409,'ENERGY_FULL','体力已满，补满体力包已为你保留');
-  const xp=gifts.reduce((sum,g)=>sum+g.xp,0),levels=applyExperience(p,xp,now),energy=effect==='full-energy'?Math.max(0,energyCap(p.level)-p.energy):gifts.reduce((sum,g)=>sum+g.energy,0);
+  const gameSettings=readGameSettings();
+  if(effect==='full-energy'&&p.energy>=energyCap(p.level,gameSettings))reject(409,'ENERGY_FULL','体力已满，补满体力包已为你保留');
+  const xp=gifts.reduce((sum,g)=>sum+g.xp,0),levels=applyExperience(p,xp,now,gameSettings),energy=effect==='full-energy'?Math.max(0,energyCap(p.level,gameSettings)-p.energy):gifts.reduce((sum,g)=>sum+g.energy,0);
   const effectResult=effect?{effect}:{};
   for(const gift of gifts){const change=db.prepare('UPDATE mobile_task_gifts SET opened_at=?,opened_request=? WHERE id=? AND owner=? AND opened_at IS NULL').run(now,input.requestId,gift.id,p.id);if(change.changes!==1)reject(409,'GIFT_EMPTY','礼包已经开启，请刷新后重试');}
-  p.energy+=energy;if(p.energy>=energyCap(p.level))p.energyAt=now;
+  p.energy+=energy;if(p.energy>=energyCap(p.level,gameSettings))p.energyAt=now;
   p.lastReward={type:'gift-open',...effectResult,quantity:input.quantity,energy,xp,levels,gift:0,giftsAdded:0,energySpent:0,autoUsed:false,at:now};
   return {kind:input.kind,...effectResult,quantity:input.quantity,energy,xp,levels};
  }

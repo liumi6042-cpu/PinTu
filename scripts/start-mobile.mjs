@@ -9,4 +9,6 @@ if(!env.MOBILE_DAILY_CONFIG&&existsSync(sharedDailyConfiguration))env.MOBILE_DAI
 if(env.MOBILE_DAILY_CONFIG&&!env.MOBILE_DAILY_APPEARANCES)env.MOBILE_DAILY_APPEARANCES=resolve('work/daily-appearances');
 const sharedTaskRewards=resolve('../content-admin/work/task-rewards/configuration.json');
 if(!env.MOBILE_TASK_REWARDS_CONFIG&&existsSync(sharedTaskRewards))env.MOBILE_TASK_REWARDS_CONFIG=sharedTaskRewards;
+const sharedGameSettings=resolve('../content-admin/work/game-settings/configuration.json');
+if(!env.MOBILE_GAME_SETTINGS_CONFIG&&existsSync(sharedGameSettings))env.MOBILE_GAME_SETTINGS_CONFIG=sharedGameSettings;
 const result=spawnSync(process.execPath,['server/h5-gateway.mjs'],{cwd:root,env,stdio:'inherit',windowsHide:true});if(result.error)throw result.error;process.exitCode=result.status??1;

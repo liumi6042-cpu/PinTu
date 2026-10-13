@@ -1,6 +1,7 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createMobileTasks} from './mobile-tasks.mjs';
 import {createTaskRewardSettings} from './task-reward-settings.mjs';
+import {createGameSettings} from './game-settings.mjs';
 import {createMobileCollection} from './mobile-collection.mjs';
 import {createMobileSocial} from './mobile-social.mjs';
 import chatPhrases from '../config/social-phrases.json' with {type:'json'};
@@ -39,6 +40,8 @@ export function createMobileService(options={}){
  const clock=options.now??Date.now,randomInt=options.randomInt??secureRandomInt;
  const taskRewardConfiguration=options.taskRewardSettings??createTaskRewardSettings({configurationPath:options.taskRewardConfigurationPath});
  let operationTaskRewards=taskRewardConfiguration.read();
+ const gameConfiguration=options.gameSettings??createGameSettings({configurationPath:options.gameConfigurationPath});
+ let operationGameSettings=gameConfiguration.read();
  const filename=options.databasePath??':memory:';
  if(filename!==':memory:')mkdirSync(dirname(resolve(filename)),{recursive:true,mode:0o700});
  const db=new DatabaseSync(filename);if(filename!==':memory:')chmodSync(filename,0o600);
@@ -54,20 +57,20 @@ export function createMobileService(options={}){
  CREATE TABLE IF NOT EXISTS mobile_settlements(room_id TEXT NOT NULL,owner TEXT NOT NULL,energy INTEGER NOT NULL,contribution INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(room_id,owner));
  CREATE TABLE IF NOT EXISTS mobile_chat(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,data TEXT NOT NULL,sent_at INTEGER NOT NULL,UNIQUE(room_id,owner,request_id));
  CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));`);
- const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);const p=row?JSON.parse(row.data):newProfile(identity,now);restoreEnergy(p,now);return p;};
+ const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);const p=row?JSON.parse(row.data):newProfile(identity,now,operationGameSettings);restoreEnergy(p,now,operationGameSettings);return p;};
  const saveProfile=p=>db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(p.id,JSON.stringify(p));
- const tasks=createMobileTasks({db,readProfile,saveProfile,readSettings:()=>operationTaskRewards});
+ const tasks=createMobileTasks({db,readProfile,saveProfile,readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings});
  const dailyContent=options.dailyContent??null;
- const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??engine.GALLERY_VISIBLE_PHOTOS,dailyContent});
+ const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??engine.GALLERY_VISIBLE_PHOTOS,dailyContent,readSettings:()=>operationGameSettings});
  if(!options.deferDailyStart)dailyContent?.start();
  const galleryPhotos=now=>dailyContent?.galleryPhotos(now)??engine.GALLERY_VISIBLE_PHOTOS;
  const readRoom=roomId=>{const row=db.prepare('SELECT data,closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!row||row.closed_at)fail(404,'ROOM_NOT_FOUND','房间不存在或已关闭');return JSON.parse(row.data);};
  const saveRoom=room=>db.prepare('INSERT INTO mobile_rooms VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET completed_at=excluded.completed_at,closed_at=excluded.closed_at,data=excluded.data').run(room.id,room.ownerId,room.visibility,room.mobilePieces,room.createdAt,room.completedAt,room.closedAt??null,JSON.stringify(room));
  const social=createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom:authorize,roomCard:card,blockedWords:options.socialBlockedWords});
- const profileView=(p,now)=>({code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1),energy:p.energy,energyCap:energyCap(p.level),giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,autoSupply:p.autoSupply,adEligible:options.adEnabled===true&&adEligible(p,now),name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,naturalRecoveryAt:p.energy<energyCap(p.level)?p.energyAt+300000:null,serverTime:now,ownedRooms:db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC').all(p.id).map(row=>{const r=JSON.parse(row.data);return {...card(r,now),inviteCode:r.mobileInviteCode??null};})});
+ const profileView=(p,now)=>({code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:energyCap(p.level,operationGameSettings),economy:{contributionCost:operationGameSettings.energy.contributionCost,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,autoSupply:p.autoSupply,adEligible:options.adEnabled===true&&adEligible(p,now),name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,naturalRecoveryAt:operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<energyCap(p.level,operationGameSettings)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC').all(p.id).map(row=>{const r=JSON.parse(row.data);return {...card(r,now),inviteCode:r.mobileInviteCode??null};})});
  const photoOf=room=>engine.RESTORABLE_PHOTOS.find(p=>p.id===room.puzzle.imageId);
  function card(room,now){const photo=photoOf(room);return {id:room.id,title:room.title||photo?.title||'一起拼图',imageId:room.puzzle.imageId,pieces:room.mobilePieces,actualPieces:room.puzzle.cols*room.puzzle.rows,visibility:room.visibility,players:room.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length,placed:engine.placedCount(room.puzzle),completed:room.completedAt!==null,acceptingNew:room.acceptingNew!==false,started:room.startedAt!==null,startedAt:room.startedAt,createdAt:room.createdAt,expiresAt:room.expiresAt,lastPlayedAt:room.lastPlayedAt,direction:photo?directionOf(photo):'landscape',thumbSrc:photo?.thumbSrc};}
- function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),identity=member?.guestId||member?.accountId;return {...m,code:identity?social.person(identity,now).code:null,level:identity?readProfile(identity,now).level:0,decoration:identity?collection.equipped(identity):null};});if(identity&&room.completedAt!==null){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id)};}return result;}
+ function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),identity=member?.guestId||member?.accountId;return {...m,code:identity?social.person(identity,now).code:null,level:identity?readProfile(identity,now).level:0,decoration:identity?collection.equipped(identity):null};});if(identity&&room.completedAt!==null){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id)};}return result;}
  function authorize(room,request,now){
   const token=/^Bearer ([a-f0-9]{32})$/.exec(request.authorization??'')?.[1];if(!token)fail(401,'ROOM_ADMISSION_REQUIRED','请重新加入房间');
   const member=engine.authenticate(room,hash(token),now);if(member.guestId!==request.identity)fail(403,'ROOM_IDENTITY_MISMATCH','请用当前身份重新加入房间');return member;
@@ -107,7 +110,7 @@ export function createMobileService(options={}){
  function settle(room,now,current){
   if(!room.completedAt||room.mobileSettled)return;
   const counts=Object.fromEntries(Object.entries(room.achievements?.contributors??{}).map(([owner,v])=>[owner,v.count]));
-  for(const reward of completionDistribution(counts,room.mobilePieces)){
+  for(const reward of completionDistribution(counts,room.mobilePieces,operationGameSettings)){
    const p=reward.id===current.id?current:readProfile(reward.id,now);
    const result=db.prepare('INSERT OR IGNORE INTO mobile_settlements VALUES(?,?,?,?,?)').run(room.id,p.id,reward.energy,reward.contribution,now);
    if(result.changes){const collected=collection.complete(p.id,room,reward.contribution,now);p.energy+=reward.energy;p.lastReward={...p.lastReward,completion:{roomId:room.id,...reward,...(collected??{})},at:now};}
@@ -167,7 +170,7 @@ export function createMobileService(options={}){
    return profileView(p,now);
   }
   if(path==='/api/mobile/supply/use'&&method==='POST')return replay(p,'supply-use',input,now,()=>{
-   if(input.kind!=='energy')fail(400,'INVALID_SUPPLY','建房券会在创建成功时使用');if(p.energy>=energyCap(p.level))fail(409,'ENERGY_FULL','体力已满，无需使用');if(p.supply.energy<1)fail(409,'SUPPLY_EMPTY','没有体力包');p.supply.energy--;p.energy=energyCap(p.level);p.energyAt=now;saveProfile(p);return profileView(p,now);
+   if(input.kind!=='energy')fail(400,'INVALID_SUPPLY','建房券会在创建成功时使用');if(p.energy>=energyCap(p.level,operationGameSettings))fail(409,'ENERGY_FULL','体力已满，无需使用');if(p.supply.energy<1)fail(409,'SUPPLY_EMPTY','没有体力包');p.supply.energy--;p.energy=energyCap(p.level,operationGameSettings);p.energyAt=now;saveProfile(p);return profileView(p,now);
   });
   if(path==='/api/rewarded/challenge'&&method==='POST'){
    if(typeof input.context!=='string'||!/^room\/[a-f0-9]{32}$/.test(input.context)||!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','广告工具请求无效');
@@ -253,11 +256,13 @@ export function createMobileService(options={}){
   if(input.type==='drop'&&!requestKey(input.requestId))fail(400,'REQUEST_ID_REQUIRED','拼合操作缺少有效请求编号');
   const act=()=>{
    const before=structuredClone(room.puzzle.groups),oldContrib=room.achievements?.contributors?.[p.id]?.count??0;
+   room.mobileContributionXp??=Object.fromEntries(Object.entries(room.achievements?.contributors??{}).map(([owner,value])=>[owner,value.count]));
    member.name=p.name;engine.applyAction(room,member,input,now);
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
    if(added){
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards});if(!reward)fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});
+    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings});if(!reward)fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});
+    room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
     p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
     const coins=collection.contribution(p.id,room.id,input.requestId,now);p.lastReward.coins=coins;
     mobileContribution={requestId:input.requestId,groupId:input.groupId,creditedXp:reward.xp,creditedCoins:coins};
@@ -274,6 +279,7 @@ export function createMobileService(options={}){
    if(Buffer.isBuffer(input)||typeof input==='string'){try{input=JSON.parse(String(input)||'{}');}catch{fail(400,'INVALID_JSON','请求格式无效');}}
    if(!input||typeof input!=='object'||Array.isArray(input))fail(400,'INVALID_JSON','请求格式无效');
    operationTaskRewards=taskRewardConfiguration.read();
+   operationGameSettings=gameConfiguration.read();
    db.exec('BEGIN IMMEDIATE');
    try{const p=readProfile(request.identity,now);saveProfile(p);social.touch(p.id,now);const data=route(request,p,input,url,now);saveProfile(p);db.exec('COMMIT');return {status:request.method==='POST'&&url.pathname==='/api/rooms'?201:200,data};}
    catch(error){db.exec('ROLLBACK');throw error;}
