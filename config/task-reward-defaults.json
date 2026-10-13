@@ -1,0 +1,13 @@
+{
+  "schema": "jigsaw-task-rewards/v1",
+  "tasks": [
+    { "id": "cooperation-10", "energy": 10, "xp": 2 },
+    { "id": "cooperation-30", "energy": 15, "xp": 5 },
+    { "id": "cooperation-60", "energy": 20, "xp": 8 },
+    { "id": "friend-10", "energy": 5, "xp": 2 },
+    { "id": "friend-30", "energy": 10, "xp": 5 }
+  ],
+  "invitationShare": { "energy": 20, "xp": 10, "dailyLimit": 3 },
+  "invitationFriend": { "effect": "full-energy", "xp": 0 },
+  "tenGrid": { "energyMin": 1, "energyMaxByTier": [5, 6, 7], "xp": 0 }
+}

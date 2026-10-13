@@ -7,4 +7,6 @@ const env={...process.env,H5_PORT:port,H5_HOST:'127.0.0.1',H5_ALLOWED_ORIGINS:`h
 const sharedDailyConfiguration=resolve('../content-admin/work/daily-bridge/configuration.json');
 if(!env.MOBILE_DAILY_CONFIG&&existsSync(sharedDailyConfiguration))env.MOBILE_DAILY_CONFIG=sharedDailyConfiguration;
 if(env.MOBILE_DAILY_CONFIG&&!env.MOBILE_DAILY_APPEARANCES)env.MOBILE_DAILY_APPEARANCES=resolve('work/daily-appearances');
+const sharedTaskRewards=resolve('../content-admin/work/task-rewards/configuration.json');
+if(!env.MOBILE_TASK_REWARDS_CONFIG&&existsSync(sharedTaskRewards))env.MOBILE_TASK_REWARDS_CONFIG=sharedTaskRewards;
 const result=spawnSync(process.execPath,['server/h5-gateway.mjs'],{cwd:root,env,stdio:'inherit',windowsHide:true});if(result.error)throw result.error;process.exitCode=result.status??1;

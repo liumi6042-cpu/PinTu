@@ -285,7 +285,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
     const engine=await import('../outputs/mobile/engine.mjs');
     dailyContent=createDailyContent({configurationPath:process.env.MOBILE_DAILY_CONFIG,appearanceDir:process.env.MOBILE_DAILY_APPEARANCES||resolve('work/daily-appearances'),photos:engine.RESTORABLE_PHOTOS,fallback:engine.dailyPuzzle});
   }
-  const mobileService=createMobileService({databasePath:process.env.MOBILE_DB||resolve('data/mobile-v3.sqlite'),adEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true'&&Boolean(process.env.H5_REWARDED_AD_UNIT),dailyContent,deferDailyStart:true});
+  const mobileService=createMobileService({databasePath:process.env.MOBILE_DB||resolve('data/mobile-v3.sqlite'),adEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true'&&Boolean(process.env.H5_REWARDED_AD_UNIT),taskRewardConfigurationPath:process.env.MOBILE_TASK_REWARDS_CONFIG,dailyContent,deferDailyStart:true});
   const server=createH5Gateway({
     publicApiBase:process.env.H5_PUBLIC_API_BASE,publicGameBase:process.env.H5_PUBLIC_GAME_BASE,
     mobileService,assetDir:process.env.MOBILE_ASSET_DIR||resolve('public'),

@@ -11,7 +11,7 @@ if(digest(readFileSync('releases/jigsaw-nook-taptap-h5.zip'))!==build.sha256)thr
 const stage=resolve('work/mobile-v3-server-release');mkdirSync(stage,{recursive:true});
 if(realpathSync(stage)!==stage)throw Error('Stage cannot be a link');
 const vite=JSON.parse(readFileSync('outputs/h5/.vite/manifest.json','utf8'));
-const files=new Set(['server/h5-gateway.mjs','server/mobile-service.mjs','server/daily-content.mjs','server/mobile-collection.mjs','lib/mobile-collection-catalog.json','server/mobile-economy.mjs','server/mobile-tasks.mjs','outputs/mobile/engine.mjs','h5/asset-manifest.json','outputs/h5/index.html','outputs/h5/config.js','outputs/h5/favicon.ico','outputs/h5/favicon-96.png','outputs/h5/favicon.svg','outputs/h5/apple-touch-icon.png','outputs/h5/h5-build.json']);
+const files=new Set(['server/h5-gateway.mjs','server/mobile-service.mjs','server/daily-content.mjs','server/mobile-collection.mjs','lib/mobile-collection-catalog.json','server/mobile-economy.mjs','server/mobile-tasks.mjs','server/task-reward-settings.mjs','config/task-reward-defaults.json','outputs/mobile/engine.mjs','h5/asset-manifest.json','outputs/h5/index.html','outputs/h5/config.js','outputs/h5/favicon.ico','outputs/h5/favicon-96.png','outputs/h5/favicon.svg','outputs/h5/apple-touch-icon.png','outputs/h5/h5-build.json']);
 if(!Array.isArray(build.fontNotices)||build.fontNotices.length!==4)throw Error('Rebuild the H5 package with font license notices');
 for(const path of build.fontNotices){if(!/^licenses\/fonts\/[A-Za-z0-9._-]+$/.test(path))throw Error('Unsafe font notice path');files.add('outputs/h5/'+path);}
 for(const entry of Object.values(vite))for(const name of [entry.file,...(entry.css||[]),...(entry.assets||[])])files.add('outputs/h5/'+name);

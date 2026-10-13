@@ -1,5 +1,6 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createMobileTasks} from './mobile-tasks.mjs';
+import {createTaskRewardSettings} from './task-reward-settings.mjs';
 import {createMobileCollection} from './mobile-collection.mjs';
 import {createMobileSocial} from './mobile-social.mjs';
 import chatPhrases from '../config/social-phrases.json' with {type:'json'};
@@ -36,6 +37,8 @@ export const CHAT_PHRASES=Object.freeze(chatPhrases);
  */
 export function createMobileService(options={}){
  const clock=options.now??Date.now,randomInt=options.randomInt??secureRandomInt;
+ const taskRewardConfiguration=options.taskRewardSettings??createTaskRewardSettings({configurationPath:options.taskRewardConfigurationPath});
+ let operationTaskRewards=taskRewardConfiguration.read();
  const filename=options.databasePath??':memory:';
  if(filename!==':memory:')mkdirSync(dirname(resolve(filename)),{recursive:true,mode:0o700});
  const db=new DatabaseSync(filename);if(filename!==':memory:')chmodSync(filename,0o600);
@@ -53,7 +56,7 @@ export function createMobileService(options={}){
  CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));`);
  const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);const p=row?JSON.parse(row.data):newProfile(identity,now);restoreEnergy(p,now);return p;};
  const saveProfile=p=>db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(p.id,JSON.stringify(p));
- const tasks=createMobileTasks({db,readProfile,saveProfile});
+ const tasks=createMobileTasks({db,readProfile,saveProfile,readSettings:()=>operationTaskRewards});
  const dailyContent=options.dailyContent??null;
  const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??engine.GALLERY_VISIBLE_PHOTOS,dailyContent});
  if(!options.deferDailyStart)dailyContent?.start();
@@ -254,7 +257,7 @@ export function createMobileService(options={}){
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
    if(added){
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt});if(!reward)fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});
+    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards});if(!reward)fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});
     p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
     const coins=collection.contribution(p.id,room.id,input.requestId,now);p.lastReward.coins=coins;
     mobileContribution={requestId:input.requestId,groupId:input.groupId,creditedXp:reward.xp,creditedCoins:coins};
@@ -270,6 +273,7 @@ export function createMobileService(options={}){
    const url=new URL(request.url,'http://mobile.invalid');let input=request.body??{};
    if(Buffer.isBuffer(input)||typeof input==='string'){try{input=JSON.parse(String(input)||'{}');}catch{fail(400,'INVALID_JSON','请求格式无效');}}
    if(!input||typeof input!=='object'||Array.isArray(input))fail(400,'INVALID_JSON','请求格式无效');
+   operationTaskRewards=taskRewardConfiguration.read();
    db.exec('BEGIN IMMEDIATE');
    try{const p=readProfile(request.identity,now);saveProfile(p);social.touch(p.id,now);const data=route(request,p,input,url,now);saveProfile(p);db.exec('COMMIT');return {status:request.method==='POST'&&url.pathname==='/api/rooms'?201:200,data};}
    catch(error){db.exec('ROLLBACK');throw error;}
