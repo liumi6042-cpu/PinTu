@@ -2,6 +2,7 @@ import { createDragPayload, parseDragPayload } from './album-drag.js';
 import { dailyImageState, tomorrowDate, nextOpenDailyDate, automaticDailyPlan } from './daily-state.js';
 import { renderTaskRewards, readTaskRewardForm, updateTaskRewardInput } from './task-rewards-ui.js';
 import { renderGameSettings, readGameSettingsForm, updateGameSettingInput, addGameMilestone, removeGameMilestone, renderGameLevelPreview, renderGameDecorationPreview } from './game-settings-ui.js';
+import { createAlbumRecovery } from './album-recovery.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
@@ -24,7 +25,9 @@ const state = {
   historyOpen: false, settings: null, dragGesture: null, suppressClickUntil: 0, suppressClickPoint: null,
   taskRewards: null, taskRewardDocument: null, taskRewardsDirty: false, taskRewardConflict: false,
   gameSettings: null, gameSettingDocument: null, gameSettingsDirty: false, gameSettingConflict: false,
+  savedAlbumDocument: null, albumRecoveryEntry: null,
 };
+const albumRecovery = createAlbumRecovery();
 Object.assign(AUDIT_NAMES, {'initialize-game-settings':'导入成长与装饰设置','save-game-settings':'保存成长与装饰设置'});
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const attr = esc;
@@ -87,8 +90,12 @@ async function busy(task) {
   finally { state.busy = false; document.body.classList.remove('loading-inline'); }
 }
 
-function dirty() {
+function dirty({sourceOnly=false} = {}) {
   state.dirty = true;
+  if (!sourceOnly) {
+    state.albumRecoveryEntry = null;
+    if (state.draft && state.session?.user?.username) albumRecovery.save({owner:state.session.user.username,draftId:state.draft.id,revision:state.draft.revision,document:doc(),baseDocument:state.savedAlbumDocument});
+  }
   state.analysis = null;
   const node = document.querySelector('#save-state');
   if (node) { node.textContent = '有未保存编辑'; node.classList.remove('saved'); }
@@ -97,8 +104,10 @@ function dirty() {
   document.title = '● 拼图 · 内容工作室';
 }
 
-function markSaved() {
+function markSaved({clearRecovery=true} = {}) {
   state.dirty = false;
+  if (clearRecovery && state.draft && state.session?.user?.username) albumRecovery.clear({owner:state.session.user.username,draftId:state.draft.id});
+  if (clearRecovery) state.albumRecoveryEntry = null;
   document.title = '拼图 · 内容工作室';
   const node = document.querySelector('#save-state');
   if (node) { node.textContent = '已保存'; node.classList.add('saved'); }
@@ -114,6 +123,7 @@ async function saveDraft({ quiet = false } = {}) {
   const saved = result.draft || result;
   if (!Number.isSafeInteger(saved.revision)) throw new Error('保存响应缺少版本号，请重新打开页面核对。');
   state.draft = saved.document ? saved : { ...state.draft, ...saved };
+  state.savedAlbumDocument = structuredClone(state.draft.document);
   const existing = state.bootstrap.drafts.find(item => item.id === state.draft.id);
   if (existing) Object.assign(existing, { revision: state.draft.revision, name: state.draft.name, updatedAt: state.draft.updatedAt });
   markSaved();
@@ -218,8 +228,11 @@ async function loadDraft(id) {
   state.selected.clear();
 
   state.albumId = null;
-  markSaved();
-  if (state.draft.sourceNeedsMerge) dirty();
+  state.savedAlbumDocument = structuredClone(state.draft.document);
+  const entries = albumRecovery.entries({owner:state.session.user.username,draftId:state.draft.id});
+  state.albumRecoveryEntry = entries.find(entry => entry.revision === state.draft.revision && JSON.stringify(entry.document) !== JSON.stringify(state.savedAlbumDocument)) || null;
+  markSaved({clearRecovery:false});
+  if (state.draft.sourceNeedsMerge) dirty({sourceOnly:true});
 }
 
 async function initialize({ keepDraft = false } = {}) {
@@ -273,8 +286,9 @@ function render() {
 function renderPage() {
   if (state.page === 'task-rewards') return renderTaskRewards({document:state.taskRewardDocument,dirty:state.taskRewardsDirty,conflict:state.taskRewardConflict,updatedAt:date(state.taskRewards?.updatedAt)});
   if (isGameSettingsPage()) return renderGameSettings({document:state.gameSettingDocument,dirty:state.gameSettingsDirty,conflict:state.gameSettingConflict,updatedAt:date(state.gameSettings?.updatedAt),section:state.page});
-  if (state.page === 'assets' || state.page === 'unassigned') return renderAssets();
-  return renderAlbums();
+  const recovery = state.albumRecoveryEntry ? `<div class="notice album-recovery-note">本机保留了一份未保存的相册编辑（${date(state.albumRecoveryEntry.savedAt)}）。<button type="button" class="small" data-action="recover-album-edits">恢复相册编辑</button></div>` : '';
+  if (state.page === 'assets' || state.page === 'unassigned') return recovery + renderAssets();
+  return recovery + renderAlbums();
 }
 
 function renderHistoryDrawer() {
@@ -369,7 +383,8 @@ function renderAlbumSettings() {
   if (!state.settings) return;
   const album = state.settings.album, cover = album.coverImageId || album.imageIds[0];
   const field = name => `data-settings-field="${name}"`;
-  openModal('相册设置', `<form id="album-settings-form" class="album-settings-form"><div class="album-settings-cover">${cover ? `<img draggable="false" src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button type="button" class="small" data-action="settings-cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${field('title')} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${field('description')} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${field('styleGroupId')}>${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>在 PC 显示</b><small>控制 PC 端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnPc')} ${album.showOnPc ? 'checked' : ''}></label><label class="setting-switch"><div><b>在小程序显示</b><small>控制小程序端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnMobile')} ${album.showOnMobile ? 'checked' : ''}></label><label class="setting-switch"><div><b>设为购买包</b><small>开启后需要金币购买。</small></div><input type="checkbox" ${field('purchasable')} ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${field('price')} type="number" min="1" max="100000000" step="1" value="${album.price}" required></label>` : ''}<details class="album-advanced"><summary>收藏奖励</summary><label class="field"><b>装饰奖励</b><input ${field('decorationId')} value="${attr(album.decorationId)}" maxlength="100"></label><div class="section-heading space-top"><h3>里程碑</h3><button type="button" class="small" data-action="settings-add-milestone">添加</button></div>${album.milestones.map((milestone, row) => `<div class="milestone-row"><label class="field">完成张数<input data-settings-row="${row}" data-settings-key="target" type="number" min="1" step="1" required value="${milestone.target}"></label><label class="field">奖励金币<input data-settings-row="${row}" data-settings-key="coins" type="number" min="0" step="1" required value="${milestone.coins}"></label><label class="field">装饰奖励<input data-settings-row="${row}" data-settings-key="decorationId" value="${attr(milestone.decorationId)}"></label><button type="button" class="danger small" data-action="settings-remove-milestone" data-row="${row}" aria-label="移除此里程碑">×</button></div>`).join('') || '<p class="muted text-small">暂未设置里程碑。</p>'}</details><button type="button" class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">应用设置</button></div><p class="muted text-small settings-save-note">应用后点击主界面“保存”，保留本次整理。</p></form>`);
+  const rewardHistory = album.decorationId || album.milestones.length ? `<details class="album-advanced"><summary>旧奖励记录（保留）</summary><p class="muted text-small">以下记录保留在相册资料中。当前奖励以“装饰与收集”的设置为准。</p>${album.decorationId ? `<p class="text-small">原装饰：${esc(album.decorationId)}</p>` : ''}${album.milestones.map(milestone => `<p class="text-small">集齐 ${milestone.target} 张 · 金币 ${milestone.coins}${milestone.decorationId ? ` · 装饰 ${esc(milestone.decorationId)}` : ''}</p>`).join('')}</details>` : '';
+  openModal('相册设置', `<form id="album-settings-form" class="album-settings-form"><div class="album-settings-cover">${cover ? `<img draggable="false" src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button type="button" class="small" data-action="settings-cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${field('title')} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${field('description')} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${field('styleGroupId')}>${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>在 PC 显示</b><small>控制 PC 端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnPc')} ${album.showOnPc ? 'checked' : ''}></label><label class="setting-switch"><div><b>在小程序显示</b><small>控制小程序端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnMobile')} ${album.showOnMobile ? 'checked' : ''}></label><label class="setting-switch"><div><b>设为购买包</b><small>开启后需要金币购买。</small></div><input type="checkbox" ${field('purchasable')} ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${field('price')} type="number" min="1" max="100000000" step="1" value="${album.price}" required></label>` : ''}<div class="notice"><b>相册集齐奖励</b><p class="text-small">奖励统一在“装饰与收集”中设置，避免在两个地方重复调整。</p><button type="button" class="small" data-action="open-collection-rewards">保存相册设置并前往装饰与收集</button></div>${rewardHistory}<button type="button" class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">保存相册设置</button></div><p class="muted text-small settings-save-note">点击即保存到后台，同时保存本页已调整的图片归属与顺序。</p></form>`);
 }
 
 function updateSettingsField(element) {
@@ -386,6 +401,21 @@ function updateSettingsField(element) {
     const item = state.settings.album.milestones[Number(element.dataset.settingsRow)];
     if (item) item[element.dataset.settingsKey] = element.type === 'number' ? Number(element.value) : element.value || null;
   }
+}
+
+async function saveAlbumSettings({openRewards=false} = {}) {
+  const form = document.querySelector('#album-settings-form');
+  if (!form || !form.reportValidity()) return;
+  const settings = state.settings;
+  const album = settings?.target === state.target && targetDoc().albums.find(item => item.id === settings.id);
+  if (!album) { closeModal(); toast('相册已变化，请重新打开设置。', true); return; }
+  for (const field of ['title','description','styleGroupId','coverImageId','showOnPc','showOnMobile','purchasable','price','decorationId','milestones']) album[field] = structuredClone(settings.album[field]);
+  album.title = album.title.trim(); album.price = album.purchasable ? album.price : 0;
+  dirty();
+  await saveDraft({quiet:true});
+  closeModal();
+  if (openRewards) { state.page = 'decorations'; state.selected.clear(); state.albumId = null; }
+  render(); toast('相册设置与本页整理已保存。');
 }
 
 async function confirmMoving(ids, destination) {
@@ -654,6 +684,12 @@ document.addEventListener('click', async event => {
   if (action === 'retry') { location.reload(); }
   else if (action === 'page') { state.page = button.dataset.page; state.selected.clear(); state.albumId = null; render(); }
   else if (action === 'save') busy(async () => { await saveDraft(); render(); });
+  else if (action === 'recover-album-edits') {
+    const entry = state.albumRecoveryEntry;
+    if (!entry || entry.revision !== state.draft.revision) { toast('相册已更新，请重新载入后核对恢复记录。', true); return; }
+    state.draft.document = structuredClone(entry.document); state.albumRecoveryEntry = null;
+    dirty(); render(); toast('相册编辑已恢复，请保存。成长与体力设置未改变。');
+  }
   else if (action === 'reload-task-rewards') busy(async () => {
     if (state.taskRewardsDirty && !await confirmAction('重新载入会替换本窗口未保存的任务奖励修改，确定继续？')) return;
     setTaskRewards(await api('/api/task-rewards')); render();
@@ -669,6 +705,9 @@ document.addEventListener('click', async event => {
   else if (action === 'close-history') { state.historyOpen = false; render(); }
   else if (action === 'album-open') { state.albumId = button.dataset.id; state.page = 'albums'; state.selected.clear(); render(); }
   else if (action === 'album-settings') openAlbumSettings(button.dataset.id);
+  else if (action === 'open-collection-rewards') {
+    busy(() => saveAlbumSettings({openRewards:true}));
+  }
   else if (action === 'settings-cover') openPicker('albums', targetDoc().albums.findIndex(album => album.id === state.settings.id), 'cover', true);
   else if (action === 'settings-add-milestone') {
     state.settings.album.milestones.push({ target: Math.max(1, state.settings.album.imageIds.length), coins: 0, decorationId: null });
@@ -850,12 +889,7 @@ document.addEventListener('submit', event => {
     dirty(); closeModal(); render();
   }
   else if (form.id === 'album-settings-form') {
-    const settings = state.settings;
-    const album = settings?.target === state.target && targetDoc().albums.find(item => item.id === settings.id);
-    if (!album) { closeModal(); toast('相册已变化，请重新打开设置。', true); return; }
-    for (const field of ['title', 'description', 'styleGroupId', 'coverImageId', 'showOnPc', 'showOnMobile', 'purchasable', 'price', 'decorationId', 'milestones']) album[field] = structuredClone(settings.album[field]);
-    album.title = album.title.trim(); album.price = album.purchasable ? album.price : 0;
-    dirty(); closeModal(); render(); toast('相册设置已应用，请保存。');
+    busy(() => saveAlbumSettings());
   }
   else if (form.id === 'new-album-form') {
     const title = String(data.get('title')).trim();
