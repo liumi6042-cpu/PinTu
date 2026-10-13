@@ -1,6 +1,7 @@
 import {createHash, randomUUID} from 'node:crypto';
 import {existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
+import {isDeepStrictEqual} from 'node:util';
 import {problem} from './store.mjs';
 
 const IMAGE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -236,8 +237,19 @@ export function createDailyCoordinator({store, getSource, validateDocument, brid
         enrollments.push({imageId: plan.imageId, firstAppearanceDate, enrolledAt: at, albumId: plan.albumId});
       }
       const validated = validateDocument(next, source);
+      // Reading old rewards gives them stable identities, but daily bookkeeping
+      // must not persist that migration over an administrator's saved albums.
+      const reconciled = copy(validated);
+      for (const album of reconciled.albums) {
+        const saved = current.document.albums.find(item => item.id === album.id);
+        for (const milestone of album.milestones) {
+          const original = saved?.milestones.find(item => item.target === milestone.target);
+          if (original && !Object.hasOwn(original, 'id') && milestone.id === 'milestone-' + milestone.target) delete milestone.id;
+        }
+      }
       if (incoming.length || enrollments.length || !same(document, validated))
-        store.reconcileDaily(current.id, current.revision, validated, source.fingerprint, incoming, enrollments, at);
+        store.reconcileDaily(current.id, current.revision, isDeepStrictEqual(current.document, reconciled) ? current.document : reconciled,
+          source.fingerprint, incoming, enrollments, at);
       writeDailyConfiguration(bridgeDir, buildDailyConfiguration(validated, source));
       return status(false, validated);
     } finally {syncing = false;}

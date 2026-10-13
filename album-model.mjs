@@ -134,7 +134,8 @@ export function buildAlbumConfiguration(input, source, target) {
   if (target !== undefined && !TARGETS.includes(target)) throw Object.assign(new Error('未知内容目标。'), {status: 400});
   return {schema: 'jigsaw-content-albums/v3', sourceFingerprint: source.fingerprint,
     ...(target === undefined ? {} : {target}), sharedAlbums: true, oneAlbumPerImage: true, unassignedImagesVisible: false,
-    albums: clone(document.albums), dailyPlans: clone(document.dailyPlans)};
+    albums: document.albums.map(album => ({...clone(album), milestones: album.milestones.map(milestone => ({
+      id: milestone.id ?? 'milestone-' + milestone.target, ...clone(milestone)}))})), dailyPlans: clone(document.dailyPlans)};
 }
 
 /** Inert legacy export adapter. Album changes still require runtime support. */

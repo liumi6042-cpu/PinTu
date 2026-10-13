@@ -34,8 +34,7 @@ test('each game settings page merges only its own fields while retaining reward 
  assert.equal(decorated.progression.earlyXp[0],12);
  assert.equal(decorated.collection.completionCoinRatio,0.33);
  assert.equal(decorated.milestones[0].id,'milestone-3');
- assert.equal(decorated.milestones[0].target,4);
- assert.equal(decorated.milestones[0].albumDecoration,true);
+ assert.deepEqual(decorated.milestones,grown.milestones,'legacy global reward fields are preserved but no longer edited by decoration form');
  assert.equal(decorated.decorations[1].enabled,false);
  assert.equal(decorated.decorations[1].description,'');
  assert.equal(decorated.decorations[1].source,'craft');
@@ -65,7 +64,9 @@ test('preview matches level thresholds; added reward tiers have stable private i
   assert.doesNotMatch(html,/name="decorations\.\d+\.(?:id|source|kind|albumId)"/);
  }
  const decor=renderGameSettings({document,section:'decorations'});
- assert.match(decor,/data-action="add-game-milestone" disabled/);
+ assert.doesNotMatch(decor,/data-action="add-game-milestone"/);
+ assert.doesNotMatch(decor,/name="milestones\./);
+ assert.match(decor,/在该相册的设置中选择/);
  assert.match(decor,/name="decorations\.1\.description" maxlength="300"\s+aria-label/);
  assert.match(decor,/name="collection\.completionCoinRatio" type="number" min="0" max="1000"/);
  const growth=renderGameSettings({document,section:'growth'});

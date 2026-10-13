@@ -97,7 +97,8 @@ function validateLegacyDraft(document, source) {
       const packId = item.packId === null ? null : id(item.packId, '图鉴关联图包');
       if (packId !== null && !packIds.has(packId)) fail('图鉴关联的图包不存在。');
       const milestones = list(item.milestones, '图鉴里程碑', 100).map(milestone => {
-        object(milestone, '里程碑', ['target', 'coins', 'decorationId']);
+        object(milestone, '里程碑', ['id', 'target', 'coins', 'decorationId'], ['id']);
+        if (Object.hasOwn(milestone, 'id')) id(milestone.id, '里程碑 ID');
         const target = integer(milestone.target, '里程碑目标', 1);
         return {target, coins: integer(milestone.coins, '里程碑金币'), decorationId: decoration(milestone.decorationId, decorations, '里程碑装饰')};
       });
@@ -322,11 +323,19 @@ function validateAlbumDraft(converted, source, version) {
       if (purchasable && price < 1) fail('购买包价格至少为 1 金币。');
       if (!purchasable && price !== 0) fail('免费相册价格必须为 0。');
       const milestones = list(item.milestones, '相册奖励', 100).map(milestone => {
-        object(milestone, '相册奖励', ['target', 'coins', 'decorationId']);
-        return {target: integer(milestone.target, '完成图片数', 1), coins: integer(milestone.coins, '奖励金币'),
+        object(milestone, '相册奖励', ['id', 'target', 'coins', 'decorationId'], ['id']);
+        const target = integer(milestone.target, '完成图片数', 1);
+        if (target > 10000) fail('完成图片数不能超过 10000。');
+        const coins = integer(milestone.coins, '奖励金币');
+        if (coins > 100000) fail('奖励金币不能超过 100000。');
+        // Freeze old target-based reward identities before an administrator edits
+        // their thresholds. This conversion only changes the read representation.
+        return {id: Object.hasOwn(milestone, 'id') ? id(milestone.id, '相册奖励 ID') : 'milestone-' + target,
+          target, coins,
           decorationId: decoration(milestone.decorationId, decorations, '相册奖励装饰')};
       });
       if (new Set(milestones.map(milestone => milestone.target)).size !== milestones.length) fail('相册奖励的完成图片数不能重复。');
+      if (new Set(milestones.map(milestone => milestone.id)).size !== milestones.length) fail('同一相册的奖励 ID 不能重复。');
       return {id: albumId, title: text(item.title, '相册名称', 180), description: text(item.description, '相册说明', 1500, true),
         imageIds: images, coverImageId, styleGroupId: styleRef(item.styleGroupId, styleIds, '相册画风'),
         ...(version === 2 ? {visible: bool(item.visible, '相册显示开关')} : {showOnPc: bool(item.showOnPc, 'PC 显示开关'), showOnMobile: bool(item.showOnMobile, '小程序显示开关')}), purchasable, price,

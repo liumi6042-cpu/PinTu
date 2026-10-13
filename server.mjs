@@ -2,6 +2,7 @@ import {createServer} from 'node:http';
 import {readFileSync,realpathSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {isDeepStrictEqual} from 'node:util';
 import {createStore,problem} from './store.mjs';
 import {createAuth} from './auth.mjs';
 import {readSource,previewFile,verifyDelivery} from './source.mjs';
@@ -10,6 +11,7 @@ import {mergeDraft} from './merge.mjs';
 import {createDailyCoordinator} from './daily.mjs';
 import {createTaskRewardCoordinator} from './task-rewards.mjs';
 import {createGameSettingsCoordinator} from './game-settings.mjs';
+import {createAlbumCoordinator} from './albums.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
 function inputFields(input,fields){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!fields.includes(k)))throw problem(400,'请求中包含无效字段');return input;}
@@ -20,20 +22,27 @@ async function jsonBody(req){if(!/^application\/json(?:;|$)/i.test(req.headers['
 function response(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 const ID=/^[a-f0-9]{32}$/;
 
-export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
+export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),albumBridgeDir=join(dataDir,'albums'),appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
  const taskRewards=createTaskRewardCoordinator({store,bridgeDir:taskRewardBridgeDir,now});taskRewards.sync();
  const gameSettings=createGameSettingsCoordinator({store,bridgeDir:gameSettingsBridgeDir,now});gameSettings.sync();
  const daily=createDailyCoordinator({store,getSource:()=>source,validateDocument:validateDraft,bridgeDir,appearanceDir,now});
- daily.sync();
- const dailyTimer=setInterval(()=>{try{daily.sync();}catch{/* A later request retries without replacing a concurrent edit. */}},30_000);dailyTimer.unref();
+ const albums=createAlbumCoordinator({store,getSource:()=>source,bridgeDir:albumBridgeDir,getDocument:currentDraft});
+ function syncContent(){const status=daily.sync();albums.sync();return status;}
+ syncContent();
+ const dailyTimer=setInterval(()=>{try{syncContent();}catch{/* A later request retries without replacing a concurrent edit. */}},30_000);dailyTimer.unref();
  // Older saved drafts remain intact. Present new source entries through the
  // existing three-way merge and persist only when the administrator saves.
  function preparedDocument(document,previous,latest=source){return validateDraft(daily.resolveDates(normalizeDraft(document,latest),previous),latest);}
  function mergeSourceDraft(draft,document=draft.document){return preparedDocument(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),source),normalizeDraft(document,source),source.baseline),draft.document);}
- function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};const document=mergeSourceDraft(draft);return {...draft,document,sourceNeedsMerge:JSON.stringify(document)!==JSON.stringify(draft.document)};}
+ function comparisonDocument(input){
+  const document=daily.resolveDates(normalizeDraft(input,source),input);
+  for(const album of document.albums)for(const milestone of album.milestones)milestone.id??='milestone-'+milestone.target;
+  return document;
+ }
+ function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};const document=mergeSourceDraft(draft);return {...draft,document,sourceNeedsMerge:!isDeepStrictEqual(comparisonDocument(document),comparisonDocument(draft.document))};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
- const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-recovery.js','album-recovery.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/style.css','style.css']]);
+ const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-recovery.js','album-recovery.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/album-rewards-ui.js','album-rewards-ui.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; form-action 'self'");
@@ -54,8 +63,8 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    const current=auth.requireSession(req);
    if(method!=='GET')auth.verifyCsrf(req,current);
    if(path==='/api/logout'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,200,auth.logout(req,res));}
-   if(path==='/api/bootstrap'&&method==='GET'){const status=daily.sync();return response(res,200,{source:{fingerprint:source.fingerprint,stats:source.stats,assets:source.assets},drafts:store.listDrafts(),versions:store.listVersions(),audit:store.listAudit(),activeDraftId:store.activeDraftId(),daily:status,taskRewards:taskRewards.sync(),gameSettings:gameSettings.sync()});}
-   if(path==='/api/daily/status'&&method==='GET'){const status=daily.sync();return response(res,200,{daily:status,draftRevision:store.draft(store.activeDraftId()).revision});}
+   if(path==='/api/bootstrap'&&method==='GET'){const status=syncContent();return response(res,200,{source:{fingerprint:source.fingerprint,stats:source.stats,assets:source.assets},drafts:store.listDrafts(),versions:store.listVersions(),audit:store.listAudit(),activeDraftId:store.activeDraftId(),daily:status,taskRewards:taskRewards.sync(),gameSettings:gameSettings.sync()});}
+   if(path==='/api/daily/status'&&method==='GET'){const status=syncContent();return response(res,200,{daily:status,draftRevision:store.draft(store.activeDraftId()).revision});}
    if(path==='/api/task-rewards'&&method==='GET')return response(res,200,taskRewards.sync());
    if(path==='/api/task-rewards'&&method==='PUT'){const input=inputFields(await jsonBody(req),['revision','document']);return response(res,200,taskRewards.save(input.revision,input.document,current.username));}
    if(path==='/api/game-settings'&&method==='GET')return response(res,200,gameSettings.sync());
@@ -65,7 +74,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    if(path==='/api/drafts'&&method==='POST'){
     const input=inputFields(await jsonBody(req),['name','fromDraftId']);let document=structuredClone(source.baseline),fingerprint=source.fingerprint;
     if(input.fromDraftId!==undefined){if(!ID.test(input.fromDraftId))throw problem(400,'原草稿无效');const base=currentDraft(input.fromDraftId);document=base.document;fingerprint=source.fingerprint;}
-    const previous=store.draft(store.activeDraftId()).document;document.name=title(input.name,'新的内容草稿');document=preparedDocument(document,document);daily.assertChanges(previous,document);const created=store.createDraft(document,fingerprint,current.username);daily.sync();return response(res,201,{draft:created});
+    const previous=store.draft(store.activeDraftId()).document;document.name=title(input.name,'新的内容草稿');document=preparedDocument(document,document);daily.assertChanges(previous,document);const created=store.createDraft(document,fingerprint,current.username);syncContent();return response(res,201,{draft:created});
    }
    const imageMatch=/^\/api\/images\/([a-z0-9-]+)$/.exec(path);
    if(imageMatch&&method==='GET'){
@@ -76,12 +85,12 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    const draftMatch=/^\/api\/drafts\/([a-f0-9]{32})(?:\/(analyze|publish|reimport))?$/.exec(path);
    if(draftMatch){
     const [,id,operation]=draftMatch;
-    if(!operation&&method==='GET')return response(res,200,currentDraft(id));
+    if(!operation&&method==='GET'){syncContent();return response(res,200,currentDraft(id));}
     if(!operation&&method==='PUT'){
-     const input=inputFields(await jsonBody(req),['revision','document']);daily.sync();const saved=store.draft(id),rev=revision(input.revision);
+     const input=inputFields(await jsonBody(req),['revision','document']);syncContent();const saved=store.draft(id),rev=revision(input.revision);
      if(saved.revision!==rev)throw problem(409,'工作内容已更新；请保留当前编辑，重新加载后合并','REVISION_CONFLICT');
-     if(saved.sourceFingerprint!==source.fingerprint){const doc=mergeSourceDraft(saved,input.document);daily.assertChanges(saved.document,doc);const updated=store.reimport(id,rev,doc,source,current.username,'保存时合并相册内容与新登记素材，保留已有编辑');daily.sync();return response(res,200,updated);}
-     const doc=preparedDocument(input.document,saved.document);daily.assertChanges(saved.document,doc);const updated=store.saveDraft(id,rev,doc,current.username);daily.sync();return response(res,200,updated);
+     if(saved.sourceFingerprint!==source.fingerprint){const doc=mergeSourceDraft(saved,input.document);daily.assertChanges(saved.document,doc);const updated=store.reimport(id,rev,doc,source,current.username,'保存时合并相册内容与新登记素材，保留已有编辑');syncContent();return response(res,200,updated);}
+     const doc=preparedDocument(input.document,saved.document);daily.assertChanges(saved.document,doc);const updated=store.saveDraft(id,rev,doc,current.username);syncContent();return response(res,200,updated);
     }
     if(operation&&method==='POST'){
      const input=inputFields(await jsonBody(req),operation==='analyze'?['revision']:operation==='reimport'?['revision','password','reason']:['revision','password','reason','label','target','kind']);
@@ -91,7 +100,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
       checkHistorical(latest);
       if(Object.keys(draft.document.assets).some(id=>!latest.baseline.assets[id]))throw problem(409,'来源删除了历史图片 ID；请先在原项目恢复归档条目后再导入','HISTORICAL_ID_MISSING');
       const merged=preparedDocument(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),latest),normalizeDraft(draft.document,latest),latest.baseline),draft.document,latest);
-      daily.assertChanges(draft.document,merged,false);const updated=store.reimport(id,draft.revision,merged,latest,current.username,why);source=latest;daily.sync();return response(res,200,{draft:updated});
+      daily.assertChanges(draft.document,merged,false);const updated=store.reimport(id,draft.revision,merged,latest,current.username,why);source=latest;syncContent();return response(res,200,{draft:updated});
      }
      const analysis=analyzeDraft(draft.document,source);
      if(operation==='analyze')return response(res,200,analysis);
@@ -128,14 +137,14 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
      const input=inputFields(await jsonBody(req),['password','reason','name']),why=reason(input.reason);auth.verifyPassword(current,input.password);
      const saved=store.version(id),previous=store.draft(store.activeDraftId()).document;
      const restored=saved.version.sourceFingerprint===source.fingerprint?preparedDocument(saved.document,saved.document):mergeSourceDraft({sourceFingerprint:saved.version.sourceFingerprint,document:saved.document});
-     daily.assertChanges(previous,restored);const result=store.restore(id,title(input.name,'从历史版本恢复的草稿'),current.username,why,restored);daily.sync();return response(res,201,{draft:result});
+     daily.assertChanges(previous,restored);const result=store.restore(id,title(input.name,'从历史版本恢复的草稿'),current.username,why,restored);syncContent();return response(res,201,{draft:result});
     }
    }
    throw problem(404,'此页面或内容不存在','NOT_FOUND');
   }catch(e){const status=Number.isInteger(e.status)&&e.status>=400&&e.status<=599?e.status:500;response(res,status,{error:status===500?'后台未能完成操作，请重试':e.message,code:e.code??'SERVER_ERROR',...(e.analysis?{analysis:e.analysis}:{})});}
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;
- return {server,store,daily,taskRewards,gameSettings,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
+ return {server,store,daily,albums,taskRewards,gameSettings,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
 }
 
 if(process.argv[1]&&realpathSync(process.argv[1])===realpathSync(fileURLToPath(import.meta.url))){

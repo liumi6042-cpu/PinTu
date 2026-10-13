@@ -3,6 +3,7 @@ import { dailyImageState, tomorrowDate, nextOpenDailyDate, automaticDailyPlan } 
 import { renderTaskRewards, readTaskRewardForm, updateTaskRewardInput } from './task-rewards-ui.js';
 import { renderGameSettings, readGameSettingsForm, updateGameSettingInput, addGameMilestone, removeGameMilestone, renderGameLevelPreview, renderGameDecorationPreview } from './game-settings-ui.js';
 import { createAlbumRecovery } from './album-recovery.js';
+import { ensureAlbumRewardIds, addAlbumReward, renderAlbumRewards } from './album-rewards-ui.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
@@ -375,7 +376,7 @@ function renderAlbumEditor(album, index) {
 function openAlbumSettings(id) {
   const album = targetDoc().albums.find(item => item.id === id);
   if (!album) return;
-  state.settings = { id, target: state.target, album: structuredClone(album) };
+  state.settings = { id, target: state.target, album: ensureAlbumRewardIds(structuredClone(album)) };
   renderAlbumSettings();
 }
 
@@ -383,8 +384,8 @@ function renderAlbumSettings() {
   if (!state.settings) return;
   const album = state.settings.album, cover = album.coverImageId || album.imageIds[0];
   const field = name => `data-settings-field="${name}"`;
-  const rewardHistory = album.decorationId || album.milestones.length ? `<details class="album-advanced"><summary>旧奖励记录（保留）</summary><p class="muted text-small">以下记录保留在相册资料中。当前奖励以“装饰与收集”的设置为准。</p>${album.decorationId ? `<p class="text-small">原装饰：${esc(album.decorationId)}</p>` : ''}${album.milestones.map(milestone => `<p class="text-small">集齐 ${milestone.target} 张 · 金币 ${milestone.coins}${milestone.decorationId ? ` · 装饰 ${esc(milestone.decorationId)}` : ''}</p>`).join('')}</details>` : '';
-  openModal('相册设置', `<form id="album-settings-form" class="album-settings-form"><div class="album-settings-cover">${cover ? `<img draggable="false" src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button type="button" class="small" data-action="settings-cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${field('title')} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${field('description')} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${field('styleGroupId')}>${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>在 PC 显示</b><small>控制 PC 端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnPc')} ${album.showOnPc ? 'checked' : ''}></label><label class="setting-switch"><div><b>在小程序显示</b><small>控制小程序端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnMobile')} ${album.showOnMobile ? 'checked' : ''}></label><label class="setting-switch"><div><b>设为购买包</b><small>开启后需要金币购买。</small></div><input type="checkbox" ${field('purchasable')} ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${field('price')} type="number" min="1" max="100000000" step="1" value="${album.price}" required></label>` : ''}<div class="notice"><b>相册集齐奖励</b><p class="text-small">奖励统一在“装饰与收集”中设置，避免在两个地方重复调整。</p><button type="button" class="small" data-action="open-collection-rewards">保存相册设置并前往装饰与收集</button></div>${rewardHistory}<button type="button" class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">保存相册设置</button></div><p class="muted text-small settings-save-note">点击即保存到后台，同时保存本页已调整的图片归属与顺序。</p></form>`);
+  const rewards = renderAlbumRewards(album, state.gameSettingDocument?.decorations || state.bootstrap?.gameSettings?.document?.decorations || []);
+  openModal('相册设置', `<form id="album-settings-form" class="album-settings-form"><div class="album-settings-cover">${cover ? `<img draggable="false" src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button type="button" class="small" data-action="settings-cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${field('title')} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${field('description')} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${field('styleGroupId')}>${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>在 PC 显示</b><small>控制 PC 端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnPc')} ${album.showOnPc ? 'checked' : ''}></label><label class="setting-switch"><div><b>在小程序显示</b><small>控制小程序端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnMobile')} ${album.showOnMobile ? 'checked' : ''}></label><label class="setting-switch"><div><b>设为购买包</b><small>开启后需要金币购买。</small></div><input type="checkbox" ${field('purchasable')} ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${field('price')} type="number" min="1" max="100000000" step="1" value="${album.price}" required></label>` : ''}${rewards}<button type="button" class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">保存相册设置</button></div><p class="muted text-small settings-save-note">点击即保存到后台，同时保存本页已调整的图片归属与顺序。</p></form>`);
 }
 
 function updateSettingsField(element) {
@@ -403,7 +404,7 @@ function updateSettingsField(element) {
   }
 }
 
-async function saveAlbumSettings({openRewards=false} = {}) {
+async function saveAlbumSettings() {
   const form = document.querySelector('#album-settings-form');
   if (!form || !form.reportValidity()) return;
   const settings = state.settings;
@@ -414,7 +415,6 @@ async function saveAlbumSettings({openRewards=false} = {}) {
   dirty();
   await saveDraft({quiet:true});
   closeModal();
-  if (openRewards) { state.page = 'decorations'; state.selected.clear(); state.albumId = null; }
   render(); toast('相册设置与本页整理已保存。');
 }
 
@@ -705,12 +705,9 @@ document.addEventListener('click', async event => {
   else if (action === 'close-history') { state.historyOpen = false; render(); }
   else if (action === 'album-open') { state.albumId = button.dataset.id; state.page = 'albums'; state.selected.clear(); render(); }
   else if (action === 'album-settings') openAlbumSettings(button.dataset.id);
-  else if (action === 'open-collection-rewards') {
-    busy(() => saveAlbumSettings({openRewards:true}));
-  }
   else if (action === 'settings-cover') openPicker('albums', targetDoc().albums.findIndex(album => album.id === state.settings.id), 'cover', true);
   else if (action === 'settings-add-milestone') {
-    state.settings.album.milestones.push({ target: Math.max(1, state.settings.album.imageIds.length), coins: 0, decorationId: null });
+    addAlbumReward(state.settings.album);
     renderAlbumSettings();
   }
   else if (action === 'settings-remove-milestone') { state.settings.album.milestones.splice(Number(button.dataset.row), 1); renderAlbumSettings(); }
@@ -782,7 +779,7 @@ document.addEventListener('click', async event => {
   else if (action === 'add-milestone') {
     const album = targetDoc().albums[Number(button.dataset.index)];
     album.milestones ||= [];
-    album.milestones.push({ target: Math.max(1, album.imageIds.length), coins: 0, decorationId: null }); dirty(); render();
+    addAlbumReward(album); dirty(); render();
   }
   else if (action === 'remove-milestone') { targetDoc().albums[Number(button.dataset.index)].milestones.splice(Number(button.dataset.row), 1); dirty(); render(); }
   else if (action === 'analyze') busy(async () => {

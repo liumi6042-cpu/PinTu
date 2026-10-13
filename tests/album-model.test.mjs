@@ -98,7 +98,8 @@ test('empty albums and reduced memberships retain old rewards as editable planni
   const savedMilestones = structuredClone(album.milestones);
   album.imageIds = []; album.coverImageId = null;
   mobile(value).albums.push(emptyAlbum('empty-album'));
-  assert.deepEqual(validateDraft(value, source).albums[0].milestones, savedMilestones);
+  assert.deepEqual(validateDraft(value, source).albums[0].milestones,
+    savedMilestones.map(milestone => ({id: 'milestone-' + milestone.target, ...milestone})));
   assert.ok(codes(value).includes('ALBUM_REWARDS_REQUIRE_ADAPTER'));
   assert.ok(codes(value).includes('ALBUM_RUNTIME_ADAPTER_REQUIRED'));
 });
