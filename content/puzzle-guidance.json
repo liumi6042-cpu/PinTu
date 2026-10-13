@@ -866,5 +866,75 @@
     "complexity": 3,
     "preferredCount": 300,
     "reason": "先拼巨鲸和浮岛城堡，再沿云海与飞鸟分区连接。"
+  },
+  "coral-garden": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "cat-library": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "skate-garden": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "amber-cabinet": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "vermilion-garden": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "lantern-market": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "tropical-aviary": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "woodland-friends": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "star-observatory": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
+  },
+  "floating-islands": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议从清晰的轮廓开始，再按颜色分区连接。"
   }
 }

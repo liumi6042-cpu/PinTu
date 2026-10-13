@@ -56,7 +56,7 @@ export function createMobileService(options={}){
  const tasks=createMobileTasks({db,readProfile,saveProfile});
  const dailyContent=options.dailyContent??null;
  const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??engine.GALLERY_VISIBLE_PHOTOS,dailyContent});
- dailyContent?.start();
+ if(!options.deferDailyStart)dailyContent?.start();
  const galleryPhotos=now=>dailyContent?.galleryPhotos(now)??engine.GALLERY_VISIBLE_PHOTOS;
  const readRoom=roomId=>{const row=db.prepare('SELECT data,closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!row||row.closed_at)fail(404,'ROOM_NOT_FOUND','房间不存在或已关闭');return JSON.parse(row.data);};
  const saveRoom=room=>db.prepare('INSERT INTO mobile_rooms VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET completed_at=excluded.completed_at,closed_at=excluded.closed_at,data=excluded.data').run(room.id,room.ownerId,room.visibility,room.mobilePieces,room.createdAt,room.completedAt,room.closedAt??null,JSON.stringify(room));
@@ -275,5 +275,5 @@ export function createMobileService(options={}){
    catch(error){db.exec('ROLLBACK');throw error;}
   }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'独立拼图服务暂时不可用',code:error.code??(error.status?'ROOM_ERROR':'INTERNAL_ERROR'),...(error.profile?{profile:error.profile}:{}),...(error.freeRemaining?{freeRemaining:error.freeRemaining}:{}),...(error.ownedRooms?{ownedRooms:error.ownedRooms}:{}),...(error.phrases?{phrases:error.phrases}:{})}};}
  }
- return {handle,close(){dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
+ return {handle,startDaily(){dailyContent?.start();},close(){dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
 }

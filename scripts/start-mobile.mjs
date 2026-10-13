@@ -1,0 +1,10 @@
+import {existsSync} from 'node:fs';import {spawnSync} from 'node:child_process';import {resolve} from 'node:path';import {fileURLToPath} from 'node:url';
+const root=fileURLToPath(new URL('..',import.meta.url));process.chdir(root);
+if(Number(process.versions.node.split('.')[0])<24)throw Error('Mobile V3 requires Node.js 24 or newer');
+if(!existsSync('outputs/mobile/engine.mjs')||!existsSync('outputs/h5/index.html'))throw Error('Run npm run build:mobile first');
+const port=process.env.H5_PORT||'3211';
+const env={...process.env,H5_PORT:port,H5_HOST:'127.0.0.1',H5_ALLOWED_ORIGINS:`http://127.0.0.1:${port},http://localhost:${port}`,H5_PUBLIC_API_BASE:'/h5',H5_PUBLIC_GAME_BASE:'/',H5_SESSION_DB:resolve('data/mobile-v3-preview/sessions.sqlite'),MOBILE_DB:resolve('data/mobile-v3-preview/mobile.sqlite'),MOBILE_ASSET_DIR:resolve('public'),H5_AD_ASSISTANCE_ENABLED:'true',H5_REWARDED_AD_UNIT:'1054324'};
+const sharedDailyConfiguration=resolve('../content-admin/work/daily-bridge/configuration.json');
+if(!env.MOBILE_DAILY_CONFIG&&existsSync(sharedDailyConfiguration))env.MOBILE_DAILY_CONFIG=sharedDailyConfiguration;
+if(env.MOBILE_DAILY_CONFIG&&!env.MOBILE_DAILY_APPEARANCES)env.MOBILE_DAILY_APPEARANCES=resolve('work/daily-appearances');
+const result=spawnSync(process.execPath,['server/h5-gateway.mjs'],{cwd:root,env,stdio:'inherit',windowsHide:true});if(result.error)throw result.error;process.exitCode=result.status??1;

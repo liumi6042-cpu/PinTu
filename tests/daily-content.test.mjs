@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdirSync,mkdtempSync,readFileSync,writeFileSync,readdirSync,rmSync} from 'node:fs';
+import {existsSync,mkdirSync,mkdtempSync,readFileSync,writeFileSync,readdirSync,rmSync} from 'node:fs';
+import {createServer} from 'node:http';
 import {resolve,join,sep} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {randomBytes} from 'node:crypto';
 import {createDailyContent,dailyConfigurationDigest,dailyContentDate} from '../server/daily-content.mjs';
 import {createMobileCollection,MOBILE_COLLECTION_CATALOG as catalog} from '../server/mobile-collection.mjs';
 import {createMobileService} from '../server/mobile-service.mjs';
-import {PHOTOS,GALLERY_VISIBLE_PHOTOS,dailyPuzzle} from '../outputs/mobile/engine.mjs';
+import {createH5Gateway} from '../server/h5-gateway.mjs';
+import {PHOTOS,RESTORABLE_PHOTOS,GALLERY_VISIBLE_PHOTOS,dailyPuzzle} from '../outputs/mobile/engine.mjs';
 
 const rid=()=>randomBytes(16).toString('hex'),owner='a'.repeat(64);
 const daily=PHOTOS.find(photo=>photo.dailyOnly),otherDaily=PHOTOS.find(photo=>photo.dailyOnly&&photo.id!==daily.id);
@@ -16,8 +18,9 @@ function fixture(entries=[{date:'2026-10-13',imageId:daily.id,albumId:'daily-ani
  const root=resolve('work');mkdirSync(root,{recursive:true});const dir=mkdtempSync(join(root,'daily-content-test-')),configurationPath=join(dir,'configuration.json'),appearanceDir=join(dir,'appearances');
  let clock=Date.parse('2026-10-12T04:00:00Z');
  const write=(plans=entries,groups=albums)=>{const value={schema:'jigsaw-daily-content/v1',timezone:'Asia/Shanghai',entries:plans,albums:groups};writeFileSync(configurationPath,JSON.stringify({...value,configDigest:dailyConfigurationDigest(value)}));};write();
- const content=createDailyContent({configurationPath,appearanceDir,photos:PHOTOS,fallback:dailyPuzzle,now:()=>clock});
- return {content,configurationPath,appearanceDir,write,get now(){return clock;},set now(value){clock=value;},close(){content.close();assert.ok(dir.startsWith(root+sep));rmSync(dir,{recursive:true,force:true});}};
+ const writeV2=({entries:plans=[],candidates=[],pool=[],groups=albums}={})=>{const value={schema:'jigsaw-daily-content/v2',timezone:'Asia/Shanghai',entries:plans,automaticCandidates:candidates,fallbackImageIds:pool,albums:groups};writeFileSync(configurationPath,JSON.stringify({...value,configDigest:dailyConfigurationDigest(value)}));};
+ const content=createDailyContent({configurationPath,appearanceDir,photos:RESTORABLE_PHOTOS,fallback:dailyPuzzle,now:()=>clock,randomInt:(min,max)=>max-1});
+ return {content,configurationPath,appearanceDir,write,writeV2,get now(){return clock;},set now(value){clock=value;},close(){content.close();assert.ok(dir.startsWith(root+sep));rmSync(dir,{recursive:true,force:true});}};
 }
 
 test('public schedule freezes actual current appearance, skips past plans and rejects changed digest/unavailable assets',()=>{
@@ -124,4 +127,75 @@ test('default service keeps static daily/gallery and failed receipt writes canno
   writeFileSync(f.appearanceDir,'file blocks directory');
   assert.throws(()=>f.content.tick(f.now));
  }finally{service.close();f.close();}
+});
+
+test('manual today outranks undated candidates; auto selections never repeat unpublished work and lock all instances for the day',()=>{
+ const f=fixture(),scheduled=PHOTOS.find(photo=>!photo.dailyOnly),free=GALLERY_VISIBLE_PHOTOS.find(photo=>photo.id!==scheduled.id);
+ const plans=[{date:'2026-10-12',imageId:scheduled.id,albumId:'daily-anime'}],candidates=[{imageId:daily.id,albumId:'daily-anime'},{imageId:otherDaily.id,albumId:'daily-anime'}];
+ let second;
+ try{
+  f.writeV2({entries:plans,candidates,pool:[scheduled.id,daily.id,otherDaily.id,free.id]});
+  assert.equal(f.content.tick(f.now).source,'scheduled');assert.equal(f.content.select(f.now).id,scheduled.id);
+  f.now=Date.parse('2026-10-13T01:00:00Z');const automatic=f.content.tick(f.now);
+  assert.equal(automatic.source,'automatic');assert.equal(automatic.imageId,otherDaily.id);assert.equal(automatic.albumId,'daily-anime');
+  f.writeV2({entries:[...plans,{date:'2026-10-13',imageId:free.id,albumId:'daily-anime'}],candidates,pool:[free.id]});
+  second=createDailyContent({configurationPath:f.configurationPath,appearanceDir:f.appearanceDir,photos:RESTORABLE_PHOTOS,fallback:dailyPuzzle,now:()=>f.now,randomInt:min=>min});
+  assert.equal(second.select(f.now).id,otherDaily.id,'persisted actual selection survives later config or another instance');
+  f.writeV2({entries:plans,candidates,pool:[scheduled.id,daily.id,otherDaily.id,free.id]});
+  f.now=Date.parse('2026-10-14T01:00:00Z');assert.equal(f.content.tick(f.now).imageId,daily.id);
+  f.now=Date.parse('2026-10-15T01:00:00Z');const exhausted=f.content.tick(f.now);
+  assert.equal(exhausted.source,'library');assert.equal(exhausted.imageId,free.id);assert.equal(exhausted.albumId,null);assert.equal(exhausted.planned,false);
+  assert.deepEqual(readdirSync(f.appearanceDir).sort(),['2026-10-12.json','2026-10-13.json','2026-10-14.json','2026-10-15.json']);
+ }finally{second?.close();f.close();}
+});
+
+test('all-album fallback includes configured archived, hidden and paid pictures but excludes unreleased manual works and unassigned daily defaults',()=>{
+ const archived=RESTORABLE_PHOTOS.find(photo=>photo.id==='coral-garden'),future=PHOTOS.find(photo=>!photo.dailyOnly),f=fixture();let service;
+ const paid={...album('new-paid-album',false),purchasable:true,price:180};
+ try{
+  f.writeV2({entries:[{date:'2026-10-20',imageId:future.id,albumId:paid.id}],pool:[archived.id,future.id],groups:[paid]});
+  const fact=f.content.tick(f.now);assert.equal(fact.source,'library');assert.equal(fact.imageId,archived.id);
+  assert.ok(!f.content.galleryPhotos(f.now).some(photo=>photo.id===archived.id),'daily fallback does not expose hidden archived work in ordinary gallery');
+  service=createMobileService({dailyContent:f.content,now:()=>f.now});
+  const profile=()=>service.handle({identity:owner,method:'GET',url:'/api/mobile/profile'}).data;
+  const before=profile(),created=service.handle({identity:owner,method:'POST',url:'/api/rooms',body:{mode:'daily',pieces:108,requestId:rid()}});
+  assert.equal(created.status,201);assert.equal(created.data.room.puzzle.imageId,archived.id);assert.equal(created.data.room.requestedPieces,108);
+  const after=profile();assert.equal(after.supply.create,before.supply.create);assert.equal(after.starterSelectionAvailable,before.starterSelectionAvailable);
+  assert.deepEqual(after.collection.ownedPackIds,[]);assert.deepEqual(after.collection.ownedImageIds,[]);
+  f.now=Date.parse('2026-10-13T01:00:00Z');f.writeV2({entries:[{date:'2026-10-20',imageId:future.id,albumId:paid.id}],pool:[future.id],groups:[paid]});
+  assert.throws(()=>f.content.tick(f.now),error=>error.code==='DAILY_CONTENT_INVALID','v2 empty eligible pool does not return old unassigned three');
+ }finally{service?.close();f.close();}
+});
+
+test('new paid target permits free daily trial without ownership and becomes purchase-gated after actual next-day collection',()=>{
+ const paid={...album('new-paid-album'),purchasable:true,price:180},f=fixture(),db=new DatabaseSync(':memory:');let service;
+ try{
+  f.writeV2({candidates:[{imageId:daily.id,albumId:paid.id}],pool:[daily.id],groups:[paid]});
+  const collection=createMobileCollection({db,photos:f.content.collectiblePhotos(),dailyContent:f.content});
+  service=createMobileService({dailyContent:f.content,now:()=>f.now});
+  const created=service.handle({identity:owner,method:'POST',url:'/api/rooms',body:{mode:'daily',requestId:rid()}});
+  assert.equal(created.status,201);assert.equal(created.data.room.puzzle.imageId,daily.id);assert.equal(collection.ownsImage(owner,daily.id,f.now),false);
+  f.now=Date.parse('2026-10-13T01:00:00Z');const view=collection.view(owner,f.now);
+  assert.equal(view.albums.find(item=>item.id===paid.id).images[0].id,daily.id);
+  assert.equal(collection.randomAllowed(owner,daily.id,f.now),false);assert.equal(collection.ownsImage(owner,daily.id,f.now),false);assert.ok(collection.packedImageIds(f.now).includes(daily.id));
+  assert.deepEqual(collection.summary(owner,f.now).ownedPackIds,[]);
+ }finally{service?.close();db.close();f.close();}
+});
+
+test('gateway records no first appearance before serving or after a failed bind, then activates on successful listening',async()=>{
+ const f=fixture(),occupied=createServer();let gateway;
+ try{
+  f.writeV2({candidates:[{imageId:daily.id,albumId:'daily-anime'}],pool:[daily.id]});
+  const service=createMobileService({dailyContent:f.content,now:()=>f.now,deferDailyStart:true});
+  assert.equal(existsSync(f.appearanceDir),false,'constructing service alone does not confirm publication');
+  gateway=createH5Gateway({upstream:'http://127.0.0.1',allowedOrigins:['http://127.0.0.1'],mobileService:service});
+  await new Promise(resolve=>occupied.listen(0,'127.0.0.1',resolve));
+  const error=await new Promise(resolve=>{gateway.once('error',resolve);gateway.listen(occupied.address().port,'127.0.0.1');});
+  assert.equal(error.code,'EADDRINUSE');assert.equal(existsSync(f.appearanceDir),false,'failed listen never publishes a candidate');
+  await new Promise((resolve,reject)=>{gateway.once('error',reject);gateway.listen(0,'127.0.0.1',resolve);});
+  assert.deepEqual(readdirSync(f.appearanceDir),['2026-10-12.json']);assert.equal(f.content.select(f.now).id,daily.id);
+ }finally{
+  if(gateway)await new Promise(resolve=>gateway.close(resolve));
+  await new Promise(resolve=>occupied.close(resolve));f.close();
+ }
 });

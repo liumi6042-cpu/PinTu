@@ -272,6 +272,7 @@ export function createH5Gateway(options){
     cleanup.run(Date.now());db.prepare('DELETE FROM h5_ad_watches WHERE expires_at<?').run(Date.now()-86400000);
     db.prepare('DELETE FROM h5_help WHERE expires_at<?').run(Date.now()-86400000);
   },60000);cleanTimer.unref();
+  server.once('listening',()=>options.mobileService?.startDaily?.());
   server.on('close',()=>{clearInterval(cleanTimer);db.close();options.mobileService?.close();});
   return server;
 }
@@ -282,9 +283,9 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
   if(process.env.MOBILE_DAILY_CONFIG){
     const {createDailyContent}=await import('./daily-content.mjs');
     const engine=await import('../outputs/mobile/engine.mjs');
-    dailyContent=createDailyContent({configurationPath:process.env.MOBILE_DAILY_CONFIG,appearanceDir:process.env.MOBILE_DAILY_APPEARANCES||resolve('work/daily-appearances'),photos:engine.PHOTOS,fallback:engine.dailyPuzzle});
+    dailyContent=createDailyContent({configurationPath:process.env.MOBILE_DAILY_CONFIG,appearanceDir:process.env.MOBILE_DAILY_APPEARANCES||resolve('work/daily-appearances'),photos:engine.RESTORABLE_PHOTOS,fallback:engine.dailyPuzzle});
   }
-  const mobileService=createMobileService({databasePath:process.env.MOBILE_DB||resolve('data/mobile-v3.sqlite'),adEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true'&&Boolean(process.env.H5_REWARDED_AD_UNIT),dailyContent});
+  const mobileService=createMobileService({databasePath:process.env.MOBILE_DB||resolve('data/mobile-v3.sqlite'),adEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true'&&Boolean(process.env.H5_REWARDED_AD_UNIT),dailyContent,deferDailyStart:true});
   const server=createH5Gateway({
     publicApiBase:process.env.H5_PUBLIC_API_BASE,publicGameBase:process.env.H5_PUBLIC_GAME_BASE,
     mobileService,assetDir:process.env.MOBILE_ASSET_DIR||resolve('public'),

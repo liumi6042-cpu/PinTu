@@ -8,7 +8,6 @@ const reject=(status,code,message)=>{throw Object.assign(new Error(message),{sta
 export function createMobileCollection({db,photos,dailyContent=null}){
  const photoById=new Map(photos.map(photo=>[photo.id,photo]));
  const packById=new Map(catalog.packs.map(pack=>[pack.id,pack]));
- for(const album of dailyContent?.targetAlbums()??[])if(album.purchasable&&!packById.has(album.id))reject(503,'DAILY_PACK_UNSUPPORTED','每日图片的购买相册尚未接入。');
  const decorationById=new Map(catalog.decorations.map(decoration=>[decoration.id,decoration]));
  const packsByImage=new Map();
  for(const pack of catalog.packs)for(const imageId of pack.imageIds){
@@ -34,9 +33,7 @@ export function createMobileCollection({db,photos,dailyContent=null}){
  function ownsDecoration(owner,decorationId){return decorationById.get(decorationId)?.source==='default'||has(owner,'decoration',decorationId);}
  function equipped(owner){const item=decorationById.get(wallet(owner).equipped);return item&&ownsDecoration(owner,item.id)?{...item}:null;}
  function overlay(now){
-  const entries=dailyContent?.albumEntries(now)??[];
-  for(const entry of entries)if(entry.album.purchasable&&!packById.has(entry.album.id))reject(503,'DAILY_PACK_UNSUPPORTED','每日图片的购买相册尚未接入。');
-  return entries;
+  return dailyContent?.albumEntries(now)??[];
  }
  function packImages(pack,now){return [...new Set([...pack.imageIds,...overlay(now).filter(entry=>entry.album.id===pack.id).flatMap(entry=>entry.imageIds)])];}
  function summary(owner,now=Date.now()){
@@ -55,10 +52,10 @@ export function createMobileCollection({db,photos,dailyContent=null}){
   db.prepare('UPDATE mobile_collection_wallets SET coins=coins+?,fragments=fragments+? WHERE owner=?').run(coins,fragments,owner);
   return true;
  }
- function imagePacks(imageId,now){return [...new Set([...(packsByImage.get(imageId)??[]),...overlay(now).filter(entry=>packById.has(entry.album.id)&&entry.imageIds.includes(imageId)).map(entry=>entry.album.id)])];}
+ function imagePacks(imageId,now){return [...new Set([...(packsByImage.get(imageId)??[]),...overlay(now).filter(entry=>(packById.has(entry.album.id)||entry.album.purchasable)&&entry.imageIds.includes(imageId)).map(entry=>entry.album.id)])];}
  function ownsImage(owner,imageId,now=Date.now()){return imagePacks(imageId,now).some(packId=>has(owner,'pack',packId));}
  function randomAllowed(owner,imageId,now=Date.now()){return !imagePacks(imageId,now).length||ownsImage(owner,imageId,now);}
- function packedImageIds(now=Date.now()){return [...new Set([...packsByImage.keys(),...overlay(now).filter(entry=>packById.has(entry.album.id)).flatMap(entry=>entry.imageIds)])];}
+ function packedImageIds(now=Date.now()){return [...new Set([...packsByImage.keys(),...overlay(now).filter(entry=>packById.has(entry.album.id)||entry.album.purchasable).flatMap(entry=>entry.imageIds)])];}
  function photoView(photo){return {id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc};}
  function view(owner,now){
   const s=summary(owner,now),entries=db.prepare('SELECT image_id,pieces FROM mobile_collection_artworks WHERE owner=?').all(owner),collected=new Map();
@@ -73,7 +70,7 @@ export function createMobileCollection({db,photos,dailyContent=null}){
    milestones:catalog.milestones.map(m=>{const earned=milestones.some(row=>row.album_id===pack.id&&row.target===m.target);return {id:pack.id+'-'+m.target,target:m.target,coins:m.coins,...(m.albumDecoration?{decorationId:pack.decorationId}:{}),earned,claimed:earned,claimable:false};})
   };});
   // Free-gallery works remain collectable, without paid-pack set rewards.
-  const basicImages=photos.filter(photo=>photo.galleryVisible!==false&&!packsByImage.has(photo.id)&&!managed.has(photo.id));
+  const basicImages=photos.filter(photo=>photo.status==='published'&&photo.galleryVisible!==false&&!packsByImage.has(photo.id)&&!managed.has(photo.id));
   albums.push({id:'everyday-gallery',title:'日常拾光',description:'在自由图库里遇见的每一幅画，也值得收藏。',images:basicImages.map(photo=>imageView(photo.id)),collected:basicImages.filter(photo=>collected.has(photo.id)).length,total:basicImages.length,milestones:[]});
   for(const {album,imageIds} of additions)if(!packById.has(album.id)){
    const existing=albums.find(item=>item.id===album.id);
