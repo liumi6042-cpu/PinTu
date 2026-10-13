@@ -1,6 +1,7 @@
 import { createDragPayload, parseDragPayload } from './album-drag.js';
 import { dailyImageState, tomorrowDate, nextOpenDailyDate, automaticDailyPlan } from './daily-state.js';
 import { renderTaskRewards, readTaskRewardForm, updateTaskRewardInput } from './task-rewards-ui.js';
+import { renderGameSettings, readGameSettingsForm, updateGameSettingInput, addGameMilestone, removeGameMilestone, renderGameLevelPreview, renderGameDecorationPreview } from './game-settings-ui.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
@@ -22,10 +23,14 @@ const state = {
   versionAdvancedOpen: false,
   historyOpen: false, settings: null, dragGesture: null, suppressClickUntil: 0, suppressClickPoint: null,
   taskRewards: null, taskRewardDocument: null, taskRewardsDirty: false, taskRewardConflict: false,
+  gameSettings: null, gameSettingDocument: null, gameSettingsDirty: false, gameSettingConflict: false,
 };
+Object.assign(AUDIT_NAMES, {'initialize-game-settings':'导入成长与装饰设置','save-game-settings':'保存成长与装饰设置'});
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const attr = esc;
 const doc = () => state.draft?.document;
+const isGameSettingsPage = () => ['growth', 'decorations'].includes(state.page);
+const hasUnsavedEdits = () => state.dirty || state.taskRewardsDirty || state.gameSettingsDirty;
 const assets = () => Array.isArray(state.bootstrap?.source?.assets) ? state.bootstrap.source.assets : Object.values(state.bootstrap?.source?.assets || {});
 const assetById = id => assets().find(asset => asset.id === id);
 const managed = id => doc()?.assets?.[id] || {};
@@ -139,6 +144,55 @@ async function saveTaskRewards(form = document.querySelector('#task-rewards-form
   }
 }
 
+function setGameSettings(settings) {
+  state.gameSettings = settings;
+  state.gameSettingDocument = structuredClone(settings.document);
+  state.gameSettingsDirty = false;
+  state.gameSettingConflict = false;
+}
+
+function markGameSettingsDirty() {
+  state.gameSettingsDirty = true;
+  const button = document.querySelector('#game-settings-save'); if (button) button.disabled = false;
+  const status = document.querySelector('#game-settings-state');
+  if (status) { status.textContent = '游戏设置有未保存修改'; status.className = 'dirty'; }
+}
+
+function updateGameSettingsField(element) {
+  updateGameSettingInput(state.gameSettingDocument, element.name, element.type === 'checkbox' ? element.checked : element.value, element.type);
+  markGameSettingsDirty();
+  const preview = document.querySelector('#game-level-preview');
+  if (preview) preview.innerHTML = renderGameLevelPreview(state.gameSettingDocument);
+  const decoration = /^decorations\.(\d+)\./.exec(element.name);
+  if (decoration) {
+    const index = Number(decoration[1]), node = document.querySelector(`[data-decoration-preview="${index}"]`);
+    if (node) node.innerHTML = renderGameDecorationPreview(state.gameSettingDocument.decorations[index]);
+  }
+  const fixedRefill = document.querySelector('[name="energy.upgradeEnergy"]');
+  if (fixedRefill) fixedRefill.disabled = state.gameSettingDocument.energy.upgradeRefill !== 'fixed';
+  for (const [name, attribute, value] of [
+    ['energy.initial','max',state.gameSettingDocument.energy.baseCap],
+    ['energy.maximumCap','min',state.gameSettingDocument.energy.baseCap],
+    ['progression.laterXpMaximum','min',state.gameSettingDocument.progression.earlyXp[9]],
+    ['collection.completionFragmentMaximum','min',state.gameSettingDocument.collection.completionFragmentMinimum],
+  ]) {
+    const input = document.querySelector(`[name="${name}"]`);
+    if (input && value !== '' && Number.isFinite(Number(value))) input.setAttribute(attribute, String(value));
+  }
+}
+
+async function saveGameSettings(form = document.querySelector('#game-settings-form')) {
+  if (!state.gameSettingsDirty || !state.gameSettings || !form) return;
+  try {
+    const settings = await api('/api/game-settings', {method:'PUT',body:{revision:state.gameSettings.revision,document:readGameSettingsForm(form,state.gameSettingDocument)}});
+    setGameSettings(settings); state.bootstrap.gameSettings = settings;
+    render(); toast('游戏设置已保存，之后的拼合、升级和新奖励会采用新规则。');
+  } catch (error) {
+    if (error.status === 409) { state.gameSettingConflict = true; render(); }
+    toast(error.message, true);
+  }
+}
+
 async function refreshDaily() {
   if (!state.session?.authenticated || !state.draft) return;
   const result = await api('/api/daily/status');
@@ -153,8 +207,8 @@ async function refreshDaily() {
     const albumId = state.albumId;
     await loadDraft(state.draft.id);
     state.albumId = doc().albums.some(album => album.id === albumId) ? albumId : null;
-    if (!modal.open && !(state.page === 'task-rewards' && state.taskRewardsDirty)) render();
-  } else if (factsChanged && !state.dirty && !state.taskRewardsDirty && !modal.open) render();
+    if (!modal.open && !(state.page === 'task-rewards' && state.taskRewardsDirty) && !(isGameSettingsPage() && state.gameSettingsDirty)) render();
+  } else if (factsChanged && !hasUnsavedEdits() && !modal.open) render();
 }
 
 async function loadDraft(id) {
@@ -173,6 +227,7 @@ async function initialize({ keepDraft = false } = {}) {
   if (!state.session.authenticated) { renderAuth(); return; }
   state.bootstrap = await api('/api/bootstrap');
   if (!(keepDraft && state.taskRewardsDirty) && state.bootstrap.taskRewards) setTaskRewards(state.bootstrap.taskRewards);
+  if (!(keepDraft && state.gameSettingsDirty) && state.bootstrap.gameSettings) setGameSettings(state.bootstrap.gameSettings);
   if (!(keepDraft && state.draft)) {
     const id = state.bootstrap.activeDraftId || state.bootstrap.drafts?.[0]?.id;
     if (id) await loadDraft(id);
@@ -201,7 +256,7 @@ function renderAuth(error = '') {
     busy(async () => {
       try {
         await api(setup ? '/api/setup' : '/api/login', { method: 'POST', body: { username: data.get('username'), password: data.get('password') } });
-        await initialize({ keepDraft: state.dirty || state.taskRewardsDirty });
+        await initialize({ keepDraft: hasUnsavedEdits() });
       } catch (error) { event.target.querySelector('.auth-error').textContent = error.message; }
     });
   });
@@ -211,12 +266,13 @@ function render() {
   if (state.dragGesture) clearDragFeedback();
   if (!state.session?.authenticated) { renderAuth(); return; }
   const unassigned = assets().filter(asset => !albumFor(asset.id)).length;
-  const tabs = [['albums', `相册与未分配 · ${unassigned}`], ['assets', `全部图片 · ${assets().length}`], ['task-rewards', '任务奖励']];
-  app.innerHTML = `<div class="album-shell"><header class="topbar"><div class="workspace-brand"><span class="brand-mark">✳</span><strong>相册工作室</strong></div><span class="workspace-scope">PC 与小程序共用</span><div class="draft-control"><span id="save-state" class="dirty ${state.dirty ? '' : 'saved'}">${state.page === 'task-rewards' ? state.dirty ? '相册有未保存编辑' : '相册已保存' : state.dirty ? '有未保存编辑' : '已保存'}</span><button class="primary" data-action="save" ${!state.dirty ? 'disabled' : ''}>${state.page === 'task-rewards' ? '保存相册' : '保存'}</button><button data-action="more" class="quiet">更多 ···</button></div></header><main class="album-main"><nav class="workspace-tabs" aria-label="相册工作台">${tabs.map(([id, name]) => `<button data-action="page" data-page="${id}" class="${state.page === id ? 'active' : ''}" ${state.page === id ? 'aria-current="page"' : ''}>${name}</button>`).join('')}</nav><div class="main-content" id="page-content">${state.draft ? renderPage() : '<div class="empty">暂时没有可整理的内容，请重新载入。</div>'}</div></main>${state.historyOpen ? renderHistoryDrawer() : ''}</div>`;
+  const tabs = [['albums', `相册与未分配 · ${unassigned}`], ['assets', `全部图片 · ${assets().length}`], ['task-rewards', '任务奖励'], ['growth', '成长与体力'], ['decorations', '装饰与收集']];
+  app.innerHTML = `<div class="album-shell"><header class="topbar"><div class="workspace-brand"><span class="brand-mark">✳</span><strong>拼图管理</strong></div><span class="workspace-scope">PC 与小程序共用</span><div class="draft-control"><span id="save-state" class="dirty ${state.dirty ? '' : 'saved'}">${(state.page === 'task-rewards' || isGameSettingsPage()) ? state.dirty ? '相册有未保存编辑' : '相册已保存' : state.dirty ? '有未保存编辑' : '已保存'}</span><button class="primary" data-action="save" ${!state.dirty ? 'disabled' : ''}>${(state.page === 'task-rewards' || isGameSettingsPage()) ? '保存相册' : '保存'}</button><button data-action="more" class="quiet">更多 ···</button></div></header><main class="album-main"><nav class="workspace-tabs" aria-label="拼图管理导航">${tabs.map(([id, name]) => `<button data-action="page" data-page="${id}" class="${state.page === id ? 'active' : ''}" ${state.page === id ? 'aria-current="page"' : ''}>${name}</button>`).join('')}</nav><div class="main-content" id="page-content">${state.draft ? renderPage() : '<div class="empty">暂时没有可整理的内容，请重新载入。</div>'}</div></main>${state.historyOpen ? renderHistoryDrawer() : ''}</div>`;
 }
 
 function renderPage() {
   if (state.page === 'task-rewards') return renderTaskRewards({document:state.taskRewardDocument,dirty:state.taskRewardsDirty,conflict:state.taskRewardConflict,updatedAt:date(state.taskRewards?.updatedAt)});
+  if (isGameSettingsPage()) return renderGameSettings({document:state.gameSettingDocument,dirty:state.gameSettingsDirty,conflict:state.gameSettingConflict,updatedAt:date(state.gameSettings?.updatedAt),section:state.page});
   if (state.page === 'assets' || state.page === 'unassigned') return renderAssets();
   return renderAlbums();
 }
@@ -602,6 +658,12 @@ document.addEventListener('click', async event => {
     if (state.taskRewardsDirty && !await confirmAction('重新载入会替换本窗口未保存的任务奖励修改，确定继续？')) return;
     setTaskRewards(await api('/api/task-rewards')); render();
   });
+  else if (action === 'reload-game-settings') busy(async () => {
+    if (state.gameSettingsDirty && !await confirmAction('重新载入会替换未保存的成长、体力、装饰和收集设置，确定继续？')) return;
+    setGameSettings(await api('/api/game-settings')); render();
+  });
+  else if (action === 'add-game-milestone') { addGameMilestone(state.gameSettingDocument); markGameSettingsDirty(); render(); }
+  else if (action === 'remove-game-milestone') { removeGameMilestone(state.gameSettingDocument, Number(button.dataset.index)); markGameSettingsDirty(); render(); }
   else if (action === 'more') openModal('更多', '<div class="more-menu"><button data-action="open-history">历史与备份 <span>以前的副本、检查记录和更新文件</span></button><button data-action="styles">管理画风 <span>编辑图片与相册的画风分组</span></button><button data-action="logout">退出账号</button></div>');
   else if (action === 'open-history') { closeModal(); state.historyOpen = true; render(); }
   else if (action === 'close-history') { state.historyOpen = false; render(); }
@@ -639,8 +701,8 @@ document.addEventListener('click', async event => {
     removeAlbumImages(album, ids); state.selected.clear(); dirty(); render();
   }
   else if (action === 'logout') {
-    if ((state.dirty || state.taskRewardsDirty) && !await confirmAction('还有未保存编辑。退出会放弃本窗口编辑，确定退出？')) return;
-    busy(async () => { await api('/api/logout', { method: 'POST', body: {} }); state.draft = null; state.dirty = false; state.taskRewardsDirty = false; state.taskRewardDocument = null; state.taskRewards = null; await initialize(); });
+    if (hasUnsavedEdits() && !await confirmAction('还有未保存编辑。退出会放弃本窗口编辑，确定退出？')) return;
+    busy(async () => { await api('/api/logout', { method: 'POST', body: {} }); state.draft = null; state.dirty = false; state.taskRewardsDirty = false; state.taskRewardDocument = null; state.taskRewards = null; state.gameSettingsDirty = false; state.gameSettingDocument = null; state.gameSettings = null; await initialize(); });
   }
   else if (action === 'close-modal') closeModal();
   else if (action === 'asset-detail') openAsset(button.dataset.id);
@@ -697,6 +759,7 @@ document.addEventListener('click', async event => {
 
 document.addEventListener('change', event => {
   const element = event.target;
+  if (element.form?.id === 'game-settings-form') { updateGameSettingsField(element); return; }
   if (element.id === 'export-target') { if (TARGETS[element.value]) state.exportTarget = element.value; render(); return; }
   if (element.dataset.settingsField || element.dataset.settingsRow !== undefined) { updateSettingsField(element); return; }
   if (element.dataset.bind) {
@@ -738,6 +801,7 @@ document.addEventListener('change', event => {
 let searchTimer;
 document.addEventListener('input', event => {
   const element = event.target;
+  if (element.form?.id === 'game-settings-form') { updateGameSettingsField(element); return; }
   if (element.form?.id === 'task-rewards-form') {
     updateTaskRewardInput(state.taskRewardDocument, element.name, element.value);
     state.taskRewardsDirty = true;
@@ -763,6 +827,7 @@ document.addEventListener('submit', event => {
   const form = event.target;
   if (form.id === 'auth-form') return;
   if (form.id === 'task-rewards-form') {event.preventDefault();busy(() => saveTaskRewards(form));return;}
+  if (form.id === 'game-settings-form') {event.preventDefault();busy(() => saveGameSettings(form));return;}
   if (!['asset-form', 'album-settings-form', 'style-form', 'new-album-form', 'publish-form', 'restore-form', 'reimport-form'].includes(form.id)) return;
   event.preventDefault();
   const data = new FormData(form);
@@ -836,12 +901,12 @@ modal.addEventListener('change', event => {
   if (event.target.name === 'dailyEnabled' && event.target.checked) event.target.form.elements.dailyAutoPublish.checked = true;
   updateDailyControls(event.target.form);
 });
-window.addEventListener('beforeunload', event => { if (state.dirty || state.taskRewardsDirty) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => { if (hasUnsavedEdits()) { event.preventDefault(); event.returnValue = ''; } });
 window.addEventListener('keydown', event => {
   if (event.key === 'Escape' && state.dragGesture) { clearDragFeedback(); event.preventDefault(); return; }
   if (confirmation.open) return;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && state.session?.authenticated) {
-    event.preventDefault(); busy(async () => { if (state.page === 'task-rewards') await saveTaskRewards(); else {await saveDraft(); render();} });
+    event.preventDefault(); busy(async () => { if (state.page === 'task-rewards') await saveTaskRewards(); else if (isGameSettingsPage()) await saveGameSettings(); else {await saveDraft(); render();} });
   }
 });
 initialize().catch(error => { app.innerHTML = `<main class="initial-loading"><h2>暂时无法打开工作室</h2><p>${esc(error.message)}</p><button data-action="retry">重试</button></main>`; });
