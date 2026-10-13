@@ -8,10 +8,16 @@ import {createAuth} from './auth.mjs';
 import {readSource,previewFile,verifyDelivery} from './source.mjs';
 import {validateDraft,analyzeDraft,buildCandidate,normalizeDraft} from './model.mjs';
 import {mergeDraft} from './merge.mjs';
-import {createDailyCoordinator} from './daily.mjs';
+import {buildDailyConfiguration,createDailyCoordinator} from './daily.mjs';
 import {createTaskRewardCoordinator} from './task-rewards.mjs';
 import {createGameSettingsCoordinator} from './game-settings.mjs';
-import {createAlbumCoordinator} from './albums.mjs';
+import {buildPublicAlbumDocument,createAlbumCoordinator} from './albums.mjs';
+import {buildAlbumConfiguration} from '../jigsaw-nook-taptap/server/album-content.mjs';
+import {buildGameConfiguration} from '../jigsaw-nook-taptap/server/game-settings.mjs';
+import {buildTaskRewardConfiguration} from '../jigsaw-nook-taptap/server/task-reward-settings.mjs';
+import {createReleaseCoordinator} from './releases.mjs';
+import {publishRelease,validatePublishTransportConfig} from './publish-transport.mjs';
+import {contentValueDigest,validContentReleaseId} from './contracts/content-release.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
 function inputFields(input,fields){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!fields.includes(k)))throw problem(400,'请求中包含无效字段');return input;}
@@ -21,8 +27,34 @@ function title(value,fallback){if(value===undefined)return fallback;if(typeof va
 async function jsonBody(req){if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']??''))throw problem(415,'此操作需要 JSON 数据');let size=0,parts=[];for await(const part of req){size+=part.length;if(size>2*1024*1024)throw problem(413,'内容过大，请分批整理');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw problem(400,'请求数据无法读取');}}
 function response(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 const ID=/^[a-f0-9]{32}$/;
+const PUBLISH_MESSAGES={
+ PUBLISH_NOT_CONFIGURED:'正式服同步尚未配置；可以先生成并检查发布预览。',
+ INVALID_PUBLISH_CONFIG:'正式服同步配置暂时不可用，请检查服务器连接配置。',
+ PUBLISH_CONNECTION_FAILED:'无法连接正式服，请检查服务器连接和目录权限。',
+ PUBLISH_UPLOAD_FAILED:'内容上传未完成，正式服当前版本未切换。',
+ PUBLISH_TIMEOUT:'同步等待超时，请检查两端当前发布状态后重试。',
+ PUBLISH_PREFLIGHT_FAILED:'两端内容预检未全部通过，正式服当前版本未切换。',
+ PUBLISH_HEALTH_FAILED:'同步检查未通过，已恢复先前版本。',
+ PUBLISH_ROLLBACK_UNVERIFIED:'同步检查未通过；回退状态仍需检查。',
+ PUBLISH_RECEIPT_INVALID:'两个目标尚未返回可验证的同一内容版本。',
+ PUBLISH_RECEIPT_MISSING:'服务器未返回可验证的同步结果，请检查正式服当前版本。',
+ PUBLISH_FAILED:'正式服同步未完成，请检查两端发布状态后重试。',
+};
+const releaseIdentity=value=>validContentReleaseId(value)?value:null;
+const publishCode=value=>typeof value==='string'&&Object.hasOwn(PUBLISH_MESSAGES,value)?value:'PUBLISH_FAILED';
+function publicPublishReceipt(value){
+ if(!value||typeof value!=='object'||Array.isArray(value))return null;
+ const targets=items=>Array.isArray(items)?items.filter(item=>['web','mobile'].includes(item?.id)).map(item=>({id:item.id,ok:item.ok===true,contentReleaseId:releaseIdentity(item.contentReleaseId)})):[];
+ const code=value.code===undefined?undefined:publishCode(value.code);
+ return {schema:'jigsaw-content-publish-receipt/v1',releaseId:releaseIdentity(value.releaseId),ok:value.ok===true,
+  ...(releaseIdentity(value.previousReleaseId)?{previousReleaseId:value.previousReleaseId}:{}),
+  ...(['preflight','active','rolled-back','rollback-unverified'].includes(value.phase)?{phase:value.phase}:{}),
+  ...(code?{code,message:PUBLISH_MESSAGES[code]}:{}),targets:targets(value.targets),
+  ...(value.rollback&&typeof value.rollback==='object'?{rollback:{attempted:value.rollback.attempted===true,...(typeof value.rollback.ok==='boolean'?{ok:value.rollback.ok}:{}),releaseId:releaseIdentity(value.rollback.releaseId),targets:targets(value.rollback.targets)}}:{}),
+ };
+}
 
-export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),albumBridgeDir=join(dataDir,'albums'),appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
+export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),albumBridgeDir=join(dataDir,'albums'),releaseDir=join(dataDir,'content-releases'),publishConfigPath=join(dataDir,'publish-config.json'),publisher=publishRelease,appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
  const taskRewards=createTaskRewardCoordinator({store,bridgeDir:taskRewardBridgeDir,now});taskRewards.sync();
  const gameSettings=createGameSettingsCoordinator({store,bridgeDir:gameSettingsBridgeDir,now});gameSettings.sync();
@@ -42,7 +74,44 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
  }
  function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};const document=mergeSourceDraft(draft);return {...draft,document,sourceNeedsMerge:!isDeepStrictEqual(comparisonDocument(document),comparisonDocument(draft.document))};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
- const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-recovery.js','album-recovery.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/album-rewards-ui.js','album-rewards-ui.js'],['/style.css','style.css']]);
+ function publishConfiguration(){
+  try{return {configured:true,configuration:validatePublishTransportConfig(JSON.parse(readFileSync(publishConfigPath,'utf8'))),configurationMessage:'已配置网页端和小程序端同步。'};}
+  catch(cause){const code=cause.code==='ENOENT'?'PUBLISH_NOT_CONFIGURED':'INVALID_PUBLISH_CONFIG';return {configured:false,code,configurationMessage:PUBLISH_MESSAGES[code]};}
+ }
+ function savedReleaseSnapshot(){
+  // The normal daily reconciliation runs first. The release then captures only
+  // persisted rows; browser edits and read-time source merges never enter it.
+  syncContent();
+  const draft=store.draft(store.activeDraftId());
+  if(currentDraft(draft.id).sourceNeedsMerge)throw problem(409,'来源素材有待合并的内容，请先保存相册后再生成发布预览。','CONTENT_SOURCE_NEEDS_SAVE');
+  const document=validateDraft(draft.document,source),tasks=taskRewards.sync(),game=gameSettings.sync();
+  const retained=source.assets.filter(asset=>asset.lifecycle==='retained'),images=source.assets.map(asset=>({id:asset.id,available:asset.lifecycle==='retained'}));
+  const assetDocument={schema:'jigsaw-content-assets/v1',images};
+  const documents={
+   albums:buildAlbumConfiguration(buildPublicAlbumDocument(document,source),{photos:retained,decorations:game.document.decorations}),
+   daily:buildDailyConfiguration(document,source),gameSettings:buildGameConfiguration(game.document),taskRewards:buildTaskRewardConfiguration(tasks.document),
+   assets:{...assetDocument,configDigest:contentValueDigest(assetDocument)},
+  };
+  return {sourceVersions:{draftId:draft.id,draftRevision:draft.revision,gameRevision:game.revision,taskRevision:tasks.revision},documents,
+   summary:{totalImageCount:source.assets.length,retainedImageCount:retained.length,pendingImageCount:source.assets.length-retained.length,assignedImageCount:new Set(document.albums.flatMap(album=>album.imageIds)).size}};
+ }
+ const releases=createReleaseCoordinator({releaseDir,readSnapshot:savedReleaseSnapshot,now,publish:async(release,actor)=>{
+  const state=publishConfiguration();if(!state.configured)throw problem(503,state.configurationMessage,state.code);
+  try{
+   const receipt=publicPublishReceipt(await publisher(release,state.configuration,{actor}));
+   if(!receipt?.ok||receipt.releaseId!==release.manifest.releaseId||receipt.targets.length!==2||new Set(receipt.targets.map(target=>target.id)).size!==2||receipt.targets.some(target=>!target.ok||target.contentReleaseId!==release.manifest.releaseId))throw problem(503,PUBLISH_MESSAGES.PUBLISH_RECEIPT_INVALID,'PUBLISH_RECEIPT_INVALID');
+   return receipt;
+  }catch(cause){const code=publishCode(cause.code),failure=problem(503,PUBLISH_MESSAGES[code],code);const receipt=publicPublishReceipt(cause.receipt);if(receipt)failure.receipt=receipt;throw failure;}
+ }});
+ async function releaseStatus(){
+  const state=publishConfiguration(),status=await releases.status();
+  return {configured:state.configured,configurationMessage:state.configurationMessage,...status,
+   previous:status.previous?{releaseId:releaseIdentity(status.previous.releaseId),manifestSha256:/^[a-f0-9]{64}$/.test(status.previous.manifestSha256)?status.previous.manifestSha256:null}:null,
+   lastPublish:status.lastPublish?{...status.lastPublish,targets:publicPublishReceipt(status.lastPublish.targets)}:null,
+   audits:status.audits.map(item=>({kind:item.kind,at:item.at,actor:item.actor,releaseId:releaseIdentity(item.releaseId),...(item.previousReleaseId?{previousReleaseId:releaseIdentity(item.previousReleaseId)}:{}),...(item.code?{code:publishCode(item.code),message:PUBLISH_MESSAGES[publishCode(item.code)]}:{}),...(item.receipt?{receipt:publicPublishReceipt(item.receipt)}:{})})),
+  };
+ }
+ const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-recovery.js','album-recovery.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/album-rewards-ui.js','album-rewards-ui.js'],['/release-ui.js','release-ui.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; form-action 'self'");
@@ -69,6 +138,12 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    if(path==='/api/task-rewards'&&method==='PUT'){const input=inputFields(await jsonBody(req),['revision','document']);return response(res,200,taskRewards.save(input.revision,input.document,current.username));}
    if(path==='/api/game-settings'&&method==='GET')return response(res,200,gameSettings.sync());
    if(path==='/api/game-settings'&&method==='PUT'){const input=inputFields(await jsonBody(req),['revision','document']);return response(res,200,gameSettings.save(input.revision,input.document,current.username));}
+   if(path.startsWith('/api/releases/')){
+    if([...url.searchParams.keys()].length)throw problem(400,'发布请求不接受额外参数');
+    if(path==='/api/releases/status'&&method==='GET')return response(res,200,await releaseStatus());
+    if(path==='/api/releases/prepare'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,201,await releases.prepare(current.username));}
+    if(path==='/api/releases/confirm'&&method==='POST'){const input=inputFields(await jsonBody(req),['releaseId','manifestSha256']);return response(res,200,await releases.confirm(input,current.username));}
+   }
    if(path==='/api/audit'&&method==='GET')return response(res,200,{audit:store.listAudit()});
    if(path==='/api/versions'&&method==='GET')return response(res,200,{versions:store.listVersions()});
    if(path==='/api/drafts'&&method==='POST'){
@@ -141,10 +216,10 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
     }
    }
    throw problem(404,'此页面或内容不存在','NOT_FOUND');
-  }catch(e){const status=Number.isInteger(e.status)&&e.status>=400&&e.status<=599?e.status:500;response(res,status,{error:status===500?'后台未能完成操作，请重试':e.message,code:e.code??'SERVER_ERROR',...(e.analysis?{analysis:e.analysis}:{})});}
+  }catch(e){const status=Number.isInteger(e.status)&&e.status>=400&&e.status<=599?e.status:500;response(res,status,{error:status===500?'后台未能完成操作，请重试':e.message,code:e.code??'SERVER_ERROR',...(e.analysis?{analysis:e.analysis}:{}),...(e.receipt?{receipt:publicPublishReceipt(e.receipt)}:{})});}
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;
- return {server,store,daily,albums,taskRewards,gameSettings,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
+ return {server,store,daily,albums,taskRewards,gameSettings,releases,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
 }
 
 if(process.argv[1]&&realpathSync(process.argv[1])===realpathSync(fileURLToPath(import.meta.url))){
