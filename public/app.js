@@ -1,5 +1,6 @@
 import { createDragPayload, parseDragPayload } from './album-drag.js';
 import { dailyImageState, tomorrowDate, nextOpenDailyDate, automaticDailyPlan } from './daily-state.js';
+import { renderTaskRewards, readTaskRewardForm, updateTaskRewardInput } from './task-rewards-ui.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
@@ -12,7 +13,7 @@ let resolveConfirmation = null;
 const TARGETS = { pc: 'PC 网页', 'mobile-shared': '小程序' };
 const FIELD_NAMES = { name: '名称', title: '标题', subtitle: '副标题', description: '说明', styleGroupId: '画风分组', subjectTags: '题材标签', visible: '旧相册显示', showOnPc: '在 PC 显示', showOnMobile: '在小程序显示', purchasable: '设为购买包', status: '历史展示状态', galleryVisible: '历史图库展示', dailyOnly: '每日专用', category: '原分类', imageIds: '图片与顺序', coverImageId: '封面', price: '金币价格', decorationId: '奖励装饰', packId: '历史图包关联', milestones: '里程碑', added: '新增', removed: '移除', packOrder: '历史图包顺序', albumOrder: '相册顺序' };
 const ENTITY_NAMES = { draft: '工作内容', style: '画风', asset: '图片', pack: '历史图包', album: '相册', target: '内容目标' };
-const AUDIT_NAMES = { 'import-baseline': '导入内容基线', 'initialize-admin': '创建管理员', login: '管理员登录', logout: '管理员退出', 'create-draft': '建立工作内容', 'save-draft': '保存相册整理', 'reimport-source': '同步原项目内容', 'generate-candidate': '生成游戏更新文件', 'save-snapshot': '保存完整备份', 'restore-version': '恢复备份为当前工作内容', 'import-pending-assets': '导入新图并整理' };
+const AUDIT_NAMES = { 'import-baseline': '导入内容基线', 'initialize-admin': '创建管理员', login: '管理员登录', logout: '管理员退出', 'create-draft': '建立工作内容', 'save-draft': '保存相册整理', 'reimport-source': '同步原项目内容', 'generate-candidate': '生成游戏更新文件', 'save-snapshot': '保存完整备份', 'restore-version': '恢复备份为当前工作内容', 'import-pending-assets': '导入新图并整理', 'initialize-task-rewards': '导入任务奖励', 'save-task-rewards': '保存任务奖励' };
 const state = {
   session: null, bootstrap: null, draft: null, target: 'shared', exportTarget: 'mobile-shared', page: 'albums',
   dirty: false, busy: false, selected: new Set(), albumId: null,
@@ -20,6 +21,7 @@ const state = {
   analysis: null, picker: null, version: null, fileIndex: 0,
   versionAdvancedOpen: false,
   historyOpen: false, settings: null, dragGesture: null, suppressClickUntil: 0, suppressClickPoint: null,
+  taskRewards: null, taskRewardDocument: null, taskRewardsDirty: false, taskRewardConflict: false,
 };
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const attr = esc;
@@ -117,6 +119,26 @@ async function saveDraft({ quiet = false } = {}) {
   return state.draft;
 }
 
+function setTaskRewards(settings) {
+  state.taskRewards = settings;
+  state.taskRewardDocument = structuredClone(settings.document);
+  state.taskRewardsDirty = false;
+  state.taskRewardConflict = false;
+}
+
+async function saveTaskRewards(form = document.querySelector('#task-rewards-form')) {
+  if (!state.taskRewardsDirty || !state.taskRewards || !form) return;
+  try {
+    const settings = await api('/api/task-rewards', {method:'PUT',body:{revision:state.taskRewards.revision,document:readTaskRewardForm(form)}});
+    setTaskRewards(settings);
+    state.bootstrap.taskRewards = settings;
+    render(); toast('任务奖励已保存，新产生的奖励会使用这些数值。');
+  } catch (error) {
+    if (error.status === 409) { state.taskRewardConflict = true; render(); }
+    toast(error.message, true);
+  }
+}
+
 async function refreshDaily() {
   if (!state.session?.authenticated || !state.draft) return;
   const result = await api('/api/daily/status');
@@ -131,8 +153,8 @@ async function refreshDaily() {
     const albumId = state.albumId;
     await loadDraft(state.draft.id);
     state.albumId = doc().albums.some(album => album.id === albumId) ? albumId : null;
-    if (!modal.open) render();
-  } else if (factsChanged && !state.dirty && !modal.open) render();
+    if (!modal.open && !(state.page === 'task-rewards' && state.taskRewardsDirty)) render();
+  } else if (factsChanged && !state.dirty && !state.taskRewardsDirty && !modal.open) render();
 }
 
 async function loadDraft(id) {
@@ -150,6 +172,7 @@ async function initialize({ keepDraft = false } = {}) {
   state.session = await api('/api/session');
   if (!state.session.authenticated) { renderAuth(); return; }
   state.bootstrap = await api('/api/bootstrap');
+  if (!(keepDraft && state.taskRewardsDirty) && state.bootstrap.taskRewards) setTaskRewards(state.bootstrap.taskRewards);
   if (!(keepDraft && state.draft)) {
     const id = state.bootstrap.activeDraftId || state.bootstrap.drafts?.[0]?.id;
     if (id) await loadDraft(id);
@@ -178,7 +201,7 @@ function renderAuth(error = '') {
     busy(async () => {
       try {
         await api(setup ? '/api/setup' : '/api/login', { method: 'POST', body: { username: data.get('username'), password: data.get('password') } });
-        await initialize({ keepDraft: state.dirty });
+        await initialize({ keepDraft: state.dirty || state.taskRewardsDirty });
       } catch (error) { event.target.querySelector('.auth-error').textContent = error.message; }
     });
   });
@@ -188,11 +211,12 @@ function render() {
   if (state.dragGesture) clearDragFeedback();
   if (!state.session?.authenticated) { renderAuth(); return; }
   const unassigned = assets().filter(asset => !albumFor(asset.id)).length;
-  const tabs = [['albums', `相册与未分配 · ${unassigned}`], ['assets', `全部图片 · ${assets().length}`]];
-  app.innerHTML = `<div class="album-shell"><header class="topbar"><div class="workspace-brand"><span class="brand-mark">✳</span><strong>相册工作室</strong></div><span class="workspace-scope">PC 与小程序共用</span><div class="draft-control"><span id="save-state" class="dirty ${state.dirty ? '' : 'saved'}">${state.dirty ? '有未保存编辑' : '已保存'}</span><button class="primary" data-action="save" ${!state.dirty ? 'disabled' : ''}>保存</button><button data-action="more" class="quiet">更多 ···</button></div></header><main class="album-main"><nav class="workspace-tabs" aria-label="相册工作台">${tabs.map(([id, name]) => `<button data-action="page" data-page="${id}" class="${state.page === id ? 'active' : ''}" ${state.page === id ? 'aria-current="page"' : ''}>${name}</button>`).join('')}</nav><div class="main-content" id="page-content">${state.draft ? renderPage() : '<div class="empty">暂时没有可整理的内容，请重新载入。</div>'}</div></main>${state.historyOpen ? renderHistoryDrawer() : ''}</div>`;
+  const tabs = [['albums', `相册与未分配 · ${unassigned}`], ['assets', `全部图片 · ${assets().length}`], ['task-rewards', '任务奖励']];
+  app.innerHTML = `<div class="album-shell"><header class="topbar"><div class="workspace-brand"><span class="brand-mark">✳</span><strong>相册工作室</strong></div><span class="workspace-scope">PC 与小程序共用</span><div class="draft-control"><span id="save-state" class="dirty ${state.dirty ? '' : 'saved'}">${state.page === 'task-rewards' ? state.dirty ? '相册有未保存编辑' : '相册已保存' : state.dirty ? '有未保存编辑' : '已保存'}</span><button class="primary" data-action="save" ${!state.dirty ? 'disabled' : ''}>${state.page === 'task-rewards' ? '保存相册' : '保存'}</button><button data-action="more" class="quiet">更多 ···</button></div></header><main class="album-main"><nav class="workspace-tabs" aria-label="相册工作台">${tabs.map(([id, name]) => `<button data-action="page" data-page="${id}" class="${state.page === id ? 'active' : ''}" ${state.page === id ? 'aria-current="page"' : ''}>${name}</button>`).join('')}</nav><div class="main-content" id="page-content">${state.draft ? renderPage() : '<div class="empty">暂时没有可整理的内容，请重新载入。</div>'}</div></main>${state.historyOpen ? renderHistoryDrawer() : ''}</div>`;
 }
 
 function renderPage() {
+  if (state.page === 'task-rewards') return renderTaskRewards({document:state.taskRewardDocument,dirty:state.taskRewardsDirty,conflict:state.taskRewardConflict,updatedAt:date(state.taskRewards?.updatedAt)});
   if (state.page === 'assets' || state.page === 'unassigned') return renderAssets();
   return renderAlbums();
 }
@@ -574,6 +598,10 @@ document.addEventListener('click', async event => {
   if (action === 'retry') { location.reload(); }
   else if (action === 'page') { state.page = button.dataset.page; state.selected.clear(); state.albumId = null; render(); }
   else if (action === 'save') busy(async () => { await saveDraft(); render(); });
+  else if (action === 'reload-task-rewards') busy(async () => {
+    if (state.taskRewardsDirty && !await confirmAction('重新载入会替换本窗口未保存的任务奖励修改，确定继续？')) return;
+    setTaskRewards(await api('/api/task-rewards')); render();
+  });
   else if (action === 'more') openModal('更多', '<div class="more-menu"><button data-action="open-history">历史与备份 <span>以前的副本、检查记录和更新文件</span></button><button data-action="styles">管理画风 <span>编辑图片与相册的画风分组</span></button><button data-action="logout">退出账号</button></div>');
   else if (action === 'open-history') { closeModal(); state.historyOpen = true; render(); }
   else if (action === 'close-history') { state.historyOpen = false; render(); }
@@ -611,8 +639,8 @@ document.addEventListener('click', async event => {
     removeAlbumImages(album, ids); state.selected.clear(); dirty(); render();
   }
   else if (action === 'logout') {
-    if (state.dirty && !await confirmAction('还有未保存编辑。退出会放弃本窗口编辑，确定退出？')) return;
-    busy(async () => { await api('/api/logout', { method: 'POST', body: {} }); state.draft = null; state.dirty = false; await initialize(); });
+    if ((state.dirty || state.taskRewardsDirty) && !await confirmAction('还有未保存编辑。退出会放弃本窗口编辑，确定退出？')) return;
+    busy(async () => { await api('/api/logout', { method: 'POST', body: {} }); state.draft = null; state.dirty = false; state.taskRewardsDirty = false; state.taskRewardDocument = null; state.taskRewards = null; await initialize(); });
   }
   else if (action === 'close-modal') closeModal();
   else if (action === 'asset-detail') openAsset(button.dataset.id);
@@ -710,6 +738,13 @@ document.addEventListener('change', event => {
 let searchTimer;
 document.addEventListener('input', event => {
   const element = event.target;
+  if (element.form?.id === 'task-rewards-form') {
+    updateTaskRewardInput(state.taskRewardDocument, element.name, element.value);
+    state.taskRewardsDirty = true;
+    document.querySelector('#task-rewards-save').disabled = false;
+    const status = document.querySelector('#task-rewards-state'); status.textContent = '任务奖励有未保存修改'; status.className = 'dirty';
+    return;
+  }
   if ((element.dataset.settingsField || element.dataset.settingsRow !== undefined) && element.type !== 'checkbox' && element.tagName !== 'SELECT') { updateSettingsField(element); return; }
   if (element.dataset.bind && element.tagName !== 'SELECT' && element.type !== 'checkbox') setBound(element);
   if (element.dataset.filter === 'query') {
@@ -727,6 +762,7 @@ document.addEventListener('input', event => {
 document.addEventListener('submit', event => {
   const form = event.target;
   if (form.id === 'auth-form') return;
+  if (form.id === 'task-rewards-form') {event.preventDefault();busy(() => saveTaskRewards(form));return;}
   if (!['asset-form', 'album-settings-form', 'style-form', 'new-album-form', 'publish-form', 'restore-form', 'reimport-form'].includes(form.id)) return;
   event.preventDefault();
   const data = new FormData(form);
@@ -800,12 +836,12 @@ modal.addEventListener('change', event => {
   if (event.target.name === 'dailyEnabled' && event.target.checked) event.target.form.elements.dailyAutoPublish.checked = true;
   updateDailyControls(event.target.form);
 });
-window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => { if (state.dirty || state.taskRewardsDirty) { event.preventDefault(); event.returnValue = ''; } });
 window.addEventListener('keydown', event => {
   if (event.key === 'Escape' && state.dragGesture) { clearDragFeedback(); event.preventDefault(); return; }
   if (confirmation.open) return;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && state.session?.authenticated) {
-    event.preventDefault(); busy(async () => { await saveDraft(); render(); });
+    event.preventDefault(); busy(async () => { if (state.page === 'task-rewards') await saveTaskRewards(); else {await saveDraft(); render();} });
   }
 });
 initialize().catch(error => { app.innerHTML = `<main class="initial-loading"><h2>暂时无法打开工作室</h2><p>${esc(error.message)}</p><button data-action="retry">重试</button></main>`; });

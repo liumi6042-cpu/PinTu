@@ -8,6 +8,7 @@ import {readSource,previewFile,verifyDelivery} from './source.mjs';
 import {validateDraft,analyzeDraft,buildCandidate,normalizeDraft} from './model.mjs';
 import {mergeDraft} from './merge.mjs';
 import {createDailyCoordinator} from './daily.mjs';
+import {createTaskRewardCoordinator} from './task-rewards.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
 function inputFields(input,fields){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!fields.includes(k)))throw problem(400,'请求中包含无效字段');return input;}
@@ -18,8 +19,9 @@ async function jsonBody(req){if(!/^application\/json(?:;|$)/i.test(req.headers['
 function response(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 const ID=/^[a-f0-9]{32}$/;
 
-export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
+export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
+ const taskRewards=createTaskRewardCoordinator({store,bridgeDir:taskRewardBridgeDir,now});taskRewards.sync();
  const daily=createDailyCoordinator({store,getSource:()=>source,validateDocument:validateDraft,bridgeDir,appearanceDir,now});
  daily.sync();
  const dailyTimer=setInterval(()=>{try{daily.sync();}catch{/* A later request retries without replacing a concurrent edit. */}},30_000);dailyTimer.unref();
@@ -29,7 +31,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
  function mergeSourceDraft(draft,document=draft.document){return preparedDocument(mergeDraft(normalizeDraft(store.baseline(draft.sourceFingerprint),source),normalizeDraft(document,source),source.baseline),draft.document);}
  function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};return {...draft,document:mergeSourceDraft(draft),sourceNeedsMerge:true};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
- const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/daily-state.js','daily-state.js'],['/style.css','style.css']]);
+ const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; form-action 'self'");
@@ -50,8 +52,10 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    const current=auth.requireSession(req);
    if(method!=='GET')auth.verifyCsrf(req,current);
    if(path==='/api/logout'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,200,auth.logout(req,res));}
-   if(path==='/api/bootstrap'&&method==='GET'){const status=daily.sync();return response(res,200,{source:{fingerprint:source.fingerprint,stats:source.stats,assets:source.assets},drafts:store.listDrafts(),versions:store.listVersions(),audit:store.listAudit(),activeDraftId:store.activeDraftId(),daily:status});}
+   if(path==='/api/bootstrap'&&method==='GET'){const status=daily.sync();return response(res,200,{source:{fingerprint:source.fingerprint,stats:source.stats,assets:source.assets},drafts:store.listDrafts(),versions:store.listVersions(),audit:store.listAudit(),activeDraftId:store.activeDraftId(),daily:status,taskRewards:taskRewards.sync()});}
    if(path==='/api/daily/status'&&method==='GET'){const status=daily.sync();return response(res,200,{daily:status,draftRevision:store.draft(store.activeDraftId()).revision});}
+   if(path==='/api/task-rewards'&&method==='GET')return response(res,200,taskRewards.sync());
+   if(path==='/api/task-rewards'&&method==='PUT'){const input=inputFields(await jsonBody(req),['revision','document']);return response(res,200,taskRewards.save(input.revision,input.document,current.username));}
    if(path==='/api/audit'&&method==='GET')return response(res,200,{audit:store.listAudit()});
    if(path==='/api/versions'&&method==='GET')return response(res,200,{versions:store.listVersions()});
    if(path==='/api/drafts'&&method==='POST'){
@@ -127,7 +131,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
   }catch(e){const status=Number.isInteger(e.status)&&e.status>=400&&e.status<=599?e.status:500;response(res,status,{error:status===500?'后台未能完成操作，请重试':e.message,code:e.code??'SERVER_ERROR',...(e.analysis?{analysis:e.analysis}:{})});}
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;
- return {server,store,daily,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
+ return {server,store,daily,taskRewards,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
 }
 
 if(process.argv[1]&&realpathSync(process.argv[1])===realpathSync(fileURLToPath(import.meta.url))){
