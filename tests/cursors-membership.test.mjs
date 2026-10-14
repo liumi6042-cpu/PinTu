@@ -7,14 +7,15 @@ import { CursorClient } from '../lib/cursor-client.ts';
 import { requiresRoomMembership, canCreateMemberRoom } from '../lib/membership-policy.ts';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
-test('stationary cursors remain visible and survive cleanup while their player is online',()=>{
+test('stationary cursors remain visible and survive cleanup until their member leaves',()=>{
   const db=new DatabaseSync(':memory:'),now=1_000_000;
   try{
     db.exec(readFileSync(new URL('../drizzle/0002_room_cursors.sql',import.meta.url),'utf8'));
     db.exec(`CREATE TABLE puzzle_rooms(id TEXT,data TEXT);
       CREATE TABLE puzzle_achievement_profiles(owner_id TEXT,equipped TEXT);
       CREATE TABLE puzzle_courtyards(user_id TEXT,data TEXT);
-      CREATE TABLE puzzle_account_security(user_id TEXT,status TEXT);`);
+      CREATE TABLE puzzle_account_security(user_id TEXT,status TEXT);
+      CREATE TABLE puzzle_room_moderation(room_id TEXT,closed INTEGER);`);
     const members=[{id:'online',name:'在线',lastSeen:now},{id:'background',lastSeen:now-60000},{id:'offline',lastSeen:now-CURSOR_ONLINE_MS-1},{id:'left',lastSeen:0},{id:'hidden',lastSeen:now}];
     db.prepare('INSERT INTO puzzle_rooms VALUES (?,?)').run('room',JSON.stringify({members}));
     const insert=db.prepare('INSERT INTO puzzle_room_cursors VALUES (?,?,?,?,?,?,?)');
@@ -23,16 +24,16 @@ test('stationary cursors remain visible and survive cleanup while their player i
     insert.run('missing-room','orphan','client',1,40,50,now-300000);
     const source=readFileSync(new URL('../app/api/rooms/[id]/cursors/route.ts',import.meta.url),'utf8');
     const query=source.match(/prepare\(`(SELECT c\.player_id[\s\S]*?)`\)/)[1];
-    const cursors=db.prepare(query).all(JSON.stringify(members),'room',now-CURSOR_ONLINE_MS);
-    assert.deepEqual(cursors.map(c=>c.player_id).sort(),['background','online']);
+    const cursors=db.prepare(query).all(JSON.stringify(members),'room');
+    assert.deepEqual(cursors.map(c=>c.player_id).sort(),['background','offline','online']);
     assert.equal(cursors[0].updated_at,now-300000,'last movement need not be recent');
     const cleanup=source.match(/prepare\(`(DELETE FROM puzzle_room_cursors[\s\S]*?)`\)/)[1];
-    db.prepare(cleanup).run(now-60000,now-CURSOR_ONLINE_MS);
-    assert.deepEqual(db.prepare('SELECT player_id FROM puzzle_room_cursors ORDER BY player_id').all().map(c=>c.player_id),['background','hidden','online']);
-    members[0].lastSeen=now-CURSOR_ONLINE_MS-1;members[1].lastSeen=0;
-    assert.deepEqual(db.prepare(query).all(JSON.stringify(members),'room',now-CURSOR_ONLINE_MS),[]);
+    db.prepare(cleanup).run(now-60000);
+    assert.deepEqual(db.prepare('SELECT player_id FROM puzzle_room_cursors ORDER BY player_id').all().map(c=>c.player_id),['background','hidden','offline','online']);
+    members[0].lastSeen=0;members[1].lastSeen=0;members[2].lastSeen=0;
+    assert.deepEqual(db.prepare(query).all(JSON.stringify(members),'room'),[]);
     db.prepare('UPDATE puzzle_rooms SET data=? WHERE id=?').run(JSON.stringify({members}),'room');
-    db.prepare(cleanup).run(now-60000,now-CURSOR_ONLINE_MS);
+    db.prepare(cleanup).run(now-60000);
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM puzzle_room_cursors WHERE player_id='online'").get().n,0);
   }finally{db.close();}
 });
@@ -79,7 +80,7 @@ test('member gate covers private and legacy invitations, while public and solo c
   for(const visibility of ['private',undefined])assert.equal(requiresRoomMembership(visibility),true);
   assert.equal(requiresRoomMembership('public'),false);assert.equal(requiresRoomMembership('solo'),false);assert.equal(canCreateMemberRoom(),false);
 });
-test('cursor tombstones prevent an older in-flight update reappearing after pointer leave',()=>{
+test('an empty cursor tombstone rejects an older first position',()=>{
   const db=new DatabaseSync(':memory:');try{
     db.exec(readFileSync(new URL('../drizzle/0002_room_cursors.sql',import.meta.url),'utf8'));
     db.prepare('INSERT INTO puzzle_room_cursors VALUES (?,?,?,?,?,?,?)').run('r','p','c',2,null,null,100);

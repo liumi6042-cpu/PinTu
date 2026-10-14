@@ -60,11 +60,11 @@ test('8 cursor channels coexist with concurrent 2000-piece dragging without chan
     }
     await Promise.all(tables.map((table,i)=>table.network.drop(i*100,0,0)));
     await until(()=>clients.every(client=>Array.from({length:8},(_,i)=>i*100).every(id=>client.state.groups.some(group=>group.locked&&group.pieces.includes(id)))));
-    cursors[0].point(null);await until(()=>seen.slice(1).every(list=>!list.some(cursor=>cursor.playerId===tickets[0].playerId)));
+    cursors[0].point(null);await wait(400);assert.ok(seen.slice(1).every(list=>list.some(cursor=>cursor.playerId===tickets[0].playerId)),'leaving the canvas retains the last position');
     const cursorBody={clientId:'f'.repeat(32),seq:2,point:null};
     await call(path+'/cursors',cursorBody,tickets[0].token);
     await call(path+'/cursors',{...cursorBody,seq:1,point:{x:1,y:1}},tickets[0].token);
-    assert.ok(!(await call(path+'/cursors',undefined,tickets[1].token)).data.cursors.some(cursor=>cursor.playerId===tickets[0].playerId));
+    assert.ok((await call(path+'/cursors',undefined,tickets[1].token)).data.cursors.some(cursor=>cursor.playerId===tickets[0].playerId));
     assert.ok(requests.every(request=>request.status===200));
     console.log(JSON.stringify({players:8,pieces:2000,cursorRequests:requests.length,cursorP95Ms:Math.round(requests.map(r=>r.ms).sort((a,b)=>a-b)[Math.floor(requests.length*.95)]),pieceStateConverged:true}));
   }finally{

@@ -31,16 +31,33 @@ async function positions(room:CursorRoom,now:number){
   let managed=new Map<string,import('@/lib/managed-decoration-art').ManagedCursorArt>();
   try{const content=readManagedContent();if(content)managed=await ownedManagedCursors([...members.values()].map(member=>member.accountId||member.guestId||'').filter(Boolean),content);}catch{/* Preserve old pointer presence while managed content is unavailable. */}
   const cursors:SharedCursor[]=[];
-  for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,cursorStyle:row.cursorStyle,managedCursor:managed.get(member.accountId||member.guestId||'')||null,x:row.x,y:row.y,updatedAt:row.updated_at});}
+  // Older observers fade a cursor by updatedAt. This is its confirmed presence
+  // time, not movement time; the stored updated_at remains the actual last move.
+  for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,cursorStyle:row.cursorStyle,managedCursor:managed.get(member.accountId||member.guestId||'')||null,x:row.x,y:row.y,updatedAt:now});}
   return json({cursors,serverTime:now});
 }
 export async function GET(request:Request,context:Context){try{const {room,now}=await authorize(request,context);return await positions(room,now);}catch(error){return failure(error);}}
 export async function POST(request:Request,context:Context){try{
   const raw=await body(request),{room,member,now}=await authorize(request,context),database=localDb();
   const input=cursorInput(raw,worldFor(room.puzzle));if(!input)throw new RoomError('鼠标位置无效');
-  const commands=[database.prepare(`INSERT INTO puzzle_room_cursors (room_id,player_id,client_id,seq,x,y,updated_at) VALUES (?,?,?,?,?,?,?)
-    ON CONFLICT(room_id,player_id) DO UPDATE SET client_id=excluded.client_id,seq=excluded.seq,x=excluded.x,y=excluded.y,updated_at=excluded.updated_at
-    WHERE puzzle_room_cursors.client_id!=excluded.client_id OR excluded.seq>puzzle_room_cursors.seq`).bind(room.id,member.id,input.clientId,input.seq,input.point?.x??null,input.point?.y??null,now)];
+  // Old clients send null when their pointer leaves the canvas or the tab sleeps.
+  // Keep that member's point, but advance its own sequence to reject late moves.
+  // A different tab's null cannot take ownership from a tab that has a position.
+  // Recheck membership in SQLite: authorization may have happened before a leave.
+  const commands=[database.prepare(`INSERT INTO puzzle_room_cursors (room_id,player_id,client_id,seq,x,y,updated_at)
+    SELECT ?,?,?,?,?,?,? WHERE EXISTS(
+      SELECT 1 FROM puzzle_rooms r,json_each(r.data,'$.members') m
+      LEFT JOIN puzzle_account_security s ON s.user_id=json_extract(m.value,'$.accountId')
+      LEFT JOIN puzzle_room_moderation moderation ON moderation.room_id=r.id
+      WHERE r.id=? AND json_extract(m.value,'$.id')=? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0
+      AND COALESCE(s.status,'active')='active' AND COALESCE(moderation.closed,0)=0)
+    ON CONFLICT(room_id,player_id) DO UPDATE SET
+      client_id=CASE WHEN excluded.x IS NULL THEN puzzle_room_cursors.client_id ELSE excluded.client_id END,
+      seq=excluded.seq,x=COALESCE(excluded.x,puzzle_room_cursors.x),y=COALESCE(excluded.y,puzzle_room_cursors.y),
+      updated_at=CASE WHEN excluded.x IS NULL THEN puzzle_room_cursors.updated_at ELSE excluded.updated_at END
+    WHERE (puzzle_room_cursors.client_id=excluded.client_id AND excluded.seq>puzzle_room_cursors.seq)
+      OR (excluded.x IS NOT NULL AND puzzle_room_cursors.client_id!=excluded.client_id)`)
+    .bind(room.id,member.id,input.clientId,input.seq,input.point?.x??null,input.point?.y??null,now,room.id,member.id)];
   // Reclaim departed/removed/disabled members and closed rooms. Do not reclaim a
   // stationary member merely because background timers or pointer updates pause.
   if(input.seq%50===0)commands.push(database.prepare(`DELETE FROM puzzle_room_cursors WHERE updated_at<?

@@ -69,6 +69,15 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T){
   // Migration 0017 records lifetime and Beijing-day placed-piece increments in
   // the successful room UPDATE's trigger, in this same transaction. A rejected
   // CAS must never persist this attempt's piece totals.
+  if(base.members.some(member=>member.lastSeen>0&&!room.members.some(next=>next.id===member.id&&next.lastSeen>0)))
+   // Keep the sequence tombstone but reset a departed member's point atomically
+   // with the room state, so rejoining cannot revive an old decoration. This is
+   // deliberately last: reward enqueueing depends on the room CAS's changes().
+   commands.push(database.prepare(`UPDATE puzzle_room_cursors SET x=NULL,y=NULL WHERE room_id=?
+    AND EXISTS(SELECT 1 FROM puzzle_rooms r WHERE r.id=puzzle_room_cursors.room_id AND r.revision=?
+      AND NOT EXISTS(SELECT 1 FROM json_each(r.data,'$.members') m
+        WHERE json_extract(m.value,'$.id')=puzzle_room_cursors.player_id
+        AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0))`).bind(id,room.revision));
   const [updated]=await database.batch(commands);
   if(becomingPrivate&&updated.meta.changes!==1){
    if(!canCreateMemberRoom(await membershipFor(room.ownerId!),Date.now()))throw new RoomError(MEMBERSHIP_REQUIRED,403);
