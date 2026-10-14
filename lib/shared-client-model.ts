@@ -13,16 +13,16 @@ export function sharedConfig(origin:string){return {mobileMode:'web-managed-shar
 export function sharedImage(photo:Data,origin:string){return {...photo,src:new URL(photo.src,origin).href,thumbSrc:new URL(photo.thumbSrc??photo.thumbnailSrc??photo.src,origin).href};}
 export function sharedProfile(view:Data,player:Data,account:Data|null,rooms:Data[],state:Data={}){
  const value=view.profile??{},decorations=view.decorations??[],equipped=decorations.find((d:Data)=>d.equipped)??null;
- const images=[...(view.albums??[]).flatMap((a:Data)=>a.images??[]),...(view.retainedImages??[])];
+ const purchasedImages=[...(view.albums??[]).filter((a:Data)=>state.ownedAlbums?.[a.id]).flatMap((a:Data)=>a.images??[]),...(view.retainedImages??[])];
  return {account,identityMode:'web-cookie',capabilities:SHARED_CAPABILITIES,compatUrls:SHARED_COMPAT_URLS,name:player.name,code:view.friends?.code??'',level:value.level??0,xp:value.xpIntoLevel??0,totalXp:value.xp??0,xpToNext:value.xpForNextLevel??1,
   energy:0,energyCap:0,supply:{energy:0,create:0},autoSupply:false,adEligible:false,newcomer:false,firstSelectionAvailable:false,
-  collection:{coins:value.coins??0,fragments:value.fragments??0,ownedPackIds:Object.keys(state.ownedAlbums??{}),ownedImageIds:[...new Set([...Object.keys(state.ownedImages??{}),...images.filter((p:Data)=>p.accessible).map((p:Data)=>p.id)])],equipped},
+  collection:{coins:value.coins??0,fragments:value.fragments??0,ownedPackIds:Object.keys(state.ownedAlbums??{}),ownedImageIds:[...new Set([...Object.keys(state.ownedImages??{}).filter(id=>state.ownedImages[id]),...purchasedImages.map((p:Data)=>p.id)])],equipped},
   giftProgress:value.giftProgress??0,giftCount:(view.tasks?.gifts??[]).filter((g:Data)=>!g.claimed&&(g.coins>0||g.xp>0)).length,ownedRooms:rooms,settlement:view.settlement,serverTime:view.serverTime};
 }
 export function sharedCollection(view:Data,profile:Data,origin:string,tuning:Data){
  const albums=(view.albums??[]).map((album:Data)=>({...album,collected:album.progress,images:album.images.map((p:Data)=>sharedImage(p,origin)),milestones:(album.milestones??[]).map((m:Data)=>({...m,earned:m.claimed,claimable:false}))}));
  if(view.retainedImages?.length)albums.push({id:'shared-retained-rights',title:'已购图片',description:'原相册调整后仍保留的已购图片',collected:view.retainedImages.filter((p:Data)=>p.collected).length,total:view.retainedImages.length,images:view.retainedImages.map((p:Data)=>sharedImage(p,origin)),milestones:[]});
- return {profile,wallet:{coins:view.profile.coins,fragments:view.profile.fragments},albums,packs:albums.filter((a:Data)=>a.purchasable).map((a:Data)=>({...a,imageIds:a.images.map((p:Data)=>p.id),coverSrc:a.images[0]?.thumbSrc??''})),decorations:view.decorations??[],equipped:profile.collection.equipped,tuning,settlement:view.settlement,serverTime:view.serverTime};
+ return {profile,wallet:{coins:view.profile.coins,fragments:view.profile.fragments},albums,packs:albums.filter((a:Data)=>a.purchasable&&a.price>0).map((a:Data)=>({...a,imageIds:a.images.map((p:Data)=>p.id),coverSrc:a.images[0]?.thumbSrc??''})),decorations:view.decorations??[],equipped:profile.collection.equipped,tuning,settlement:view.settlement,serverTime:view.serverTime};
 }
 export function sharedTasks(view:Data,profile:Data,rewards:Data){
  const source=view.tasks,day=new Date(view.serverTime+8*3600000).toISOString().slice(0,10),gifts=source.gifts??[];

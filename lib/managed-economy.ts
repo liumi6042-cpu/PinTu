@@ -164,19 +164,19 @@ export async function syncManagedRoom(room:Room,content?:ManagedContentSnapshot|
  }
 }
 const defaultOwned=(state:State,item:any)=>!isRetiredDecoration(item.id)&&item.source==='default'||state.decorations.includes(item.id);
-function ownsManagedImage(state:State,imageId:string,albums:any[]){return !!state.ownedImages[imageId]||albums.some(album=>album.imageIds.includes(imageId)&&(!album.purchasable||!!state.ownedAlbums[album.id]));}
+function ownsManagedImage(state:State,imageId:string,albums:any[]){return !!state.ownedImages[imageId]||albums.some(album=>album.imageIds.includes(imageId)&&(!album.purchasable||album.price===0||!!state.ownedAlbums[album.id]));}
 export async function managedImageAllowed(owner:string,imageId:string,content:ManagedContentSnapshot|null,now=Date.now()){
  if(!content)return true;
  if(managedDailyPuzzle(content,now)?.id===imageId)return true;
  const albums=managedAlbumImages(content,now),state=(await stateFor(owner)).state;
  if(state.ownedImages[imageId])return true;
- return albums.some(album=>album.showOnPc!==false&&album.imageIds.includes(imageId)&&(!album.purchasable||!!state.ownedAlbums[album.id]));
+ return albums.some(album=>album.showOnPc!==false&&album.imageIds.includes(imageId)&&(!album.purchasable||album.price===0||!!state.ownedAlbums[album.id]));
 }
 export async function managedAccessibleImageIds(owner:string,content:ManagedContentSnapshot|null,now=Date.now()):Promise<Set<string>>{
  const output=new Set<string>();if(!content)return output;
  const state=(await stateFor(owner)).state;
  for(const [id,owned] of Object.entries(state.ownedImages))if(owned)output.add(id);
- for(const album of managedAlbumImages(content,now))if(!album.purchasable||state.ownedAlbums[album.id])for(const id of album.imageIds)output.add(id);
+ for(const album of managedAlbumImages(content,now))if(!album.purchasable||album.price===0||state.ownedAlbums[album.id])for(const id of album.imageIds)output.add(id);
  const daily=managedDailyPuzzle(content,now);if(daily)output.add(daily.id);return output;
 }
 export async function ownedManagedCursors(owners:string[],content:ManagedContentSnapshot|null):Promise<Map<string,Cursor>>{
@@ -193,7 +193,7 @@ export async function managedPlayerView(owner:string,content:ManagedContentSnaps
  if(!content)return {enabled:false,contentReleaseId:null};
  const now=Date.now();await activate(content);if(options.recover!==false){try{await drainManagedRewards(content,owner);}catch{console.error('Managed reward settlement pending recovery');}}
  const qualified=await issueInvitationGifts(owner,content,now),code=await invitationCode(owner),state=(await stateFor(owner)).state,game=settings(content),rewards=taskRewards(content),day=managedDay(now),daily=state.daily[day]??{cooperation:0,friend:0,shares:[]},allAlbums=managedAlbumImages(content,now),photoById=new Map(photos(content).map(photo=>[photo.id,photo]));
- const albums=allAlbums.filter(album=>album.showOnPc!==false).map(album=>({id:album.id,title:album.title,description:album.description,price:album.price,purchasable:album.purchasable,owned:!album.purchasable||!!state.ownedAlbums[album.id],progress:album.imageIds.filter((id:string)=>!!state.artworks[id]).length,total:album.imageIds.length,
+ const albums=allAlbums.filter(album=>album.showOnPc!==false).map(album=>({id:album.id,title:album.title,description:album.description,price:album.price,purchasable:album.purchasable,owned:!album.purchasable||album.price===0||!!state.ownedAlbums[album.id],progress:album.imageIds.filter((id:string)=>!!state.artworks[id]).length,total:album.imageIds.length,
   images:album.imageIds.flatMap((id:string)=>{const photo=photoById.get(id);return photo?[{...photo,thumbSrc:photo.thumbSrc??photo.thumbnailSrc??photo.src,collected:!!state.artworks[id],difficulties:state.artworks[id]??[],accessible:ownsManagedImage(state,id,allAlbums)}]:[];}),
   milestones:(album.milestones??[]).map((m:any)=>{const issued=state.milestones[album.id]?.[m.id];return {...m,...(issued?{target:issued.target,coins:issued.coins}:{}),decorationId:availableDecorationId(issued?issued.decorationId:m.decorationId),claimed:!!issued,claimable:false};})}));
  const taskView=TASK_DEFINITIONS.map(def=>{const id='daily:'+day+':'+def.id,gift=state.gifts[id],reward=gift??rewards.tasks.find((item:any)=>item.id===def.id),claimed=!!gift?.openedAt,claimable=!!gift&&!claimed;

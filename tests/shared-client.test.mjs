@@ -50,6 +50,34 @@ test('shared cookie profile and collection retain the original account, wallet a
  }finally{f.close();}
 });
 
+test('gallery separates free album images from paid packs, daily choices and retained purchases',async()=>{
+ const f=fixture();try{
+  const first=await f.request('/api/mobile/gallery');assert.equal(first.status,200);
+  assert.deepEqual(first.data.freeImageIds,[f.photos[1].id]);assert.deepEqual(first.data.packedImageIds,[f.photos[0].id]);
+  assert.ok(first.data.accessibleImageIds.includes(f.photos[0].id),'an owned paid image stays accessible, without being called free');
+  assert.ok(first.data.imageIds.includes(f.photos[2].id));assert.ok(!first.data.freeImageIds.includes(f.photos[2].id),'historical purchased images retain access but are not unassigned free artwork');
+  const profile=await f.request('/api/mobile/profile');assert.deepEqual(new Set(profile.data.collection.ownedImageIds),new Set([f.photos[0].id,f.photos[2].id]),'free albums do not become purchased image entitlements in the client');
+  const extras=api.RESTORABLE_PHOTOS.slice(3,8).map(p=>({...p,width:1200,height:900}));f.snapshot.photos.push(...extras);
+  const base=f.snapshot.albums.albums[1];f.snapshot.albums.albums.push(
+   {...base,id:'zero-price',purchasable:true,price:0,imageIds:[extras[0].id]},
+   {...base,id:'mobile-only',showOnPc:false,imageIds:[extras[1].id]},
+   {...base,id:'hidden',showOnPc:false,showOnMobile:false,imageIds:[extras[2].id]}
+  );
+  f.snapshot.albums.albums[1].imageIds.push(f.photos[0].id);
+  f.snapshot.dailyRuntime.managedImageIds=()=>new Set([extras[3].id]);f.snapshot.dailyRuntime.select=()=>extras[3];
+  f.snapshot.albums.albums[1].imageIds.push(extras[3].id);
+  const library=await f.request('/api/mobile/gallery',{cookie:otherToken});assert.equal(library.status,200);
+  assert.deepEqual(new Set(library.data.freeImageIds),new Set([f.photos[0].id,f.photos[1].id,extras[0].id]));
+  assert.deepEqual(library.data.packedImageIds,[],'free membership takes precedence over a paid pack');
+  assert.ok(library.data.accessibleImageIds.includes(extras[0].id),'zero-price albums require no purchase');
+  assert.ok(library.data.accessibleImageIds.includes(extras[3].id),'today remains playable without entering the regular free gallery early');
+  assert.ok(!library.data.imageIds.includes(extras[1].id));assert.ok(!library.data.imageIds.includes(extras[2].id));assert.ok(!library.data.imageIds.includes(extras[4].id));
+  const collection=await f.request('/api/mobile/collection',{cookie:otherToken});assert.ok(!collection.data.packs.some(pack=>pack.id==='zero-price'));
+  assert.deepEqual(collection.data.profile.collection.ownedImageIds,[],'a player without purchases sees free images only in the free gallery, not owned packs');
+  assert.deepEqual(stored(f).ownedImages,f.state.ownedImages);assert.equal(stored(f).coins,100);
+ }finally{f.close();}
+});
+
 test('a gift wire ID replays the same saved reward, never the next gift or new configuration',async()=>{
  const f=fixture();try{
   const before=await f.request('/api/mobile/tasks');assert.deepEqual(before.data.inventory.map(g=>g.kind),['ten:1','ten:2']);assert.equal(before.data.inventory[0].coins,13);

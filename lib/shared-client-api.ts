@@ -4,7 +4,7 @@ import {localDb} from './local-db';
 import {body,json,failure,readRoom} from './room-store';
 import {RoomError,hasRoomAdmission} from './room-engine';
 import {securityLimit} from './account-security';
-import {readManagedContent,managedDailyPuzzle,managedGalleryPhotos} from './managed-content';
+import {readManagedContent,managedDailyPuzzle,managedGalleryPhotos,effectiveManagedAlbums} from './managed-content';
 import {managedPlayerView,managedPlayerAction,managedAccessibleImageIds} from './managed-economy';
 import {managedRooms} from './lobby-store';
 import {pieceBand} from './piece-policy';
@@ -171,9 +171,10 @@ export async function sharedClientApi(request:Request,path:string){
   if(path==='/api/mobile/tasks'&&method==='GET')return answer(taskView(ctx),ctx);
   if(path==='/api/mobile/collection'&&method==='GET')return answer(collectionView(ctx),ctx);
   if(path==='/api/mobile/gallery'&&method==='GET'){
-   const allowed=await managedAccessibleImageIds(ctx.player.id,ctx.content),photos=[...managedGalleryPhotos(ctx.content),...(ctx.view.retainedImages??[])];
+   const now=Date.now(),albums=effectiveManagedAlbums(ctx.content,now),free=new Set(albums.filter(album=>!album.purchasable||album.price===0).flatMap(album=>album.imageIds)),paid=new Set(albums.filter(album=>album.purchasable&&album.price>0).flatMap(album=>album.imageIds));
+   const allowed=await managedAccessibleImageIds(ctx.player.id,ctx.content,now),photos=[...managedGalleryPhotos(ctx.content,now),...(ctx.view.retainedImages??[])];
    const all=[...new Map(photos.map(p=>[p.id,p])).values()];
-   return answer({imageIds:all.map(p=>p.id),packedImageIds:[...allowed],accessibleImageIds:[...allowed],photos:all.map(p=>sharedImage(p,ctx.origin)),daily:sharedImage(managedDailyPuzzle(ctx.content),ctx.origin),contentReleaseId:ctx.content.releaseId},ctx);
+   return answer({imageIds:all.map(p=>p.id),freeImageIds:[...free],packedImageIds:[...paid].filter(id=>!free.has(id)),accessibleImageIds:[...allowed],photos:all.map(p=>sharedImage(p,ctx.origin)),daily:sharedImage(managedDailyPuzzle(ctx.content,now),ctx.origin),contentReleaseId:ctx.content.releaseId},ctx);
   }
   if(method!=='POST')return json({error:'请求方式无效'},405);
   if(path==='/api/mobile/gifts/open'){
