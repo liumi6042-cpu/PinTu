@@ -199,9 +199,13 @@ def activate(root, stage, request, health_checker=check_health, runner=subproces
     preflights = []
     for target in targets:
         try:
-            result = runner(target['preflightCommand'], env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=preflight_timeout, check=False, shell=False)
-            ok = result.returncode == 0
-        except (OSError, subprocess.TimeoutExpired):
+            result = runner(target['preflightCommand'], env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=preflight_timeout, check=False, shell=False)
+            payload = getattr(result, 'stdout', None)
+            receipt = json.loads(payload) if result.returncode == 0 and isinstance(payload, (bytes, str)) and 0 < len(payload) <= 65536 else None
+            ok = (isinstance(receipt, dict) and receipt.get('ok') is True
+                  and receipt.get('contentReleaseId') == release_id
+                  and ('manifestSha256' not in receipt or receipt['manifestSha256'] == manifest_hash))
+        except (OSError, subprocess.TimeoutExpired, ValueError, TypeError):
             ok = False
         preflights.append({'id': target['id'], 'ok': ok})
     if not all(item['ok'] for item in preflights):

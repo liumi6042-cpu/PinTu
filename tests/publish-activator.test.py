@@ -48,7 +48,8 @@ class ActivatorTests(unittest.TestCase):
     def runner(self, command, **kwargs):
         self.assertFalse(kwargs['shell'])
         self.assertEqual(kwargs['env']['JIGSAW_CONTENT_RELEASE_ID'], 'next')
-        return types.SimpleNamespace(returncode=0)
+        self.assertEqual(kwargs['stdout'], subprocess.PIPE)
+        return types.SimpleNamespace(returncode=0, stdout=json.dumps({'ok': True, 'contentReleaseId': 'next', 'manifestSha256': kwargs['env']['JIGSAW_CONTENT_MANIFEST_SHA256']}).encode())
 
     def healthy(self, targets, expected, timeout):
         current = self.root / 'current.json'
@@ -72,7 +73,10 @@ class ActivatorTests(unittest.TestCase):
         old = self.previous()
         stage, _, digest = self.release('next')
         def runner(command, **kwargs):
-            return types.SimpleNamespace(returncode=1 if 'mobile' in command[1] else 0)
+            result = self.runner(command, **kwargs)
+            if 'mobile' in command[1]:
+                result.returncode = 1
+            return result
         result = MODULE.activate(self.root, stage, self.request('next', digest), self.healthy, runner)
         self.assertEqual(result['code'], 'PUBLISH_PREFLIGHT_FAILED')
         self.assertEqual((self.root / 'current.json').read_bytes(), old)
@@ -93,6 +97,28 @@ class ActivatorTests(unittest.TestCase):
         self.assertTrue(result['rollback']['ok'])
         self.assertEqual(calls, ['next', 'previous'])
         self.assertEqual((self.root / 'current.json').read_bytes(), old)
+
+    def test_empty_or_malformed_success_output_cannot_publish(self):
+        old = self.previous()
+        stage, _, digest = self.release('next')
+        for payload in [b'', b'not json', b'\xff', b'{}', b'[]', b'{"ok":false,"contentReleaseId":"next"}']:
+            with self.subTest(payload=payload):
+                def runner(command, **kwargs):
+                    return types.SimpleNamespace(returncode=0, stdout=payload)
+                result = MODULE.activate(self.root, stage, self.request('next', digest), self.healthy, runner)
+                self.assertEqual(result['code'], 'PUBLISH_PREFLIGHT_FAILED')
+                self.assertEqual((self.root / 'current.json').read_bytes(), old)
+
+    def test_wrong_preflight_version_or_digest_cannot_publish(self):
+        old = self.previous()
+        stage, _, digest = self.release('next')
+        for receipt in [{'ok': True, 'contentReleaseId': 'previous'}, {'ok': True, 'contentReleaseId': 'next', 'manifestSha256': '0' * 64}]:
+            with self.subTest(receipt=receipt):
+                def runner(command, **kwargs):
+                    return types.SimpleNamespace(returncode=0, stdout=json.dumps(receipt).encode())
+                result = MODULE.activate(self.root, stage, self.request('next', digest), self.healthy, runner)
+                self.assertEqual(result['code'], 'PUBLISH_PREFLIGHT_FAILED')
+                self.assertEqual((self.root / 'current.json').read_bytes(), old)
 
     def test_first_release_rolls_back_to_absent_pointer_on_health_exception(self):
         stage, _, digest = self.release('next')
