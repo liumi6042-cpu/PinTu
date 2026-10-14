@@ -36,7 +36,7 @@ try{
 const port=await freePort(3137);
   child=spawn(process.execPath,['server.js'],{cwd:app,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,TEMP:process.env.TEMP,NODE_ENV:'production',HOST:'127.0.0.1',PORT:String(port),VINEXT_TRUSTED_HOSTS:'jigsawnook.online',VINEXT_TRUST_PROXY:'1',PUZZLE_PUBLIC_ORIGIN:'https://jigsawnook.online',PUZZLE_BETA_CAPACITY:'200',DATABASE_PATH:resolve(root,'data/puzzle.sqlite'),MIGRATIONS_DIR:resolve(app,'drizzle')}});
   child.stdout.on('data',data=>{output+=data;});child.stderr.on('data',data=>{output+=data;});
-  const get=path=>fetch('http://127.0.0.1:'+port+path,{headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'},signal:AbortSignal.timeout(5000)});
+  const get=async path=>{for(let redirects=0;redirects<5;redirects++){const response=await fetch('http://127.0.0.1:'+port+path,{headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'},redirect:'manual',signal:AbortSignal.timeout(5000)});if(![301,302,303,307,308].includes(response.status))return response;const target=new URL(response.headers.get('Location'),'https://jigsawnook.online');assert.equal(target.origin,'https://jigsawnook.online','smoke redirects must stay on the isolated service');path=target.pathname+target.search;await response.arrayBuffer();}throw Error('Too many isolated redirects');};
   let ready=false;
   for(let attempt=0;attempt<60;attempt++){
     if(child.exitCode!==null)throw new Error(output);
@@ -45,6 +45,8 @@ const port=await freePort(3137);
   }
   assert.ok(ready,output);
   for(const path of ['/','/gallery','/lobby','/help','/api/locale']){const response=await get(path);assert.equal(response.status,200,path);await response.arrayBuffer();}
+  const sharedPage=await (await get('/play')).text();assert.ok(sharedPage.includes('id="game"'));assert.ok(sharedPage.includes('shared-game-host'));
+  const sharedConfig=await (await get('/api/shared/config')).json();assert.equal(sharedConfig.identityMode,'web-cookie');assert.equal(sharedConfig.capabilities.energy,false);assert.ok(sharedConfig.uiBase.startsWith('/shared-client/'));
   for(const lobbyPath of ['/lobby','/zh/lobby']){
     const html=await (await get(lobbyPath)).text();assert.ok(html.includes('397229653'));assert.ok(html.includes('lobby-qq'));
   }

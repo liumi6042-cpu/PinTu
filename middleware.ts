@@ -3,7 +3,7 @@ import { settings } from './lib/site-settings';
 import { securityLimit } from './lib/account-security';
 import { isPublicSearchPage } from './lib/seo';
 import { cookieLanguage,LANGUAGE_COOKIE } from './lib/language-detection';
-import { ENTRANCE_BYPASS, ENTRANCE_COOKIE, isEntrancePath, languageRedirect, lobbyFor, skipsEntrance } from './lib/entrance-preference';
+import { ENTRANCE_BYPASS, ENTRANCE_COOKIE, isEntrancePath, languageRedirect, skipsEntrance } from './lib/entrance-preference';
 
 export async function middleware(request:NextRequest) {
   const s=settings(),local=!!s.PUZZLE_LOCAL_ORIGIN;
@@ -30,7 +30,7 @@ export async function middleware(request:NextRequest) {
   } else if(skipEntrance) {
     // Temporary on purpose: the entrance stays this address's page for search engines
     // and for anyone arriving for the first time.
-    response=NextResponse.redirect(new URL(lobbyFor(request.nextUrl.pathname),request.url));
+    response=NextResponse.redirect(new URL('/play',request.url));
   } else {
     try {
       // In local mode the existing gateway enforces socket-IP limits. Hosted

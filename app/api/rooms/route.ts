@@ -55,6 +55,8 @@ export async function POST(request:Request){
     if(grid&&(grid.cols!==level.cols||grid.rows!==level.rows))room.puzzle=createFittedPuzzle(input.imageId,grid.cols,grid.rows);
    }
   }
+  // Shared clients use the reviewed compact table; existing/seed clients keep their layout.
+  if(input.scatterVersion===3&&!input.initialState)room.puzzle=createFittedPuzzle(room.puzzle.imageId,room.puzzle.cols,room.puzzle.rows,room.puzzle.seed,3);
   // An already-open old client still reconstructs seed-v1 using the old slots.
   // Keep its creation compatible; new clients request seed-v2 instead.
   if(input.initialState==='seed-v1')room.puzzle=room.puzzle.scatterVersion===2

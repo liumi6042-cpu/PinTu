@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 // render outside the server, e.g. a prerender pass) this stays English.
 export default async function RootLayout({children}:{children:React.ReactNode}) {
   const path=(await headers()).get('x-jigsaw-path') ?? '/';
-  const lang=path==='/zh'||path.startsWith('/zh/')?'zh-CN':'en';
+  const lang=path==='/play'||path==='/zh'||path.startsWith('/zh/')?'zh-CN':'en';
   const retentionVisible=CHECKIN_VISIBLE||HATCHING_VISIBLE;
-  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}{retentionVisible&&path!=='/courtyard'&&<CourtyardCompanion/>}{path!=='/courtyard'&&<FeedbackWidget/>}</LanguageProvider></body></html>;
+  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}{retentionVisible&&path!=='/courtyard'&&path!=='/play'&&<CourtyardCompanion/>}{path!=='/courtyard'&&path!=='/play'&&<FeedbackWidget/>}</LanguageProvider></body></html>;
 }
