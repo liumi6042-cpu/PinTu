@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdir
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { inside } from './release-files.mjs';
+import { inside, SERVER_RUNTIME_HELPERS, CONTENT_RUNTIME_FILES } from './release-files.mjs';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
 const release=process.argv.includes('--release');
@@ -43,8 +43,8 @@ try {
   const output=resolve(buildRoot,'dist/standalone');
   if(!existsSync(resolve(output,'server.js')))throw new Error('Standalone server output missing');
   copyTree(resolve(root,'drizzle'),resolve(output,'drizzle'));
-  for(const name of ['backup.mjs','migrate.mjs','public-room-cleanup.mjs','runtime.node.mjs','sqlite.mjs']){
-    copyFile(resolve(root,'server',name),resolve(output,'server',name));
+  for(const name of [...SERVER_RUNTIME_HELPERS,...CONTENT_RUNTIME_FILES]){
+    copyFile(resolve(root,name),resolve(output,name));
   }
   if(readFileSync(resolve(output,'dist/server/index.js'),'utf8').includes('cloudflare:workers'))throw new Error('Worker-only import remained in Node output');
   let target=output;

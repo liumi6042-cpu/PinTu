@@ -18,6 +18,7 @@ type AccountContextValue = {
     logout: () => Promise<void>;
 };
 const AccountContext = createContext<AccountContextValue | null>(null);
+export function useOptionalAccount(){return useContext(AccountContext);}
 export function useAccount() { const context = useContext(AccountContext); if (!context)
     throw new Error('AccountGate is required'); return context; }
 export default function AccountGate({ children, intro = false, requireLogin = false, solo = false }: {

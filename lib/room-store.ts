@@ -7,11 +7,13 @@ import { recordRoomChange } from './room-sync';
 import { localDb } from './local-db';
 import { saveCompletion } from './lobby-store';
 import { RoomError, type Room } from './room-engine';
-import { normalizePuzzle, placedCount } from './puzzle-engine';
+import { normalizePuzzle } from './puzzle-engine';
 import { RESTORABLE_PHOTO_IDS } from './puzzle-catalog';
 import { roomAchievementDays,saveAchievementActivity,saveAchievementCompletion } from './achievement-store';
 import { RoomReadCache } from './room-read-cache';
 import { RoomWriteQueue } from './room-write-queue';
+import {readManagedContent,type ManagedContentSnapshot} from './managed-content';
+import {prepareManagedRoomEvent,drainManagedRewards} from './managed-economy';
 const db=localDb;
 const roomCache=new RoomReadCache();
 const writes=new RoomWriteQueue();
@@ -34,11 +36,17 @@ export async function mutateRoom<T>(id:string,fn:(room:Room)=>T){
  return writes.run(id,()=>commitRoom(id,fn));
 }
 async function commitRoom<T>(id:string,fn:(room:Room)=>T){
+ let content:ManagedContentSnapshot|null|undefined,contentRead=false,contentUnavailable=false;
  for(let attempt=0;attempt<8;attempt++){
   const base=await readRoom(id),room=structuredClone(base),before=room.revision,previousExpiry=room.expiresAt,previousTitle=room.title,previousVisibility=room.visibility,previousDays=roomAchievementDays(room),wasComplete=!!room.completedAt;
   const previous=base.puzzle.groups;
   const result=fn(room);room.revision++;recordRoomChange(room,previous);
+  const rewardChanged=(!wasComplete&&!!room.completedAt)||Object.entries(room.achievements?.contributors||{}).some(([owner,value])=>value.count>(base.achievements?.contributors[owner]?.count||0));
+  // Capture one content version for this committed gameplay event. A broken
+  // rewards release must stop payouts without interrupting a player's drag.
+  if(rewardChanged&&!contentRead){contentRead=true;try{content=readManagedContent();}catch{contentUnavailable=true;console.error('Managed reward configuration unavailable');}}
   const becomingPrivate=base.visibility==='public'&&room.visibility==='private',now=Date.now();
+  const rewardEvent=rewardChanged?await prepareManagedRoomEvent(room,base,content??null,now,{unavailable:contentUnavailable}):null;
   if(becomingPrivate){
    if(!room.ownerId||!canCreateMemberRoom(await membershipFor(room.ownerId),now))throw new RoomError(MEMBERSHIP_REQUIRED,403);
    room.expiresAt=Math.max(room.lastPlayedAt||room.createdAt,room.publicLastSeenAt||0)+30*86400000;
@@ -47,20 +55,20 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T){
     AND (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL)<?`:'';
   const admissionValues=becomingPrivate?[room.ownerId!,now,now,room.ownerId!,now,MEMBER_ROOM_LIMIT]:[];
   const serialized=JSON.stringify(room),database=db(),commands=[database.prepare('UPDATE puzzle_rooms SET data = ?, revision = ?, expires_at = ? WHERE id = ? AND revision = ?'+admission).bind(serialized,room.revision,room.expiresAt,id,before,...admissionValues)];
+  // The immediately preceding CAS is the only operation allowed to enqueue this
+  // original-time event. Room progress and pending rewards therefore survive
+  // together, including a failed payout or a service restart.
+  if(rewardEvent)commands.push(database.prepare(`INSERT OR IGNORE INTO puzzle_managed_reward_events(id,room_id,revision,occurred_at,payload)
+    SELECT ?,?,?,?,? WHERE changes()=1`).bind(rewardEvent.id,rewardEvent.roomId,rewardEvent.revision,rewardEvent.occurredAt,rewardEvent.payload));
   if(room.expiresAt!==previousExpiry||room.title!==previousTitle||room.visibility!==previousVisibility||!!room.completedAt!==wasComplete)
    commands.push(database.prepare(`UPDATE puzzle_room_directory SET
     expires_at=(SELECT expires_at FROM puzzle_rooms WHERE id=?),
     title=COALESCE((SELECT json_extract(data,'$.title') FROM puzzle_rooms WHERE id=?),title),
     visibility=COALESCE((SELECT json_extract(data,'$.visibility') FROM puzzle_rooms WHERE id=?),visibility),
     completed_at=(SELECT json_extract(data,'$.completedAt') FROM puzzle_rooms WHERE id=?) WHERE room_id=?`).bind(id,id,id,id,id));
-  // Keep the room's highest placed-piece total in a history table.  This command
-  // is part of the same batch as the room write, so a cleanup cannot race the
-  // history update and completed rooms remain counted after their JSON is gone.
-  commands.push(database.prepare(`INSERT INTO puzzle_piece_progress (room_id,placed_count,updated_at) VALUES (?,?,?)
-    ON CONFLICT(room_id) DO UPDATE SET
-      placed_count=MAX(puzzle_piece_progress.placed_count,excluded.placed_count),
-      updated_at=CASE WHEN excluded.placed_count>puzzle_piece_progress.placed_count
-        THEN excluded.updated_at ELSE puzzle_piece_progress.updated_at END`).bind(id,placedCount(room.puzzle),now));
+  // Migration 0017 records lifetime and Beijing-day placed-piece increments in
+  // the successful room UPDATE's trigger, in this same transaction. A rejected
+  // CAS must never persist this attempt's piece totals.
   const [updated]=await database.batch(commands);
   if(becomingPrivate&&updated.meta.changes!==1){
    if(!canCreateMemberRoom(await membershipFor(room.ownerId!),Date.now()))throw new RoomError(MEMBERSHIP_REQUIRED,403);
@@ -71,6 +79,7 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T){
    if(room.completedAt)await saveCompletion(room);
    if(room.completedAt&&!wasComplete){await saveAchievementCompletion(room);try{await settleGarden(room);}catch{console.error('Courtyard reward pending recovery');}}
    else await saveAchievementActivity(room,previousDays);
+   if(rewardEvent)try{await drainManagedRewards(content??null);}catch{console.error('Managed room reward pending recovery');}
    roomCache.put(room,serialized.length*2);
    return {room,result};
   }

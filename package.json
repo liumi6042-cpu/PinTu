@@ -15,6 +15,7 @@
     "search:notify": "node scripts/notify-search-engines.mjs",
     "test:release": "node --test tests/release-package.test.mjs",
     "check:images": "node scripts/check-image-library.mjs",
+    "check:content-release": "node scripts/check-content-release.mjs",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt"

@@ -19,6 +19,7 @@ import './ranking-records.css';
 import './service-pages.css';
 import './search-pages.css';
 import './bookmark-site.css';
+import './managed-play.css';
 import { headers } from 'next/headers';
 import { LanguageProvider } from './language-switch';
 import FeedbackWidget from './feedback-widget';

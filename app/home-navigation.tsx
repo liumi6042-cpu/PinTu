@@ -6,7 +6,9 @@ import { usePathname } from 'next/navigation';
 import { isChinesePath,zhPath } from '@/lib/site-paths';
 
 import { useEffect, useState } from 'react';
-import { Users, UserRound, Images, Crown, Puzzle } from 'lucide-react';
+import { Users, UserRound, Images, Crown, Puzzle,BookOpen,ListChecks,Palette } from 'lucide-react';
+import {useManagedContent} from './managed-content';
+import ManagedProfile from './managed-profile';
 import type { Account } from '@/lib/account-crypto';
 import { apiJson } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
@@ -19,6 +21,7 @@ export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:st
     const copy=useAddressCopy();
     useLanguage();
     const zh=isChinesePath(usePathname()||'');
+    const {data:managed}=useManagedContent();
     const zhHref=(href:string)=>{const [path,...query]=href.split('?');return zh?zhPath(path)+(query.length?'?'+query.join('?'):''):href;};
     const [account, setAccount] = useState<Account | null>(null);
     useEffect(() => {
@@ -33,6 +36,7 @@ export default function HomeNavigation({galleryHref='/gallery'}:{galleryHref?:st
   <a href={zh?'/zh/lobby':'/lobby'}><Users size={17}/>{copy("公开大厅")}</a>
   {COURTYARD_VISIBLE&&<a href="/courtyard"><Puzzle size={17}/>{copy("我的庭院")}</a>}
   <a href={zhHref(galleryHref)}><Images size={17}/>{copy('图库')}</a>
+  {managed?.enabled&&<><a href={zhHref('/albums')}><BookOpen size={17}/>{zh?'相册':'Albums'}</a><a href={zhHref('/tasks')}><ListChecks size={17}/>{zh?'任务':'Tasks'}</a><a href={zhHref('/decorations')}><Palette size={17}/>{zh?'装饰':'Decorations'}</a><ManagedProfile zh={zh}/></>}
   <a href="/personal"><UserRound size={17}/>{copy(PERSONAL_PLAY_VISIBLE?'个人空间':'拼图记录')}</a>
   {MEMBERSHIP_VISIBLE&&<a href="/membership"><Crown size={17}/>{copy("会员")}</a>}
   <a className="home-account-link" href={account?"/account/security":"/account"}>{account ? account.name : copy('登录（可选）')}</a>

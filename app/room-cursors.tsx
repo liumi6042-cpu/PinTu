@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import {cosmeticsOf,validStyle} from '../public/cosmetics/catalog.mjs';
 import {cosmeticUrl} from '@/lib/cosmetic-art';
 import {CosmeticCursor} from './cosmetic-preview';
+import ManagedCursor from './managed-cursor';
+import {managedCursorUrl,validManagedCursor,type ManagedCursorArt} from '@/lib/managed-decoration-art';
 import AchievementBadge from './achievement-badge';
 import { MousePointer2 } from 'lucide-react';
 import { playerName } from '@/lib/i18n';
@@ -23,7 +25,10 @@ export default function RoomCursors({client,canvas,getTable,hidden=false}:{
   const channel=useRef<CursorClient|null>(null);
   useEffect(()=>{const element=canvas.current;if(!element)return;let alive=true,revision=0;
     const clear=()=>{delete element.dataset.cosmeticCursor;element.style.removeProperty('--cosmetic-cursor');};
-    const refresh=async()=>{const n=++revision;clear();if(!window.matchMedia('(pointer:fine)').matches)return;try{const r=await fetch('/api/courtyard',{cache:'no-store'});if(!r.ok)return;const data=await r.json() as {state:Parameters<typeof cosmeticsOf>[0]};const id=cosmeticsOf(data.state).equipped.cursor;if(!validStyle(id))return;const url=await cosmeticUrl('cursor',id);if(alive&&n===revision){element.style.setProperty('--cosmetic-cursor',`url("${url}") 16 16, auto`);element.dataset.cosmeticCursor=id;}}catch{}};
+    const refresh=async()=>{const n=++revision;clear();if(!window.matchMedia('(pointer:fine)').matches)return;
+      try{const response=await fetch('/api/player-content',{cache:'no-store'});if(response.ok){const data=await response.json() as {enabled:boolean;decorations?:Array<ManagedCursorArt&{owned:boolean;equipped:boolean}>};const art=data.enabled?data.decorations?.find(item=>item.owned&&item.equipped):null;if(validManagedCursor(art)){if(alive&&n===revision){element.style.setProperty('--cosmetic-cursor',`url("${managedCursorUrl(art)}") 16 16, auto`);element.dataset.cosmeticCursor=art.id;}return;}}}catch{}
+      try{const r=await fetch('/api/courtyard',{cache:'no-store'});if(!r.ok)return;const data=await r.json() as {state:Parameters<typeof cosmeticsOf>[0]};const id=cosmeticsOf(data.state).equipped.cursor;if(!validStyle(id))return;const url=await cosmeticUrl('cursor',id);if(alive&&n===revision){element.style.setProperty('--cosmetic-cursor',`url("${url}") 16 16, auto`);element.dataset.cosmeticCursor=id;}}catch{}
+    };
     void refresh();window.addEventListener('focus',refresh);window.addEventListener('puzzle:cosmetics-changed',refresh);window.addEventListener('puzzle:account-changed',refresh);
     const storage=(e:StorageEvent)=>{if(e.key==='jigsaw:cosmetics-updated')void refresh();};window.addEventListener('storage',storage);
     return()=>{alive=false;clear();window.removeEventListener('focus',refresh);window.removeEventListener('puzzle:cosmetics-changed',refresh);window.removeEventListener('puzzle:account-changed',refresh);window.removeEventListener('storage',storage);};
@@ -67,6 +72,6 @@ export default function RoomCursors({client,canvas,getTable,hidden=false}:{
     };
   },[client,canvas,getTable]);
   return <div className="shared-cursors" aria-hidden="true">{cursors.map(cursor=><div className="shared-cursor" key={cursor.playerId} ref={node=>{if(node)nodes.current.set(cursor.playerId,node);else nodes.current.delete(cursor.playerId);}}>
-    {validStyle(cursor.cursorStyle)?<CosmeticCursor id={cursor.cursorStyle!}/>:<MousePointer2 size={24} fill={cursor.color} stroke="#342e26" strokeWidth={1.4}/>}<span style={{backgroundColor:cursor.color}}>{cursor.badge&&<AchievementBadge id={cursor.badge} small/>}{playerName(cursor.name)}</span>
+    {validManagedCursor(cursor.managedCursor)?<ManagedCursor art={cursor.managedCursor}/>:validStyle(cursor.cursorStyle)?<CosmeticCursor id={cursor.cursorStyle!}/>:<MousePointer2 size={24} fill={cursor.color} stroke="#342e26" strokeWidth={1.4}/>}<span style={{backgroundColor:cursor.color}}>{cursor.badge&&<AchievementBadge id={cursor.badge} small/>}{playerName(cursor.name)}</span>
   </div>)}</div>;
 }

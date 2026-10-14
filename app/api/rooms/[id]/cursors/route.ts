@@ -4,6 +4,8 @@ import { body, failure, getDigest, json,readRoom } from '@/lib/room-store';
 import { checkRoomAccount } from '@/lib/room-account';
 import { ONLINE_MS, RoomError, type Member, type Room, type RoomVisibility } from '@/lib/room-engine';
 import { CURSOR_ONLINE_MS, cursorInput, type SharedCursor } from '@/lib/room-cursors';
+import {readManagedContent} from '@/lib/managed-content';
+import {ownedManagedCursors} from '@/lib/managed-economy';
 type Context={params:Promise<{id:string}>};
 type CursorRoom={id:string;expiresAt:number;visibility?:RoomVisibility;members:Member[];puzzle:Room['puzzle']};
 async function authorize(request:Request,context:Context){
@@ -24,8 +26,10 @@ async function positions(room:CursorRoom,now:number){
     LEFT JOIN puzzle_account_security s ON s.user_id=g.user_id
     WHERE c.room_id=? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0 AND c.x IS NOT NULL AND c.y IS NOT NULL`).bind(JSON.stringify(room.members),room.id,now-CURSOR_ONLINE_MS).all<{player_id:string;x:number;y:number;updated_at:number;badge:string|null;cursorStyle:string|null}>();
   const members=new Map(room.members.filter(m=>m.lastSeen>0&&now-m.lastSeen<CURSOR_ONLINE_MS).map(m=>[m.id,m]));
+  let managed=new Map<string,import('@/lib/managed-decoration-art').ManagedCursorArt>();
+  try{const content=readManagedContent();if(content)managed=await ownedManagedCursors([...members.values()].map(member=>member.accountId||member.guestId||'').filter(Boolean),content);}catch{/* Preserve old pointer presence while managed content is unavailable. */}
   const cursors:SharedCursor[]=[];
-  for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,cursorStyle:row.cursorStyle,x:row.x,y:row.y,updatedAt:row.updated_at});}
+  for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,cursorStyle:row.cursorStyle,managedCursor:managed.get(member.accountId||member.guestId||'')||null,x:row.x,y:row.y,updatedAt:row.updated_at});}
   return json({cursors,serverTime:now});
 }
 export async function GET(request:Request,context:Context){try{const {room,now}=await authorize(request,context);return await positions(room,now);}catch(error){return failure(error);}}

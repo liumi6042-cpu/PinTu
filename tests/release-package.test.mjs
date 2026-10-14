@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
 import {resolve} from 'node:path';
-import {runtimeAssets,selectRuntimeFiles,inventory,inside} from '../scripts/release-files.mjs';
+import {runtimeAssets,selectRuntimeFiles,inventory,inside,SERVER_RUNTIME_HELPERS,CONTENT_RUNTIME_FILES} from '../scripts/release-files.mjs';
 
 test('runtime artwork retains archived saves but excludes PNG originals and unpublished artwork',()=>{
   const photo=(id,status)=>({id,status,origin:'project-ai-generated',src:`/puzzles/${id}.png`,playSrc:`/puzzles/${id}-play-0123456789ab.webp`,thumbSrc:`/puzzles/${id}-thumbnail-0123456789ab.webp`,optimizedSrc:`/puzzles/${id}-optimized-0123456789ab.webp`});
@@ -23,7 +23,7 @@ test('release allowlist excludes source, credentials, raw images, duplicate publ
   const put=name=>{mkdirSync(resolve(root,name,'..'),{recursive:true});writeFileSync(resolve(root,name),'fixture');};
   try{
     const assets=['/favicon.svg','/puzzles/new-optimized-0123456789ab.webp','/puzzles/new-compact-0123456789ab.webp','/puzzles/old-play-0123456789ab.webp'];
-    const required=['server.js','package.json','dist/server/index.js','node_modules/react/index.js','drizzle/0000_tables.sql','dist/client/_next/static/chunk.js','dist/client/.vite/manifest.json',...assets.map(url=>'dist/client'+url),...['backup','migrate','public-room-cleanup','runtime.node','sqlite'].map(name=>`server/${name}.mjs`)];
+    const required=['server.js','package.json','dist/server/index.js','node_modules/react/index.js','drizzle/0000_tables.sql','dist/client/_next/static/chunk.js','dist/client/.vite/manifest.json',...assets.map(url=>'dist/client'+url),...SERVER_RUNTIME_HELPERS,...CONTENT_RUNTIME_FILES];
     const forbidden=['.env','app/page.tsx','docs/passwords.md','tests/example.test.mjs','work/source.tar','public/favicon.svg','public/puzzles/original.png','dist/client/puzzles/original.png','dist/client/intro/unused.png','server/deploy-existing-server.py','dist/server/index.js.map','drizzle/meta/_journal.json'];
     [...required,...forbidden].forEach(put);
     const files=selectRuntimeFiles(root,assets);

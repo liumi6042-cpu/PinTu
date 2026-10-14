@@ -6,7 +6,7 @@ export const CURSOR_INTERVAL = 200;
 // existing shorter timeout. Explicit leave/stop still removes the cursor now.
 export const CURSOR_ONLINE_MS = 120000;
 export type CursorPoint = { x: number; y: number };
-export type SharedCursor = CursorPoint & { playerId: string; name: string; color: string; badge?:string|null;cursorStyle?:string|null; updatedAt: number };
+export type SharedCursor = CursorPoint & { playerId: string; name: string; color: string; badge?:string|null;cursorStyle?:string|null; managedCursor?:import('./managed-decoration-art').ManagedCursorArt|null; updatedAt: number };
 export type CursorInput = { clientId: string; seq: number; point: CursorPoint | null };
 export function cursorInput(input: unknown,world:typeof WORLD=WORLD): CursorInput | null {
   if (!input || typeof input !== 'object') return null;

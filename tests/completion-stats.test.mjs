@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { beijingDayStart, completionStats } from '../lib/completion-stats.ts';
 
 // A fake D1-style database: records the bound parameter so the test can prove which day was asked for.
-function fakeDatabase(today, total, pieces, calls) {
+function fakeDatabase(today, total, pieces, calls, piecesToday=0) {
   if (!calls) { calls = pieces; pieces = 0; }
   return {
     prepare(sql) {
@@ -13,7 +13,7 @@ function fakeDatabase(today, total, pieces, calls) {
           return {
             all: async () => {
               calls.push(values);
-            return { results: [{ today, total, pieces }] };
+            return { results: [{ today, total, pieces, piecesToday }] };
             },
           };
         },
@@ -35,9 +35,9 @@ test('the day boundary is midnight in Beijing', () => {
 
 test('today is counted from the Beijing day start and the total has no boundary', async () => {
   const calls = [], now = Date.UTC(2026, 8, 21, 15, 0);
-  const stats = await completionStats(now, fakeDatabase(7, 1234, 9876, calls));
-  assert.deepEqual(stats, { completedToday: 7, completedTotal: 1234, completedPiecesTotal: 9876 });
-  assert.deepEqual(calls, [[beijingDayStart(now)]]);
+  const stats = await completionStats(now, fakeDatabase(7, 1234, 9876, calls, 108));
+  assert.deepEqual(stats, { completedToday: 7, completedTotal: 1234, completedPiecesTotal: 9876, completedPiecesToday: 108 });
+  assert.deepEqual(calls, [[beijingDayStart(now),beijingDayStart(now)]]);
 });
 
 test('the numbers are memoised briefly, and recomputed when the day turns over', async () => {
@@ -54,7 +54,7 @@ test('the numbers are memoised briefly, and recomputed when the day turns over',
   // Crossing midnight always asks again, even inside the cache window.
   const afterMidnight = Date.UTC(2026, 8, 21, 16, 5);
   const fresh = fakeDatabase(0, 51, calls);
-  assert.deepEqual(await completionStats(afterMidnight, fresh), { completedToday: 0, completedTotal: 51, completedPiecesTotal: 0 });
+  assert.deepEqual(await completionStats(afterMidnight, fresh), { completedToday: 0, completedTotal: 51, completedPiecesTotal: 0, completedPiecesToday: 0 });
   assert.equal(calls.length, 3);
 });
 

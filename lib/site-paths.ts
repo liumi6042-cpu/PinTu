@@ -1,6 +1,6 @@
 // Address helpers with no heavy imports. The language switch runs in the browser,
 // and pulling lib/seo.ts in would drag the puzzle engine along with it.
-export const PUBLIC_PAGE_PATHS = ['/', '/lobby', '/gallery', '/help'] as const;
+export const PUBLIC_PAGE_PATHS = ['/', '/lobby', '/gallery', '/help', '/albums', '/tasks', '/decorations'] as const;
 export const zhPath = (path: string) => (path === '/' ? '/zh' : `/zh${path}`);
 export const isChinesePath = (path: string) => path === '/zh' || path.startsWith('/zh/');
 export const englishPath = (path: string) => (path === '/zh' ? '/' : path.replace(/^\/zh(?=\/)/, ''));

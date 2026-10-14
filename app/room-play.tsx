@@ -34,7 +34,9 @@ export default function RoomPlay({ roomId }: {
         // Another table, straight away: a different picture at the same size, so a finished
         // puzzle is followed by playing rather than by choosing.
         const startNextTable = async () => {
-            const { photo: next, pieces } = nextTableChoice({ imageId: client.state.imageId, cols: client.state.cols, rows: client.state.rows });
+            const library=await apiJson<{photos:typeof RESTORABLE_PHOTOS;accessibleImageIds:string[]}>('/api/gallery-content');
+            const allowed=new Set(library.accessibleImageIds);
+            const { photo: next, pieces } = nextTableChoice({ imageId: client.state.imageId, cols: client.state.cols, rows: client.state.rows },{photos:library.photos.filter(photo=>allowed.has(photo.id))});
             const open = (imageId: string, count: number) => apiJson<RoomTicket>('/api/rooms', { imageId, pieces: count, visibility: 'public' });
             let ticket: RoomTicket;
             try { ticket = await open(next.id, pieces); }

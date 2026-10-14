@@ -7,6 +7,7 @@ import { recommendedPieces } from '@/lib/play-guidance';
 import { saveTicket,type RoomTicket } from '@/lib/room-client';
 import { useRouter } from 'next/navigation';
 import type { RoomCard } from '@/lib/lobby-types';
+import type { CompletionStats } from '@/lib/completion-stats';
 import { apiJson,clockLabel } from '@/lib/community-client';
 import { useAddressCopy } from '@/lib/address-copy';
 import { useLanguage } from './language-switch';
@@ -32,7 +33,7 @@ function AnimatedCount({value}:{value:number}){
  useEffect(()=>{const from=previous.current,to=value;previous.current=to;if(from===to){setShown(to);return;}let frame=0;const start=performance.now();const step=(time:number)=>{const progress=Math.min(1,(time-start)/420);setShown(Math.round(from+(to-from)*(1-Math.pow(1-progress,3))));if(progress<1)frame=requestAnimationFrame(step);};frame=requestAnimationFrame(step);return()=>cancelAnimationFrame(frame);},[value]);
  return <strong>{shown.toLocaleString()}</strong>;
 }
-export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode;initialStats?:{completedToday:number;completedTotal:number;completedPiecesTotal:number}|null}){
+export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode;initialStats?:CompletionStats|null}){
  const language=useLanguage();
  // Creating a public table should keep a Chinese visitor on the Chinese gallery.
  const zh=isChinesePath(usePathname()||''),copy=useAddressCopy(),createTableHref=zh?'/zh/gallery?mode=public':'/gallery?mode=public';
@@ -46,13 +47,13 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
   catch(e){if(mounted.current&&e instanceof Error&&e.message===PIECE_LOGIN_REQUIRED){window.location.assign(accountLoginUrl(publicPuzzleReturnTo(photo.id,recommendedPieces(photo.id))));return;}launchLock.current=false;if(mounted.current){setRandomBusy(false);setLaunchError(e instanceof Error?e.message:'暂时无法开始');}}
  }
  const [rooms,setRooms]=useState<RoomCard[]>([]),[ready,setReady]=useState(false),[error,setError]=useState('');
- const [stats,setStats]=useState<{completedToday:number;completedTotal:number;completedPiecesTotal:number}|null>(initialStats??null);
+ const [stats,setStats]=useState<CompletionStats|null>(initialStats??null);
  const [query,setQuery]=useState(''),[filter,setFilter]=useState('all'),[now,setNow]=useState(Date.now),[offset,setOffset]=useState(0);
  const enterRooms=()=>{setFilter('open');window.setTimeout(()=>document.getElementById('lobby-tables')?.scrollIntoView({behavior:'smooth',block:'start'}),0);};
  useEffect(()=>{
   let alive=true,timer:ReturnType<typeof setTimeout>;
   async function refresh(){
-   try{if(!document.hidden){const result=await apiJson<{rooms:RoomCard[];stats?:{completedToday:number;completedTotal:number;completedPiecesTotal:number};serverTime:number}>('/api/lobby');if(alive){setRooms(result.rooms);setStats(result.stats??null);setOffset(result.serverTime-Date.now());setNow(Date.now());setError('');}}}
+   try{if(!document.hidden){const result=await apiJson<{rooms:RoomCard[];stats?:CompletionStats;serverTime:number}>('/api/lobby');if(alive){setRooms(result.rooms);setStats(result.stats??null);setOffset(result.serverTime-Date.now());setNow(Date.now());setError('');}}}
    catch(e){if(alive)setError(e instanceof Error?e.message:'大厅暂时无法刷新');}
    finally{if(alive){setReady(true);timer=setTimeout(refresh,3500);}}
   }
@@ -64,11 +65,11 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
   const text=[room.title,copy(room.title),photo?.category,copy(photo?.category)].join(' ').toLocaleLowerCase();
   return text.includes(query.trim().toLocaleLowerCase())&&(filter==='all'||filter==='active'&&room.players>0||filter==='open'&&room.players<8&&room.acceptingNew!==false);
  }),[rooms,query,filter,language]);
- // How much the site has finished: today's count rolls over at midnight Beijing time, the
- // same boundary the day's picture uses. Both numbers come from finished rooms only.
+ // Finished-picture counters and placed-piece counters remain separate. The day's
+ // placed pieces roll over at the same Beijing midnight as the daily picture.
  const summary=stats&&<><span><AnimatedCount value={stats.completedToday}/> {copy('幅 · 今天完成')}</span><span><AnimatedCount value={stats.completedTotal}/> {copy('幅 · 累计完成')}</span><span><AnimatedCount value={stats.completedPiecesTotal}/> {copy('片 · 全站累计')}</span></>;
  return <CommunityShell active="lobby"><LobbyFirstVisit zh={zh} onEnterRooms={enterRooms}/><main className="community-main lobby-main">
-  <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{copy('公开拼图大厅')}</h1><p>{copy('任何片数都能直接加入；只有创建 500 片及以上房间需要登录。')}</p></div><div className="lobby-summary"><span><strong>{rooms.length}</strong> {copy('个公开房间')}</span>{summary}</div></section>
+  <section className="lobby-heading"><div><p className="section-kicker">JIGSAW NOOK</p><h1>{copy('公开拼图大厅')}</h1><p>{copy('任何片数都能直接加入；只有创建 500 片及以上房间需要登录。')}</p></div><div className="lobby-summary"><span title={copy('今日实际归位的拼图块数，每天零点（北京时间）重新计数。')}>{stats?<AnimatedCount value={stats.completedPiecesToday}/>:<strong>—</strong>} {copy('当日完成碎片')}</span>{summary}</div></section>
   <LobbyCommunity/>
   <ResumePuzzle/>
   {daily}

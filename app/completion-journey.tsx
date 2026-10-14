@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import type {RoomClient} from '@/lib/room-client';
-import {GALLERY_VISIBLE_PHOTOS} from '@/lib/puzzle-catalog';
+import {RESTORABLE_PHOTOS as GALLERY_VISIBLE_PHOTOS} from '@/lib/puzzle-catalog';
 import {englishCopy} from '@/lib/seo';
 import {useLanguage} from './language-switch';
 type Moment={choices:string[];votes:Record<string,number>;myVote:string|null;nextRoomId:string|null;selected:string|null;count:number;total:number;names:string[];completedAt:number;canContinue:boolean};

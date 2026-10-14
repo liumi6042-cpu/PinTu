@@ -1,0 +1,152 @@
+{
+  "schema": "jigsaw-game-settings/v1",
+  "progression": {
+    "earlyXp": [
+      1,
+      5,
+      10,
+      18,
+      28,
+      40,
+      55,
+      70,
+      90,
+      110
+    ],
+    "laterXpStep": 10,
+    "laterXpMaximum": 300
+  },
+  "energy": {
+    "initial": 50,
+    "baseCap": 50,
+    "capPerLevel": 1,
+    "maximumCap": 100,
+    "contributionCost": 1,
+    "contributionXp": 1,
+    "naturalRecoveryMinutes": 5,
+    "firstRoomFree": true,
+    "upgradeRefill": "full",
+    "upgradeEnergy": 0,
+    "completionPools": {
+      "48": 10,
+      "108": 25,
+      "300": 60,
+      "500": 100
+    }
+  },
+  "collection": {
+    "contributionCoins": 1,
+    "completionCoinRatio": 0.5,
+    "fragmentContributionStep": 10,
+    "completionFragmentMaximum": 10,
+    "catalogMinimumContributions": 3,
+    "completionFragmentMinimum": 1
+  },
+  "milestones": [
+    {
+      "id": "milestone-3",
+      "target": 3,
+      "coins": 30,
+      "albumDecoration": false
+    },
+    {
+      "id": "milestone-6",
+      "target": 6,
+      "coins": 60,
+      "albumDecoration": true
+    }
+  ],
+  "decorations": [
+    {
+      "id": "berry-spark",
+      "title": "莓色星光",
+      "description": "陪伴每一次拼合的小小星光。",
+      "kind": "cursor",
+      "artKey": "star",
+      "color": "#b66578",
+      "cost": 0,
+      "source": "default",
+      "enabled": true
+    },
+    {
+      "id": "cream-bow",
+      "title": "奶油蝴蝶结",
+      "description": "为指尖系上一份柔软心意。",
+      "kind": "cursor",
+      "artKey": "bow",
+      "color": "#d98b9d",
+      "cost": 30,
+      "source": "craft",
+      "enabled": true
+    },
+    {
+      "id": "honey-star",
+      "title": "蜜糖流星",
+      "description": "一颗温暖的小流星。",
+      "kind": "cursor",
+      "artKey": "star",
+      "color": "#d4a458",
+      "cost": 45,
+      "source": "craft",
+      "enabled": true
+    },
+    {
+      "id": "rose-butterfly",
+      "title": "玫瑰蝶影",
+      "description": "花园里的轻盈伙伴。",
+      "kind": "cursor",
+      "artKey": "butterfly",
+      "color": "#bf748c",
+      "cost": 60,
+      "source": "craft",
+      "enabled": true
+    },
+    {
+      "id": "mint-feather",
+      "title": "薄荷羽毛",
+      "description": "随指尖轻轻划过的青羽。",
+      "kind": "cursor",
+      "artKey": "feather",
+      "color": "#7eaa98",
+      "cost": 60,
+      "source": "craft",
+      "enabled": true
+    },
+    {
+      "id": "cloud-moon",
+      "title": "云间月牙",
+      "description": "集齐云端奇遇图鉴获得。",
+      "kind": "cursor",
+      "artKey": "moon",
+      "color": "#a192c3",
+      "cost": 0,
+      "source": "album",
+      "albumId": "cloud-wonders",
+      "enabled": true
+    },
+    {
+      "id": "blossom-lantern",
+      "title": "花间小灯",
+      "description": "集齐花间灯火图鉴获得。",
+      "kind": "cursor",
+      "artKey": "lantern",
+      "color": "#ce788b",
+      "cost": 0,
+      "source": "album",
+      "albumId": "blossom-lights",
+      "enabled": true
+    },
+    {
+      "id": "mountain-leaf",
+      "title": "山间新叶",
+      "description": "集齐山水漫游图鉴获得。",
+      "kind": "cursor",
+      "artKey": "leaf",
+      "color": "#8aab89",
+      "cost": 0,
+      "source": "album",
+      "albumId": "mountain-journey",
+      "enabled": true
+    }
+  ]
+}

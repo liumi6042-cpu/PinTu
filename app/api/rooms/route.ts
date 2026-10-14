@@ -14,6 +14,8 @@ import { createPuzzle,createFittedPuzzle,LEVELS } from '@/lib/puzzle-engine';
 import type { Room } from '@/lib/room-engine';
 import { countsForDimensions,gridForDimensions,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PAUSED,NEW_GAME_LEVELS } from '@/lib/piece-policy';
 import {checkPieceCreation} from '@/lib/room-piece-access';
+import {readManagedContent} from '@/lib/managed-content';
+import {managedImageAllowed} from '@/lib/managed-economy';
 export async function POST(request:Request){
  try{
   const input=await body(request),now=Date.now();
@@ -38,12 +40,15 @@ export async function POST(request:Request){
     if(!grid)throw new RoomError(PIECE_RESOLUTION_ERROR);
     room={id:newId(),customImage:{id:image.id,title:image.title,width:image.width,height:image.height},title:image.title.slice(0,40),ownerId:player.id,visibility:input.visibility,retentionVersion:2,lastPlayedAt:now,puzzle:createFittedPuzzle(image.id,grid.cols,grid.rows),revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,members:[],leases:{},startedAt:null,participants:{}};
   }else{
+   const content=readManagedContent();
+   if(content&&!await managedImageAllowed(player!.id,input.imageId,content,now))throw new RoomError('请先在相册中解锁这张图片，或参加今日拼图。',403);
    // Catalog pictures also keep their own frame now. The room is still created
    // from the fixed level, which validates the request, then the grid is fitted
    // to the picture so a 2:1 landscape stops losing its left and right edges to
    // the 4:3 default board. Leaderboards group the fitted count into the band of
    // the level that was requested, so results stay on one board.
-   room=newPlayableRoom(newId(),input.imageId,input.pieces,(input.visibility??'private') as RoomVisibility,player!.id,now);
+   room=newPlayableRoom(newId(),input.imageId,input.pieces,(input.visibility??'private') as RoomVisibility,player!.id,now,content?.photos.map(photo=>photo.id));
+   if(content)room.title=content.photos.find(photo=>photo.id===input.imageId)?.title||room.title;
    const picture=photoGuidance(input.imageId),level=NEW_GAME_LEVELS.find(l=>l.count===input.pieces);
    if(picture&&level){
     const grid=gridForDimensions(picture.width,picture.height,level.count);

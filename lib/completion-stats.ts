@@ -6,7 +6,7 @@ const DAY = 86400000, BEIJING_OFFSET = 8 * 3600000;
 // picture turns over at, so "today" means the same thing everywhere on the site.
 export const beijingDayStart = (now: number) => dailyPuzzleDay(now) * DAY - BEIJING_OFFSET;
 
-export type CompletionStats = { completedToday: number; completedTotal: number; completedPiecesTotal: number };
+export type CompletionStats = { completedToday: number; completedTotal: number; completedPiecesTotal: number; completedPiecesToday: number };
 
 type Reader = { prepare: (sql: string) => { bind: (...values: number[]) => { all: () => Promise<{ results: Array<Record<string, unknown>> }> } } };
 
@@ -19,10 +19,11 @@ async function countCompletions(database: Reader, now: number): Promise<Completi
     .prepare(`SELECT
       (SELECT COUNT(*) FROM puzzle_results WHERE completed_at >= ?) AS today,
       (SELECT COUNT(*) FROM puzzle_results) AS total,
-      (SELECT COALESCE(SUM(placed_count),0) FROM puzzle_piece_progress) AS pieces`)
-    .bind(beijingDayStart(now)).all();
+      (SELECT COALESCE(SUM(placed_count),0) FROM puzzle_piece_progress) AS pieces,
+      (SELECT COALESCE(SUM(placed_delta),0) FROM puzzle_piece_daily_events WHERE day_start=?) AS piecesToday`)
+    .bind(beijingDayStart(now),beijingDayStart(now)).all();
   const row = result.results[0] ?? {};
-  return { completedToday: Number(row.today) || 0, completedTotal: Number(row.total) || 0, completedPiecesTotal: Number(row.pieces) || 0 };
+  return { completedToday: Number(row.today) || 0, completedTotal: Number(row.total) || 0, completedPiecesTotal: Number(row.pieces) || 0, completedPiecesToday: Number(row.piecesToday) || 0 };
 }
 
 // A finished puzzle is rare next to a lobby poll every few seconds, so the numbers are

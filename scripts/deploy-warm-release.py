@@ -8,6 +8,7 @@ import tarfile, tempfile, time, urllib.request, urllib.error
 
 p = argparse.ArgumentParser()
 p.add_argument('--additive-migration-sha256')
+p.add_argument('--migration-sha256', action='append', default=[], metavar='NAME=SHA256')
 for name in ['release', 'previous', 'sha256', 'commit', 'old-unit']:
     p.add_argument('--' + name, required=True)
 p.add_argument('--from-port', type=int, required=True, choices=[3103, 3104])
@@ -57,18 +58,27 @@ def migrations(root):
 old_migrations, new_migrations = migrations(old), migrations(app)
 added = set(new_migrations) - set(old_migrations)
 assert all(new_migrations.get(name) == digest for name,digest in old_migrations.items()), 'Existing migrations must never change'
+reviewed_migrations = {}
+for item in args.migration_sha256:
+    name, separator, digest = item.partition('=')
+    assert separator and re.fullmatch(r'001[4-7]_[a-z_]+\.sql', name) and re.fullmatch(r'[a-f0-9]{64}', digest)
+    assert name not in reviewed_migrations, 'Duplicate migration digest'
+    reviewed_migrations[name] = digest
+if args.additive_migration_sha256:
+    assert not reviewed_migrations, 'Use either the legacy digest or explicit migration digests'
+    reviewed_migrations = {'0014_piece_progress.sql': args.additive_migration_sha256}
 if added:
-    # The current production release already contains 0013.  The piece-history
-    # table is deliberately additive and has no foreign key to rooms, so room
-    # cleanup cannot erase the site-wide progress counter.
-    assert added == {'0014_piece_progress.sql'}, 'Only the reviewed piece-progress additive migration is allowed'
-    assert args.additive_migration_sha256 == new_migrations['0014_piece_progress.sql'], 'Require exact reviewed migration digest'
-    sql = (app / 'drizzle/0014_piece_progress.sql').read_text().upper()
-    assert 'DROP TABLE' not in sql and 'ALTER TABLE' not in sql and 'DELETE FROM' not in sql
-    assert re.search(r'^CREATE TABLE IF NOT EXISTS PUZZLE_PIECE_PROGRESS ', sql, re.MULTILINE)
-    assert re.search(r'^CREATE INDEX IF NOT EXISTS PUZZLE_PIECE_PROGRESS_UPDATED_IDX\b', sql, re.MULTILINE)
+    supported = {'0014_piece_progress.sql', '0015_managed_content_economy.sql',
+                 '0016_managed_reward_outbox.sql', '0017_daily_piece_progress.sql'}
+    assert added <= supported, 'Only reviewed additive migrations are allowed'
+    assert set(reviewed_migrations) == added, 'Require one exact reviewed digest per new migration'
+    for name in added:
+        assert reviewed_migrations[name] == new_migrations[name], 'Migration digest mismatch: ' + name
+        sql = (app / 'drizzle' / name).read_text().upper()
+        assert 'DROP TABLE' not in sql and 'ALTER TABLE' not in sql and 'DELETE FROM' not in sql
+        assert re.search(r'^CREATE TABLE IF NOT EXISTS ', sql, re.MULTILINE)
 else:
-    assert not args.additive_migration_sha256
+    assert not reviewed_migrations
 
 
 headers = {'Host': 'jigsawnook.online', 'X-Forwarded-Host': 'jigsawnook.online', 'X-Forwarded-Proto': 'https', 'CF-Connecting-IP': '192.0.2.43'}
@@ -132,11 +142,14 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
     try:
         launch(old, 3139)
         qa_db = pathlib.Path(temporary) / 'data/puzzle.sqlite'
+        original_table_names = None
         def original_fingerprints():
+            nonlocal_names = original_table_names
             with sqlite3.connect(qa_db) as connection:
                 names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='app_migrations'") if not row[0].startswith(('puzzle_courtyard','puzzle_lobby_chat','puzzle_welcome_gifts','puzzle_piece_progress'))]
-                return {name:hashlib.sha256(repr(connection.execute('SELECT * FROM '+name+' ORDER BY rowid').fetchall()).encode()).hexdigest() for name in names}
+                return {name:hashlib.sha256(repr(connection.execute('SELECT * FROM '+name+' ORDER BY rowid').fetchall()).encode()).hexdigest() for name in (nonlocal_names if nonlocal_names is not None else names)}
         fingerprints_before=original_fingerprints()
+        original_table_names = tuple(fingerprints_before)
         launch(app, 3138)
         assert original_fingerprints()==fingerprints_before, 'Additive migration modified original data'
         # The old runtime remains healthy against the upgraded database.
@@ -305,6 +318,7 @@ report = {'release': args.release, 'gitCommit': args.commit, 'activeUnit': new_u
           'rollback': str(old), 'previousUnit': args.old_unit, 'oldAppRequestsDrained': drained,
           'assetsChecked': len(manifest['runtimeAssets']), 'retainedHashedAssets': retained,
           'reusedImmutableAssets': reused, 'reusedImmutableBytes': reused_bytes,
-          'migrationChanges': bool(added), 'additiveMigrationSha256': args.additive_migration_sha256, 'isolatedCrossVersionTests': True, 'forcedClientRefresh': False}
+          'migrationChanges': bool(added), 'additiveMigrationSha256': args.additive_migration_sha256,
+          'reviewedMigrationSha256': reviewed_migrations, 'isolatedCrossVersionTests': True, 'forcedClientRefresh': False}
 (release / 'deployment.json').write_text(json.dumps(report, indent=2) + '\n')
 print(json.dumps(report), flush=True)

@@ -1,0 +1,4 @@
+# Install through the coordinated release window for the Web instance.
+# The existing database/upload write paths remain configured in the main unit.
+[Service]
+ReadWritePaths=/srv/sites/jigsaw-mobile-v3/shared/daily-appearances

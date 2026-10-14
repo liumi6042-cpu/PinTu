@@ -13,8 +13,8 @@ function publicRoomTitle(title:string){
  const match=title.match(/^机器人练习桌\s*·\s*(.+)$/);
  return match?.[1]?.trim()||title;
 }
-export function newPlayableRoom(id:string,imageId:string,pieces:number,visibility:RoomVisibility,ownerId?:string,now=Date.now()){
- const room=makeRoom(id,imageId,pieces,now);room.visibility=visibility;room.ownerId=ownerId;room.startedAt=null;room.participants={};touchPublicRoom(room,now);return room;
+export function newPlayableRoom(id:string,imageId:string,pieces:number,visibility:RoomVisibility,ownerId?:string,now=Date.now(),allowedImageIds?:readonly string[]){
+ const room=makeRoom(id,imageId,pieces,now,allowedImageIds);room.visibility=visibility;room.ownerId=ownerId;room.startedAt=null;room.participants={};touchPublicRoom(room,now);return room;
 }
 // The directory and the leaderboard both record the *band* of the grid that was
 // played, not the raw fitted count: a picture asked for 300 pieces may come out

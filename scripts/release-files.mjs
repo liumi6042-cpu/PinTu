@@ -4,6 +4,8 @@ import { resolve, relative, sep, posix } from 'node:path';
 import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
 
 export const hash = data => createHash('sha256').update(data).digest('hex');
+export const SERVER_RUNTIME_HELPERS=Object.freeze(['backup.mjs','migrate.mjs','public-room-cleanup.mjs','runtime.node.mjs','sqlite.mjs','content-release.mjs','managed-content.node.mjs','album-content.mjs','daily-content.mjs','game-settings.mjs','task-reward-settings.mjs'].map(name=>'server/'+name));
+export const CONTENT_RUNTIME_FILES=Object.freeze(['scripts/check-content-release.mjs','content/puzzle-catalog.json','content/puzzle-guidance.json','config/game-settings-defaults.json','config/task-reward-defaults.json']);
 // Tar must be the Windows bsdtar, addressed by absolute path. Git Bash puts GNU
 // tar ahead of the bundled bsdtar on PATH, and GNU tar reads the "D:" in a
 // drive-letter path as a remote host ("Cannot connect to D: resolve failed"),
@@ -43,7 +45,7 @@ export function runtimeAssets(catalog, config) {
 }
 export function selectRuntimeFiles(build, assets) {
   const publicPaths=new Set(assets.map(url=>'dist/client'+url));
-  const helpers=new Set(['backup.mjs','migrate.mjs','public-room-cleanup.mjs','runtime.node.mjs','sqlite.mjs'].map(name=>'server/'+name));
+  const helpers=new Set([...SERVER_RUNTIME_HELPERS,...CONTENT_RUNTIME_FILES]);
   const files=walk(build).filter(name=>{
     if(name.endsWith('.map'))return false;
     if(['server.js','package.json','dist/vinext-client-assets.js'].includes(name)||helpers.has(name))return true;
