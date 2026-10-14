@@ -3,17 +3,90 @@
 Run on the Linux host with explicit release/hash/commit/previous release and ports.
 Never ships source or original artwork. All mutable acceptance tests use a temp DB.
 """
-import argparse, hashlib, json, os, pathlib, re, secrets, socket, sqlite3, subprocess
-import tarfile, tempfile, time, urllib.request, urllib.error
+import argparse, hashlib, json, os, pathlib, re, secrets, shlex, socket, sqlite3, stat, subprocess
+import tarfile, tempfile, time, urllib.request, urllib.error, urllib.parse
+
+PUBLIC_ENV_KEYS = ('PUZZLE_OPERATOR_NAME', 'PUZZLE_SUPPORT_EMAIL')
+
+def env_entry_key(line):
+    match = re.match(rb'^[ \t]*([A-Z][A-Z0-9_]*)[ \t]*=', line)
+    return match.group(1).decode('ascii') if match else None
+
+def public_env_entries(data):
+    values = {key: [] for key in PUBLIC_ENV_KEYS}
+    for line in data.splitlines(keepends=True):
+        key = env_entry_key(line)
+        if key not in values: continue
+        raw = line.partition(b'=')[2].strip()
+        assert not raw.endswith(b'\\'), 'Public environment values must fit on one line'
+        assert not raw.startswith((b'"', b"'")) or raw[-1:] == raw[:1], 'Public environment values must fit on one line'
+        values[key].append(line)
+    return values
+
+def replace_public_env(data, replacement):
+    assert set(replacement) == set(PUBLIC_ENV_KEYS)
+    public_env_entries(data)  # Reject multiline values before touching the file.
+    output, found = [], set()
+    for line in data.splitlines(keepends=True):
+        key = env_entry_key(line)
+        if key not in replacement: output.append(line); continue
+        if key not in found: output.extend(replacement[key]); found.add(key)
+    for key in PUBLIC_ENV_KEYS:
+        if key in found or not replacement[key]: continue
+        if output and not output[-1].endswith((b'\r', b'\n')): output[-1] += b'\n'
+        output.extend(replacement[key])
+    return b''.join(output)
+
+def public_env_value(data, key):
+    # Parse only the allowlisted public paths, never source or print an env file.
+    assert key in ('JIGSAW_CONTENT_DIR', 'JIGSAW_DAILY_APPEARANCES_DIR')
+    lines = [line.partition(b'=')[2].decode('utf-8').strip() for line in data.splitlines() if env_entry_key(line) == key]
+    assert len(lines) == 1, 'Expected one configured content path: ' + key
+    parsed = shlex.split(lines[0], comments=False)
+    assert len(parsed) == 1 and pathlib.Path(parsed[0]).is_absolute(), 'Invalid content path: ' + key
+    return parsed[0]
+
+def write_env_atomically(path, expected, updated):
+    info = path.lstat()
+    assert stat.S_ISREG(info.st_mode) and not path.is_symlink(), 'Environment file must be a regular file'
+    assert path.read_bytes() == expected, 'Environment changed during preparation'
+    descriptor, temporary = tempfile.mkstemp(prefix='.' + path.name + '-', dir=path.parent)
+    try:
+        with os.fdopen(descriptor, 'wb') as handle:
+            os.fchown(handle.fileno(), info.st_uid, info.st_gid)
+            os.fchmod(handle.fileno(), stat.S_IMODE(info.st_mode))
+            handle.write(updated); handle.flush(); os.fsync(handle.fileno())
+        assert path.read_bytes() == expected, 'Environment changed during preparation'
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary): os.unlink(temporary)
+
+def loopback_redirect(port, current, location):
+    target = urllib.parse.urlsplit(urllib.parse.urljoin(current, location))
+    assert target.scheme in ('http', 'https') and not target.username and not target.password, 'Unsafe acceptance redirect'
+    local = target.hostname == '127.0.0.1' and target.scheme == 'http' and target.port == port
+    public = target.hostname == 'jigsawnook.online' and target.port in (None, 443 if target.scheme == 'https' else 80)
+    assert local or public, 'Acceptance redirect must remain on this site'
+    return urllib.parse.urlunsplit(('http', f'127.0.0.1:{port}', target.path or '/', target.query, ''))
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 p = argparse.ArgumentParser()
 p.add_argument('--additive-migration-sha256')
 p.add_argument('--migration-sha256', action='append', default=[], metavar='NAME=SHA256')
+p.add_argument('--operator-name', help='Reviewed public operator name; must be paired with --support-email')
+p.add_argument('--support-email', help='Reviewed public contact address; changes no other environment keys')
 for name in ['release', 'previous', 'sha256', 'commit', 'old-unit']:
     p.add_argument('--' + name, required=True)
 p.add_argument('--from-port', type=int, required=True, choices=[3103, 3104])
 p.add_argument('--to-port', type=int, required=True, choices=[3103, 3104])
 args = p.parse_args()
+assert (args.operator_name is None) == (args.support_email is None), 'Provide both reviewed public contact fields'
+if args.operator_name is not None:
+    assert args.operator_name == args.operator_name.strip() and 1 <= len(args.operator_name) <= 120 and args.operator_name.isprintable()
+    assert re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,63}", args.support_email)
 assert args.from_port != args.to_port
 assert all(re.fullmatch(r'\d{8}-\d{2}', x) for x in [args.release, args.previous])
 assert re.fullmatch(r'[a-f0-9]{64}', args.sha256) and re.fullmatch(r'[a-f0-9]{40}', args.commit)
@@ -82,17 +155,29 @@ else:
 
 
 headers = {'Host': 'jigsawnook.online', 'X-Forwarded-Host': 'jigsawnook.online', 'X-Forwarded-Proto': 'https', 'CF-Connecting-IP': '192.0.2.43'}
-def request(port, path, body=None, actor=None):
+http = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+def request(port, path, body=None, actor=None, follow_redirects=True):
+    assert path.startswith('/') and not path.startswith('//') and '\\' not in path
     h = dict(headers)
     if body is not None: h['Content-Type'] = 'application/json'
     if actor:
         if actor.get('cookie'): h['Cookie'] = actor['cookie']
         if actor.get('token'): h['Authorization'] = 'Bearer ' + actor['token']
-    req = urllib.request.Request(f'http://127.0.0.1:{port}{path}', data=None if body is None else json.dumps(body).encode(), headers=h)
-    try: response = urllib.request.urlopen(req, timeout=15)
-    except urllib.error.HTTPError as error: response = error
-    with response:
-        return response.status, response.headers, response.read()
+    url, payload = f'http://127.0.0.1:{port}{path}', None if body is None else json.dumps(body).encode()
+    for _ in range(8):
+        req = urllib.request.Request(url, data=payload, headers=h)
+        try: response = http.open(req, timeout=15)
+        except urllib.error.HTTPError as error: response = error
+        with response:
+            status, head, raw = response.status, response.headers, response.read()
+        if follow_redirects and status in (301, 302, 303, 307, 308):
+            assert head.get('Location'), 'Redirect is missing a destination'
+            url = loopback_redirect(port, url, head['Location'])
+            if status == 303 or status in (301, 302) and payload is not None:
+                payload = None; h.pop('Content-Type', None)
+            continue
+        return status, head, raw
+    raise RuntimeError('Too many local acceptance redirects')
 def get(port, path):
     status, head, data = request(port, path)
     assert status == 200, (path, status)
@@ -105,7 +190,23 @@ def ready(port):
         except Exception: time.sleep(.25)
     raise RuntimeError('Health check failed')
 def check(port, all_assets=False):
-    for path in ['/', '/lobby', '/gallery', '/help']:
+    status, root_headers, _ = request(port, '/', follow_redirects=False)
+    assert status in (301, 302, 303, 307, 308), 'Root must redirect to the shared game'
+    destination = loopback_redirect(port, f'http://127.0.0.1:{port}/', root_headers.get('Location', ''))
+    assert urllib.parse.urlsplit(destination).path == '/play', 'Unexpected root destination'
+    for path in ['/', '/play']:
+        html = get(port, path)[1].decode()
+        assert 'class="shared-game-host"' in html and 'id="game"' in html, 'Shared game host missing'
+    config = json.loads(get(port, '/api/shared/config')[1])
+    assert config['mobileMode'] == 'web-managed-shared' and config['identityMode'] == 'web-cookie'
+    assert config['capabilities']['energy'] is False
+    assert config['gameBase'] == 'https://jigsawnook.online/play'
+    assert re.fullmatch(r'/shared-client/[a-f0-9]{16}/', config['uiBase'])
+    assert config['webLinks']['feedback'] == '/feedback'
+    game_asset = config['uiBase'] + 'game.js'
+    inventory = {i['path']: i['sha256'] for i in manifest['files']}
+    assert hashlib.sha256(get(port, game_asset)[1]).hexdigest() == inventory['dist/client' + game_asset]
+    for path in ['/lobby', '/gallery', '/help']:
         html = get(port, path)[1].decode()
         assert 'href="/membership"' not in html
         if path == '/gallery':
@@ -118,9 +219,32 @@ def check(port, all_assets=False):
         head = html.partition('</head>')[0]
         assert 'name="msvalidate.01"' in head and 'name="google-site-verification"' in head
     if all_assets:
-        inventory = {i['path']: i['sha256'] for i in manifest['files']}
         for url in manifest['runtimeAssets']:
             assert hashlib.sha256(get(port, url)[1]).hexdigest() == inventory['dist/client' + url]
+
+# This gate is read-only: no albums, rewards, daily choices or content pointer writes.
+env_path = pathlib.Path('/etc/webapps/jigsaw.env')
+assert env_path.is_file() and not env_path.is_symlink()
+environment_initial = env_path.read_bytes()
+content_directory = pathlib.Path(public_env_value(environment_initial, 'JIGSAW_CONTENT_DIR')).resolve(strict=True)
+appearance_directory = pathlib.Path(public_env_value(environment_initial, 'JIGSAW_DAILY_APPEARANCES_DIR')).resolve(strict=True)
+content_pointer = content_directory / 'current.json'
+assert content_pointer.is_file() and not content_pointer.is_symlink()
+content_pointer_before = content_pointer.read_bytes()
+published = json.loads(content_pointer_before)
+assert re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9-]{0,99}', published['releaseId'])
+assert re.fullmatch(r'[a-f0-9]{64}', published['manifestSha256'])
+site_before = json.loads(get(args.from_port, '/api/site-info')[1])
+def check_content(port):
+    assert content_pointer.read_bytes() == content_pointer_before, 'Published content changed during deployment; retry with the current release'
+    health = json.loads(get(port, '/api/health')[1])
+    assert health['ok'] is True and health['contentReleaseId'] == published['releaseId'], 'Runtime reader does not match the existing content pointer'
+def check_public_contact(port):
+    info = json.loads(get(port, '/api/site-info')[1])
+    assert info['policiesReviewed'] == site_before['policiesReviewed'], 'Privacy review status must remain unchanged'
+    if args.operator_name is not None:
+        assert info['operator'] == args.operator_name and info['support'] == args.support_email, 'Reviewed public contact was not loaded'
+check_content(args.from_port)
 
 # Both versions run against the same disposable DB. No production player IDs,
 # cookies, room writes or test chat messages are used by acceptance tests.
@@ -255,6 +379,7 @@ unit_path = pathlib.Path('/etc/systemd/system/jigsaw-web@.service')
 template = unit_path.read_text() if unit_path.exists() else pathlib.Path('/etc/systemd/system/jigsaw-web.service').read_text()
 template = template.replace('WorkingDirectory=/srv/sites/jigsaw/current', 'WorkingDirectory=/srv/sites/jigsaw/slots/%i').replace('Environment=PORT=3103', 'Environment=PORT=%i')
 assert 'WorkingDirectory=/srv/sites/jigsaw/slots/%i' in template and 'Environment=PORT=%i' in template
+assert 'EnvironmentFile=/etc/webapps/jigsaw.env' in template
 assert '[Install]' in template and 'WantedBy=multi-user.target' in template
 if unit_path.exists(): assert unit_path.read_text() == template
 else: unit_path.write_text(template)
@@ -269,9 +394,15 @@ assert not slot.exists(); slot.symlink_to(app)
 run('chown', '-R', 'web-jigsaw:web-jigsaw', str(release))
 run('systemctl', 'daemon-reload')
 run('systemctl', 'start', 'jigsaw-backup.service')
-run('systemctl', 'start', new_unit)
-ready(args.to_port); check(args.to_port)
-assert (base / 'current').resolve() == old and nginx.read_text() == nginx_before
+# Validate the existing published configuration against the new delivered assets.
+# This checker never selects today's picture or writes an appearance receipt.
+content_check = json.loads(run('runuser', '-u', 'web-jigsaw', '--', 'env',
+    'JIGSAW_CONTENT_RELEASE_DIR=' + str(content_directory / 'releases' / published['releaseId']),
+    'JIGSAW_CONTENT_RELEASE_ID=' + published['releaseId'],
+    'JIGSAW_CONTENT_MANIFEST_SHA256=' + published['manifestSha256'],
+    '/usr/local/bin/node', str(app / 'scripts/check-content-release.mjs')))
+assert content_check['ok'] is True and content_check['contentReleaseId'] == published['releaseId']
+check_content(args.from_port)
 def worker_pids():
     return {int(line.strip().split(None, 1)[0]) for line in run('ps', '-eo', 'pid,args').splitlines() if 'nginx: worker process' in line}
 workers = worker_pids()
@@ -279,46 +410,94 @@ staged = base / 'current-warm-next'
 assert not staged.exists() and not staged.is_symlink()
 def point_current(target):
     staged.symlink_to(target); os.replace(staged, base / 'current')
+env_original_entries = None
+env_backup = None
+env_changed = False
+old_enabled = subprocess.run(['systemctl', 'is-enabled', '--quiet', args.old_unit]).returncode == 0
+new_enabled_before = subprocess.run(['systemctl', 'is-enabled', '--quiet', new_unit]).returncode == 0
+backup = pathlib.Path('/etc/systemd/system/jigsaw-backup.service')
+backup_text = backup.read_text()
 try:
+    environment_before = env_path.read_bytes()
+    assert pathlib.Path(public_env_value(environment_before, 'JIGSAW_CONTENT_DIR')).resolve() == content_directory
+    assert pathlib.Path(public_env_value(environment_before, 'JIGSAW_DAILY_APPEARANCES_DIR')).resolve() == appearance_directory
+    if args.operator_name is not None:
+        env_original_entries = public_env_entries(environment_before)
+        replacement = {key: [(key + '=' + json.dumps(value, ensure_ascii=False) + '\n').encode('utf-8')]
+                       for key, value in zip(PUBLIC_ENV_KEYS, (args.operator_name, args.support_email))}
+        environment_after = replace_public_env(environment_before, replacement)
+        env_backup = env_path.with_name(env_path.name + '.before-' + args.release)
+        descriptor = os.open(env_backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, 'wb') as handle:
+            os.fchmod(handle.fileno(), 0o600)
+            handle.write(environment_before); handle.flush(); os.fsync(handle.fileno())
+        write_env_atomically(env_path, environment_before, environment_after)
+        env_changed = True
+    run('systemctl', 'start', new_unit)
+    ready(args.to_port); check(args.to_port); check_content(args.to_port); check_public_contact(args.to_port)
+    assert (base / 'current').resolve() == old and nginx.read_text() == nginx_before
     point_current(app)
     nginx.write_text(nginx_after)
     run('nginx', '-t')
     run('systemctl', 'reload', 'nginx')
-except Exception:
-    nginx.write_text(nginx_before); point_current(old)
-    run('nginx', '-t'); run('systemctl', 'reload', 'nginx')
+    run('systemctl', 'enable', new_unit)
+    drained = False
+    quiet_since = None
+    for _ in range(80):
+        if not workers.intersection(worker_pids()):
+            drained = True; break
+        # Other sites may keep old global nginx workers alive with WebSockets.
+        # Require 10 continuous seconds with no connection on this app's old port.
+        connections = run('ss', '-Htn', f'( sport = :{args.from_port} or dport = :{args.from_port} )')
+        active = [line for line in connections.splitlines() if not line.startswith('TIME-WAIT')]
+        if active: quiet_since = None
+        elif quiet_since is None: quiet_since = time.monotonic()
+        elif time.monotonic() - quiet_since >= 10:
+            drained = True; break
+        time.sleep(.5)
+    if drained:
+        run('systemctl', 'stop', args.old_unit)
+        run('systemctl', 'disable', args.old_unit)
+    if 'After=jigsaw-web.service' in backup_text:
+        backup.write_text(backup_text.replace('After=jigsaw-web.service', 'After=network.target'))
+        run('systemctl', 'daemon-reload')
+    check(args.to_port); check_content(args.to_port); check_public_contact(args.to_port)
+    report = {'release': args.release, 'gitCommit': args.commit, 'activeUnit': new_unit, 'port': args.to_port,
+              'rollback': str(old), 'previousUnit': args.old_unit, 'oldAppRequestsDrained': drained,
+              'assetsChecked': len(manifest['runtimeAssets']), 'retainedHashedAssets': retained,
+              'reusedImmutableAssets': reused, 'reusedImmutableBytes': reused_bytes,
+              'migrationChanges': bool(added), 'additiveMigrationSha256': args.additive_migration_sha256,
+              'reviewedMigrationSha256': reviewed_migrations, 'isolatedCrossVersionTests': True, 'forcedClientRefresh': False,
+              'contentReleaseId': published['releaseId'], 'contentPointerUnchanged': True,
+              'publicContactUpdated': env_changed, 'environmentBackup': str(env_backup) if env_backup else None,
+              'policiesReviewed': site_before['policiesReviewed']}
+    (release / 'deployment.json').write_text(json.dumps(report, indent=2) + '\n')
+    print(json.dumps(report), flush=True)
+except BaseException:
+    # Restore only these two public keys; concurrent edits to other keys survive.
+    # The full original file remains in the private 0600 backup for manual recovery.
+    rollback_errors = []
+    def rollback_step(name, operation):
+        try: operation()
+        except BaseException: rollback_errors.append(name)
+    def restore_public_environment():
+        if not env_changed: return
+        current = env_path.read_bytes()
+        write_env_atomically(env_path, current, replace_public_env(current, env_original_entries))
+    rollback_step('public contact environment', restore_public_environment)
+    rollback_step('restart previous service', lambda: run('systemctl', 'start', args.old_unit))
+    if old_enabled: rollback_step('enable previous service', lambda: run('systemctl', 'enable', args.old_unit))
+    rollback_step('previous service health', lambda: ready(args.from_port))
+    def restore_routing():
+        if staged.is_symlink(): staged.unlink()
+        point_current(old); nginx.write_text(nginx_before)
+        run('nginx', '-t'); run('systemctl', 'reload', 'nginx')
+    rollback_step('previous routing', restore_routing)
+    rollback_step('stop replacement service', lambda: run('systemctl', 'stop', new_unit))
+    if not new_enabled_before: rollback_step('disable replacement service', lambda: run('systemctl', 'disable', new_unit))
+    if backup.read_text() != backup_text:
+        rollback_step('backup service definition', lambda: backup.write_text(backup_text))
+        rollback_step('reload service definitions', lambda: run('systemctl', 'daemon-reload'))
+    if rollback_errors:
+        raise RuntimeError('Deployment failed; manual recovery needed for: ' + ', '.join(rollback_errors))
     raise
-run('systemctl', 'enable', new_unit)
-drained = False
-quiet_since = None
-for _ in range(80):
-    if not workers.intersection(worker_pids()):
-        drained = True; break
-    # Other sites can keep old global nginx workers alive with WebSockets.
-    # This app uses bounded HTTP polling, not upgraded/streaming connections.
-    # Require 10 continuous seconds with no TCP connection on its old port.
-    connections = run('ss', '-Htn', f'( sport = :{args.from_port} or dport = :{args.from_port} )')
-    active = [line for line in connections.splitlines() if not line.startswith('TIME-WAIT')]
-    if active: quiet_since = None
-    elif quiet_since is None: quiet_since = time.monotonic()
-    elif time.monotonic() - quiet_since >= 10:
-        drained = True; break
-    time.sleep(.5)
-if drained:
-    run('systemctl', 'stop', args.old_unit)
-    run('systemctl', 'disable', args.old_unit)
-# Backup uses current and does not require starting the retired legacy service.
-backup = pathlib.Path('/etc/systemd/system/jigsaw-backup.service')
-backup_text = backup.read_text()
-if 'After=jigsaw-web.service' in backup_text:
-    backup.write_text(backup_text.replace('After=jigsaw-web.service', 'After=network.target'))
-    run('systemctl', 'daemon-reload')
-check(args.to_port)
-report = {'release': args.release, 'gitCommit': args.commit, 'activeUnit': new_unit, 'port': args.to_port,
-          'rollback': str(old), 'previousUnit': args.old_unit, 'oldAppRequestsDrained': drained,
-          'assetsChecked': len(manifest['runtimeAssets']), 'retainedHashedAssets': retained,
-          'reusedImmutableAssets': reused, 'reusedImmutableBytes': reused_bytes,
-          'migrationChanges': bool(added), 'additiveMigrationSha256': args.additive_migration_sha256,
-          'reviewedMigrationSha256': reviewed_migrations, 'isolatedCrossVersionTests': True, 'forcedClientRefresh': False}
-(release / 'deployment.json').write_text(json.dumps(report, indent=2) + '\n')
-print(json.dumps(report), flush=True)

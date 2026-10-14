@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import publicService from '@/config/public-service.json';
 
 export type SiteSettings = {
   PUZZLE_LOCAL_ORIGIN?: string; PUZZLE_PUBLIC_ORIGIN?: string;
@@ -10,7 +11,7 @@ export type SiteSettings = {
 export function settings() { return env as unknown as SiteSettings; }
 export function publicSettings() {
   const s=settings();
-  return { operator:s.PUZZLE_OPERATOR_NAME||'', support:s.PUZZLE_SUPPORT_EMAIL||'',
+  return { operator:s.PUZZLE_OPERATOR_NAME?.trim()||publicService.operator, support:s.PUZZLE_SUPPORT_EMAIL?.trim()||publicService.support,
     local:!!s.PUZZLE_LOCAL_ORIGIN, capacity:betaCapacity(),
     policiesReviewed:s.PUZZLE_PRIVACY_REVIEWED==='true' };
 }
