@@ -103,3 +103,19 @@ test('shared rooms use existing account authentication and return authoritative 
   const unchanged=f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,compat=await f.request('/api/rooms/'+id+'/join',{method:'POST',body:{}});assert.equal(compat.status,409);assert.equal(compat.data.compatUrl,'/room/'+id);assert.equal(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,unchanged);
  }finally{f.close();}
 });
+
+test('a paused guest-admitted room cannot issue a guest ticket labeled as the signed-in account',async()=>{
+ const f=fixture();try{
+  const made=await f.request('/api/rooms',{method:'POST',body:{mode:'selected',imageId:f.photos[1].id,pieces:108,visibility:'public'}});assert.equal(made.status,201);
+  const id=made.data.room.id,secret='3'.repeat(64),guestId='guest:'+hash(secret),room=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data);
+  room.ownerId=guestId;room.acceptingNew=false;room.admitted={[guestId]:true};room.participants={[guestId]:'原游客'};
+  for(const member of room.members){delete member.accountId;member.guestId=guestId;}
+  const preserved=JSON.stringify(room);f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=revision+1 WHERE id=?').run(preserved,id);
+  const headers={Cookie:'puzzle_session='+token+'; puzzle_guest='+secret},blocked=await f.request('/api/rooms/'+id+'/join',{method:'POST',headers,body:{}});
+  assert.equal(blocked.status,409);assert.equal(blocked.data.code,'LEGACY_ROOM_REQUIRED');assert.equal(blocked.data.compatUrl,'/room/'+id);assert.equal(blocked.data.token,undefined);
+  assert.equal(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,preserved,'guard runs before the original join mutates room tickets or membership');assert.equal(stored(f).coins,100);
+  room.admitted[owner]=true;f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=revision+1 WHERE id=?').run(JSON.stringify(room),id);
+  const allowed=await f.request('/api/rooms/'+id+'/join',{method:'POST',headers,body:{}});assert.equal(allowed.status,200);
+  const joined=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data).members.find(member=>member.id===allowed.data.playerId);assert.equal(joined.accountId,owner);assert.equal(joined.guestId,undefined);
+ }finally{f.close();}
+});

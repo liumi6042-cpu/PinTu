@@ -2,7 +2,7 @@ import {currentPlayer,currentGuest,withPlayerCookie} from './player-identity';
 import {currentAccount} from './account-store';
 import {localDb} from './local-db';
 import {body,json,failure,readRoom} from './room-store';
-import {RoomError} from './room-engine';
+import {RoomError,hasRoomAdmission} from './room-engine';
 import {securityLimit} from './account-security';
 import {readManagedContent,managedDailyPuzzle,managedGalleryPhotos} from './managed-content';
 import {managedPlayerView,managedPlayerAction,managedAccessibleImageIds} from './managed-economy';
@@ -89,6 +89,12 @@ async function sharedRoom(request:Request,path:string,input:Data){
  if(method==='DELETE')return unsupported('请在原房间页面管理房间，已有进度会保留',roomLink(id));
  const room=await readRoom(id);
  if(compatibilityRoom(room))return json({error:'这间历史拼图请在原界面继续，原进度和权限保留',code:'LEGACY_ROOM_REQUIRED',compatUrl:roomLink(id)},409);
+ if(part==='join'&&method==='POST'&&room.visibility&&room.acceptingNew===false){
+  const player=await currentPlayer(request),guest=player?.accountId?await currentGuest(request):null;
+  // The original join route may resume an admitted guest beneath a signed-in account.
+  // Keep that identity switch in the original UI instead of issuing a mislabeled ticket.
+  if(guest&&!hasRoomAdmission(room,player?.id)&&hasRoomAdmission(room,guest.id))return json({error:'这间拼图曾以游客身份加入，当前账号尚未入座；请在原版继续，游客进度和奖励仍归原身份保留',code:'LEGACY_ROOM_REQUIRED',compatUrl:roomLink(id)},409);
+ }
  let response:Response;
  const route:( {GET?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>;POST?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>})=part==='join'?joinRoute:part==='chat'?chatRoute:part==='cursors'?cursorRoute:part==='assistance'?assistanceRoute:roomRoute;
  if(part==='chat'&&method==='POST'&&input.phraseId!==undefined){if(!Number.isSafeInteger(input.phraseId)||!phrases[input.phraseId])throw new RoomError('快捷消息无效');input={...input,text:phrases[input.phraseId]};}
