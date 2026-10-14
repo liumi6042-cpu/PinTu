@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a botanical collection of unusual tropical leaves and flowers arranged in a circular wreath, dewdrops and delicate stems, no people.
+Style/medium: luminous glass watercolor botanical illustration, translucent layered washes, fine scientific specimen detail, emerald, coral, turquoise and gold palette.
+Composition: square, circular wreath centered with balanced negative space and crisp edge details.
+Constraints: no text, no logos, no watermark, no people, no photorealism, polished high-detail 4K.

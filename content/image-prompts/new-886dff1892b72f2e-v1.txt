@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a peaceful Japanese paper garden through four seasons, red, white and blue paper kites, a pond, maple, plum and cherry branches, no people.
+Style/medium: layered Japanese washi-paper collage, visible handmade paper fibers, cut-paper silhouettes, overlapping translucent layers, elegant folk craft.
+Composition: square, central pond and kite cluster, balanced seasonal corners, readable cut shapes.
+Constraints: no text, no logos, no watermark, no photorealism, no people, polished high-detail 4K.

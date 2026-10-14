@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone 4K anime character artwork.
+Primary request: an original adult female steampunk airship engineer on a brass airship deck, auburn braided hair, leather goggles resting on her head, cream shirt, brown utility vest, copper mechanical gauntlet, holding a wrench, giant propellers and clouds behind her.
+Style/medium: detailed steampunk anime illustration, crisp ink contours, painterly metals, intricate gears and believable mechanical details.
+Composition/framing: dynamic three-quarter full-body composition, character slightly off-center, airship perspective lines.
+Lighting/mood: golden late-afternoon sunlight, adventurous and optimistic.
+Color palette: brass, copper, teal, warm cream, brown.
+Constraints: original character design only, fully clothed adult, no logos, no readable text, no watermark, no blur, no extra fingers or limbs. Target a true 4K-quality finished illustration.

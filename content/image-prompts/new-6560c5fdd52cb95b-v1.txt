@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone 4K anime character artwork.
+Primary request: an original adult gothic detective in a candlelit Victorian library, short dark hair, black tailored coat with burgundy lining, silver pocket watch, holding an old notebook, tall bookshelves and stained-glass moonlight in the background, observant serious expression.
+Style/medium: dark refined anime illustration, intricate costume details, rich painterly shadows, elegant gothic atmosphere.
+Composition/framing: vertical waist-up portrait with library depth, character slightly turned toward viewer.
+Lighting/mood: candlelight mixed with cool moonlight, mysterious, sophisticated, atmospheric.
+Color palette: charcoal black, burgundy, antique gold, midnight blue.
+Constraints: original character only, fully clothed adult, no logos, no readable text, no watermark, no gore, no blur, no anatomical errors. Target a true 4K-quality finished illustration.

@@ -105,13 +105,14 @@ export async function checkImageLibrary(root){
 }
 
 // Read the actual VP8 key-frame dimensions, not just an optional VP8X canvas.
-// No animated, lossless or alpha payload can masquerade as optimized delivery.
+// Static lossy VP8 may have the standard VP8X + ALPH wrapper. Animation and
+// lossless color frames still cannot masquerade as optimized delivery.
 function lossyWebpSize(data){
   if(data.length<30||data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP'||data.readUInt32LE(4)+8!==data.length)return null;
-  let frame=null,canvas=null,offset=12;
+  let frame=null,canvas=null,alpha=null,alphaFlag=false,offset=12;
   while(offset+8<=data.length){
     const kind=data.toString('ascii',offset,offset+4),length=data.readUInt32LE(offset+4),start=offset+8,end=start+length;
-    if(end+(length%2)>data.length)return null;
+    if(end+(length%2)>data.length||(length%2&&data[end]!==0))return null;
     if(kind==='VP8 '){
       if(frame||length<10||(data[start]&1)!==0||data.toString('hex',start+3,start+6)!=='9d012a')return null;
       const partitionSize=data.readUIntLE(start,3)>>>5;
@@ -119,12 +120,19 @@ function lossyWebpSize(data){
       frame={width:data.readUInt16LE(start+6)&0x3fff,height:data.readUInt16LE(start+8)&0x3fff};
       if(!frame.width||!frame.height)return null;
     }else if(kind==='VP8X'){
-      if(canvas||length!==10||(data[start]&0x12)!==0)return null;
+      if(offset!==12||canvas||length!==10||(data[start]&0xc3)!==0||data.readUIntLE(start+1,3)!==0)return null;
+      alphaFlag=(data[start]&0x10)!==0;
       canvas={width:1+data.readUIntLE(start+4,3),height:1+data.readUIntLE(start+7,3)};
-    }else if(['VP8L','ANIM','ANMF','ALPH'].includes(kind))return null;
+    }else if(kind==='ALPH'){
+      if(!canvas||!alphaFlag||alpha||frame||length<2)return null;
+      const header=data[start],compression=header&3;
+      if((header&0xc0)!==0||((header>>>4)&3)>1||compression>1)return null;
+      if(compression===0&&length!==1+canvas.width*canvas.height)return null;
+      alpha={compression};
+    }else if(['VP8L','ANIM','ANMF'].includes(kind))return null;
     offset=end+(length%2);
   }
-  if(offset!==data.length||!frame||canvas&&(canvas.width!==frame.width||canvas.height!==frame.height))return null;
+  if(offset!==data.length||!frame||alphaFlag!==!!alpha||canvas&&(canvas.width!==frame.width||canvas.height!==frame.height))return null;
   return frame;
 }
 function losslessWebp(data){

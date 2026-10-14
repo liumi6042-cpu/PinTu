@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K mythological beast artwork.
+Primary request: an original non-humanoid Bifang inspired by the Shan Hai Jing, a magnificent one-legged fire bird with a single powerful leg, long elegant tail feathers, one large wing pair, bright vermilion and cobalt plumage, perched on a black volcanic branch with flames curling around it. Clearly a bird, no human anatomy.
+Style/medium: refined Japanese anime fantasy creature illustration, detailed iridescent feathers, elegant graphic silhouette, painterly fire and smoke.
+Composition/framing: wide horizontal 16:9, bird dominates the center-right, full body and single leg clearly visible, wing and tail spread.
+Background: minimal dark smoky gradient with a few distant ember specks, no people, no large scenery.
+Lighting/mood: glowing firelight, mythical and powerful.
+Color palette: vermilion, orange-gold, cobalt, black, ivory highlights.
+Constraints: non-humanoid bird only, exactly one leg, no human face, no human arms, no text, no logos, no watermark, no extra creatures, no anatomical errors. Target a finished 4K-quality landscape illustration.
