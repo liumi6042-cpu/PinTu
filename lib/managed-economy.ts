@@ -3,6 +3,7 @@ import {RoomError,type Room} from './room-engine';
 import {pieceBand} from './piece-policy';
 import {readManagedContent,effectiveManagedAlbums,managedDailyPuzzle,type ManagedContentSnapshot} from './managed-content';
 import {newManagedProfile,xpForManagedLevel,TASK_DEFINITIONS,managedDay,recordManagedRoom,managedGift,claimManagedGift,purchaseManagedAlbum,craftManagedDecoration,shareManagedInvitation} from './managed-economy-model.mjs';
+import {isRetiredDecoration,availableDecorationId} from './decoration-policy.mjs';
 
 type State=Record<string,any>;
 type Cursor={id:string;artKey:string;color:string};
@@ -162,7 +163,7 @@ export async function syncManagedRoom(room:Room,content?:ManagedContentSnapshot|
   if(binding)await issueInvitationGifts(binding.inviter,snapshot,now);
  }
 }
-const defaultOwned=(state:State,item:any)=>item.source==='default'||state.decorations.includes(item.id);
+const defaultOwned=(state:State,item:any)=>!isRetiredDecoration(item.id)&&item.source==='default'||state.decorations.includes(item.id);
 function ownsManagedImage(state:State,imageId:string,albums:any[]){return !!state.ownedImages[imageId]||albums.some(album=>album.imageIds.includes(imageId)&&(!album.purchasable||!!state.ownedAlbums[album.id]));}
 export async function managedImageAllowed(owner:string,imageId:string,content:ManagedContentSnapshot|null,now=Date.now()){
  if(!content)return true;
@@ -183,7 +184,7 @@ export async function ownedManagedCursors(owners:string[],content:ManagedContent
  const ids=[...new Set(owners.filter(validOwner))];if(!ids.length)return output;
  const rows=await localDb().prepare(`SELECT p.owner,p.data FROM puzzle_managed_players p LEFT JOIN puzzle_account_security a ON a.user_id=p.owner WHERE p.owner IN (${ids.map(()=>'?').join(',')}) AND COALESCE(a.status,'active')='active'`).bind(...ids).all<{owner:string;data:string}>();
  const definitions=settings(content).decorations;
- for(const row of rows.results){const state=readState(row.data),item=definitions.find((entry:any)=>entry.id===state.equipped&&entry.kind==='cursor');if(item&&defaultOwned(state,item))output.set(row.owner,{id:item.id,artKey:item.artKey,color:item.color});}
+ for(const row of rows.results){const state=readState(row.data),item=definitions.find((entry:any)=>entry.id===state.equipped&&entry.kind==='cursor');if(item&&!isRetiredDecoration(item.id)&&defaultOwned(state,item))output.set(row.owner,{id:item.id,artKey:item.artKey,color:item.color});}
  return output;
 }
 export async function ownedManagedCursor(owner:string,content?:ManagedContentSnapshot|null){const snapshot=content===undefined?readManagedContent():content;return (await ownedManagedCursors([owner],snapshot)).get(owner)??null;}
@@ -194,7 +195,7 @@ export async function managedPlayerView(owner:string,content:ManagedContentSnaps
  const qualified=await issueInvitationGifts(owner,content,now),code=await invitationCode(owner),state=(await stateFor(owner)).state,game=settings(content),rewards=taskRewards(content),day=managedDay(now),daily=state.daily[day]??{cooperation:0,friend:0,shares:[]},allAlbums=managedAlbumImages(content,now),photoById=new Map(photos(content).map(photo=>[photo.id,photo]));
  const albums=allAlbums.filter(album=>album.showOnPc!==false).map(album=>({id:album.id,title:album.title,description:album.description,price:album.price,purchasable:album.purchasable,owned:!album.purchasable||!!state.ownedAlbums[album.id],progress:album.imageIds.filter((id:string)=>!!state.artworks[id]).length,total:album.imageIds.length,
   images:album.imageIds.flatMap((id:string)=>{const photo=photoById.get(id);return photo?[{...photo,thumbSrc:photo.thumbSrc??photo.thumbnailSrc??photo.src,collected:!!state.artworks[id],difficulties:state.artworks[id]??[],accessible:ownsManagedImage(state,id,allAlbums)}]:[];}),
-  milestones:(album.milestones??[]).map((m:any)=>{const issued=state.milestones[album.id]?.[m.id];return {...m,...(issued?{target:issued.target,coins:issued.coins,decorationId:issued.decorationId}:{}),claimed:!!issued,claimable:false};})}));
+  milestones:(album.milestones??[]).map((m:any)=>{const issued=state.milestones[album.id]?.[m.id];return {...m,...(issued?{target:issued.target,coins:issued.coins}:{}),decorationId:availableDecorationId(issued?issued.decorationId:m.decorationId),claimed:!!issued,claimable:false};})}));
  const taskView=TASK_DEFINITIONS.map(def=>{const id='daily:'+day+':'+def.id,gift=state.gifts[id],reward=gift??rewards.tasks.find((item:any)=>item.id===def.id),claimed=!!gift?.openedAt,claimable=!!gift&&!claimed;
   const goal=def.group==='friend'?`与已互相添加的好友或绑定邀请的伙伴同桌，完成 ${def.target} 次有效拼合。伙伴也需要在最近两分钟内有效拼合。`:`与同桌伙伴一起完成 ${def.target} 次有效拼合。伙伴也需要在最近两分钟内有效拼合。`;
   const goalEn=def.group==='friend'?`Make ${def.target} successful connections at a table with an accepted friend or invitation-linked partner who also made a successful connection in the last two minutes.`:`Make ${def.target} successful connections with a table partner who also made a successful connection in the last two minutes.`;
@@ -215,7 +216,7 @@ export async function managedPlayerView(owner:string,content:ManagedContentSnaps
  ]);
  const friends={code,requests:incoming.results,outgoing:outgoing.results,list:friendList.results};
  for(const task of tasks.invitations)Object.assign(task,{titleEn:task.id==='share-invitation'?'Share an invitation':'Invite a new friend'});
- const decorations=game.decorations.map((item:any)=>({...item,owned:defaultOwned(state,item),equipped:state.equipped===item.id,rewardAlbums:allAlbums.flatMap(album=>(album.milestones??[]).filter((m:any)=>m.decorationId===item.id).map((m:any)=>({id:album.id,title:album.title,target:m.target})))})).filter((item:any)=>item.enabled!==false||item.owned);
+ const decorations=game.decorations.filter((item:any)=>!isRetiredDecoration(item.id)).map((item:any)=>({...item,owned:defaultOwned(state,item),equipped:state.equipped===item.id,rewardAlbums:allAlbums.flatMap(album=>(album.milestones??[]).filter((m:any)=>m.decorationId===item.id).map((m:any)=>({id:album.id,title:album.title,target:m.target})))})).filter((item:any)=>item.enabled!==false||item.owned);
  const visibleImages=new Set(albums.flatMap(album=>album.images.map((photo:any)=>photo.id)));
  const retainedImages=Object.keys(state.ownedImages).filter(id=>state.ownedImages[id]&&!visibleImages.has(id)).flatMap(id=>{const photo=photoById.get(id);return photo?[{...photo,thumbSrc:photo.thumbSrc??photo.thumbnailSrc??photo.src,collected:!!state.artworks[id],difficulties:state.artworks[id]??[],accessible:true}]:[];});
  const settlement=await managedRewardStatus(owner);
@@ -244,7 +245,7 @@ export async function managedPlayerAction(owner:string,input:Record<string,unkno
   switch(action){
   case 'purchase-album':purchaseManagedAlbum(state,managedAlbumImages(content,now).find(album=>album.id===input.albumId),game,now);break;
   case 'craft-decoration':craftManagedDecoration(state,game.decorations.find((item:any)=>item.id===input.decorationId),game,now);break;
-  case 'equip-decoration':{const item=game.decorations.find((entry:any)=>entry.id===input.decorationId);if(input.decorationId!==null&&(!item||!defaultOwned(state,item)))throw new RoomError('请先获得这件装饰',403);state.equipped=input.decorationId;break;}
+  case 'equip-decoration':{const item=game.decorations.find((entry:any)=>entry.id===input.decorationId);if(isRetiredDecoration(input.decorationId))throw new RoomError('这件装饰已移除，正在重新制作',409);if(input.decorationId!==null&&(!item||!defaultOwned(state,item)))throw new RoomError('请先获得这件装饰',403);state.equipped=input.decorationId;break;}
   case 'claim-task':{if(!TASK_DEFINITIONS.some(task=>task.id===input.taskId))throw new RoomError('任务不存在',404);claimManagedGift(state,'daily:'+managedDay(now)+':'+input.taskId,game,now);break;}
   case 'claim-gift':{if(typeof input.giftId!=='string'||input.giftId.length>160)throw new RoomError('奖励不存在',404);claimManagedGift(state,input.giftId,game,now);break;}
   case 'share-invitation':{if(typeof input.requestId!=='string'||!/^[a-f0-9-]{32,36}$/i.test(input.requestId))throw new RoomError('分享请求无效');shareManagedInvitation(state,input.requestId,game,rewards,now);break;}

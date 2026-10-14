@@ -3,7 +3,7 @@ import { worldFor } from '@/lib/puzzle-engine';
 import { body, failure, getDigest, json,readRoom } from '@/lib/room-store';
 import { checkRoomAccount } from '@/lib/room-account';
 import { ONLINE_MS, RoomError, type Member, type Room, type RoomVisibility } from '@/lib/room-engine';
-import { CURSOR_ONLINE_MS, cursorInput, type SharedCursor } from '@/lib/room-cursors';
+import { cursorInput, type SharedCursor } from '@/lib/room-cursors';
 import {readManagedContent} from '@/lib/managed-content';
 import {ownedManagedCursors} from '@/lib/managed-economy';
 type Context={params:Promise<{id:string}>};
@@ -23,9 +23,11 @@ async function positions(room:CursorRoom,now:number){
     JOIN json_each(?) m ON json_extract(m.value,'$.id')=c.player_id
     LEFT JOIN puzzle_achievement_profiles p ON p.owner_id=COALESCE(json_extract(m.value,'$.accountId'),json_extract(m.value,'$.guestId'))
     LEFT JOIN puzzle_courtyards g ON g.user_id=json_extract(m.value,'$.accountId')
-    LEFT JOIN puzzle_account_security s ON s.user_id=g.user_id
-    WHERE c.room_id=? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0 AND c.x IS NOT NULL AND c.y IS NOT NULL`).bind(JSON.stringify(room.members),room.id,now-CURSOR_ONLINE_MS).all<{player_id:string;x:number;y:number;updated_at:number;badge:string|null;cursorStyle:string|null}>();
-  const members=new Map(room.members.filter(m=>m.lastSeen>0&&now-m.lastSeen<CURSOR_ONLINE_MS).map(m=>[m.id,m]));
+    LEFT JOIN puzzle_account_security s ON s.user_id=json_extract(m.value,'$.accountId')
+    WHERE c.room_id=? AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0 AND COALESCE(s.status,'active')='active' AND c.x IS NOT NULL AND c.y IS NOT NULL`).bind(JSON.stringify(room.members),room.id).all<{player_id:string;x:number;y:number;updated_at:number;badge:string|null;cursorStyle:string|null}>();
+  // A stationary decoration follows membership, not the short online-seat timer.
+  // Background tabs may be offline in the player count while keeping this point.
+  const members=new Map(room.members.filter(m=>m.lastSeen>0).map(m=>[m.id,m]));
   let managed=new Map<string,import('@/lib/managed-decoration-art').ManagedCursorArt>();
   try{const content=readManagedContent();if(content)managed=await ownedManagedCursors([...members.values()].map(member=>member.accountId||member.guestId||'').filter(Boolean),content);}catch{/* Preserve old pointer presence while managed content is unavailable. */}
   const cursors:SharedCursor[]=[];
@@ -39,12 +41,14 @@ export async function POST(request:Request,context:Context){try{
   const commands=[database.prepare(`INSERT INTO puzzle_room_cursors (room_id,player_id,client_id,seq,x,y,updated_at) VALUES (?,?,?,?,?,?,?)
     ON CONFLICT(room_id,player_id) DO UPDATE SET client_id=excluded.client_id,seq=excluded.seq,x=excluded.x,y=excluded.y,updated_at=excluded.updated_at
     WHERE puzzle_room_cursors.client_id!=excluded.client_id OR excluded.seq>puzzle_room_cursors.seq`).bind(room.id,member.id,input.clientId,input.seq,input.point?.x??null,input.point?.y??null,now)];
-  // Stationary online pointers stay visible. Only reclaim old positions belonging
-  // to players who are no longer online (or whose room has been removed).
+  // Reclaim departed/removed/disabled members and closed rooms. Do not reclaim a
+  // stationary member merely because background timers or pointer updates pause.
   if(input.seq%50===0)commands.push(database.prepare(`DELETE FROM puzzle_room_cursors WHERE updated_at<?
     AND NOT EXISTS(SELECT 1 FROM puzzle_rooms r,json_each(r.data,'$.members') m
+      LEFT JOIN puzzle_account_security s ON s.user_id=json_extract(m.value,'$.accountId')
+      LEFT JOIN puzzle_room_moderation moderation ON moderation.room_id=r.id
       WHERE r.id=puzzle_room_cursors.room_id AND json_extract(m.value,'$.id')=puzzle_room_cursors.player_id
-      AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>?
-      AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0)`).bind(now-60000,now-CURSOR_ONLINE_MS));
+      AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0
+      AND COALESCE(s.status,'active')='active' AND COALESCE(moderation.closed,0)=0)`).bind(now-60000));
   await database.batch(commands);return await positions(room,now);
 }catch(error){return failure(error);}}

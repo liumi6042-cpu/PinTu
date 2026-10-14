@@ -22,9 +22,9 @@ import * as myRoomsRoute from '../app/api/my-rooms/route';
 
 type Data=Record<string,any>;
 const phrases=['大家好！','我来找边缘','这块放这里','稍等一下','一起加油！','我来拼边缘','我来拼中间','请稍等一下','这一块在这里','谢谢你！','拼得真棒！','我要离开了','👏','👍','😊','🧩'];
-const unsupported=(message='这项功能尚未接入网页版，请使用原页面',url?:string)=>json({error:message,code:'WEB_FEATURE_UNAVAILABLE',...(url?{compatUrl:url}:{})},501);
+const unsupported=(message='这项功能目前尚未接入网页版',url?:string)=>json({error:message,code:'WEB_FEATURE_UNAVAILABLE',...(url?{compatUrl:url}:{})},501);
 const compatibilityRoom=(room:Data)=>!!room.customImage||room.visibility==='solo'||(pieceBand(room.puzzle?.cols*room.puzzle?.rows)||0)>500;
-const roomLink=(id:string)=>'/room/'+id;
+const roomLink=(id:string)=>'/play?room='+id;
 async function playerState(owner:string){const row=await localDb().prepare('SELECT data FROM puzzle_managed_players WHERE owner=?').bind(owner).first<{data:string}>();return row?JSON.parse(row.data):{};}
 async function context(request:Request){
  const content=readManagedContent();if(!content)throw new RoomError('正式内容暂未发布，暂时不能读取玩家奖励',503);
@@ -49,6 +49,19 @@ function roomPhoto(room:Data,origin:string){
 }
 function taskView(ctx:Context){return sharedTasks(ctx.view,ctx.profile,ctx.content.taskRewards);}
 function collectionView(ctx:Context){return sharedCollection(ctx.view,ctx.profile,ctx.origin,ctx.content.gameSettings.collection);}
+async function dropContribution(ctx:Context,roomId:string,revision:unknown,input:Data){
+ if(typeof input.requestId!=='string'||!/^[a-f0-9]{32}$/.test(input.requestId)||!Number.isSafeInteger(input.groupId)||input.groupId<0||!Number.isSafeInteger(revision))return undefined;
+ // The route returns this mutation's committed revision, including a fresh
+ // revision for ignored old sequences. Only a real new contribution has an
+ // outbox event at this exact revision; never borrow the most recent reward.
+ const eventId='room:'+roomId+':'+revision,row=await localDb().prepare('SELECT payload,settled_at FROM puzzle_managed_reward_events WHERE id=? AND room_id=? AND revision=?').bind(eventId,roomId,revision).first<{payload:string;settled_at:number|null}>();
+ if(!row?.settled_at)return undefined;
+ const event=JSON.parse(row.payload) as Data,contribution=event.owners?.find((value:Data)=>value.owner===ctx.player.id),settlement=ctx.state.settlements?.[eventId];
+ if(event.room?.id!==roomId||event.room?.revision!==revision||!contribution||!Number.isSafeInteger(contribution.count)||contribution.count!==contribution.previousCount+1||settlement?.occurredAt!==event.occurredAt)return undefined;
+ const receipt=ctx.state.receipts?.['snap:'+roomId+':'+contribution.count];
+ if(!receipt||receipt.at!==event.occurredAt||!Number.isSafeInteger(receipt.xp)||receipt.xp<=0)return undefined;
+ return {requestId:input.requestId,groupId:input.groupId,creditedXp:receipt.xp};
+}
 async function socialView(ctx:Context){
  const sources=ctx.view.friends,self={code:sources.code,name:ctx.player.name,level:ctx.profile.level,online:true,lastSeenAt:Date.now()};
  const codes=[...new Set<string>([...sources.list,...sources.requests,...sources.outgoing].map((p:Data)=>p.code))],levels=new Map<string,number>();
@@ -86,14 +99,14 @@ async function social(request:Request,path:string,input:Data,ctx:Context){
 async function sharedRoom(request:Request,path:string,input:Data){
  const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|chat|cursors|assistance))?$/.exec(path);if(!match)return null;
  const id=match[1],part=match[2],method=request.method,params={params:Promise.resolve({id})};
- if(method==='DELETE')return unsupported('请在原房间页面管理房间，已有进度会保留',roomLink(id));
+ if(method==='DELETE')return unsupported('网页版暂不支持删除房间，已有进度会保留',roomLink(id));
  const room=await readRoom(id);
- if(compatibilityRoom(room))return json({error:'这间历史拼图请在原界面继续，原进度和权限保留',code:'LEGACY_ROOM_REQUIRED',compatUrl:roomLink(id)},409);
+ if(compatibilityRoom(room))return json({error:'这间历史拼图目前尚未支持，原进度和权限保留',code:'LEGACY_ROOM_REQUIRED',compatUrl:roomLink(id)},409);
  if(part==='join'&&method==='POST'&&room.visibility&&room.acceptingNew===false){
   const player=await currentPlayer(request),guest=player?.accountId?await currentGuest(request):null;
   // The original join route may resume an admitted guest beneath a signed-in account.
   // Keep that identity switch in the original UI instead of issuing a mislabeled ticket.
-  if(guest&&!hasRoomAdmission(room,player?.id)&&hasRoomAdmission(room,guest.id))return json({error:'这间拼图曾以游客身份加入，当前账号尚未入座；请在原版继续，游客进度和奖励仍归原身份保留',code:'LEGACY_ROOM_REQUIRED',compatUrl:roomLink(id)},409);
+  if(guest&&!hasRoomAdmission(room,player?.id)&&hasRoomAdmission(room,guest.id))return json({error:'这间历史拼图目前尚未支持，游客进度和奖励仍归原身份保留',code:'LEGACY_ROOM_REQUIRED',compatUrl:roomLink(id)},409);
  }
  let response:Response;
  const route:( {GET?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>;POST?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>})=part==='join'?joinRoute:part==='chat'?chatRoute:part==='cursors'?cursorRoute:part==='assistance'?assistanceRoute:roomRoute;
@@ -107,7 +120,7 @@ async function sharedRoom(request:Request,path:string,input:Data){
  if(part==='cursors')data.cursors=(data.cursors??[]).map((cursor:Data)=>({...cursor,decoration:cursor.managedCursor??null}));
  // The original room mutation commits its reward outbox before this DTO refresh.
  if(!part&&method==='POST'&&input.type==='drop'){
-  try{const ctx=await context(request);data.mobileProfile=ctx.profile;
+  try{const ctx=await context(request);data.mobileProfile=ctx.profile;const contribution=await dropContribution(ctx,id,data.revision,input);if(contribution)data.mobileContribution=contribution;
    if(data.completedAt){const receipts=ctx.state.receipts??{},result=receipts['completion:'+id]??{};data.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:result.coins??0,fragments:result.fragments??0,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0)};}
   }catch{/* A committed room move must stay successful if optional profile reads fail. */}
  }
@@ -115,7 +128,7 @@ async function sharedRoom(request:Request,path:string,input:Data){
 }
 async function createSharedRoom(request:Request,input:Data){
  const ctx=await context(request),mode=input.mode??'selected',pieces=input.pieces;
- if(![108,300,500].includes(pieces))return json({error:'请选择108、300或500片；大图可在原页面创建',code:'LEGACY_CREATE_REQUIRED',compatUrl:'/gallery'},409);
+ if(![108,300,500].includes(pieces))return json({error:'请选择108、300或500片；更大片数暂未开放',code:'LEGACY_CREATE_REQUIRED',compatUrl:'/play'},409);
  if(!['selected','random','daily'].includes(mode))throw new RoomError('创建方式无效');
  let imageId=input.imageId;
  if(mode==='daily')imageId=managedDailyPuzzle(ctx.content).id;

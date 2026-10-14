@@ -100,7 +100,7 @@ test('shared rooms use existing account authentication and return authoritative 
   const tooLong=await f.request('/api/rooms/'+id+'/chat',{method:'POST',headers,body:{...chatBody,text:'字'.repeat(301),requestId:'2'.repeat(32)}});assert.equal(tooLong.status,400);
   const wrong=await f.request('/api/rooms/'+id,{cookie:otherToken,headers:{Authorization:'Bearer '+made.data.token}});assert.equal(wrong.status,401,'room token cannot impersonate a different logged-in account');
   const legacy={...saved,puzzle:{...saved.puzzle,scatterVersion:undefined,cols:40,rows:25},customImage:{id:'custom-preserved',title:'旧上传',width:1600,height:1200}};f.db.sql.prepare('UPDATE puzzle_rooms SET revision=revision+1,data=? WHERE id=?').run(JSON.stringify(legacy),id);
-  const unchanged=f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,compat=await f.request('/api/rooms/'+id+'/join',{method:'POST',body:{}});assert.equal(compat.status,409);assert.equal(compat.data.compatUrl,'/room/'+id);assert.equal(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,unchanged);
+  const unchanged=f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,compat=await f.request('/api/rooms/'+id+'/join',{method:'POST',body:{}});assert.equal(compat.status,409);assert.equal(compat.data.compatUrl,'/play?room='+id);assert.equal(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,unchanged);
  }finally{f.close();}
 });
 
@@ -112,10 +112,69 @@ test('a paused guest-admitted room cannot issue a guest ticket labeled as the si
   for(const member of room.members){delete member.accountId;member.guestId=guestId;}
   const preserved=JSON.stringify(room);f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=revision+1 WHERE id=?').run(preserved,id);
   const headers={Cookie:'puzzle_session='+token+'; puzzle_guest='+secret},blocked=await f.request('/api/rooms/'+id+'/join',{method:'POST',headers,body:{}});
-  assert.equal(blocked.status,409);assert.equal(blocked.data.code,'LEGACY_ROOM_REQUIRED');assert.equal(blocked.data.compatUrl,'/room/'+id);assert.equal(blocked.data.token,undefined);
+  assert.equal(blocked.status,409);assert.equal(blocked.data.code,'LEGACY_ROOM_REQUIRED');assert.equal(blocked.data.compatUrl,'/play?room='+id);assert.equal(blocked.data.token,undefined);
   assert.equal(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,preserved,'guard runs before the original join mutates room tickets or membership');assert.equal(stored(f).coins,100);
   room.admitted[owner]=true;f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=revision+1 WHERE id=?').run(JSON.stringify(room),id);
   const allowed=await f.request('/api/rooms/'+id+'/join',{method:'POST',headers,body:{}});assert.equal(allowed.status,200);
   const joined=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data).members.find(member=>member.id===allowed.data.playerId);assert.equal(joined.accountId,owner);assert.equal(joined.guestId,undefined);
+ }finally{f.close();}
+});
+
+test('shared cursor presence follows room membership without extending online status',async()=>{
+ const f=fixture();try{
+  const made=await f.request('/api/rooms',{method:'POST',body:{mode:'selected',imageId:f.photos[1].id,pieces:108,visibility:'public'}});assert.equal(made.status,201);
+  const ticket=made.data,path='/api/rooms/'+ticket.room.id,headers={Authorization:'Bearer '+ticket.token};
+  const joined=await f.request(path+'/join',{method:'POST',cookie:otherToken,body:{}});assert.equal(joined.status,200);
+  const peerHeaders={Authorization:'Bearer '+joined.data.token},point={clientId:'e'.repeat(32),seq:1,point:{x:100,y:120}};
+  assert.equal((await f.request(path+'/cursors',{method:'POST',headers,body:point})).status,200);
+  const room=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(ticket.room.id).data);
+  room.members.find(m=>m.id===ticket.playerId).lastSeen=Date.now()-10*60*1000;room.revision++;
+  f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=? WHERE id=?').run(JSON.stringify(room),room.revision,room.id);
+  f.db.sql.prepare('UPDATE puzzle_room_cursors SET updated_at=? WHERE room_id=?').run(Date.now()-10*60*1000,room.id);
+  const snapshot=await f.request(path,{cookie:otherToken,headers:peerHeaders});assert.equal(snapshot.status,200);
+  assert.equal(snapshot.data.members.some(m=>m.id===ticket.playerId),false);
+  const old=await f.request(path+'/cursors',{cookie:otherToken,headers:peerHeaders});assert.equal(old.status,200);assert.equal(old.data.cursors.find(p=>p.playerId===ticket.playerId).x,100);
+  const sweep=await f.request(path+'/cursors',{method:'POST',cookie:otherToken,headers:peerHeaders,body:{clientId:'f'.repeat(32),seq:50,point:{x:200,y:220}}});assert.equal(sweep.status,200);assert.ok(sweep.data.cursors.some(p=>p.playerId===ticket.playerId),'cleanup preserves a stationary member');
+  f.db.sql.prepare("INSERT INTO puzzle_account_security(user_id,status) VALUES(?,'suspended') ON CONFLICT(user_id) DO UPDATE SET status='suspended'").run(owner);
+  const suspended=await f.request(path+'/cursors',{cookie:otherToken,headers:peerHeaders});assert.ok(!suspended.data.cursors.some(p=>p.playerId===ticket.playerId),'a suspended account cannot leave a visible decoration');
+  f.db.sql.prepare("UPDATE puzzle_account_security SET status='active' WHERE user_id=?").run(owner);
+  assert.equal((await f.request(path,{method:'POST',headers,body:{type:'leave'}})).status,200);
+  const left=await f.request(path+'/cursors',{cookie:otherToken,headers:peerHeaders});assert.ok(!left.data.cursors.some(p=>p.playerId===ticket.playerId));
+  assert.equal((await f.request(path+'/cursors',{method:'POST',headers,body:{...point,seq:2}})).status,409);
+ }finally{f.close();}
+});
+
+test('shared drop feedback reads only this committed contribution receipt and stays silent for polls or ignored sequences',async()=>{
+ const f=fixture();try{
+  f.snapshot.gameSettings.energy.contributionXp=3;f.snapshot.gameSettings.collection.contributionCoins=7;
+  const made=await f.request('/api/rooms',{method:'POST',body:{mode:'selected',imageId:f.photos[1].id,pieces:108,visibility:'public'}});assert.equal(made.status,201);
+  const path='/api/rooms/'+made.data.room.id,headers={Authorization:'Bearer '+made.data.token},send=body=>f.request(path,{method:'POST',headers,body}),drop={type:'drop',groupId:0,dx:0,dy:0,seq:1,requestId:'7'.repeat(32)};
+  assert.equal((await send({type:'claim',groupId:0})).status,200);
+  const [placed,gift]=await Promise.all([send(drop),f.request('/api/mobile/gifts/open',{method:'POST',body:{kind:'ten:1',quantity:1,requestId:'6'.repeat(32)}})]);assert.equal(placed.status,200);assert.equal(gift.status,200);assert.deepEqual(placed.data.mobileContribution,{requestId:drop.requestId,groupId:0,creditedXp:3},'another concurrent reward cannot inflate this drop receipt');
+  assert.equal(stored(f).totalXp,908);assert.equal(stored(f).coins,120);assert.equal(stored(f).receipts['snap:'+made.data.room.id+':1'].xp,3);
+  const event=f.db.sql.prepare('SELECT payload,settled_at FROM puzzle_managed_reward_events WHERE id=?').get('room:'+made.data.room.id+':'+placed.data.revision);assert.ok(event.settled_at);assert.equal(JSON.parse(event.payload).owners.find(p=>p.owner===owner).count,1);
+  const replay=await send(drop);assert.equal(replay.status,409);assert.equal(replay.data.mobileContribution,undefined);assert.equal(stored(f).totalXp,908);
+  const poll=await f.request(path,{headers});assert.equal(poll.data.mobileContribution,undefined,'polls cannot replay a completed reward');
+  assert.equal((await send({type:'claim',groupId:1})).status,200);
+  const g=poll.data.puzzle.groups.find(g=>g.id===1);assert.equal((await send({type:'move',groupId:1,dx:g.dx,dy:g.dy,seq:2})).status,200);
+  const ignored=await send({...drop,groupId:1,requestId:'8'.repeat(32)});assert.equal(ignored.status,200);assert.equal(ignored.data.mobileContribution,undefined,'ignored old sequence receives no exact-revision event');assert.equal(stored(f).totalXp,908);
+  const badRequest=await f.request(path,{method:'POST',cookie:otherToken,headers,body:{...drop,groupId:1,seq:3,requestId:'9'.repeat(32)}});assert.equal(badRequest.status,401);assert.equal(badRequest.data.mobileContribution,undefined);
+  f.snapshot.gameSettings.energy.contributionXp=0;const zero=await send({...drop,groupId:1,seq:3,requestId:'a'.repeat(32)});assert.equal(zero.status,200);assert.equal(zero.data.mobileContribution,undefined,'zero XP cannot display a fabricated +1');assert.equal(stored(f).totalXp,908);
+ }finally{f.close();}
+});
+
+test('shared drop without a settled payout succeeds without XP text and recovery never replays it through polling',async()=>{
+ const f=fixture();try{
+  f.snapshot.gameSettings.energy.contributionXp=4;
+  const made=await f.request('/api/rooms',{method:'POST',body:{mode:'selected',imageId:f.photos[1].id,pieces:108,visibility:'public'}});assert.equal(made.status,201);
+  const path='/api/rooms/'+made.data.room.id,headers={Authorization:'Bearer '+made.data.token},send=body=>f.request(path,{method:'POST',headers,body});
+  assert.equal((await send({type:'claim',groupId:0})).status,200);
+  globalThis.__sharedClientEnv.PUZZLE_CONTENT_SNAPSHOT=()=>{throw Error('isolated test: reward release unavailable');};
+  const result=await send({type:'drop',groupId:0,dx:0,dy:0,seq:1,requestId:'b'.repeat(32)});assert.equal(result.status,200);assert.equal(result.data.mobileContribution,undefined);assert.equal(stored(f).totalXp,900);
+  assert.equal(f.db.sql.prepare('SELECT settled_at FROM puzzle_managed_reward_events WHERE room_id=?').get(made.data.room.id).settled_at,null);
+  globalThis.__sharedClientEnv.PUZZLE_CONTENT_SNAPSHOT=()=>f.snapshot;
+  const recovered=await f.request('/api/mobile/profile');assert.equal(recovered.status,200);assert.equal(stored(f).totalXp,904);assert.equal(recovered.data.mobileContribution,undefined);
+  assert.equal((await f.request(path,{headers})).data.mobileContribution,undefined);
+  assert.equal((await send({type:'heartbeat',requestId:'c'.repeat(32)})).data.mobileContribution,undefined);
  }finally{f.close();}
 });

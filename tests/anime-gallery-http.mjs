@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {randomBytes} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {resolve} from 'node:path';
+import {isolatedGet,assertSharedEntry} from './isolated-game-entry.mjs';
 const base=process.argv[2],filename=process.argv[3];
 assert.match(base,/^http:\/\/127\.0\.0\.1:31\d\d$/,'Run only against the disposable release smoke server');
 const catalog=JSON.parse(readFileSync(new URL('../content/puzzle-catalog.json',import.meta.url),'utf8'));
@@ -14,14 +15,13 @@ const circled=['cel-sunset-train-v1','painted-crimson-rose-v1','painted-amber-au
 const pictures=catalog.filter(photo=>(photo.category==='动漫'||circled.includes(photo.id))&&photo.status==='archived');
 assert.equal(pictures.length,9);assert.ok(pictures.every(photo=>photo.status==='archived'));
 const headers={Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'};
-const get=path=>fetch(base+path,{headers,signal:AbortSignal.timeout(10000)});
+const get=isolatedGet(base,headers);
 const database=new DatabaseSync(resolve(filename));
 try{
- const gallery=await (await get('/gallery')).text(),sitemap=await (await get('/sitemap.xml')).text();
- assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,Math.min(12,catalog.filter(photo=>photo.status==='published').length));
+ await assertSharedEntry(get,'/gallery');const sitemap=await (await get('/sitemap.xml')).text();
  for(const photo of pictures){
-  assert.ok(!gallery.includes(photo.id));assert.ok(!sitemap.includes(photo.id));
-  assert.equal((await get('/puzzle/'+photo.id)).status,404);
+  assert.ok(!sitemap.includes(photo.id));
+  await assertSharedEntry(get,'/puzzle/'+photo.id);
   const create=body=>fetch(base+'/api/rooms',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({...body,visibility:'public',pieces:108,guestSecret:randomBytes(32).toString('hex')}),signal:AbortSignal.timeout(10000)});
   const rejected=await create({imageId:photo.id});assert.equal(rejected.status,400,photo.id);await rejected.arrayBuffer();
   // Seed an earlier room only in this disposable DB, without a public API bypass.
@@ -37,8 +37,8 @@ try{
   }catch(error){database.exec('ROLLBACK');throw error;}
   const joined=await fetch(base+'/api/rooms/'+id+'/join',{method:'POST',headers:{...headers,Cookie:cookie,'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(10000)});
   assert.equal(joined.status,200);const restored=await joined.json();assert.equal(restored.room.puzzle.imageId,photo.id);assert.deepEqual(restored.room.puzzle.groups,room.puzzle.groups);
-  const roomPage=await get('/room/'+id);assert.equal(roomPage.status,200);const html=await roomPage.text();assert.ok(html.split('</head>')[0].includes(photo.optimizedSrc));
+  await assertSharedEntry(get,'/room/'+id,'/play?room='+id);
   for(const src of [photo.optimizedSrc,photo.playSrc,photo.thumbSrc]){const asset=await get(src);assert.equal(asset.status,200);await asset.arrayBuffer();}
  }
- console.log(JSON.stringify({withdrawnAnime:5,withdrawnCircledArt:4,publishedPictures:catalog.filter(photo=>photo.status==='published').length,newCreationRejected:true,galleryAndSitemapExcluded:true,existingRoomJoinAndProgressPreserved:true,legacyAssetsAvailable:true}));
+ console.log(JSON.stringify({withdrawnAnime:5,withdrawnCircledArt:4,publishedPictures:catalog.filter(photo=>photo.status==='published').length,newCreationRejected:true,legacyPagesRedirected:true,archivedSitemapExcluded:true,existingRoomJoinAndProgressPreserved:true,legacyAssetsAvailable:true}));
 }finally{database.close();}

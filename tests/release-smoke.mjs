@@ -9,13 +9,13 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createServer} from 'node:net';
 import {walk,runtimeAssets,TAR} from '../scripts/release-files.mjs';
 import {isPublishedPlayable} from '../scripts/image-origin.mjs';
+import {isolatedGet,assertSharedEntry} from './isolated-game-entry.mjs';
 
 const freePort=async(start)=>{for(let port=start;port<start+40;port++){const taken=await new Promise(resolve=>{const probe=createServer();probe.once('error',()=>resolve(true));probe.once('listening',()=>probe.close(()=>resolve(false)));probe.listen(port,'127.0.0.1');});if(!taken)return port;}throw new Error('No free port near '+start);};
 const project=fileURLToPath(new URL('..',import.meta.url));
 const archive=resolve(project,'releases/latest.tar.gz');
 const catalog=JSON.parse(readFileSync(resolve(project,'content/puzzle-catalog.json'),'utf8'));
 const published=catalog.filter(isPublishedPlayable);
-const galleryPublished=published.filter(photo=>photo.galleryVisible!==false);
 const expectedAssets=runtimeAssets(catalog,JSON.parse(readFileSync(resolve(project,'config/runtime-assets.json'),'utf8')));
 const root=mkdtempSync(resolve(tmpdir(),'jigsaw-release-test-')),app=resolve(root,'app');mkdirSync(app);
 let child,output='';
@@ -36,7 +36,7 @@ try{
 const port=await freePort(3137);
   child=spawn(process.execPath,['server.js'],{cwd:app,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,TEMP:process.env.TEMP,NODE_ENV:'production',HOST:'127.0.0.1',PORT:String(port),VINEXT_TRUSTED_HOSTS:'jigsawnook.online',VINEXT_TRUST_PROXY:'1',PUZZLE_PUBLIC_ORIGIN:'https://jigsawnook.online',PUZZLE_BETA_CAPACITY:'200',DATABASE_PATH:resolve(root,'data/puzzle.sqlite'),MIGRATIONS_DIR:resolve(app,'drizzle')}});
   child.stdout.on('data',data=>{output+=data;});child.stderr.on('data',data=>{output+=data;});
-  const get=async path=>{for(let redirects=0;redirects<5;redirects++){const response=await fetch('http://127.0.0.1:'+port+path,{headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'},redirect:'manual',signal:AbortSignal.timeout(5000)});if(![301,302,303,307,308].includes(response.status))return response;const target=new URL(response.headers.get('Location'),'https://jigsawnook.online');assert.equal(target.origin,'https://jigsawnook.online','smoke redirects must stay on the isolated service');path=target.pathname+target.search;await response.arrayBuffer();}throw Error('Too many isolated redirects');};
+  const get=isolatedGet('http://127.0.0.1:'+port,{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https'});
   let ready=false;
   for(let attempt=0;attempt<60;attempt++){
     if(child.exitCode!==null)throw new Error(output);
@@ -47,14 +47,14 @@ const port=await freePort(3137);
   for(const path of ['/','/gallery','/lobby','/help','/api/locale']){const response=await get(path);assert.equal(response.status,200,path);await response.arrayBuffer();}
   const sharedPage=await (await get('/play')).text();assert.ok(sharedPage.includes('id="game"'));assert.ok(sharedPage.includes('shared-game-host'));
   const sharedConfig=await (await get('/api/shared/config')).json();assert.equal(sharedConfig.identityMode,'web-cookie');assert.equal(sharedConfig.capabilities.energy,false);assert.ok(sharedConfig.uiBase.startsWith('/shared-client/'));
-  for(const lobbyPath of ['/lobby','/zh/lobby']){
-    const html=await (await get(lobbyPath)).text();assert.ok(html.includes('397229653'));assert.ok(html.includes('lobby-qq'));
-  }
+  for(const path of ['/','/zh','/lobby','/zh/lobby','/gallery','/zh/gallery','/albums','/tasks','/decorations','/personal','/personal/images','/achievements','/leaderboard','/courtyard','/wardrobe'])await assertSharedEntry(get,path);
+  await assertSharedEntry(get,'/zh/lobby?invite=qa-code','/play?invite=qa-code');
+  for(const path of ['/account','/account/security','/account/recover','/privacy','/terms','/feedback'])assert.equal((await get(path)).status,200,path);
   const post=async(body,cookie='')=>fetch('http://127.0.0.1:'+port+'/api/rooms',{method:'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https',Origin:'https://jigsawnook.online','Content-Type':'application/json',Cookie:cookie},body:JSON.stringify(body)});
   for(const imageId of ['seaside-native-v2','custom-'+'a'.repeat(32)]){
     const response=await post({visibility:'solo',imageId,pieces:108});assert.equal(response.status,410);assert.match((await response.json()).error,/独自拼图已下线/);
   }
-  console.log('Lobby QQ banner present in both languages; catalogue and uploaded solo creation retired.');
+  console.log('Legacy game entries lead to the shared UI; account services and retired solo creation policy remain intact.');
   const journey=spawnSync(process.execPath,[resolve(project,'tests/journey-node-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(journey.status,0,journey.stdout+journey.stderr);console.log(journey.stdout.trim());
   const cosmetics=spawnSync(process.execPath,[resolve(project,'tests/cosmetics-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
@@ -63,20 +63,11 @@ const port=await freePort(3137);
   assert.equal(welcome.status,0,welcome.stdout+welcome.stderr);console.log(welcome.stdout.trim());
   const retention=spawnSync(process.execPath,[resolve(project,'tests/retention-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(retention.status,0,retention.stdout+retention.stderr);console.log(retention.stdout.trim());
-  for(const path of ['/courtyard','/flower-garden/index.html','/courtyard/index.html']){
+  for(const path of ['/flower-garden/index.html','/courtyard/index.html']){
     const response=await get(path);assert.equal(response.status,200,path);
     const html=await response.text();assert.ok(html.includes('正在开发'),path);
     for(const tag of ['<iframe','<canvas','<footer','<button'])assert.ok(!html.includes(tag),path+' hides '+tag);
   }
-  for(const path of ['/gallery','/lobby','/zh/gallery','/zh/lobby']){
-    const html=await (await get(path)).text();assert.ok(!html.includes('href="/courtyard"'),path+' hides courtyard navigation');
-  }
-  const gallery=await (await get('/gallery')).text();assert.equal((gallery.match(/class="gallery-entry-card"/g)||[]).length,Math.min(12,galleryPublished.length));
-  assert.equal((gallery.match(/type="radio"/g)||[]).length,4);
-  for(const count of [108,300,500,1000])assert.ok(gallery.includes('value="'+count+'"'));
-  for(const count of [2000,5000])assert.ok(!gallery.includes('value="'+count+'"'));
-  for(const removed of ['class="picture-guidance"','class="picture-advice"','class="detail-note"','gallery-picture-details','About this puzzle'])assert.ok(!gallery.includes(removed),removed);
-  for(const photo of [...galleryPublished].sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,12))assert.ok(gallery.includes('href="/puzzle/'+photo.id+'"'),photo.id);
   const creation=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/room-creation-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});
   assert.equal(creation.status,0,creation.stdout+creation.stderr);console.log(creation.stdout.trim());
   const access=spawnSync(process.execPath,['--import',pathToFileURL(resolve(project,'tests/ts-register.mjs')).href,resolve(project,'tests/access-assistance-http.mjs'),'http://127.0.0.1:'+port,resolve(root,'data/puzzle.sqlite')],{cwd:project,windowsHide:true,encoding:'utf8'});

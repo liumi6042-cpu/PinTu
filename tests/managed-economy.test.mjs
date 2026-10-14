@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {DEFAULT_GAME_SETTINGS} from '../server/game-settings.mjs';
 import {DEFAULT_TASK_REWARD_SETTINGS} from '../server/task-reward-settings.mjs';
-import {newManagedProfile,recordManagedRoom,managedReward,claimManagedGift,purchaseManagedAlbum,craftManagedDecoration,shareManagedInvitation,managedDay} from '../lib/managed-economy-model.mjs';
+import {newManagedProfile,recordManagedRoom,managedReward,claimManagedGift,purchaseManagedAlbum,craftManagedDecoration,shareManagedInvitation,managedDay,awardManagedMilestones} from '../lib/managed-economy-model.mjs';
 const settings=structuredClone(DEFAULT_GAME_SETTINGS),rewards=structuredClone(DEFAULT_TASK_REWARD_SETTINGS),now=Date.parse('2026-10-13T08:00:00Z');
 settings.collection.contributionCoins=2;settings.energy.contributionXp=3;settings.collection.catalogMinimumContributions=2;
 for(const task of rewards.tasks){task.coins=11;task.xp=5;}
@@ -31,7 +31,18 @@ test('paid album rights survive membership moves; craft purchase cannot overdraf
  managedReward(state,'test-seed',{coins:10,fragments:30},settings,now);purchaseManagedAlbum(state,album,settings,now);purchaseManagedAlbum(state,album,settings,now);assert.equal(state.coins,0);assert.equal(state.ownedImages.a,true);
  const next={...album,imageIds:['c']};assert.deepEqual(state.ownedAlbums[album.id].imageIds,['a','b']);assert.equal(state.ownedImages.c,undefined);
  const bow=settings.decorations.find(item=>item.id==='cream-bow');craftManagedDecoration(state,bow,settings,now);craftManagedDecoration(state,bow,settings,now);assert.equal(state.fragments,0);assert.equal(state.decorations.filter(id=>id===bow.id).length,1);
- assert.throws(()=>craftManagedDecoration(state,settings.decorations.find(item=>item.id==='honey-star'),settings,now),/碎片不足/);assert.equal(state.fragments,0);
+ assert.throws(()=>craftManagedDecoration(state,settings.decorations.find(item=>item.id==='rose-butterfly'),settings,now),/碎片不足/);assert.equal(state.fragments,0);
+});
+
+test('retired decorations preserve old ownership and receipts without crafting or new album grants',()=>{
+ const state=newManagedProfile();state.fragments=500;state.decorations=['honey-star'];state.equipped='honey-star';state.artworks.a=[108];
+ const historical={target:1,coins:13,decorationId:'honey-star',at:now-1};state.milestones.old={done:historical};
+ for(const id of ['berry-spark','honey-star'])assert.throws(()=>craftManagedDecoration(state,settings.decorations.find(item=>item.id===id),settings,now),/已移除/);
+ assert.equal(state.fragments,500);assert.deepEqual(state.decorations,['honey-star']);assert.equal(state.equipped,'honey-star');
+ const updated={...album,milestones:[{id:'retired-reward',target:1,coins:17,decorationId:'berry-spark'}]};
+ awardManagedMilestones(state,[updated],settings,now);awardManagedMilestones(state,[updated],settings,now+1);
+ assert.equal(state.coins,17);assert.equal(state.milestones[album.id]['retired-reward'].decorationId,null);
+ assert.deepEqual(state.decorations,['honey-star']);assert.deepEqual(state.milestones.old.done,historical);
 });
 test('invites require three successful contributions and retain the configured gift',()=>{
  const state=newManagedProfile(),binding={inviter:'friend',bound_at:now-1};recordManagedRoom(state,room(2),{...options,invitation:binding});assert.equal(state.invitation.qualifiedAt,null);

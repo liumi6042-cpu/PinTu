@@ -189,6 +189,14 @@ def ready(port):
             return
         except Exception: time.sleep(.25)
     raise RuntimeError('Health check failed')
+def check_game_redirect(port, path, expected='/play'):
+    status, headers, _ = request(port, path, follow_redirects=False)
+    assert status in (301, 302, 303, 307, 308), ('Old game entry must redirect', path, status)
+    destination = urllib.parse.urlsplit(loopback_redirect(port, f'http://127.0.0.1:{port}' + path, headers.get('Location', '')))
+    assert destination.path + ('?' + destination.query if destination.query else '') == expected, (path, destination)
+    html = get(port, path)[1].decode()
+    assert 'class="shared-game-host"' in html and 'id="game"' in html, path
+    assert '使用原版大厅' not in html and '返回原版大厅' not in html, path
 def check(port, all_assets=False):
     status, root_headers, _ = request(port, '/', follow_redirects=False)
     assert status in (301, 302, 303, 307, 308), 'Root must redirect to the shared game'
@@ -206,16 +214,11 @@ def check(port, all_assets=False):
     game_asset = config['uiBase'] + 'game.js'
     inventory = {i['path']: i['sha256'] for i in manifest['files']}
     assert hashlib.sha256(get(port, game_asset)[1]).hexdigest() == inventory['dist/client' + game_asset]
-    for path in ['/lobby', '/gallery', '/help']:
+    for path in ['/lobby', '/zh/lobby', '/gallery', '/zh/gallery', '/personal', '/personal/images', '/albums', '/tasks', '/decorations', '/courtyard', '/puzzle/mountain-lake-reflection-hd-v3']:
+        check_game_redirect(port, path)
+    check_game_redirect(port, '/zh/lobby?invite=qa-code', '/play?invite=qa-code')
+    for path in ['/help', '/account', '/account/security', '/privacy', '/terms', '/feedback']:
         html = get(port, path)[1].decode()
-        assert 'href="/membership"' not in html
-        if path == '/gallery':
-            assert html.count('class="gallery-entry-card"') == min(12, manifest['publicPictures'])
-            assert html.count('type="radio"') == 4
-            for marker in ['mountain-lake-reflection-hd-v3', 'morning-meadow-tree-hd-v3', 'clear-sand-bay-hd-v3']:
-                assert marker in get(port, '/puzzle/' + marker)[1].decode()
-            for marker in ['class="picture-guidance"', 'class="picture-advice"', 'gallery-picture-details']:
-                assert marker not in html
         head = html.partition('</head>')[0]
         assert 'name="msvalidate.01"' in head and 'name="google-site-verification"' in head
     if all_assets:
@@ -293,7 +296,9 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         json_request(3138, '/api/lobby/chat', message, garden_actor, 410)
         assert not json_request(3138, '/api/lobby/chat', expected=410)['messages']
         ready(3139)
-        old_picture = re.search(r'href="/puzzle/([a-z0-9-]+)"', get(3139, '/gallery')[1].decode()).group(1)
+        # The previous release can also use the shared UI; do not scrape retired gallery HTML.
+        old_catalog = json.loads((old / 'content/puzzle-catalog.json').read_text())
+        old_picture = next(photo['id'] for photo in old_catalog if photo['status'] == 'published' and photo['id'] == 'mountain-lake-reflection-hd-v3')
         for count in [3000, 5000]:
             actor = {}
             ticket = json_request(3139, '/api/rooms', {'visibility': 'public', 'imageId': old_picture, 'pieces': 108, 'guestSecret': secrets.token_hex(32)}, actor, 201)
@@ -326,8 +331,7 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             # The 500+ creation check for a fresh guest is covered below.
             guest = json_request(3138, path + '/join', {}, {})
             assert guest['room']['puzzle']['cols'] * guest['room']['puzzle']['rows'] == count
-            head = get(3138, '/room/' + ticket['room']['id'])[1].decode().partition('</head>')[0]
-            assert '/puzzles/mountain-lake-reflection-native-v2-optimized-' in head
+            check_game_redirect(3138, '/room/' + ticket['room']['id'], '/play?room=' + ticket['room']['id'])
         for count in [2000, 5000]:
             json_request(3138, '/api/rooms', {'visibility': 'public', 'imageId': 'seaside-native-v2', 'pieces': count, 'guestSecret': secrets.token_hex(32)}, {}, 400)
         for count in [1500, 2000, 3000, 4000, 5000]:
@@ -345,9 +349,8 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             # requested count. Assert the board the ticket promised was delivered.
             grid = ticket['room']['puzzle']
             assert len(json_request(3138, path, None, actor)['puzzle']['groups']) == grid['cols'] * grid['rows']
-            head = get(3138, '/room/' + ticket['room']['id'])[1].decode().partition('</head>')[0]
-            assert '/puzzles/mountain-lake-reflection-hd-v3-' + kind + '-' in head
-        print('Isolated Linux: old rooms, cross-version moves/chat, resolution policy, SSR delivery and all assets passed.', flush=True)
+            check_game_redirect(3138, '/room/' + ticket['room']['id'], '/play?room=' + ticket['room']['id'])
+        print('Isolated Linux: old rooms, cross-version moves/chat, resolution policy, shared UI routing and all assets passed.', flush=True)
     finally:
         for process in processes: process.terminate()
         for process in processes: process.wait(timeout=15)

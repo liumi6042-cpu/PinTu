@@ -1,3 +1,3 @@
 import AccountGate from '../account-gate';
-import PersonalSpace from '../personal/personal-space';
-export default function AccountPage(){return <AccountGate requireLogin><PersonalSpace/></AccountGate>;}
+import SecurityCenter from './security/security-center';
+export default function AccountPage(){return <AccountGate requireLogin><SecurityCenter/></AccountGate>;}

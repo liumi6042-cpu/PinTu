@@ -4,10 +4,13 @@ import { securityLimit } from './lib/account-security';
 import { isPublicSearchPage } from './lib/seo';
 import { cookieLanguage,LANGUAGE_COOKIE } from './lib/language-detection';
 import { ENTRANCE_BYPASS, ENTRANCE_COOKIE, isEntrancePath, languageRedirect, skipsEntrance } from './lib/entrance-preference';
+import { sharedGameEntry } from './lib/shared-game-entry';
 
 export async function middleware(request:NextRequest) {
   const s=settings(),local=!!s.PUZZLE_LOCAL_ORIGIN;
   let response:NextResponse;
+  // Resolve legacy game addresses before language routing; /play has one shared UI.
+  const gameTarget=sharedGameEntry(request.nextUrl.pathname,request.nextUrl.search,request.method);
   // A visitor who picked a language reaches the address that speaks it, whatever entry they
   // typed: choosing 中文 on /lobby, or opening / with Chinese chosen, lands on the Chinese
   // address. Crawlers send no cookie and are never redirected.
@@ -23,6 +26,8 @@ export async function middleware(request:NextRequest) {
   requestHeaders.set('x-jigsaw-path',request.nextUrl.pathname);
   if(!local&&(!s.PUZZLE_PUBLIC_ORIGIN||new URL(request.url).origin!==s.PUZZLE_PUBLIC_ORIGIN)) {
     response=NextResponse.json({error:'Service configuration is incomplete.'},{status:503});
+  } else if(gameTarget) {
+    response=NextResponse.redirect(new URL(gameTarget,request.url));
   } else if(languageTarget) {
     // Temporary on purpose, like the entrance skip: both exist for the visitor, not for
     // search engines, which never send the cookie that triggers them.
@@ -50,12 +55,12 @@ export async function middleware(request:NextRequest) {
   // from a shared cache: a cached redirect would send a first-time visitor to the
   // lobby, and a cached entrance would hide the lobby from a returning one. The same
   // holds for a language redirect, which only ever happens for a visitor with a cookie.
-  if(isEntrancePath(request.nextUrl.pathname)||languageTarget) {
+  if(gameTarget||isEntrancePath(request.nextUrl.pathname)||languageTarget) {
     response.headers.set('Vary','Cookie');
     response.headers.set('Cache-Control','private, no-store');
   }
   // Allow only curated, stable public pages. Room and account URLs stay excluded.
-  const searchable=!local && response.status<400 && !skipEntrance && !languageTarget && !request.nextUrl.search && isPublicSearchPage(request.nextUrl.pathname);
+  const searchable=!local && response.status<400 && !gameTarget && !skipEntrance && !languageTarget && !request.nextUrl.search && isPublicSearchPage(request.nextUrl.pathname);
   response.headers.set('X-Robots-Tag',searchable?'index, follow, max-image-preview:large':'noindex, nofollow');
   response.headers.set('Referrer-Policy','no-referrer');
   response.headers.set('Permissions-Policy','camera=(), microphone=(), geolocation=()');
