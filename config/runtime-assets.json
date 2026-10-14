@@ -80,15 +80,15 @@
     "/cosmetics/assets/strawberry-icon-e686b59e08ec.webp",
     "/cosmetics/assets/strawberry-bubble-095e72256bcb.webp",
     "/cosmetics/assets/strawberry-cursor-ada622b371e1.png",
-    "/shared-client/0942701ed20d9cf3/game.js",
-    "/shared-client/0942701ed20d9cf3/assets/audio/mobile-snap.wav",
-    "/shared-client/0942701ed20d9cf3/assets/ui/b2-core-icons23.png",
-    "/shared-client/0942701ed20d9cf3/assets/ui/b2-task-icons23.png",
-    "/shared-client/0942701ed20d9cf3/art/b2-supply-scenes.png",
-    "/shared-client/0942701ed20d9cf3/art/b2-pixel-atlas.png",
-    "/shared-client/0942701ed20d9cf3/assets/fonts/OFL-NotoSansSC.txt",
-    "/shared-client/0942701ed20d9cf3/assets/fonts/FONT-NOTICES.md",
-    "/shared-client/0942701ed20d9cf3/assets/fonts/jigsaw-ui-sc.woff2"
+    "/shared-client/455127b56803b8d7/game.js",
+    "/shared-client/455127b56803b8d7/assets/audio/mobile-snap.wav",
+    "/shared-client/455127b56803b8d7/assets/ui/b2-core-icons23.png",
+    "/shared-client/455127b56803b8d7/assets/ui/b2-task-icons23.png",
+    "/shared-client/455127b56803b8d7/art/b2-supply-scenes.png",
+    "/shared-client/455127b56803b8d7/art/b2-pixel-atlas.png",
+    "/shared-client/455127b56803b8d7/assets/fonts/OFL-NotoSansSC.txt",
+    "/shared-client/455127b56803b8d7/assets/fonts/FONT-NOTICES.md",
+    "/shared-client/455127b56803b8d7/assets/fonts/jigsaw-ui-sc.woff2"
   ],
   "description": "The packager also includes playSrc and thumbSrc for every published or archived project-generated puzzle. PNG originals stay in Git and never enter runtime uploads."
 }
