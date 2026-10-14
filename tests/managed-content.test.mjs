@@ -18,7 +18,7 @@ registerHooks({resolve(specifier,context,next){
  if(specifier.startsWith('.')&&!/\.[cm]?[jt]s$/.test(specifier)){try{return next(specifier+'.ts',context);}catch{}}
  return next(specifier,context);
 },load(url,context,next){if(url==='test:managed-content-env')return {format:'module',source:'export const env=globalThis.__contentTestEnv;',shortCircuit:true};return next(url,context);}});
-const {effectiveManagedAlbums,managedDailyPuzzle}=await import('../lib/managed-content.ts');
+const {effectiveManagedAlbums,managedDailyPuzzle,managedGalleryPhotos}=await import('../lib/managed-content.ts');
 const photos=managedPhotos.slice(0,2),ids=photos.map(photo=>photo.id),clock=Date.parse('2026-10-13T12:00:00+08:00');
 const signed=value=>({...value,configDigest:contentValueDigest(value)});
 function fixture(){
@@ -75,15 +75,35 @@ test('readonly preflight checks exact immutable version and does not create appe
 
 test('shared daily receipt gives both services the same image and actual premieres enter albums next Beijing midnight',()=>{
  const f=fixture();try{
-  f.publish('daily');const snapshot=f.read();assert.equal(effectiveManagedAlbums(snapshot,clock)[0].imageIds.length,0);
+  f.publish('daily');const snapshot=f.read();assert.deepEqual(effectiveManagedAlbums(snapshot,clock),[]);
   const selected=managedDailyPuzzle(snapshot,clock);
   const mobile=createDailyContent({readConfiguration:()=>snapshot.documents.daily,appearanceDir:resolve(f.root,'daily'),photos,fallback:()=>null,randomInt:()=>selected.id===ids[0]?1:0});
   assert.equal(mobile.select(clock+1000).id,selected.id,'existing shared receipt defeats a different random draw');
-  assert.equal(effectiveManagedAlbums(snapshot,clock)[0].imageIds.length,0);
+  assert.deepEqual(effectiveManagedAlbums(snapshot,clock),[]);
   const nextDay=Date.parse('2026-10-14T00:00:00+08:00');assert.deepEqual(effectiveManagedAlbums(snapshot,nextDay)[0].imageIds,[selected.id]);
   const second=managedDailyPuzzle(snapshot,nextDay);assert.notEqual(second.id,selected.id,'unreleased automatic artwork has priority');
   const nextNextDay=nextDay+86400000;assert.equal(effectiveManagedAlbums(snapshot,nextNextDay)[0].imageIds.length,2);
   const fallback=managedDailyPuzzle(snapshot,nextNextDay);assert.ok(ids.includes(fallback.id),'all-album fallback works after automatic candidates are exhausted');
   const receipt=JSON.parse(readFileSync(resolve(f.root,'daily','2026-10-15.json'),'utf8'));assert.equal(receipt.source,'library');
+ }finally{f.close();}
+});
+
+test('player albums hide empty and unavailable content without changing saved membership, price or visibility',()=>{
+ const f=fixture();try{
+  f.publish('empty-albums');const original=f.read(),template=original.albums.albums[0];
+  const albums=[
+   {...template,id:'empty',imageIds:[],coverImageId:null},
+   {...template,id:'unavailable',imageIds:['not-delivered'],coverImageId:'not-delivered'},
+   {...template,id:'mobile-only',imageIds:[ids[0]],showOnPc:false},
+   {...template,id:'mixed',imageIds:[ids[0],ids[1]],purchasable:true,price:71},
+  ];
+  const before=JSON.stringify(albums),released=new Set();
+  const snapshot={...original,albums:{...original.albums,albums},dailyRuntime:{...original.dailyRuntime,managedImageIds:()=>new Set([ids[1]]),releasedImageIds:()=>released,albumEntries:()=>[]}};
+  const visible=effectiveManagedAlbums(snapshot,clock);
+  assert.deepEqual(visible.map(album=>album.id),['mixed']);
+  assert.deepEqual(visible[0].imageIds,[ids[0]]);assert.equal(visible[0].price,71);assert.equal(visible[0].purchasable,true);
+  assert.deepEqual(managedGalleryPhotos(snapshot,clock).map(photo=>photo.id),[ids[0]]);
+  released.add(ids[1]);assert.deepEqual(effectiveManagedAlbums(snapshot,clock)[0].imageIds,ids);
+  assert.equal(JSON.stringify(albums),before,'visibility is derived without rewriting saved album data');
  }finally{f.close();}
 });

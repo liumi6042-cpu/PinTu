@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
+import {registerHooks} from 'node:module';
 import ts from 'typescript';
 import {SqliteD1} from '../server/sqlite.mjs';
 import {DEFAULT_GAME_SETTINGS} from '../server/game-settings.mjs';
@@ -10,11 +11,17 @@ import {DEFAULT_TASK_REWARD_SETTINGS} from '../server/task-reward-settings.mjs';
 // Keep the actual asynchronous store/CAS implementation. Only platform access,
 // room error type and content reader are injected for this in-memory database.
 const modelUrl=new URL('../lib/managed-economy-model.mjs',import.meta.url).href;
+const managedContentUrl=new URL('../lib/managed-content.ts',import.meta.url).href;
+registerHooks({resolve(specifier,context,next){
+ if(specifier==='cloudflare:workers')return {url:'test:managed-economy-env',shortCircuit:true};
+ if(specifier.startsWith('.')&&!/\.[cm]?[jt]s$/.test(specifier)){try{return next(specifier+'.ts',context);}catch{}}
+ return next(specifier,context);
+},load(url,context,next){if(url==='test:managed-economy-env')return {format:'module',source:'export const env={};',shortCircuit:true};return next(url,context);}});
 let source=readFileSync(new URL('../lib/managed-economy.ts',import.meta.url),'utf8');
 source=source.replace(/import \{localDb\} from '\.\/local-db';/,"const localDb=()=>globalThis.__managedEconomyTestDatabase;")
  .replace(/import \{RoomError,type Room\} from '\.\/room-engine';/,"class RoomError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}")
  .replace(/import \{pieceBand\} from '\.\/piece-policy';/,"const pieceBand=(count:number)=>count;")
- .replace(/import \{readManagedContent,effectiveManagedAlbums,managedDailyPuzzle,type ManagedContentSnapshot\} from '\.\/managed-content';/,"type ManagedContentSnapshot=any;const readManagedContent=()=>null;const effectiveManagedAlbums=(snapshot:any)=>snapshot.albums.albums.filter((album:any)=>album.showOnPc);const managedDailyPuzzle=(snapshot:any)=>snapshot.photos.find((photo:any)=>photo.id==='daily');")
+ .replace(/import \{readManagedContent,effectiveManagedAlbums,managedDailyPuzzle,type ManagedContentSnapshot\} from '\.\/managed-content';/,"import {effectiveManagedAlbums} from "+JSON.stringify(managedContentUrl)+";type ManagedContentSnapshot=any;const readManagedContent=()=>null;const managedDailyPuzzle=(snapshot:any)=>snapshot.photos.find((photo:any)=>photo.id==='daily');")
  .replace("from './managed-economy-model.mjs'",'from '+JSON.stringify(modelUrl));
 const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
 const store=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
@@ -24,7 +31,7 @@ game.collection.contributionCoins=2;game.energy.contributionXp=3;game.collection
 rewards.tasks.forEach(task=>{task.coins=11;task.xp=5;});rewards.invitationFriend.coins=13;rewards.invitationFriend.xp=8;
 const paid={id:'paid-album',title:'相册',description:'收藏',showOnPc:true,purchasable:true,price:10,imageIds:['a','b'],milestones:[{id:'stable',target:1,coins:17,decorationId:'cloud-moon'}]};
 const free={id:'free-album',title:'免费相册',description:'自由拼图',showOnPc:true,purchasable:false,price:0,imageIds:['c'],milestones:[]};
-const snapshot={releaseId:'test-local',gameSettings:game,taskRewards:rewards,albums:{albums:[paid,free]},photos:[...['a','b','c','daily'].map(id=>({id,title:id,src:'/a.jpg',thumbSrc:'/a-thumb.jpg',width:1200,height:900}))]};
+const snapshot={releaseId:'test-local',gameSettings:game,taskRewards:rewards,albums:{albums:[paid,free]},dailyRuntime:{managedImageIds:()=>new Set(),releasedImageIds:()=>new Set(),albumEntries:()=>[]},photos:[...['a','b','c','daily'].map(id=>({id,title:id,src:'/a.jpg',thumbSrc:'/a-thumb.jpg',width:1200,height:900}))]};
 function makeRoom(id,count,now){return {id,revision:0,puzzle:{imageId:'a',cols:12,rows:9},members:[{id:'one',accountId:owner,name:'一',lastSeen:now},{id:'two',guestId:guest,name:'二',lastSeen:now}],achievements:{contributors:{[owner]:{count,days:[]}}},createdAt:now-1000,lastPlayedAt:now,completedAt:null};}
 function createDb(){const db=new SqliteD1(':memory:',fileURLToPath(new URL('../drizzle/',import.meta.url)));globalThis.__managedEconomyTestDatabase=db;db.sql.prepare('INSERT INTO puzzle_users VALUES(?,?,?,?,?,?)').run(owner,'owner','测试用户','placeholder','salt',Date.now());return db;}
 function writeRoom(db,room){db.sql.prepare('INSERT OR REPLACE INTO puzzle_rooms(id,revision,data,expires_at) VALUES(?,?,?,?)').run(room.id,room.revision,JSON.stringify(room),Date.now()+86400000);}
@@ -54,6 +61,10 @@ test('real concurrent task claims, album purchases and permanent retained rights
   const moved={...snapshot,albums:{albums:[{...paid,imageIds:[]},free]}};
   assert.equal(await store.managedImageAllowed(owner,'a',moved,now),true);assert.equal(await store.managedImageAllowed(guest,'a',moved,now),false);
   const view=await store.managedPlayerView(owner,moved,'http://localhost',{recover:false});assert.deepEqual(view.retainedImages.map(photo=>photo.id),['a','b']);
+  assert.deepEqual(view.albums.map(album=>album.id),[free.id],'empty purchased album is hidden while its images stay accessible');
+  assert.deepEqual(stateFor(db).ownedAlbums[paid.id].imageIds,['a','b']);
+  assert.equal((await store.managedAccessibleImageIds(owner,moved,now)).has('a'),true);
+  await assert.rejects(store.managedPlayerAction(guest,{action:'purchase-album',albumId:paid.id},moved),/相册暂未开放购买/);
   assert.match(view.tasks.daily[0].goal,/有效拼合/);assert.ok(view.tasks.daily[0].goalEn.length>20);
   await assert.rejects(store.managedPlayerAction(guest,{action:'claim-task',taskId:'cooperation-10'},snapshot),/奖励不存在/);
  }finally{db.close();delete globalThis.__managedEconomyTestDatabase;}
