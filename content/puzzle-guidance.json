@@ -1307,5 +1307,26 @@
     "complexity": 3,
     "preferredCount": 108,
     "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "blossom-rainy-flower-lane-v1": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "blossom-osmanthus-tea-courtyard-v1": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "blossom-firefly-conservatory-v1": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
   }
 }

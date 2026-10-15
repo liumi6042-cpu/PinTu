@@ -2182,6 +2182,33 @@
         "width": 2144,
         "height": 2144
       }
+    ],
+    "blossom-rainy-flower-lane-v1": [
+      {
+        "revision": "4b15b2a3b1fa5f0800eb2eb8af6758c4a38f7659428d8b211cfeb87b3263cb0d",
+        "src": "/puzzles/blossom-rainy-flower-lane-v1-optimized-c907b07d7a4d.webp",
+        "thumbSrc": "/puzzles/blossom-rainy-flower-lane-v1-thumbnail-966e2b522ec5.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "blossom-osmanthus-tea-courtyard-v1": [
+      {
+        "revision": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+        "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1-optimized-59321e36f1b8.webp",
+        "thumbSrc": "/puzzles/blossom-osmanthus-tea-courtyard-v1-thumbnail-a53e9edac75b.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "blossom-firefly-conservatory-v1": [
+      {
+        "revision": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+        "src": "/puzzles/blossom-firefly-conservatory-v1-optimized-bde5f4d5b3b2.webp",
+        "thumbSrc": "/puzzles/blossom-firefly-conservatory-v1-thumbnail-d6d20d499bf9.webp",
+        "width": 2144,
+        "height": 2144
+      }
     ]
   },
   "active": {

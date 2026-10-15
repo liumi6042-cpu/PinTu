@@ -2527,5 +2527,47 @@
     "playSrc": "/puzzles/new-f8d8189a200835e3-v1-play-d7d30cf6eec0.webp",
     "thumbSrc": "/puzzles/new-f8d8189a200835e3-v1-thumbnail-24ddb9a5ffc3.webp",
     "optimizedSrc": "/puzzles/new-f8d8189a200835e3-v1-optimized-316877a488ef.webp"
+  },
+  {
+    "id": "blossom-rainy-flower-lane-v1",
+    "title": "雨巷花伞",
+    "subtitle": "蓝调时刻刚停雨的江南小巷，一间开门的临河花铺是视觉焦点。前景错落摆放开满牡丹、绣球、百合与小雏菊的竹篮和青瓷缸，一把手绘花卉的油纸伞倚着木门；暖金色宫灯照亮花瓣上的水珠。湿润的青石板小路从花铺弯向中景的小拱桥，窄窄的水渠、砖墙、木格窗、青瓦屋檐和远处几盏不同形制的小灯层层延伸。少量细雨水痕与灯影反射，橘金与孔雀蓝、花朵的胭脂粉和奶白相映，不出现行人。",
+    "category": "插画",
+    "src": "/puzzles/blossom-rainy-flower-lane-v1.png",
+    "origin": "project-ai-generated",
+    "status": "archived",
+    "galleryVisible": false,
+    "dailyOnly": false,
+    "playSrc": "/puzzles/blossom-rainy-flower-lane-v1-play-a34af7d97341.webp",
+    "thumbSrc": "/puzzles/blossom-rainy-flower-lane-v1-thumbnail-966e2b522ec5.webp",
+    "optimizedSrc": "/puzzles/blossom-rainy-flower-lane-v1-optimized-c907b07d7a4d.webp"
+  },
+  {
+    "id": "blossom-osmanthus-tea-courtyard-v1",
+    "title": "桂香茶宴",
+    "subtitle": "初秋傍晚的精致中式小庭院，一株形态自然的桂花树伸展在前景上方，树枝间挂少量纱灯与小巧宫灯。视觉焦点是中景一张不大的圆木茶桌，上面是成套但器形各异的青瓷茶壶与茶杯、竹托盘、小碟桂花糕、莲蓉酥与橙黄色柿子。桌旁有盛开的菊花、木芙蓉、地上落桂，月洞门后能看到一小片翠竹、窗棂、木廊和微亮的屋内。略微抬高的斜视角，让茶点、器物与花园同时清楚，不是食物特写。桂花金黄、青瓷玉绿、暖木棕、胭脂红花卉和蓝紫暮色形成丰富而克制的色块，温暖宁静。",
+    "category": "插画",
+    "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1.png",
+    "origin": "project-ai-generated",
+    "status": "archived",
+    "galleryVisible": false,
+    "dailyOnly": false,
+    "playSrc": "/puzzles/blossom-osmanthus-tea-courtyard-v1-play-880003d90d19.webp",
+    "thumbSrc": "/puzzles/blossom-osmanthus-tea-courtyard-v1-thumbnail-a53e9edac75b.webp",
+    "optimizedSrc": "/puzzles/blossom-osmanthus-tea-courtyard-v1-optimized-59321e36f1b8.webp"
+  },
+  {
+    "id": "blossom-firefly-conservatory-v1",
+    "title": "萤灯花房",
+    "subtitle": "夜幕初临的东方庭院玻璃花房，从敞开的木框玻璃门斜看进去。一条镶着碎色石子的短小步道穿过花房，通向中景一座放着剪枝篮、陶罐、细嘴浇水壶和小暖灯的木质育花台，这是主焦点。左右错落的木架、藤编吊篮与地面陶盆里，绣球、兰花、铁线莲、小玫瑰和蕨类各自成簇，花叶形状能辨认。铜色细框玻璃顶与竹木支架结构可信，窗边的暖黄小吊灯、粉紫花朵、孔雀绿枝叶和外面微蓝的园林互相映衬，只有少量萤火点缀，没有密集光斑遮住细节。画面精致、自然、有轻微童话气息，不是塑料3D，也不是未来科幻温室。",
+    "category": "插画",
+    "src": "/puzzles/blossom-firefly-conservatory-v1.png",
+    "origin": "project-ai-generated",
+    "status": "archived",
+    "galleryVisible": false,
+    "dailyOnly": false,
+    "playSrc": "/puzzles/blossom-firefly-conservatory-v1-play-8f82ba376201.webp",
+    "thumbSrc": "/puzzles/blossom-firefly-conservatory-v1-thumbnail-d6d20d499bf9.webp",
+    "optimizedSrc": "/puzzles/blossom-firefly-conservatory-v1-optimized-bde5f4d5b3b2.webp"
   }
 ]

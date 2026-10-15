@@ -6,6 +6,58 @@ import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
 import { checkArtworkRevisions } from './check-artwork-revisions.mjs';
 
 const fullHdOptimizedIds=new Set(['mountain-lake-reflection-hd-v3','morning-meadow-tree-hd-v3','clear-sand-bay-hd-v3']);
+const OPENAI_TERMS='https://openai.com/policies/row-terms-of-use/';
+const DOUBAO_TERMS='https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh';
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+
+/** A reference redraw is still project-generated, with both providers recorded.
+ * This branch proves the actual local inputs/outputs instead of relabeling an
+ * external result as image_gen or weakening the original source checks. */
+export async function checkReferenceRedraw(root,photo,record){
+  const fail=message=>{throw Error('参考高清来源无效：'+photo.id+' / '+message);};
+  const generation=record.generation,stages=generation?.stages;
+  if(generation?.method!=='builtin-original-reference-redraw'||generation.provider!=='Volcengine Ark'||generation.tool!=='images/generations'||!/^doubao-seedream-[a-z0-9-]+$/.test(generation.model??'')||!Array.isArray(stages)||stages.length!==2)fail('生成工具或阶段');
+  const [original,redraw]=stages;
+  if(original.role!=='original-artwork'||original.provider!=='OpenAI'||original.tool!=='image_gen'||redraw.role!=='reference-hd-redraw')fail('阶段来源');
+  for(const key of ['provider','tool','model','generatedAt'])if(redraw[key]!==generation[key])fail('最终阶段 '+key);
+  if(record.nativeResolution!==true||record.upscaled!==false)fail('原生输出标志');
+  if(record.commercialUse?.basis!=='provider-output-terms'||record.commercialUse.termsUrl!==DOUBAO_TERMS||JSON.stringify(record.commercialUse.referenceTermsUrls)!==JSON.stringify([OPENAI_TERMS])||record.commercialUse.exclusiveRightsGuaranteed!==false)fail('双服务条款依据');
+  const nativeAt=async(item,expectedPath)=>{
+    if(item?.path!==expectedPath||!Number.isSafeInteger(item.width)||item.width<=0||!Number.isSafeInteger(item.height)||item.height<=0||!Number.isSafeInteger(item.bytes)||item.bytes<=0||!/^[a-f0-9]{64}$/.test(item.sha256??''))fail('原生文件记录');
+    const bytes=await readFile(join(root,expectedPath));
+    if(bytes.length<24||bytes.subarray(0,8).toString('hex')!=='89504e470d0a1a0a'||bytes.length!==item.bytes||bytes.readUInt32BE(16)!==item.width||bytes.readUInt32BE(20)!==item.height||sha(bytes)!==item.sha256)fail('原生PNG尺寸或哈希');
+  };
+  const references=generation.referenceImages;
+  const originalPath='content/artwork/gallery-hd/'+photo.id+'/reference-original.png',nativePath='content/artwork/gallery-hd/'+photo.id+'/native.png';
+  if(!Array.isArray(references)||references.length!==1||references[0].origin!=='project-ai-generated'||references[0].path!==originalPath||references[0].sha256!==original.native.sha256||references[0].purpose!=='same-artwork-reference-redraw')fail('参考原画');
+  const receipts=[];
+  for(const [index,stage] of stages.entries()){
+    if(!Number.isFinite(Date.parse(stage.generatedAt))||stage.commercialUse?.basis!=='provider-output-terms'||stage.commercialUse.termsUrl!==(index?DOUBAO_TERMS:OPENAI_TERMS)||stage.commercialUse.exclusiveRightsGuaranteed!==false)fail('阶段日期或条款');
+    await nativeAt(stage.native,index?nativePath:originalPath);
+    const promptPath='content/image-prompts/'+photo.id+(index?'':'-original')+'.txt';
+    if(stage.promptPath!==promptPath||(index&&generation.promptPath!==promptPath))fail('阶段提示词路径');
+    const prompt=(await readFile(join(root,promptPath),'utf8')).trim();if(!prompt)fail('阶段提示词为空');
+    if(!Array.isArray(stage.evidence)||stage.evidence.length!==(index?2:1))fail('阶段证据数量');
+    const evidence=[];
+    for(const [evidenceIndex,item] of stage.evidence.entries()){
+      const expectedPath='content/artwork/gallery-hd/'+photo.id+'/stage-'+index+'-evidence-'+evidenceIndex+'.json';
+      if(item?.path!==expectedPath||!Number.isSafeInteger(item.bytes)||item.bytes<=0||item.bytes>1024*1024||!/^[a-f0-9]{64}$/.test(item.sha256??''))fail('阶段证据路径或摘要');
+      const bytes=await readFile(join(root,expectedPath));
+      if(bytes.length!==item.bytes||sha(bytes)!==item.sha256)fail('阶段证据哈希');
+      const text=bytes.toString('utf8');if(/ark-[a-z0-9-]{20,}|Bearer\s+[a-z0-9_-]+|"(?:api[_-]?key|authorization)"\s*:/i.test(text))fail('证据包含凭据');
+      evidence.push(JSON.parse(text));
+    }
+    receipts.push({prompt,evidence});
+  }
+  for(const key of ['sha256','width','height'])if(redraw.native[key]!==record[key])fail('最终输出与原件不符');
+  for(const key of ['path','sha256','width','height','bytes'])if(generation.native?.[key]!==redraw.native[key])fail('最终原生记录不符');
+  const built=receipts[0].evidence[0],request=receipts[1].evidence[0],result=receipts[1].evidence[1];
+  if(built.ok!==true||built.method!=='builtin'||built.prompt?.trim()!==receipts[0].prompt||built.sha256!==original.native.sha256||built.actualWidth!==original.native.width||built.actualHeight!==original.native.height||built.bytes!==original.native.bytes||built.createdAt!==original.generatedAt)fail('内置原画回执');
+  if(request.endpoint!=='https://ark.cn-beijing.volces.com/api/v3/images/generations'||request.model!==redraw.model||request.prompt?.trim()!==receipts[1].prompt||request.size!==record.width+'x'+record.height||request.output_format!=='png'||request.image!=='[REFERENCE_BASE64_OMITTED]')fail('参考重绘请求');
+  for(const key of ['sha256','width','height','bytes'])if(request.reference?.[key]!==original.native[key]||result.reference?.[key]!==original.native[key])fail('请求参考原画不符');
+  if(result.ok!==true||result.method!=='builtin-reference-doubao-hd'||result.model!==redraw.model||result.prompt?.trim()!==receipts[1].prompt||result.requestedSize!==request.size||result.sha256!==record.sha256||result.width!==record.width||result.height!==record.height||result.bytes!==redraw.native.bytes||result.completedAt!==redraw.generatedAt)fail('参考重绘结果回执');
+  return true;
+}
 
 // This validates provenance records and serving rules, not a legal guarantee.
 //
@@ -32,8 +84,10 @@ export async function checkImageLibrary(root){
     const record=JSON.parse(await readFile(join(root,'content/image-provenance',photo.id+'.json'),'utf8'));
     if(record.id!==photo.id||record.origin!==photo.origin||record.review.status!=='reviewed')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
     if(photo.origin==='project-ai-generated'){
-      if(record.generation.tool!=='image_gen')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
-      for(const reference of record.generation.referenceImages){
+      const referenceRedraw=record.generation?.method==='builtin-original-reference-redraw';
+      if(referenceRedraw)await checkReferenceRedraw(root,photo,record);
+      else if(record.generation.tool!=='image_gen')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
+      for(const reference of referenceRedraw?[]:record.generation.referenceImages){
         if(!reference||!/^[a-f0-9]{64}$/.test(reference.sha256))throw new Error(`图片参考来源或用途未获登记：${photo.id}`);
         const legacyProject=reference.origin==='project-ai-generated'&&/^content\/artwork\/gallery-hd\/[a-z0-9-]+\/[a-z0-9-]+\.png$/.test(reference.path);
         const parent=restorable.find(item=>item.id===reference.imageId);
@@ -52,7 +106,7 @@ export async function checkImageLibrary(root){
         if(!/^content\/image-prompts\/[a-z0-9-]+\.txt$/.test(record.generation.promptPath))throw new Error('提示词存档路径无效');
         if(!(await readFile(join(root,record.generation.promptPath),'utf8')).trim())throw new Error('提示词为空');
       }else if(!(photo.id==='seaside'&&record.generation.legacyPromptUnavailable))throw new Error(`缺少原始提示词：${photo.id}`);
-      if(record.commercialUse.basis!=='provider-output-terms'||!record.commercialUse.termsUrl.startsWith('https://openai.com/policies/'))throw new Error('缺少服务条款依据');
+      if(!referenceRedraw&&(record.commercialUse.basis!=='provider-output-terms'||!record.commercialUse.termsUrl.startsWith('https://openai.com/policies/')))throw new Error('缺少服务条款依据');
     }else{
       // user-provided: the right to publish must be stated, not assumed.
       if(!record.source?.description?.trim())throw new Error(`缺少图片来源说明：${photo.id}`);
