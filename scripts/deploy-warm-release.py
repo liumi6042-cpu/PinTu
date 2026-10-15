@@ -398,9 +398,12 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         # Give this test identity access only inside the isolated DB, without
         # changing album prices, live accounts or purchase/reward handlers.
         with sqlite3.connect(qa_db) as connection:
-            state = json.loads(connection.execute('SELECT data FROM puzzle_managed_players WHERE owner=?', (account['id'],)).fetchone()[0])
+            # Profile GET is read-only and may not have persisted a wallet yet.
+            # Initialize only this disposable QA identity with the exact schema-1 factory.
+            row = connection.execute('SELECT data FROM puzzle_managed_players WHERE owner=?', (account['id'],)).fetchone()
+            state = json.loads(row[0]) if row else json.loads('{"schema":1,"level":0,"xp":0,"totalXp":0,"coins":0,"fragments":0,"contributionTotal":0,"giftProgress":0,"giftSequence":0,"ownedAlbums":{},"ownedImages":{},"decorations":[],"equipped":null,"artworks":{},"rooms":{},"daily":{},"gifts":{},"milestones":{},"receipts":{},"invitation":null,"settlements":{}}')
             state['ownedImages'][upgraded_id] = True
-            connection.execute('UPDATE puzzle_managed_players SET data=? WHERE owner=?', (json.dumps(state), account['id']))
+            connection.execute('INSERT INTO puzzle_managed_players(owner,data,updated_at) VALUES(?,?,?) ON CONFLICT(owner) DO UPDATE SET data=excluded.data', (account['id'], json.dumps(state), int(time.time() * 1000)))
         old_ticket = json_request(3139, '/api/rooms',
             {'visibility': 'public', 'imageId': upgraded_id, 'pieces': 108}, artwork_actor, 201)
         artwork_actor['token'] = old_ticket['token']
