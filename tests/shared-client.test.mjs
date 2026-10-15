@@ -11,7 +11,7 @@ import {newManagedProfile,managedDay,managedGift,TASK_DEFINITIONS} from '../lib/
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 globalThis.__sharedClientEnv={PUZZLE_LOCAL_ORIGIN:'http://localhost',PUZZLE_BETA_CAPACITY:'0'};
-const built=await build({absWorkingDir:root,stdin:{contents:'export {sharedClientApi} from "./lib/shared-client-api";export * from "./lib/shared-client-model";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";export {applyRoomUpdate} from "./lib/room-sync";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export const env=globalThis.__sharedClientEnv;',loader:'js'}));}}]});
+const built=await build({absWorkingDir:root,stdin:{contents:'export {POST as createRoomRoute} from "./app/api/rooms/route";export {sharedClientApi} from "./lib/shared-client-api";export * from "./lib/shared-client-model";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";export {applyRoomUpdate} from "./lib/room-sync";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export const env=globalThis.__sharedClientEnv;',loader:'js'}));}}]});
 const api=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
 const owner='a'.repeat(32),other='b'.repeat(32),token='c'.repeat(64),otherToken='d'.repeat(64),origin='http://localhost';
 const hash=value=>createHash('sha256').update(value).digest('hex');
@@ -45,6 +45,15 @@ test('shared public creation reuses an empty table and admits the next account w
   assert.equal(next.data.room.members.length,2);assert.equal(f.db.sql.prepare('SELECT COUNT(*) n FROM puzzle_rooms').get().n,1);
   const retained=await f.request('/api/rooms/'+first.data.room.id,{headers:{Authorization:'Bearer '+first.data.token}});assert.equal(retained.status,200,'the first player ticket remains valid');
   assert.equal(f.db.sql.prepare('SELECT owner_id FROM puzzle_room_directory').get().owner_id,owner);
+ }finally{f.close();}
+});
+
+test('legacy public creation without managed content retains the catalog title',async()=>{
+ const f=fixture();try{
+  globalThis.__sharedClientEnv.PUZZLE_CONTENT_SNAPSHOT=()=>null;
+  const photo=api.RESTORABLE_PHOTOS.find(p=>p.status==='published');
+  const response=await api.createRoomRoute(new Request(origin+'/api/rooms',{method:'POST',headers:{Cookie:'puzzle_session='+token,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({imageId:photo.id,pieces:108,visibility:'public'})}));
+  const data=await response.json();assert.equal(response.status,201,JSON.stringify(data));assert.equal(data.room.title,photo.title);
  }finally{f.close();}
 });
 

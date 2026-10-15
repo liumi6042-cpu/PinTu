@@ -6,6 +6,7 @@ import { body, digestToken, newId, json, failure,mutateRoom } from '@/lib/room-s
 import {localDb} from '@/lib/local-db';
 import {insertOrReuseEmptyPublicRoom} from '@/lib/public-room-admission.mjs';
 import {pieceBand} from '@/lib/piece-policy';
+import {PHOTOS} from '@/lib/puzzle-catalog';
 import { currentPlayer,withPlayerCookie } from '@/lib/player-identity';
 import { newPlayableRoom,insertPlayableRoom } from '@/lib/lobby-store';
 import { membershipFor,insertMemberRoom } from '@/lib/membership-store';
@@ -71,6 +72,7 @@ export async function POST(request:Request){
   // spends a member slot; a private or solo upload still needs the image owner.
   if(memberRoom||(room.customImage&&room.visibility==='private'))await insertMemberRoom(room,player!.accountId!);
   else if(room.visibility==='public'&&!room.customImage){
+   room.title??=PHOTOS.find(photo=>photo.id===room.puzzle.imageId)?.title??room.puzzle.imageId;
    const admission=await insertOrReuseEmptyPublicRoom(localDb(),room,pieceBand(room.puzzle.cols*room.puzzle.rows)??room.puzzle.cols*room.puzzle.rows,now,ONLINE_MS);
    if(!admission)throw new RoomError('房间刚刚开始或已坐满，请重试',409);
    if(!admission.created){
