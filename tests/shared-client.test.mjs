@@ -36,6 +36,18 @@ function fixture(){
 }
 const stored=f=>JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_managed_players WHERE owner=?').get(owner).data);
 
+test('shared public creation reuses an empty table and admits the next account without resetting its board',async()=>{
+ const f=fixture();try{
+  const input={imageId:f.photos[1].id,pieces:108,visibility:'public',mode:'selected'};
+  const first=await f.request('/api/rooms',{method:'POST',body:input});assert.equal(first.status,201,JSON.stringify(first.data));
+  const next=await f.request('/api/rooms',{method:'POST',body:input,cookie:otherToken});assert.equal(next.status,201,JSON.stringify(next.data));assert.equal(next.data.reused,true);
+  assert.equal(next.data.room.id,first.data.room.id);assert.deepEqual(next.data.room.puzzle.groups,first.data.room.puzzle.groups);
+  assert.equal(next.data.room.members.length,2);assert.equal(f.db.sql.prepare('SELECT COUNT(*) n FROM puzzle_rooms').get().n,1);
+  const retained=await f.request('/api/rooms/'+first.data.room.id,{headers:{Authorization:'Bearer '+first.data.token}});assert.equal(retained.status,200,'the first player ticket remains valid');
+  assert.equal(f.db.sql.prepare('SELECT owner_id FROM puzzle_room_directory').get().owner_id,owner);
+ }finally{f.close();}
+});
+
 test('shared configuration points to the packaged UI and original service pages',()=>{
  const manifest=JSON.parse(readFileSync(new URL('../app/shared-client-build.json',import.meta.url),'utf8')),config=api.sharedConfig(origin);
  assert.equal(config.uiBase,manifest.uiBase);assert.equal(config.gameBase,origin+'/play');assert.equal(config.webLinks.feedback,'/feedback');

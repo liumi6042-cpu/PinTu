@@ -1,8 +1,11 @@
 import { ensureBetaSeat } from '@/lib/beta-seats';
 import { requiresRoomMembership, canCreateMemberRoom, MEMBERSHIP_REQUIRED } from '@/lib/membership-policy';
-import { addMember, snapshot, snapshotMetadata, RoomError, type RoomVisibility } from '@/lib/room-engine';
+import { addMember, snapshot, snapshotMetadata, ONLINE_MS, RoomError, type RoomVisibility } from '@/lib/room-engine';
 import { INITIAL_STATE_FORMAT, type SeedRoomTicket } from '@/lib/room-creation';
-import { body, digestToken, newId, json, failure } from '@/lib/room-store';
+import { body, digestToken, newId, json, failure,mutateRoom } from '@/lib/room-store';
+import {localDb} from '@/lib/local-db';
+import {insertOrReuseEmptyPublicRoom} from '@/lib/public-room-admission.mjs';
+import {pieceBand} from '@/lib/piece-policy';
 import { currentPlayer,withPlayerCookie } from '@/lib/player-identity';
 import { newPlayableRoom,insertPlayableRoom } from '@/lib/lobby-store';
 import { membershipFor,insertMemberRoom } from '@/lib/membership-store';
@@ -66,7 +69,16 @@ export async function POST(request:Request){
   // Membership applies to private rooms only. A public upload room is as free as
   // any other public table, so it takes the ordinary playable path and never
   // spends a member slot; a private or solo upload still needs the image owner.
-  if(memberRoom||(room.customImage&&room.visibility==='private'))await insertMemberRoom(room,player!.accountId!);else await insertPlayableRoom(room);
+  if(memberRoom||(room.customImage&&room.visibility==='private'))await insertMemberRoom(room,player!.accountId!);
+  else if(room.visibility==='public'&&!room.customImage){
+   const admission=await insertOrReuseEmptyPublicRoom(localDb(),room,pieceBand(room.puzzle.cols*room.puzzle.rows)??room.puzzle.cols*room.puzzle.rows,now,ONLINE_MS);
+   if(!admission)throw new RoomError('房间刚刚开始或已坐满，请重试',409);
+   if(!admission.created){
+    const joined=await mutateRoom(admission.id,existing=>addMember(existing,member.id,name,member.digest,Date.now(),player?.accountId,player?.guestId));
+    // A reused table must return its authoritative state, never a fresh seed.
+    return withPlayerCookie(json({token,playerId:joined.result.id,room:snapshot(joined.room,Date.now()),reused:true},201),player!);
+   }
+  }else await insertPlayableRoom(room);
   const {groups:_groups,...initialPuzzle}=room.puzzle;
   const ticket=input.initialState===INITIAL_STATE_FORMAT||input.initialState==='seed-v1'
    ? {token,playerId:member.id,initialState:input.initialState==='seed-v1'?'seed-v1':INITIAL_STATE_FORMAT,room:{...snapshotMetadata(room,now),puzzle:initialPuzzle}} satisfies SeedRoomTicket
