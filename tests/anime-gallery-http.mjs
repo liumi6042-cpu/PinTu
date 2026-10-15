@@ -28,6 +28,9 @@ try{
   const response=await create({imageId:'mountain-lake-reflection-hd-v3'});
   assert.equal(response.status,201);const ticket=await response.json(),cookie=response.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
   const id=ticket.room.id,row=database.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id),room=JSON.parse(row.data);
+  // A historic archived-image save predates artwork snapshots; do not retain
+  // the freshly created room's snapshot when replacing its logical imageId.
+  delete room.artwork;
   room.puzzle.imageId=photo.id;room.puzzle.groups[0].locked=true;room.puzzle.groups[0].dx=0;room.puzzle.groups[0].dy=0;room.revision+=1;
   database.exec('BEGIN IMMEDIATE');
   try{

@@ -316,6 +316,9 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             # reject retired counts at creation, but must continue existing games.
             with sqlite3.connect(temporary + '/data/puzzle.sqlite') as db:
                 room = json.loads(db.execute('SELECT data FROM puzzle_rooms WHERE id=?', (ticket['room']['id'],)).fetchone()[0])
+                # This injected pre-versioning save changes image identity; a
+                # newer baseline runtime may have stamped a different artwork.
+                room.pop('artwork', None)
                 room['puzzle'].update(imageId='mountain-lake-reflection-native-v2', cols=count//50, rows=50,
                     groups=[{'id': i, 'pieces': [i], 'dx': 200+(i%10)*5, 'dy': -100+(i//10)*5, 'locked': False} for i in range(count)])
                 room['revision'] += 1
