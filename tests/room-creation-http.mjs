@@ -67,6 +67,9 @@ try{
    const puzzle=createFixturePuzzle('mountain-lake-reflection-native-v2',level.cols,level.rows,42);
    puzzle.elapsed=123;puzzle.groups[0].locked=true;puzzle.groups[0].dx=0;puzzle.groups[0].dy=0;
    puzzle.groups[1].pieces.push(2);puzzle.groups[1].dx=300;puzzle.groups[1].dy=300;puzzle.groups.splice(2,1);
+   // This fixture represents a pre-versioning save for a different image. It
+   // cannot inherit the new room's artwork snapshot, which belongs to its old imageId.
+   delete room.artwork;
    room.puzzle=puzzle;room.revision=row.revision+1;room.syncHistory=[];room.startedAt=now-123000;room.completedAt=null;
    room.leases={};delete room.lastOrganizedAt;room.lastPlayedAt=now;room.publicLastSeenAt=now;room.expiresAt=now+86400000;
    for(const member of room.members)member.lastSeen=now;
