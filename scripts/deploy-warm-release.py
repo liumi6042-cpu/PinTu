@@ -8,6 +8,29 @@ import tarfile, tempfile, time, urllib.request, urllib.error, urllib.parse
 
 PUBLIC_ENV_KEYS = ('PUZZLE_OPERATOR_NAME', 'PUZZLE_SUPPORT_EMAIL')
 
+def pre_artwork_qa_fixture(serialized):
+    """Represent the pre-snapshot save format using one isolated QA room only.
+
+    Puzzle, identity, members, lease and revision retain the actual old-runtime
+    values. Only the optional drawing snapshot is absent, as before snapshots
+    existed. This is explicitly a historical fixture, not an old create claim.
+    """
+    room = json.loads(serialized)
+    assert isinstance(room.get('puzzle'), dict) and isinstance(room.get('id'), str)
+    assert not room.get('customImage'), 'Artwork fixtures must use catalog images'
+    room.pop('artwork', None)
+    return json.dumps(room)
+
+
+def assert_preserved_artwork_snapshot(before, restored, expected_artwork):
+    """Check actual cross-runtime responses without weakening progress checks."""
+    assert restored['id'] == before['id'], 'The restored room identity changed'
+    assert restored['artwork'] == expected_artwork, 'The room drawing changed'
+    assert urllib.parse.urlsplit(restored['photo']['src']).path == expected_artwork['src']
+    assert {k: v for k, v in restored['puzzle'].items() if k != 'elapsed'} == {k: v for k, v in before['puzzle'].items() if k != 'elapsed'}, 'Old seed and placed/movable groups changed'
+    assert restored['revision'] == before['revision'], 'Reading the room changed its revision'
+
+
 def env_entry_key(line):
     match = re.match(rb'^[ \t]*([A-Z][A-Z0-9_]*)[ \t]*=', line)
     return match.group(1).decode('ascii') if match else None
@@ -266,7 +289,7 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         if managed_content:
             env['JIGSAW_CONTENT_DIR'] = str(isolated_content)
             env['JIGSAW_DAILY_APPEARANCES_DIR'] = str(isolated_appearances)
-        log = open(temporary + '/' + str(port) + ('-artwork' if managed_content else '') + '.log', 'w'); logs.append(log)
+        log = open(temporary + '/' + str(port) + ('-artwork' if managed_content else '') + '.log', 'a'); logs.append(log)
         processes.append(subprocess.Popen(['/usr/local/bin/node', 'server.js'], cwd=root, env=env, stdout=log, stderr=log))
         ready(port)
     def json_request(port, path, body=None, actor=None, expected=200, extra_headers=None):
@@ -413,14 +436,55 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         with sqlite3.connect(qa_db) as connection:
             stored_before = connection.execute('SELECT data FROM puzzle_rooms WHERE id=?', (old_ticket['room']['id'],)).fetchone()[0]
             wallet_before = connection.execute('SELECT data FROM puzzle_managed_players WHERE owner=?', (account['id'],)).fetchone()[0]
-        assert 'artwork' not in json.loads(stored_before), 'Old runtime must create a real legacy room'
+        # An old client requests the legacy drawing, but the previous deployment
+        # may already pin it. Prove its actual pinned/unpinned room is preserved.
+        assert json.loads(stored_before).get('artwork') in (None, legacy_artwork), 'Old-client creation must keep the legacy drawing'
         restored = json_request(3138, '/api/shared' + old_path, actor=artwork_actor, extra_headers=capability)
-        assert restored['artwork'] == legacy_artwork
-        assert urllib.parse.urlsplit(restored['photo']['src']).path == legacy_artwork['src']
-        assert {k: v for k, v in restored['puzzle'].items() if k != 'elapsed'} == {k: v for k, v in before['puzzle'].items() if k != 'elapsed'}, 'Old seed and placed/movable groups changed'
-        assert restored['revision'] == before['revision']
+        assert_preserved_artwork_snapshot(before, restored, legacy_artwork)
         with sqlite3.connect(qa_db) as connection:
             assert connection.execute('SELECT data FROM puzzle_rooms WHERE id=?', (old_ticket['room']['id'],)).fetchone()[0] == stored_before, 'Reading old artwork must not rewrite its room'
+
+        # Seed the actual pre-artwork storage format separately in the disposable
+        # DB. Only our QA row's optional snapshot is removed. Its seed, groups,
+        # positions, progress, membership, identity and revision remain intact.
+        legacy_stored = pre_artwork_qa_fixture(stored_before)
+        assert json.loads(legacy_stored) == {key: value for key, value in json.loads(stored_before).items() if key != 'artwork'}
+        with sqlite3.connect(qa_db) as connection:
+            connection.execute('UPDATE puzzle_rooms SET data=? WHERE id=?', (legacy_stored, old_ticket['room']['id']))
+        # The read cache is keyed by revision/expiry. Restart only the disposable
+        # new runtime so this fixture is really decoded from SQLite, rather than
+        # accidentally proving the previously cached pinned snapshot again.
+        fixture_runtime = processes[-1]
+        fixture_runtime.terminate(); fixture_runtime.wait(timeout=15)
+        processes.remove(fixture_runtime)
+        launch(app, 3138, managed_content=True)
+        legacy_restored = json_request(3138, '/api/shared' + old_path, actor=artwork_actor, extra_headers=capability)
+        assert_preserved_artwork_snapshot(before, legacy_restored, legacy_artwork)
+        with sqlite3.connect(qa_db) as connection:
+            assert connection.execute('SELECT data FROM puzzle_rooms WHERE id=?', (old_ticket['room']['id'],)).fetchone()[0] == legacy_stored, 'Reading a pre-artwork fixture must not rewrite its room'
+
+        # Already-upgraded rooms created by the actual previous runtime must also
+        # keep their pinned drawing and movable groups after this code update.
+        old_artwork_file = old / 'content/artwork-revisions.json'
+        if old_artwork_file.exists():
+            previous_artwork = json.loads(old_artwork_file.read_text())
+            previous_active = next(version for version in previous_artwork['versions'][upgraded_id]
+                                   if version['revision'] == previous_artwork['active'][upgraded_id])
+            previous_actor = dict(artwork_actor)
+            previous_ticket = json_request(3139, '/api/shared/api/rooms',
+                {'visibility': 'public', 'mode': 'selected', 'imageId': upgraded_id, 'pieces': 108}, previous_actor, 201, extra_headers=capability)
+            previous_actor['token'] = previous_ticket['token']
+            previous_path = '/api/rooms/' + previous_ticket['room']['id']
+            assert previous_ticket['room']['artwork'] == previous_active
+            json_request(3139, '/api/shared' + previous_path, {'type': 'claim', 'groupId': 0}, previous_actor, extra_headers=capability)
+            previous_before = json_request(3139, '/api/shared' + previous_path, {'type': 'move', 'groupId': 0, 'dx': 321, 'dy': 654, 'seq': 1}, previous_actor, extra_headers=capability)
+            with sqlite3.connect(qa_db) as connection:
+                previous_stored = connection.execute('SELECT data FROM puzzle_rooms WHERE id=?', (previous_ticket['room']['id'],)).fetchone()[0]
+            assert json.loads(previous_stored)['artwork'] == previous_active
+            previous_restored = json_request(3138, '/api/shared' + previous_path, actor=previous_actor, extra_headers=capability)
+            assert_preserved_artwork_snapshot(previous_before, previous_restored, previous_active)
+            with sqlite3.connect(qa_db) as connection:
+                assert connection.execute('SELECT data FROM puzzle_rooms WHERE id=?', (previous_ticket['room']['id'],)).fetchone()[0] == previous_stored, 'Reading an existing upgraded room must not rewrite its room'
         new_ticket = json_request(3138, '/api/shared/api/rooms',
             {'visibility': 'public', 'mode': 'selected', 'imageId': upgraded_id, 'pieces': 108}, artwork_actor, 201, extra_headers=capability)
         assert new_ticket['room']['id'] != old_ticket['room']['id']
@@ -447,7 +511,7 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
         with sqlite3.connect(qa_db) as connection:
             assert connection.execute('SELECT data FROM puzzle_managed_players WHERE owner=?', (account['id'],)).fetchone()[0] == wallet_before, 'Artwork changes must not mutate wallet, collections or purchased access'
         assert content_pointer.read_bytes() == content_pointer_before
-        print('Isolated artwork: legacy/new rooms, unchanged old progress, capability admission/lobby filtering, active gallery and Q70 asset hashes passed.', flush=True)
+        print('Isolated artwork: actual previous pinned rooms, explicit pre-artwork fixture, new rooms, unchanged old progress, capability admission/lobby filtering, active gallery and Q70 asset hashes passed.', flush=True)
     finally:
         for process in processes: process.terminate()
         for process in processes: process.wait(timeout=15)
