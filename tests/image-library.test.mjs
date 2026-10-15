@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import sharp from 'sharp';
 import { checkImageLibrary } from '../scripts/check-image-library.mjs';
 import { PHOTOS, RESTORABLE_PHOTOS, PHOTO_IDS, FEATURED_PHOTOS, RETIRED_PHOTO_IDS, CATEGORIES } from '../lib/puzzle-catalog.ts';
 import { makeRoom } from '../lib/room-engine.ts';
@@ -120,6 +122,52 @@ test('HD project references, native regions and standard delivery are independen
   await assert.rejects(checkImageLibrary(dir),/拼接分区来源不一致/);
   const standard=structuredClone(original);standard.delivery.standard.downsampled=false;await saveJson(path,standard);
   await assert.rejects(checkImageLibrary(dir),/小片数图片交付记录无效/);
+});
+
+test('offline preparation preserves existing legacy optimized and compact delivery byte-for-byte',async t=>{
+  for(const id of ['winter-village','mountain-lake-reflection-hd-v3']){
+    const dir=await fixture(t,id),recordPath=join(dir,'content/image-provenance',id+'.json'),recordBytes=await readFile(recordPath);
+    const record=JSON.parse(recordBytes),catalogPath=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(catalogPath);
+    const watched=[record.delivery.optimized,...(record.delivery.compact?[record.delivery.compact]:[])];
+    const imageBytes=await Promise.all(watched.map(item=>readFile(join(dir,'public'+item.src))));
+    await mkdir(join(dir,'scripts'));
+    const script=(await readFile(join(root,'scripts/prepare-optimized-delivery.mjs'),'utf8')).replace("from 'sharp'",'from '+JSON.stringify(import.meta.resolve('sharp')));
+    await writeFile(join(dir,'scripts/prepare-optimized-delivery.mjs'),script);
+    await copyFile(join(root,'scripts/image-origin.mjs'),join(dir,'scripts/image-origin.mjs'));
+    const run=spawnSync(process.execPath,[join(dir,'scripts/prepare-optimized-delivery.mjs')],{encoding:'utf8',timeout:30000,windowsHide:true});
+    assert.equal(run.status,0,run.stderr);const summary=JSON.parse(run.stdout);
+    assert.equal(summary.encoded,0);assert.equal(summary.skipped,watched.length);assert.equal(summary.newBytes,0);
+    assert.equal(summary.policy.normalQuality,70);assert.equal(summary.policy.effort,6);
+    assert.deepEqual(await readFile(recordPath),recordBytes);assert.deepEqual(await readJson(catalogPath),catalog);
+    for(let index=0;index<watched.length;index++)assert.deepEqual(await readFile(join(dir,'public'+watched[index].src)),imageBytes[index]);
+    // Existing metadata corruption must not be repaired by an accidental re-encode.
+    record.delivery.optimized.inputSha256='0'.repeat(64);await saveJson(recordPath,record);
+    const invalid=spawnSync(process.execPath,[join(dir,'scripts/prepare-optimized-delivery.mjs')],{encoding:'utf8',timeout:30000,windowsHide:true});
+    assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/invalid existing delivery record/);
+  }
+});
+
+test('Q70 effort6 delivery accepts real full and compact WebP while retaining legacy encodings',async t=>{
+  for(const id of ['winter-village','mountain-lake-reflection-hd-v3']){
+    const dir=await fixture(t,id),recordPath=join(dir,'content/image-provenance',id+'.json'),record=await readJson(recordPath);
+    const catalogPath=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(catalogPath);
+    // Existing Q84/Q88 effort5 records remain accepted before any replacement.
+    assert.deepEqual(await checkImageLibrary(dir),{published:1});
+    for(const [kind,field] of [['optimized','optimizedSrc'],...(record.delivery.compact?[['compact','optimizedStandardSrc']]:[])]){
+      const item=record.delivery[kind],previous=item.src;
+      const input=await readFile(join(dir,kind==='compact'?'public'+record.delivery.standard.src:'public'+catalog[0].src));
+      const bytes=await sharp(input).webp({quality:70,effort:6,smartSubsample:true}).toBuffer();
+      item.sha256=createHash('sha256').update(bytes).digest('hex');item.bytes=bytes.length;
+      item.src=`/puzzles/${id}-${kind}-${item.sha256.slice(0,12)}.webp`;
+      item.quality=70;item.encoding={library:'sharp',version:sharp.versions.sharp,effort:6,smartSubsample:true};
+      catalog[0][field]=item.src;
+      await writeFile(join(dir,'public'+item.src),bytes);await rm(join(dir,'public'+previous));
+    }
+    await saveJson(recordPath,record);await saveJson(catalogPath,catalog);
+    assert.deepEqual(await checkImageLibrary(dir),{published:1});
+    const wrongPair=structuredClone(record);wrongPair.delivery.optimized.encoding.effort=5;
+    await saveJson(recordPath,wrongPair);await assert.rejects(checkImageLibrary(dir),/压缩交付编码记录无效/);
+  }
 });
 
 test('optimized delivery validates source linkage, exact pixels, quality, hash and byte metadata',async t=>{

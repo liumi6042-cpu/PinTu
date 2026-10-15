@@ -8,6 +8,7 @@ import { pieceBand } from './piece-policy';
 import type { RoomCard } from './lobby-types';
 import { env } from 'cloudflare:workers';
 import { PublicLobbyCache } from './public-lobby-cache';
+import {resolveRoomArtwork} from './room-artwork';
 const publicLobbyCache=new PublicLobbyCache();
 function publicRoomTitle(title:string){
  const match=title.match(/^机器人练习桌\s*·\s*(.+)$/);
@@ -45,8 +46,8 @@ export async function saveCompletion(room:Room){
  }
  await database.batch(commands);
 }
-type CardRow={customImageData:string|null;customTitle:number;acceptingNew:number;lastPlayedAt:number;id:string;title:string;imageId:string;pieces:number;visibility:RoomVisibility;expiresAt:number;completedAt:number|null;startedAt:number|null;online:number;placed:number};
-const summaryColumns=`json_extract(r.data,'$.customImage') AS customImageData,(json_extract(r.data,'$.title') IS NOT NULL) AS customTitle,COALESCE(json_extract(r.data,'$.acceptingNew'),1) AS acceptingNew,d.room_id AS id,d.title,d.image_id AS imageId,d.piece_count AS pieces,d.visibility,d.expires_at AS expiresAt,d.completed_at AS completedAt,COALESCE(json_extract(r.data,'$.lastPlayedAt'),d.created_at) AS lastPlayedAt,json_extract(r.data,'$.startedAt') AS startedAt,
+type CardRow={artworkData:string|null;customImageData:string|null;customTitle:number;acceptingNew:number;lastPlayedAt:number;id:string;title:string;imageId:string;pieces:number;visibility:RoomVisibility;expiresAt:number;completedAt:number|null;startedAt:number|null;online:number;placed:number};
+const summaryColumns=`json_extract(r.data,'$.artwork') AS artworkData,json_extract(r.data,'$.customImage') AS customImageData,(json_extract(r.data,'$.title') IS NOT NULL) AS customTitle,COALESCE(json_extract(r.data,'$.acceptingNew'),1) AS acceptingNew,d.room_id AS id,d.title,d.image_id AS imageId,d.piece_count AS pieces,d.visibility,d.expires_at AS expiresAt,d.completed_at AS completedAt,COALESCE(json_extract(r.data,'$.lastPlayedAt'),d.created_at) AS lastPlayedAt,json_extract(r.data,'$.startedAt') AS startedAt,
  (SELECT COUNT(*) FROM json_each(r.data,'$.members') m WHERE CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>?) AS online,
  COALESCE((SELECT SUM(json_array_length(json_extract(g.value,'$.pieces'))) FROM json_each(r.data,'$.puzzle.groups') g WHERE json_extract(g.value,'$.locked')=1),0) AS placed`;
 export async function roomCards(ownerId?:string,onlyOwned=false){
@@ -69,6 +70,9 @@ async function queryRoomCards(database:D1DatabaseSession,ownerId?:string,onlyOwn
  const result=await (onlyOwned?query.bind(now-ONLINE_MS,ownerId,now):ownerId?query.bind(now-ONLINE_MS,ownerId,ownerId,ownerId,ownerId,now):query.bind(now-ONLINE_MS,now,now-PUBLIC_LOBBY_REVEAL_MS)).all<CardRow>();
  // Uploaded public rooms expose only safe image metadata. The card requests its
  // separate 480px preview; neither original nor preview bytes enter this JSON.
- return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>({...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:publicRoomTitle(row.title),imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt})) satisfies RoomCard[];
+ return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>{
+  const artwork=resolveRoomArtwork({puzzle:{imageId:row.imageId},artwork:row.artworkData?JSON.parse(row.artworkData):undefined,customImage:row.customImageData});
+  return {artwork,thumbSrc:artwork?.thumbSrc,...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:publicRoomTitle(row.title),imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt};
+ }) satisfies RoomCard[];
 }
 export async function managedRooms(ownerId:string){return roomCards(ownerId,true);}

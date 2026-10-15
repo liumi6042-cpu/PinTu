@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
+import { checkArtworkRevisions } from './check-artwork-revisions.mjs';
 
 const fullHdOptimizedIds=new Set(['mountain-lake-reflection-hd-v3','morning-meadow-tree-hd-v3','clear-sand-bay-hd-v3']);
 
@@ -85,10 +86,10 @@ export async function checkImageLibrary(root){
     if(!photo.standardSrc&&(photo.optimizedStandardSrc||record.delivery.compact))throw new Error(`压缩小图缺少标准图来源：${photo.id}`);
     for(const [kind,field] of [['optimized','optimizedSrc'],...(photo.standardSrc?[['compact','optimizedStandardSrc']]:[])]){
       const item=record.delivery[kind],compact=kind==='compact',source=compact?record.delivery.standard:record;
-      const expectedQuality=compact?84:fullHdOptimizedIds.has(photo.id)?88:84;
-      if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||item.quality!==expectedQuality)throw new Error(`压缩交付记录无效：${photo.id}`);
+      const legacyQuality=compact?84:fullHdOptimizedIds.has(photo.id)?88:84;
+      if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||![70,legacyQuality].includes(item.quality))throw new Error(`压缩交付记录无效：${photo.id}`);
       if(item.sourceSha256!==record.sha256||item.inputSha256!==source.sha256)throw new Error(`压缩交付原件关联无效：${photo.id}`);
-      if(item.encoding?.library!=='sharp'||typeof item.encoding.version!=='string'||!item.encoding.version||item.encoding.effort!==5||item.encoding.smartSubsample!==true)throw new Error(`压缩交付编码记录无效：${photo.id}`);
+      if(item.encoding?.library!=='sharp'||typeof item.encoding.version!=='string'||!item.encoding.version||item.encoding.effort!==(item.quality===70?6:5)||item.encoding.smartSubsample!==true)throw new Error(`压缩交付编码记录无效：${photo.id}`);
       const data=await readFile(join(root,'public',item.src.slice(1)));
       if(createHash('sha256').update(data).digest('hex')!==item.sha256||data.length!==item.bytes)throw new Error(`压缩交付哈希或字节不一致：${photo.id}`);
       if(data.length>(compact?700*1024:2*1024*1024))throw new Error(`压缩交付超过体积预算：${photo.id}`);
@@ -99,9 +100,11 @@ export async function checkImageLibrary(root){
       files.add(item.src.slice('/puzzles/'.length));
     }
   }
+  const artworkOverlay=await checkArtworkRevisions(root);
+  for(const file of artworkOverlay.files)files.add(file);
   const served=await readdir(join(root,'public/puzzles'));
   for(const file of served)if(!files.has(file))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
-  return {published:published.length};
+  return {published:published.length,artworkOverlay:{activeImages:artworkOverlay.activeImages,files:artworkOverlay.overlayFiles}};
 }
 
 // Read the actual VP8 key-frame dimensions, not just an optional VP8X canvas.

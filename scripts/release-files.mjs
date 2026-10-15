@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve, relative, sep, posix } from 'node:path';
 import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
+import artworkRegistry from '../content/artwork-revisions.json' with {type:'json'};
 
 export const hash = data => createHash('sha256').update(data).digest('hex');
 export const SERVER_RUNTIME_HELPERS=Object.freeze(['backup.mjs','migrate.mjs','public-room-cleanup.mjs','runtime.node.mjs','sqlite.mjs','content-release.mjs','managed-content.node.mjs','album-content.mjs','daily-content.mjs','game-settings.mjs','task-reward-settings.mjs'].map(name=>'server/'+name));
-export const CONTENT_RUNTIME_FILES=Object.freeze(['scripts/check-content-release.mjs','content/puzzle-catalog.json','content/puzzle-guidance.json','config/game-settings-defaults.json','config/task-reward-defaults.json','lib/decoration-policy.mjs']);
+export const CONTENT_RUNTIME_FILES=Object.freeze(['scripts/check-content-release.mjs','content/puzzle-catalog.json','content/puzzle-guidance.json','content/artwork-revisions.json','config/game-settings-defaults.json','config/task-reward-defaults.json','lib/decoration-policy.mjs']);
 // Tar must be the Windows bsdtar, addressed by absolute path. Git Bash puts GNU
 // tar ahead of the bundled bsdtar on PATH, and GNU tar reads the "D:" in a
 // drive-letter path as a remote host ("Cannot connect to D: resolve failed"),
@@ -38,6 +39,23 @@ export function runtimeAssets(catalog, config) {
       const kind={playSrc:'play',thumbSrc:'thumbnail',standardSrc:'standard',optimizedSrc:'optimized',optimizedStandardSrc:'compact'}[name];
       if(!/^[a-z0-9-]+$/.test(photo.id)||typeof url!=='string'||!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Missing runtime artwork: '+photo.id);
       urls.add(url);
+    }
+    // Catalog upgrades never remove the resources used by pre-upgrade rooms.
+    const retained=artworkRegistry.legacy[photo.id];
+    if(retained){
+      for(const [kind,url] of [['optimized',retained.src],['thumbnail',retained.thumbSrc]]){
+        if(!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Invalid retained room artwork: '+photo.id);
+        urls.add(url);
+      }
+    }
+    const activeRevision=artworkRegistry.active[photo.id];
+    if(activeRevision){
+      const active=artworkRegistry.versions[photo.id]?.find(item=>item.revision===activeRevision);
+      if(!active)throw new Error('Missing active artwork version: '+photo.id);
+      for(const [kind,url] of [['optimized',active.src],['thumbnail',active.thumbSrc]]){
+        if(!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Invalid active room artwork: '+photo.id);
+        urls.add(url);
+      }
     }
   }
   for(const url of urls)if(!url.startsWith('/')||url.startsWith('//')||url.includes('\\')||posix.normalize(url)!==url||url.includes('..'))throw new Error('Invalid runtime asset path');

@@ -156,10 +156,16 @@ else:
 
 headers = {'Host': 'jigsawnook.online', 'X-Forwarded-Host': 'jigsawnook.online', 'X-Forwarded-Proto': 'https', 'CF-Connecting-IP': '192.0.2.43'}
 http = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
-def request(port, path, body=None, actor=None, follow_redirects=True):
+def request(port, path, body=None, actor=None, follow_redirects=True, extra_headers=None):
     assert path.startswith('/') and not path.startswith('//') and '\\' not in path
     h = dict(headers)
+    if extra_headers:
+        assert set(extra_headers) <= {'X-Jigsaw-Artwork-Snapshot'}, 'Acceptance headers must stay allowlisted'
+        assert all(value == '1' for value in extra_headers.values()), 'Invalid artwork client capability'
+        h.update(extra_headers)
     if body is not None: h['Content-Type'] = 'application/json'
+    if body is not None and path.startswith('/api/shared/'):
+        h['Origin'] = 'https://jigsawnook.online'
     if actor:
         if actor.get('cookie'): h['Cookie'] = actor['cookie']
         if actor.get('token'): h['Authorization'] = 'Bearer ' + actor['token']
@@ -253,15 +259,18 @@ check_content(args.from_port)
 # cookies, room writes or test chat messages are used by acceptance tests.
 with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
     processes, logs = [], []
-    def launch(root, port):
+    def launch(root, port, managed_content=False):
         env = {'PATH': os.environ['PATH'], 'NODE_ENV': 'production', 'HOST': '127.0.0.1', 'PORT': str(port),
                'VINEXT_TRUSTED_HOSTS': 'jigsawnook.online', 'VINEXT_TRUST_PROXY': '1',
                'PUZZLE_PUBLIC_ORIGIN': 'https://jigsawnook.online', 'DATABASE_PATH': temporary + '/data/puzzle.sqlite', 'MIGRATIONS_DIR': str(root / 'drizzle')}
-        log = open(temporary + '/' + str(port) + '.log', 'w'); logs.append(log)
+        if managed_content:
+            env['JIGSAW_CONTENT_DIR'] = str(isolated_content)
+            env['JIGSAW_DAILY_APPEARANCES_DIR'] = str(isolated_appearances)
+        log = open(temporary + '/' + str(port) + ('-artwork' if managed_content else '') + '.log', 'w'); logs.append(log)
         processes.append(subprocess.Popen(['/usr/local/bin/node', 'server.js'], cwd=root, env=env, stdout=log, stderr=log))
         ready(port)
-    def json_request(port, path, body=None, actor=None, expected=200):
-        status, head, raw = request(port, path, body, actor)
+    def json_request(port, path, body=None, actor=None, expected=200, extra_headers=None):
+        status, head, raw = request(port, path, body, actor, extra_headers=extra_headers)
         assert status == expected, (path, status, expected, raw[:200])
         value = json.loads(raw)
         if actor is not None and head.get('Set-Cookie'): actor['cookie'] = head['Set-Cookie'].split(';')[0]
@@ -351,6 +360,88 @@ with tempfile.TemporaryDirectory(prefix='jigsaw-release-test-') as temporary:
             assert len(json_request(3138, path, None, actor)['puzzle']['groups']) == grid['cols'] * grid['rows']
             check_game_redirect(3138, '/room/' + ticket['room']['id'], '/play?room=' + ticket['room']['id'])
         print('Isolated Linux: old rooms, cross-version moves/chat, resolution policy, shared UI routing and all assets passed.', flush=True)
+
+        # The picture upgrade checks use copies of public content and a disposable
+        # appearance directory. Neither runtime can write the live content tree.
+        for process in processes: process.terminate()
+        for process in processes: process.wait(timeout=15)
+        processes.clear()
+        isolated_content = pathlib.Path(temporary) / 'content'
+        isolated_release = isolated_content / 'releases' / published['releaseId']
+        isolated_release.mkdir(parents=True)
+        for name in ['manifest.json', 'albums.json', 'daily.json', 'game-settings.json', 'task-rewards.json', 'assets.json']:
+            source = content_directory / 'releases' / published['releaseId'] / name
+            if not source.exists():
+                assert name == 'assets.json', 'Published content file is missing'
+                continue
+            assert source.is_file() and not source.is_symlink(), 'Public content must use regular files'
+            (isolated_release / name).write_bytes(source.read_bytes())
+        (isolated_content / 'current.json').write_bytes(content_pointer_before)
+        isolated_appearances = pathlib.Path(temporary) / 'daily-appearances'
+        isolated_appearances.mkdir()
+        launch(old, 3139, managed_content=True)
+        launch(app, 3138, managed_content=True)
+        artwork = json.loads((app / 'content/artwork-revisions.json').read_text())
+        upgraded_id = next(image_id for image_id in artwork['active']
+                           if any(photo['id'] == image_id and photo['status'] == 'published' for photo in old_catalog))
+        legacy_artwork = artwork['legacy'][upgraded_id]
+        active_artwork = next(version for version in artwork['versions'][upgraded_id]
+                              if version['revision'] == artwork['active'][upgraded_id])
+        capability = {'X-Jigsaw-Artwork-Snapshot': '1'}
+        artwork_actor = {}
+        account = json_request(3139, '/api/auth/register',
+            {'username': 'artwork_' + secrets.token_hex(5), 'name': 'QA artwork', 'password': secrets.token_hex(16)}, artwork_actor, 201)['account']
+        json_request(3139, '/api/shared/api/mobile/profile', actor=artwork_actor)
+        # Give this test identity access only inside the isolated DB, without
+        # changing album prices, live accounts or purchase/reward handlers.
+        with sqlite3.connect(qa_db) as connection:
+            state = json.loads(connection.execute('SELECT data FROM puzzle_managed_players WHERE owner=?', (account['id'],)).fetchone()[0])
+            state['ownedImages'][upgraded_id] = True
+            connection.execute('UPDATE puzzle_managed_players SET data=? WHERE owner=?', (json.dumps(state), account['id']))
+        old_ticket = json_request(3139, '/api/rooms',
+            {'visibility': 'public', 'imageId': upgraded_id, 'pieces': 108}, artwork_actor, 201)
+        artwork_actor['token'] = old_ticket['token']
+        old_path = '/api/rooms/' + old_ticket['room']['id']
+        json_request(3139, old_path, {'type': 'claim', 'groupId': 0}, artwork_actor)
+        before = json_request(3139, old_path, {'type': 'move', 'groupId': 0, 'dx': 123, 'dy': 456, 'seq': 1}, artwork_actor)
+        with sqlite3.connect(qa_db) as connection:
+            stored_before = connection.execute('SELECT data FROM puzzle_rooms WHERE id=?', (old_ticket['room']['id'],)).fetchone()[0]
+            wallet_before = connection.execute('SELECT data FROM puzzle_managed_players WHERE owner=?', (account['id'],)).fetchone()[0]
+        assert 'artwork' not in json.loads(stored_before), 'Old runtime must create a real legacy room'
+        restored = json_request(3138, '/api/shared' + old_path, actor=artwork_actor, extra_headers=capability)
+        assert restored['artwork'] == legacy_artwork
+        assert urllib.parse.urlsplit(restored['photo']['src']).path == legacy_artwork['src']
+        assert {k: v for k, v in restored['puzzle'].items() if k != 'elapsed'} == {k: v for k, v in before['puzzle'].items() if k != 'elapsed'}, 'Old seed and placed/movable groups changed'
+        assert restored['revision'] == before['revision']
+        with sqlite3.connect(qa_db) as connection:
+            assert connection.execute('SELECT data FROM puzzle_rooms WHERE id=?', (old_ticket['room']['id'],)).fetchone()[0] == stored_before, 'Reading old artwork must not rewrite its room'
+        new_ticket = json_request(3138, '/api/shared/api/rooms',
+            {'visibility': 'public', 'mode': 'selected', 'imageId': upgraded_id, 'pieces': 108}, artwork_actor, 201, extra_headers=capability)
+        assert new_ticket['room']['id'] != old_ticket['room']['id']
+        assert new_ticket['room']['artwork'] == active_artwork
+        assert urllib.parse.urlsplit(new_ticket['room']['photo']['src']).path == active_artwork['src']
+        new_path = '/api/rooms/' + new_ticket['room']['id']
+        denied = json_request(3138, '/api/shared' + new_path + '/join', {}, artwork_actor, 409)
+        assert denied['code'] == 'ARTWORK_CLIENT_UPDATE_REQUIRED'
+        compatibility_lobby = json_request(3138, '/api/shared/api/lobby?limit=48', actor=artwork_actor)
+        assert all(room['id'] != new_ticket['room']['id'] for room in compatibility_lobby['rooms']), 'Old clients must not see incompatible upgraded tables'
+        new_lobby = json_request(3138, '/api/shared/api/lobby?limit=48', actor=artwork_actor, extra_headers=capability)
+        assert next(room for room in new_lobby['rooms'] if room['id'] == new_ticket['room']['id'])['thumbSrc'] == active_artwork['thumbSrc']
+        gallery = json_request(3138, '/api/shared/api/mobile/gallery', actor=artwork_actor, extra_headers=capability)
+        gallery_photo = next(photo for photo in gallery['photos'] if photo['id'] == upgraded_id)
+        assert urllib.parse.urlsplit(gallery_photo['src']).path == active_artwork['src']
+        assert (gallery_photo['width'], gallery_photo['height']) == (active_artwork['width'], active_artwork['height'])
+        for url, quality in [(active_artwork['src'], 70), (active_artwork['thumbSrc'], 82)]:
+            metadata = artwork['files'][url]
+            assert metadata['quality'] == quality and metadata['lossless'] is False
+            assert metadata['sourceSha256'] == active_artwork['revision']
+            asset_headers, raw = get(3138, url)
+            assert asset_headers.get_content_type() == 'image/webp' and raw[:4] == b'RIFF' and raw[8:12] == b'WEBP'
+            assert len(raw) == metadata['bytes'] and hashlib.sha256(raw).hexdigest() == metadata['sha256']
+        with sqlite3.connect(qa_db) as connection:
+            assert connection.execute('SELECT data FROM puzzle_managed_players WHERE owner=?', (account['id'],)).fetchone()[0] == wallet_before, 'Artwork changes must not mutate wallet, collections or purchased access'
+        assert content_pointer.read_bytes() == content_pointer_before
+        print('Isolated artwork: legacy/new rooms, unchanged old progress, capability admission/lobby filtering, active gallery and Q70 asset hashes passed.', flush=True)
     finally:
         for process in processes: process.terminate()
         for process in processes: process.wait(timeout=15)

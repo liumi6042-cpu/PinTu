@@ -4,11 +4,13 @@ import { currentPlayer,currentGuest,withPlayerCookie } from '@/lib/player-identi
 import { ensureBetaSeat } from '@/lib/beta-seats';
 import { requireSoloAccount } from '@/lib/solo-account';
 import { botsEnabled } from '@/lib/bot-settings';
+import {checkArtworkClient} from '@/lib/room-artwork';
 export async function POST(request:Request,context:{params:Promise<{id:string}>}){
  try{
   const {id}=await context.params,input=await body(request),existing=await readRoom(id);
   if(!botsEnabled()&&existing.botRoom)throw new RoomError('房间不存在，请选择其他拼图',404);
   if(existing.visibility==='solo')await requireSoloAccount(request);
+  checkArtworkClient(existing,request.headers);
   let player=existing.visibility?await currentPlayer(request,true):null;
   if(existing.visibility==='solo'&&existing.ownerId!==player?.id){const guest=await currentGuest(request);if(guest?.id===existing.ownerId)player=guest;}
   const guest=player?.accountId?await currentGuest(request):null;
@@ -19,5 +21,5 @@ export async function POST(request:Request,context:{params:Promise<{id:string}>}
    return addMember(room,newId(),player?.name||validName(input.name??'游客'),digest,now,player?.accountId,player?.guestId);
   });
   const response=json({token,playerId:member.id,room:snapshot(room,now)});return player?withPlayerCookie(response,player):response;
- }catch(error){return failure(error);}
+ }catch(error){return error instanceof Error&&'code'in error&&error.code==='ARTWORK_CLIENT_UPDATE_REQUIRED'?json({error:error.message,code:error.code},409):failure(error);}
 }

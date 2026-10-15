@@ -2,6 +2,7 @@ import {env} from 'cloudflare:workers';
 import {dailyPuzzle} from './daily-puzzle';
 import {GALLERY_PHOTOS,RESTORABLE_PHOTOS} from './puzzle-catalog';
 import {photoGuidance} from './play-guidance';
+import {activeArtworkPhoto} from './room-artwork';
 
 export type ManagedPhoto=(typeof RESTORABLE_PHOTOS[number])&{width:number;height:number};
 export type ManagedMilestone={id:string;target:number;coins:number;decorationId:string|null};
@@ -15,15 +16,19 @@ type DailyRuntime={select:(now:number)=>ManagedPhoto;albumEntries:(now:number,ta
 export type ManagedContentSnapshot={releaseId:string;manifestSha256:string;documents:{albums:ManagedAlbumDocument;daily:ManagedDailyDocument;gameSettings:ManagedGameSettings;taskRewards:ManagedTaskRewards};albums:ManagedAlbumDocument;daily:ManagedDailyDocument;gameSettings:ManagedGameSettings;taskRewards:ManagedTaskRewards;photos:ManagedPhoto[];summary:{albumCount:number;imageCount:number;taskCount:number};configDigests:Record<string,string>;dailyRuntime:DailyRuntime};
 
 /** Node injects the reader through its server-only env module. Worker builds retain legacy content. */
-export function readManagedContent():ManagedContentSnapshot|null{
+export function readManagedContent(artworkSnapshots=true):ManagedContentSnapshot|null{
  const bindings=env as unknown as {PUZZLE_CONTENT_SNAPSHOT?:()=>ManagedContentSnapshot|null};
- return typeof bindings.PUZZLE_CONTENT_SNAPSHOT==='function'?bindings.PUZZLE_CONTENT_SNAPSHOT():null;
+ const snapshot=typeof bindings.PUZZLE_CONTENT_SNAPSHOT==='function'?bindings.PUZZLE_CONTENT_SNAPSHOT():null;
+ if(!snapshot)return null;
+ if(!artworkSnapshots)return snapshot;
+ // Drawing delivery is independent of saved albums, rewards and release IDs.
+ return {...snapshot,photos:snapshot.photos.map(activeArtworkPhoto),dailyRuntime:{...snapshot.dailyRuntime,select:now=>activeArtworkPhoto(snapshot.dailyRuntime.select(now))}};
 }
 
 const withManagedDimensions=(photo:typeof RESTORABLE_PHOTOS[number]):ManagedPhoto=>{
  const dimensions=photoGuidance(photo.id);
  if(!Number.isSafeInteger(dimensions?.width)||dimensions.width<=0||!Number.isSafeInteger(dimensions?.height)||dimensions.height<=0)throw Object.assign(new Error('图片暂时不可用，请稍后重试。'),{status:503});
- return {...photo,width:dimensions.width,height:dimensions.height};
+ return activeArtworkPhoto({...photo,width:dimensions.width,height:dimensions.height});
 };
 
 /** Uses the same persisted appearance and atomic selection algorithm as the mobile service. */

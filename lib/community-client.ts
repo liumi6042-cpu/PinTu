@@ -4,7 +4,7 @@ import { expandCreatedTicket, INITIAL_STATE_FORMAT, rememberCreatedTicket, takeC
 export async function apiJson<T>(path:string,body?:unknown):Promise<T>{
  const creation=body!==undefined&&path==='/api/rooms';
  if(creation)body={...(body as Record<string,unknown>),guestSecret:await guestCreationSecret(),initialState:INITIAL_STATE_FORMAT};
- const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
+ const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:{'X-Jigsaw-Artwork-Snapshot':'1',...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
  const data=await response.json().catch(()=>({error:'暂时无法连接，请重试'})) as {error?:string};
  if(!response.ok){const error=Object.assign(new Error(data.error||'暂时无法连接，请重试'),{status:response.status});throw error;}
  if(creation){const ticket=expandCreatedTicket(data as unknown as RoomTicket|SeedRoomTicket);rememberCreatedTicket(ticket);return ticket as T;}
@@ -17,7 +17,7 @@ export async function joinPuzzle(roomId:string,name?:string){
  const candidates=new Set<string>();try{const raw=sessionStorage.getItem(roomSessionKey(roomId));if(raw)candidates.add(raw);}catch{}try{const raw=localStorage.getItem(roomSessionKey(roomId)+':account');if(raw)candidates.add(raw);}catch{}
  for(const raw of candidates){try{
   const saved=JSON.parse(raw);if(typeof saved.token!=='string'||!/^[a-f0-9]{32}$/.test(saved.token)||typeof saved.playerId!=='string')continue;
-  const heartbeat=()=>fetch('/api/rooms/'+roomId,{method:'POST',headers:{Authorization:'Bearer '+saved.token,'Content-Type':'application/json'},body:JSON.stringify({type:'heartbeat'}),cache:'no-store',signal:AbortSignal.timeout(6500)});
+  const heartbeat=()=>fetch('/api/rooms/'+roomId,{method:'POST',headers:{Authorization:'Bearer '+saved.token,'Content-Type':'application/json','X-Jigsaw-Artwork-Snapshot':'1'},body:JSON.stringify({type:'heartbeat'}),cache:'no-store',signal:AbortSignal.timeout(6500)});
   let response=await heartbeat();
   // A valid cookie + ticket is already an authenticated session. Only restore
   // the persistent guest cookie when the server actually asks for it.

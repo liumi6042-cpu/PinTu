@@ -57,6 +57,24 @@ test('legacy public creation without managed content retains the catalog title',
  }finally{f.close();}
 });
 
+test('shared rooms keep old artwork and entitlements while upgraded creation ignores client-supplied URLs',async()=>{
+ const f=fixture();try{
+  const registry=JSON.parse(readFileSync(new URL('../content/artwork-revisions.json',import.meta.url),'utf8')),id='lantern-market',old=registry.legacy[id],next=registry.versions[id].find(p=>p.revision!==old.revision),photo=api.RESTORABLE_PHOTOS.find(p=>p.id===id);
+  f.snapshot.photos.push({...photo,width:old.width,height:old.height});f.snapshot.albums.albums.find(a=>a.id==='free').imageIds.push(id);
+  const input={imageId:id,pieces:108,visibility:'public',mode:'selected'},first=await f.request('/api/rooms',{method:'POST',body:input});assert.equal(first.status,201,JSON.stringify(first.data));
+  const row=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(first.data.room.id).data);delete row.artwork;
+  f.db.sql.prepare('UPDATE puzzle_rooms SET data=? WHERE id=?').run(JSON.stringify(row),row.id);
+  const keptBoard=JSON.stringify(row.puzzle),keptWallet=JSON.stringify(stored(f)),keptCatalog=JSON.stringify(f.snapshot.photos);
+  const gallery=await f.request('/api/mobile/gallery',{headers:{'X-Jigsaw-Artwork-Snapshot':'1'}});assert.equal(gallery.status,200);assert.equal(gallery.data.photos.find(p=>p.id===id).src,origin+next.src);assert.equal(JSON.stringify(f.snapshot.photos),keptCatalog,'presentation overlay preserves the source catalog and snapshot');
+  const upgraded=await f.request('/api/rooms',{method:'POST',body:{...input,artwork:{...next,src:'https://untrusted.example/image.webp'}},headers:{'X-Jigsaw-Artwork-Snapshot':'1'}});
+  assert.equal(upgraded.status,201,JSON.stringify(upgraded.data));assert.notEqual(upgraded.data.room.id,row.id);assert.deepEqual(upgraded.data.room.artwork,next);assert.equal(upgraded.data.room.photo.src,origin+next.src);
+  const historical=await f.request('/api/rooms/'+row.id,{headers:{Authorization:'Bearer '+first.data.token}});assert.equal(historical.status,200);assert.equal(historical.data.photo.src,origin+old.src);assert.equal(JSON.stringify(historical.data.puzzle),keptBoard);
+  const stale=await f.request('/api/rooms/'+upgraded.data.room.id,{headers:{Authorization:'Bearer '+upgraded.data.token}});assert.equal(stale.status,409);assert.equal(stale.data.code,'ARTWORK_CLIENT_UPDATE_REQUIRED');
+  const lobby=await f.request('/api/lobby',{headers:{'X-Jigsaw-Artwork-Snapshot':'1'}});assert.equal(lobby.status,200);assert.equal(lobby.data.rooms.find(r=>r.id===row.id).thumbSrc,old.thumbSrc);assert.equal(lobby.data.rooms.find(r=>r.id===upgraded.data.room.id).thumbSrc,next.thumbSrc);
+  assert.equal(JSON.stringify(stored(f)),keptWallet,'creation and picture versioning do not change player wallets, purchases or collections');
+ }finally{f.close();}
+});
+
 test('shared configuration points to the packaged UI and original service pages',()=>{
  const manifest=JSON.parse(readFileSync(new URL('../app/shared-client-build.json',import.meta.url),'utf8')),config=api.sharedConfig(origin);
  assert.equal(config.uiBase,manifest.uiBase);assert.equal(config.gameBase,origin+'/play');assert.equal(config.webLinks.feedback,'/feedback');

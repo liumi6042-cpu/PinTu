@@ -39,3 +39,15 @@ test('started, connected, full, closed, private and expired tables are never reu
 test('other owners can reuse an open table without changing the original owner',async()=>{
  const db=database();try{await insertOrReuseEmptyPublicRoom(db,room('original'),108,now,online);const result=await insertOrReuseEmptyPublicRoom(db,room('other',{ownerId:'other'}),108,now,online);assert.equal(result.id,'original');assert.equal(JSON.parse(db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get('original').data).ownerId,'owner');}finally{db.close();}
 });
+
+test('empty public rooms are reused only within the exact artwork revision',async()=>{
+ const db=database();try{
+  await insertOrReuseEmptyPublicRoom(db,room('legacy'),108,now,online);
+  const old={revision:'a'.repeat(64)},next={revision:'b'.repeat(64)};
+  assert.equal((await insertOrReuseEmptyPublicRoom(db,room('old-pinned',{artwork:old}),108,now,online)).created,true,'unpinned history is never mistaken for a pinned new room');
+  assert.equal((await insertOrReuseEmptyPublicRoom(db,room('old-retry',{artwork:old}),108,now,online)).id,'old-pinned');
+  assert.equal((await insertOrReuseEmptyPublicRoom(db,room('new-pinned',{artwork:next}),108,now,online)).created,true);
+  assert.equal((await insertOrReuseEmptyPublicRoom(db,room('new-retry',{artwork:next}),108,now,online)).id,'new-pinned');
+  assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM puzzle_rooms').get().n,3);
+ }finally{db.close();}
+});

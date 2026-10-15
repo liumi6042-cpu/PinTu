@@ -10,6 +10,7 @@ import {managedRooms} from './lobby-store';
 import {pieceBand} from './piece-policy';
 import {photoGuidance} from './play-guidance';
 import {RESTORABLE_PHOTOS} from './puzzle-catalog';
+import {roomArtworkPhoto,roomUsesUpgradedArtwork,supportsArtworkSnapshot} from './room-artwork';
 import {sharedConfig,sharedRequestAllowed,sharedProfile,sharedCollection,sharedTasks,sharedGiftId,sharedImage,SHARED_COMPAT_URLS} from './shared-client-model';
 import * as roomsRoute from '../app/api/rooms/route';
 import * as roomRoute from '../app/api/rooms/[id]/route';
@@ -27,7 +28,7 @@ const compatibilityRoom=(room:Data)=>!!room.customImage||room.visibility==='solo
 const roomLink=(id:string)=>'/play?room='+id;
 async function playerState(owner:string){const row=await localDb().prepare('SELECT data FROM puzzle_managed_players WHERE owner=?').bind(owner).first<{data:string}>();return row?JSON.parse(row.data):{};}
 async function context(request:Request){
- const content=readManagedContent();if(!content)throw new RoomError('正式内容暂未发布，暂时不能读取玩家奖励',503);
+ const content=readManagedContent(supportsArtworkSnapshot(request.headers));if(!content)throw new RoomError('正式内容暂未发布，暂时不能读取玩家奖励',503);
  const player=(await currentPlayer(request,true))!,account=await currentAccount(request),guest=await currentGuest(request),origin=new URL(request.url).origin;
  const view=await managedPlayerView(player.id,content,origin) as Data;
  const owners=[...new Set([player.id,guest?.id].filter((id):id is string=>!!id))];
@@ -44,7 +45,7 @@ async function responseData(response:Response){return await response.json() as D
 function replaceResponse(response:Response,value:Data){const headers=new Headers(response.headers);headers.set('Content-Type','application/json');headers.set('Cache-Control','private, no-store');return new Response(JSON.stringify(value),{status:response.status,headers});}
 function roomPhoto(room:Data,origin:string){
  let photos:readonly Data[]=RESTORABLE_PHOTOS;try{photos=readManagedContent()?.photos??photos;}catch{/* Existing public pictures stay readable during a release outage. */}
- const id=room.puzzle?.imageId,photo:Data|undefined=photos.find(p=>p.id===id)??RESTORABLE_PHOTOS.find(p=>p.id===id);if(!photo)return undefined;
+ const id=room.puzzle?.imageId,photo:Data|undefined=roomArtworkPhoto(room as any,photos as any)??roomArtworkPhoto(room as any,RESTORABLE_PHOTOS);if(!photo)return undefined;
  const dimensions=photoGuidance(id);return sharedImage({...photo,width:photo.width??dimensions?.width,height:photo.height??dimensions?.height},origin);
 }
 function taskView(ctx:Context){return sharedTasks(ctx.view,ctx.profile,ctx.content.taskRewards);}
@@ -155,10 +156,11 @@ export async function sharedClientApi(request:Request,path:string){
    const response=await lobbyRoute.GET();if(!response.ok)return response;const data=await responseData(response),url=new URL(request.url);
    const direction=url.searchParams.get('direction'),limit=Math.max(1,Math.min(48,Number(url.searchParams.get('limit'))||16)),rawCursor=url.searchParams.get('cursor')??'0';if(!/^\d{1,5}$/.test(rawCursor))throw new RoomError('大厅翻页位置无效');
    const start=Number(rawCursor),filtered=(data.rooms??[]).filter((r:Data)=>{
+    if(!supportsArtworkSnapshot(request.headers)&&roomUsesUpgradedArtwork({puzzle:{imageId:r.imageId},artwork:r.artwork}))return false;
     if(url.searchParams.get('pieces')&&r.pieces!==Number(url.searchParams.get('pieces')))return false;
     if(url.searchParams.get('open')==='1'&&(r.completed||r.acceptingNew===false||r.players>=8))return false;
     if(url.searchParams.get('active')==='1'&&r.players<=0)return false;
-    const dimensions=r.customImage??photoGuidance(r.imageId),ratio=dimensions?dimensions.width/dimensions.height:1;
+    const dimensions=r.customImage??r.artwork??photoGuidance(r.imageId),ratio=dimensions?dimensions.width/dimensions.height:1;
     return direction==='portrait'?ratio<1/1.1:direction==='landscape'?ratio>1.1:direction==='square'?Math.abs(ratio-1)<=.1:true;
    });
    data.rooms=filtered.slice(start,start+limit).map((r:Data)=>({...r,...(r.customImage||r.pieces>500?{compatUrl:roomLink(r.id)}:{})}));data.nextCursor=start+limit<filtered.length?String(start+limit):null;return replaceResponse(response,data);

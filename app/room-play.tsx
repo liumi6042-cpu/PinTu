@@ -7,6 +7,7 @@ import { Puzzle, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Game } from './puzzle-app';
 import { customPhoto } from '@/lib/custom-images';
 import { RESTORABLE_PHOTOS } from '@/lib/puzzle-catalog';
+import {roomArtworkPhoto} from '@/lib/room-artwork';
 import { DEFAULT_PIECES } from '@/lib/piece-policy';
 import { nextTableChoice } from '@/lib/next-table';
 import { RoomClient, saveTicket } from '@/lib/room-client';
@@ -30,7 +31,7 @@ export default function RoomPlay({ roomId }: {
     const lobbyHref = language === 'zh' ? '/zh/lobby' : '/lobby';
     useEffect(() => { if(!missing)return; const started=Date.now(),timer=window.setInterval(()=>{const left=5-Math.floor((Date.now()-started)/1000);if(left<=0){window.clearInterval(timer);window.location.assign(lobbyHref);}else setCountdown(left);},200); return () => window.clearInterval(timer); }, [missing,lobbyHref]);
     if (client) {
-        const photo = client.snapshot.customImage?customPhoto(client.snapshot.customImage,client.snapshot.id):RESTORABLE_PHOTOS.find(p => p.id === client.state.imageId);
+        const photo = client.snapshot.customImage?customPhoto(client.snapshot.customImage,client.snapshot.id):roomArtworkPhoto(client.snapshot,RESTORABLE_PHOTOS);
         // Another table, straight away: a different picture at the same size, so a finished
         // puzzle is followed by playing rather than by choosing.
         const startNextTable = async () => {

@@ -54,14 +54,14 @@ export class RoomClient {
     if (Date.now() < this.retryAt) { const error=Object.assign(new Error('服务器繁忙，正在等待重试'),{status:503}); throw error; }
     const response = await fetch(`/api/rooms/${this.ticket.room.id}?since=${this.snapshot.revision}`, {
       method: action ? 'POST' : 'GET',
-      headers: { Authorization: `Bearer ${this.ticket.token}`, ...(action ? { 'Content-Type': 'application/json' } : {}) },
+      headers: { Authorization: `Bearer ${this.ticket.token}`, 'X-Jigsaw-Artwork-Snapshot':'1', ...(action ? { 'Content-Type': 'application/json' } : {}) },
       body: action ? JSON.stringify(action) : undefined, cache: 'no-store', signal: AbortSignal.timeout(6500),
     });
     const data = await response.json().catch(()=>({error:'连接暂时中断'})) as RoomUpdate & { error?: string };
     if (!response.ok) { if(response.status===429||response.status===503)this.retryAt=Date.now()+retryDelay(response.headers.get('Retry-After'));const error = new Error(data.error || '连接暂时中断') as Error & { status: number }; error.status = response.status; throw error; }
     const merged = applyRoomUpdate(this.snapshot, data);
     if (merged) return merged;
-    const recovery = await fetch(`/api/rooms/${this.ticket.room.id}`, { headers: { Authorization: `Bearer ${this.ticket.token}` }, cache: 'no-store', signal: AbortSignal.timeout(6500) });
+    const recovery = await fetch(`/api/rooms/${this.ticket.room.id}`, { headers: { Authorization: `Bearer ${this.ticket.token}`,'X-Jigsaw-Artwork-Snapshot':'1' }, cache: 'no-store', signal: AbortSignal.timeout(6500) });
     const full = await recovery.json() as RoomSnapshot & { error?: string };
     if (!recovery.ok) throw new Error(full.error || '连接暂时中断');
     return full;

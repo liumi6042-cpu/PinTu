@@ -6,7 +6,8 @@ import { body, digestToken, newId, json, failure,mutateRoom } from '@/lib/room-s
 import {localDb} from '@/lib/local-db';
 import {insertOrReuseEmptyPublicRoom} from '@/lib/public-room-admission.mjs';
 import {pieceBand} from '@/lib/piece-policy';
-import {PHOTOS} from '@/lib/puzzle-catalog';
+import {PHOTOS,RESTORABLE_PHOTOS} from '@/lib/puzzle-catalog';
+import {currentRoomArtwork,supportsArtworkSnapshot} from '@/lib/room-artwork';
 import { currentPlayer,withPlayerCookie } from '@/lib/player-identity';
 import { newPlayableRoom,insertPlayableRoom } from '@/lib/lobby-store';
 import { membershipFor,insertMemberRoom } from '@/lib/membership-store';
@@ -53,7 +54,10 @@ export async function POST(request:Request){
    // the level that was requested, so results stay on one board.
    room=newPlayableRoom(newId(),input.imageId,input.pieces,(input.visibility??'private') as RoomVisibility,player!.id,now,content?.photos.map(photo=>photo.id));
    if(content)room.title=content.photos.find(photo=>photo.id===input.imageId)?.title||room.title;
-   const picture=photoGuidance(input.imageId),level=NEW_GAME_LEVELS.find(l=>l.count===input.pieces);
+   const photo=content?.photos.find(photo=>photo.id===input.imageId)??RESTORABLE_PHOTOS.find(photo=>photo.id===input.imageId);
+   if(!photo)throw new RoomError('图片暂不可用',503);
+   room.artwork=currentRoomArtwork(photo,input.pieces,!supportsArtworkSnapshot(request.headers));
+   const picture=room.artwork??photoGuidance(input.imageId),level=NEW_GAME_LEVELS.find(l=>l.count===input.pieces);
    if(picture&&level){
     const grid=gridForDimensions(picture.width,picture.height,level.count);
     if(grid&&(grid.cols!==level.cols||grid.rows!==level.rows))room.puzzle=createFittedPuzzle(input.imageId,grid.cols,grid.rows);
