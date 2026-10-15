@@ -1,12 +1,14 @@
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { inside, SERVER_RUNTIME_HELPERS, CONTENT_RUNTIME_FILES } from './release-files.mjs';
+import { inside, SERVER_RUNTIME_HELPERS, CONTENT_RUNTIME_FILES, runtimeAssets, selectRuntimeFiles } from './release-files.mjs';
+import { stageBuildSource, materializeRuntimeAssets } from './release-staging.mjs';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
 const release=process.argv.includes('--release');
+const requestedOutput=process.argv.find(value=>value.startsWith('--output='))?.slice(9);
+if(requestedOutput&&!release)throw new Error('--output is only allowed with --release');
 // Recursive fs.cpSync terminates the process on the Windows build host, so copy
 // trees with plain per-entry primitives that work wherever this is built.
 const copyTree=(from,to)=>{
@@ -25,19 +27,18 @@ const copyFile=(from,to)=>{
 // copy so it cannot remove the running local preview or load private .env files.
 let temporary;
 try {
-  const buildRoot=release ? (temporary=mkdtempSync(resolve(tmpdir(),'jigsaw-build-'))) : root;
+  const temporaryParent=resolve(root,'work/release-sources');
+  if(release)mkdirSync(temporaryParent,{recursive:true});
+  const buildRoot=release ? (temporary=mkdtempSync(resolve(temporaryParent,'build-'))) : root;
   if(release){
     const listed=spawnSync('git',['ls-files','-z','--cached','--others','--exclude-standard'],{cwd:root,windowsHide:true,encoding:'utf8'});
     if(listed.error||listed.status!==0)throw new Error('Cannot list build source files');
-    for(const name of new Set(listed.stdout.split('\0').filter(Boolean))){
-      const source=inside(root,resolve(root,name));
-      if(existsSync(source))copyFile(source,inside(buildRoot,resolve(buildRoot,name)));
-    }
+    stageBuildSource(root,buildRoot,listed.stdout.split('\0').filter(Boolean));
     symlinkSync(resolve(root,'node_modules'),resolve(buildRoot,'node_modules'),process.platform==='win32'?'junction':'dir');
   }
   const result=spawnSync(process.execPath,[resolve(root,'node_modules/vinext/dist/cli.js'),'build'],{
     cwd:buildRoot,stdio:'inherit',windowsHide:true,
-    env:{...process.env,PUZZLE_TARGET:'node',PUZZLE_LOCAL_BUILD:'0'},
+    env:{...process.env,PUZZLE_TARGET:'node',PUZZLE_LOCAL_BUILD:'0',PUZZLE_RELEASE_BUILD:release?'1':'0'},
   });
   if(result.error||result.status!==0)throw new Error('Standalone build failed');
   const output=resolve(buildRoot,'dist/standalone');
@@ -50,9 +51,15 @@ try {
   let target=output;
   if(release){
     const folder=resolve(root,'work/release-build');mkdirSync(folder,{recursive:true});
-    target=inside(folder,resolve(folder,'standalone'));
-    if(existsSync(target))rmSync(target,{recursive:true,force:true});
-    copyTree(output,target);
+    target=inside(folder,requestedOutput?resolve(requestedOutput):resolve(folder,'standalone-'+Date.now()));
+    if(existsSync(target))throw new Error('Release output already exists; choose a new output directory');
+    const assets=runtimeAssets(JSON.parse(readFileSync(resolve(root,'content/puzzle-catalog.json'),'utf8')),JSON.parse(readFileSync(resolve(root,'config/runtime-assets.json'),'utf8')));
+    materializeRuntimeAssets(root,output,assets);
+    const files=selectRuntimeFiles(output,assets);
+    // Copy only the complete verified runtime, excluding standalone's extra
+    // public/ tree and PNGs. The final result is independent of source hardlinks.
+    mkdirSync(target);
+    for(const name of files)copyFile(resolve(output,name),resolve(target,name));
   }
   console.log('Self-hosted build ready in '+target);
 } finally {
@@ -60,6 +67,6 @@ try {
     // Unlink the dependency junction explicitly; never traverse the real install.
     const dependencies=resolve(temporary,'node_modules');
     if(existsSync(dependencies))unlinkSync(dependencies);
-    rmSync(inside(tmpdir(),temporary),{recursive:true,force:true});
+    rmSync(inside(resolve(root,'work/release-sources'),temporary),{recursive:true,force:true});
   }
 }

@@ -10,8 +10,8 @@ const run=(command,args,options={})=>{const result=spawnSync(command,args,{cwd:r
 const git=args=>run('git',args,{stdio:'pipe',encoding:'utf8'}).stdout.trim();
 const commit=git(['rev-parse','HEAD']),dirty=!!git(['status','--porcelain']);
 if(dirty&&!process.argv.includes('--allow-dirty'))throw new Error('Commit the source before creating an uploadable release. Use --allow-dirty only for local validation.');
-run(process.execPath,['scripts/build-server.mjs','--release']);
-const build=resolve(root,'work/release-build/standalone');
+const build=resolve(root,'work/release-build/standalone-'+Date.now());
+run(process.execPath,['scripts/build-server.mjs','--release','--output='+build]);
 const catalog=JSON.parse(readFileSync('content/puzzle-catalog.json','utf8'));
 const assets=runtimeAssets(catalog,JSON.parse(readFileSync('config/runtime-assets.json','utf8')));
 const files=selectRuntimeFiles(build,assets);

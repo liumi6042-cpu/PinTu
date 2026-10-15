@@ -39,6 +39,9 @@ const localBindingConfig = {
 export default defineConfig(async () => {
   await checkImageLibrary(process.cwd());
   if (process.env.PUZZLE_TARGET === 'node') return {
+    // Release packaging installs its complete runtime allowlist after compiling.
+    // Validation still sees the original public inputs in the isolated source.
+    build: { copyPublicDir: process.env.PUZZLE_RELEASE_BUILD !== '1' },
     css: { postcss: { plugins: [tailwindcss()] } },
     resolve: { alias: { 'cloudflare:workers': fileURLToPath(new URL('./server/runtime.node.mjs', import.meta.url)) } },
     plugins: [vinext()],
