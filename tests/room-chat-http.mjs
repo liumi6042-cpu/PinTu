@@ -11,11 +11,13 @@ async function request(path,body,actor={},options={}){
  const cookie=response.headers.get('set-cookie')?.split(';')[0];return {status:response.status,data:await response.json(),headers:response.headers,cookie};
 }
 async function create(actor={},visibility='public'){
- const result=await request('/api/rooms',{visibility,imageId:'seaside-native-v2',pieces:108,guestSecret:randomBytes(32).toString('hex')},actor);
+ // Isolation assertions need separate named tables; ordinary empty public tables now reuse.
+ const result=await request('/api/rooms',{visibility,title:'Chat fixture '+id().slice(0,12),imageId:'seaside-native-v2',pieces:108,guestSecret:randomBytes(32).toString('hex')},actor);
  assert.equal(result.status,201,JSON.stringify(result.data));rooms.push(result.data.room.id);return {...result.data,cookie:result.cookie||actor.cookie};
 }
 try{
  const a=await create(),other=await create(),path='/api/rooms/'+a.room.id,chat=path+'/chat';
+ assert.notEqual(a.room.id,other.room.id,'cross-room authorization uses distinct tables');
  const join=await request(path+'/join',{},other);assert.equal(join.status,200);const b={...join.data,cookie:other.cookie};
  assert.equal((await request(chat)).status,401);
  assert.equal((await request(chat,undefined,{token:a.token,cookie:other.cookie})).status,401);
