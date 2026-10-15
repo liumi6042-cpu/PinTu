@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inside, SERVER_RUNTIME_HELPERS, CONTENT_RUNTIME_FILES, runtimeAssets, selectRuntimeFiles } from './release-files.mjs';
 import { stageBuildSource, materializeRuntimeAssets } from './release-staging.mjs';
+import { withReleaseCleanup } from './release-cleanup.mjs';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
 const release=process.argv.includes('--release');
@@ -25,11 +26,10 @@ const copyFile=(from,to)=>{
 };
 // Vinext's CLI always cleans cwd/dist. Build a release in a disposable source
 // copy so it cannot remove the running local preview or load private .env files.
-let temporary;
-try {
-  const temporaryParent=resolve(root,'work/release-sources');
-  if(release)mkdirSync(temporaryParent,{recursive:true});
-  const buildRoot=release ? (temporary=mkdtempSync(resolve(temporaryParent,'build-'))) : root;
+const buildServer=async attempt=>{
+ let temporary;
+ try {
+  const buildRoot=release ? (temporary=attempt.sourceDirectory()) : root;
   if(release){
     const listed=spawnSync('git',['ls-files','-z','--cached','--others','--exclude-standard'],{cwd:root,windowsHide:true,encoding:'utf8'});
     if(listed.error||listed.status!==0)throw new Error('Cannot list build source files');
@@ -61,12 +61,14 @@ try {
     mkdirSync(target);
     for(const name of files)copyFile(resolve(output,name),resolve(target,name));
   }
-  console.log('Self-hosted build ready in '+target);
-} finally {
+  return target;
+ } finally {
   if(temporary){
     // Unlink the dependency junction explicitly; never traverse the real install.
     const dependencies=resolve(temporary,'node_modules');
     if(existsSync(dependencies))unlinkSync(dependencies);
-    rmSync(inside(resolve(root,'work/release-sources'),temporary),{recursive:true,force:true});
   }
-}
+ }
+};
+const {value:target}=release?await withReleaseCleanup(root,buildServer):{value:await buildServer()};
+console.log('Self-hosted build ready in '+target);
