@@ -105,16 +105,16 @@ export function validateContentManifest(value){
  return structuredClone(value);
 }
 
-function readJson(path,limit){
- const info=lstatSync(path);
+function readJson(path,limit,observe){
+ const info=lstatSync(path,{bigint:true});observe?.(path,info);
  if(!info.isFile()||info.isSymbolicLink()||info.size>limit)invalid('内容发布文件不安全或超过大小限制。');
  const bytes=readFileSync(path);
  if(bytes.length>limit)invalid('内容发布文件超过大小限制。');
  let value;try{value=JSON.parse(bytes.toString('utf8'));}catch{invalid('内容发布文件不是有效 JSON。');}
  return {value,bytes};
 }
-function checkedChildDirectory(parent,name){
- const path=join(parent,name),info=lstatSync(path);
+function checkedChildDirectory(parent,name,observe){
+ const path=join(parent,name),info=lstatSync(path,{bigint:true});observe?.(path,info);
  if(!info.isDirectory()||info.isSymbolicLink())invalid('内容发布目录不可使用符号链接。');
  const resolved=realpathSync(path);
  if(!resolved.startsWith(parent+sep))invalid('内容发布目录超出配置位置。');
@@ -127,29 +127,63 @@ function checkedChildDirectory(parent,name){
  * Missing current.json means legacy fallback only when strict is false.
  * Corrupt releases always fail closed; they never fall back to unrelated files.
  */
-export function readManagedRelease(root,{releaseId,strict=false}={}){
+export function readManagedRelease(root,options={}){return loadManagedRelease(root,options);}
+function loadManagedRelease(root,{releaseId,strict=false}={},observe){
  if(!root){if(!strict&&!releaseId)return null;throw contentReleaseError('未配置统一内容发布目录。','CONTENT_RELEASE_UNAVAILABLE',503);}
  let directory;
- try{directory=realpathSync(resolve(root));}
+ try{const requested=resolve(root);observe?.(requested,lstatSync(requested,{bigint:true}));directory=realpathSync(requested);observe?.(directory,lstatSync(directory,{bigint:true}));}
  catch(error){if(error.code==='ENOENT'&&!strict&&!releaseId)return null;throw contentReleaseError('统一内容发布目录暂时不可用。','CONTENT_RELEASE_UNAVAILABLE',503);}
  let pointer;
  if(releaseId===undefined){
-  try{pointer=validateContentPointer(readJson(join(directory,'current.json'),MAX_MANIFEST_BYTES).value);}
+  try{pointer=validateContentPointer(readJson(join(directory,'current.json'),MAX_MANIFEST_BYTES,observe).value);}
   catch(error){if(error.code==='ENOENT'&&!strict)return null;throw error;}
   releaseId=pointer.releaseId;
  }else if(!validContentReleaseId(releaseId))invalid('内容发布版本标识无效。');
- const releases=checkedChildDirectory(directory,'releases'),releaseDir=checkedChildDirectory(releases,releaseId);
- const rawManifest=readJson(join(releaseDir,'manifest.json'),MAX_MANIFEST_BYTES),manifest=validateContentManifest(rawManifest.value);
+ const releases=checkedChildDirectory(directory,'releases',observe),releaseDir=checkedChildDirectory(releases,releaseId,observe);
+ const rawManifest=readJson(join(releaseDir,'manifest.json'),MAX_MANIFEST_BYTES,observe),manifest=validateContentManifest(rawManifest.value);
  const manifestSha256=contentSha256(rawManifest.bytes);
  if(manifest.releaseId!==releaseId||pointer&&pointer.manifestSha256!==manifestSha256)invalid('内容发布清单与当前版本不匹配。');
  if(!pointer)pointer={schema:CONTENT_POINTER_SCHEMA,releaseId,manifestSha256};
  const documents={};
  for(const file of manifest.files){
-  const {value,bytes}=readJson(join(releaseDir,file.path),MAX_DOCUMENT_BYTES);
+  const {value,bytes}=readJson(join(releaseDir,file.path),MAX_DOCUMENT_BYTES,observe);
   if(bytes.length!==file.bytes||contentSha256(bytes)!==file.sha256)invalid(file.path+' 的文件校验不匹配。');
   const key=Object.keys(CONTENT_RELEASE_FILES).find(name=>CONTENT_RELEASE_FILES[name]===file.path);
   documents[key]=validatePublicReleaseDocument(key,value);
  }
  validateReleaseAssetReferences(documents);
  return freezeContent({pointer,manifest,manifestSha256,releaseDir,documents,files:manifest.files});
+}
+
+const fileSignature=info=>[info.dev,info.ino,info.mode,info.size,info.mtimeNs,info.ctimeNs].join(':');
+const signaturesMatch=signatures=>[...signatures].every(([path,signature])=>fileSignature(lstatSync(path,{bigint:true}))===signature);
+
+/** One bounded, fully validated snapshot per service; the pure reader above stays uncached.
+ * Every hit checks filesystem identities, including caller-supplied asset dependencies.
+ * Changed/deleted inputs fail closed on the next read. A full hash/typed validation is
+ * also repeated at least every 30 seconds, even when all stat signatures stay equal.
+ */
+export function createManagedReleaseReader(root,{strict=false,validate=release=>release,watchPaths=()=>[],maxAgeMs=30000,now=Date.now}={}){
+ const lifetime=Math.max(0,Math.min(30000,Number.isFinite(maxAgeMs)?maxAgeMs:30000));let cached=null;
+ return {read(){
+  try{
+   const clock=now();
+   if(cached&&clock>=cached.validatedAt&&clock-cached.validatedAt<lifetime&&signaturesMatch(cached.signatures))return cached.value;
+   cached=null;
+   const signatures=new Map(),observe=(path,info)=>signatures.set(path,fileSignature(info));
+   const release=loadManagedRelease(root,{strict},observe);if(!release)return null;
+   // Capture dependencies before typed validation, so replacement during validation
+   // cannot associate an unchecked new file with an old cached validation result.
+   for(const path of new Set(watchPaths(release)))observe(path,lstatSync(path,{bigint:true}));
+   const value=freezeContent(validate(release));
+   if(signaturesMatch(signatures))cached={key:release.pointer.releaseId+':'+release.manifestSha256,value,signatures,validatedAt:clock};
+   return value;
+  }catch(error){cached=null;throw error;}
+ },clear(){cached=null;}};
+}
+
+/** Files referenced by this release only; no directory scans or daily selection. */
+export function contentReleaseImageIds(release){
+ const {albums,daily}=release.documents;
+ return new Set([...(albums.albums??[]).flatMap(album=>album.imageIds??[]),...(daily.entries??[]).map(entry=>entry.imageId),...(daily.automaticCandidates??[]).map(entry=>entry.imageId),...(daily.fallbackImageIds??[])]);
 }

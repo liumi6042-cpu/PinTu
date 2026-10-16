@@ -1,6 +1,6 @@
 import {existsSync,lstatSync,realpathSync} from 'node:fs';
-import {resolve,sep} from 'node:path';
-import {readManagedRelease,freezeContent} from './content-release.mjs';
+import {dirname,resolve,sep} from 'node:path';
+import {readManagedRelease,createManagedReleaseReader,contentReleaseImageIds,freezeContent} from './content-release.mjs';
 import {validateAlbumConfiguration} from './album-content.mjs';
 import {createDailyContent,validateDailyConfiguration} from './daily-content.mjs';
 import {validateGameConfiguration} from './game-settings.mjs';
@@ -44,11 +44,39 @@ export function validateWebContentRelease(release,{photos=managedPhotos,assetDir
 }
 
 /** A single call pins and validates one whole release. Health checks never select a daily. */
-export function readNodeManagedContent({directory=process.env.JIGSAW_CONTENT_DIR,appearanceDir=process.env.JIGSAW_DAILY_APPEARANCES_DIR,photos=managedPhotos,assetDir}={}){
- try{
-  const snapshot=validateWebContentRelease(readManagedRelease(directory),{photos,assetDir});if(!snapshot)return null;
+function withDailyRuntime(snapshot,{directory,appearanceDir,photos}){
+  if(!snapshot)return null;
   const dailyChoices=photos.filter(photo=>photo.status==='published'&&photo.dailyOnly===true),fallbackChoices=dailyChoices.length?dailyChoices:photos.filter(photo=>photo.status==='published');
   const dailyRuntime=createDailyContent({readConfiguration:()=>snapshot.documents.daily,appearanceDir:appearanceDir||resolve(directory,'daily-appearances'),photos,fallback:clock=>fallbackChoices[Math.floor((clock+8*3600000)/86400000)%fallbackChoices.length]});
-  return freezeContent({...snapshot,dailyRuntime});
- }catch(error){throw unavailable(error);}
+  // The verified snapshot is already deeply frozen. Only these per-operation
+  // methods are new; avoid walking every cached configuration object again.
+  return Object.freeze({...snapshot,dailyRuntime:Object.freeze(dailyRuntime)});
+}
+
+export function readNodeManagedContent({directory=process.env.JIGSAW_CONTENT_DIR,appearanceDir=process.env.JIGSAW_DAILY_APPEARANCES_DIR,photos=managedPhotos,assetDir}={}){
+ try{return withDailyRuntime(validateWebContentRelease(readManagedRelease(directory),{photos,assetDir}),{directory,appearanceDir,photos});}
+ catch(error){throw unavailable(error);}
+}
+
+/** Service-scoped cache for verified configuration, never daily appearance facts. */
+export function createNodeManagedContent({directory=process.env.JIGSAW_CONTENT_DIR,appearanceDir=process.env.JIGSAW_DAILY_APPEARANCES_DIR,photos=managedPhotos,assetDir}={}){
+ const byId=new Map(photos.map(photo=>[photo.id,photo]));
+ const reader=createManagedReleaseReader(directory,{
+  validate:release=>validateWebContentRelease(release,{photos,assetDir}),
+  watchPaths:release=>{
+   if(!assetDir)return [];
+   const root=resolve(assetDir),paths=[root];
+   for(const imageId of contentReleaseImageIds(release)){
+    const photo=byId.get(imageId);
+    for(const path of [photo?.src,photo?.thumbSrc,photo?.playSrc].filter(Boolean)){
+     const file=resolve(root,path.slice(1));paths.push(dirname(file));
+    }
+   }
+   return paths;
+  },
+ });
+ return {read(){
+  try{return withDailyRuntime(reader.read(),{directory,appearanceDir,photos});}
+  catch(error){throw unavailable(error);}
+ }};
 }

@@ -1,7 +1,8 @@
 import { isAbsolute, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
 import { SqliteD1 } from './sqlite.mjs';
 import { cleanupPublicRooms } from './public-room-cleanup.mjs';
-import { readNodeManagedContent } from './managed-content.node.mjs';
+import { createNodeManagedContent } from './managed-content.node.mjs';
 
 let database;
 const names = [
@@ -14,7 +15,10 @@ const names = [
 // Server-only allowlist: never export the process environment to a client module.
 export const env = Object.fromEntries(names.map(name => [name, process.env[name]]));
 // This function is evaluated once at each request entry; callers keep its immutable result.
-Object.defineProperty(env, 'PUZZLE_CONTENT_SNAPSHOT', { value: readNodeManagedContent });
+// The standalone service uses the app root as WorkingDirectory, as migrations do.
+// import.meta.url is unsuitable here because Vinext also bundles this module.
+const managedContent=createNodeManagedContent({assetDir:existsSync(resolve('dist/client/puzzles'))?resolve('dist/client'):resolve('public')});
+Object.defineProperty(env, 'PUZZLE_CONTENT_SNAPSHOT', { value: ()=>managedContent.read() });
 Object.defineProperty(env, 'PUZZLE_DB', { get() {
   if (!database) {
     const filename = process.env.DATABASE_PATH;
