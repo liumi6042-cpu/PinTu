@@ -36,7 +36,8 @@ async function positions(room:CursorRoom,now:number){
   for(const row of data.results){const member=members.get(row.player_id);if(member)cursors.push({playerId:member.id,name:member.name,color:member.color,badge:row.badge,cursorStyle:row.cursorStyle,managedCursor:managed.get(member.accountId||member.guestId||'')||null,x:row.x,y:row.y,updatedAt:now});}
   return json({cursors,serverTime:now});
 }
-export async function GET(request:Request,context:Context){try{const {room,now}=await authorize(request,context);return await positions(room,now);}catch(error){return failure(error);}}
+async function realtimeMetadata(response:Response,room:CursorRoom,member:Member){const states=await localDb().prepare('SELECT player_id AS playerId,client_id AS clientId,seq FROM puzzle_room_cursors WHERE room_id=?').bind(room.id).all<{playerId:string;clientId:string;seq:number}>();const present=new Set(room.members.filter(m=>m.lastSeen>0).map(m=>m.id));response.headers.set('X-Jigsaw-Cursor-Player',member.id);response.headers.set('X-Jigsaw-Cursor-World',JSON.stringify(worldFor(room.puzzle)));response.headers.set('X-Jigsaw-Cursor-Sequences',JSON.stringify(states.results.filter(state=>present.has(state.playerId))));return response;}
+export async function GET(request:Request,context:Context){try{const {room,member,now}=await authorize(request,context);return realtimeMetadata(await positions(room,now),room,member);}catch(error){return failure(error);}}
 export async function POST(request:Request,context:Context){try{
   const raw=await body(request),{room,member,now}=await authorize(request,context),database=localDb();
   const input=cursorInput(raw,worldFor(room.puzzle));if(!input)throw new RoomError('鼠标位置无效');
@@ -67,5 +68,5 @@ export async function POST(request:Request,context:Context){try{
       WHERE r.id=puzzle_room_cursors.room_id AND json_extract(m.value,'$.id')=puzzle_room_cursors.player_id
       AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0
       AND COALESCE(s.status,'active')='active' AND COALESCE(moderation.closed,0)=0)`).bind(now-60000));
-  await database.batch(commands);return await positions(room,now);
+  await database.batch(commands);return realtimeMetadata(await positions(room,now),room,member);
 }catch(error){return failure(error);}}

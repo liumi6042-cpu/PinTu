@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { inside, SERVER_RUNTIME_HELPERS, CONTENT_RUNTIME_FILES, runtimeAssets, selectRuntimeFiles } from './release-files.mjs';
 import { stageBuildSource, materializeRuntimeAssets } from './release-staging.mjs';
 import { withReleaseCleanup } from './release-cleanup.mjs';
+import { prepareNodeRealtime } from './build-room-realtime.mjs';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
 const release=process.argv.includes('--release');
@@ -45,8 +46,10 @@ const buildServer=async attempt=>{
   if(!existsSync(resolve(output,'server.js')))throw new Error('Standalone server output missing');
   copyTree(resolve(root,'drizzle'),resolve(output,'drizzle'));
   for(const name of [...SERVER_RUNTIME_HELPERS,...CONTENT_RUNTIME_FILES]){
+    if(name==='server/room-realtime.node.mjs')continue; // generated with its portable dependencies below
     copyFile(resolve(root,name),resolve(output,name));
   }
+  await prepareNodeRealtime(output);
   if(readFileSync(resolve(output,'dist/server/index.js'),'utf8').includes('cloudflare:workers'))throw new Error('Worker-only import remained in Node output');
   let target=output;
   if(release){

@@ -1,4 +1,5 @@
 import sharedClientBuild from '../app/shared-client-build.json';
+import {settings} from './site-settings';
 
 /** Presentation-only DTOs. The existing managed store remains the only wallet. */
 type Data=Record<string,any>;
@@ -9,7 +10,7 @@ export function sharedRequestAllowed(request:Request){
  if(source&&source!==origin||site==='cross-site')return false;
  return request.method==='GET'||request.method==='HEAD'||source===origin||site==='same-origin';
 }
-export function sharedConfig(origin:string){return {mobileMode:'web-managed-shared',identityMode:'web-cookie',wechatLoginConfigured:false,adRewardEnabled:false,rewardedAdUnitId:'',capabilities:SHARED_CAPABILITIES,compatUrls:SHARED_COMPAT_URLS,webLinks:SHARED_COMPAT_URLS,assetBase:origin,gameBase:origin+'/play',uiBase:sharedClientBuild.uiBase};}
+export function sharedConfig(origin:string){return {mobileMode:'web-managed-shared',identityMode:'web-cookie',wechatLoginConfigured:false,adRewardEnabled:false,rewardedAdUnitId:'',capabilities:SHARED_CAPABILITIES,compatUrls:SHARED_COMPAT_URLS,webLinks:SHARED_COMPAT_URLS,assetBase:origin,gameBase:origin+'/play',uiBase:sharedClientBuild.uiBase,...(settings().PUZZLE_REALTIME_ENABLED==='1'?{realtime:{version:1}}:{})};}
 export function sharedImage(photo:Data,origin:string){return {...photo,src:new URL(photo.src,origin).href,thumbSrc:new URL(photo.thumbSrc??photo.thumbnailSrc??photo.src,origin).href};}
 export function sharedProfile(view:Data,player:Data,account:Data|null,rooms:Data[],state:Data={}){
  const value=view.profile??{},decorations=view.decorations??[],equipped=decorations.find((d:Data)=>d.equipped)??null;

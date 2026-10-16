@@ -5,7 +5,7 @@ import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
 import artworkRegistry from '../content/artwork-revisions.json' with {type:'json'};
 
 export const hash = data => createHash('sha256').update(data).digest('hex');
-export const SERVER_RUNTIME_HELPERS=Object.freeze(['backup.mjs','migrate.mjs','public-room-cleanup.mjs','runtime.node.mjs','sqlite.mjs','content-release.mjs','managed-content.node.mjs','album-content.mjs','daily-content.mjs','game-settings.mjs','task-reward-settings.mjs'].map(name=>'server/'+name));
+export const SERVER_RUNTIME_HELPERS=Object.freeze(['backup.mjs','migrate.mjs','public-room-cleanup.mjs','runtime.node.mjs','sqlite.mjs','content-release.mjs','managed-content.node.mjs','album-content.mjs','daily-content.mjs','game-settings.mjs','task-reward-settings.mjs','room-realtime.node.mjs','room-realtime.LICENSE.txt'].map(name=>'server/'+name));
 export const CONTENT_RUNTIME_FILES=Object.freeze(['scripts/check-content-release.mjs','content/puzzle-catalog.json','content/puzzle-guidance.json','content/artwork-revisions.json','config/game-settings-defaults.json','config/task-reward-defaults.json','lib/decoration-policy.mjs']);
 // Tar must be the Windows bsdtar, addressed by absolute path. Git Bash puts GNU
 // tar ahead of the bundled bsdtar on PATH, and GNU tar reads the "D:" in a

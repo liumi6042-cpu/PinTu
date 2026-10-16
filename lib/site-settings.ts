@@ -7,6 +7,7 @@ export type SiteSettings = {
   PUZZLE_ADMIN_IDS?: string; PUZZLE_BETA_CAPACITY?: string;
   PUZZLE_FEEDBACK_ADMIN_URL?: string;
   PUZZLE_PRIVACY_REVIEWED?: string; PUZZLE_ASSETS_REVIEWED?: string;
+  PUZZLE_REALTIME_ENABLED?: string;
 };
 export function settings() { return env as unknown as SiteSettings; }
 export function publicSettings() {
