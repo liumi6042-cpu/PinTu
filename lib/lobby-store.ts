@@ -72,7 +72,10 @@ async function queryRoomCards(database:D1DatabaseSession,ownerId?:string,onlyOwn
  // separate 480px preview; neither original nor preview bytes enter this JSON.
  return result.results.filter(row=>RESTORABLE_PHOTOS.some(p=>p.id===row.imageId)||row.customImageData).map(row=>{
   const artwork=resolveRoomArtwork({puzzle:{imageId:row.imageId},artwork:row.artworkData?JSON.parse(row.artworkData):undefined,customImage:row.customImageData});
-  return {artwork,thumbSrc:artwork?.thumbSrc,...(row.customImageData?{customImage:JSON.parse(row.customImageData)}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:publicRoomTitle(row.title),imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt};
+  // Uploaded pictures have no catalogue entry, so their preview URL is built here.
+  const uploaded=row.customImageData?JSON.parse(row.customImageData):null;
+  const thumbSrc=artwork?.thumbSrc??(uploaded?'/api/user-images/'+uploaded.id+'?room='+row.id+'&preview=1':undefined);
+  return {artwork,thumbSrc,...(uploaded?{customImage:uploaded}:{}),customTitle:!!row.customTitle,acceptingNew:!!row.acceptingNew,lastPlayedAt:row.lastPlayedAt,id:row.id,title:publicRoomTitle(row.title),imageId:row.imageId,pieces:row.pieces,visibility:row.visibility,players:row.online,placed:row.placed,elapsed:row.startedAt===null?0:Math.floor(Math.max(0,(row.completedAt??now)-row.startedAt)/1000),started:row.startedAt!==null,startedAt:row.startedAt,completed:row.completedAt!==null,expiresAt:row.expiresAt};
  }) satisfies RoomCard[];
 }
 export async function managedRooms(ownerId:string){return roomCards(ownerId,true);}
