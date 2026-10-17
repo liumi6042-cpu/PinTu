@@ -2209,6 +2209,60 @@
         "width": 2144,
         "height": 2144
       }
+    ],
+    "cat-journey-magic-bookshop-v1": [
+      {
+        "revision": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+        "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-5685ebdbb45a.webp",
+        "thumbSrc": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-27cf37e7e4e9.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-cloud-roof-v1": [
+      {
+        "revision": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+        "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-35d95fa70aff.webp",
+        "thumbSrc": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-69392793b4cc.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-spirit-blackcat-v1": [
+      {
+        "revision": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+        "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-c930dbe45e3a.webp",
+        "thumbSrc": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-47de28bd4d2e.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-flower-shop-v1": [
+      {
+        "revision": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+        "src": "/puzzles/cat-journey-flower-shop-v1-optimized-68b036b3e867.webp",
+        "thumbSrc": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-paper-garden-v1": [
+      {
+        "revision": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
+        "src": "/puzzles/cat-journey-paper-garden-v1-optimized-3c3ed964fa94.webp",
+        "thumbSrc": "/puzzles/cat-journey-paper-garden-v1-thumbnail-ca50663c3f46.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-pixel-nightmarket-v1": [
+      {
+        "revision": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+        "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-493a0b82676b.webp",
+        "thumbSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
+        "width": 3840,
+        "height": 3840
+      }
     ]
   },
   "active": {
