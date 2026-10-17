@@ -1328,5 +1328,47 @@
     "complexity": 3,
     "preferredCount": 108,
     "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "cat-journey-magic-bookshop-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-cloud-roof-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-spirit-blackcat-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-flower-shop-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-paper-garden-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-pixel-nightmarket-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
   }
 }

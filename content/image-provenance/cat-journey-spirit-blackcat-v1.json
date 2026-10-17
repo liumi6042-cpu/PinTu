@@ -1,0 +1,99 @@
+{
+  "id": "cat-journey-spirit-blackcat-v1",
+  "origin": "project-ai-generated",
+  "width": 3840,
+  "height": 3840,
+  "sha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+  "nativeResolution": false,
+  "upscaled": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-17",
+    "generatedAt": "2026-10-17T09:06:48.645Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/cat-journey-spirit-blackcat-v1.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/cat-journey-spirit-blackcat-v1/native.png",
+      "sha256": "830b05f6254f5a16897b7c51548518c7275a4b6ead75e7c221cc10145fdba4b2",
+      "bytes": 3299237,
+      "width": 1254,
+      "height": 1254,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/cat-journey-spirit-blackcat-v1.png",
+    "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 3840×3840，已放大，放大尺寸不代表新增原生细节。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-17T09:41:10.614Z",
+    "notes": "黑色猫灵有金色眼睛、三条尾巴与青色云纹，山茶花、月光、灯笼和神社营造东方妖灵气氛。 原始生成1254×1254，本批仅放大导出3840×3840；不标记为原生4K或AI高清重绘。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+    "play": {
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-play-503776469d92.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "503776469d9249e1e5d847aeef2a5b9a2b26a6500f790668caacd14dd44566a6",
+      "bytes": 11236474,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-47de28bd4d2e.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "47de28bd4d2e5bbe50f6aa6591d293e5261bb1efa686a548f4c6591455ca27db",
+      "bytes": 46710,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "kernel": "lanczos3"
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-c930dbe45e3a.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "c930dbe45e3a52934fb97f6ddcdb0823b5029c322eaaaf7deb9d8e61b1eebb34",
+      "bytes": 866554,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}
