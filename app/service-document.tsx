@@ -38,7 +38,7 @@ const sections={
  ['共同游玩的约定','Playing together','请尊重其他玩家，不使用侮辱性昵称或房间名，不通过脚本持续抢块或大量请求干扰服务。管理员可以核实并暂停问题房间或账号，并记录处理原因。','Respect other players. Do not use abusive names, repeatedly seize pieces through scripts, or overload the service. Administrators may review and suspend problem rooms or accounts, with recorded reasons.'],
  ['服务可用性','Service availability','测试期间可能出现中断，房间按明确的保存规则保留，请勿将本机存档视为跨设备云存档。','Interruptions can occur during testing. Rooms follow the stated retention rules; browser saves are not cross-device cloud saves.'],
  ['图片和使用范围','Images and use','图库使用已登记来源与使用授权的图片：多数由本站生成，少部分由用户提供并授权公开。网页提供拼图游玩，不授予玩家转售图片、商标或其他素材权利。正式公开前仍需要经营者核实生成服务条款、素材来源和其他适用权利。','The gallery uses images with documented provenance and permission: most are generated for this project, and some are user-provided with permission to publish. Puzzle play does not grant resale rights to images, trademarks or other assets. Before public launch, the operator must still review generation-service terms, provenance and other applicable rights.'],
- ['后续收费','Future paid features','若开放会员，将在付款前展示价格、币种、权益、续费与取消方式以及适用退款说明。拼图帮助按每局免费次数开放，广告尚未接入。','If memberships launch, pricing, currency, benefits, renewal and cancellation methods, and applicable refund information will be shown before payment. Puzzle assistance is free within each game’s allowances; ads are not integrated.']
+ ['后续收费','Future paid features','如后续提供付费功能，将在付款前展示价格、币种、权益与退款说明。拼图帮助按每局免费次数开放，广告尚未接入。','If paid features launch, pricing, currency, benefits and refund information will be shown before payment. Puzzle assistance is free within each game’s allowances; ads are not integrated.']
  ]
 };
 export default function ServiceDocument({kind}:{kind:keyof typeof sections}){

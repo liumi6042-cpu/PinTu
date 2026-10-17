@@ -1,4 +1,5 @@
 import {currentPlayer,currentGuest,withPlayerCookie} from './player-identity';
+import {customPhoto} from '@/lib/custom-images';
 import {currentAccount} from './account-store';
 import {localDb} from './local-db';
 import {body,json,failure,readRoom} from './room-store';
@@ -24,7 +25,9 @@ import * as myRoomsRoute from '../app/api/my-rooms/route';
 type Data=Record<string,any>;
 const phrases=['大家好！','我来找边缘','这块放这里','稍等一下','一起加油！','我来拼边缘','我来拼中间','请稍等一下','这一块在这里','谢谢你！','拼得真棒！','我要离开了','👏','👍','😊','🧩'];
 const unsupported=(message='这项功能目前尚未接入网页版',url?:string)=>json({error:message,code:'WEB_FEATURE_UNAVAILABLE',...(url?{compatUrl:url}:{})},501);
-const compatibilityRoom=(room:Data)=>!!room.customImage||room.visibility==='solo'||(pieceBand(room.puzzle?.cols*room.puzzle?.rows)||0)>500;
+// Uploaded pictures are playable here now; only solo rooms and boards above 500
+// pieces still need the legacy client.
+const compatibilityRoom=(room:Data)=>room.visibility==='solo'||(pieceBand(room.puzzle?.cols*room.puzzle?.rows)||0)>500;
 const roomLink=(id:string)=>'/play?room='+id;
 async function playerState(owner:string){const row=await localDb().prepare('SELECT data FROM puzzle_managed_players WHERE owner=?').bind(owner).first<{data:string}>();return row?JSON.parse(row.data):{};}
 async function context(request:Request){
@@ -44,6 +47,7 @@ function forwarded(request:Request,path:string,input?:Data){const headers=new He
 async function responseData(response:Response){return await response.json() as Data;}
 function replaceResponse(response:Response,value:Data){const headers=new Headers(response.headers);headers.set('Content-Type','application/json');headers.set('Cache-Control','private, no-store');return new Response(JSON.stringify(value),{status:response.status,headers});}
 function roomPhoto(room:Data,origin:string){
+ if(room.customImage)return sharedImage(customPhoto(room.customImage,room.id) as Data,origin);
  let photos:readonly Data[]=RESTORABLE_PHOTOS;try{photos=readManagedContent()?.photos??photos;}catch{/* Existing public pictures stay readable during a release outage. */}
  const id=room.puzzle?.imageId,photo:Data|undefined=roomArtworkPhoto(room as any,photos as any)??roomArtworkPhoto(room as any,RESTORABLE_PHOTOS);if(!photo)return undefined;
  const dimensions=photoGuidance(id);return sharedImage({...photo,width:photo.width??dimensions?.width,height:photo.height??dimensions?.height},origin);

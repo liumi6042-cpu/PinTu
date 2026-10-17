@@ -79,7 +79,7 @@ function AccountForm({ onSuccess, initialError, solo }: {
   <section className="account-card">
    <p className="section-kicker">YOUR NEXT LITTLE ADVENTURE</p>
    <h1>{t(register ? '把名字留在这里。' : '欢迎来到这一片。')}</h1>
-   <p className="muted">{t(!PERSONAL_PLAY_VISIBLE ? '108、300 片可游客游玩；创建 500 片及以上房间需要登录，普通账号免费。' : solo ? '个人拼图需登录，普通账号即可免费游玩。' : register ? '注册普通账号即可免费独自拼图，公开大厅无需登录。' : '个人拼图需登录，公开大厅无需登录。会员可创建私人房间、上传自己的图片；订阅即将开放。')}</p>
+   <p className="muted">{t(!PERSONAL_PLAY_VISIBLE ? '108、300 片可游客游玩；创建 500 片及以上房间需要登录，普通账号免费。' : solo ? '个人拼图需登录，普通账号即可免费游玩。' : register ? '注册普通账号即可免费独自拼图，公开大厅无需登录。' : '个人拼图需登录，公开大厅无需登录。')}</p>
    <div className="account-tabs"><button aria-pressed={!register} onClick={() => { setRegister(false); setError(''); }} disabled={busy}>{t("登录")}</button><button aria-pressed={register} onClick={() => { setRegister(true); setError(''); }} disabled={busy}>{t("注册账号")}</button></div>
    <form key={register ? 'register' : 'login'} onSubmit={submit}>
     <label>{t("账号")}<Input value={username} onChange={e => { e.currentTarget.setCustomValidity(t('')); setUsername(e.target.value); }} onBlur={e => setUsername(e.target.value.trim())} onInvalid={e => e.currentTarget.setCustomValidity(t('账号需为 3–24 个字符，只能使用英文字母、数字或下划线'))} required minLength={3} maxLength={24} pattern="[a-zA-Z0-9_]{3,24}" aria-describedby={register ? 'account-username-help' : undefined} placeholder={t("例如 puzzle_2026")} autoComplete="username" disabled={busy}/>

@@ -72,7 +72,7 @@ const extras:Record<string,string>={
 
   '登录（可选）':'Sign in (optional)', '游客游玩':'Playing as a guest',
   '注册为可选操作，游客也可以直接游玩。':'Registration is optional. You can play as a guest.',
-  '公开拼图和个人游玩均无需登录。账号入口为后续会员服务保留，当前没有付费项目。':'Public and solo puzzles are free to play without signing in. Accounts are optional; paid membership is not available yet.',
+  '公开拼图和个人游玩均无需登录。账号仅用于保存进度与好友。':'Public and solo puzzles are free to play without signing in. Accounts are optional; paid membership is not available yet.',
   '此房间已经不存在':'This room no longer exists',
   '这个链接对应的房间已结束或已被清理。':'The room from this link has ended or has been removed.',
   '%s 秒后自动进入公开大厅':'Going to the public lobby in %s seconds',

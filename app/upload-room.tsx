@@ -1,6 +1,6 @@
 'use client';
 import {useRef,useState} from 'react';
-import {ImagePlus,Lock,Globe,Loader2} from 'lucide-react';
+import {ImagePlus,Loader2} from 'lucide-react';
 import CommunityShell from './community-shell';
 import {useLanguage} from './language-switch';
 import {apiJson,joinPuzzle} from '@/lib/community-client';
@@ -42,8 +42,7 @@ export default function UploadRoom(){
  const [prepared,setPrepared]=useState<{full:Prepared;thumb:Prepared}|null>(null);
  const [title,setTitle]=useState('');
  const [pieces,setPieces]=useState(108);
- const [isPrivate,setIsPrivate]=useState(true);
- const [rights,setRights]=useState(false);
+  const [rights,setRights]=useState(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [note,setNote]=useState('');
@@ -80,7 +79,7 @@ export default function UploadRoom(){
    const saved=await response.json() as {error?:string;image?:{id:string}};
    if(!response.ok||!saved.image)throw new Error(saved?.error||(zh?'上传失败':'Upload failed'));
    setNote(zh?'正在创建房间…':'Creating the room…');
-   const ticket=await apiJson<{room:{id:string}}>('/api/rooms',{imageId:saved.image.id,pieces,visibility:isPrivate?'private':'public'});
+   const ticket=await apiJson<{room:{id:string}}>('/api/rooms',{imageId:saved.image.id,pieces,visibility:'public'});
    saveTicket(ticket as never);
    window.location.assign('/room/'+ticket.room.id);
   }catch(e){setError(e instanceof Error?e.message:'创建失败');setNote('');}
@@ -110,12 +109,8 @@ export default function UploadRoom(){
     ))}</div>
    </div>
 
-   <div className="upload-field"><span>{zh?'谁能进来':'Who can join'}</span>
-    <div className="piece-choice">
-     <button type="button" className={isPrivate?'primary':'secondary'} onClick={()=>setIsPrivate(true)}><Lock size={16}/>{zh?'私人房间':'Private'}</button>
-     <button type="button" className={!isPrivate?'primary':'secondary'} onClick={()=>setIsPrivate(false)}><Globe size={16}/>{zh?'公开大厅':'Public'}</button>
-    </div>
-    <small>{isPrivate?(zh?'只有拿到房间链接的人可以加入。':'Only people with the room link can join.'):(zh?'会出现在公开大厅，任何人可以加入。':'It appears in the public lobby and anyone can join.')}</small>
+   <div className="upload-field"><span>{zh?'房间':'Room'}</span>
+    <small>{zh?'房间会出现在公开大厅，任何拿到链接的人都可以加入。私人房间请在手机客户端创建。':'The table appears in the public lobby; anyone with the link can join. Private rooms are created in the mobile app.'}</small>
    </div>
 
    <label className="upload-rights"><input type="checkbox" checked={rights} onChange={event=>setRights(event.target.checked)}/>

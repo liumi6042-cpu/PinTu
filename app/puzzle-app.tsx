@@ -26,9 +26,6 @@ import RoomChat from './room-chat';
 import AchievementBadge from './achievement-badge';
 import { Trophy } from 'lucide-react';
 import { useGameAchievements,AchievementToast,CompletionAchievements } from './game-achievements';
-import MemberRoomGate from './member-room-gate';
-import { MEMBERSHIP_REQUIRED } from '@/lib/membership-policy';
-import { useMembership } from '@/lib/use-membership';
 import {ReportProblem} from './feedback-widget';
 import HomeNavigation from './home-navigation';
 import {NEW_GAME_LEVELS as LEVELS,DEFAULT_PIECES,PIECE_PREFERENCE_KEY,preferredPieceCount,supportsPieceCount,PIECE_RESOLUTION_ERROR,gridForDimensions} from '@/lib/piece-policy';
@@ -63,7 +60,7 @@ export default function PuzzleApp(props: PuzzleAppProps) {
 function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initialQuery='',initialPieces,catalogPhotos,managedAlbums}: PuzzleAppProps) {
  const router=useRouter();
  const copy=useAddressCopy();
- const language=useLanguage(),membership=useMembership(entryMode==='create');
+ const language=useLanguage();
  const [roomName,setRoomName]=useState('');
  const [creating,setCreating]=useState(false),[entryError,setEntryError]=useState('');
  const [opening,setOpening]=useState<{photo:Photo;pieces:number}|null>(null);
@@ -111,25 +108,24 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
  const fittedState=useCallback((photo:Photo,pieces:number)=>{const level=LEVELS.find(l=>l.count===pieces),guidance=photoGuidance(photo.id);if(!level)throw new Error('请选择列表内的图片和片数');const grid=guidance?gridForDimensions(guidance.width,guidance.height,level.count):null;return grid?createFittedPuzzle(photo.id,grid.cols,grid.rows):createPuzzle(photo.id,level.cols,level.rows);},[]);
  const start=useCallback((chosen:Photo,pieces:number)=>{const previous=saved[saveKey(chosen.id,pieces)],state=previous&&placedCount(previous)<pieces?structuredClone(previous):fittedState(chosen,pieces);persist(state);setSession(state);},[saved,persist,fittedState]);
  const beginPuzzle=useCallback(async(chosen:Photo,pieces:number)=>{
-  if(entryMode==='create'&&(!membership.data?.summary.canCreate||membership.loading||membership.error))throw new Error(MEMBERSHIP_REQUIRED);
   if(launchLock.current)throw new Error('拼图正在打开，请稍候');
   if(!LEVELS.some(level=>level.count===pieces))throw new Error('请选择列表内的图片和片数');
   if(!supportsPieceCount(chosen.id,pieces))throw new Error(PIECE_RESOLUTION_ERROR);
-  launchLock.current=true;const roomVisibility=entryMode==='solo'?'solo':entryMode==='public'?'public':'private';setOpening({photo:chosen,pieces});setCreating(true);setEntryError('');
+  launchLock.current=true;// The web build only offers public tables; private rooms live in the mini program.
+  const roomVisibility=entryMode==='solo'?'solo':'public';setOpening({photo:chosen,pieces});setCreating(true);setEntryError('');
   preloadPuzzleImage(puzzleImageSource(chosen,pieces));
   try{if(guestPlay){start(chosen,pieces);setCreating(false);return;}const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:chosen.id,pieces,visibility:roomVisibility,...(entryMode!=='solo'?{title:roomName}: {})});if(!mounted.current)return;saveTicket(ticket);router.push('/room/'+ticket.room.id);}
   catch(error){if(!mounted.current)return;if(error instanceof Error&&error.message===PIECE_LOGIN_REQUIRED){window.location.assign(accountLoginUrl(publicPuzzleReturnTo(chosen.id,pieces)));return;}launchLock.current=false;setEntryError(error instanceof Error?error.message:'暂时无法开始');setCreating(false);throw error;}
- },[entryMode,guestPlay,start,saved,roomName,membership.data?.summary.canCreate,membership.loading,membership.error,router]);
+ },[entryMode,guestPlay,start,saved,roomName,router]);
  const leave=()=>{launchLock.current=false;setCreating(false);if(session){persist(session);setSaved(s=>({...s,[saveKey(session.imageId,session.cols*session.rows)]:structuredClone(session)}));}try{localStorage.removeItem(activeKey);}catch{}const url=new URL(window.location.href);url.searchParams.delete('resume');window.history.replaceState(null,'',url.pathname+url.search);setSession(null);};
  const stateRef=useRef({session,count});stateRef.current={session,count};
  useEffect(()=>registerPuzzleTools({read:()=>({screen:stateRef.current.session?'playing':gallery?'gallery':'collection',puzzles:library.map(({id,title})=>({id,title})),pieceCounts:LEVELS.map(l=>l.count),current:stateRef.current.session?{imageId:stateRef.current.session.imageId,pieces:stateRef.current.session.cols*stateRef.current.session.rows,placed:placedCount(stateRef.current.session),elapsed:stateRef.current.session.elapsed}:null}),start:async(imageId,pieces)=>{const p=library.find(p=>p.id===imageId);if(!p||!LEVELS.some(l=>l.count===pieces))throw new Error('请选择列表内的图片和片数');if(stateRef.current.session)throw new Error('请先从当前拼图返回选图页');await beginPuzzle(p,pieces);return{screen:guestPlay?'playing':'room',imageId,pieces};}}),[beginPuzzle,guestPlay,gallery,library]);
- if(entryMode==='create'&&(!membership.data?.summary.canCreate||membership.loading||membership.error))return <main className="collection collection-simple"><header className="site-header"><a href="/" className="collection-brand-link"><Brand/></a><HomeNavigation/></header>{membership.loading?<p className="muted">{copy('正在读取会员状态…')}</p>:<>{membership.error&&<p className="form-error" role="alert">{copy(membership.error)}<button onClick={membership.reload}>{copy('重试')}</button></p>}{membership.data?.summary.status==='active'&&!membership.data.summary.canCreate&&<p className="form-error">{copy('已有 3 个进行中的私人房间，请先完成其中一局')}</p>}<MemberRoomGate/></>}</main>;
  if(session)return <Game key={`${session.imageId}-${session.cols}-${session.seed}`} state={session} photo={RESTORABLE_PHOTOS.find(p=>p.id===session.imageId)!} persist={persist} leave={leave} saveError={saveError} restart={()=>{const state=restartPuzzle(session);persist(state);setSession(state);}}/>;
  if(creating&&opening&&!guestPlay)return <PuzzleOpening photo={opening.photo} pieces={opening.pieces}/>;
  const oldSaves=Object.values(saved).filter(s=>placedCount(s)<s.cols*s.rows);
  const launchPhoto=(chosen:Photo)=>{const album=lockedAlbum(chosen.id);if(album){window.location.assign((window.location.pathname.startsWith('/zh')?'/zh/albums':'/albums')+'?album='+encodeURIComponent(album.id));return;}void beginPuzzle(chosen,count).catch(error=>{setEntryError(error instanceof Error?error.message:'暂时无法开始');});};
  const randomChoices=photos.filter(photo=>!lockedAlbum(photo.id));
- const roomOptions=entryMode!=='solo'&&<p className="room-mode-note">{copy(entryMode==='public'?'免费公开房间 · 创建 500 片及以上房间需登录':'会员私人房间 · 仅通过邀请链接加入')}</p>;
+ const roomOptions=entryMode!=='solo'&&<p className="room-mode-note">{copy('免费公开房间 · 创建 500 片及以上房间需登录')}</p>;
  return <main className={'collection collection-simple'+(gallery?' gallery-collection':'')}>
   <header className="site-header"><a href="/" className="collection-brand-link"><Brand/></a><HomeNavigation galleryHref={guestPlay?'/gallery':'/gallery?mode='+entryMode}/></header>
   <section className="collection-intro"><p className="eyebrow">{gallery?'THE PICTURE LIBRARY':'A LITTLE SURPRISE'}</p><h1>{copy(entryMode==='public'?'创建公开房间':gallery?'把喜欢的画面，慢慢拼起来。':entryMode==='solo'?'下一幅，交给一点小运气。':'随机一幅画，准备一起拼。')}</h1><p className="muted">{copy(gallery?'所有画面都在这里，选好片数，点图开拼。':'从整个图库随机挑一张，点一下就开拼。')}</p>
