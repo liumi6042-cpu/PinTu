@@ -113,7 +113,7 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
   if(!supportsPieceCount(chosen.id,pieces))throw new Error(PIECE_RESOLUTION_ERROR);
   launchLock.current=true;// The web build only offers public tables; private rooms live in the mini program.
   const roomVisibility=entryMode==='solo'?'solo':'public';setOpening({photo:chosen,pieces});setCreating(true);setEntryError('');
-  preloadPuzzleImage(puzzleImageSource(chosen,pieces));
+  preloadPuzzleImage(puzzleImageSource(chosen));
   try{if(guestPlay){start(chosen,pieces);setCreating(false);return;}const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:chosen.id,pieces,visibility:roomVisibility,...(entryMode!=='solo'?{title:roomName}: {})});if(!mounted.current)return;saveTicket(ticket);router.push('/room/'+ticket.room.id);}
   catch(error){if(!mounted.current)return;if(error instanceof Error&&error.message===PIECE_LOGIN_REQUIRED){window.location.assign(accountLoginUrl(publicPuzzleReturnTo(chosen.id,pieces)));return;}launchLock.current=false;setEntryError(error instanceof Error?error.message:'暂时无法开始');setCreating(false);throw error;}
  },[entryMode,guestPlay,start,saved,roomName,router]);
@@ -190,7 +190,7 @@ export function Game({ state, photo, persist, leave, restart, saveError, collabo
     },[applyTableTheme]);
     const switchTableTheme=()=>{const next=tableThemeRef.current==='beige'?'dark':'beige';applyTableTheme(next);try{localStorage.setItem(TABLE_THEME_KEY,next);}catch{/* Keep the selection for this visit. */}};
     const getTable=useCallback(()=>table.current,[]);
-    const total = state.cols * state.rows, isMultiplayer = !!collaboration && collaboration.snapshot.visibility !== 'solo',imageSource=puzzleImageSource(photo,total);
+    const total = state.cols * state.rows, isMultiplayer = !!collaboration && collaboration.snapshot.visibility !== 'solo',imageSource=puzzleImageSource(photo);
     useEffect(() => { let canceled = false; let detach: (() => void) | undefined; const img = new window.Image(); setLoading(true); setImageError(false); img.onload = () => { if (canceled || !canvas.current)
         return; const engine = new PuzzleTable(canvas.current, state, img, () => { if (canceled)
         return; setMetrics({ placed: placedCount(state), elapsed: state.elapsed, zoom: table.current?.camera.z ?? 1 }); persist(state); }, setMessage); table.current = engine; engine.setTheme(tableThemeRef.current); if (collaboration)

@@ -53,7 +53,7 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
  useEffect(()=>{mounted.current=true;markLobbyVisited();return()=>{mounted.current=false;};},[]);
  async function launchRandom(){
   if(launchLock.current)return;launchLock.current=true;setRandomBusy(true);setLaunchError('');
-  const photo=randomPhoto(GALLERY_VISIBLE_PHOTOS);preloadPuzzleImage(puzzleImageSource(photo,recommendedPieces(photo.id)));
+  const photo=randomPhoto(GALLERY_VISIBLE_PHOTOS);preloadPuzzleImage(puzzleImageSource(photo));
   try{const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:photo.id,pieces:recommendedPieces(photo.id),visibility:'public'});if(!mounted.current)return;saveTicket(ticket);router.push('/room/'+ticket.room.id);}
   catch(e){if(mounted.current&&e instanceof Error&&e.message===PIECE_LOGIN_REQUIRED){window.location.assign(accountLoginUrl(publicPuzzleReturnTo(photo.id,recommendedPieces(photo.id))));return;}launchLock.current=false;if(mounted.current){setRandomBusy(false);setLaunchError(e instanceof Error?e.message:'暂时无法开始');}}
  }
@@ -93,7 +93,7 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
    const progress=Math.round(room.placed/room.pieces*100),full=room.players>=8;
    const elapsed=room.startedAt===null?0:Math.max(0,Math.floor((now+offset-room.startedAt)/1000));
    const joinLabel=copy(full?'已满员':room.acceptingNew===false?'老朋友继续':'加入拼图');
-   return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else if(catalogPhoto)preloadPuzzleImage(puzzleImageSource(catalogPhoto,room.pieces));}} aria-label={copy(title)+' · '+copy(full?'已满员':'点击图片，加入拼图')}>
+   return <article className="public-card" key={room.id}><a className="public-card-link" href={'/room/'+room.id} aria-disabled={full} onClick={event=>{if(full)event.preventDefault();else if(catalogPhoto)preloadPuzzleImage(puzzleImageSource(catalogPhoto));}} aria-label={copy(title)+' · '+copy(full?'已满员':'点击图片，加入拼图')}>
     <div className="public-picture">{room.customImage?<img src={'/api/user-images/'+room.customImage.id+'?room='+room.id+'&preview=1'} alt={copy(title)} loading={index<3?'eager':'lazy'}/>:photo?<img src={photo.thumbSrc} alt={copy(title)} loading={index<3?'eager':'lazy'}/>:<span className="public-picture-upload" aria-hidden="true"><ImagePlus size={30}/></span>}<span className="picture-count">{room.pieces.toLocaleString()} {copy('片')}</span><span className={'live-chip'+(room.players?' is-active':'')}><i/>{copy(full?'已满员':room.acceptingNew===false?'暂停接待新玩家':room.players?'正在拼图':'等你开拼')}</span><div className="public-picture-stats"><span aria-label={copy('拼图计时')}><Clock3 size={16}/><time>{clockLabel(elapsed)}</time></span><span aria-label={copy('在线人数')}><Users size={16}/><strong>{room.players}/8</strong></span></div></div>
     <div className="public-card-body"><div className="public-title"><h2>{catalogPhoto&&!room.customTitle?copy(catalogPhoto.title):room.title}</h2><ArrowUpRight size={19}/></div><div className="public-card-bottom"><span>{copy(category)} · {progress}% {copy('已完成')}</span><span className="public-join-label">{uploadOnly?copy('玩家上传'):joinLabel}</span></div><div className="room-progress" aria-hidden="true"><span style={{width:progress+'%'}}/></div></div>
    </a></article>;

@@ -12,5 +12,5 @@ export function roomImagePreload(
   if (room.visibility !== 'public' || room.expiresAt <= now || room.customImage) return null;
   const photo=photos.find(photo => photo.id === room.puzzle.imageId);
   if(photo){const artwork=resolveRoomArtwork(room);if(artwork)return artwork.src;}
-  return photo?puzzleImageSource(photo,room.puzzle.cols*room.puzzle.rows):null;
+  return photo?puzzleImageSource(photo):null;
 }

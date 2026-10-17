@@ -139,25 +139,21 @@ export async function checkImageLibrary(root){
       if(kind==='standard'&&(item.lossless!==true||!losslessWebp(data)||item.downsampled!==true||size.width>1774||size.height>1774||size.width>record.width||size.height>record.height))throw new Error(`小片数图片交付记录无效：${photo.id}`);
       files.add(item.src.slice('/puzzles/'.length));
     }
-    // One uniform delivery rule since 2026-10-17 (no separate lossless play file):
-    //   optimized  Q70, longest side 2560  — rooms with 300+ pieces
-    //   compact    Q60, longest side 1600  — rooms under 300 pieces
-    //   thumbnail  Q82, 384 box
-    for(const [kind,field] of [['optimized','optimizedSrc'],...(photo.optimizedStandardSrc?[['compact','optimizedStandardSrc']]:[])]){
-      const item=record.delivery[kind],compact=kind==='compact';
-      const expectedQuality=compact?60:70,cap=compact?1600:2560;
-      if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||item.quality!==expectedQuality)throw new Error(`压缩交付记录无效：${photo.id}`);
+    // Two deliverable files per picture since 2026-10-17 (no separate play file,
+    // no smaller variant): optimized Q70 / longest side 2560, plus a 384 thumbnail.
+    for(const [kind,field] of [['optimized','optimizedSrc']]){
+      const item=record.delivery[kind];
+      if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||item.quality!==70)throw new Error(`压缩交付记录无效：${photo.id}`);
       if(item.sourceSha256!==record.sha256||item.inputSha256!==record.sha256)throw new Error(`压缩交付原件关联无效：${photo.id}`);
       if(item.encoding?.library!=='sharp'||typeof item.encoding.version!=='string'||!item.encoding.version||item.encoding.effort!==6||item.encoding.smartSubsample!==true)throw new Error(`压缩交付编码记录无效：${photo.id}`);
       const data=await readFile(join(root,'public',item.src.slice(1)));
       if(createHash('sha256').update(data).digest('hex')!==item.sha256||data.length!==item.bytes)throw new Error(`压缩交付哈希或字节不一致：${photo.id}`);
-      if(data.length>(compact?700*1024:2*1024*1024))throw new Error(`压缩交付超过体积预算：${photo.id}`);
+      if(data.length>2*1024*1024)throw new Error(`压缩交付超过体积预算：${photo.id}`);
       const size=lossyWebpSize(data);
       if(!size)throw new Error(`压缩交付必须是静态 VP8 有损 WebP：${photo.id}`);
       if(size.width!==item.width||size.height!==item.height)throw new Error(`压缩交付记录尺寸不一致：${photo.id}`);
-      if(Math.max(size.width,size.height)!==Math.min(cap,Math.max(record.width,record.height)))throw new Error(`压缩交付长边必须为 ${cap} 或原生尺寸：${photo.id}`);
+      if(Math.max(size.width,size.height)!==Math.min(2560,Math.max(record.width,record.height)))throw new Error(`压缩交付长边必须为 2560 或原生尺寸：${photo.id}`);
       if(size.width>record.width||size.height>record.height)throw new Error(`压缩交付不得放大：${photo.id}`);
-      if(compact&&(item.downsampled!==true||item.maximumPieces!==300||size.width>1600||size.height>1600))throw new Error(`压缩小图交付记录无效：${photo.id}`);
       files.add(item.src.slice('/puzzles/'.length));
     }
   }

@@ -2,7 +2,7 @@ import registry from '../content/artwork-revisions.json' with {type:'json'};
 
 /** Image identity stays in puzzle.imageId; this is the immutable drawing used by one room. */
 export type RoomArtwork={revision:string;src:string;thumbSrc:string;width:number;height:number};
-type Photo={id:string;src:string;thumbSrc?:string;optimizedSrc?:string;optimizedStandardSrc?:string;standardSrc?:string;[key:string]:unknown};
+type Photo={id:string;src:string;thumbSrc?:string;optimizedSrc?:string;[key:string]:unknown};
 type ArtworkRoom={puzzle:{imageId:string;cols?:number;rows?:number};artwork?:RoomArtwork;customImage?:unknown};
 const versions=registry.versions as Record<string,RoomArtwork[]>;
 const legacy=registry.legacy as Record<string,RoomArtwork>;
@@ -43,9 +43,8 @@ export function supportsArtworkSnapshot(headers:Pick<Headers,'get'>){return head
 export function currentRoomArtwork(photo:Photo,pieces:number,legacyOnly=false):RoomArtwork{
  if(legacyOnly&&legacy[photo.id])return copy(legacy[photo.id]);
  const upgraded=activeRoomArtwork(photo.id);if(upgraded)return upgraded;
- // Boards under 300 pieces use the compact build (Q60/1600); larger boards use
- // the full build (Q70/2560). Both carry the same content hash in the file name.
- const src=pieces<=300?photo.optimizedStandardSrc??photo.optimizedSrc??photo.standardSrc??photo.src:photo.optimizedSrc??photo.src;
+ // One delivery file serves every board size since 2026-10-17: Q70/2560.
+ const src=photo.optimizedSrc??photo.src;
  const found=versions[photo.id]?.find(item=>item.src===src&&item.thumbSrc===photo.thumbSrc);
  if(found)return copy(found);
  // A picture uploaded after this bundle was built has no compiled revision row.
@@ -79,11 +78,11 @@ export function roomArtworkPhoto<T extends Photo>(room:ArtworkRoom,photos:readon
  const photo=photos.find(item=>item.id===room.puzzle.imageId);if(!photo)return undefined;
  const artwork=resolveRoomArtwork(room,photos);if(!artwork)return photo;
  // Keep downstream image selectors from overriding the room snapshot with today's catalog URLs.
- return {...photo,...artwork,optimizedSrc:artwork.src,optimizedStandardSrc:artwork.src,standardSrc:artwork.src,playSrc:artwork.src};
+ return {...photo,...artwork,optimizedSrc:artwork.src,playSrc:artwork.src};
 }
 
 /** Presentation overlay only: the original catalog and provenance remain unchanged. */
 export function activeArtworkPhoto<T extends Photo>(photo:T):T{
  const artwork=activeRoomArtwork(photo.id);if(!artwork)return photo;
- return {...photo,...artwork,optimizedSrc:artwork.src,optimizedStandardSrc:artwork.src,standardSrc:artwork.src,playSrc:artwork.src};
+ return {...photo,...artwork,optimizedSrc:artwork.src,playSrc:artwork.src};
 }
