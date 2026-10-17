@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
-    "play": {
-      "src": "/puzzles/cloud-dragon-ascension-v1-play-f014dbe20562.webp",
-      "width": 1672,
-      "height": 941,
-      "sha256": "f014dbe20562251041f1357c3097232ab164b390c02c8774126152a2bada8952",
-      "bytes": 2397486,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cloud-dragon-ascension-v1-thumbnail-c1652068653c.webp",
-      "width": 480,
-      "height": 270,
-      "sha256": "c1652068653cd121eb46293518ba4d03afff70e7baed61090adf19de7db11953",
-      "bytes": 49472,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cloud-dragon-ascension-v1-optimized-68a47ee2076e.webp",
+      "src": "/puzzles/cloud-dragon-ascension-v1-optimized-a04f6e3e9043.webp",
+      "sha256": "a04f6e3e9043b5041e960b83d67b38ef021f6b96633edc4244e936fbb3fd12d6",
+      "bytes": 294134,
       "width": 1672,
       "height": 941,
-      "sha256": "68a47ee2076ee2760b6cb516d6e2d0b2d09dae1cbd3b991d39caff9d5df7fd01",
-      "bytes": 463664,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
       "inputSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cloud-dragon-ascension-v1-compact-a78447accd29.webp",
+      "sha256": "a78447accd295eb75751575a0dcd046aa7b0bf64458518a31ee9b8b825cbc382",
+      "bytes": 244858,
+      "width": 1600,
+      "height": 900,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "inputSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cloud-dragon-ascension-v1-thumbnail-5a681ad1f67b.webp",
+      "sha256": "5a681ad1f67b6edf5aa971949c37783fd86c17bca54df48838f6cda0c2906f61",
+      "bytes": 32130,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "inputSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

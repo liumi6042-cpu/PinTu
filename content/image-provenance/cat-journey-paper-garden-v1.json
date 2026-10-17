@@ -39,53 +39,17 @@
   },
   "delivery": {
     "sourceSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
-    "play": {
-      "src": "/puzzles/cat-journey-paper-garden-v1-play-1437c4f50c04.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "1437c4f50c0452103cb3842900048cc51588953845ffa24fbe43b2b88abd68c2",
-      "bytes": 12207828,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
-      "inputSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-journey-paper-garden-v1-thumbnail-ca50663c3f46.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "ca50663c3f460aeaf9cbdce25bf848d4ed1003a68cae5d20b95007fff9690eb1",
-      "bytes": 60058,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
-      "inputSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "kernel": "lanczos3"
-      }
-    },
     "optimized": {
-      "src": "/puzzles/cat-journey-paper-garden-v1-optimized-3c3ed964fa94.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "3c3ed964fa9456380ea6e8171ca096bef29b10531c849886486cf7c522d4d9aa",
-      "bytes": 1029100,
+      "src": "/puzzles/cat-journey-paper-garden-v1-optimized-532ef39f44d9.webp",
+      "sha256": "532ef39f44d9ee4d9aae84338298ce983554ee860916038825813f9a12e9e1cc",
+      "bytes": 653988,
+      "width": 2560,
+      "height": 2560,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
       "inputSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
       "encoding": {
@@ -93,6 +57,47 @@
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-journey-paper-garden-v1-compact-86896fca5bda.webp",
+      "sha256": "86896fca5bdaac3a63c7f1210efdfed942dc2deb8cd885514a8035727e5c7959",
+      "bytes": 350584,
+      "width": 1600,
+      "height": 1600,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
+      "inputSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-paper-garden-v1-thumbnail-ca50663c3f46.webp",
+      "sha256": "ca50663c3f460aeaf9cbdce25bf848d4ed1003a68cae5d20b95007fff9690eb1",
+      "bytes": 60058,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
+      "inputSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

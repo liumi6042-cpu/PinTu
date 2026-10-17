@@ -96,80 +96,66 @@
   },
   "delivery": {
     "sourceSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
-    "play": {
-      "src": "/puzzles/mountain-lake-reflection-hd-v3-play-563c2612aa6c.webp",
-      "width": 3144,
-      "height": 1572,
-      "sha256": "563c2612aa6ce7c514f559170479395c719971a2333d752394f63de576a4da2c",
-      "bytes": 6621592,
+    "optimized": {
+      "src": "/puzzles/mountain-lake-reflection-hd-v3-optimized-01e57ad26cff.webp",
+      "sha256": "01e57ad26cff39a6f25a3cab3796356b397db3b19a6f11ab7877861379703cc4",
+      "bytes": 532856,
+      "width": 2560,
+      "height": 1280,
       "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "standard": {
-      "src": "/puzzles/mountain-lake-reflection-hd-v3-standard-e247f09e7668.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "e247f09e76684d893e34eb3bcf21e044e62c1fc74347be1c689c62b0eac38af2",
-      "bytes": 2188664,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
+      "lossless": false,
+      "quality": 70,
       "upscaled": false,
       "downsampled": true,
-      "maximumPieces": 1000
-    },
-    "thumbnail": {
-      "src": "/puzzles/mountain-lake-reflection-hd-v3-thumbnail-0a408ca8a9e2.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "0a408ca8a9e2b40f023a94d3ee33cbbbcbede4bbe13786f574c613b7280020e0",
-      "bytes": 30638,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
-    "optimized": {
-      "src": "/puzzles/mountain-lake-reflection-hd-v3-optimized-eacf05631c58.webp",
-      "width": 3144,
-      "height": 1572,
-      "sha256": "eacf05631c58af740883d7b0651373138810a6e74a8a5f05d97bb8986da3b991",
-      "bytes": 1322638,
-      "format": "webp",
-      "lossless": false,
-      "quality": 88,
-      "upscaled": false,
       "sourceSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
       "inputSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
       }
     },
     "compact": {
-      "src": "/puzzles/mountain-lake-reflection-hd-v3-compact-1eda9430a072.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "1eda9430a0726291dee869112e6605dc4ecc54dad7d6c93d0e59a6c49f84186a",
-      "bytes": 429654,
+      "src": "/puzzles/mountain-lake-reflection-hd-v3-compact-50e3a16a4ece.webp",
+      "sha256": "50e3a16a4ecea43120fd98a33171559558fef6afc030e370727649e9edbafaa0",
+      "bytes": 211456,
+      "width": 1600,
+      "height": 800,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 60,
       "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
       "sourceSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
-      "inputSha256": "e247f09e76684d893e34eb3bcf21e044e62c1fc74347be1c689c62b0eac38af2",
+      "inputSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
-      },
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/mountain-lake-reflection-hd-v3-thumbnail-739ba58adad5.webp",
+      "sha256": "739ba58adad543a8a0d432e1fec056043c9a4b7fb0f119c79f14c37dbb9c6112",
+      "bytes": 20170,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
       "downsampled": true,
-      "maximumPieces": 1000
+      "sourceSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
+      "inputSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
     }
   }
 }

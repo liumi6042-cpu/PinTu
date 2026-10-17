@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
-    "play": {
-      "src": "/puzzles/clockwork-invention-fair-v1-play-b7d23cd7783c.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "b7d23cd7783ca171edc78416863dc1783c894bdda195104cc197f6ec85b66973",
-      "bytes": 2767430,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/clockwork-invention-fair-v1-thumbnail-3e43d961f470.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "3e43d961f470ceafbbcf13820433332de3bf62126f53545161223e3013a0d6d2",
-      "bytes": 68616,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/clockwork-invention-fair-v1-optimized-12628dca7fe3.webp",
+      "src": "/puzzles/clockwork-invention-fair-v1-optimized-389b4364ba17.webp",
+      "sha256": "389b4364ba170712e50980f59a1c46bc40f42f5f471c55cc037e624fe6fc7ddf",
+      "bytes": 457172,
       "width": 1254,
       "height": 1254,
-      "sha256": "12628dca7fe3c58724b9348e237f1f6c9f30cdc3c96a900d80bd5ca0b31ef160",
-      "bytes": 642080,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
       "inputSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/clockwork-invention-fair-v1-compact-6e41340cdfb7.webp",
+      "sha256": "6e41340cdfb7f39c262a177b642e3d33a5f67dfef264434b3a701a420f32cdf3",
+      "bytes": 412638,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "inputSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/clockwork-invention-fair-v1-thumbnail-23282833aa98.webp",
+      "sha256": "23282833aa98c66aaf7033039cce5b1aadf087cc78a48164149c744955dcd7bd",
+      "bytes": 68252,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "inputSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

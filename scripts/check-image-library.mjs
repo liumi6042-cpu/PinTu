@@ -125,7 +125,9 @@ export async function checkImageLibrary(root){
       }
     }
     if(record.delivery?.sourceSha256!==record.sha256)throw new Error(`衍生图片缺少原件关联：${photo.id}`);
-    for(const [kind,field] of [['play','playSrc'],['thumbnail','thumbSrc'],...(photo.standardSrc?[['standard','standardSrc']]:[])]){
+    // Since 2026-10-17 the playable build and the gallery build share one file:
+    // playSrc === optimizedSrc. Only validate play when it is a separate file.
+    for(const [kind,field] of [...(photo.playSrc&&photo.playSrc!==photo.optimizedSrc?[['play','playSrc']]:[]),['thumbnail','thumbSrc'],...(photo.standardSrc?[['standard','standardSrc']]:[])]){
       const item=record.delivery[kind];
       if(!item||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.upscaled!==false)throw new Error(`衍生图片记录无效：${photo.id}`);
       const data=await readFile(join(root,'public',item.src.slice(1)));
@@ -137,27 +139,36 @@ export async function checkImageLibrary(root){
       if(kind==='standard'&&(item.lossless!==true||!losslessWebp(data)||item.downsampled!==true||size.width>1774||size.height>1774||size.width>record.width||size.height>record.height))throw new Error(`小片数图片交付记录无效：${photo.id}`);
       files.add(item.src.slice('/puzzles/'.length));
     }
-    if(!photo.standardSrc&&(photo.optimizedStandardSrc||record.delivery.compact))throw new Error(`压缩小图缺少标准图来源：${photo.id}`);
-    for(const [kind,field] of [['optimized','optimizedSrc'],...(photo.standardSrc?[['compact','optimizedStandardSrc']]:[])]){
-      const item=record.delivery[kind],compact=kind==='compact',source=compact?record.delivery.standard:record;
-      const legacyQuality=compact?84:fullHdOptimizedIds.has(photo.id)?88:84;
-      if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||![70,legacyQuality].includes(item.quality))throw new Error(`压缩交付记录无效：${photo.id}`);
-      if(item.sourceSha256!==record.sha256||item.inputSha256!==source.sha256)throw new Error(`压缩交付原件关联无效：${photo.id}`);
-      if(item.encoding?.library!=='sharp'||typeof item.encoding.version!=='string'||!item.encoding.version||item.encoding.effort!==(item.quality===70?6:5)||item.encoding.smartSubsample!==true)throw new Error(`压缩交付编码记录无效：${photo.id}`);
+    // One uniform delivery rule since 2026-10-17 (no separate lossless play file):
+    //   optimized  Q70, longest side 2560  — rooms with 300+ pieces
+    //   compact    Q60, longest side 1600  — rooms under 300 pieces
+    //   thumbnail  Q82, 384 box
+    for(const [kind,field] of [['optimized','optimizedSrc'],...(photo.optimizedStandardSrc?[['compact','optimizedStandardSrc']]:[])]){
+      const item=record.delivery[kind],compact=kind==='compact';
+      const expectedQuality=compact?60:70,cap=compact?1600:2560;
+      if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||item.quality!==expectedQuality)throw new Error(`压缩交付记录无效：${photo.id}`);
+      if(item.sourceSha256!==record.sha256||item.inputSha256!==record.sha256)throw new Error(`压缩交付原件关联无效：${photo.id}`);
+      if(item.encoding?.library!=='sharp'||typeof item.encoding.version!=='string'||!item.encoding.version||item.encoding.effort!==6||item.encoding.smartSubsample!==true)throw new Error(`压缩交付编码记录无效：${photo.id}`);
       const data=await readFile(join(root,'public',item.src.slice(1)));
       if(createHash('sha256').update(data).digest('hex')!==item.sha256||data.length!==item.bytes)throw new Error(`压缩交付哈希或字节不一致：${photo.id}`);
       if(data.length>(compact?700*1024:2*1024*1024))throw new Error(`压缩交付超过体积预算：${photo.id}`);
       const size=lossyWebpSize(data);
       if(!size)throw new Error(`压缩交付必须是静态 VP8 有损 WebP：${photo.id}`);
-      if(size.width!==item.width||size.height!==item.height||size.width!==source.width||size.height!==source.height)throw new Error(`压缩交付不得改变来源像素尺寸：${photo.id}`);
-      if(compact&&(item.downsampled!==true||item.maximumPieces!==1000||size.width>1774||size.height>1774))throw new Error(`压缩小图交付记录无效：${photo.id}`);
+      if(size.width!==item.width||size.height!==item.height)throw new Error(`压缩交付记录尺寸不一致：${photo.id}`);
+      if(Math.max(size.width,size.height)!==Math.min(cap,Math.max(record.width,record.height)))throw new Error(`压缩交付长边必须为 ${cap} 或原生尺寸：${photo.id}`);
+      if(size.width>record.width||size.height>record.height)throw new Error(`压缩交付不得放大：${photo.id}`);
+      if(compact&&(item.downsampled!==true||item.maximumPieces!==300||size.width>1600||size.height>1600))throw new Error(`压缩小图交付记录无效：${photo.id}`);
       files.add(item.src.slice('/puzzles/'.length));
     }
   }
   const artworkOverlay=await checkArtworkRevisions(root);
   for(const file of artworkOverlay.files)files.add(file);
   const served=await readdir(join(root,'public/puzzles'));
-  for(const file of served)if(!files.has(file))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
+  // Files from earlier deliveries stay on disk so rooms created before a
+  // re-encode keep resolving; they are listed explicitly instead of guessed.
+  let legacyFiles=new Set();
+  try{legacyFiles=new Set(JSON.parse(await readFile(join(root,'content/legacy-artwork-files.json'),'utf8')).files);}catch{}
+  for(const file of served)if(!files.has(file)&&!legacyFiles.has(file))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
   return {published:published.length,artworkOverlay:{activeImages:artworkOverlay.activeImages,files:artworkOverlay.overlayFiles}};
 }
 

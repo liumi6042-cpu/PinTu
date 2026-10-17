@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
-    "play": {
-      "src": "/puzzles/golden-amber-study-05-play-126940c8a987.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "126940c8a987d051108f01016ea51755368b6fb87f0019c13ca7b48d6daf6ad1",
-      "bytes": 2452474,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/golden-amber-study-05-thumbnail-1f93f481f000.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "1f93f481f000f6aeb0e4424d7021bfe08dcbf12a192b8adba7011102d01f4ff3",
-      "bytes": 69958,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/golden-amber-study-05-optimized-0c7ebaf3f6ca.webp",
+      "src": "/puzzles/golden-amber-study-05-optimized-45ddce866d63.webp",
+      "sha256": "45ddce866d63243b69642a1913813ddffa2f9e0252d525fa1357a11033059e99",
+      "bytes": 344766,
       "width": 1448,
       "height": 1086,
-      "sha256": "0c7ebaf3f6ca45a25a1f1ce6b8e9262cee4e9375833548ecabde3b87f3933b7c",
-      "bytes": 512856,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
       "inputSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/golden-amber-study-05-compact-8bba30eed5d5.webp",
+      "sha256": "8bba30eed5d56c6b9fd534fbfad6d1e7467c4bde026b7f136c8a4a6f8ee590c3",
+      "bytes": 307720,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "inputSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/golden-amber-study-05-thumbnail-30a54fc9a028.webp",
+      "sha256": "30a54fc9a028c1ed1cf08eed1cd87560e089d80025e8d5fd5efbad8ab2e46615",
+      "bytes": 45946,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "inputSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

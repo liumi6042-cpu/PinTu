@@ -37,45 +37,65 @@
   },
   "delivery": {
     "sourceSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
-    "play": {
-      "src": "/puzzles/floating-house-play-0edf56ad945b.webp",
-      "width": 1402,
-      "height": 1122,
-      "sha256": "0edf56ad945b2144abfb3b7311902c29a8aa29aec0a5338143d17f758877caa4",
-      "bytes": 1308188,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/floating-house-thumbnail-08f4d3d888e4.webp",
-      "width": 480,
-      "height": 384,
-      "sha256": "08f4d3d888e405d76d1b87fd7a46cc5395414a0af6830b21d5061f13aeb67d4d",
-      "bytes": 9256,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/floating-house-optimized-abf5047c9f31.webp",
+      "src": "/puzzles/floating-house-optimized-3e168ecf9b9a.webp",
+      "sha256": "3e168ecf9b9a841a1973f359792f3b7b5567f2a63feed14be7993e17c634376d",
+      "bytes": 29060,
       "width": 1402,
       "height": 1122,
-      "sha256": "abf5047c9f31c2b60007c00a86071c9a587970c7cc3a5b697c7b2a3e5e25fad8",
-      "bytes": 51458,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
       "inputSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/floating-house-compact-cde852f51f85.webp",
+      "sha256": "cde852f51f85da65303f9c967af791c019ce3b2eb8724bc26d182a3f8c722552",
+      "bytes": 25532,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
+      "inputSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/floating-house-thumbnail-ab94bc577d80.webp",
+      "sha256": "ab94bc577d80df876896d7c9926c86300dab2b6b59b7badef2207931d21683a5",
+      "bytes": 6920,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
+      "inputSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

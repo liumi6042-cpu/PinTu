@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
-    "play": {
-      "src": "/puzzles/lantern-dance-v1-play-c03bf21e4ec3.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "c03bf21e4ec32c6445ea77f15a3a41b5b4c49af030465e280b923767467c3283",
-      "bytes": 2724164,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/lantern-dance-v1-thumbnail-61c1318e61e9.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "61c1318e61e9d49ccdefd90ec35f3e4a16aabdc47e7851cec403ac132c11cf4b",
-      "bytes": 71224,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/lantern-dance-v1-optimized-6ed8fdce9304.webp",
+      "src": "/puzzles/lantern-dance-v1-optimized-48e2a942f340.webp",
+      "sha256": "48e2a942f340fdd2937b52ced00d88ed2ce9b9039a8bdeb0d85b9d20e89acb5f",
+      "bytes": 386462,
       "width": 1254,
       "height": 1254,
-      "sha256": "6ed8fdce9304b547b4f022c6789bacfc3eda1a5016f40b88806ae62389897688",
-      "bytes": 555180,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
       "inputSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/lantern-dance-v1-compact-6c3b262b3946.webp",
+      "sha256": "6c3b262b39464e5b7f0905d5efa992551f4ba5ba5a58927705725cdd9562fbcd",
+      "bytes": 347516,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+      "inputSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/lantern-dance-v1-thumbnail-6027fbb514d5.webp",
+      "sha256": "6027fbb514d50c9993dadf2daecdc9d0ef83267057a28da7f493352f5037e554",
+      "bytes": 71416,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+      "inputSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
-    "play": {
-      "src": "/puzzles/olive-tone-study-03-play-352aecdbc17e.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "352aecdbc17e33995e73fbbf8e0e4c69311ef54f4cc3131571e9d069e8068b7f",
-      "bytes": 2744680,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/olive-tone-study-03-thumbnail-e1a53c85943a.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "e1a53c85943a0088d737bd9bdde456061190929e16284ed30d2be30da603734f",
-      "bytes": 81268,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/olive-tone-study-03-optimized-1ec96ac902a4.webp",
+      "src": "/puzzles/olive-tone-study-03-optimized-46788f7210c5.webp",
+      "sha256": "46788f7210c5242f82770e028a73d799da658b62b66d64971f65ea099bbf7b99",
+      "bytes": 405648,
       "width": 1448,
       "height": 1086,
-      "sha256": "1ec96ac902a43f40f9e8deff78d32cc458bb32ad36997fc29689f815b15be448",
-      "bytes": 594118,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
       "inputSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/olive-tone-study-03-compact-08383490c193.webp",
+      "sha256": "08383490c1935f56fbbba060ab60a849aad9b37da1b630438e688d8ec74d5021",
+      "bytes": 359814,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "inputSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/olive-tone-study-03-thumbnail-188b7fbee683.webp",
+      "sha256": "188b7fbee6833c355093d849e4563f80ad39453fecb94d4ce58f913d2faaf9cb",
+      "bytes": 52994,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "inputSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

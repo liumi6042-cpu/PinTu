@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
-    "play": {
-      "src": "/puzzles/cel-rainy-bridge-v1-play-b7cd143f16b3.webp",
-      "width": 1536,
-      "height": 1024,
-      "sha256": "b7cd143f16b37c805b73dcaf877e172971c8a3853c534a75196253e7b3d539a6",
-      "bytes": 2328190,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cel-rainy-bridge-v1-thumbnail-904e80d0c382.webp",
-      "width": 480,
-      "height": 320,
-      "sha256": "904e80d0c382eaad2df60100fff9055d33938231c6fb460c0042383719ffd094",
-      "bytes": 58616,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cel-rainy-bridge-v1-optimized-e52cdef9093e.webp",
+      "src": "/puzzles/cel-rainy-bridge-v1-optimized-b15c65a98498.webp",
+      "sha256": "b15c65a98498f24786e7dac70e277804abc3b4173e63ddf20c3494c4202e2819",
+      "bytes": 293866,
       "width": 1536,
       "height": 1024,
-      "sha256": "e52cdef9093e2983d2fdcce26c075f7d0e44e45bb583fafde4e0ddf9e61b7e87",
-      "bytes": 448064,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
       "inputSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cel-rainy-bridge-v1-compact-8363f94397db.webp",
+      "sha256": "8363f94397dbd79b19f6efdc3e2ec9abcd2529a90eb165e1db9302d99c79f8d1",
+      "bytes": 263420,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+      "inputSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rainy-bridge-v1-thumbnail-e5910d829a89.webp",
+      "sha256": "e5910d829a89a82ee91b9a6b7a32560d3d93559aa37da7dba07b54b8c2d77cbe",
+      "bytes": 37704,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+      "inputSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

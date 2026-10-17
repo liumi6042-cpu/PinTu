@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
-    "play": {
-      "src": "/puzzles/starlit-lakeside-camp-v1-play-d533badcb6ce.webp",
-      "width": 1672,
-      "height": 941,
-      "sha256": "d533badcb6ce4f394d0518c7c753b893b9e9fdd8efd9fd33d62d2ac4d9ad14d6",
-      "bytes": 2515792,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/starlit-lakeside-camp-v1-thumbnail-47398ef7ac00.webp",
-      "width": 480,
-      "height": 270,
-      "sha256": "47398ef7ac002da5659579920548d87400d0fef8b85a3257e2699b29cff10f08",
-      "bytes": 52028,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/starlit-lakeside-camp-v1-optimized-9cfedc5a5edb.webp",
+      "src": "/puzzles/starlit-lakeside-camp-v1-optimized-10a1018bcd9a.webp",
+      "sha256": "10a1018bcd9aa4f19de22a952f92374a5c356594a36fb01f35f98be1b402cf38",
+      "bytes": 329084,
       "width": 1672,
       "height": 941,
-      "sha256": "9cfedc5a5edba0b0d50ac69cb7a0d9e5f77e304bd293c70b3739c3fe918ff690",
-      "bytes": 492638,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
       "inputSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/starlit-lakeside-camp-v1-compact-a5fb966dea9f.webp",
+      "sha256": "a5fb966dea9fa99df3abe80d3b45aeaa8fc6f43b7930df88a8e78c4177bab4b7",
+      "bytes": 273244,
+      "width": 1600,
+      "height": 900,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "inputSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/starlit-lakeside-camp-v1-thumbnail-5a54e8e14c2e.webp",
+      "sha256": "5a54e8e14c2ef91caab557809f4213e13c93721730faf8be23faefae6f097958",
+      "bytes": 33038,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "inputSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

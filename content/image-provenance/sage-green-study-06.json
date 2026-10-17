@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
-    "play": {
-      "src": "/puzzles/sage-green-study-06-play-917fd2de6235.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "917fd2de62355470d90836d297fe5ff89c4404025e46d8269c63c55ee704403b",
-      "bytes": 2535708,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/sage-green-study-06-thumbnail-e6594778920f.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "e6594778920f53de068c068b5b7f0535f2e7dcc7644584c7484b098e2c8afb8a",
-      "bytes": 70266,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/sage-green-study-06-optimized-97b7bc29ce88.webp",
+      "src": "/puzzles/sage-green-study-06-optimized-afca9f64c5f5.webp",
+      "sha256": "afca9f64c5f5bb75fe63e5b560ede9dcd62687698ed8619d2a40226a76555a06",
+      "bytes": 338648,
       "width": 1448,
       "height": 1086,
-      "sha256": "97b7bc29ce8874a1c2d4a0f3c558eafa956d39a4b2da0fde1d678383c7b98fd4",
-      "bytes": 505806,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
       "inputSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/sage-green-study-06-compact-363410837001.webp",
+      "sha256": "363410837001a7c55f981966dcadda8630b4f725e2b1fd5c70a0f93936e04d34",
+      "bytes": 302250,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "inputSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/sage-green-study-06-thumbnail-456e206b2137.webp",
+      "sha256": "456e206b213727b7997a56a187bd30d8635eda644a4193cfee71982bcaeb5b73",
+      "bytes": 46630,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "inputSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

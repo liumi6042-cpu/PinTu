@@ -49,45 +49,65 @@
   },
   "delivery": {
     "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
-    "play": {
-      "src": "/puzzles/star-observatory-play-adaaa23caa19.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "adaaa23caa195c318480d16a5c80af0a08332b9abfe9343c1e590aee558cc1ba",
-      "bytes": 2658516,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/star-observatory-thumbnail-2e6e5cb3ac62.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "2e6e5cb3ac62c1666ad8613b800ea51de6723da741795b767ed2bcc5134dafe1",
-      "bytes": 67128,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/star-observatory-optimized-d1237d3774db.webp",
+      "src": "/puzzles/star-observatory-optimized-1ad5867ee57a.webp",
+      "sha256": "1ad5867ee57a93d8fd9f548dc4893f2ead0f58f98b42cdf1267f05d5ac869c44",
+      "bytes": 376654,
       "width": 1448,
       "height": 1086,
-      "sha256": "d1237d3774db25b361da186e6d56152def04bcbf7605ed6b1beb4037aaeb4b71",
-      "bytes": 562188,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
       "inputSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/star-observatory-compact-900930041d75.webp",
+      "sha256": "900930041d75b32d0c598cf21ce4dec59105fc68e7284814ddbaa8f0bd9d4343",
+      "bytes": 335544,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "inputSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/star-observatory-thumbnail-c88c0cd51559.webp",
+      "sha256": "c88c0cd51559000f32a6cdb0e0421b99eb7e0f78e484d068932ecc1c42818780",
+      "bytes": 43482,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "inputSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

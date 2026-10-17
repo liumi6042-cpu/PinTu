@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
-    "play": {
-      "src": "/puzzles/daily-sky-whale-islands-v1-play-6b70189968e4.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "6b70189968e4ed682596ae67a2ef284cf334ceb35965fefc192a36b10f08bfab",
-      "bytes": 2003600,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/daily-sky-whale-islands-v1-thumbnail-3ae6da19d07e.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "3ae6da19d07e99c6d7182fc568e7bdf3769e5c4feb4665b8cd7611c8a81b3a96",
-      "bytes": 44116,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/daily-sky-whale-islands-v1-optimized-9294728dd8dc.webp",
+      "src": "/puzzles/daily-sky-whale-islands-v1-optimized-f8beef49057c.webp",
+      "sha256": "f8beef49057c472d89ad272d5bf61f5072e9e62c4359736aa44891f8a5c44b2e",
+      "bytes": 175632,
       "width": 1254,
       "height": 1254,
-      "sha256": "9294728dd8dc623162c16db6b2370c193896e403e67b9b6da6548ae27406e7b5",
-      "bytes": 280238,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
       "inputSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/daily-sky-whale-islands-v1-compact-bac0c051f13a.webp",
+      "sha256": "bac0c051f13a3f092d1c74ac68e08038a1054ce0a3f881d0357aebf33f540c29",
+      "bytes": 154578,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "inputSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/daily-sky-whale-islands-v1-thumbnail-242bdb766a70.webp",
+      "sha256": "242bdb766a702eddb9fff973f17efb4bc66057a6f0d2c84eb65c5057b3261694",
+      "bytes": 40614,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "inputSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

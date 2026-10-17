@@ -39,53 +39,17 @@
   },
   "delivery": {
     "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
-    "play": {
-      "src": "/puzzles/cat-journey-magic-bookshop-v1-play-779eb2ddb4f4.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "779eb2ddb4f40a0b8cb9c7ba706c56adb3ca425a12fcde2a6bf41fa8c7f2b3be",
-      "bytes": 12158702,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
-      "inputSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-27cf37e7e4e9.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "27cf37e7e4e96cc0ff1e5c6004ab1122b66a594de7652b91756099b21f5c0e40",
-      "bytes": 55558,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
-      "inputSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "kernel": "lanczos3"
-      }
-    },
     "optimized": {
-      "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-5685ebdbb45a.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "5685ebdbb45a0a65f9b26687cec64007adb2b018e734319a5639c84d69ada77c",
-      "bytes": 1065664,
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-24e847b8f149.webp",
+      "sha256": "24e847b8f14904c6eb7567af7ee0f1d3e29186f7c05e26ce2bc75e24189d410e",
+      "bytes": 672420,
+      "width": 2560,
+      "height": 2560,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
       "inputSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
       "encoding": {
@@ -93,6 +57,47 @@
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-compact-d3679f7bd0ea.webp",
+      "sha256": "d3679f7bd0ea1ff344c072b41ac8678dda3322f003ab3e29bece265f165f0f04",
+      "bytes": 359510,
+      "width": 1600,
+      "height": 1600,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "inputSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-27cf37e7e4e9.webp",
+      "sha256": "27cf37e7e4e96cc0ff1e5c6004ab1122b66a594de7652b91756099b21f5c0e40",
+      "bytes": 55558,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "inputSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

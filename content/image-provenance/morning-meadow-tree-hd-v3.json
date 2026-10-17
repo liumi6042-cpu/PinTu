@@ -96,80 +96,66 @@
   },
   "delivery": {
     "sourceSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
-    "play": {
-      "src": "/puzzles/morning-meadow-tree-hd-v3-play-28ce2feb8f83.webp",
-      "width": 3147,
-      "height": 1574,
-      "sha256": "28ce2feb8f832d1bc0a242720abc2ca56544c02c82569412f38e20a0fdb8ac12",
-      "bytes": 7889968,
+    "optimized": {
+      "src": "/puzzles/morning-meadow-tree-hd-v3-optimized-8e5afd7efc6a.webp",
+      "sha256": "8e5afd7efc6af2d5a98a1966dfe3bbaa82aeae3cb114b7eab0fe59819054c3af",
+      "bytes": 766766,
+      "width": 2560,
+      "height": 1280,
       "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "standard": {
-      "src": "/puzzles/morning-meadow-tree-hd-v3-standard-877e1bb7d17b.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "877e1bb7d17b787feaac432c6f9b44c6c0ed5ec635390ba195eb43a9274d5691",
-      "bytes": 2706794,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
+      "lossless": false,
+      "quality": 70,
       "upscaled": false,
       "downsampled": true,
-      "maximumPieces": 1000
-    },
-    "thumbnail": {
-      "src": "/puzzles/morning-meadow-tree-hd-v3-thumbnail-ef4e7a2db071.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "ef4e7a2db071ed208ccb4af1a536b4906402d9d4b51e7d14415528a5178222f3",
-      "bytes": 43936,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
-    "optimized": {
-      "src": "/puzzles/morning-meadow-tree-hd-v3-optimized-eeb2598a912d.webp",
-      "width": 3147,
-      "height": 1574,
-      "sha256": "eeb2598a912d5ca0aab38e35e91e37d1107f37ce991fc2043f699cfc75202908",
-      "bytes": 1804256,
-      "format": "webp",
-      "lossless": false,
-      "quality": 88,
-      "upscaled": false,
       "sourceSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
       "inputSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
       }
     },
     "compact": {
-      "src": "/puzzles/morning-meadow-tree-hd-v3-compact-acae83af8769.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "acae83af8769404a1b6d434e5395238be8747cdb42e85c6653bb13212d8692b3",
-      "bytes": 618380,
+      "src": "/puzzles/morning-meadow-tree-hd-v3-compact-929ebcc0afd3.webp",
+      "sha256": "929ebcc0afd36ddd6aa035fdcbf487965b7264615d6c4b9a9c7f42c407867c3e",
+      "bytes": 324662,
+      "width": 1600,
+      "height": 800,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 60,
       "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
       "sourceSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
-      "inputSha256": "877e1bb7d17b787feaac432c6f9b44c6c0ed5ec635390ba195eb43a9274d5691",
+      "inputSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
-      },
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/morning-meadow-tree-hd-v3-thumbnail-7e038f2e3f41.webp",
+      "sha256": "7e038f2e3f4140f774bef8cf3a8b87e1156601f666ed44c8677c966e9d6429d7",
+      "bytes": 29048,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
       "downsampled": true,
-      "maximumPieces": 1000
+      "sourceSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
+      "inputSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
     }
   }
 }

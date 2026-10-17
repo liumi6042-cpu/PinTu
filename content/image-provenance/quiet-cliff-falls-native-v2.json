@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
-    "play": {
-      "src": "/puzzles/quiet-cliff-falls-native-v2-play-c3adb310954c.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "c3adb310954c97f69a5dec4db33a73ef30745f0dce513763268ceaedcad0a5a3",
-      "bytes": 2371284,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/quiet-cliff-falls-native-v2-thumbnail-626d33828104.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "626d3382810429c55ac8fab919f20f8617ba04cb5137ff38f9aae4ced3a2165f",
-      "bytes": 42696,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/quiet-cliff-falls-native-v2-optimized-a8b12b63d281.webp",
+      "src": "/puzzles/quiet-cliff-falls-native-v2-optimized-169033f8db32.webp",
+      "sha256": "169033f8db3200e1ab86e84919b77e4042e9b413dee62dc7b7523e7b608fb065",
+      "bytes": 298470,
       "width": 1774,
       "height": 887,
-      "sha256": "a8b12b63d281402388e983e00dd6a25105a1c5d48b1588b96a9b6ef1271b5487",
-      "bytes": 462802,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
       "inputSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/quiet-cliff-falls-native-v2-compact-96df196465af.webp",
+      "sha256": "96df196465afab6a146a8af218e0da71cad3f89567eae7038781fda3df8eb9e4",
+      "bytes": 227874,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+      "inputSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/quiet-cliff-falls-native-v2-thumbnail-fa108a7aba44.webp",
+      "sha256": "fa108a7aba44e966ee8cea3e5525a0646473968dc3e851ed8c99c055473ed55f",
+      "bytes": 27788,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+      "inputSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

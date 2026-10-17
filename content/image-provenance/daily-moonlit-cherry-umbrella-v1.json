@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
-    "play": {
-      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-play-a5682fe203b6.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "a5682fe203b630e5ca42116cb7d52b8c27e8302d62461dcafa18d16ef5302260",
-      "bytes": 2249402,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-thumbnail-336cece91850.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "336cece9185085fd17e632115cb394177e61a787767583b952f1961cb16d48ae",
-      "bytes": 55750,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-optimized-e433b1b96d84.webp",
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-optimized-023c8ccf1b4e.webp",
+      "sha256": "023c8ccf1b4e64bbd814ca2fb899dc86ba16c5b5f42454e33493240f9a96567e",
+      "bytes": 254038,
       "width": 1254,
       "height": 1254,
-      "sha256": "e433b1b96d8421edc6cafa7270ff54634a3002d3e0c52bcf837ee3c13648e40d",
-      "bytes": 392374,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
       "inputSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-compact-3fbc45f37b66.webp",
+      "sha256": "3fbc45f37b667358bb21b59f41eb2e85db310e8d6b64012c3722390254039fb7",
+      "bytes": 228198,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "inputSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-thumbnail-4b752e9521cf.webp",
+      "sha256": "4b752e9521cf1284cb7aae99d665fd2c808536642bdae3b77053553c4092070e",
+      "bytes": 52762,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "inputSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

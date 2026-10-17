@@ -49,45 +49,65 @@
   },
   "delivery": {
     "sourceSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
-    "play": {
-      "src": "/puzzles/garden-table-play-00852b035590.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "00852b03559020eec7af688336e7496d67249a7c24b8095a6545d78bd892340b",
-      "bytes": 2631456,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/garden-table-thumbnail-86ce914461f9.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "86ce914461f966dfca6ea2b0c067fc0ccc184d4c9909f44c1ec1dc1384a86a30",
-      "bytes": 71434,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/garden-table-optimized-5de140c6180d.webp",
+      "src": "/puzzles/garden-table-optimized-dd63a88862b8.webp",
+      "sha256": "dd63a88862b83a7ebc8126d6882152ff6e6c1e433cb3c4418bd5948162d5bb37",
+      "bytes": 345406,
       "width": 1448,
       "height": 1086,
-      "sha256": "5de140c6180d8da686a977cbb0af1d876aea8a1e5e5944ff9bc0f3ef465f96de",
-      "bytes": 532272,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
       "inputSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/garden-table-compact-4ec53cd84156.webp",
+      "sha256": "4ec53cd84156efd33934ff535a58fcc83055e83a5f8e3986ddae12298025ba6a",
+      "bytes": 307398,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
+      "inputSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/garden-table-thumbnail-57cb142849ab.webp",
+      "sha256": "57cb142849ab844f5b87e1d0709c284e878aafbd7c5a07872046aca1ea6803b0",
+      "bytes": 48020,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
+      "inputSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -37,45 +37,65 @@
   },
   "delivery": {
     "sourceSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
-    "play": {
-      "src": "/puzzles/whale-moon-play-1637afcdf018.webp",
-      "width": 1402,
-      "height": 1122,
-      "sha256": "1637afcdf018749bea7ccce21d5b595031e172ead52cf002a60a500d6ce74845",
-      "bytes": 1692920,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/whale-moon-thumbnail-462b3eb77a54.webp",
-      "width": 480,
-      "height": 384,
-      "sha256": "462b3eb77a540bd4ef9d93a455d108d7c835c47278c918cb82053a4f7be8632e",
-      "bytes": 21382,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/whale-moon-optimized-e6b46c5a0771.webp",
+      "src": "/puzzles/whale-moon-optimized-0dd5e3138141.webp",
+      "sha256": "0dd5e3138141f9b24ba918aa0b00f5759abf966852ac77915f31f966132a2de1",
+      "bytes": 86780,
       "width": 1402,
       "height": 1122,
-      "sha256": "e6b46c5a0771cc4d2f90e51f6f7d3c605c5bcdf100e6959cc3ab2cbef9fdd448",
-      "bytes": 158696,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
       "inputSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/whale-moon-compact-7de5ab9bf68b.webp",
+      "sha256": "7de5ab9bf68be5ec81842e430456c0d4a0e6f17c2126fd3f05e2fa77f8ecd830",
+      "bytes": 74828,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+      "inputSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/whale-moon-thumbnail-0085ada2b7f3.webp",
+      "sha256": "0085ada2b7f34f0fa193fe112efd323777f17ca8f8a789890069a0b0cea1531e",
+      "bytes": 15192,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+      "inputSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

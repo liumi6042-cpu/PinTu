@@ -34,45 +34,65 @@
   },
   "delivery": {
     "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
-    "play": {
-      "src": "/puzzles/skate-garden-play-884a5d26624c.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "884a5d26624c8db4079eccd2f3a093fb75ae9ad16edec6c8e9aeb20c423805b8",
-      "bytes": 2577748,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/skate-garden-thumbnail-a0176a1a6279.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "a0176a1a62799e3b463b18978a126d1d414bb48be9642bdfb847cbcf05491f87",
-      "bytes": 70648,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/skate-garden-optimized-5969ded60f60.webp",
+      "src": "/puzzles/skate-garden-optimized-a72e2ca39c92.webp",
+      "sha256": "a72e2ca39c92fead97e930d3a36cf97c0ceac734ad736836624662485cf418ab",
+      "bytes": 330354,
       "width": 1448,
       "height": 1086,
-      "sha256": "5969ded60f60806f35f62f3553fe72cc89fbd1fd2db2c454bddab4a1d49e67c9",
-      "bytes": 503520,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
       "inputSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/skate-garden-compact-3de0d0c910f3.webp",
+      "sha256": "3de0d0c910f320af0a85be41fb4c7c77aacbf7fddee3d716f68957dd21b562ee",
+      "bytes": 294368,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "inputSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/skate-garden-thumbnail-7238c772e1c3.webp",
+      "sha256": "7238c772e1c34e240c7e79564833fb67dd7ff51de252e98a04268a2acb4cae42",
+      "bytes": 46408,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "inputSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

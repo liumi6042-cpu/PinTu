@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
-    "play": {
-      "src": "/puzzles/tropical-harbor-carnival-v1-play-bbe22bccad8b.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "bbe22bccad8b04e49a0de40fbb5b594e677e3ad8ad2141bfaf2819918fb2b654",
-      "bytes": 3030514,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/tropical-harbor-carnival-v1-thumbnail-1f7675d1f866.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "1f7675d1f866de402b5fc4435eeb0b30ab0a84438420997f41e97c274132e809",
-      "bytes": 82300,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/tropical-harbor-carnival-v1-optimized-031294a0d198.webp",
+      "src": "/puzzles/tropical-harbor-carnival-v1-optimized-672238b50c0a.webp",
+      "sha256": "672238b50c0a7005964e0c4375978fcf4abe8b96e9ee2d8cb10c2caa915b967c",
+      "bytes": 515168,
       "width": 1254,
       "height": 1254,
-      "sha256": "031294a0d198d34ef1d373d21c078bd14613cd785b477f02702e8f742a718369",
-      "bytes": 709060,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
       "inputSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/tropical-harbor-carnival-v1-compact-9be95d82d64a.webp",
+      "sha256": "9be95d82d64af9efe5169c52bcca28ce2a79025c6dafe9560eb9259984993f3c",
+      "bytes": 463586,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+      "inputSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/tropical-harbor-carnival-v1-thumbnail-ad5f64749761.webp",
+      "sha256": "ad5f64749761117c4bc44782a57e781db0a3183474162863221f17c775c7546b",
+      "bytes": 82320,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+      "inputSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

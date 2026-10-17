@@ -43,7 +43,9 @@ export function supportsArtworkSnapshot(headers:Pick<Headers,'get'>){return head
 export function currentRoomArtwork(photo:Photo,pieces:number,legacyOnly=false):RoomArtwork{
  if(legacyOnly&&legacy[photo.id])return copy(legacy[photo.id]);
  const upgraded=activeRoomArtwork(photo.id);if(upgraded)return upgraded;
- const src=pieces<=1000?photo.optimizedStandardSrc??photo.optimizedSrc??photo.standardSrc??photo.src:photo.optimizedSrc??photo.src;
+ // Boards under 300 pieces use the compact build (Q60/1600); larger boards use
+ // the full build (Q70/2560). Both carry the same content hash in the file name.
+ const src=pieces<=300?photo.optimizedStandardSrc??photo.optimizedSrc??photo.standardSrc??photo.src:photo.optimizedSrc??photo.src;
  const found=versions[photo.id]?.find(item=>item.src===src&&item.thumbSrc===photo.thumbSrc);
  if(found)return copy(found);
  // A picture uploaded after this bundle was built has no compiled revision row.

@@ -39,53 +39,17 @@
   },
   "delivery": {
     "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
-    "play": {
-      "src": "/puzzles/cat-journey-spirit-blackcat-v1-play-503776469d92.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "503776469d9249e1e5d847aeef2a5b9a2b26a6500f790668caacd14dd44566a6",
-      "bytes": 11236474,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
-      "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-47de28bd4d2e.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "47de28bd4d2e5bbe50f6aa6591d293e5261bb1efa686a548f4c6591455ca27db",
-      "bytes": 46710,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
-      "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "kernel": "lanczos3"
-      }
-    },
     "optimized": {
-      "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-c930dbe45e3a.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "c930dbe45e3a52934fb97f6ddcdb0823b5029c322eaaaf7deb9d8e61b1eebb34",
-      "bytes": 866554,
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-0c2c8134ace2.webp",
+      "sha256": "0c2c8134ace2790f4ea2e67c79e20c46dc252c4eb1f0615c7d57a8d781efe07f",
+      "bytes": 553788,
+      "width": 2560,
+      "height": 2560,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
       "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
       "encoding": {
@@ -93,6 +57,47 @@
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-compact-589476d84fd5.webp",
+      "sha256": "589476d84fd52aead8c5726c4c6e6f6e9317e7c8cc541492341f383f821f97f8",
+      "bytes": 292768,
+      "width": 1600,
+      "height": 1600,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-47de28bd4d2e.webp",
+      "sha256": "47de28bd4d2e5bbe50f6aa6591d293e5261bb1efa686a548f4c6591455ca27db",
+      "bytes": 46710,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "inputSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

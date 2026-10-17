@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
-    "play": {
-      "src": "/puzzles/grass-green-study-07-play-32dcb9f5340b.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "32dcb9f5340bf62b1c57a6ec1c18d09da236f4ffaea784791c6c2eef1f2b7a1b",
-      "bytes": 2763054,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/grass-green-study-07-thumbnail-3c75966233a1.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "3c75966233a145e40a80f931150903e7c303dbf71ff8841b83f01bac9679675f",
-      "bytes": 81312,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/grass-green-study-07-optimized-e8371ce33774.webp",
+      "src": "/puzzles/grass-green-study-07-optimized-db0313475060.webp",
+      "sha256": "db0313475060a3baf9d1e421907ad1a92f88a07f7c5fc6deff2e7323f6b492b4",
+      "bytes": 404996,
       "width": 1448,
       "height": 1086,
-      "sha256": "e8371ce337747521d606dc24c3874c8030510710bbff67fbe15fe9167b921a93",
-      "bytes": 588408,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
       "inputSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/grass-green-study-07-compact-b874ee93ebae.webp",
+      "sha256": "b874ee93ebae8d827698323dbcf76ede58a4c3f095d7b0e2a8a0b707349410b1",
+      "bytes": 359970,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "inputSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/grass-green-study-07-thumbnail-b73be271e6c9.webp",
+      "sha256": "b73be271e6c944837173c6ed97f2b7bc705bed9ac809c62f38a3ed5394865aaa",
+      "bytes": 52784,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "inputSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

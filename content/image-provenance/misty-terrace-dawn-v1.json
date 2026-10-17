@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
-    "play": {
-      "src": "/puzzles/misty-terrace-dawn-v1-play-6bbfb6259f39.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "6bbfb6259f39b12e9fb2d448d875969e16f914a2de4b11de1e531395989143ba",
-      "bytes": 2554168,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/misty-terrace-dawn-v1-thumbnail-aa8021d7efd6.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "aa8021d7efd605dab5680c0e96d85cf27092fa3c23d1f53d8e74f7b551f17961",
-      "bytes": 68576,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/misty-terrace-dawn-v1-optimized-3d89cc60dcdf.webp",
+      "src": "/puzzles/misty-terrace-dawn-v1-optimized-41b543fc03aa.webp",
+      "sha256": "41b543fc03aad6bea3cbdf0d9e9cb2cc592fc1d10a48bd21616b3d1ac76c2dd5",
+      "bytes": 340118,
       "width": 1448,
       "height": 1086,
-      "sha256": "3d89cc60dcdf099fff3e935e651c2bb666d50d8d58c121b37f94a35594268221",
-      "bytes": 505938,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
       "inputSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/misty-terrace-dawn-v1-compact-6158ffffb308.webp",
+      "sha256": "6158ffffb308cd2b336cacecc0f02bbf471e34f97a975639d8757019d4eaefd6",
+      "bytes": 304460,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
+      "inputSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/misty-terrace-dawn-v1-thumbnail-5058eb62c99a.webp",
+      "sha256": "5058eb62c99af3b6cfc746603f09881a0113c15e3f127dd9eff82ff4eb4a9d51",
+      "bytes": 45110,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
+      "inputSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

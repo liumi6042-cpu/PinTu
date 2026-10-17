@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
-    "play": {
-      "src": "/puzzles/whale-sunken-city-v1-play-1c1264e5adb9.webp",
-      "width": 1672,
-      "height": 941,
-      "sha256": "1c1264e5adb95a74e264cb5cbc71f68ba20e19e8959704be1beb74af5b589a38",
-      "bytes": 2721706,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/whale-sunken-city-v1-thumbnail-57dd00cd1926.webp",
-      "width": 480,
-      "height": 270,
-      "sha256": "57dd00cd1926c238de4ae0faa995536a58c2c59548ecd76344d89a4f9f9a3d5d",
-      "bytes": 59310,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/whale-sunken-city-v1-optimized-3fcebda4055a.webp",
+      "src": "/puzzles/whale-sunken-city-v1-optimized-6ca410acb6c7.webp",
+      "sha256": "6ca410acb6c79d01e2da45460f7b5f391b1ad80d457403714d7fe2eef9366430",
+      "bytes": 381336,
       "width": 1672,
       "height": 941,
-      "sha256": "3fcebda4055ae3899fe4bd83bb3d37843af07a4942b7e919ed73a3804d7eac82",
-      "bytes": 557006,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
       "inputSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/whale-sunken-city-v1-compact-ff61e6d8d7a1.webp",
+      "sha256": "ff61e6d8d7a1be85eba615c773e3bec1d4fdbb8e7a523517f175fd48206a8ee0",
+      "bytes": 319010,
+      "width": 1600,
+      "height": 900,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "inputSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/whale-sunken-city-v1-thumbnail-4882c8b74705.webp",
+      "sha256": "4882c8b747058e6c8375473611b361f64f9eb7e160be60aecf0263303316ee3a",
+      "bytes": 38314,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "inputSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

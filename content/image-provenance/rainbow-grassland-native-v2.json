@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
-    "play": {
-      "src": "/puzzles/rainbow-grassland-native-v2-play-42b28fe777db.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "42b28fe777dbdc9dbd1abadd10ca87a91d394361f3dc9e0ec237269921d7b293",
-      "bytes": 2100994,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/rainbow-grassland-native-v2-thumbnail-9f178bdf851f.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "9f178bdf851ff8bbaaaef436c384f7e63bfa8b21ab2ac5f8f530e2ae023603f7",
-      "bytes": 28230,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/rainbow-grassland-native-v2-optimized-b25355e426da.webp",
+      "src": "/puzzles/rainbow-grassland-native-v2-optimized-4151d109b7e6.webp",
+      "sha256": "4151d109b7e68decff06f652b4f86bf91114eb28c0591eeb1d306f22a4f8936e",
+      "bytes": 208954,
       "width": 1774,
       "height": 887,
-      "sha256": "b25355e426dae570eafde9c8bd1ad62aaec7d63cefd4e7488fe89ef9ccbfc6d1",
-      "bytes": 334668,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
       "inputSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/rainbow-grassland-native-v2-compact-2388ce746a7b.webp",
+      "sha256": "2388ce746a7b3781322b7af746b285199bcadd12c0a01e41b12787e277c07dfc",
+      "bytes": 155786,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+      "inputSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/rainbow-grassland-native-v2-thumbnail-66ad6c5e1d13.webp",
+      "sha256": "66ad6c5e1d1305e1d54b8c014ff12c761744f9a3dc8676c6ea057fe84554c633",
+      "bytes": 18352,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+      "inputSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

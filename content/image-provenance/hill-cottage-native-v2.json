@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
-    "play": {
-      "src": "/puzzles/hill-cottage-native-v2-play-c9b13a91e032.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "c9b13a91e0325cb2c1fe5b632d4c41fa1e0c2c786c74877c32a6e4b8585d6be0",
-      "bytes": 2324200,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/hill-cottage-native-v2-thumbnail-314f1ea02612.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "314f1ea0261234f862ff0d1a9672a67bff04a91804b21bada7574de313dfc590",
-      "bytes": 36274,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/hill-cottage-native-v2-optimized-5d368736a87e.webp",
+      "src": "/puzzles/hill-cottage-native-v2-optimized-b111610db664.webp",
+      "sha256": "b111610db664a31df810e3e4b0e0a81c96834536dc3aba4316d5cb05d04d8e8c",
+      "bytes": 284018,
       "width": 1774,
       "height": 887,
-      "sha256": "5d368736a87e177bcedacfafed05d18e4c7908225f4f1e03113834593274ead2",
-      "bytes": 443984,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
       "inputSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/hill-cottage-native-v2-compact-518972910799.webp",
+      "sha256": "518972910799a6d157a3d4b42be51d8fd2fd08b2cb5158e144a1660254052723",
+      "bytes": 211656,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
+      "inputSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/hill-cottage-native-v2-thumbnail-835671bfadb3.webp",
+      "sha256": "835671bfadb3b37fc75eeb124f1df2329e53214965fc170300adbc2c13403e64",
+      "bytes": 23694,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
+      "inputSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

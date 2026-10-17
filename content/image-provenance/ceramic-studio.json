@@ -49,45 +49,65 @@
   },
   "delivery": {
     "sourceSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
-    "play": {
-      "src": "/puzzles/ceramic-studio-play-151ce006e135.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "151ce006e135aee93eee8fc79013c28b279d5edc4350129773bbf20c63b04f58",
-      "bytes": 2481938,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/ceramic-studio-thumbnail-ce44ab7fdb9e.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "ce44ab7fdb9ec8bc887fad1271357a91e0517d767e78167d8eebf7287e668954",
-      "bytes": 69786,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/ceramic-studio-optimized-27ae99ef7be6.webp",
+      "src": "/puzzles/ceramic-studio-optimized-4f34c263bf60.webp",
+      "sha256": "4f34c263bf601575cfb4c422e884a1f7b21503bf7192649f4700728491b2927f",
+      "bytes": 324574,
       "width": 1448,
       "height": 1086,
-      "sha256": "27ae99ef7be62b3422052bc4118d83d0dee9099348423a1594d3e6dfa3565ff2",
-      "bytes": 490378,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
       "inputSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/ceramic-studio-compact-21e803560dda.webp",
+      "sha256": "21e803560ddad9468042d924c9e4346d9c7dd818c964f7b9faeefefcd0ff8405",
+      "bytes": 289308,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
+      "inputSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/ceramic-studio-thumbnail-376025b29b37.webp",
+      "sha256": "376025b29b374d9d7a5d139f6787793c2b7b0e2b0ec14363387b4db8d8979669",
+      "bytes": 46046,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
+      "inputSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
-    "play": {
-      "src": "/puzzles/anime-cat-shop-v1-play-c020abe18244.webp",
-      "width": 1536,
-      "height": 1024,
-      "sha256": "c020abe18244699a29f91b9cdbabfd376e3bad46627ce0e946849d5166cf1ebf",
-      "bytes": 1579852,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/anime-cat-shop-v1-thumbnail-a4b861b7839c.webp",
-      "width": 480,
-      "height": 320,
-      "sha256": "a4b861b7839c77c70571419f0a66384050697449b06ff5a46479cc5b71b76252",
-      "bytes": 33688,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/anime-cat-shop-v1-optimized-15e468dd27fc.webp",
+      "src": "/puzzles/anime-cat-shop-v1-optimized-a3ee09261696.webp",
+      "sha256": "a3ee09261696456a23964d4aefc460d85ab2e47ff3dbfd7fbcdde35775b2d42d",
+      "bytes": 126794,
       "width": 1536,
       "height": 1024,
-      "sha256": "15e468dd27fcf74cadfee99e8ea7daaddf10c973e03440200265778b8f7a6d7b",
-      "bytes": 201702,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
       "inputSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/anime-cat-shop-v1-compact-cc4afb12c35b.webp",
+      "sha256": "cc4afb12c35b16573a476b4be4ff3ef03ddc5d3b393c0cf8eae823f77e22f089",
+      "bytes": 111666,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+      "inputSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/anime-cat-shop-v1-thumbnail-369425ca4d3f.webp",
+      "sha256": "369425ca4d3fc14cce8be34bc0544a98dc8504ad8faaf505a9db9077dae56b79",
+      "bytes": 23772,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+      "inputSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

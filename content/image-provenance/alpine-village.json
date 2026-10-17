@@ -45,45 +45,65 @@
   },
   "delivery": {
     "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
-    "play": {
-      "src": "/puzzles/alpine-village-play-ad7aa273c289.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "ad7aa273c2893e229e1a23546cdada1ff551d402d162a3dd419aaae27e6206e3",
-      "bytes": 2783134,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/alpine-village-thumbnail-f2ab8f7ecf6b.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "f2ab8f7ecf6b65d2d1b82e889d8bc4df44ce09253c3cb1c30ae90cd61532f6f2",
-      "bytes": 52542,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/alpine-village-optimized-9b69d116744b.webp",
+      "src": "/puzzles/alpine-village-optimized-0ff0107ad6c3.webp",
+      "sha256": "0ff0107ad6c367c6c448c11942c42ec0fcd2e8c650479971ec46f2cc9b7e7a55",
+      "bytes": 425552,
       "width": 1774,
       "height": 887,
-      "sha256": "9b69d116744bdc588bf076d776e65ec8680b7868e0797972f341af76e3a76bf1",
-      "bytes": 610524,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
       "inputSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/alpine-village-compact-4c1b54d2ad8a.webp",
+      "sha256": "4c1b54d2ad8ab65e2e0f0ae6bf96ed7e6ed4707d3fe3d24417a8f275388564d9",
+      "bytes": 331160,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "inputSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/alpine-village-thumbnail-235748013cb4.webp",
+      "sha256": "235748013cb4cce0810cf884049fbd755f58250b7ec9b399e38d2495f87c7fca",
+      "bytes": 33810,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "inputSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

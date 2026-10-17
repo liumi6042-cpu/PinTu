@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
-    "play": {
-      "src": "/puzzles/autumn-teahouse-native-v2-play-0ab5f379db04.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "0ab5f379db04641078ee03e7b0fa02dad30bf53898b56cbcedccef60711485d3",
-      "bytes": 2533664,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/autumn-teahouse-native-v2-thumbnail-fe898d0bc4af.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "fe898d0bc4af08ce2bd96b2e4664a94243ad69a3f3bdc1b9419ad4fd8c67e979",
-      "bytes": 42024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/autumn-teahouse-native-v2-optimized-d8f697535864.webp",
+      "src": "/puzzles/autumn-teahouse-native-v2-optimized-4ecc8432380c.webp",
+      "sha256": "4ecc8432380c8f34a934004e2ea4570ff3938d74e0201c1d07bb5f1e7b366c6f",
+      "bytes": 329300,
       "width": 1774,
       "height": 887,
-      "sha256": "d8f6975358644fbd36dc4d9ac33ecd7e1af2817bde5c2a5024e466b12d1eec0a",
-      "bytes": 502084,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
       "inputSha256": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/autumn-teahouse-native-v2-compact-c3541beb3648.webp",
+      "sha256": "c3541beb364868525daf5ee3acd9744a2c622f2a6e5cfed86705ff6ff2b4709f",
+      "bytes": 249646,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
+      "inputSha256": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/autumn-teahouse-native-v2-thumbnail-66b203bec2eb.webp",
+      "sha256": "66b203bec2ebe7889ed5c7090269ecd4abd41e3d4c82308b012572c1c5e3b4fe",
+      "bytes": 27206,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
+      "inputSha256": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

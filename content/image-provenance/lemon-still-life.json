@@ -37,45 +37,65 @@
   },
   "delivery": {
     "sourceSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
-    "play": {
-      "src": "/puzzles/lemon-still-life-play-351bb31dec03.webp",
-      "width": 1402,
-      "height": 1122,
-      "sha256": "351bb31dec037f250dd930a7a64ced1a36598c9d4bcb689050e63288fe7d56b4",
-      "bytes": 1604642,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/lemon-still-life-thumbnail-8c5a0448dd12.webp",
-      "width": 480,
-      "height": 384,
-      "sha256": "8c5a0448dd129dad9d748ee505ea65837a505e3767bc047bbd8e72520b2a1ff6",
-      "bytes": 15994,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/lemon-still-life-optimized-d8b24a6a599e.webp",
+      "src": "/puzzles/lemon-still-life-optimized-758d2718e5db.webp",
+      "sha256": "758d2718e5db8d2874170caa339c7a805bc4f9060da9ca0c77d6a775e0127086",
+      "bytes": 59402,
       "width": 1402,
       "height": 1122,
-      "sha256": "d8b24a6a599e247b7b136dda70a8d6702acdcc79cd8f1aedf7a5937e1f8ce5ce",
-      "bytes": 115178,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
       "inputSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/lemon-still-life-compact-efe31a753e17.webp",
+      "sha256": "efe31a753e1766ede5271da3d40372b1566ec3a5bacf9ea103a3351925a35ea0",
+      "bytes": 49832,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+      "inputSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/lemon-still-life-thumbnail-6e303ed646c9.webp",
+      "sha256": "6e303ed646c94f0402a7bf57a8e4b6b34824a5e99f475669cb7eb7095dbdf9e2",
+      "bytes": 11698,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+      "inputSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

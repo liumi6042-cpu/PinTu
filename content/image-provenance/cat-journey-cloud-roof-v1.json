@@ -39,53 +39,17 @@
   },
   "delivery": {
     "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
-    "play": {
-      "src": "/puzzles/cat-journey-cloud-roof-v1-play-537aefd05926.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "537aefd0592663b3a36c49d4a19a229cb32546df1e9716c4e88f639b3b58975f",
-      "bytes": 10937572,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
-      "inputSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-69392793b4cc.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "69392793b4cc88fa9facaeb25745c2d3adf24b9d98a572afa0fef8fc50bc22bf",
-      "bytes": 51046,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
-      "inputSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "kernel": "lanczos3"
-      }
-    },
     "optimized": {
-      "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-35d95fa70aff.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "35d95fa70aff01184a006cde483b4fa39bfeca9ab1ad6443222dd5486c16143d",
-      "bytes": 856284,
+      "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-390a1e773ad6.webp",
+      "sha256": "390a1e773ad6041b84739453f199f8bfb2ccafe937dca9b0d3c2870e41f68438",
+      "bytes": 545348,
+      "width": 2560,
+      "height": 2560,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
       "inputSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
       "encoding": {
@@ -93,6 +57,47 @@
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-journey-cloud-roof-v1-compact-7b6c57e23870.webp",
+      "sha256": "7b6c57e23870d69a02b72c3909663eeb142d7b8fe376fdc4ee5d65b278d8dfd0",
+      "bytes": 290774,
+      "width": 1600,
+      "height": 1600,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "inputSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-69392793b4cc.webp",
+      "sha256": "69392793b4cc88fa9facaeb25745c2d3adf24b9d98a572afa0fef8fc50bc22bf",
+      "bytes": 51046,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "inputSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }
