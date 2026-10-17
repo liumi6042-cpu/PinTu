@@ -80,8 +80,18 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
    if(guestPlay&&resumeKey){const previous=entries.find(entry=>entry.key===resumeKey);if(previous){setSession(structuredClone(previous.state));}else setEntryError('没有找到这份本机进度，请在原来的浏览器中继续。');}
   }catch{setSaveError(true);}setReady(true);
  },[guestPlay]);
- const library=catalogPhotos??GALLERY_PHOTOS;
  const {data:managedPlayer,loading:managedLoading}=useManagedContent();
+ // Every album picture must be pickable when creating a room, including free
+ // albums whose files are not part of the freely visible gallery.
+ const albumPhotos=useMemo<Photo[]>(()=>{
+  const seen=new Map<string,Photo>();
+  for(const album of managedPlayer?.albums??[])for(const image of album.images??[]){
+   if(seen.has(image.id))continue;
+   seen.set(image.id,{id:image.id,title:image.title,subtitle:'',category:'',src:image.src,thumbSrc:image.thumbSrc??image.src,playSrc:image.src,optimizedSrc:image.src,width:image.width,height:image.height} as unknown as Photo);
+  }
+  return [...seen.values()];
+ },[managedPlayer]);
+ const library=catalogPhotos??(albumPhotos.length?albumPhotos:GALLERY_PHOTOS);
  const accessible=new Set((managedPlayer?.albums??[]).flatMap(album=>album.images.filter(image=>image.accessible).map(image=>image.id)));
  const lockedAlbum=(id:string)=>managedAlbums?.find(album=>album.purchasable&&album.imageIds.includes(id)&&!accessible.has(id));
  const categories=catalogPhotos?['全部',...new Set(catalogPhotos.map(photo=>photo.category))]:CATEGORIES;
