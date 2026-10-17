@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/warm-sienna-study-01-compact-08847b84013e.webp",
-      "sha256": "08847b84013e24dde50245e5516d335579788e76ba8c236c6f1376c01a03b88f",
-      "bytes": 240964,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
-      "inputSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/warm-sienna-study-01-thumbnail-04f6c17d62b5.webp",
       "sha256": "04f6c17d62b59720bf3bb1d8933b0d1a0d7b7283a7f64f9fec03401bcbdeb47c",

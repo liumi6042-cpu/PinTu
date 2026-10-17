@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/anime-seaside-platform-v1-compact-36477f97b89b.webp",
-      "sha256": "36477f97b89b7c1ebe4376774b410a068791d2034dbb182bba8912f450b134c0",
-      "bytes": 125582,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913",
-      "inputSha256": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/anime-seaside-platform-v1-thumbnail-c5f036e89c5e.webp",
       "sha256": "c5f036e89c5e91e790b55d5a2c94b82a8b53333290ff284ab4e50231770447ea",

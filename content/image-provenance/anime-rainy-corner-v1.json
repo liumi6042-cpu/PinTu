@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/anime-rainy-corner-v1-compact-ca7c9ac7a095.webp",
-      "sha256": "ca7c9ac7a095184ae09c17f37794196e717492f7243e91c95b7c51373ed72c0f",
-      "bytes": 256108,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb",
-      "inputSha256": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/anime-rainy-corner-v1-thumbnail-6ed09fc9767b.webp",
       "sha256": "6ed09fc9767be950c6988736a41d67360ff7fe7b548e3dee3870db2245587525",

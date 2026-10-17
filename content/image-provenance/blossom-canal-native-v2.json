@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/blossom-canal-native-v2-compact-c53faa894109.webp",
-      "sha256": "c53faa8941098798c69da930f525e1cc3607bee9cef9f7ce5db9dd692606844e",
-      "bytes": 230574,
-      "width": 1600,
-      "height": 800,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "c32a5856c0e7cf153d972116ee9beab6eed6211e09b66e636ec6c22200be9ef1",
-      "inputSha256": "c32a5856c0e7cf153d972116ee9beab6eed6211e09b66e636ec6c22200be9ef1",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/blossom-canal-native-v2-thumbnail-8772d33aa81a.webp",
       "sha256": "8772d33aa81a5b273f303ba9c0006916f22c56df3912224a1902e96187c485d0",

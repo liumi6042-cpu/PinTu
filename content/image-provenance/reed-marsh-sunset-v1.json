@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/reed-marsh-sunset-v1-compact-8bcc1f45bbb4.webp",
-      "sha256": "8bcc1f45bbb4e9d692c4ecca59d69393dbdd037cd6cc6579309cc30ab9c9db2a",
-      "bytes": 288686,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0",
-      "inputSha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/reed-marsh-sunset-v1-thumbnail-1d83e180f53c.webp",
       "sha256": "1d83e180f53c8f497181170da8b1c2b320c6a95ef6e3eb65bd4db132994e690f",

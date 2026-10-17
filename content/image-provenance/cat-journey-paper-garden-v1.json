@@ -59,27 +59,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/cat-journey-paper-garden-v1-compact-86896fca5bda.webp",
-      "sha256": "86896fca5bdaac3a63c7f1210efdfed942dc2deb8cd885514a8035727e5c7959",
-      "bytes": 350584,
-      "width": 1600,
-      "height": 1600,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
-      "inputSha256": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/cat-journey-paper-garden-v1-thumbnail-ca50663c3f46.webp",
       "sha256": "ca50663c3f460aeaf9cbdce25bf848d4ed1003a68cae5d20b95007fff9690eb1",

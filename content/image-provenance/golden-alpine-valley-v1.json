@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/golden-alpine-valley-v1-compact-79eca4ad35e5.webp",
-      "sha256": "79eca4ad35e5f88bd50f87605da4564ef2bc17242dc89010a99d706016fbf8c2",
-      "bytes": 384958,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de",
-      "inputSha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/golden-alpine-valley-v1-thumbnail-8a2247da5c5c.webp",
       "sha256": "8a2247da5c5cac352b2e9e76dfc63f5e79966ff1d7438868fb2f439037cf665e",

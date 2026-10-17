@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/autumn-teahouse-compact-113d2e4a247b.webp",
-      "sha256": "113d2e4a247ba5f28f6dc68131fcb18e757467c4b8ede03dc583385fef8ffece",
-      "bytes": 392256,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "4aae9d7de6c78cbf798b47ac7e6df4d91031ac7ca62c46de084e689c277c5578",
-      "inputSha256": "4aae9d7de6c78cbf798b47ac7e6df4d91031ac7ca62c46de084e689c277c5578",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/autumn-teahouse-thumbnail-8e5769c20c8a.webp",
       "sha256": "8e5769c20c8ae363624f2696106b75c3515d8295a6e8bbe4fb926bddf3b3d9cf",

@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/winter-village-compact-a0949d595ba2.webp",
-      "sha256": "a0949d595ba279951aa96b8d5c9bb4345800861545f60d04489538f07e5fbab3",
-      "bytes": 316746,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
-      "inputSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/winter-village-thumbnail-45fa9f4c8ef7.webp",
       "sha256": "45fa9f4c8ef7fa2fab6fd7efd2c1dc27f991bf56da5bc4368152453ec2490c84",

@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/seaside-native-v2-compact-4adcd0f6a9bd.webp",
-      "sha256": "4adcd0f6a9bd7ec17632587c2f0e3665c1dfbcce47f24dc327b86d35ea3e9197",
-      "bytes": 217524,
-      "width": 1600,
-      "height": 800,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "a6bb2a8e4eb1f0f77451dfa06cac6df3a8a43e412c1fab6226ca702b5a650bc4",
-      "inputSha256": "a6bb2a8e4eb1f0f77451dfa06cac6df3a8a43e412c1fab6226ca702b5a650bc4",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/seaside-native-v2-thumbnail-485bd3d89a81.webp",
       "sha256": "485bd3d89a814fd206b3963fa0b252d5ab2f28009013076f7d299b82c4331aa4",

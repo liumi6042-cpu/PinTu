@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/painted-glasshouse-workbench-v1-compact-29e59050eae1.webp",
-      "sha256": "29e59050eae19b4c75066a3bfab8660d867888b8871dc6e8ae878ef55c7483dc",
-      "bytes": 222074,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609",
-      "inputSha256": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/painted-glasshouse-workbench-v1-thumbnail-a8aba0ca43bd.webp",
       "sha256": "a8aba0ca43bd3cf15d2da34a0f7432612bb8cc4c4aa9fb4579f5b37c5b33cbf6",

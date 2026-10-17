@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/floating-islands-compact-97c206fe3887.webp",
-      "sha256": "97c206fe3887531fe723cc5613abdb69b0254ca031581c708666e5cbb483e7bc",
-      "bytes": 388590,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
-      "inputSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/floating-islands-thumbnail-8f01dba6b116.webp",
       "sha256": "8f01dba6b1160439c6e9bd6eab9170a9a363501b73dedd4ebc74f714a86d49bb",

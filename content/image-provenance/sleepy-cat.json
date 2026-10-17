@@ -57,27 +57,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/sleepy-cat-compact-ac1b7973989a.webp",
-      "sha256": "ac1b7973989a4a349221e86b56802d52f6bfecafaba46ba7a4f658459a981329",
-      "bytes": 76886,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279",
-      "inputSha256": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/sleepy-cat-thumbnail-dc42295183c1.webp",
       "sha256": "dc42295183c1178bf01bd8a3e78f764d292a886fe18d6fc84da9e7a552421bcc",

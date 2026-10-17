@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/rainbow-grassland-compact-17430410b428.webp",
-      "sha256": "17430410b4280e159869848be3a03f97c9d869f1ca278078c8eae225e505126f",
-      "bytes": 211604,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
-      "inputSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/rainbow-grassland-thumbnail-1f291b010d2d.webp",
       "sha256": "1f291b010d2d03796aa4ee6785cd7f2205a61de87c1e45df0d2873fffcc01cb5",

@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/harbor-houses-compact-b5fd6a81d13c.webp",
-      "sha256": "b5fd6a81d13c676b8e2b21032f292dd6d81f2982ba7846e571bb59f6b820c9ce",
-      "bytes": 357412,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
-      "inputSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/harbor-houses-thumbnail-bc482de164d0.webp",
       "sha256": "bc482de164d0da760fe69c4e72a5352fc8fc9139bfe48b5e01ebe2c0d5c47717",

@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/emerald-river-valley-compact-042ebc7d70f6.webp",
-      "sha256": "042ebc7d70f6dd66b75436e7f9814fb12e926593089a9d59bc81bb510a82fdcd",
-      "bytes": 246618,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
-      "inputSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/emerald-river-valley-thumbnail-ecf827c557fe.webp",
       "sha256": "ecf827c557fe9ec2309a0afa75c94ccb6403134df008156898e797f0d9b6e09e",

@@ -57,27 +57,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/desert-sun-compact-326e32fdf82c.webp",
-      "sha256": "326e32fdf82cce0f47939b7ebce20b3ae4a88e72056301727fa8128000f76907",
-      "bytes": 20312,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
-      "inputSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/desert-sun-thumbnail-1d46266e2bf1.webp",
       "sha256": "1d46266e2bf1afac067495c30a3b3e90ca1d3ec58a954c90ae8e8a7d2ce14b7f",

@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/azure-blue-study-04-compact-f236b2aa6c7f.webp",
-      "sha256": "f236b2aa6c7f6a3480b60accd98433c7ea75db551ea5cd964b9c07730f395826",
-      "bytes": 290388,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "208996e7fd3b875560a43fe5ecb907bb72702b25f7f9b63ae43eadda7d5f78c7",
-      "inputSha256": "208996e7fd3b875560a43fe5ecb907bb72702b25f7f9b63ae43eadda7d5f78c7",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/azure-blue-study-04-thumbnail-52dfe820d0d2.webp",
       "sha256": "52dfe820d0d2e3079391139356b1ed5636afffbceae3f0b0807ded8c9d037132",

@@ -54,27 +54,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/amber-cabinet-compact-0eb35419e47c.webp",
-      "sha256": "0eb35419e47c1f860ce3bb7be844c60fe0f67554758d39b55c4c65f579adac01",
-      "bytes": 239760,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "6efa913d5ffa8c37d2df4d8d795f0dea98173429e5ae14ffd05eb23d4874f9c4",
-      "inputSha256": "6efa913d5ffa8c37d2df4d8d795f0dea98173429e5ae14ffd05eb23d4874f9c4",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/amber-cabinet-thumbnail-13ba3913dc37.webp",
       "sha256": "13ba3913dc3732b29aaf8eefce76854b5f37d5144ec688f34059d2ced5e3b1a4",

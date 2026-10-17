@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/grass-green-study-07-compact-b874ee93ebae.webp",
-      "sha256": "b874ee93ebae8d827698323dbcf76ede58a4c3f095d7b0e2a8a0b707349410b1",
-      "bytes": 359970,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
-      "inputSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/grass-green-study-07-thumbnail-b73be271e6c9.webp",
       "sha256": "b73be271e6c944837173c6ed97f2b7bc705bed9ac809c62f38a3ed5394865aaa",

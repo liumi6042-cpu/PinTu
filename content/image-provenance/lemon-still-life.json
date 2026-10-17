@@ -57,27 +57,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/lemon-still-life-compact-efe31a753e17.webp",
-      "sha256": "efe31a753e1766ede5271da3d40372b1566ec3a5bacf9ea103a3351925a35ea0",
-      "bytes": 49832,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
-      "inputSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/lemon-still-life-thumbnail-6e303ed646c9.webp",
       "sha256": "6e303ed646c94f0402a7bf57a8e4b6b34824a5e99f475669cb7eb7095dbdf9e2",

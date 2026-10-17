@@ -57,27 +57,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/peach-breakfast-compact-bfa32b9ade7f.webp",
-      "sha256": "bfa32b9ade7ffd4555f2f1045d64315d17284fc94e17f0eebff28c3b799c8b15",
-      "bytes": 44192,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "a73ceddd4c7d8110b535db21bf022deb71620aadadde7f80e7343aa09f95a5cd",
-      "inputSha256": "a73ceddd4c7d8110b535db21bf022deb71620aadadde7f80e7343aa09f95a5cd",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/peach-breakfast-thumbnail-6aca6b9fc9aa.webp",
       "sha256": "6aca6b9fc9aac524d9eeecfd388222d0ffde2f55a7ac59a657271f9d27138b53",

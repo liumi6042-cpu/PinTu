@@ -64,27 +64,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/coral-garden-compact-3a8b5cf64a41.webp",
-      "sha256": "3a8b5cf64a4104abe2a65cd513e249c9135564a9b9e76790f69074cd7f726ba5",
-      "bytes": 384074,
-      "width": 1600,
-      "height": 800,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
-      "inputSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/coral-garden-thumbnail-dfd5e55088d1.webp",
       "sha256": "dfd5e55088d1b5bea96bd4071d12fed6e6fdc6853c5f5bd28c289c4d84b45e02",

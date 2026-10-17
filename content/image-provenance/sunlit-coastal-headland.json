@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/sunlit-coastal-headland-compact-3653e76517ad.webp",
-      "sha256": "3653e76517adca2de056202216ed834f88c85681fbb38dd810b4d6953c172f1f",
-      "bytes": 157528,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
-      "inputSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/sunlit-coastal-headland-thumbnail-78811139abbf.webp",
       "sha256": "78811139abbf2644ed90a7691fead67e1c5e7c198edb8e2ea5397ce8d7906bd5",

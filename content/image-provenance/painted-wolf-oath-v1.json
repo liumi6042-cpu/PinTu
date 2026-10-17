@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/painted-wolf-oath-v1-compact-5d718d7578f7.webp",
-      "sha256": "5d718d7578f79200747fa51ddd94b324b169ee630f37e24eb97abdcffb0b5a59",
-      "bytes": 165034,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
-      "inputSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/painted-wolf-oath-v1-thumbnail-bfe468a6f1f3.webp",
       "sha256": "bfe468a6f1f3f83e00b09b826e1d8a779e22c22fd4200e3976414ceb3ccc9a2c",

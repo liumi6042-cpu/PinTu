@@ -54,27 +54,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/skate-garden-compact-3de0d0c910f3.webp",
-      "sha256": "3de0d0c910f320af0a85be41fb4c7c77aacbf7fddee3d716f68957dd21b562ee",
-      "bytes": 294368,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
-      "inputSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/skate-garden-thumbnail-7238c772e1c3.webp",
       "sha256": "7238c772e1c34e240c7e79564833fb67dd7ff51de252e98a04268a2acb4cae42",

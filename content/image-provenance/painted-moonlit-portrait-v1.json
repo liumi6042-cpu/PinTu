@@ -64,27 +64,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/painted-moonlit-portrait-v1-compact-2f8529ecc7c6.webp",
-      "sha256": "2f8529ecc7c60c9f43af4fc5655093de2972cb0c64c845f3ebd0a0f94ff85d4b",
-      "bytes": 140060,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
-      "inputSha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/painted-moonlit-portrait-v1-thumbnail-66023e0e033b.webp",
       "sha256": "66023e0e033b175f9497ec6f34d8af8790e1eeced88bda7e6c4dfe80649cf544",

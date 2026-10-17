@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/daily-lantern-lake-violin-v1-compact-622c79e26239.webp",
-      "sha256": "622c79e26239c631e1c6f957f381e630394dda512f85133c4fa39a8b0fd63a21",
-      "bytes": 297156,
-      "width": 1254,
-      "height": 1254,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
-      "inputSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/daily-lantern-lake-violin-v1-thumbnail-c255350fd82e.webp",
       "sha256": "c255350fd82e74bf7794f770c0e054acef062a4fbc8490e13245be30c13c7f07",

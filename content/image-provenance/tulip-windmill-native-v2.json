@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/tulip-windmill-native-v2-compact-8f7b6034eeb0.webp",
-      "sha256": "8f7b6034eeb0e36dbd986135633836d10382c61d8906ef02528787afc283d8c8",
-      "bytes": 176902,
-      "width": 1600,
-      "height": 800,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc",
-      "inputSha256": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/tulip-windmill-native-v2-thumbnail-ef8ceb89f4c7.webp",
       "sha256": "ef8ceb89f4c7221335de48b873fae7bd18c7c0515d939c709cce6f917ab5540c",

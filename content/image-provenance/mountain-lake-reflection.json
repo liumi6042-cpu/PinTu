@@ -57,27 +57,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/mountain-lake-reflection-compact-e3bcb9d54ceb.webp",
-      "sha256": "e3bcb9d54ceb77adf015cb3616ce22ce5f88cab229df3a9a9f3229d776e601ec",
-      "bytes": 182482,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "03b39a70fded56605f63ef3e4f6e0437c9b74706a72e70b0bdbd591f8ca67146",
-      "inputSha256": "03b39a70fded56605f63ef3e4f6e0437c9b74706a72e70b0bdbd591f8ca67146",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/mountain-lake-reflection-thumbnail-d55e0085e311.webp",
       "sha256": "d55e0085e311829090b59f7508bcd6805d58c290d5aba137faaba3f9bba47a56",

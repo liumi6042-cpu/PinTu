@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/morning-meadow-tree-native-v2-compact-cf2bcc32e16b.webp",
-      "sha256": "cf2bcc32e16b3c26f98d4fe5668387c3cc6037d77d46764a909fc4baf12aa2fb",
-      "bytes": 258418,
-      "width": 1600,
-      "height": 800,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
-      "inputSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/morning-meadow-tree-native-v2-thumbnail-d27f2424c000.webp",
       "sha256": "d27f2424c000c2d0fc664c9138d51cb9cffeda08146eb98af6634bfb8b7f8600",

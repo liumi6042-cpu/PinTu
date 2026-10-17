@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/lavender-evening-fields-v1-compact-1c2746c880cf.webp",
-      "sha256": "1c2746c880cf7fb949323fbe46c290f8df911e295b9f27c036903f96aa31f42a",
-      "bytes": 338334,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193",
-      "inputSha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/lavender-evening-fields-v1-thumbnail-76d1b2513996.webp",
       "sha256": "76d1b251399603825227cb1e24965079543a560eb158276af8fd59b7bf15d22f",

@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/sunset-cliff-lighthouse-v1-compact-f75c0e05cbb9.webp",
-      "sha256": "f75c0e05cbb9a08c6bc3543d9968e61cc12a49f6b5c4fed440cf584c587aab82",
-      "bytes": 331162,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
-      "inputSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/sunset-cliff-lighthouse-v1-thumbnail-ad8a2cb8d6bf.webp",
       "sha256": "ad8a2cb8d6bf40fdf8fddef65fa562835d55f64dd6c52e9e7b42f2fb0c5e6aa6",

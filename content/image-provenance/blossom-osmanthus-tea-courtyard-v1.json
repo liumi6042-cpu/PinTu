@@ -135,27 +135,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1-compact-049c12deb0b1.webp",
-      "sha256": "049c12deb0b16622ccb94fefea84ee92557820e8d26e923f8ab1c26f74d3969b",
-      "bytes": 526512,
-      "width": 1600,
-      "height": 1600,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
-      "inputSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1-thumbnail-a53e9edac75b.webp",
       "sha256": "a53e9edac75bb1c2fe1d901cb534c4470bc14c8c4436f0e2072216482f5e3848",

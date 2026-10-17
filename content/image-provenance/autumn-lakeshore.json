@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/autumn-lakeshore-compact-45fffa1a1f1a.webp",
-      "sha256": "45fffa1a1f1a029156f944fe7fea466cda58c1caea7e803599616771260fedb1",
-      "bytes": 200146,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
-      "inputSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/autumn-lakeshore-thumbnail-e4ed7e2b7610.webp",
       "sha256": "e4ed7e2b7610714c8511f1e8fecc28c656dc9a845fdd94b307056a2e27bc2c60",

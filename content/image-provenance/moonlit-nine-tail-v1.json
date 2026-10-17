@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/moonlit-nine-tail-v1-compact-ad11bb6f0f28.webp",
-      "sha256": "ad11bb6f0f281e352f699f4103aa19608615f1be251afeda7f03f2c1712867de",
-      "bytes": 93602,
-      "width": 1600,
-      "height": 900,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
-      "inputSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/moonlit-nine-tail-v1-thumbnail-13e4e56aadf1.webp",
       "sha256": "13e4e56aadf12feb1019221c7cf188007fe1e7c7d5db7767bff201db49de8df2",
