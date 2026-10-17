@@ -6,6 +6,7 @@ import {isDeepStrictEqual} from 'node:util';
 import {createStore,problem} from './store.mjs';
 import {createAuth} from './auth.mjs';
 import {readSource,previewFile,verifyDelivery} from './source.mjs';
+import {runtimeAvailable} from './delivery-status.mjs';
 import {validateDraft,analyzeDraft,buildCandidate,normalizeDraft} from './model.mjs';
 import {mergeDraft} from './merge.mjs';
 import {buildDailyConfiguration,createDailyCoordinator} from './daily.mjs';
@@ -17,6 +18,7 @@ import {buildGameConfiguration} from '../jigsaw-nook-taptap/server/game-settings
 import {buildTaskRewardConfiguration} from '../jigsaw-nook-taptap/server/task-reward-settings.mjs';
 import {createReleaseCoordinator} from './releases.mjs';
 import {publishRelease,validatePublishTransportConfig} from './publish-transport.mjs';
+import {createAssetDelivery} from './asset-delivery.mjs';
 import {contentValueDigest,validContentReleaseId} from './contracts/content-release.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
@@ -54,7 +56,7 @@ function publicPublishReceipt(value){
  };
 }
 
-export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),albumBridgeDir=join(dataDir,'albums'),releaseDir=join(dataDir,'content-releases'),publishConfigPath=join(dataDir,'publish-config.json'),publisher=publishRelease,appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
+export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),albumBridgeDir=join(dataDir,'albums'),releaseDir=join(dataDir,'content-releases'),publishConfigPath=join(dataDir,'publish-config.json'),publisher=publishRelease,assetDelivery:providedAssetDelivery,appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
  const taskRewards=createTaskRewardCoordinator({store,bridgeDir:taskRewardBridgeDir,now});taskRewards.sync();
  const gameSettings=createGameSettingsCoordinator({store,bridgeDir:gameSettingsBridgeDir,now});gameSettings.sync();
@@ -85,7 +87,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
   const draft=store.draft(store.activeDraftId());
   if(currentDraft(draft.id).sourceNeedsMerge)throw problem(409,'来源素材有待合并的内容，请先保存相册后再生成发布预览。','CONTENT_SOURCE_NEEDS_SAVE');
   const document=validateDraft(draft.document,source),tasks=taskRewards.sync(),game=gameSettings.sync();
-  const retained=source.assets.filter(asset=>asset.lifecycle==='retained'),images=source.assets.map(asset=>({id:asset.id,available:asset.lifecycle==='retained'}));
+  const retained=source.assets.filter(runtimeAvailable),images=source.assets.map(asset=>({id:asset.id,available:runtimeAvailable(asset)}));
   const assetDocument={schema:'jigsaw-content-assets/v1',images};
   const documents={
    albums:buildAlbumConfiguration(buildPublicAlbumDocument(document,source),{photos:retained,decorations:game.document.decorations}),
@@ -95,6 +97,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
   return {sourceVersions:{draftId:draft.id,draftRevision:draft.revision,gameRevision:game.revision,taskRevision:tasks.revision},documents,
    summary:{totalImageCount:source.assets.length,retainedImageCount:retained.length,pendingImageCount:source.assets.length-retained.length,assignedImageCount:new Set(document.albums.flatMap(album=>album.imageIds)).size}};
  }
+ const assets=providedAssetDelivery??createAssetDelivery({projectRoot,dataDir,configPath:publishConfigPath,now});
  const releases=createReleaseCoordinator({releaseDir,readSnapshot:savedReleaseSnapshot,now,publish:async(release,actor)=>{
   const state=publishConfiguration();if(!state.configured)throw problem(503,state.configurationMessage,state.code);
   try{
@@ -111,7 +114,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    audits:status.audits.map(item=>({kind:item.kind,at:item.at,actor:item.actor,releaseId:releaseIdentity(item.releaseId),...(item.previousReleaseId?{previousReleaseId:releaseIdentity(item.previousReleaseId)}:{}),...(item.code?{code:publishCode(item.code),message:PUBLISH_MESSAGES[publishCode(item.code)]}:{}),...(item.receipt?{receipt:publicPublishReceipt(item.receipt)}:{})})),
   };
  }
- const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-recovery.js','album-recovery.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/album-rewards-ui.js','album-rewards-ui.js'],['/release-ui.js','release-ui.js'],['/style.css','style.css']]);
+ const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-recovery.js','album-recovery.js'],['/image-trash.js','image-trash.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/album-rewards-ui.js','album-rewards-ui.js'],['/release-ui.js','release-ui.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; form-action 'self'");
@@ -121,6 +124,9 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    const url=new URL(req.url,`http://${req.headers.host}`),path=url.pathname,method=req.method;
    if(!['GET','POST','PUT'].includes(method))throw problem(405,'此操作方式不支持');
    if(method!=='GET'&&req.headers.origin!==url.origin)throw problem(403,'操作来源不匹配，请在后台页面重试','ORIGIN_REJECTED');
+   if(path==='/decoration-policy.mjs'&&method==='GET'){
+    res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8'});res.end(readFileSync(join(projectRoot,'jigsaw-nook-taptap/lib/decoration-policy.mjs')));return;
+   }
    if(routes.has(path)&&method==='GET'){
     const filename=routes.get(path),bytes=readFileSync(join(appRoot,'public',filename)),type=filename.endsWith('.css')?'text/css':filename.endsWith('.js')?'text/javascript':'text/html';
     res.writeHead(200,{'Content-Type':type+'; charset=utf-8'});res.end(bytes);return;
@@ -143,6 +149,11 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
     if(path==='/api/releases/status'&&method==='GET')return response(res,200,await releaseStatus());
     if(path==='/api/releases/prepare'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,201,await releases.prepare(current.username));}
     if(path==='/api/releases/confirm'&&method==='POST'){const input=inputFields(await jsonBody(req),['releaseId','manifestSha256']);return response(res,200,await releases.confirm(input,current.username));}
+   }
+   if(path.startsWith('/api/assets/')){
+    if([...url.searchParams.keys()].length)throw problem(400,'图片交付请求不接受额外参数');
+    if(path==='/api/assets/status'&&method==='GET')return response(res,200,await assets.plan());
+    if(path==='/api/assets/deliver'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,200,await assets.deliver({actor:current.username}));}
    }
    if(path==='/api/audit'&&method==='GET')return response(res,200,{audit:store.listAudit()});
    if(path==='/api/versions'&&method==='GET')return response(res,200,{versions:store.listVersions()});
