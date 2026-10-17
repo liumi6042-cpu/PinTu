@@ -2263,6 +2263,33 @@
         "width": 3840,
         "height": 3840
       }
+    ],
+    "ink-mountain-palace-v1": [
+      {
+        "revision": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+        "src": "/puzzles/ink-mountain-palace-v1-optimized-ee3409f30f81.webp",
+        "thumbSrc": "/puzzles/ink-mountain-palace-v1-thumbnail-9712b40c21d8.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "moonlit-spirit-deer-v1": [
+      {
+        "revision": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+        "src": "/puzzles/moonlit-spirit-deer-v1-optimized-d21767b1b96e.webp",
+        "thumbSrc": "/puzzles/moonlit-spirit-deer-v1-thumbnail-359e9f3a6865.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "wisteria-seaside-station-v1": [
+      {
+        "revision": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
+        "src": "/puzzles/wisteria-seaside-station-v1-optimized-d353157726b1.webp",
+        "thumbSrc": "/puzzles/wisteria-seaside-station-v1-thumbnail-e3de3f1f6f2a.webp",
+        "width": 1254,
+        "height": 1254
+      }
     ]
   },
   "active": {

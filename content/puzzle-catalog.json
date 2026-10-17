@@ -2653,5 +2653,47 @@
     "playSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-play-47008db05b89.webp",
     "thumbSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
     "optimizedSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-493a0b82676b.webp"
+  },
+  {
+    "id": "ink-mountain-palace-v1",
+    "title": "云山宫阙",
+    "subtitle": "国风仙境",
+    "category": "插画",
+    "src": "/puzzles/ink-mountain-palace-v1.png",
+    "origin": "project-ai-generated",
+    "status": "archived",
+    "galleryVisible": false,
+    "dailyOnly": false,
+    "playSrc": "/puzzles/ink-mountain-palace-v1-play-22fdce3edfe1.webp",
+    "thumbSrc": "/puzzles/ink-mountain-palace-v1-thumbnail-9712b40c21d8.webp",
+    "optimizedSrc": "/puzzles/ink-mountain-palace-v1-optimized-ee3409f30f81.webp"
+  },
+  {
+    "id": "moonlit-spirit-deer-v1",
+    "title": "月夜灵鹿",
+    "subtitle": "东方妖灵幻想",
+    "category": "插画",
+    "src": "/puzzles/moonlit-spirit-deer-v1.png",
+    "origin": "project-ai-generated",
+    "status": "archived",
+    "galleryVisible": false,
+    "dailyOnly": false,
+    "playSrc": "/puzzles/moonlit-spirit-deer-v1-play-c718e9b039bc.webp",
+    "thumbSrc": "/puzzles/moonlit-spirit-deer-v1-thumbnail-359e9f3a6865.webp",
+    "optimizedSrc": "/puzzles/moonlit-spirit-deer-v1-optimized-d21767b1b96e.webp"
+  },
+  {
+    "id": "wisteria-seaside-station-v1",
+    "title": "紫藤海边车站",
+    "subtitle": "日系唯美场景",
+    "category": "插画",
+    "src": "/puzzles/wisteria-seaside-station-v1.png",
+    "origin": "project-ai-generated",
+    "status": "archived",
+    "galleryVisible": false,
+    "dailyOnly": false,
+    "playSrc": "/puzzles/wisteria-seaside-station-v1-play-1f620ee6d040.webp",
+    "thumbSrc": "/puzzles/wisteria-seaside-station-v1-thumbnail-e3de3f1f6f2a.webp",
+    "optimizedSrc": "/puzzles/wisteria-seaside-station-v1-optimized-d353157726b1.webp"
   }
 ]
