@@ -57,27 +57,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/orange-bicycle-compact-c8e9d050c314.webp",
-      "sha256": "c8e9d050c314bad8c108fe292eab8f2539f5a22efb2f5acbe5bcaf79142e5c51",
-      "bytes": 77018,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
-      "inputSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/orange-bicycle-thumbnail-1ef44041f557.webp",
       "sha256": "1ef44041f5576eee292dcc74a8a210f6cae8cb9869e5c9071ed4098ea6c689fb",

@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/woodland-friends-compact-6487a4d9c95e.webp",
-      "sha256": "6487a4d9c95ebd1357c9461afb2f40a3138554ce1681bc310bd849200a54357d",
-      "bytes": 408084,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "1199446d03476b2090fcb6fc91a2875c0b76b20b0ba1ed8b009e03e1a84bbd2c",
-      "inputSha256": "1199446d03476b2090fcb6fc91a2875c0b76b20b0ba1ed8b009e03e1a84bbd2c",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/woodland-friends-thumbnail-9682aef1b992.webp",
       "sha256": "9682aef1b9929a1e40710eaa6d777ac71cb50786da4579f3329f57835f266910",

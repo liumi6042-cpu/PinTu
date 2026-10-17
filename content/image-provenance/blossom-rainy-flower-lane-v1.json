@@ -135,27 +135,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/blossom-rainy-flower-lane-v1-compact-d838d2a76133.webp",
-      "sha256": "d838d2a7613393888199c2c37fde2f93748262f665ec195fc2dcebdde854322d",
-      "bytes": 547124,
-      "width": 1600,
-      "height": 1600,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "4b15b2a3b1fa5f0800eb2eb8af6758c4a38f7659428d8b211cfeb87b3263cb0d",
-      "inputSha256": "4b15b2a3b1fa5f0800eb2eb8af6758c4a38f7659428d8b211cfeb87b3263cb0d",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/blossom-rainy-flower-lane-v1-thumbnail-966e2b522ec5.webp",
       "sha256": "966e2b522ec56710a6099e89a1d8aba11144b09992f75a591c4a51d6af7c50c9",

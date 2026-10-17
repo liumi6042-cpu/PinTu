@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/tropical-aviary-compact-c7d47de09643.webp",
-      "sha256": "c7d47de09643c4d24b8dc4f22195d952c4ff2afb8c324405637c3ee00118f399",
-      "bytes": 388114,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "f56f6c745c6eee9ededc7ce637fac6e2a7a2d2baa5867892020b7b5cc3d3b66a",
-      "inputSha256": "f56f6c745c6eee9ededc7ce637fac6e2a7a2d2baa5867892020b7b5cc3d3b66a",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/tropical-aviary-thumbnail-1b457d45f861.webp",
       "sha256": "1b457d45f8610c6247b7a5c674dd842addd730e2b8ab992a6831e6e02227d30d",

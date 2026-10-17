@@ -59,27 +59,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/moonlit-spirit-deer-v1-compact-a11ff4f6a5f4.webp",
-      "sha256": "a11ff4f6a5f4136da236638be8948756c601b21ff036bf04aad2911e5376259f",
-      "bytes": 253696,
-      "width": 1254,
-      "height": 1254,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
-      "inputSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/moonlit-spirit-deer-v1-thumbnail-4c0288670c5f.webp",
       "sha256": "4c0288670c5fc7c6177142ceb5d22b7ca4bcd7af51abc875c0bcc2774fc3da4b",

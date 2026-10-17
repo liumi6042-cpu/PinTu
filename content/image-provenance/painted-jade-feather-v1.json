@@ -64,27 +64,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/painted-jade-feather-v1-compact-f0c2c0322161.webp",
-      "sha256": "f0c2c0322161ae55a63ab144ee0d1f3d66d3d2e4f96180c2908da66dd3186989",
-      "bytes": 175560,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
-      "inputSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/painted-jade-feather-v1-thumbnail-83c1ac84cfe3.webp",
       "sha256": "83c1ac84cfe316bc10185d701ee8a548dc385d59e3300bbfaeae522ddc793118",

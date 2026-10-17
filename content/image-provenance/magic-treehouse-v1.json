@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/magic-treehouse-v1-compact-769c1c3c0473.webp",
-      "sha256": "769c1c3c0473514783842d1d7435661021ecbb6eb3d522ac27ead39045f27071",
-      "bytes": 364036,
-      "width": 1254,
-      "height": 1254,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
-      "inputSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/magic-treehouse-v1-thumbnail-dba3c72eb1ff.webp",
       "sha256": "dba3c72eb1ff686ee5c798ec5292e4d4eeb9be913fddeb334e0b2939c92de502",

@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/anime-starlight-witch-v1-compact-6bb64b08564f.webp",
-      "sha256": "6bb64b08564f6aff0fef82986523b6d5e15042942b0db436ad82022d8ddadef7",
-      "bytes": 165992,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
-      "inputSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/anime-starlight-witch-v1-thumbnail-ad12df2080e3.webp",
       "sha256": "ad12df2080e316e07563b799e0f2bfb5be8f4e1400a74660a9de07ca494f1b41",

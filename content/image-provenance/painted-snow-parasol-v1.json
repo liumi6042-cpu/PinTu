@@ -57,27 +57,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/painted-snow-parasol-v1-compact-830df7f2fc63.webp",
-      "sha256": "830df7f2fc6389d3b7d6122a99b99e9620a89563c6a7d01ee09d2f113c78514f",
-      "bytes": 180044,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961",
-      "inputSha256": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/painted-snow-parasol-v1-thumbnail-a070316a71fc.webp",
       "sha256": "a070316a71fc593b5faecfec126a8fc05d695c39d605602068bff4031aa47d7f",

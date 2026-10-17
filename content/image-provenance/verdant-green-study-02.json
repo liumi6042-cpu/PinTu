@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/verdant-green-study-02-compact-5549cd60897e.webp",
-      "sha256": "5549cd60897ec59f8374c6e221255ab666c9fdd73531e2dcce2ddc2b19dea3ad",
-      "bytes": 310692,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
-      "inputSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/verdant-green-study-02-thumbnail-19957e98ef54.webp",
       "sha256": "19957e98ef546711bcd3d18d93dadf0f7829defe64ce1dc4497b2b42e442c025",

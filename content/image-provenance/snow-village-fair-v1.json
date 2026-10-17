@@ -46,27 +46,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/snow-village-fair-v1-compact-8d67132a673b.webp",
-      "sha256": "8d67132a673ba2c9e08ddea561a319410d78b6845409d6f21c64f19567db3266",
-      "bytes": 336870,
-      "width": 1254,
-      "height": 1254,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
-      "inputSha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/snow-village-fair-v1-thumbnail-4672fb75a245.webp",
       "sha256": "4672fb75a24592d21bc3707cbe30c731a17307c257d46abdee3ce7a1bc3fbb4b",

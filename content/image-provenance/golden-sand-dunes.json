@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/golden-sand-dunes-compact-7d3a5f8c0988.webp",
-      "sha256": "7d3a5f8c0988bd7ba9be234f9fe22f03ef732bccb14b1b24cf4b498707dd8879",
-      "bytes": 75850,
-      "width": 1402,
-      "height": 1122,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
-      "inputSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/golden-sand-dunes-thumbnail-0fe66166b880.webp",
       "sha256": "0fe66166b8806f11ca250fa6b7d17aeeca84d57c8bb0018bd0f044f73ad974b6",

@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/painted-tidal-encounter-v1-compact-62653c46ba76.webp",
-      "sha256": "62653c46ba7687be1d119c30a924aa13d136a0276e00ef6bca31914298bae617",
-      "bytes": 186762,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
-      "inputSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/painted-tidal-encounter-v1-thumbnail-439aa30e36db.webp",
       "sha256": "439aa30e36db41aee0c90c744763fb16fcf3e62666f5da162aaf6ec0bf52ffda",

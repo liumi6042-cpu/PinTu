@@ -64,27 +64,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/painted-amber-autumn-v1-compact-477bb57f5e79.webp",
-      "sha256": "477bb57f5e793f68c7e591fbcc89eca6af4d734bbdb7da8f2c66afc07811b75d",
-      "bytes": 159042,
-      "width": 1536,
-      "height": 1024,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3",
-      "inputSha256": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/painted-amber-autumn-v1-thumbnail-a1dfb082da5b.webp",
       "sha256": "a1dfb082da5bba6ceb42c8f0dedc4b4477cd3ac394a36ddb656444a9a141caf8",

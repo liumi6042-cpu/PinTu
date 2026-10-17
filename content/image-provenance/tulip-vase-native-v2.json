@@ -56,27 +56,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/tulip-vase-native-v2-compact-b8a389239c19.webp",
-      "sha256": "b8a389239c19a8063cdfad7e3eda041e3e542715c68c191f49b9468ff40bcf83",
-      "bytes": 65348,
-      "width": 1600,
-      "height": 800,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
-      "inputSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/tulip-vase-native-v2-thumbnail-0cd55a2dadab.webp",
       "sha256": "0cd55a2dadab6b73d4e51aa36c4bce7f3e714387f323df93702656d67c5b6dad",

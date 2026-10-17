@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/garden-table-compact-4ec53cd84156.webp",
-      "sha256": "4ec53cd84156efd33934ff535a58fcc83055e83a5f8e3986ddae12298025ba6a",
-      "bytes": 307398,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
-      "inputSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/garden-table-thumbnail-57cb142849ab.webp",
       "sha256": "57cb142849ab844f5b87e1d0709c284e878aafbd7c5a07872046aca1ea6803b0",

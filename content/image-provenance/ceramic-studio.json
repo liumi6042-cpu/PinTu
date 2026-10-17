@@ -69,27 +69,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/ceramic-studio-compact-21e803560dda.webp",
-      "sha256": "21e803560ddad9468042d924c9e4346d9c7dd818c964f7b9faeefefcd0ff8405",
-      "bytes": 289308,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
-      "inputSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/ceramic-studio-thumbnail-376025b29b37.webp",
       "sha256": "376025b29b374d9d7a5d139f6787793c2b7b0e2b0ec14363387b4db8d8979669",

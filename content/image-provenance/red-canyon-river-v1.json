@@ -44,27 +44,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/red-canyon-river-v1-compact-faa4636a02a9.webp",
-      "sha256": "faa4636a02a9e5351dff72d5289d3147585ea3fc2b01144cfaa362d64897ce12",
-      "bytes": 300270,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
-      "inputSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/red-canyon-river-v1-thumbnail-e5434aed94e7.webp",
       "sha256": "e5434aed94e7e85bb9f431e88101a2e6b1935a4618cfd058bb81e4f6ff9d40c5",

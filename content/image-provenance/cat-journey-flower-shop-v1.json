@@ -59,27 +59,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/cat-journey-flower-shop-v1-compact-a3d8c90b0928.webp",
-      "sha256": "a3d8c90b09282767eefd02d72555eca8590cbc786f58e017a99f975fd13585e5",
-      "bytes": 351754,
-      "width": 1600,
-      "height": 1600,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
-      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
       "sha256": "ac7c3c356ffdf963956216fe917240a2cf7a4cd033c2190c90067a77cc90dad5",

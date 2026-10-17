@@ -54,27 +54,6 @@
         "smartSubsample": true
       }
     },
-    "compact": {
-      "src": "/puzzles/vermilion-garden-compact-743a77fc131c.webp",
-      "sha256": "743a77fc131c4b579429648251474f91e171c7a6d88ed127fbe8009a9295e8c2",
-      "bytes": 338364,
-      "width": 1448,
-      "height": 1086,
-      "format": "webp",
-      "lossless": false,
-      "quality": 60,
-      "upscaled": false,
-      "downsampled": true,
-      "maximumPieces": 300,
-      "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
-      "inputSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
-      }
-    },
     "thumbnail": {
       "src": "/puzzles/vermilion-garden-thumbnail-ea2d8c812c24.webp",
       "sha256": "ea2d8c812c24fe810db6d7d9624d82945307c20c5b13eeec631263eaa48e9830",
