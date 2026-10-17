@@ -1,12 +1,24 @@
-import {existsSync,lstatSync,realpathSync} from 'node:fs';
+import {existsSync,lstatSync,readFileSync,realpathSync} from 'node:fs';
 import {dirname,resolve,sep} from 'node:path';
 import {readManagedRelease,createManagedReleaseReader,contentReleaseImageIds,freezeContent} from './content-release.mjs';
 import {validateAlbumConfiguration} from './album-content.mjs';
 import {createDailyContent,validateDailyConfiguration} from './daily-content.mjs';
 import {validateGameConfiguration} from './game-settings.mjs';
 import {validateTaskRewardConfiguration} from './task-reward-settings.mjs';
-import catalog from '../content/puzzle-catalog.json' with {type:'json'};
-import guidance from '../content/puzzle-guidance.json' with {type:'json'};
+import catalogSeed from '../content/puzzle-catalog.json' with {type:'json'};
+import guidanceSeed from '../content/puzzle-guidance.json' with {type:'json'};
+
+// Delivered artwork registry and dimensions are read at process start from the
+// shared asset directory written by the admin delivery step. The bundled copies
+// remain the fallback, so a missing or damaged file never empties the gallery.
+const assetCatalogDir=process.env.JIGSAW_ASSET_CATALOG_DIR||'/srv/sites/jigsaw-content/assets';
+function loadDeliveredJson(name,seed){
+ try{const value=JSON.parse(readFileSync(resolve(assetCatalogDir,name),'utf8'));
+  return Array.isArray(seed)===Array.isArray(value)?value:seed;
+ }catch{return seed;}
+}
+const catalog=loadDeliveredJson('catalog.json',catalogSeed);
+const guidance=loadDeliveredJson('guidance.json',guidanceSeed);
 
 export const managedPhotos=freezeContent(catalog.filter(photo=>['project-ai-generated','user-provided'].includes(photo.origin)&&['published','archived'].includes(photo.status)).map(photo=>{
  const dimensions=guidance[photo.id];
