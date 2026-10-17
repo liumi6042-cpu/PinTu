@@ -50,12 +50,17 @@ async function admittedToRoom(room:Room,id:string,owners:ReadonlySet<string>){
  return room.members.some(m=>owners.has(m.accountId||m.guestId||''))||[...owners].some(owner=>room.admitted?.[owner]);
 }
 export async function canReadUserImage(id:string,owners:ReadonlySet<string>,roomId?:string|null){
- if(!isCustomImageId(id)||!owners.size)return false;
- const image=await localDb().prepare('SELECT owner_id AS owner FROM puzzle_user_images WHERE id=?').bind(id).first<{owner:string}>();if(!image)return false;if(owners.has(image.owner))return true;
+ if(!isCustomImageId(id))return false;
+ const image=await localDb().prepare('SELECT owner_id AS owner FROM puzzle_user_images WHERE id=?').bind(id).first<{owner:string}>();if(!image)return false;
+ if(owners.size&&owners.has(image.owner))return true;
  if(!roomId||!/^[a-f0-9]{32}$/.test(roomId))return false;
  const row=await localDb().prepare("SELECT r.data FROM puzzle_rooms r LEFT JOIN puzzle_room_moderation m ON m.room_id=r.id WHERE r.id=? AND r.expires_at>? AND COALESCE(m.closed,0)=0").bind(roomId,Date.now()).first<{data:string}>();
  if(!row)return false;const room=JSON.parse(row.data) as Room;
- return admittedToRoom(room,id,owners);
+ // A public room is open to every visitor by definition, and its 480px preview is
+ // already world-readable. Requiring a cookie identity here made the board image
+ // 404 for guests who joined by token, which left the table blank.
+ if(room.visibility==='public')return true;
+ return owners.size>0&&admittedToRoom(room,id,owners);
 }
 export async function canReadPublicUserImagePreview(id:string,roomId?:string|null){
  if(!isCustomImageId(id)||!roomId||!/^[a-f0-9]{32}$/.test(roomId))return false;

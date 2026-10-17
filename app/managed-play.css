@@ -22,3 +22,11 @@
 .piece-choice button{display:inline-flex;align-items:center;gap:6px;min-width:96px;justify-content:center}
 .upload-rights{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--muted);line-height:1.7}
 .upload-rights input{margin-top:3px}
+
+/* Upload entry on the how-to-play page */
+.help-upload{max-width:760px;margin:8px auto 56px;padding:0 18px}
+.help-upload-card{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:16px;padding:22px;background:#fbfaf4}
+.help-upload-card h2{font-size:18px;margin:0 0 8px}
+.help-upload-card p{margin:0 0 6px;font-size:14px;color:var(--ink);line-height:1.7}
+.help-upload-card small{font-size:12px;color:var(--muted)}
+.help-upload-card>a{white-space:nowrap}
