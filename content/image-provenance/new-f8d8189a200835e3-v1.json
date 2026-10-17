@@ -1,0 +1,108 @@
+{
+  "id": "new-f8d8189a200835e3-v1",
+  "origin": "project-ai-generated",
+  "width": 3840,
+  "height": 3840,
+  "sha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+  "nativeResolution": false,
+  "upscaled": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-09",
+    "generatedAt": "2026-10-09T14:00:30.000Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/new-f8d8189a200835e3-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "new-886dff1892b72f2e-v1",
+        "path": "content/artwork/gallery-hd/new-886dff1892b72f2e-v1/native.png",
+        "sha256": "886dff1892b72f2ebc4ae7dcc12db47f37b70f66867fa2a25abbbf094e760a91",
+        "purpose": "rendering-style-only",
+        "resolution": "native-generation"
+      }
+    ],
+    "native": {
+      "path": "content/artwork/gallery-hd/new-f8d8189a200835e3-v1/native.png",
+      "sha256": "f8d8189a200835e3763e94b9925fca9d78c1cb0eb67664896e894357fa1be91b",
+      "bytes": 3967434,
+      "width": 1254,
+      "height": 1254,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/new-f8d8189a200835e3-v1.png",
+    "importedRegistrySha256": "bd1e037e7947148bb43c3201818d1599da1d8791e29c32d5ae820241d9a065e4"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 3840×3840，已放大，放大尺寸不代表新增原生细节。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex / 本次本地导入",
+    "reviewedAt": "2026-10-12T04:58:05.672Z",
+    "notes": "已核对生成会话、母版与成品匹配，并逐张查看联系表：单幅完整画面、未发现明显水印或破损。此为本地素材整理审核；原生尺寸与4K放大成品分别保存。用户提供参考仅用于和纸质感，新主题另行生成。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+    "play": {
+      "src": "/puzzles/new-f8d8189a200835e3-v1-play-d7d30cf6eec0.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "d7d30cf6eec0ae32852a74c887f1d86218e9cc8242c38ce1850961af287e46c8",
+      "bytes": 13368828,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "sourceSha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+      "inputSha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/new-f8d8189a200835e3-v1-thumbnail-24ddb9a5ffc3.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "24ddb9a5ffc356f71e0f43c457acd092ea39ad992d81068ba9f9544ee62ce4b5",
+      "bytes": 67098,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+      "inputSha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "kernel": "lanczos3"
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/new-f8d8189a200835e3-v1-optimized-316877a488ef.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "316877a488efdbd5be4a087f3b6f325180e5acad941e8dcc9a73a58dcd1a8077",
+      "bytes": 1886824,
+      "format": "webp",
+      "lossless": false,
+      "quality": 84,
+      "upscaled": false,
+      "sourceSha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+      "inputSha256": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 5,
+        "smartSubsample": true
+      }
+    }
+  }
+}

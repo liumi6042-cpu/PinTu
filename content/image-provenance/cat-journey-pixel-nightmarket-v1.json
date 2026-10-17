@@ -1,0 +1,99 @@
+{
+  "id": "cat-journey-pixel-nightmarket-v1",
+  "origin": "project-ai-generated",
+  "width": 3840,
+  "height": 3840,
+  "sha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+  "nativeResolution": false,
+  "upscaled": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-17",
+    "generatedAt": "2026-10-17T09:09:35.792Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/cat-journey-pixel-nightmarket-v1.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/cat-journey-pixel-nightmarket-v1/native.png",
+      "sha256": "9be31da23b253bfcff7ddfcee6b817bcf84e6f12fb20b4b20fc6b1e312f15681",
+      "bytes": 2753538,
+      "width": 1254,
+      "height": 1254,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/cat-journey-pixel-nightmarket-v1.png",
+    "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 3840×3840，已放大，放大尺寸不代表新增原生细节。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-17T09:41:12.154Z",
+    "notes": "像素夜市中橘猫照看蒸笼，其他猫咪沿灯笼水巷漫游；以最近邻放大保留方块边缘。 原始生成1254×1254，本批仅放大导出3840×3840；不标记为原生4K或AI高清重绘。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+    "play": {
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-play-47008db05b89.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "47008db05b892c6dfff92a0692fd8d5a7180dd1e8811bf5c8faf58334761d304",
+      "bytes": 3019022,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "5418f580178e4362d30ddb07ee21c83c354d05320a9e995c33a1e12f2e6a2969",
+      "bytes": 60370,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "kernel": "lanczos3"
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-493a0b82676b.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "493a0b82676b9d0f4b8be4de50d81dc2f8f283f19ea840f96b56a72e50af6759",
+      "bytes": 1140630,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

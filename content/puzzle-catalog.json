@@ -2664,9 +2664,9 @@
     "status": "archived",
     "galleryVisible": false,
     "dailyOnly": false,
-    "playSrc": "/puzzles/ink-mountain-palace-v1-play-22fdce3edfe1.webp",
-    "thumbSrc": "/puzzles/ink-mountain-palace-v1-thumbnail-9712b40c21d8.webp",
-    "optimizedSrc": "/puzzles/ink-mountain-palace-v1-optimized-ee3409f30f81.webp"
+    "playSrc": "/puzzles/ink-mountain-palace-v1-play-8fde05c16c68.webp",
+    "thumbSrc": "/puzzles/ink-mountain-palace-v1-thumbnail-e60427c37745.webp",
+    "optimizedSrc": "/puzzles/ink-mountain-palace-v1-optimized-d2a59e9037fc.webp"
   },
   {
     "id": "moonlit-spirit-deer-v1",
@@ -2678,9 +2678,9 @@
     "status": "archived",
     "galleryVisible": false,
     "dailyOnly": false,
-    "playSrc": "/puzzles/moonlit-spirit-deer-v1-play-c718e9b039bc.webp",
-    "thumbSrc": "/puzzles/moonlit-spirit-deer-v1-thumbnail-359e9f3a6865.webp",
-    "optimizedSrc": "/puzzles/moonlit-spirit-deer-v1-optimized-d21767b1b96e.webp"
+    "playSrc": "/puzzles/moonlit-spirit-deer-v1-play-cf99ad9fa5ff.webp",
+    "thumbSrc": "/puzzles/moonlit-spirit-deer-v1-thumbnail-4c0288670c5f.webp",
+    "optimizedSrc": "/puzzles/moonlit-spirit-deer-v1-optimized-163a972da398.webp"
   },
   {
     "id": "wisteria-seaside-station-v1",
@@ -2692,8 +2692,8 @@
     "status": "archived",
     "galleryVisible": false,
     "dailyOnly": false,
-    "playSrc": "/puzzles/wisteria-seaside-station-v1-play-1f620ee6d040.webp",
-    "thumbSrc": "/puzzles/wisteria-seaside-station-v1-thumbnail-e3de3f1f6f2a.webp",
-    "optimizedSrc": "/puzzles/wisteria-seaside-station-v1-optimized-d353157726b1.webp"
+    "playSrc": "/puzzles/wisteria-seaside-station-v1-play-78e722eafab4.webp",
+    "thumbSrc": "/puzzles/wisteria-seaside-station-v1-thumbnail-b81ea48bcdbb.webp",
+    "optimizedSrc": "/puzzles/wisteria-seaside-station-v1-optimized-abb600cd9aa3.webp"
   }
 ]

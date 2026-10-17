@@ -1,0 +1,99 @@
+{
+  "id": "cat-journey-flower-shop-v1",
+  "origin": "project-ai-generated",
+  "width": 3840,
+  "height": 3840,
+  "sha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+  "nativeResolution": false,
+  "upscaled": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-17",
+    "generatedAt": "2026-10-17T09:07:31.793Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/cat-journey-flower-shop-v1.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/cat-journey-flower-shop-v1/native.png",
+      "sha256": "945dccc1b6e1904f90ae9e22107f0ba550e644c65c58c84c31f023189241bbbc",
+      "bytes": 3372685,
+      "width": 1254,
+      "height": 1254,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/cat-journey-flower-shop-v1.png",
+    "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 3840×3840，已放大，放大尺寸不代表新增原生细节。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-17T09:41:11.311Z",
+    "notes": "三花猫趴在花店窗台，奶油色小猫从下方篮子探头；蓝绿木门、花束和雨后街巷构成明亮场景。 原始生成1254×1254，本批仅放大导出3840×3840；不标记为原生4K或AI高清重绘。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+    "play": {
+      "src": "/puzzles/cat-journey-flower-shop-v1-play-6b687fc38975.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "6b687fc3897516672a4715c5ac70964ee57e8b79f208c58898a5655d0305cf7d",
+      "bytes": 11567154,
+      "format": "webp",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "ac7c3c356ffdf963956216fe917240a2cf7a4cd033c2190c90067a77cc90dad5",
+      "bytes": 59310,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "kernel": "lanczos3"
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/cat-journey-flower-shop-v1-optimized-68b036b3e867.webp",
+      "width": 3840,
+      "height": 3840,
+      "sha256": "68b036b3e8673ad61dacf734d7a186f0b6ca9445b381c64ca9b48d791d653d40",
+      "bytes": 994268,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}
