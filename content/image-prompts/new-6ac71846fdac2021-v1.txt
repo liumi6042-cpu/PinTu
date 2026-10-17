@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime character portrait.
+Primary request: an original adult Japanese-anime wolf-eared man, strong three-quarter body portrait, dark indigo yukata layered with a modern black haori, silver wolf ears, windswept charcoal hair, one hand resting on a sheathed katana, composed serious gaze. The character fills about 80% of the frame.
+Style/medium: high-quality Japanese anime character art, sharp clean linework, subtle painterly shadows, detailed textile patterns and metal fittings.
+Composition/framing: wide horizontal 16:9, character centered slightly left, chest-to-thigh framing, clear silhouette and strong face detail.
+Lighting/mood: cool night light with a narrow red lantern rim light, stoic and cinematic.
+Color palette: indigo, charcoal, silver, muted crimson.
+Constraints: original fully clothed adult character, nonsexual, no logos, no readable text, no watermark, no excessive scenery, no duplicate character, no anatomical errors. Target a finished 4K-quality landscape illustration.

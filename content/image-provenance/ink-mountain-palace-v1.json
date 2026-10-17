@@ -1,0 +1,100 @@
+{
+  "id": "ink-mountain-palace-v1",
+  "origin": "project-ai-generated",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-17",
+    "generatedAt": "2026-10-17T13:52:59.219474Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/ink-mountain-palace-v1.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/ink-mountain-palace-v1/native.png",
+      "sha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "bytes": 3787521,
+      "width": 1254,
+      "height": 1254,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/ink-mountain-palace-v1.png",
+    "importedRegistrySha256": "a71b7293ff4c85c09b084b4203af3a06e944ca301ed5912e14e97f9555cee760"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 1254×1254，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "阿枢",
+    "reviewedAt": "2026-10-17T13:52:59.219474Z",
+    "notes": "云山宫阙（国风仙境）。原始生成 1254×1254，未放大、未重绘；按 Q70/effort6/智能子采样生成 WebP 交付件。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+    "play": {
+      "src": "/puzzles/ink-mountain-palace-v1-play-22fdce3edfe1.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "22fdce3edfe1074e3827e5e78a4a1754ad15ab716198dc083402833ef1ecf617",
+      "bytes": 2585174,
+      "format": "webp",
+      "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "encoding": {
+        "library": "Pillow",
+        "version": "12.3.0",
+        "effort": 6
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/ink-mountain-palace-v1-thumbnail-9712b40c21d8.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "9712b40c21d86bd3e162514ae6b58cdcd4d5f013463ed144fa1ee2bb8d8082e2",
+      "bytes": 57700,
+      "format": "webp",
+      "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "Pillow",
+        "version": "12.3.0",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/ink-mountain-palace-v1-optimized-ee3409f30f81.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ee3409f30f8148072f6fd7ff466df3ecba16000365213d771e44320c0808f34b",
+      "bytes": 357264,
+      "format": "webp",
+      "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "Pillow",
+        "version": "12.3.0",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

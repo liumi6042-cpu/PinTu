@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a cheerful spring market with a decorated flower cart, striped awnings, tulips, balloons and baskets of fruit, no people.
+Style/medium: pastel wax crayon illustration, tactile crayon grain, soft rounded forms, bright playful blocks of color, handmade picture-book charm.
+Composition: square, flower cart centered, abundant but organized details, safe margins around all edges.
+Constraints: no text, no logos, no watermark, no photorealism, no people, polished high-detail 4K.

@@ -1,0 +1,3081 @@
+{
+  "schema": "jigsaw-artwork-revisions/v1",
+  "legacy": {
+    "lantern-market": {
+      "revision": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+      "src": "/puzzles/lantern-market-optimized-bec35d733845.webp",
+      "thumbSrc": "/puzzles/lantern-market-thumbnail-2493faf2382d.webp",
+      "width": 1448,
+      "height": 1086
+    },
+    "daily-lantern-lake-violin-v1": {
+      "revision": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+      "src": "/puzzles/daily-lantern-lake-violin-v1-optimized-9554237a34b8.webp",
+      "thumbSrc": "/puzzles/daily-lantern-lake-violin-v1-thumbnail-d66d1d6a8119.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "vermilion-garden": {
+      "revision": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "src": "/puzzles/vermilion-garden-optimized-13a666b25e35.webp",
+      "thumbSrc": "/puzzles/vermilion-garden-thumbnail-a5c77e092a92.webp",
+      "width": 1448,
+      "height": 1086
+    },
+    "new-49cc72d1ec6fb1c8-v1": {
+      "revision": "c7192eb30ac50e799c3dd73d9e7af2655aca77560797b47c765c37fbbacb53c9",
+      "src": "/puzzles/new-49cc72d1ec6fb1c8-v1-optimized-2b585e80f8aa.webp",
+      "thumbSrc": "/puzzles/new-49cc72d1ec6fb1c8-v1-thumbnail-b930647f5a9e.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-ed33701d9e7980fa-v1": {
+      "revision": "dd6dd25d3ffcc8c66de426bc7f0363ba1aa9b5068d07681a07e589ff23ea366d",
+      "src": "/puzzles/new-ed33701d9e7980fa-v1-optimized-e39528aacfb8.webp",
+      "thumbSrc": "/puzzles/new-ed33701d9e7980fa-v1-thumbnail-984b11009631.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-c54eb7fbb3cd0060-v1": {
+      "revision": "66435fd3850f6f41f55997cc8ccb6583ad7f9f46b83da0b8b7b21412144e53c7",
+      "src": "/puzzles/new-c54eb7fbb3cd0060-v1-optimized-37710d713acd.webp",
+      "thumbSrc": "/puzzles/new-c54eb7fbb3cd0060-v1-thumbnail-15b54ee919f8.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-afa7c18454e23349-v1": {
+      "revision": "07535fa9e7f8772454e7c5f1ce91d3415a5fdc17753b742b9facccada2627527",
+      "src": "/puzzles/new-afa7c18454e23349-v1-optimized-1978817b4026.webp",
+      "thumbSrc": "/puzzles/new-afa7c18454e23349-v1-thumbnail-1fa6ad26ae48.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-f7194f44e36dc5e3-v1": {
+      "revision": "ec9e1b243f816f74e63a61e31376174e0904a2a797f01c8971828b7b14d363ea",
+      "src": "/puzzles/new-f7194f44e36dc5e3-v1-optimized-9251330c1eb0.webp",
+      "thumbSrc": "/puzzles/new-f7194f44e36dc5e3-v1-thumbnail-08efa22db193.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-f8652afed3c63a86-v1": {
+      "revision": "ff882fc86aad7b95ec40063fc62541d2bdec6b308a7914345e523c5cf2c29c10",
+      "src": "/puzzles/new-f8652afed3c63a86-v1-optimized-bd709d9b8796.webp",
+      "thumbSrc": "/puzzles/new-f8652afed3c63a86-v1-thumbnail-e656179c1c4e.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-f8d8189a200835e3-v1": {
+      "revision": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+      "src": "/puzzles/new-f8d8189a200835e3-v1-optimized-316877a488ef.webp",
+      "thumbSrc": "/puzzles/new-f8d8189a200835e3-v1-thumbnail-24ddb9a5ffc3.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-89189e4f7af26f25-v1": {
+      "revision": "8501be2740c378ce6ed182739067f1b4fbcf9c26b13d68cd66faf75c01fc7a74",
+      "src": "/puzzles/new-89189e4f7af26f25-v1-optimized-4a1a72fcd423.webp",
+      "thumbSrc": "/puzzles/new-89189e4f7af26f25-v1-thumbnail-e49bef31152c.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-9359385b622e8505-v1": {
+      "revision": "7d1ff0e400dfbea59b2539f1d7e4df7081f2f2649fb97a4a496f3ffe04eada0a",
+      "src": "/puzzles/new-9359385b622e8505-v1-optimized-16b431280fd2.webp",
+      "thumbSrc": "/puzzles/new-9359385b622e8505-v1-thumbnail-c75642d7842e.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-886dff1892b72f2e-v1": {
+      "revision": "f334e8f0f7f0feb2f946582d1c2bb35dee41ac0691efc63f674297b7ed509148",
+      "src": "/puzzles/new-886dff1892b72f2e-v1-optimized-066eb4070b94.webp",
+      "thumbSrc": "/puzzles/new-886dff1892b72f2e-v1-thumbnail-ea31bfbc203b.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-35405f4ae5ef618e-v1": {
+      "revision": "716c81f7ccbcdf2492aa408cf18722608c1a6d82a8c2774e9393ad0960e3f15b",
+      "src": "/puzzles/new-35405f4ae5ef618e-v1-optimized-27471e72f7ea.webp",
+      "thumbSrc": "/puzzles/new-35405f4ae5ef618e-v1-thumbnail-24b01456284a.webp",
+      "width": 3840,
+      "height": 2160
+    },
+    "new-629dfdbe43cd5b09-v1": {
+      "revision": "57bf7eed109262acc0c46d379324d0bd710b979b880581f55afd68bedd6f4766",
+      "src": "/puzzles/new-629dfdbe43cd5b09-v1-optimized-31863fc4828a.webp",
+      "thumbSrc": "/puzzles/new-629dfdbe43cd5b09-v1-thumbnail-04207093b616.webp",
+      "width": 3840,
+      "height": 2160
+    },
+    "new-0b10af90a58ce698-v1": {
+      "revision": "d14e8d15a7e9b36837f1759226f7bc2c35831bafb4b727ac210ca8cf3426f13c",
+      "src": "/puzzles/new-0b10af90a58ce698-v1-optimized-0f143e692b58.webp",
+      "thumbSrc": "/puzzles/new-0b10af90a58ce698-v1-thumbnail-65422c6c01af.webp",
+      "width": 3840,
+      "height": 2160
+    },
+    "new-32f4a77d2dd8becd-v1": {
+      "revision": "8c3a66210247841ad1763516c889bf41e14d1c5c6c8f7fd4a78694bdd4b7d413",
+      "src": "/puzzles/new-32f4a77d2dd8becd-v1-optimized-64cb73108d5b.webp",
+      "thumbSrc": "/puzzles/new-32f4a77d2dd8becd-v1-thumbnail-fd17b237a67e.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-c9d0f62b9a9536ed-v1": {
+      "revision": "f725db0a26e7ee70d88c717b90bfbd893bef30a5bfc6e788533144f9cfee1540",
+      "src": "/puzzles/new-c9d0f62b9a9536ed-v1-optimized-93c099a0e9f1.webp",
+      "thumbSrc": "/puzzles/new-c9d0f62b9a9536ed-v1-thumbnail-f0265979f855.webp",
+      "width": 3840,
+      "height": 2160
+    },
+    "new-ef12f1e7d74ee89a-v1": {
+      "revision": "c9a3f056ce8b756102b6e57f9a2f0b697bfcf29d5cc70336c2defa6aafdcc202",
+      "src": "/puzzles/new-ef12f1e7d74ee89a-v1-optimized-e6cffcf01f51.webp",
+      "thumbSrc": "/puzzles/new-ef12f1e7d74ee89a-v1-thumbnail-d535628e9ac6.webp",
+      "width": 3840,
+      "height": 2160
+    },
+    "lantern-dance-v1": {
+      "revision": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+      "src": "/puzzles/lantern-dance-v1-optimized-6ed8fdce9304.webp",
+      "thumbSrc": "/puzzles/lantern-dance-v1-thumbnail-61c1318e61e9.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "riverside-park-festival-v1": {
+      "revision": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "src": "/puzzles/riverside-park-festival-v1-optimized-3e478cefefc9.webp",
+      "thumbSrc": "/puzzles/riverside-park-festival-v1-thumbnail-409d3ee391a9.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "summer-night-matsuri-v1": {
+      "revision": "e163daa82abc2433a8ecac0efb24f417eec847ed827164e65ce82aaf60c7cda1",
+      "src": "/puzzles/summer-night-matsuri-v1-optimized-148f1eccbec8.webp",
+      "thumbSrc": "/puzzles/summer-night-matsuri-v1-thumbnail-d5b27c4f8c68.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "orbital-market-v1": {
+      "revision": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "src": "/puzzles/orbital-market-v1-optimized-e02ffe344c41.webp",
+      "thumbSrc": "/puzzles/orbital-market-v1-thumbnail-29274227b9c2.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "snow-village-fair-v1": {
+      "revision": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
+      "src": "/puzzles/snow-village-fair-v1-optimized-034682537977.webp",
+      "thumbSrc": "/puzzles/snow-village-fair-v1-thumbnail-a97041fe9e48.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "tropical-harbor-carnival-v1": {
+      "revision": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+      "src": "/puzzles/tropical-harbor-carnival-v1-optimized-031294a0d198.webp",
+      "thumbSrc": "/puzzles/tropical-harbor-carnival-v1-thumbnail-1f7675d1f866.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "autumn-farm-festival-v1": {
+      "revision": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "src": "/puzzles/autumn-farm-festival-v1-optimized-b28051563c57.webp",
+      "thumbSrc": "/puzzles/autumn-farm-festival-v1-thumbnail-a30f98a16372.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "rooftop-neighborhood-festival-v1": {
+      "revision": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-optimized-9b04303916b4.webp",
+      "thumbSrc": "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-5a83f9760734.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "new-2b4be6fe98943de7-v1": {
+      "revision": "807caaef0072f39af8e6f8fae99ae09174d269fecb886c01cc46da68b8238266",
+      "src": "/puzzles/new-2b4be6fe98943de7-v1-optimized-d72c13f0a2c7.webp",
+      "thumbSrc": "/puzzles/new-2b4be6fe98943de7-v1-thumbnail-7a0728929677.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-968c3449978849e1-v1": {
+      "revision": "5a949c3bcabdcaddf9169c0eba9648fdd2f45c0e8a2250e5ffad5e8dd149f5c2",
+      "src": "/puzzles/new-968c3449978849e1-v1-optimized-79890873b8d0.webp",
+      "thumbSrc": "/puzzles/new-968c3449978849e1-v1-thumbnail-13d9184e3e74.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-645c9cf0cfee91ad-v1": {
+      "revision": "2e456ed72b4f7c06bc990bdc85f547e36aa4263eba7b5c603fba07ac287b4476",
+      "src": "/puzzles/new-645c9cf0cfee91ad-v1-optimized-e095428f3a2f.webp",
+      "thumbSrc": "/puzzles/new-645c9cf0cfee91ad-v1-thumbnail-15ef7d23ec70.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-20a4b922bbb578e8-v1": {
+      "revision": "3923bea0cb1aab7e78660886e0fbbf886cde3b890c1974599494960e9bd23769",
+      "src": "/puzzles/new-20a4b922bbb578e8-v1-optimized-4c2463e35660.webp",
+      "thumbSrc": "/puzzles/new-20a4b922bbb578e8-v1-thumbnail-ea06ac5d3a82.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-79565e08fd397b1e-v1": {
+      "revision": "60af8007a8a3696f47063234f6fcc2bd385ee0c4a4de7e1c9a548d14a6421e45",
+      "src": "/puzzles/new-79565e08fd397b1e-v1-optimized-c09361d8ec19.webp",
+      "thumbSrc": "/puzzles/new-79565e08fd397b1e-v1-thumbnail-a0f97f82382f.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-48413157ae051c95-v1": {
+      "revision": "b55f147c8e5659d1beb33d1db2e17a17f201da211fdd98b4b3bc2423227ac846",
+      "src": "/puzzles/new-48413157ae051c95-v1-optimized-0f09102b89d5.webp",
+      "thumbSrc": "/puzzles/new-48413157ae051c95-v1-thumbnail-55d4dad6c3a6.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "new-cc532d03d405abd6-v1": {
+      "revision": "5db109f365cb912268981a72edc31326c27bbaf9e39e115eade6109c061fb598",
+      "src": "/puzzles/new-cc532d03d405abd6-v1-optimized-38f6b4aa74f9.webp",
+      "thumbSrc": "/puzzles/new-cc532d03d405abd6-v1-thumbnail-d5bca25c051b.webp",
+      "width": 3840,
+      "height": 2160
+    }
+  },
+  "versions": {
+    "cel-coastal-family-v1": [
+      {
+        "revision": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+        "src": "/puzzles/cel-coastal-family-v1-optimized-a9c3bd49fd5f.webp",
+        "thumbSrc": "/puzzles/cel-coastal-family-v1-thumbnail-52f2b7947655.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "cel-rainy-bridge-v1": [
+      {
+        "revision": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495",
+        "src": "/puzzles/cel-rainy-bridge-v1-optimized-e52cdef9093e.webp",
+        "thumbSrc": "/puzzles/cel-rainy-bridge-v1-thumbnail-904e80d0c382.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-tidal-encounter-v1": [
+      {
+        "revision": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
+        "src": "/puzzles/painted-tidal-encounter-v1-optimized-088ded801b91.webp",
+        "thumbSrc": "/puzzles/painted-tidal-encounter-v1-thumbnail-67261c06f424.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-snow-parasol-v1": [
+      {
+        "revision": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961",
+        "src": "/puzzles/painted-snow-parasol-v1-optimized-f4eef6ac8885.webp",
+        "thumbSrc": "/puzzles/painted-snow-parasol-v1-thumbnail-9c2c66242aa6.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-glasshouse-workbench-v1": [
+      {
+        "revision": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609",
+        "src": "/puzzles/painted-glasshouse-workbench-v1-optimized-81f63049cb3a.webp",
+        "thumbSrc": "/puzzles/painted-glasshouse-workbench-v1-thumbnail-e389c52f9521.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-wolf-oath-v1": [
+      {
+        "revision": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
+        "src": "/puzzles/painted-wolf-oath-v1-optimized-c00ca199b93e.webp",
+        "thumbSrc": "/puzzles/painted-wolf-oath-v1-thumbnail-548446540b8c.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-moonlit-portrait-v1": [
+      {
+        "revision": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+        "src": "/puzzles/painted-moonlit-portrait-v1-optimized-4b20b0a13d5a.webp",
+        "thumbSrc": "/puzzles/painted-moonlit-portrait-v1-thumbnail-966f188ae2fd.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "cel-sunset-train-v1": [
+      {
+        "revision": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+        "src": "/puzzles/cel-sunset-train-v1-optimized-3e9db12afb37.webp",
+        "thumbSrc": "/puzzles/cel-sunset-train-v1-thumbnail-f20ee4697b93.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-crimson-rose-v1": [
+      {
+        "revision": "4e33aee441f7adc7a4f78adab4dd20b7199852049ca980e0b3a5819808dc0d1f",
+        "src": "/puzzles/painted-crimson-rose-v1-optimized-fc4f00bf9557.webp",
+        "thumbSrc": "/puzzles/painted-crimson-rose-v1-thumbnail-2620e1a3f70d.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-jade-feather-v1": [
+      {
+        "revision": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
+        "src": "/puzzles/painted-jade-feather-v1-optimized-ff9b9c8570e2.webp",
+        "thumbSrc": "/puzzles/painted-jade-feather-v1-thumbnail-dae9374ca6b3.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "painted-amber-autumn-v1": [
+      {
+        "revision": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3",
+        "src": "/puzzles/painted-amber-autumn-v1-optimized-a24055b07928.webp",
+        "thumbSrc": "/puzzles/painted-amber-autumn-v1-thumbnail-e952cf375372.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "cel-rainy-bookshop-v1": [
+      {
+        "revision": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+        "src": "/puzzles/cel-rainy-bookshop-v1-optimized-3ef7b9fdf1e4.webp",
+        "thumbSrc": "/puzzles/cel-rainy-bookshop-v1-thumbnail-ef6947ff1369.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "cel-rooftop-breeze-v1": [
+      {
+        "revision": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+        "src": "/puzzles/cel-rooftop-breeze-v1-optimized-0346f0ab18f9.webp",
+        "thumbSrc": "/puzzles/cel-rooftop-breeze-v1-thumbnail-b3996a66f057.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "anime-seaside-platform-v1": [
+      {
+        "revision": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913",
+        "src": "/puzzles/anime-seaside-platform-v1-optimized-b8fdb66c6a2a.webp",
+        "thumbSrc": "/puzzles/anime-seaside-platform-v1-thumbnail-587c82def48e.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "anime-cat-shop-v1": [
+      {
+        "revision": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043",
+        "src": "/puzzles/anime-cat-shop-v1-optimized-15e468dd27fc.webp",
+        "thumbSrc": "/puzzles/anime-cat-shop-v1-thumbnail-a4b861b7839c.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "anime-cloud-courier-v1": [
+      {
+        "revision": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+        "src": "/puzzles/anime-cloud-courier-v1-optimized-f276ebe07916.webp",
+        "thumbSrc": "/puzzles/anime-cloud-courier-v1-thumbnail-719d468e46dd.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "anime-rainy-corner-v1": [
+      {
+        "revision": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb",
+        "src": "/puzzles/anime-rainy-corner-v1-optimized-2cf1100ead82.webp",
+        "thumbSrc": "/puzzles/anime-rainy-corner-v1-thumbnail-630189c5c45c.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "anime-starlight-witch-v1": [
+      {
+        "revision": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
+        "src": "/puzzles/anime-starlight-witch-v1-optimized-8107d4bf0de1.webp",
+        "thumbSrc": "/puzzles/anime-starlight-witch-v1-thumbnail-600e5ee017bd.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "mountain-lake-reflection-hd-v3": [
+      {
+        "revision": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
+        "src": "/puzzles/mountain-lake-reflection-hd-v3-optimized-eacf05631c58.webp",
+        "thumbSrc": "/puzzles/mountain-lake-reflection-hd-v3-thumbnail-0a408ca8a9e2.webp",
+        "width": 3144,
+        "height": 1572
+      },
+      {
+        "revision": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491",
+        "src": "/puzzles/mountain-lake-reflection-hd-v3-compact-1eda9430a072.webp",
+        "thumbSrc": "/puzzles/mountain-lake-reflection-hd-v3-thumbnail-0a408ca8a9e2.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "morning-meadow-tree-hd-v3": [
+      {
+        "revision": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
+        "src": "/puzzles/morning-meadow-tree-hd-v3-optimized-eeb2598a912d.webp",
+        "thumbSrc": "/puzzles/morning-meadow-tree-hd-v3-thumbnail-ef4e7a2db071.webp",
+        "width": 3147,
+        "height": 1574
+      },
+      {
+        "revision": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
+        "src": "/puzzles/morning-meadow-tree-hd-v3-compact-acae83af8769.webp",
+        "thumbSrc": "/puzzles/morning-meadow-tree-hd-v3-thumbnail-ef4e7a2db071.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "clear-sand-bay-hd-v3": [
+      {
+        "revision": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d",
+        "src": "/puzzles/clear-sand-bay-hd-v3-optimized-e2ceeefda1cd.webp",
+        "thumbSrc": "/puzzles/clear-sand-bay-hd-v3-thumbnail-eee0dd03149c.webp",
+        "width": 3147,
+        "height": 1574
+      },
+      {
+        "revision": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d",
+        "src": "/puzzles/clear-sand-bay-hd-v3-compact-6191306c291b.webp",
+        "thumbSrc": "/puzzles/clear-sand-bay-hd-v3-thumbnail-eee0dd03149c.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "emerald-river-valley-native-v2": [
+      {
+        "revision": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+        "src": "/puzzles/emerald-river-valley-native-v2-optimized-31bef7ba3bec.webp",
+        "thumbSrc": "/puzzles/emerald-river-valley-native-v2-thumbnail-f821ab3720a9.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "sunlit-coastal-headland-native-v2": [
+      {
+        "revision": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff",
+        "src": "/puzzles/sunlit-coastal-headland-native-v2-optimized-c423ea3989aa.webp",
+        "thumbSrc": "/puzzles/sunlit-coastal-headland-native-v2-thumbnail-f84d69f50b3a.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "golden-sand-dunes-native-v2": [
+      {
+        "revision": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+        "src": "/puzzles/golden-sand-dunes-native-v2-optimized-d2fc1961d7a6.webp",
+        "thumbSrc": "/puzzles/golden-sand-dunes-native-v2-thumbnail-47662e08216d.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "autumn-lakeshore-native-v2": [
+      {
+        "revision": "71286f0f311e8041d66e8773842e4cf43ed446bc228e3012a732cc2df37f7437",
+        "src": "/puzzles/autumn-lakeshore-native-v2-optimized-e3914272512e.webp",
+        "thumbSrc": "/puzzles/autumn-lakeshore-native-v2-thumbnail-ad7f3e75d88e.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "rainbow-grassland-native-v2": [
+      {
+        "revision": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b",
+        "src": "/puzzles/rainbow-grassland-native-v2-optimized-b25355e426da.webp",
+        "thumbSrc": "/puzzles/rainbow-grassland-native-v2-thumbnail-9f178bdf851f.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "mountain-lake-reflection-native-v2": [
+      {
+        "revision": "231037dc16d0cf0115c496d139c1e6fc9f5e4e719445dfbf2c8ac02dc35afde8",
+        "src": "/puzzles/mountain-lake-reflection-native-v2-optimized-4c2fd2eae149.webp",
+        "thumbSrc": "/puzzles/mountain-lake-reflection-native-v2-thumbnail-96d08a46989a.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "morning-meadow-tree-native-v2": [
+      {
+        "revision": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+        "src": "/puzzles/morning-meadow-tree-native-v2-optimized-43a858fdcc91.webp",
+        "thumbSrc": "/puzzles/morning-meadow-tree-native-v2-thumbnail-64a63bc67a04.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "clear-sand-bay-native-v2": [
+      {
+        "revision": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+        "src": "/puzzles/clear-sand-bay-native-v2-optimized-bacaad35fb44.webp",
+        "thumbSrc": "/puzzles/clear-sand-bay-native-v2-thumbnail-a19a624dc4c7.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "lone-pine-snow-native-v2": [
+      {
+        "revision": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+        "src": "/puzzles/lone-pine-snow-native-v2-optimized-34ef3dd60c61.webp",
+        "thumbSrc": "/puzzles/lone-pine-snow-native-v2-thumbnail-4ef8a6c6f399.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "quiet-cliff-falls-native-v2": [
+      {
+        "revision": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33",
+        "src": "/puzzles/quiet-cliff-falls-native-v2-optimized-a8b12b63d281.webp",
+        "thumbSrc": "/puzzles/quiet-cliff-falls-native-v2-thumbnail-626d33828104.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "lemon-still-life-native-v2": [
+      {
+        "revision": "c2bd8732b84806be73d660b999fc6f9a37883671cee18cd4e0689b224b9b4300",
+        "src": "/puzzles/lemon-still-life-native-v2-optimized-4f7b85c6982b.webp",
+        "thumbSrc": "/puzzles/lemon-still-life-native-v2-thumbnail-07e8165718fe.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "sleepy-cat-native-v2": [
+      {
+        "revision": "0b4bcddcf8cfc252b269a44841ca402d8ef1d2954acf85870058d9c60ce942c6",
+        "src": "/puzzles/sleepy-cat-native-v2-optimized-5719ebdc4e4c.webp",
+        "thumbSrc": "/puzzles/sleepy-cat-native-v2-thumbnail-6e13e45276b8.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "sailboat-bay-native-v2": [
+      {
+        "revision": "1eea734d9fba2be254778180d53d8d1105f76f3d0d97bc646e2b4eba9a446a1c",
+        "src": "/puzzles/sailboat-bay-native-v2-optimized-51652d90180b.webp",
+        "thumbSrc": "/puzzles/sailboat-bay-native-v2-thumbnail-216af1686bcf.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "tulip-vase-native-v2": [
+      {
+        "revision": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+        "src": "/puzzles/tulip-vase-native-v2-optimized-87b2a5df0ff6.webp",
+        "thumbSrc": "/puzzles/tulip-vase-native-v2-thumbnail-ac75758b8e18.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "hill-cottage-native-v2": [
+      {
+        "revision": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4",
+        "src": "/puzzles/hill-cottage-native-v2-optimized-5d368736a87e.webp",
+        "thumbSrc": "/puzzles/hill-cottage-native-v2-thumbnail-314f1ea02612.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "whale-moon-native-v2": [
+      {
+        "revision": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+        "src": "/puzzles/whale-moon-native-v2-optimized-dab1cbdec1a5.webp",
+        "thumbSrc": "/puzzles/whale-moon-native-v2-thumbnail-2dc9dbddd901.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "orange-bicycle-native-v2": [
+      {
+        "revision": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+        "src": "/puzzles/orange-bicycle-native-v2-optimized-7b170f60ddaf.webp",
+        "thumbSrc": "/puzzles/orange-bicycle-native-v2-thumbnail-d549da791d47.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "peach-breakfast-native-v2": [
+      {
+        "revision": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+        "src": "/puzzles/peach-breakfast-native-v2-optimized-00f127b51434.webp",
+        "thumbSrc": "/puzzles/peach-breakfast-native-v2-thumbnail-08303e3534ca.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "desert-sun-native-v2": [
+      {
+        "revision": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+        "src": "/puzzles/desert-sun-native-v2-optimized-f8acca556f70.webp",
+        "thumbSrc": "/puzzles/desert-sun-native-v2-thumbnail-35e54945d5f4.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "floating-house-native-v2": [
+      {
+        "revision": "c8c01215a8cab4a202374b785cc58b2ee73c079c0ebe277504495870d3294928",
+        "src": "/puzzles/floating-house-native-v2-optimized-d9db7ae262bf.webp",
+        "thumbSrc": "/puzzles/floating-house-native-v2-thumbnail-e73afeb54279.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "blossom-canal-native-v2": [
+      {
+        "revision": "c32a5856c0e7cf153d972116ee9beab6eed6211e09b66e636ec6c22200be9ef1",
+        "src": "/puzzles/blossom-canal-native-v2-optimized-b2047cc43051.webp",
+        "thumbSrc": "/puzzles/blossom-canal-native-v2-thumbnail-c4bbba6d127c.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "alpine-village-native-v2": [
+      {
+        "revision": "02f63878ababc5dfcb7174dfe9edf14e1653285955c1aa16e631fdeff984e42f",
+        "src": "/puzzles/alpine-village-native-v2-optimized-85b0351fbc78.webp",
+        "thumbSrc": "/puzzles/alpine-village-native-v2-thumbnail-1d1c2dce9ede.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "seaside-native-v2": [
+      {
+        "revision": "a6bb2a8e4eb1f0f77451dfa06cac6df3a8a43e412c1fab6226ca702b5a650bc4",
+        "src": "/puzzles/seaside-native-v2-optimized-e06407b749db.webp",
+        "thumbSrc": "/puzzles/seaside-native-v2-thumbnail-05f117fb8a2d.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "tulip-windmill-native-v2": [
+      {
+        "revision": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc",
+        "src": "/puzzles/tulip-windmill-native-v2-optimized-eac562ed21c9.webp",
+        "thumbSrc": "/puzzles/tulip-windmill-native-v2-thumbnail-063e643f6ea6.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "autumn-teahouse-native-v2": [
+      {
+        "revision": "d794b60b957f28fe222ed86dd017495effcc3112a4aef5688232ec114ee1fe78",
+        "src": "/puzzles/autumn-teahouse-native-v2-optimized-d8f697535864.webp",
+        "thumbSrc": "/puzzles/autumn-teahouse-native-v2-thumbnail-fe898d0bc4af.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "bakery-morning-native-v2": [
+      {
+        "revision": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
+        "src": "/puzzles/bakery-morning-native-v2-optimized-c286d84dd455.webp",
+        "thumbSrc": "/puzzles/bakery-morning-native-v2-thumbnail-bdc949984254.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "ceramic-studio-native-v2": [
+      {
+        "revision": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+        "src": "/puzzles/ceramic-studio-native-v2-optimized-465c95333307.webp",
+        "thumbSrc": "/puzzles/ceramic-studio-native-v2-thumbnail-ccf170013821.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "harbor-houses-native-v2": [
+      {
+        "revision": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+        "src": "/puzzles/harbor-houses-native-v2-optimized-e85bac4bd1d5.webp",
+        "thumbSrc": "/puzzles/harbor-houses-native-v2-thumbnail-9fad6c135239.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "garden-table-native-v2": [
+      {
+        "revision": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+        "src": "/puzzles/garden-table-native-v2-optimized-98cba0eff578.webp",
+        "thumbSrc": "/puzzles/garden-table-native-v2-thumbnail-22407ec6159f.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "winter-village-native-v2": [
+      {
+        "revision": "6a9f7bd722a6f07fad44568ec977bf4b45c3b00c547030e5951e94c92372878a",
+        "src": "/puzzles/winter-village-native-v2-optimized-96073e7f8c82.webp",
+        "thumbSrc": "/puzzles/winter-village-native-v2-thumbnail-0c178c067353.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "emerald-river-valley": [
+      {
+        "revision": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+        "src": "/puzzles/emerald-river-valley-optimized-2d86f48b3515.webp",
+        "thumbSrc": "/puzzles/emerald-river-valley-thumbnail-487330d2a587.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "sunlit-coastal-headland": [
+      {
+        "revision": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+        "src": "/puzzles/sunlit-coastal-headland-optimized-ad9441550180.webp",
+        "thumbSrc": "/puzzles/sunlit-coastal-headland-thumbnail-762e40c41598.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "golden-sand-dunes": [
+      {
+        "revision": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+        "src": "/puzzles/golden-sand-dunes-optimized-5d70c7b1ba93.webp",
+        "thumbSrc": "/puzzles/golden-sand-dunes-thumbnail-6f3d81c994f7.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "autumn-lakeshore": [
+      {
+        "revision": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+        "src": "/puzzles/autumn-lakeshore-optimized-1c76dd818968.webp",
+        "thumbSrc": "/puzzles/autumn-lakeshore-thumbnail-5bdf424a0a75.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "rainbow-grassland": [
+      {
+        "revision": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+        "src": "/puzzles/rainbow-grassland-optimized-7ff7268904ea.webp",
+        "thumbSrc": "/puzzles/rainbow-grassland-thumbnail-537ca8ee53bf.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "mountain-lake-reflection": [
+      {
+        "revision": "03b39a70fded56605f63ef3e4f6e0437c9b74706a72e70b0bdbd591f8ca67146",
+        "src": "/puzzles/mountain-lake-reflection-optimized-1867e2d4de16.webp",
+        "thumbSrc": "/puzzles/mountain-lake-reflection-thumbnail-014103253f54.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "morning-meadow-tree": [
+      {
+        "revision": "7cc1d79bc02f8a614cf755170b994ececf4126ed4866f339260202e88814cf01",
+        "src": "/puzzles/morning-meadow-tree-optimized-689cf2ac905c.webp",
+        "thumbSrc": "/puzzles/morning-meadow-tree-thumbnail-8750918ab6b2.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "clear-sand-bay": [
+      {
+        "revision": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72",
+        "src": "/puzzles/clear-sand-bay-optimized-b6ebebf3c564.webp",
+        "thumbSrc": "/puzzles/clear-sand-bay-thumbnail-971e9300045f.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "lone-pine-snow": [
+      {
+        "revision": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa",
+        "src": "/puzzles/lone-pine-snow-optimized-083ae5be3e49.webp",
+        "thumbSrc": "/puzzles/lone-pine-snow-thumbnail-4249c2e1f234.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "quiet-cliff-falls": [
+      {
+        "revision": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+        "src": "/puzzles/quiet-cliff-falls-optimized-3e9e87d2282c.webp",
+        "thumbSrc": "/puzzles/quiet-cliff-falls-thumbnail-925d563cffb2.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "lemon-still-life": [
+      {
+        "revision": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6",
+        "src": "/puzzles/lemon-still-life-optimized-d8b24a6a599e.webp",
+        "thumbSrc": "/puzzles/lemon-still-life-thumbnail-8c5a0448dd12.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "sleepy-cat": [
+      {
+        "revision": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279",
+        "src": "/puzzles/sleepy-cat-optimized-3522daec8e39.webp",
+        "thumbSrc": "/puzzles/sleepy-cat-thumbnail-c49d7e4d1010.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "sailboat-bay": [
+      {
+        "revision": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+        "src": "/puzzles/sailboat-bay-optimized-944a369ee381.webp",
+        "thumbSrc": "/puzzles/sailboat-bay-thumbnail-daacaea1f9fe.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "tulip-vase": [
+      {
+        "revision": "509cb41c13a164bd1afe293a0a922d7c12b4b81d8cd5037fba8ae9b9148f8892",
+        "src": "/puzzles/tulip-vase-optimized-d09d1fe5f14e.webp",
+        "thumbSrc": "/puzzles/tulip-vase-thumbnail-fcb40404fae3.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "hill-cottage": [
+      {
+        "revision": "2f7958c757930a52bcbf199d07b9ef29f780e1e688a73b7964cd599e7b0d7570",
+        "src": "/puzzles/hill-cottage-optimized-60b9a4b62ee7.webp",
+        "thumbSrc": "/puzzles/hill-cottage-thumbnail-179a213e140b.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "whale-moon": [
+      {
+        "revision": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc",
+        "src": "/puzzles/whale-moon-optimized-e6b46c5a0771.webp",
+        "thumbSrc": "/puzzles/whale-moon-thumbnail-462b3eb77a54.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "orange-bicycle": [
+      {
+        "revision": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+        "src": "/puzzles/orange-bicycle-optimized-8122151359da.webp",
+        "thumbSrc": "/puzzles/orange-bicycle-thumbnail-f6d0c4f92a73.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "peach-breakfast": [
+      {
+        "revision": "a73ceddd4c7d8110b535db21bf022deb71620aadadde7f80e7343aa09f95a5cd",
+        "src": "/puzzles/peach-breakfast-optimized-e78fd7fd081b.webp",
+        "thumbSrc": "/puzzles/peach-breakfast-thumbnail-56ee6654835c.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "desert-sun": [
+      {
+        "revision": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+        "src": "/puzzles/desert-sun-optimized-756cb116c7c6.webp",
+        "thumbSrc": "/puzzles/desert-sun-thumbnail-93030157090c.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "floating-house": [
+      {
+        "revision": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22",
+        "src": "/puzzles/floating-house-optimized-abf5047c9f31.webp",
+        "thumbSrc": "/puzzles/floating-house-thumbnail-08f4d3d888e4.webp",
+        "width": 1402,
+        "height": 1122
+      }
+    ],
+    "blossom-canal": [
+      {
+        "revision": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+        "src": "/puzzles/blossom-canal-optimized-38e9abcf0f4a.webp",
+        "thumbSrc": "/puzzles/blossom-canal-thumbnail-ab2cc4687425.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "coral-garden": [
+      {
+        "revision": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+        "src": "/puzzles/coral-garden-optimized-232e4d089b04.webp",
+        "thumbSrc": "/puzzles/coral-garden-thumbnail-81c0426bec73.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "cat-library": [
+      {
+        "revision": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+        "src": "/puzzles/cat-library-optimized-f8cd932c094b.webp",
+        "thumbSrc": "/puzzles/cat-library-thumbnail-d2661e89cd92.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "alpine-village": [
+      {
+        "revision": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+        "src": "/puzzles/alpine-village-optimized-9b69d116744b.webp",
+        "thumbSrc": "/puzzles/alpine-village-thumbnail-f2ab8f7ecf6b.webp",
+        "width": 1774,
+        "height": 887
+      }
+    ],
+    "seaside": [
+      {
+        "revision": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+        "src": "/puzzles/seaside-optimized-daee3d7abdfb.webp",
+        "thumbSrc": "/puzzles/seaside-thumbnail-ed9549cc365d.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "skate-garden": [
+      {
+        "revision": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182",
+        "src": "/puzzles/skate-garden-optimized-5969ded60f60.webp",
+        "thumbSrc": "/puzzles/skate-garden-thumbnail-a0176a1a6279.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "amber-cabinet": [
+      {
+        "revision": "6efa913d5ffa8c37d2df4d8d795f0dea98173429e5ae14ffd05eb23d4874f9c4",
+        "src": "/puzzles/amber-cabinet-optimized-8eaa3c563177.webp",
+        "thumbSrc": "/puzzles/amber-cabinet-thumbnail-b5d538d458cd.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "vermilion-garden": [
+      {
+        "revision": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+        "src": "/puzzles/vermilion-garden-optimized-13a666b25e35.webp",
+        "thumbSrc": "/puzzles/vermilion-garden-thumbnail-a5c77e092a92.webp",
+        "width": 1448,
+        "height": 1086
+      },
+      {
+        "revision": "6c48849ad6f92706def0ad5a466279eadda6cc5929a621a6c085b6bf0246f53b",
+        "src": "/puzzles/vermilion-garden-optimized-22f1e01f804e.webp",
+        "thumbSrc": "/puzzles/vermilion-garden-thumbnail-6c96de0885b3.webp",
+        "width": 2432,
+        "height": 1824
+      }
+    ],
+    "lantern-market": [
+      {
+        "revision": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+        "src": "/puzzles/lantern-market-optimized-bec35d733845.webp",
+        "thumbSrc": "/puzzles/lantern-market-thumbnail-2493faf2382d.webp",
+        "width": 1448,
+        "height": 1086
+      },
+      {
+        "revision": "7a3f2401cef85d3be35d7c0cd4b3c7a87d1f0e68ac41e684475d39b301a1edad",
+        "src": "/puzzles/lantern-market-optimized-a87a42d468d1.webp",
+        "thumbSrc": "/puzzles/lantern-market-thumbnail-f00aa9b09d09.webp",
+        "width": 2432,
+        "height": 1824
+      }
+    ],
+    "tulip-windmill": [
+      {
+        "revision": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+        "src": "/puzzles/tulip-windmill-optimized-f329d9b4ade4.webp",
+        "thumbSrc": "/puzzles/tulip-windmill-thumbnail-116adeb7c698.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "autumn-teahouse": [
+      {
+        "revision": "4aae9d7de6c78cbf798b47ac7e6df4d91031ac7ca62c46de084e689c277c5578",
+        "src": "/puzzles/autumn-teahouse-optimized-2c19055b348b.webp",
+        "thumbSrc": "/puzzles/autumn-teahouse-thumbnail-5d53386d4009.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "bakery-morning": [
+      {
+        "revision": "61e70be74e954036b975362a91cb43160269efd7ccc1fd733605d9e9585edf0d",
+        "src": "/puzzles/bakery-morning-optimized-f858a1bc72e3.webp",
+        "thumbSrc": "/puzzles/bakery-morning-thumbnail-61e2e0f3b75c.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "tropical-aviary": [
+      {
+        "revision": "f56f6c745c6eee9ededc7ce637fac6e2a7a2d2baa5867892020b7b5cc3d3b66a",
+        "src": "/puzzles/tropical-aviary-optimized-cd57dc72f961.webp",
+        "thumbSrc": "/puzzles/tropical-aviary-thumbnail-b249d8aa9fdc.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "woodland-friends": [
+      {
+        "revision": "1199446d03476b2090fcb6fc91a2875c0b76b20b0ba1ed8b009e03e1a84bbd2c",
+        "src": "/puzzles/woodland-friends-optimized-6e7d582858fd.webp",
+        "thumbSrc": "/puzzles/woodland-friends-thumbnail-78c4420f01b2.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "ceramic-studio": [
+      {
+        "revision": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56",
+        "src": "/puzzles/ceramic-studio-optimized-27ae99ef7be6.webp",
+        "thumbSrc": "/puzzles/ceramic-studio-thumbnail-ce44ab7fdb9e.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "star-observatory": [
+      {
+        "revision": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8",
+        "src": "/puzzles/star-observatory-optimized-d1237d3774db.webp",
+        "thumbSrc": "/puzzles/star-observatory-thumbnail-2e6e5cb3ac62.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "floating-islands": [
+      {
+        "revision": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e",
+        "src": "/puzzles/floating-islands-optimized-209ed26d6529.webp",
+        "thumbSrc": "/puzzles/floating-islands-thumbnail-837a5c15defc.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "harbor-houses": [
+      {
+        "revision": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+        "src": "/puzzles/harbor-houses-optimized-32a8c8d6056d.webp",
+        "thumbSrc": "/puzzles/harbor-houses-thumbnail-bfeed0789495.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "garden-table": [
+      {
+        "revision": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0",
+        "src": "/puzzles/garden-table-optimized-5de140c6180d.webp",
+        "thumbSrc": "/puzzles/garden-table-thumbnail-86ce914461f9.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "winter-village": [
+      {
+        "revision": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+        "src": "/puzzles/winter-village-optimized-76be54565d36.webp",
+        "thumbSrc": "/puzzles/winter-village-thumbnail-bfea8c39bd6c.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "cat-video-call-v1": [
+      {
+        "revision": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+        "src": "/puzzles/cat-video-call-v1-optimized-164a8edd1bef.webp",
+        "thumbSrc": "/puzzles/cat-video-call-v1-thumbnail-30f2fe02f81c.webp",
+        "width": 1122,
+        "height": 1402
+      }
+    ],
+    "warm-sienna-study-01": [
+      {
+        "revision": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
+        "src": "/puzzles/warm-sienna-study-01-optimized-2b7517a62176.webp",
+        "thumbSrc": "/puzzles/warm-sienna-study-01-thumbnail-83c8433cea97.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "verdant-green-study-02": [
+      {
+        "revision": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
+        "src": "/puzzles/verdant-green-study-02-optimized-faab64119d31.webp",
+        "thumbSrc": "/puzzles/verdant-green-study-02-thumbnail-00741da618ec.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "olive-tone-study-03": [
+      {
+        "revision": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+        "src": "/puzzles/olive-tone-study-03-optimized-1ec96ac902a4.webp",
+        "thumbSrc": "/puzzles/olive-tone-study-03-thumbnail-e1a53c85943a.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "azure-blue-study-04": [
+      {
+        "revision": "208996e7fd3b875560a43fe5ecb907bb72702b25f7f9b63ae43eadda7d5f78c7",
+        "src": "/puzzles/azure-blue-study-04-optimized-0b5d59b89a40.webp",
+        "thumbSrc": "/puzzles/azure-blue-study-04-thumbnail-83356118108d.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "golden-amber-study-05": [
+      {
+        "revision": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+        "src": "/puzzles/golden-amber-study-05-optimized-0c7ebaf3f6ca.webp",
+        "thumbSrc": "/puzzles/golden-amber-study-05-thumbnail-1f93f481f000.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "sage-green-study-06": [
+      {
+        "revision": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+        "src": "/puzzles/sage-green-study-06-optimized-97b7bc29ce88.webp",
+        "thumbSrc": "/puzzles/sage-green-study-06-thumbnail-e6594778920f.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "grass-green-study-07": [
+      {
+        "revision": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+        "src": "/puzzles/grass-green-study-07-optimized-e8371ce33774.webp",
+        "thumbSrc": "/puzzles/grass-green-study-07-thumbnail-3c75966233a1.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "cat-lantern-market-v1": [
+      {
+        "revision": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+        "src": "/puzzles/cat-lantern-market-v1-optimized-d91f042d75b8.webp",
+        "thumbSrc": "/puzzles/cat-lantern-market-v1-thumbnail-79f1d1b348ef.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "lantern-dance-v1": [
+      {
+        "revision": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d",
+        "src": "/puzzles/lantern-dance-v1-optimized-6ed8fdce9304.webp",
+        "thumbSrc": "/puzzles/lantern-dance-v1-thumbnail-61c1318e61e9.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "ef3c28c339d233d44f2fbd357e5754453cd52e2944353f0be21f073535e22ae8",
+        "src": "/puzzles/lantern-dance-v1-optimized-90db7f2d0dff.webp",
+        "thumbSrc": "/puzzles/lantern-dance-v1-thumbnail-8cf490499a62.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "magic-treehouse-v1": [
+      {
+        "revision": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+        "src": "/puzzles/magic-treehouse-v1-optimized-9087c7c19b15.webp",
+        "thumbSrc": "/puzzles/magic-treehouse-v1-thumbnail-c82398bad66f.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "riverside-park-festival-v1": [
+      {
+        "revision": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+        "src": "/puzzles/riverside-park-festival-v1-optimized-3e478cefefc9.webp",
+        "thumbSrc": "/puzzles/riverside-park-festival-v1-thumbnail-409d3ee391a9.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "04c65bf572e00cdd34d5ba37628fbf16dbf3b453bf2071bc074f0c4b1acaaeb2",
+        "src": "/puzzles/riverside-park-festival-v1-optimized-2928da6c1471.webp",
+        "thumbSrc": "/puzzles/riverside-park-festival-v1-thumbnail-f6b1e404e171.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "summer-night-matsuri-v1": [
+      {
+        "revision": "e163daa82abc2433a8ecac0efb24f417eec847ed827164e65ce82aaf60c7cda1",
+        "src": "/puzzles/summer-night-matsuri-v1-optimized-148f1eccbec8.webp",
+        "thumbSrc": "/puzzles/summer-night-matsuri-v1-thumbnail-d5b27c4f8c68.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "e30f3dd7aebd5f1274bb8441c839f779d4656e83ed98fca9a3b1c6ca6ba76c05",
+        "src": "/puzzles/summer-night-matsuri-v1-optimized-cbc4d65c8a3b.webp",
+        "thumbSrc": "/puzzles/summer-night-matsuri-v1-thumbnail-f607975d201d.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "orbital-market-v1": [
+      {
+        "revision": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+        "src": "/puzzles/orbital-market-v1-optimized-e02ffe344c41.webp",
+        "thumbSrc": "/puzzles/orbital-market-v1-thumbnail-29274227b9c2.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "7a8399b3db4e9087bfa48b2955eff34c5fe35ef9299bba0239aa97dbc6bd448d",
+        "src": "/puzzles/orbital-market-v1-optimized-e3d9a0867de8.webp",
+        "thumbSrc": "/puzzles/orbital-market-v1-thumbnail-271fcf889cbd.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "snow-village-fair-v1": [
+      {
+        "revision": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10",
+        "src": "/puzzles/snow-village-fair-v1-optimized-034682537977.webp",
+        "thumbSrc": "/puzzles/snow-village-fair-v1-thumbnail-a97041fe9e48.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "2c59de1dd8c53d36b8778b3a8a9f723f627beb75b5db30f1463f5ab563cce5a2",
+        "src": "/puzzles/snow-village-fair-v1-optimized-f5d9c69746e7.webp",
+        "thumbSrc": "/puzzles/snow-village-fair-v1-thumbnail-111047efc863.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "tropical-harbor-carnival-v1": [
+      {
+        "revision": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a",
+        "src": "/puzzles/tropical-harbor-carnival-v1-optimized-031294a0d198.webp",
+        "thumbSrc": "/puzzles/tropical-harbor-carnival-v1-thumbnail-1f7675d1f866.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "e2313e31e4310f957e354f90f40eb01df8169f0c2395da98f2b913b9be9e2739",
+        "src": "/puzzles/tropical-harbor-carnival-v1-optimized-9439cb3ba9c7.webp",
+        "thumbSrc": "/puzzles/tropical-harbor-carnival-v1-thumbnail-10cc2b4be524.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "clockwork-invention-fair-v1": [
+      {
+        "revision": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+        "src": "/puzzles/clockwork-invention-fair-v1-optimized-12628dca7fe3.webp",
+        "thumbSrc": "/puzzles/clockwork-invention-fair-v1-thumbnail-3e43d961f470.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "enchanted-library-garden-v1": [
+      {
+        "revision": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+        "src": "/puzzles/enchanted-library-garden-v1-optimized-ebcf66da3b83.webp",
+        "thumbSrc": "/puzzles/enchanted-library-garden-v1-thumbnail-1d560b5f7061.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "autumn-farm-festival-v1": [
+      {
+        "revision": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+        "src": "/puzzles/autumn-farm-festival-v1-optimized-b28051563c57.webp",
+        "thumbSrc": "/puzzles/autumn-farm-festival-v1-thumbnail-a30f98a16372.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "24b4b2548fa172dff56c59da271e250804023ebc7debae679ebb8898edae0abd",
+        "src": "/puzzles/autumn-farm-festival-v1-optimized-ccc02f574efd.webp",
+        "thumbSrc": "/puzzles/autumn-farm-festival-v1-thumbnail-74be6b7efcf9.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "underwater-city-fair-v1": [
+      {
+        "revision": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+        "src": "/puzzles/underwater-city-fair-v1-optimized-d286f9679e67.webp",
+        "thumbSrc": "/puzzles/underwater-city-fair-v1-thumbnail-8b9aba675fba.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "rooftop-neighborhood-festival-v1": [
+      {
+        "revision": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+        "src": "/puzzles/rooftop-neighborhood-festival-v1-optimized-9b04303916b4.webp",
+        "thumbSrc": "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-5a83f9760734.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "ecf6b256749ec3d7321a540b34b5b60ec49cb3bded5ed1cf05d224263252b2a6",
+        "src": "/puzzles/rooftop-neighborhood-festival-v1-optimized-a06e083f4dcd.webp",
+        "thumbSrc": "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-b29a1d6580e8.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "golden-alpine-valley-v1": [
+      {
+        "revision": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de",
+        "src": "/puzzles/golden-alpine-valley-v1-optimized-72dc0bea3c48.webp",
+        "thumbSrc": "/puzzles/golden-alpine-valley-v1-thumbnail-e6dc52bd3e54.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "sunset-cliff-lighthouse-v1": [
+      {
+        "revision": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
+        "src": "/puzzles/sunset-cliff-lighthouse-v1-optimized-6ba02981ad75.webp",
+        "thumbSrc": "/puzzles/sunset-cliff-lighthouse-v1-thumbnail-5de31be23190.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "lavender-evening-fields-v1": [
+      {
+        "revision": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193",
+        "src": "/puzzles/lavender-evening-fields-v1-optimized-46b079f1405d.webp",
+        "thumbSrc": "/puzzles/lavender-evening-fields-v1-thumbnail-c5a5ca0a83ba.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "alpine-turquoise-reflections-v1": [
+      {
+        "revision": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+        "src": "/puzzles/alpine-turquoise-reflections-v1-optimized-0f752cf9eac4.webp",
+        "thumbSrc": "/puzzles/alpine-turquoise-reflections-v1-thumbnail-68ee1b368644.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "red-canyon-river-v1": [
+      {
+        "revision": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+        "src": "/puzzles/red-canyon-river-v1-optimized-37447e85115c.webp",
+        "thumbSrc": "/puzzles/red-canyon-river-v1-thumbnail-f2ed0f8be756.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "misty-terrace-dawn-v1": [
+      {
+        "revision": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf",
+        "src": "/puzzles/misty-terrace-dawn-v1-optimized-3d89cc60dcdf.webp",
+        "thumbSrc": "/puzzles/misty-terrace-dawn-v1-thumbnail-aa8021d7efd6.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "spring-stream-stone-bridge-v1": [
+      {
+        "revision": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+        "src": "/puzzles/spring-stream-stone-bridge-v1-optimized-e9fa7d00788d.webp",
+        "thumbSrc": "/puzzles/spring-stream-stone-bridge-v1-thumbnail-288915d05201.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "winter-lake-cabin-glow-v1": [
+      {
+        "revision": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+        "src": "/puzzles/winter-lake-cabin-glow-v1-optimized-66bb3073ca40.webp",
+        "thumbSrc": "/puzzles/winter-lake-cabin-glow-v1-thumbnail-f6ded2e7cc41.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "reed-marsh-sunset-v1": [
+      {
+        "revision": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0",
+        "src": "/puzzles/reed-marsh-sunset-v1-optimized-30e9d7162f59.webp",
+        "thumbSrc": "/puzzles/reed-marsh-sunset-v1-thumbnail-f831f3028c64.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "rainforest-waterfall-haven-v1": [
+      {
+        "revision": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+        "src": "/puzzles/rainforest-waterfall-haven-v1-optimized-788a4ce49ed9.webp",
+        "thumbSrc": "/puzzles/rainforest-waterfall-haven-v1-thumbnail-2dee811487d0.webp",
+        "width": 1448,
+        "height": 1086
+      }
+    ],
+    "whale-sunken-city-v1": [
+      {
+        "revision": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+        "src": "/puzzles/whale-sunken-city-v1-optimized-3fcebda4055a.webp",
+        "thumbSrc": "/puzzles/whale-sunken-city-v1-thumbnail-57dd00cd1926.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "snowy-sunset-train-v1": [
+      {
+        "revision": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+        "src": "/puzzles/snowy-sunset-train-v1-optimized-db3fc700542e.webp",
+        "thumbSrc": "/puzzles/snowy-sunset-train-v1-thumbnail-1dbea8d3ebbf.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "starlit-lakeside-camp-v1": [
+      {
+        "revision": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+        "src": "/puzzles/starlit-lakeside-camp-v1-optimized-9cfedc5a5edb.webp",
+        "thumbSrc": "/puzzles/starlit-lakeside-camp-v1-thumbnail-47398ef7ac00.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "cherry-blossom-seaside-tram-v1": [
+      {
+        "revision": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+        "src": "/puzzles/cherry-blossom-seaside-tram-v1-optimized-4c937684842b.webp",
+        "thumbSrc": "/puzzles/cherry-blossom-seaside-tram-v1-thumbnail-c2466bfe8a0b.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "cloud-dragon-ascension-v1": [
+      {
+        "revision": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+        "src": "/puzzles/cloud-dragon-ascension-v1-optimized-68a47ee2076e.webp",
+        "thumbSrc": "/puzzles/cloud-dragon-ascension-v1-thumbnail-c1652068653c.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "moonlit-nine-tail-v1": [
+      {
+        "revision": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
+        "src": "/puzzles/moonlit-nine-tail-v1-optimized-1d3a8a605b86.webp",
+        "thumbSrc": "/puzzles/moonlit-nine-tail-v1-thumbnail-83ad8f7ea66d.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "lantern-fox-pair-v1": [
+      {
+        "revision": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+        "src": "/puzzles/lantern-fox-pair-v1-optimized-a4f5339c4b63.webp",
+        "thumbSrc": "/puzzles/lantern-fox-pair-v1-thumbnail-50ed6e40a0a9.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "neon-cherry-swordswoman-v1": [
+      {
+        "revision": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+        "src": "/puzzles/neon-cherry-swordswoman-v1-optimized-4d1d6001b7cf.webp",
+        "thumbSrc": "/puzzles/neon-cherry-swordswoman-v1-thumbnail-537248b946b1.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "peach-blossom-fan-v1": [
+      {
+        "revision": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+        "src": "/puzzles/peach-blossom-fan-v1-optimized-2e43ae7eeb29.webp",
+        "thumbSrc": "/puzzles/peach-blossom-fan-v1-thumbnail-60094937426c.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "daily-moonlit-cherry-umbrella-v1": [
+      {
+        "revision": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+        "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-optimized-e433b1b96d84.webp",
+        "thumbSrc": "/puzzles/daily-moonlit-cherry-umbrella-v1-thumbnail-336cece91850.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "daily-lantern-lake-violin-v1": [
+      {
+        "revision": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+        "src": "/puzzles/daily-lantern-lake-violin-v1-optimized-9554237a34b8.webp",
+        "thumbSrc": "/puzzles/daily-lantern-lake-violin-v1-thumbnail-d66d1d6a8119.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "revision": "18828b11113a6fc226906ec4eec2f12f3875a025e141c730f3877bb1eca96f74",
+        "src": "/puzzles/daily-lantern-lake-violin-v1-optimized-ca864f595c63.webp",
+        "thumbSrc": "/puzzles/daily-lantern-lake-violin-v1-thumbnail-0357d1c6210a.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "daily-sky-whale-islands-v1": [
+      {
+        "revision": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+        "src": "/puzzles/daily-sky-whale-islands-v1-optimized-9294728dd8dc.webp",
+        "thumbSrc": "/puzzles/daily-sky-whale-islands-v1-thumbnail-3ae6da19d07e.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "new-0d5e19f196b617a4-v1": [
+      {
+        "revision": "24a3e349648481acb50b93a0d23873d97c972472801b3d50037a4e8019382038",
+        "src": "/puzzles/new-0d5e19f196b617a4-v1-optimized-e63f30ea1b02.webp",
+        "thumbSrc": "/puzzles/new-0d5e19f196b617a4-v1-thumbnail-cd5af60983ca.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-cdcb42ee9dfd5d7e-v1": [
+      {
+        "revision": "1707aec50a8a3ba75929e0affc7f1786053e5059ce92aba06224a55f46725815",
+        "src": "/puzzles/new-cdcb42ee9dfd5d7e-v1-optimized-b6727b696b4a.webp",
+        "thumbSrc": "/puzzles/new-cdcb42ee9dfd5d7e-v1-thumbnail-3ed5a8011fc5.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-5820571e53d622ca-v1": [
+      {
+        "revision": "932b4f9ddd922f08d9fb0240b0a3a7cabf57d1f0cec446cd4c2a925c731a744e",
+        "src": "/puzzles/new-5820571e53d622ca-v1-optimized-1b03fcaae104.webp",
+        "thumbSrc": "/puzzles/new-5820571e53d622ca-v1-thumbnail-386f8d5b87a1.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-828eeec143c7c6b0-v1": [
+      {
+        "revision": "9424f714bc68726d46d1475a6e3f2c22f54155556ff8218e60def9f44e656ada",
+        "src": "/puzzles/new-828eeec143c7c6b0-v1-optimized-2c6ab5c84ce8.webp",
+        "thumbSrc": "/puzzles/new-828eeec143c7c6b0-v1-thumbnail-8bde09912857.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-9a0dfcaef45b9a0a-v1": [
+      {
+        "revision": "2d37ce85ea871ca457cf16f2de5569203e300f8d9d5011fd170dbbd02b18f6d5",
+        "src": "/puzzles/new-9a0dfcaef45b9a0a-v1-optimized-623b3113a975.webp",
+        "thumbSrc": "/puzzles/new-9a0dfcaef45b9a0a-v1-thumbnail-b555a5b085f4.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-494d8352a6bf09de-v1": [
+      {
+        "revision": "d4e0e1a7c7fbfb95a2123eb1a0725deb32e01b4fc88ff893d609616d16d10385",
+        "src": "/puzzles/new-494d8352a6bf09de-v1-optimized-54ed5d45c24d.webp",
+        "thumbSrc": "/puzzles/new-494d8352a6bf09de-v1-thumbnail-781f92087f16.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-32f4a77d2dd8becd-v1": [
+      {
+        "revision": "8c3a66210247841ad1763516c889bf41e14d1c5c6c8f7fd4a78694bdd4b7d413",
+        "src": "/puzzles/new-32f4a77d2dd8becd-v1-optimized-64cb73108d5b.webp",
+        "thumbSrc": "/puzzles/new-32f4a77d2dd8becd-v1-thumbnail-fd17b237a67e.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "691d72a50c25b132892191265d9f69c1bce5ed68ba138acb4848bc4e274efbca",
+        "src": "/puzzles/new-32f4a77d2dd8becd-v1-optimized-0ea9546235be.webp",
+        "thumbSrc": "/puzzles/new-32f4a77d2dd8becd-v1-thumbnail-5c71e71b3bd1.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-cadc3cceade3fdfe-v1": [
+      {
+        "revision": "8b5a2a1b3af0fb8677d1773bf6d819ff63d9bbe9956409938ec15d4d73ddfcdd",
+        "src": "/puzzles/new-cadc3cceade3fdfe-v1-optimized-19de3ee4dd47.webp",
+        "thumbSrc": "/puzzles/new-cadc3cceade3fdfe-v1-thumbnail-3b4f76bdd694.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-8117a394ef1497a7-v1": [
+      {
+        "revision": "e0d80664eefb3b3dec3ac43bf818957931ae156aece45aeee07f42b6d124ebb9",
+        "src": "/puzzles/new-8117a394ef1497a7-v1-optimized-c94e5518dffa.webp",
+        "thumbSrc": "/puzzles/new-8117a394ef1497a7-v1-thumbnail-5f1751ca1e64.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-204e0f8d41fefd44-v1": [
+      {
+        "revision": "d5cd5e030816aed2291329e74fb1de6bc94617032312979d8ddb9c95fdac5e61",
+        "src": "/puzzles/new-204e0f8d41fefd44-v1-optimized-554870416f8d.webp",
+        "thumbSrc": "/puzzles/new-204e0f8d41fefd44-v1-thumbnail-061cb4b377f1.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-721cd6a55b98088c-v1": [
+      {
+        "revision": "e294f332028db35324c4fa93d48eab1f4012695dd65689021eec0fad8b69df68",
+        "src": "/puzzles/new-721cd6a55b98088c-v1-optimized-b0b94bf641a4.webp",
+        "thumbSrc": "/puzzles/new-721cd6a55b98088c-v1-thumbnail-9093c34ae5d2.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-71cf185693ca0bc1-v1": [
+      {
+        "revision": "5fff136db7d59f8f72d26e85b5bda7c96023d084bdb949f7168d15453b4efd2c",
+        "src": "/puzzles/new-71cf185693ca0bc1-v1-optimized-fa9ec1b8e91d.webp",
+        "thumbSrc": "/puzzles/new-71cf185693ca0bc1-v1-thumbnail-648b9a8ba135.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-886dff1892b72f2e-v1": [
+      {
+        "revision": "f334e8f0f7f0feb2f946582d1c2bb35dee41ac0691efc63f674297b7ed509148",
+        "src": "/puzzles/new-886dff1892b72f2e-v1-optimized-066eb4070b94.webp",
+        "thumbSrc": "/puzzles/new-886dff1892b72f2e-v1-thumbnail-ea31bfbc203b.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "a9bb6a810435d8d06ba45bb85301382a6abb1c4607403fe5c62e3dc3049b39d8",
+        "src": "/puzzles/new-886dff1892b72f2e-v1-optimized-b8368da158c3.webp",
+        "thumbSrc": "/puzzles/new-886dff1892b72f2e-v1-thumbnail-9cff6fad1797.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-3f0d7bc0dd7a34ad-v1": [
+      {
+        "revision": "db667fef81b7926a9682a2e3cc1bcaf18465b80ceba199d92cdda7c2618d9d4f",
+        "src": "/puzzles/new-3f0d7bc0dd7a34ad-v1-optimized-9abd07c7d13a.webp",
+        "thumbSrc": "/puzzles/new-3f0d7bc0dd7a34ad-v1-thumbnail-839a5cfaa88b.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-bc35fb2187f9d352-v1": [
+      {
+        "revision": "73dea9ddd9c9cb449227ed447f5a65866b4346d08e3134ddcdf87660dc349cd4",
+        "src": "/puzzles/new-bc35fb2187f9d352-v1-optimized-38c6e97b2220.webp",
+        "thumbSrc": "/puzzles/new-bc35fb2187f9d352-v1-thumbnail-dcc87e7f007e.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-d177593d049591db-v1": [
+      {
+        "revision": "02cd52f18ba577200c2edccc18aa16ebdbd5edf39ecfb8fa4d247dbcb970c464",
+        "src": "/puzzles/new-d177593d049591db-v1-optimized-a2b20b3d158e.webp",
+        "thumbSrc": "/puzzles/new-d177593d049591db-v1-thumbnail-e271160ecf20.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-1f5772e32c73b6ac-v1": [
+      {
+        "revision": "5cd689eb2948d623e4033286f2a0905cdaf6f7f0b6e1b254c858f95f798920f3",
+        "src": "/puzzles/new-1f5772e32c73b6ac-v1-optimized-93bca7bab6b6.webp",
+        "thumbSrc": "/puzzles/new-1f5772e32c73b6ac-v1-thumbnail-348b05620653.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "new-df3130f1f1278398-v1": [
+      {
+        "revision": "c35ba5fc6271dd0c9d99fef7916a4b5f1c50106bf6ff91ecc8ccd5bddb8d5665",
+        "src": "/puzzles/new-df3130f1f1278398-v1-optimized-b7de6e26fa50.webp",
+        "thumbSrc": "/puzzles/new-df3130f1f1278398-v1-thumbnail-e3997ca063ea.webp",
+        "width": 2560,
+        "height": 3840
+      }
+    ],
+    "new-7eda4ecbd0894fa8-v1": [
+      {
+        "revision": "9e9d8a13d26ce839963e5b1ffbf391112ed94d3a1680cbd70e2a96beccd76586",
+        "src": "/puzzles/new-7eda4ecbd0894fa8-v1-optimized-23a8b9e36ea1.webp",
+        "thumbSrc": "/puzzles/new-7eda4ecbd0894fa8-v1-thumbnail-17898420ea1f.webp",
+        "width": 2560,
+        "height": 3840
+      }
+    ],
+    "new-81bf859e5fa1c25a-v1": [
+      {
+        "revision": "1b1d99b88431004f319ef706c92b45dd87f7506c7f42390abc944d4e36e3eaea",
+        "src": "/puzzles/new-81bf859e5fa1c25a-v1-optimized-9ce07bbf1db3.webp",
+        "thumbSrc": "/puzzles/new-81bf859e5fa1c25a-v1-thumbnail-7fd1714a483a.webp",
+        "width": 2560,
+        "height": 3840
+      }
+    ],
+    "new-6560c5fdd52cb95b-v1": [
+      {
+        "revision": "9379d77b418c680f8b2aff172f37af0c5ed1eba08891afea6f73419a599f1344",
+        "src": "/puzzles/new-6560c5fdd52cb95b-v1-optimized-37a6d539db33.webp",
+        "thumbSrc": "/puzzles/new-6560c5fdd52cb95b-v1-thumbnail-a7421362816a.webp",
+        "width": 2560,
+        "height": 3840
+      }
+    ],
+    "new-d59461bdbc671d97-v1": [
+      {
+        "revision": "427a99316b616abb8a440038a44e92c8c0c88f81709dee161e303a2fe4b305a4",
+        "src": "/puzzles/new-d59461bdbc671d97-v1-optimized-50d45ff7c203.webp",
+        "thumbSrc": "/puzzles/new-d59461bdbc671d97-v1-thumbnail-d7c1e2d6fa6f.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-6ac71846fdac2021-v1": [
+      {
+        "revision": "5a33b5da7d64c36f58e66282a7c37c41e8a5957a41c4b90ecabf17db4b71b17c",
+        "src": "/puzzles/new-6ac71846fdac2021-v1-optimized-ba40adec5bec.webp",
+        "thumbSrc": "/puzzles/new-6ac71846fdac2021-v1-thumbnail-3e4046972faf.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-99e18f4c84d31022-v1": [
+      {
+        "revision": "c595a997ea2c7e2adcd83704a976380f6bd5928696d5dd7370c1fed4c3873397",
+        "src": "/puzzles/new-99e18f4c84d31022-v1-optimized-bff4eaaffdbf.webp",
+        "thumbSrc": "/puzzles/new-99e18f4c84d31022-v1-thumbnail-c2a0d3a40469.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-11843900585354d3-v1": [
+      {
+        "revision": "770002b3c1572bd7a9ae9f2f275b47befe2a078f3a4ddfc81cb8a19117c7abcd",
+        "src": "/puzzles/new-11843900585354d3-v1-optimized-7d503bc9f00f.webp",
+        "thumbSrc": "/puzzles/new-11843900585354d3-v1-thumbnail-798b495d8b5f.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-8c5f509bfbb67790-v1": [
+      {
+        "revision": "407bce69b992b3333256dcf397f9fef1743eb13c58d9826376aa33d5da44142b",
+        "src": "/puzzles/new-8c5f509bfbb67790-v1-optimized-e647e7bbdd58.webp",
+        "thumbSrc": "/puzzles/new-8c5f509bfbb67790-v1-thumbnail-e23315f17148.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-0d69b3080237d458-v1": [
+      {
+        "revision": "3f6f931af00d0f856188897de53b6921a7227ec83e200bba7a6b14762119c72a",
+        "src": "/puzzles/new-0d69b3080237d458-v1-optimized-5e9ea85043e2.webp",
+        "thumbSrc": "/puzzles/new-0d69b3080237d458-v1-thumbnail-35847e58fb6a.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-73e8158077c67d43-v1": [
+      {
+        "revision": "8cf47e1bb958d664cbe6737baa0ea2731a8b0f5dd5720f35ac9844b681fdc88e",
+        "src": "/puzzles/new-73e8158077c67d43-v1-optimized-0fc6ec53833e.webp",
+        "thumbSrc": "/puzzles/new-73e8158077c67d43-v1-thumbnail-830ce69079b0.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-565e548c6fbda865-v1": [
+      {
+        "revision": "af958860a1ccd595498578a74def0f8f7cbf122f491068bf28d7dc86eff786d6",
+        "src": "/puzzles/new-565e548c6fbda865-v1-optimized-c32ef666c722.webp",
+        "thumbSrc": "/puzzles/new-565e548c6fbda865-v1-thumbnail-8ed82939b652.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-3abe116c803210c5-v1": [
+      {
+        "revision": "444bea066ec25fe0039ce393f54962f451929e85b55aa259e06bac5d6fd0b108",
+        "src": "/puzzles/new-3abe116c803210c5-v1-optimized-337212bd4c8d.webp",
+        "thumbSrc": "/puzzles/new-3abe116c803210c5-v1-thumbnail-6e9b884f239b.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-601be8375f771827-v1": [
+      {
+        "revision": "81379ed2ff51af467ef2c95336adc33b98fa7f92b3489a8d4c1634af464d0377",
+        "src": "/puzzles/new-601be8375f771827-v1-optimized-500fafc1b5d0.webp",
+        "thumbSrc": "/puzzles/new-601be8375f771827-v1-thumbnail-f1becb48e240.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-7f19d62a6727539b-v1": [
+      {
+        "revision": "c8624a9ff123607fd3510ad9eacbbe606254a1d818a14593b9c20d4c2281dbef",
+        "src": "/puzzles/new-7f19d62a6727539b-v1-optimized-9b1c61993e05.webp",
+        "thumbSrc": "/puzzles/new-7f19d62a6727539b-v1-thumbnail-389f4b2cee92.webp",
+        "width": 3840,
+        "height": 2160
+      }
+    ],
+    "new-cc532d03d405abd6-v1": [
+      {
+        "revision": "5db109f365cb912268981a72edc31326c27bbaf9e39e115eade6109c061fb598",
+        "src": "/puzzles/new-cc532d03d405abd6-v1-optimized-38f6b4aa74f9.webp",
+        "thumbSrc": "/puzzles/new-cc532d03d405abd6-v1-thumbnail-d5bca25c051b.webp",
+        "width": 3840,
+        "height": 2160
+      },
+      {
+        "revision": "f41b83be13532edc5b0204c86923eed2636247528b58a54a832993dc0c09d7a5",
+        "src": "/puzzles/new-cc532d03d405abd6-v1-optimized-6ee5daf098d7.webp",
+        "thumbSrc": "/puzzles/new-cc532d03d405abd6-v1-thumbnail-75305a56954c.webp",
+        "width": 2816,
+        "height": 1584
+      }
+    ],
+    "new-0b10af90a58ce698-v1": [
+      {
+        "revision": "d14e8d15a7e9b36837f1759226f7bc2c35831bafb4b727ac210ca8cf3426f13c",
+        "src": "/puzzles/new-0b10af90a58ce698-v1-optimized-0f143e692b58.webp",
+        "thumbSrc": "/puzzles/new-0b10af90a58ce698-v1-thumbnail-65422c6c01af.webp",
+        "width": 3840,
+        "height": 2160
+      },
+      {
+        "revision": "2a881855cae10a4e7e298e00ae0253e722840fba0405859975755e89c5c96cab",
+        "src": "/puzzles/new-0b10af90a58ce698-v1-optimized-adec105e811f.webp",
+        "thumbSrc": "/puzzles/new-0b10af90a58ce698-v1-thumbnail-1cfadf44012f.webp",
+        "width": 2816,
+        "height": 1584
+      }
+    ],
+    "new-c9d0f62b9a9536ed-v1": [
+      {
+        "revision": "f725db0a26e7ee70d88c717b90bfbd893bef30a5bfc6e788533144f9cfee1540",
+        "src": "/puzzles/new-c9d0f62b9a9536ed-v1-optimized-93c099a0e9f1.webp",
+        "thumbSrc": "/puzzles/new-c9d0f62b9a9536ed-v1-thumbnail-f0265979f855.webp",
+        "width": 3840,
+        "height": 2160
+      },
+      {
+        "revision": "dc2c656c80a745f7223017ea297147b19ebc60ce9fe3d3eedc51a3a5cf3e031d",
+        "src": "/puzzles/new-c9d0f62b9a9536ed-v1-optimized-84f7ee427496.webp",
+        "thumbSrc": "/puzzles/new-c9d0f62b9a9536ed-v1-thumbnail-1865675720fb.webp",
+        "width": 2816,
+        "height": 1584
+      }
+    ],
+    "new-35405f4ae5ef618e-v1": [
+      {
+        "revision": "716c81f7ccbcdf2492aa408cf18722608c1a6d82a8c2774e9393ad0960e3f15b",
+        "src": "/puzzles/new-35405f4ae5ef618e-v1-optimized-27471e72f7ea.webp",
+        "thumbSrc": "/puzzles/new-35405f4ae5ef618e-v1-thumbnail-24b01456284a.webp",
+        "width": 3840,
+        "height": 2160
+      },
+      {
+        "revision": "bb5dfbfc2cef1e2b906ee0ad7e3c170c68b5485ec1dc0444f819e130a3fbaa0d",
+        "src": "/puzzles/new-35405f4ae5ef618e-v1-optimized-ecf4f623f43d.webp",
+        "thumbSrc": "/puzzles/new-35405f4ae5ef618e-v1-thumbnail-78d95a35399c.webp",
+        "width": 2816,
+        "height": 1584
+      }
+    ],
+    "new-629dfdbe43cd5b09-v1": [
+      {
+        "revision": "57bf7eed109262acc0c46d379324d0bd710b979b880581f55afd68bedd6f4766",
+        "src": "/puzzles/new-629dfdbe43cd5b09-v1-optimized-31863fc4828a.webp",
+        "thumbSrc": "/puzzles/new-629dfdbe43cd5b09-v1-thumbnail-04207093b616.webp",
+        "width": 3840,
+        "height": 2160
+      },
+      {
+        "revision": "8831eea8d03d1197a1f8014d6fba34fd128a378fc0e4258adae25e21b1ccc2fe",
+        "src": "/puzzles/new-629dfdbe43cd5b09-v1-optimized-02897c07144d.webp",
+        "thumbSrc": "/puzzles/new-629dfdbe43cd5b09-v1-thumbnail-392f93abfbf2.webp",
+        "width": 2816,
+        "height": 1584
+      }
+    ],
+    "new-ef12f1e7d74ee89a-v1": [
+      {
+        "revision": "c9a3f056ce8b756102b6e57f9a2f0b697bfcf29d5cc70336c2defa6aafdcc202",
+        "src": "/puzzles/new-ef12f1e7d74ee89a-v1-optimized-e6cffcf01f51.webp",
+        "thumbSrc": "/puzzles/new-ef12f1e7d74ee89a-v1-thumbnail-d535628e9ac6.webp",
+        "width": 3840,
+        "height": 2160
+      },
+      {
+        "revision": "c9bc6c0b369c912e0ec267cb635559825be20121541d42255a038aec356020ff",
+        "src": "/puzzles/new-ef12f1e7d74ee89a-v1-optimized-4c3b76b80fe5.webp",
+        "thumbSrc": "/puzzles/new-ef12f1e7d74ee89a-v1-thumbnail-b088909faf72.webp",
+        "width": 2816,
+        "height": 1584
+      }
+    ],
+    "new-9359385b622e8505-v1": [
+      {
+        "revision": "7d1ff0e400dfbea59b2539f1d7e4df7081f2f2649fb97a4a496f3ffe04eada0a",
+        "src": "/puzzles/new-9359385b622e8505-v1-optimized-16b431280fd2.webp",
+        "thumbSrc": "/puzzles/new-9359385b622e8505-v1-thumbnail-c75642d7842e.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "01018e74cc93bfac86418c9ee5fa96ca4891d3b37d21503690e9da6383603a56",
+        "src": "/puzzles/new-9359385b622e8505-v1-optimized-b8300d00d65a.webp",
+        "thumbSrc": "/puzzles/new-9359385b622e8505-v1-thumbnail-1e9a3cff4774.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-968c3449978849e1-v1": [
+      {
+        "revision": "5a949c3bcabdcaddf9169c0eba9648fdd2f45c0e8a2250e5ffad5e8dd149f5c2",
+        "src": "/puzzles/new-968c3449978849e1-v1-optimized-79890873b8d0.webp",
+        "thumbSrc": "/puzzles/new-968c3449978849e1-v1-thumbnail-13d9184e3e74.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "32fb603a4426b3f9077d84bda55d93b19d737bdd4224358fac9c5effbc884d35",
+        "src": "/puzzles/new-968c3449978849e1-v1-optimized-0feafd7ba6ba.webp",
+        "thumbSrc": "/puzzles/new-968c3449978849e1-v1-thumbnail-be6fcb0c8405.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-89189e4f7af26f25-v1": [
+      {
+        "revision": "8501be2740c378ce6ed182739067f1b4fbcf9c26b13d68cd66faf75c01fc7a74",
+        "src": "/puzzles/new-89189e4f7af26f25-v1-optimized-4a1a72fcd423.webp",
+        "thumbSrc": "/puzzles/new-89189e4f7af26f25-v1-thumbnail-e49bef31152c.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "2db5d869626076944e3111e7b0ee599a5ebd67140d58f968fff26e2a959a2614",
+        "src": "/puzzles/new-89189e4f7af26f25-v1-optimized-bc52ae0d97fc.webp",
+        "thumbSrc": "/puzzles/new-89189e4f7af26f25-v1-thumbnail-bd9a8020ef2c.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-2b4be6fe98943de7-v1": [
+      {
+        "revision": "807caaef0072f39af8e6f8fae99ae09174d269fecb886c01cc46da68b8238266",
+        "src": "/puzzles/new-2b4be6fe98943de7-v1-optimized-d72c13f0a2c7.webp",
+        "thumbSrc": "/puzzles/new-2b4be6fe98943de7-v1-thumbnail-7a0728929677.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "c90c507c90dbea5c6e2da2fa775bc951f2701facd54edbd5320b67190d162bb1",
+        "src": "/puzzles/new-2b4be6fe98943de7-v1-optimized-6ab279c30653.webp",
+        "thumbSrc": "/puzzles/new-2b4be6fe98943de7-v1-thumbnail-87578af74678.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-c54eb7fbb3cd0060-v1": [
+      {
+        "revision": "66435fd3850f6f41f55997cc8ccb6583ad7f9f46b83da0b8b7b21412144e53c7",
+        "src": "/puzzles/new-c54eb7fbb3cd0060-v1-optimized-37710d713acd.webp",
+        "thumbSrc": "/puzzles/new-c54eb7fbb3cd0060-v1-thumbnail-15b54ee919f8.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "0645d5706ae4d442a81d4985c2073567e9c6b5c701f7215e5fb754274e987c89",
+        "src": "/puzzles/new-c54eb7fbb3cd0060-v1-optimized-79f8165c70ff.webp",
+        "thumbSrc": "/puzzles/new-c54eb7fbb3cd0060-v1-thumbnail-2ba8f4ce0f1e.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-49cc72d1ec6fb1c8-v1": [
+      {
+        "revision": "c7192eb30ac50e799c3dd73d9e7af2655aca77560797b47c765c37fbbacb53c9",
+        "src": "/puzzles/new-49cc72d1ec6fb1c8-v1-optimized-2b585e80f8aa.webp",
+        "thumbSrc": "/puzzles/new-49cc72d1ec6fb1c8-v1-thumbnail-b930647f5a9e.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "9002f0c24d9251fe692c9ebaaceb70f696bc241afb47394fa2cc8c25820c7723",
+        "src": "/puzzles/new-49cc72d1ec6fb1c8-v1-optimized-46400bae9b88.webp",
+        "thumbSrc": "/puzzles/new-49cc72d1ec6fb1c8-v1-thumbnail-b135924349a3.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-afa7c18454e23349-v1": [
+      {
+        "revision": "07535fa9e7f8772454e7c5f1ce91d3415a5fdc17753b742b9facccada2627527",
+        "src": "/puzzles/new-afa7c18454e23349-v1-optimized-1978817b4026.webp",
+        "thumbSrc": "/puzzles/new-afa7c18454e23349-v1-thumbnail-1fa6ad26ae48.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "f5d5a9efa6bc7bb901698f238e5f8ab693981a179ade73a52f347376f052e446",
+        "src": "/puzzles/new-afa7c18454e23349-v1-optimized-1bb5fffda5d3.webp",
+        "thumbSrc": "/puzzles/new-afa7c18454e23349-v1-thumbnail-be0e69d99a4d.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-ed33701d9e7980fa-v1": [
+      {
+        "revision": "dd6dd25d3ffcc8c66de426bc7f0363ba1aa9b5068d07681a07e589ff23ea366d",
+        "src": "/puzzles/new-ed33701d9e7980fa-v1-optimized-e39528aacfb8.webp",
+        "thumbSrc": "/puzzles/new-ed33701d9e7980fa-v1-thumbnail-984b11009631.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "b5f7a6b4ec200a57f5f4f8ceb39b802a355f11ff52e19240cece393ddd9a685e",
+        "src": "/puzzles/new-ed33701d9e7980fa-v1-optimized-11aadd08b7ec.webp",
+        "thumbSrc": "/puzzles/new-ed33701d9e7980fa-v1-thumbnail-d2a53924faf1.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-645c9cf0cfee91ad-v1": [
+      {
+        "revision": "2e456ed72b4f7c06bc990bdc85f547e36aa4263eba7b5c603fba07ac287b4476",
+        "src": "/puzzles/new-645c9cf0cfee91ad-v1-optimized-e095428f3a2f.webp",
+        "thumbSrc": "/puzzles/new-645c9cf0cfee91ad-v1-thumbnail-15ef7d23ec70.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "898b886a326c0eb37bb1d0b5fa5347cb439d62207a02903fd8605502b43b73c6",
+        "src": "/puzzles/new-645c9cf0cfee91ad-v1-optimized-a4ddcdd7f550.webp",
+        "thumbSrc": "/puzzles/new-645c9cf0cfee91ad-v1-thumbnail-6bf7a18f4775.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-f8652afed3c63a86-v1": [
+      {
+        "revision": "ff882fc86aad7b95ec40063fc62541d2bdec6b308a7914345e523c5cf2c29c10",
+        "src": "/puzzles/new-f8652afed3c63a86-v1-optimized-bd709d9b8796.webp",
+        "thumbSrc": "/puzzles/new-f8652afed3c63a86-v1-thumbnail-e656179c1c4e.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "7c9f78c0f566c668a31c607e7d53289dd4ff8a54d37e738dec51cb11b02fa96a",
+        "src": "/puzzles/new-f8652afed3c63a86-v1-optimized-1400d19faded.webp",
+        "thumbSrc": "/puzzles/new-f8652afed3c63a86-v1-thumbnail-3be7b85ca361.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-20a4b922bbb578e8-v1": [
+      {
+        "revision": "3923bea0cb1aab7e78660886e0fbbf886cde3b890c1974599494960e9bd23769",
+        "src": "/puzzles/new-20a4b922bbb578e8-v1-optimized-4c2463e35660.webp",
+        "thumbSrc": "/puzzles/new-20a4b922bbb578e8-v1-thumbnail-ea06ac5d3a82.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "e778559830398a3b5d2c95d7683624143ea52fc1f5a2971db76e30c681c3d6d1",
+        "src": "/puzzles/new-20a4b922bbb578e8-v1-optimized-6924125913be.webp",
+        "thumbSrc": "/puzzles/new-20a4b922bbb578e8-v1-thumbnail-1220409ba37c.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-79565e08fd397b1e-v1": [
+      {
+        "revision": "60af8007a8a3696f47063234f6fcc2bd385ee0c4a4de7e1c9a548d14a6421e45",
+        "src": "/puzzles/new-79565e08fd397b1e-v1-optimized-c09361d8ec19.webp",
+        "thumbSrc": "/puzzles/new-79565e08fd397b1e-v1-thumbnail-a0f97f82382f.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "3d707ed73c7c60c08a187d37723668146d8a9bd86ba7a0e0bdd8318a800e9d5c",
+        "src": "/puzzles/new-79565e08fd397b1e-v1-optimized-d8878d15a2f7.webp",
+        "thumbSrc": "/puzzles/new-79565e08fd397b1e-v1-thumbnail-b4e56e4419e1.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-f7194f44e36dc5e3-v1": [
+      {
+        "revision": "ec9e1b243f816f74e63a61e31376174e0904a2a797f01c8971828b7b14d363ea",
+        "src": "/puzzles/new-f7194f44e36dc5e3-v1-optimized-9251330c1eb0.webp",
+        "thumbSrc": "/puzzles/new-f7194f44e36dc5e3-v1-thumbnail-08efa22db193.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "bee191b0d5c86359b94a9d6fe5b0b0865bb50b8d27de183c769c88b4fb4bd48c",
+        "src": "/puzzles/new-f7194f44e36dc5e3-v1-optimized-48b01fd0aba1.webp",
+        "thumbSrc": "/puzzles/new-f7194f44e36dc5e3-v1-thumbnail-9024dc7c2328.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-48413157ae051c95-v1": [
+      {
+        "revision": "b55f147c8e5659d1beb33d1db2e17a17f201da211fdd98b4b3bc2423227ac846",
+        "src": "/puzzles/new-48413157ae051c95-v1-optimized-0f09102b89d5.webp",
+        "thumbSrc": "/puzzles/new-48413157ae051c95-v1-thumbnail-55d4dad6c3a6.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "11842b4b691e22b66139e19cdb0ef92eab5eee2e39f19b3fa54b4d2f21523c74",
+        "src": "/puzzles/new-48413157ae051c95-v1-optimized-2ef2a368a475.webp",
+        "thumbSrc": "/puzzles/new-48413157ae051c95-v1-thumbnail-86941112ca44.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "new-f8d8189a200835e3-v1": [
+      {
+        "revision": "aac34e0de4a8fa743415990b776766b9e30090199aba823b5d86cb91fd6bc067",
+        "src": "/puzzles/new-f8d8189a200835e3-v1-optimized-316877a488ef.webp",
+        "thumbSrc": "/puzzles/new-f8d8189a200835e3-v1-thumbnail-24ddb9a5ffc3.webp",
+        "width": 3840,
+        "height": 3840
+      },
+      {
+        "revision": "317c5ebf12f2dc7233240e167e45e0a4edc4d6dafa7b149aacaf4e9fb07f005e",
+        "src": "/puzzles/new-f8d8189a200835e3-v1-optimized-e92655c09a99.webp",
+        "thumbSrc": "/puzzles/new-f8d8189a200835e3-v1-thumbnail-46c89e033fe0.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "blossom-rainy-flower-lane-v1": [
+      {
+        "revision": "4b15b2a3b1fa5f0800eb2eb8af6758c4a38f7659428d8b211cfeb87b3263cb0d",
+        "src": "/puzzles/blossom-rainy-flower-lane-v1-optimized-c907b07d7a4d.webp",
+        "thumbSrc": "/puzzles/blossom-rainy-flower-lane-v1-thumbnail-966e2b522ec5.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "blossom-osmanthus-tea-courtyard-v1": [
+      {
+        "revision": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+        "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1-optimized-59321e36f1b8.webp",
+        "thumbSrc": "/puzzles/blossom-osmanthus-tea-courtyard-v1-thumbnail-a53e9edac75b.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "blossom-firefly-conservatory-v1": [
+      {
+        "revision": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+        "src": "/puzzles/blossom-firefly-conservatory-v1-optimized-bde5f4d5b3b2.webp",
+        "thumbSrc": "/puzzles/blossom-firefly-conservatory-v1-thumbnail-d6d20d499bf9.webp",
+        "width": 2144,
+        "height": 2144
+      }
+    ],
+    "cat-journey-magic-bookshop-v1": [
+      {
+        "revision": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+        "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-5685ebdbb45a.webp",
+        "thumbSrc": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-27cf37e7e4e9.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-cloud-roof-v1": [
+      {
+        "revision": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+        "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-35d95fa70aff.webp",
+        "thumbSrc": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-69392793b4cc.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-spirit-blackcat-v1": [
+      {
+        "revision": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+        "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-c930dbe45e3a.webp",
+        "thumbSrc": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-47de28bd4d2e.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-flower-shop-v1": [
+      {
+        "revision": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+        "src": "/puzzles/cat-journey-flower-shop-v1-optimized-68b036b3e867.webp",
+        "thumbSrc": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-paper-garden-v1": [
+      {
+        "revision": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
+        "src": "/puzzles/cat-journey-paper-garden-v1-optimized-3c3ed964fa94.webp",
+        "thumbSrc": "/puzzles/cat-journey-paper-garden-v1-thumbnail-ca50663c3f46.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "cat-journey-pixel-nightmarket-v1": [
+      {
+        "revision": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+        "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-493a0b82676b.webp",
+        "thumbSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
+        "width": 3840,
+        "height": 3840
+      }
+    ],
+    "ink-mountain-palace-v1": [
+      {
+        "revision": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+        "src": "/puzzles/ink-mountain-palace-v1-optimized-ee3409f30f81.webp",
+        "thumbSrc": "/puzzles/ink-mountain-palace-v1-thumbnail-9712b40c21d8.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "moonlit-spirit-deer-v1": [
+      {
+        "revision": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+        "src": "/puzzles/moonlit-spirit-deer-v1-optimized-d21767b1b96e.webp",
+        "thumbSrc": "/puzzles/moonlit-spirit-deer-v1-thumbnail-359e9f3a6865.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "wisteria-seaside-station-v1": [
+      {
+        "revision": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
+        "src": "/puzzles/wisteria-seaside-station-v1-optimized-d353157726b1.webp",
+        "thumbSrc": "/puzzles/wisteria-seaside-station-v1-thumbnail-e3de3f1f6f2a.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ]
+  },
+  "active": {
+    "lantern-market": "7a3f2401cef85d3be35d7c0cd4b3c7a87d1f0e68ac41e684475d39b301a1edad",
+    "daily-lantern-lake-violin-v1": "18828b11113a6fc226906ec4eec2f12f3875a025e141c730f3877bb1eca96f74",
+    "vermilion-garden": "6c48849ad6f92706def0ad5a466279eadda6cc5929a621a6c085b6bf0246f53b",
+    "new-49cc72d1ec6fb1c8-v1": "9002f0c24d9251fe692c9ebaaceb70f696bc241afb47394fa2cc8c25820c7723",
+    "new-ed33701d9e7980fa-v1": "b5f7a6b4ec200a57f5f4f8ceb39b802a355f11ff52e19240cece393ddd9a685e",
+    "new-c54eb7fbb3cd0060-v1": "0645d5706ae4d442a81d4985c2073567e9c6b5c701f7215e5fb754274e987c89",
+    "new-afa7c18454e23349-v1": "f5d5a9efa6bc7bb901698f238e5f8ab693981a179ade73a52f347376f052e446",
+    "new-f7194f44e36dc5e3-v1": "bee191b0d5c86359b94a9d6fe5b0b0865bb50b8d27de183c769c88b4fb4bd48c",
+    "new-f8652afed3c63a86-v1": "7c9f78c0f566c668a31c607e7d53289dd4ff8a54d37e738dec51cb11b02fa96a",
+    "new-f8d8189a200835e3-v1": "317c5ebf12f2dc7233240e167e45e0a4edc4d6dafa7b149aacaf4e9fb07f005e",
+    "new-89189e4f7af26f25-v1": "2db5d869626076944e3111e7b0ee599a5ebd67140d58f968fff26e2a959a2614",
+    "new-9359385b622e8505-v1": "01018e74cc93bfac86418c9ee5fa96ca4891d3b37d21503690e9da6383603a56",
+    "new-886dff1892b72f2e-v1": "a9bb6a810435d8d06ba45bb85301382a6abb1c4607403fe5c62e3dc3049b39d8",
+    "new-35405f4ae5ef618e-v1": "bb5dfbfc2cef1e2b906ee0ad7e3c170c68b5485ec1dc0444f819e130a3fbaa0d",
+    "new-629dfdbe43cd5b09-v1": "8831eea8d03d1197a1f8014d6fba34fd128a378fc0e4258adae25e21b1ccc2fe",
+    "new-0b10af90a58ce698-v1": "2a881855cae10a4e7e298e00ae0253e722840fba0405859975755e89c5c96cab",
+    "new-32f4a77d2dd8becd-v1": "691d72a50c25b132892191265d9f69c1bce5ed68ba138acb4848bc4e274efbca",
+    "new-c9d0f62b9a9536ed-v1": "dc2c656c80a745f7223017ea297147b19ebc60ce9fe3d3eedc51a3a5cf3e031d",
+    "new-ef12f1e7d74ee89a-v1": "c9bc6c0b369c912e0ec267cb635559825be20121541d42255a038aec356020ff",
+    "lantern-dance-v1": "ef3c28c339d233d44f2fbd357e5754453cd52e2944353f0be21f073535e22ae8",
+    "riverside-park-festival-v1": "04c65bf572e00cdd34d5ba37628fbf16dbf3b453bf2071bc074f0c4b1acaaeb2",
+    "summer-night-matsuri-v1": "e30f3dd7aebd5f1274bb8441c839f779d4656e83ed98fca9a3b1c6ca6ba76c05",
+    "orbital-market-v1": "7a8399b3db4e9087bfa48b2955eff34c5fe35ef9299bba0239aa97dbc6bd448d",
+    "snow-village-fair-v1": "2c59de1dd8c53d36b8778b3a8a9f723f627beb75b5db30f1463f5ab563cce5a2",
+    "tropical-harbor-carnival-v1": "e2313e31e4310f957e354f90f40eb01df8169f0c2395da98f2b913b9be9e2739",
+    "autumn-farm-festival-v1": "24b4b2548fa172dff56c59da271e250804023ebc7debae679ebb8898edae0abd",
+    "rooftop-neighborhood-festival-v1": "ecf6b256749ec3d7321a540b34b5b60ec49cb3bded5ed1cf05d224263252b2a6",
+    "new-2b4be6fe98943de7-v1": "c90c507c90dbea5c6e2da2fa775bc951f2701facd54edbd5320b67190d162bb1",
+    "new-968c3449978849e1-v1": "32fb603a4426b3f9077d84bda55d93b19d737bdd4224358fac9c5effbc884d35",
+    "new-645c9cf0cfee91ad-v1": "898b886a326c0eb37bb1d0b5fa5347cb439d62207a02903fd8605502b43b73c6",
+    "new-20a4b922bbb578e8-v1": "e778559830398a3b5d2c95d7683624143ea52fc1f5a2971db76e30c681c3d6d1",
+    "new-79565e08fd397b1e-v1": "3d707ed73c7c60c08a187d37723668146d8a9bd86ba7a0e0bdd8318a800e9d5c",
+    "new-48413157ae051c95-v1": "11842b4b691e22b66139e19cdb0ef92eab5eee2e39f19b3fa54b4d2f21523c74",
+    "new-cc532d03d405abd6-v1": "f41b83be13532edc5b0204c86923eed2636247528b58a54a832993dc0c09d7a5"
+  },
+  "files": {
+    "/puzzles/lantern-market-optimized-a87a42d468d1.webp": {
+      "src": "/puzzles/lantern-market-optimized-a87a42d468d1.webp",
+      "sha256": "a87a42d468d12ebd884704a2bd99ae2ba4bd2df4363bb0701b2200181d7534d8",
+      "bytes": 902190,
+      "width": 2432,
+      "height": 1824,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "7a3f2401cef85d3be35d7c0cd4b3c7a87d1f0e68ac41e684475d39b301a1edad"
+    },
+    "/puzzles/lantern-market-thumbnail-f00aa9b09d09.webp": {
+      "src": "/puzzles/lantern-market-thumbnail-f00aa9b09d09.webp",
+      "sha256": "f00aa9b09d092f68480c066dd8470f1540cfe71eab70814ca90253a286d72413",
+      "bytes": 65262,
+      "width": 480,
+      "height": 360,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "7a3f2401cef85d3be35d7c0cd4b3c7a87d1f0e68ac41e684475d39b301a1edad"
+    },
+    "/puzzles/daily-lantern-lake-violin-v1-optimized-ca864f595c63.webp": {
+      "src": "/puzzles/daily-lantern-lake-violin-v1-optimized-ca864f595c63.webp",
+      "sha256": "ca864f595c63a0ade672c0190f698932c823468aa0da6d426ffc4834d5df421c",
+      "bytes": 868580,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "18828b11113a6fc226906ec4eec2f12f3875a025e141c730f3877bb1eca96f74"
+    },
+    "/puzzles/daily-lantern-lake-violin-v1-thumbnail-0357d1c6210a.webp": {
+      "src": "/puzzles/daily-lantern-lake-violin-v1-thumbnail-0357d1c6210a.webp",
+      "sha256": "0357d1c6210ae615dbeb146db3946a577f31e121019f7b9ae3358e2a6d8098ab",
+      "bytes": 61366,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "18828b11113a6fc226906ec4eec2f12f3875a025e141c730f3877bb1eca96f74"
+    },
+    "/puzzles/vermilion-garden-optimized-22f1e01f804e.webp": {
+      "src": "/puzzles/vermilion-garden-optimized-22f1e01f804e.webp",
+      "sha256": "22f1e01f804eab2d683301c91a00f8eb11f0a27b76cfc29bb48de36cddcd6f3c",
+      "bytes": 1043420,
+      "width": 2432,
+      "height": 1824,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "6c48849ad6f92706def0ad5a466279eadda6cc5929a621a6c085b6bf0246f53b"
+    },
+    "/puzzles/vermilion-garden-thumbnail-6c96de0885b3.webp": {
+      "src": "/puzzles/vermilion-garden-thumbnail-6c96de0885b3.webp",
+      "sha256": "6c96de0885b3d6b3178e59df77b4427c9bb0ec0f436c094cd200cdc312a7e6a4",
+      "bytes": 71404,
+      "width": 480,
+      "height": 360,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "6c48849ad6f92706def0ad5a466279eadda6cc5929a621a6c085b6bf0246f53b"
+    },
+    "/puzzles/new-49cc72d1ec6fb1c8-v1-optimized-46400bae9b88.webp": {
+      "src": "/puzzles/new-49cc72d1ec6fb1c8-v1-optimized-46400bae9b88.webp",
+      "sha256": "46400bae9b887d0f7e7fb4086a984ac1fd61131e59a21585fe91e3e4a49f35a8",
+      "bytes": 1064048,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "9002f0c24d9251fe692c9ebaaceb70f696bc241afb47394fa2cc8c25820c7723"
+    },
+    "/puzzles/new-49cc72d1ec6fb1c8-v1-thumbnail-b135924349a3.webp": {
+      "src": "/puzzles/new-49cc72d1ec6fb1c8-v1-thumbnail-b135924349a3.webp",
+      "sha256": "b135924349a3d16e4f56d065e502d0a3ae8b26905c7336e27ad02181c95a6316",
+      "bytes": 67788,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "9002f0c24d9251fe692c9ebaaceb70f696bc241afb47394fa2cc8c25820c7723"
+    },
+    "/puzzles/new-ed33701d9e7980fa-v1-optimized-11aadd08b7ec.webp": {
+      "src": "/puzzles/new-ed33701d9e7980fa-v1-optimized-11aadd08b7ec.webp",
+      "sha256": "11aadd08b7ecc849780c84f631d43b59252da8ec0ba7c5e52c2326bdc5e830cc",
+      "bytes": 1003144,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "b5f7a6b4ec200a57f5f4f8ceb39b802a355f11ff52e19240cece393ddd9a685e"
+    },
+    "/puzzles/new-ed33701d9e7980fa-v1-thumbnail-d2a53924faf1.webp": {
+      "src": "/puzzles/new-ed33701d9e7980fa-v1-thumbnail-d2a53924faf1.webp",
+      "sha256": "d2a53924faf1199954694ac360e36a3b9da53348cb71a2e0addf872c8e7b98df",
+      "bytes": 63554,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "b5f7a6b4ec200a57f5f4f8ceb39b802a355f11ff52e19240cece393ddd9a685e"
+    },
+    "/puzzles/new-c54eb7fbb3cd0060-v1-optimized-79f8165c70ff.webp": {
+      "src": "/puzzles/new-c54eb7fbb3cd0060-v1-optimized-79f8165c70ff.webp",
+      "sha256": "79f8165c70ff09bcbb5f2379f67eecbc86ed34df7c3ccbbbf41e90710489beb2",
+      "bytes": 1008170,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "0645d5706ae4d442a81d4985c2073567e9c6b5c701f7215e5fb754274e987c89"
+    },
+    "/puzzles/new-c54eb7fbb3cd0060-v1-thumbnail-2ba8f4ce0f1e.webp": {
+      "src": "/puzzles/new-c54eb7fbb3cd0060-v1-thumbnail-2ba8f4ce0f1e.webp",
+      "sha256": "2ba8f4ce0f1ec3b32e6bba7cf5b1bc559ed2e60f0fa19e55cbdc0cfb1b3e46a8",
+      "bytes": 68562,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "0645d5706ae4d442a81d4985c2073567e9c6b5c701f7215e5fb754274e987c89"
+    },
+    "/puzzles/new-afa7c18454e23349-v1-optimized-1bb5fffda5d3.webp": {
+      "src": "/puzzles/new-afa7c18454e23349-v1-optimized-1bb5fffda5d3.webp",
+      "sha256": "1bb5fffda5d354c4fcb62f9cf61767f8f87c9e6d56c9d9bb386577e892faf379",
+      "bytes": 1171698,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "f5d5a9efa6bc7bb901698f238e5f8ab693981a179ade73a52f347376f052e446"
+    },
+    "/puzzles/new-afa7c18454e23349-v1-thumbnail-be0e69d99a4d.webp": {
+      "src": "/puzzles/new-afa7c18454e23349-v1-thumbnail-be0e69d99a4d.webp",
+      "sha256": "be0e69d99a4d3753d84905e81ca3239258a205059d639b2a39cfba09ce1aa9d1",
+      "bytes": 67970,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "f5d5a9efa6bc7bb901698f238e5f8ab693981a179ade73a52f347376f052e446"
+    },
+    "/puzzles/new-f7194f44e36dc5e3-v1-optimized-48b01fd0aba1.webp": {
+      "src": "/puzzles/new-f7194f44e36dc5e3-v1-optimized-48b01fd0aba1.webp",
+      "sha256": "48b01fd0aba1400f21b8e5e9e838c759ff03b22609844124d7e1948101137772",
+      "bytes": 1042808,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "bee191b0d5c86359b94a9d6fe5b0b0865bb50b8d27de183c769c88b4fb4bd48c"
+    },
+    "/puzzles/new-f7194f44e36dc5e3-v1-thumbnail-9024dc7c2328.webp": {
+      "src": "/puzzles/new-f7194f44e36dc5e3-v1-thumbnail-9024dc7c2328.webp",
+      "sha256": "9024dc7c23289f78b69521ef2b9022d5c3c2d59ddda1c689a6a04893688471ff",
+      "bytes": 68150,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "bee191b0d5c86359b94a9d6fe5b0b0865bb50b8d27de183c769c88b4fb4bd48c"
+    },
+    "/puzzles/new-f8652afed3c63a86-v1-optimized-1400d19faded.webp": {
+      "src": "/puzzles/new-f8652afed3c63a86-v1-optimized-1400d19faded.webp",
+      "sha256": "1400d19faded8a3b573a41c8875fd082767010f6ce9487211909ef4de4144125",
+      "bytes": 760480,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "7c9f78c0f566c668a31c607e7d53289dd4ff8a54d37e738dec51cb11b02fa96a"
+    },
+    "/puzzles/new-f8652afed3c63a86-v1-thumbnail-3be7b85ca361.webp": {
+      "src": "/puzzles/new-f8652afed3c63a86-v1-thumbnail-3be7b85ca361.webp",
+      "sha256": "3be7b85ca361f8aa89ef9c9c916fab963e6b048c821a77e6b43a54c915537ac9",
+      "bytes": 60206,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "7c9f78c0f566c668a31c607e7d53289dd4ff8a54d37e738dec51cb11b02fa96a"
+    },
+    "/puzzles/new-f8d8189a200835e3-v1-optimized-e92655c09a99.webp": {
+      "src": "/puzzles/new-f8d8189a200835e3-v1-optimized-e92655c09a99.webp",
+      "sha256": "e92655c09a99539a31d6100303a086d6637df3823a7bbd01d7ccb372fbc485cd",
+      "bytes": 1106258,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "317c5ebf12f2dc7233240e167e45e0a4edc4d6dafa7b149aacaf4e9fb07f005e"
+    },
+    "/puzzles/new-f8d8189a200835e3-v1-thumbnail-46c89e033fe0.webp": {
+      "src": "/puzzles/new-f8d8189a200835e3-v1-thumbnail-46c89e033fe0.webp",
+      "sha256": "46c89e033fe02c6ff3409a8691190911bec6f053f2320bbb49719de01e803614",
+      "bytes": 67952,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "317c5ebf12f2dc7233240e167e45e0a4edc4d6dafa7b149aacaf4e9fb07f005e"
+    },
+    "/puzzles/new-89189e4f7af26f25-v1-optimized-bc52ae0d97fc.webp": {
+      "src": "/puzzles/new-89189e4f7af26f25-v1-optimized-bc52ae0d97fc.webp",
+      "sha256": "bc52ae0d97fca009642e20f66a17372940fce445ebd5a30fd991fd7cf2357eef",
+      "bytes": 1003030,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "2db5d869626076944e3111e7b0ee599a5ebd67140d58f968fff26e2a959a2614"
+    },
+    "/puzzles/new-89189e4f7af26f25-v1-thumbnail-bd9a8020ef2c.webp": {
+      "src": "/puzzles/new-89189e4f7af26f25-v1-thumbnail-bd9a8020ef2c.webp",
+      "sha256": "bd9a8020ef2ccf2caef0dd7c9663a76a5cbec5734f9d1daa6773dacf03235016",
+      "bytes": 62232,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "2db5d869626076944e3111e7b0ee599a5ebd67140d58f968fff26e2a959a2614"
+    },
+    "/puzzles/new-9359385b622e8505-v1-optimized-b8300d00d65a.webp": {
+      "src": "/puzzles/new-9359385b622e8505-v1-optimized-b8300d00d65a.webp",
+      "sha256": "b8300d00d65aa92b4a49a32ac917e4ed9f6813419566c423b2c2586e8bad7d1f",
+      "bytes": 946732,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "01018e74cc93bfac86418c9ee5fa96ca4891d3b37d21503690e9da6383603a56"
+    },
+    "/puzzles/new-9359385b622e8505-v1-thumbnail-1e9a3cff4774.webp": {
+      "src": "/puzzles/new-9359385b622e8505-v1-thumbnail-1e9a3cff4774.webp",
+      "sha256": "1e9a3cff477482b9634f7f89235b381df68cdfcbf1dbb321efaea46600ae71ec",
+      "bytes": 51598,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "01018e74cc93bfac86418c9ee5fa96ca4891d3b37d21503690e9da6383603a56"
+    },
+    "/puzzles/new-886dff1892b72f2e-v1-optimized-b8368da158c3.webp": {
+      "src": "/puzzles/new-886dff1892b72f2e-v1-optimized-b8368da158c3.webp",
+      "sha256": "b8368da158c3a94d2b76755d2760ad00944376f91494dfcdc1fd3d05f1c88380",
+      "bytes": 890282,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "a9bb6a810435d8d06ba45bb85301382a6abb1c4607403fe5c62e3dc3049b39d8"
+    },
+    "/puzzles/new-886dff1892b72f2e-v1-thumbnail-9cff6fad1797.webp": {
+      "src": "/puzzles/new-886dff1892b72f2e-v1-thumbnail-9cff6fad1797.webp",
+      "sha256": "9cff6fad1797c01cad869dbf5c268c9b85392622459cc464cc97b719548a844c",
+      "bytes": 55154,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "a9bb6a810435d8d06ba45bb85301382a6abb1c4607403fe5c62e3dc3049b39d8"
+    },
+    "/puzzles/new-35405f4ae5ef618e-v1-optimized-ecf4f623f43d.webp": {
+      "src": "/puzzles/new-35405f4ae5ef618e-v1-optimized-ecf4f623f43d.webp",
+      "sha256": "ecf4f623f43dbe6eebc50fe113b3f6ffae39e4c23e430a325ce570763996afaf",
+      "bytes": 540444,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "bb5dfbfc2cef1e2b906ee0ad7e3c170c68b5485ec1dc0444f819e130a3fbaa0d"
+    },
+    "/puzzles/new-35405f4ae5ef618e-v1-thumbnail-78d95a35399c.webp": {
+      "src": "/puzzles/new-35405f4ae5ef618e-v1-thumbnail-78d95a35399c.webp",
+      "sha256": "78d95a35399c1c3696d9a22198107fb585666a0ad963c2f9920bedbf46bf73ce",
+      "bytes": 38280,
+      "width": 480,
+      "height": 270,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "bb5dfbfc2cef1e2b906ee0ad7e3c170c68b5485ec1dc0444f819e130a3fbaa0d"
+    },
+    "/puzzles/new-629dfdbe43cd5b09-v1-optimized-02897c07144d.webp": {
+      "src": "/puzzles/new-629dfdbe43cd5b09-v1-optimized-02897c07144d.webp",
+      "sha256": "02897c07144d52f6403c8785dfb159fd38e258e723447413c20d3b68a3b8ce9c",
+      "bytes": 575798,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "8831eea8d03d1197a1f8014d6fba34fd128a378fc0e4258adae25e21b1ccc2fe"
+    },
+    "/puzzles/new-629dfdbe43cd5b09-v1-thumbnail-392f93abfbf2.webp": {
+      "src": "/puzzles/new-629dfdbe43cd5b09-v1-thumbnail-392f93abfbf2.webp",
+      "sha256": "392f93abfbf29c43bbea05f9857268d4e6312c04c161ab880c0cd05aeb87398f",
+      "bytes": 40744,
+      "width": 480,
+      "height": 270,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "8831eea8d03d1197a1f8014d6fba34fd128a378fc0e4258adae25e21b1ccc2fe"
+    },
+    "/puzzles/new-0b10af90a58ce698-v1-optimized-adec105e811f.webp": {
+      "src": "/puzzles/new-0b10af90a58ce698-v1-optimized-adec105e811f.webp",
+      "sha256": "adec105e811f5637d1fb3a53d603c96a807da97ecbaa37dd0fa5b0607c2f5965",
+      "bytes": 434670,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "2a881855cae10a4e7e298e00ae0253e722840fba0405859975755e89c5c96cab"
+    },
+    "/puzzles/new-0b10af90a58ce698-v1-thumbnail-1cfadf44012f.webp": {
+      "src": "/puzzles/new-0b10af90a58ce698-v1-thumbnail-1cfadf44012f.webp",
+      "sha256": "1cfadf44012fe3a83a38d1c96db280e73aade891cc5ffcdc4f323a702cc38a22",
+      "bytes": 32274,
+      "width": 480,
+      "height": 270,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "2a881855cae10a4e7e298e00ae0253e722840fba0405859975755e89c5c96cab"
+    },
+    "/puzzles/new-32f4a77d2dd8becd-v1-optimized-0ea9546235be.webp": {
+      "src": "/puzzles/new-32f4a77d2dd8becd-v1-optimized-0ea9546235be.webp",
+      "sha256": "0ea9546235beb323d57054e2f6dfdc4e20cb7714bf5b19dadb3f163bbff9644a",
+      "bytes": 707798,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "691d72a50c25b132892191265d9f69c1bce5ed68ba138acb4848bc4e274efbca"
+    },
+    "/puzzles/new-32f4a77d2dd8becd-v1-thumbnail-5c71e71b3bd1.webp": {
+      "src": "/puzzles/new-32f4a77d2dd8becd-v1-thumbnail-5c71e71b3bd1.webp",
+      "sha256": "5c71e71b3bd1f0783c3d3b6a158b0702a21de1147afa64ece1ee5241cc60316f",
+      "bytes": 53024,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "691d72a50c25b132892191265d9f69c1bce5ed68ba138acb4848bc4e274efbca"
+    },
+    "/puzzles/new-c9d0f62b9a9536ed-v1-optimized-84f7ee427496.webp": {
+      "src": "/puzzles/new-c9d0f62b9a9536ed-v1-optimized-84f7ee427496.webp",
+      "sha256": "84f7ee4274969da1e8b8c71e16b23b198dd18fc22557a0c92840028f3cf7f59d",
+      "bytes": 509568,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "dc2c656c80a745f7223017ea297147b19ebc60ce9fe3d3eedc51a3a5cf3e031d"
+    },
+    "/puzzles/new-c9d0f62b9a9536ed-v1-thumbnail-1865675720fb.webp": {
+      "src": "/puzzles/new-c9d0f62b9a9536ed-v1-thumbnail-1865675720fb.webp",
+      "sha256": "1865675720fbda88603b1609f0d217cc295c6376399fba3ac4a7f2a72f75119f",
+      "bytes": 38274,
+      "width": 480,
+      "height": 270,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "dc2c656c80a745f7223017ea297147b19ebc60ce9fe3d3eedc51a3a5cf3e031d"
+    },
+    "/puzzles/new-ef12f1e7d74ee89a-v1-optimized-4c3b76b80fe5.webp": {
+      "src": "/puzzles/new-ef12f1e7d74ee89a-v1-optimized-4c3b76b80fe5.webp",
+      "sha256": "4c3b76b80fe5d29fd177c662c83ef56b0abd76eb17ce4169892273c692849295",
+      "bytes": 544924,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "c9bc6c0b369c912e0ec267cb635559825be20121541d42255a038aec356020ff"
+    },
+    "/puzzles/new-ef12f1e7d74ee89a-v1-thumbnail-b088909faf72.webp": {
+      "src": "/puzzles/new-ef12f1e7d74ee89a-v1-thumbnail-b088909faf72.webp",
+      "sha256": "b088909faf72310b1fd1b1f65853dc24aab5e27bad74bc93edf59ed09f8c588f",
+      "bytes": 36724,
+      "width": 480,
+      "height": 270,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "c9bc6c0b369c912e0ec267cb635559825be20121541d42255a038aec356020ff"
+    },
+    "/puzzles/lantern-dance-v1-optimized-90db7f2d0dff.webp": {
+      "src": "/puzzles/lantern-dance-v1-optimized-90db7f2d0dff.webp",
+      "sha256": "90db7f2d0dff7068f95515aa0bcdcb3804ad779b8efa6b7fadf7116a2811c8d7",
+      "bytes": 1147134,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "ef3c28c339d233d44f2fbd357e5754453cd52e2944353f0be21f073535e22ae8"
+    },
+    "/puzzles/lantern-dance-v1-thumbnail-8cf490499a62.webp": {
+      "src": "/puzzles/lantern-dance-v1-thumbnail-8cf490499a62.webp",
+      "sha256": "8cf490499a627cf018d7af9200e121ea74b237598015925b0e4e4ac09501c55b",
+      "bytes": 70806,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "ef3c28c339d233d44f2fbd357e5754453cd52e2944353f0be21f073535e22ae8"
+    },
+    "/puzzles/riverside-park-festival-v1-optimized-2928da6c1471.webp": {
+      "src": "/puzzles/riverside-park-festival-v1-optimized-2928da6c1471.webp",
+      "sha256": "2928da6c1471e1a664e8e37ed8fe164726fad7c86673cc001e09796324032bfe",
+      "bytes": 1279840,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "04c65bf572e00cdd34d5ba37628fbf16dbf3b453bf2071bc074f0c4b1acaaeb2"
+    },
+    "/puzzles/riverside-park-festival-v1-thumbnail-f6b1e404e171.webp": {
+      "src": "/puzzles/riverside-park-festival-v1-thumbnail-f6b1e404e171.webp",
+      "sha256": "f6b1e404e1719972b0be406de454482097da2805c2b246010d0e06ca3ae582b7",
+      "bytes": 73518,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "04c65bf572e00cdd34d5ba37628fbf16dbf3b453bf2071bc074f0c4b1acaaeb2"
+    },
+    "/puzzles/summer-night-matsuri-v1-optimized-cbc4d65c8a3b.webp": {
+      "src": "/puzzles/summer-night-matsuri-v1-optimized-cbc4d65c8a3b.webp",
+      "sha256": "cbc4d65c8a3b9d19bf563dfe5313ce9a5a723abe096bb10b3f285afa985f3b80",
+      "bytes": 1136018,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "e30f3dd7aebd5f1274bb8441c839f779d4656e83ed98fca9a3b1c6ca6ba76c05"
+    },
+    "/puzzles/summer-night-matsuri-v1-thumbnail-f607975d201d.webp": {
+      "src": "/puzzles/summer-night-matsuri-v1-thumbnail-f607975d201d.webp",
+      "sha256": "f607975d201d3e398aa10161e484b3c0e19dc6a1319d08002246fb05369de35d",
+      "bytes": 78158,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "e30f3dd7aebd5f1274bb8441c839f779d4656e83ed98fca9a3b1c6ca6ba76c05"
+    },
+    "/puzzles/orbital-market-v1-optimized-e3d9a0867de8.webp": {
+      "src": "/puzzles/orbital-market-v1-optimized-e3d9a0867de8.webp",
+      "sha256": "e3d9a0867de8dc0f7ec2d3ade97d41e7fd5f6a3cd2befaaae1d89a2a290b33eb",
+      "bytes": 935864,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "7a8399b3db4e9087bfa48b2955eff34c5fe35ef9299bba0239aa97dbc6bd448d"
+    },
+    "/puzzles/orbital-market-v1-thumbnail-271fcf889cbd.webp": {
+      "src": "/puzzles/orbital-market-v1-thumbnail-271fcf889cbd.webp",
+      "sha256": "271fcf889cbd27659aab8bd0d1b2dd7810ed6bf3314a44036d431cd9349f16af",
+      "bytes": 61882,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "7a8399b3db4e9087bfa48b2955eff34c5fe35ef9299bba0239aa97dbc6bd448d"
+    },
+    "/puzzles/snow-village-fair-v1-optimized-f5d9c69746e7.webp": {
+      "src": "/puzzles/snow-village-fair-v1-optimized-f5d9c69746e7.webp",
+      "sha256": "f5d9c69746e7313bad9bf7325797149c5f77728a79d07ff07f06ac27646340a9",
+      "bytes": 1115066,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "2c59de1dd8c53d36b8778b3a8a9f723f627beb75b5db30f1463f5ab563cce5a2"
+    },
+    "/puzzles/snow-village-fair-v1-thumbnail-111047efc863.webp": {
+      "src": "/puzzles/snow-village-fair-v1-thumbnail-111047efc863.webp",
+      "sha256": "111047efc863db4b621e66eb602616a6ef43eb9d40a035185ebbde64d929a625",
+      "bytes": 71970,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "2c59de1dd8c53d36b8778b3a8a9f723f627beb75b5db30f1463f5ab563cce5a2"
+    },
+    "/puzzles/tropical-harbor-carnival-v1-optimized-9439cb3ba9c7.webp": {
+      "src": "/puzzles/tropical-harbor-carnival-v1-optimized-9439cb3ba9c7.webp",
+      "sha256": "9439cb3ba9c700b32e5e8d4ddb62864cc03b1a797b2f9787deebdc02937ea5dc",
+      "bytes": 1469104,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "e2313e31e4310f957e354f90f40eb01df8169f0c2395da98f2b913b9be9e2739"
+    },
+    "/puzzles/tropical-harbor-carnival-v1-thumbnail-10cc2b4be524.webp": {
+      "src": "/puzzles/tropical-harbor-carnival-v1-thumbnail-10cc2b4be524.webp",
+      "sha256": "10cc2b4be52450ea9630e29b30c64c3a3264547e549910820d9e716183f819f4",
+      "bytes": 78486,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "e2313e31e4310f957e354f90f40eb01df8169f0c2395da98f2b913b9be9e2739"
+    },
+    "/puzzles/autumn-farm-festival-v1-optimized-ccc02f574efd.webp": {
+      "src": "/puzzles/autumn-farm-festival-v1-optimized-ccc02f574efd.webp",
+      "sha256": "ccc02f574efd0eb1878baf543c7297a77556cbbd527d13724e5f1c6f361ba2e2",
+      "bytes": 1441358,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "24b4b2548fa172dff56c59da271e250804023ebc7debae679ebb8898edae0abd"
+    },
+    "/puzzles/autumn-farm-festival-v1-thumbnail-74be6b7efcf9.webp": {
+      "src": "/puzzles/autumn-farm-festival-v1-thumbnail-74be6b7efcf9.webp",
+      "sha256": "74be6b7efcf9f451902586fb6cecc59feb860f6b4020cacdff302780c2b5b598",
+      "bytes": 72244,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "24b4b2548fa172dff56c59da271e250804023ebc7debae679ebb8898edae0abd"
+    },
+    "/puzzles/rooftop-neighborhood-festival-v1-optimized-a06e083f4dcd.webp": {
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-optimized-a06e083f4dcd.webp",
+      "sha256": "a06e083f4dcd98e8e62cd9e26a76f7a6790b610b5b3b9d0dd082141e7f820824",
+      "bytes": 1019724,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "ecf6b256749ec3d7321a540b34b5b60ec49cb3bded5ed1cf05d224263252b2a6"
+    },
+    "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-b29a1d6580e8.webp": {
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-b29a1d6580e8.webp",
+      "sha256": "b29a1d6580e8895eb4cb942c61122ffcd51c2045dd1704de2d5a8181af5b8cf9",
+      "bytes": 63358,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "ecf6b256749ec3d7321a540b34b5b60ec49cb3bded5ed1cf05d224263252b2a6"
+    },
+    "/puzzles/new-2b4be6fe98943de7-v1-optimized-6ab279c30653.webp": {
+      "src": "/puzzles/new-2b4be6fe98943de7-v1-optimized-6ab279c30653.webp",
+      "sha256": "6ab279c30653e5c5a123de6cc9496e980203e302956d8f3ec55c024be79732a4",
+      "bytes": 845414,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "c90c507c90dbea5c6e2da2fa775bc951f2701facd54edbd5320b67190d162bb1"
+    },
+    "/puzzles/new-2b4be6fe98943de7-v1-thumbnail-87578af74678.webp": {
+      "src": "/puzzles/new-2b4be6fe98943de7-v1-thumbnail-87578af74678.webp",
+      "sha256": "87578af74678689517b35700972e7e066c35eebc20ef4f54ef82ef107a601755",
+      "bytes": 57652,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "c90c507c90dbea5c6e2da2fa775bc951f2701facd54edbd5320b67190d162bb1"
+    },
+    "/puzzles/new-968c3449978849e1-v1-optimized-0feafd7ba6ba.webp": {
+      "src": "/puzzles/new-968c3449978849e1-v1-optimized-0feafd7ba6ba.webp",
+      "sha256": "0feafd7ba6bafe1e92d5685e3fad110f75124e500acce516a14d0f38c2244ee2",
+      "bytes": 968466,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "32fb603a4426b3f9077d84bda55d93b19d737bdd4224358fac9c5effbc884d35"
+    },
+    "/puzzles/new-968c3449978849e1-v1-thumbnail-be6fcb0c8405.webp": {
+      "src": "/puzzles/new-968c3449978849e1-v1-thumbnail-be6fcb0c8405.webp",
+      "sha256": "be6fcb0c8405c49fc402fc1fe636d424f3a7991120a1a696abb56df7a4a7a884",
+      "bytes": 70830,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "32fb603a4426b3f9077d84bda55d93b19d737bdd4224358fac9c5effbc884d35"
+    },
+    "/puzzles/new-645c9cf0cfee91ad-v1-optimized-a4ddcdd7f550.webp": {
+      "src": "/puzzles/new-645c9cf0cfee91ad-v1-optimized-a4ddcdd7f550.webp",
+      "sha256": "a4ddcdd7f5503a602d78675f024a8307f3cbf82f1172663e7ecf31c61a686d89",
+      "bytes": 935558,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "898b886a326c0eb37bb1d0b5fa5347cb439d62207a02903fd8605502b43b73c6"
+    },
+    "/puzzles/new-645c9cf0cfee91ad-v1-thumbnail-6bf7a18f4775.webp": {
+      "src": "/puzzles/new-645c9cf0cfee91ad-v1-thumbnail-6bf7a18f4775.webp",
+      "sha256": "6bf7a18f477576ade38f142aa1e0af6170f883248cae7a8d3bdc827e66be7c33",
+      "bytes": 62850,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "898b886a326c0eb37bb1d0b5fa5347cb439d62207a02903fd8605502b43b73c6"
+    },
+    "/puzzles/new-20a4b922bbb578e8-v1-optimized-6924125913be.webp": {
+      "src": "/puzzles/new-20a4b922bbb578e8-v1-optimized-6924125913be.webp",
+      "sha256": "6924125913be9c4550d322985af525667ab786da0609d841f31b73feb63bf388",
+      "bytes": 1077130,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "e778559830398a3b5d2c95d7683624143ea52fc1f5a2971db76e30c681c3d6d1"
+    },
+    "/puzzles/new-20a4b922bbb578e8-v1-thumbnail-1220409ba37c.webp": {
+      "src": "/puzzles/new-20a4b922bbb578e8-v1-thumbnail-1220409ba37c.webp",
+      "sha256": "1220409ba37caab5d19f6e0369aa5ada8cec9a114969200071e9875f56033061",
+      "bytes": 69774,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "e778559830398a3b5d2c95d7683624143ea52fc1f5a2971db76e30c681c3d6d1"
+    },
+    "/puzzles/new-79565e08fd397b1e-v1-optimized-d8878d15a2f7.webp": {
+      "src": "/puzzles/new-79565e08fd397b1e-v1-optimized-d8878d15a2f7.webp",
+      "sha256": "d8878d15a2f7b315eb30a8ff13ec42eb6e48b5a6a246e839e541c5f8b894c411",
+      "bytes": 915380,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "3d707ed73c7c60c08a187d37723668146d8a9bd86ba7a0e0bdd8318a800e9d5c"
+    },
+    "/puzzles/new-79565e08fd397b1e-v1-thumbnail-b4e56e4419e1.webp": {
+      "src": "/puzzles/new-79565e08fd397b1e-v1-thumbnail-b4e56e4419e1.webp",
+      "sha256": "b4e56e4419e1de5163ad11ab71576151deee86251c81d3b7b50b226445144f57",
+      "bytes": 58864,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "3d707ed73c7c60c08a187d37723668146d8a9bd86ba7a0e0bdd8318a800e9d5c"
+    },
+    "/puzzles/new-48413157ae051c95-v1-optimized-2ef2a368a475.webp": {
+      "src": "/puzzles/new-48413157ae051c95-v1-optimized-2ef2a368a475.webp",
+      "sha256": "2ef2a368a4757961234a99e81f4fe4f09b93f95016dd60e23fcaccd30857e15b",
+      "bytes": 892884,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "11842b4b691e22b66139e19cdb0ef92eab5eee2e39f19b3fa54b4d2f21523c74"
+    },
+    "/puzzles/new-48413157ae051c95-v1-thumbnail-86941112ca44.webp": {
+      "src": "/puzzles/new-48413157ae051c95-v1-thumbnail-86941112ca44.webp",
+      "sha256": "86941112ca44a492bcdf4925389b1d3ba6a0604f33efcf217b45b88c63163462",
+      "bytes": 61248,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "11842b4b691e22b66139e19cdb0ef92eab5eee2e39f19b3fa54b4d2f21523c74"
+    },
+    "/puzzles/new-cc532d03d405abd6-v1-optimized-6ee5daf098d7.webp": {
+      "src": "/puzzles/new-cc532d03d405abd6-v1-optimized-6ee5daf098d7.webp",
+      "sha256": "6ee5daf098d783d02768fbc7142432cf48b76c1a9f3b279a870473d2be8c0d06",
+      "bytes": 428144,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "f41b83be13532edc5b0204c86923eed2636247528b58a54a832993dc0c09d7a5"
+    },
+    "/puzzles/new-cc532d03d405abd6-v1-thumbnail-75305a56954c.webp": {
+      "src": "/puzzles/new-cc532d03d405abd6-v1-thumbnail-75305a56954c.webp",
+      "sha256": "75305a56954ccb2915ee3cf9eae5770c9dc3e5396906bcea522f3faa3316ece7",
+      "bytes": 39700,
+      "width": 480,
+      "height": 270,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "f41b83be13532edc5b0204c86923eed2636247528b58a54a832993dc0c09d7a5"
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "id": "moonlit-spirit-deer-v1",
+  "origin": "project-ai-generated",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-17",
+    "generatedAt": "2026-10-17T13:53:11.235990Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/moonlit-spirit-deer-v1.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/moonlit-spirit-deer-v1/native.png",
+      "sha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+      "bytes": 3309307,
+      "width": 1254,
+      "height": 1254,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/moonlit-spirit-deer-v1.png",
+    "importedRegistrySha256": "a71b7293ff4c85c09b084b4203af3a06e944ca301ed5912e14e97f9555cee760"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 1254×1254，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "阿枢",
+    "reviewedAt": "2026-10-17T13:53:11.235990Z",
+    "notes": "月夜灵鹿（东方妖灵幻想）。原始生成 1254×1254，未放大、未重绘；按 Q70/effort6/智能子采样生成 WebP 交付件。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+    "play": {
+      "src": "/puzzles/moonlit-spirit-deer-v1-play-c718e9b039bc.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c718e9b039bc7dc1a40a3f333b1eefb99ca2d645952b618594be2fbd6201c6ec",
+      "bytes": 2408718,
+      "format": "webp",
+      "sourceSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+      "inputSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+      "lossless": true,
+      "quality": null,
+      "upscaled": false,
+      "encoding": {
+        "library": "Pillow",
+        "version": "12.3.0",
+        "effort": 6
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/moonlit-spirit-deer-v1-thumbnail-359e9f3a6865.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "359e9f3a68651a4f6254883367fa20aa3cf137a990aa769bb35e1bc3e48c9eb1",
+      "bytes": 52990,
+      "format": "webp",
+      "sourceSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+      "inputSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "Pillow",
+        "version": "12.3.0",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/moonlit-spirit-deer-v1-optimized-d21767b1b96e.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d21767b1b96e10c68fa547e1a1fecefac3a735d75e15f2c7753c94206ca36c00",
+      "bytes": 270078,
+      "format": "webp",
+      "sourceSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+      "inputSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "Pillow",
+        "version": "12.3.0",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

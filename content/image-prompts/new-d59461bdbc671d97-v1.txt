@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime character portrait.
+Primary request: an original adult Japanese-anime fox-eared woman, three-quarter body portrait, elegant modern kimono-inspired outfit in ivory, vermilion and navy, large soft fox ears, one fluffy fox tail visible, holding a small paper fan, calm confident expression. The character fills about 75% of the frame.
+Style/medium: contemporary Japanese anime illustration, clean expressive linework, polished cel-painterly rendering, detailed hair and fabric.
+Composition/framing: wide horizontal 16:9, character centered slightly right, portrait-first, background minimal with only a softly blurred shrine gate, maple leaves and warm lantern bokeh.
+Lighting/mood: golden evening light, refined and gentle.
+Color palette: ivory, vermilion, navy, amber.
+Constraints: original fully clothed adult character, nonsexual, no logos, no readable text, no watermark, no excessive scenery, no duplicate character, no anatomical errors. Target a finished 4K-quality landscape illustration.
