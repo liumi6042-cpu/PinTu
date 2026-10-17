@@ -121,26 +121,26 @@ export function readPendingAssets(projectRoot = resolve(import.meta.dirname, '..
     text(asset.review.notes, '审核说明', 8000, true);
     if (reviewed && !Number.isFinite(Date.parse(asset.review.reviewedAt))) fail('待整理素材审核时间无效。');
     if (!plain(asset.delivery) || asset.delivery.sourceSha256 !== asset.source.sha256) fail('待整理素材交付未关联登记原件。');
-    // One uniform rule since 2026-10-17: optimized Q70/2560 for 300+ pieces,
-    // compact Q60/1600 for smaller boards, plus a 384 thumbnail. No lossless play file.
-    for (const kind of ['optimized', 'compact', 'thumbnail']) {
+    // Two deliverable files per picture since 2026-10-17. A legacy `compact`
+    // variant may still be present in old records and is tolerated, not required.
+    for (const kind of ['optimized', 'thumbnail']) {
       const item = asset.delivery[kind];
       if (!plain(item) || item.format !== 'webp') fail('待整理素材 WebP 交付记录缺失：' + kind);
       const {size} = checkedImage(root, item, 'webp');
-      const cap = kind === 'optimized' ? 2560 : kind === 'compact' ? 1600 : 384;
-      const quality = kind === 'optimized' ? 70 : kind === 'compact' ? 60 : 82;
+      const cap = kind === 'optimized' ? 2560 : 384;
+      const quality = kind === 'optimized' ? 70 : 82;
       if (size.lossless !== false || item.lossless !== false) fail('待整理素材交付必须是有损 WebP：' + kind);
       if (kind === 'thumbnail') {
         if (item.width > 480 || item.height > 384 || item.width > asset.source.width || item.height > asset.source.height) fail('待整理素材缩略图超过尺寸预算。');
-      } else {
-        const expected = Math.min(cap, Math.max(asset.source.width, asset.source.height));
-        if (Math.max(item.width, item.height) !== expected) fail('待整理素材交付长边必须为 ' + cap + ' 或原生尺寸：' + kind);
-        if (item.width > asset.source.width || item.height > asset.source.height) fail('待整理素材交付不得放大：' + kind);
-        if (item.quality !== quality) fail('待整理素材交付质量必须为 Q' + quality + '：' + kind);
-        const effort = item.effort ?? item.encoding?.effort;
-        if (size.lossless !== false || effort !== 6 || (item.smartSubsample ?? item.encoding?.smartSubsample) !== true) fail('待整理压缩交付参数不符：' + kind);
-        if (item.bytes > 2 * 1024 * 1024) fail('待整理压缩交付超过体积预算：' + kind);
+        continue;
       }
+      const expected = Math.min(cap, Math.max(asset.source.width, asset.source.height));
+      if (Math.max(item.width, item.height) !== expected) fail('待整理素材交付长边必须为 ' + cap + ' 或原生尺寸：' + kind);
+      if (item.width > asset.source.width || item.height > asset.source.height) fail('待整理素材交付不得放大：' + kind);
+      if (item.quality !== quality) fail('待整理素材交付质量必须为 Q' + quality + '：' + kind);
+      const effort = item.effort ?? item.encoding?.effort;
+      if (effort !== 6 || (item.smartSubsample ?? item.encoding?.smartSubsample) !== true) fail('待整理压缩交付参数不符：' + kind);
+      if (item.bytes > 2 * 1024 * 1024) fail('待整理压缩交付超过体积预算：' + kind);
     }
   }
   return {root, registryPath, assets: registry.assets, byId: new Map(registry.assets.map(asset => [asset.id, asset])), fingerprint: sha(bytes)};

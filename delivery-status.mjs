@@ -4,8 +4,8 @@ import {basename,join,relative,resolve,sep} from 'node:path';
 
 const fail=message=>{throw Object.assign(new Error(message),{status:409,code:'INVALID_DELIVERY_RECEIPT'});};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
-const kinds=['thumbnail','optimized','compact'];
-const fields={thumbnail:'thumbSrc',optimized:'optimizedSrc',compact:'optimizedStandardSrc'};
+const kinds=['thumbnail','optimized'];
+const fields={thumbnail:'thumbSrc',optimized:'optimizedSrc'};
 const inside=(root,file)=>{const part=relative(root,file);return part!==''&&part!=='..'&&!part.startsWith('..'+sep)&&!resolve(part).startsWith('\\\\')&&!/^[A-Za-z]:/.test(part);};
 function fileWithin(root,path){
  const target=resolve(root,path);if(!inside(root,target))fail('交付核验路径超出项目目录。');
@@ -40,9 +40,9 @@ export function readDeliveredAssets(projectRoot,pending){
  for(const catalog of catalogs)if(!Array.isArray(catalog)||new Set(catalog.map(photo=>photo.id)).size!==catalog.length)fail('双端运行图片登记无效或重复。');
  const availableIds=new Set();
  for(const image of receipt.images){
-  const asset=pending.byId.get(image?.id);if(!asset||availableIds.has(image.id)||image.sourceSha256!==asset.source.sha256||!Array.isArray(image.files)||image.files.length!==3)fail('双端交付回执的图片身份无效。');
+  const asset=pending.byId.get(image?.id);if(!asset||availableIds.has(image.id)||image.sourceSha256!==asset.source.sha256||!Array.isArray(image.files)||image.files.length!==kinds.length)fail('双端交付回执的图片身份无效。');
   const expected=pendingDeliveryFiles(asset);
-  if(new Set(image.files.map(file=>file?.url)).size!==3||expected.some(file=>!image.files.some(item=>item.url===file.url&&item.bytes===file.bytes&&item.sha256===file.sha256)))fail('双端交付回执与登记文件不一致：'+image.id);
+  if(new Set(image.files.map(file=>file?.url)).size!==kinds.length||expected.some(file=>!image.files.some(item=>item.url===file.url&&item.bytes===file.bytes&&item.sha256===file.sha256)))fail('双端交付回执与登记文件不一致：'+image.id);
   for(let index=0;index<roots.length;index++){
    const root=roots[index],photo=catalogs[index].find(item=>item.id===image.id),record=jsonAt(root,'content/image-provenance/'+image.id+'.json');
    validatePendingRuntimePhoto(asset,photo,record);
