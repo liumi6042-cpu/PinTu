@@ -11,11 +11,24 @@ export const ARTWORK_SNAPSHOT_HEADER='X-Jigsaw-Artwork-Snapshot';
 const fields=['revision','src','thumbSrc','width','height'] as const;
 const copy=(artwork:RoomArtwork):RoomArtwork=>({...artwork});
 
-export function trustedRoomArtwork(imageId:string,value:unknown):RoomArtwork|undefined{
+/** Validate one snapshot shape. Only same-site artwork paths are accepted. */
+function shapeArtwork(value:unknown):RoomArtwork|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
- const candidate=value as RoomArtwork;
- const found=versions[imageId]?.find(item=>fields.every(key=>item[key]===candidate[key]));
- return found?copy(found):undefined;
+ const item=value as RoomArtwork;
+ if(typeof item.revision!=='string'||!item.revision||item.revision.length>512)return undefined;
+ if(typeof item.src!=='string'||!item.src.startsWith('/puzzles/')||item.src.includes('..'))return undefined;
+ if(typeof item.thumbSrc!=='string'||!item.thumbSrc.startsWith('/puzzles/')||item.thumbSrc.includes('..'))return undefined;
+ if(!Number.isSafeInteger(item.width)||item.width<=0||!Number.isSafeInteger(item.height)||item.height<=0)return undefined;
+ return {revision:item.revision,src:item.src,thumbSrc:item.thumbSrc,width:item.width,height:item.height};
+}
+
+export function trustedRoomArtwork(imageId:string,value:unknown):RoomArtwork|undefined{
+ const found=versions[imageId]?.find(item=>fields.every(key=>item[key]===(value as RoomArtwork|undefined)?.[key]));
+ if(found)return copy(found);
+ // Artwork delivered after this bundle was built has no compile-time entry. The
+ // room snapshot is written by the server from the verified release catalogue,
+ // so its shape is what matters here; players still cannot invent a remote URL.
+ return shapeArtwork(value);
 }
 export function legacyRoomArtwork(imageId:string){return legacy[imageId]?copy(legacy[imageId]):undefined;}
 export function activeRoomArtwork(imageId:string){
@@ -32,8 +45,14 @@ export function currentRoomArtwork(photo:Photo,pieces:number,legacyOnly=false):R
  const upgraded=activeRoomArtwork(photo.id);if(upgraded)return upgraded;
  const src=pieces<=1000?photo.optimizedStandardSrc??photo.optimizedSrc??photo.standardSrc??photo.src:photo.optimizedSrc??photo.src;
  const found=versions[photo.id]?.find(item=>item.src===src&&item.thumbSrc===photo.thumbSrc);
- if(!found)throw Object.assign(new Error('图片版本尚未完成交付登记，请稍后重试'),{status:503});
- return copy(found);
+ if(found)return copy(found);
+ // A picture uploaded after this bundle was built has no compiled revision row.
+ // The photo comes from the verified release snapshot, and its file names carry
+ // the content hash, so pinning the room to this exact drawing is deterministic.
+ const measured=photo as Photo&{width?:number;height?:number};
+ const generated=shapeArtwork({revision:src,src,thumbSrc:photo.thumbSrc,width:measured.width,height:measured.height});
+ if(generated)return generated;
+ throw Object.assign(new Error('图片版本尚未完成交付登记，请稍后重试'),{status:503});
 }
 export function resolveRoomArtwork(room:ArtworkRoom,photos:readonly Photo[]=[]):RoomArtwork|undefined{
  if(room.customImage)return undefined;

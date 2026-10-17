@@ -16,6 +16,17 @@ import { apiJson, joinPuzzle } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
 import { accountLoginUrl, SOLO_LOGIN_REQUIRED } from '@/lib/account-return';
 const noop = () => { };
+
+/**
+ * A picture delivered after this bundle was built has no compiled catalogue row.
+ * The room snapshot already carries its immutable drawing, so render from that
+ * instead of failing to find the image and showing an empty screen.
+ */
+function deliveredRoomPhoto(snapshot: { puzzle: { imageId: string }; title?: string; artwork?: { src: string; thumbSrc: string; width: number; height: number } }) {
+    const artwork = snapshot.artwork;
+    if (!artwork) return undefined;
+    return { id: snapshot.puzzle.imageId, title: snapshot.title ?? '', category: '', src: artwork.src, thumbSrc: artwork.thumbSrc, playSrc: artwork.src, optimizedSrc: artwork.src, width: artwork.width, height: artwork.height };
+}
 export default function RoomPlay({ roomId }: {
     roomId: string;
 }) {
@@ -31,7 +42,7 @@ export default function RoomPlay({ roomId }: {
     const lobbyHref = language === 'zh' ? '/zh/lobby' : '/lobby';
     useEffect(() => { if(!missing)return; const started=Date.now(),timer=window.setInterval(()=>{const left=5-Math.floor((Date.now()-started)/1000);if(left<=0){window.clearInterval(timer);window.location.assign(lobbyHref);}else setCountdown(left);},200); return () => window.clearInterval(timer); }, [missing,lobbyHref]);
     if (client) {
-        const photo = client.snapshot.customImage?customPhoto(client.snapshot.customImage,client.snapshot.id):roomArtworkPhoto(client.snapshot,RESTORABLE_PHOTOS);
+        const photo = client.snapshot.customImage?customPhoto(client.snapshot.customImage,client.snapshot.id):(roomArtworkPhoto(client.snapshot,RESTORABLE_PHOTOS)??deliveredRoomPhoto(client.snapshot));
         // Another table, straight away: a different picture at the same size, so a finished
         // puzzle is followed by playing rather than by choosing.
         const startNextTable = async () => {

@@ -12,6 +12,17 @@ import { apiJson,clockLabel } from '@/lib/community-client';
 import { useAddressCopy } from '@/lib/address-copy';
 import { useLanguage } from './language-switch';
 import LobbyCommunity from './lobby-community';
+
+/**
+ * Pictures delivered after this bundle was built are absent from the compiled
+ * catalogue. The lobby card already carries the thumbnail and measured frame
+ * from the server, so render that instead of showing an empty card.
+ */
+function deliveredLobbyPhoto(room:RoomCard){
+ if(!room.thumbSrc)return undefined;
+ return {id:room.imageId,title:room.title,category:'',src:room.thumbSrc,thumbSrc:room.thumbSrc,playSrc:room.thumbSrc,optimizedSrc:room.thumbSrc,
+  width:room.artwork?.width??0,height:room.artwork?.height??0} as unknown as (typeof RESTORABLE_PHOTOS)[number];
+}
 import CommunityShell from './community-shell';
 import ResumePuzzle from './resume-puzzle';
 import SearchIntroduction from './search-introduction';
@@ -77,7 +88,7 @@ export default function PublicLobby({daily,initialStats}:{daily?:React.ReactNode
   <div className="lobby-filters" id="lobby-tables"><div className="filter-tabs">{[{id:'all',name:'所有拼图'},{id:'active',name:'有人在拼'},{id:'open',name:'可以加入'}].map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{copy(item.name)}</button>)}</div><label className="lobby-search"><Search size={18}/><input aria-label={copy('搜索公开拼图')} placeholder={copy('搜索喜欢的画面')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
   {error&&<p className="form-error" role="alert">{copy(error)}</p>}
   {!ready?<div className="community-empty"><RefreshCw className="loading-icon" size={28}/><p>{copy('正在铺开公开桌面…')}</p></div>:visible.length?<div className="public-grid public-tiled-grid">{visible.map((room,index)=>{
-   const catalogPhoto=RESTORABLE_PHOTOS.find(p=>p.id===room.imageId),uploadedPhoto=room.customImage?customPhoto(room.customImage,room.id):null;
+   const catalogPhoto=RESTORABLE_PHOTOS.find(p=>p.id===room.imageId)??deliveredLobbyPhoto(room),uploadedPhoto=room.customImage?customPhoto(room.customImage,room.id):null;
    const photo=catalogPhoto||uploadedPhoto,uploadOnly=!catalogPhoto&&!!room.customTitle,title=room.customTitle?room.title:(catalogPhoto?catalogPhoto.title:room.title),category=catalogPhoto?catalogPhoto.category:'玩家上传';
    const progress=Math.round(room.placed/room.pieces*100),full=room.players>=8;
    const elapsed=room.startedAt===null?0:Math.max(0,Math.floor((now+offset-room.startedAt)/1000));
