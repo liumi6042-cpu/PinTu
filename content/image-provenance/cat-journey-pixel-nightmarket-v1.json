@@ -39,53 +39,17 @@
   },
   "delivery": {
     "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
-    "play": {
-      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-play-47008db05b89.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "47008db05b892c6dfff92a0692fd8d5a7180dd1e8811bf5c8faf58334761d304",
-      "bytes": 3019022,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
-      "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "5418f580178e4362d30ddb07ee21c83c354d05320a9e995c33a1e12f2e6a2969",
-      "bytes": 60370,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
-      "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "kernel": "lanczos3"
-      }
-    },
     "optimized": {
-      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-493a0b82676b.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "493a0b82676b9d0f4b8be4de50d81dc2f8f283f19ea840f96b56a72e50af6759",
-      "bytes": 1140630,
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-70b1096b1c2f.webp",
+      "sha256": "70b1096b1c2ff95f0d317f7460ddc5f21c63df1d036de23af543d0b140a899fd",
+      "bytes": 659012,
+      "width": 2560,
+      "height": 2560,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
       "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
       "encoding": {
@@ -93,6 +57,47 @@
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-compact-46a3836697e8.webp",
+      "sha256": "46a3836697e8b1558035478a6e9bcba908c0ce66a86e03547fd9cb60c117bd73",
+      "bytes": 328738,
+      "width": 1600,
+      "height": 1600,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
+      "sha256": "5418f580178e4362d30ddb07ee21c83c354d05320a9e995c33a1e12f2e6a2969",
+      "bytes": 60370,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "inputSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

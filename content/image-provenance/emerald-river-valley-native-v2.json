@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
-    "play": {
-      "src": "/puzzles/emerald-river-valley-native-v2-play-09ebdd9f974b.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "09ebdd9f974b8b79c1e89ed3d7f6b96d6df69742f4b93f96cecfbe4eabdf03bc",
-      "bytes": 2608984,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/emerald-river-valley-native-v2-thumbnail-f821ab3720a9.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "f821ab3720a9f52ce33b87aea3114dade371fbfd1ca671e04a68833425484deb",
-      "bytes": 46080,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/emerald-river-valley-native-v2-optimized-31bef7ba3bec.webp",
+      "src": "/puzzles/emerald-river-valley-native-v2-optimized-1a20550f1fba.webp",
+      "sha256": "1a20550f1fba830d2e239d3fa23b12e711fae7c90373cd4c83f113196f72400e",
+      "bytes": 376054,
       "width": 1774,
       "height": 887,
-      "sha256": "31bef7ba3bec94d5d024935f3dd53ecf6a22667f5cda7b6de48645f1cbde10c4",
-      "bytes": 553518,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
       "inputSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/emerald-river-valley-native-v2-compact-2d8b2d4b06dc.webp",
+      "sha256": "2d8b2d4b06dc0582a0ea9819df464f72920346e7316a91874ceac070026c9965",
+      "bytes": 283696,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "inputSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/emerald-river-valley-native-v2-thumbnail-7fc8e0287d32.webp",
+      "sha256": "7fc8e0287d32085a3a655ef8c2fdbe2a01fbf11c18ebfe27900fcba69911c18b",
+      "bytes": 29858,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "inputSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

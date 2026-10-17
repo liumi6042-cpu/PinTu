@@ -44,45 +44,65 @@
   },
   "delivery": {
     "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
-    "play": {
-      "src": "/puzzles/cel-sunset-train-v1-play-d1fc0f24c7d3.webp",
-      "width": 1536,
-      "height": 1024,
-      "sha256": "d1fc0f24c7d348b671f3a82a989111b828f2bf7dec059af02c6e1731952bcfbf",
-      "bytes": 1480918,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cel-sunset-train-v1-thumbnail-f20ee4697b93.webp",
-      "width": 480,
-      "height": 320,
-      "sha256": "f20ee4697b933088256cf3abed7be601818639c39d4a70ca97b9ffe653fa26f3",
-      "bytes": 22908,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cel-sunset-train-v1-optimized-3e9db12afb37.webp",
+      "src": "/puzzles/cel-sunset-train-v1-optimized-a9c3d13c5c3c.webp",
+      "sha256": "a9c3d13c5c3cb883ddb5c15e2922401371d6d72bed6d6fd5f9bb19762a8deb15",
+      "bytes": 99896,
       "width": 1536,
       "height": 1024,
-      "sha256": "3e9db12afb3705f265b106c9b8ecdb22acdb5d5a0746e02df11b36118dd7bce2",
-      "bytes": 169010,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
       "inputSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cel-sunset-train-v1-compact-7e01c547fe03.webp",
+      "sha256": "7e01c547fe032de73f2dd08553c19c377aa6afdb0ea79e18c315bcf6c0e97c75",
+      "bytes": 87750,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "inputSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-sunset-train-v1-thumbnail-9a31db7a41a0.webp",
+      "sha256": "9a31db7a41a0d07393b6020c89c751d87ed6e3a767bbc65ac8f8b93fe8425f9d",
+      "bytes": 15974,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "inputSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

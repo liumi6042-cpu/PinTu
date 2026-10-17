@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
-    "play": {
-      "src": "/puzzles/spring-stream-stone-bridge-v1-play-751e163dfa09.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "751e163dfa09b03a4de0b1e4482cfa3311fcfd930e731fb7781ee03353591b81",
-      "bytes": 2863982,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/spring-stream-stone-bridge-v1-thumbnail-288915d05201.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "288915d05201bc65807790ee7124c2b32614aff3cbc330b356de554134447890",
-      "bytes": 81414,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/spring-stream-stone-bridge-v1-optimized-e9fa7d00788d.webp",
+      "src": "/puzzles/spring-stream-stone-bridge-v1-optimized-88f41336c684.webp",
+      "sha256": "88f41336c684595eadd79a772c57c70b3b3ae8d7284e35004cbfd48b01450099",
+      "bytes": 456950,
       "width": 1448,
       "height": 1086,
-      "sha256": "e9fa7d00788d86c355693a131c3869fd258073ecaea0a8763604f3ce5574f0a1",
-      "bytes": 634714,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
       "inputSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/spring-stream-stone-bridge-v1-compact-05f1c0f43396.webp",
+      "sha256": "05f1c0f433964b194ba2e9fa55902e48fdcc76ecfa8bb61c0f56f3425339cfbd",
+      "bytes": 406950,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "inputSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/spring-stream-stone-bridge-v1-thumbnail-13626c98f017.webp",
+      "sha256": "13626c98f017c4cc1d9699af68c2fed27b901d0325cd610e99301ce9e3de4ce4",
+      "bytes": 53018,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "inputSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

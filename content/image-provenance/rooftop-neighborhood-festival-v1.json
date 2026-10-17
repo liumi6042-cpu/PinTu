@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
-    "play": {
-      "src": "/puzzles/rooftop-neighborhood-festival-v1-play-a45c97fa96a1.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "a45c97fa96a19de1e88badb86d80983a5380a0f4c9aa849d63e3b302dc3f74b2",
-      "bytes": 2736820,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-5a83f9760734.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "5a83f9760734fae4c23d1789cb211b98b128acb65ec475e52343864ccd16d818",
-      "bytes": 69408,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/rooftop-neighborhood-festival-v1-optimized-9b04303916b4.webp",
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-optimized-c3936fe6b25f.webp",
+      "sha256": "c3936fe6b25fbebef6a68ae9b7a13c4fa2828a9b38bafff6dbc14af915a2f357",
+      "bytes": 435280,
       "width": 1254,
       "height": 1254,
-      "sha256": "9b04303916b4d60045d3ff9cf98ccd907f5c876feb9b3e69a13b717a8b1b51fd",
-      "bytes": 598324,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
       "inputSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-compact-15d704e68a1b.webp",
+      "sha256": "15d704e68a1bf7d6712d88ef3628113ff83c5b909fa5c4591987c2246f9cf95d",
+      "bytes": 393430,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+      "inputSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/rooftop-neighborhood-festival-v1-thumbnail-339ad3bc65fe.webp",
+      "sha256": "339ad3bc65fe7f292b91ecdf7c9cfefb332fe84f2d04f963d95a75ee85c74649",
+      "bytes": 69366,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+      "inputSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

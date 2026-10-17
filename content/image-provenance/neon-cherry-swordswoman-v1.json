@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
-    "play": {
-      "src": "/puzzles/neon-cherry-swordswoman-v1-play-d78e18ef5811.webp",
-      "width": 1024,
-      "height": 1536,
-      "sha256": "d78e18ef58118504c63e94597430a2e60fc34d1955b87bf8bdca1175ff9182c7",
-      "bytes": 2361248,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/neon-cherry-swordswoman-v1-thumbnail-537248b946b1.webp",
-      "width": 256,
-      "height": 384,
-      "sha256": "537248b946b17e82171b0ccc06444d959c70ea80c99ad07d6115b4ea4f06de67",
-      "bytes": 35072,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/neon-cherry-swordswoman-v1-optimized-4d1d6001b7cf.webp",
+      "src": "/puzzles/neon-cherry-swordswoman-v1-optimized-7be2283706b4.webp",
+      "sha256": "7be2283706b4ceb1ffa7cefb569cc27f12df351418f2f5fd40059c1bd58cde35",
+      "bytes": 291204,
       "width": 1024,
       "height": 1536,
-      "sha256": "4d1d6001b7cf3b47f6978f1270e168700cfb4f50d41ffa17fafd10bee1de08da",
-      "bytes": 437568,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
       "inputSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/neon-cherry-swordswoman-v1-compact-5a787e6d98bb.webp",
+      "sha256": "5a787e6d98bbed9f4c553c81fb3a55aaa0b257e5e77b2d35a95832babd287e2e",
+      "bytes": 260678,
+      "width": 1024,
+      "height": 1536,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "inputSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/neon-cherry-swordswoman-v1-thumbnail-537248b946b1.webp",
+      "sha256": "537248b946b17e82171b0ccc06444d959c70ea80c99ad07d6115b4ea4f06de67",
+      "bytes": 35072,
+      "width": 256,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "inputSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

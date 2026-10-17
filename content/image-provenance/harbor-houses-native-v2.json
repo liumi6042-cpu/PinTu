@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
-    "play": {
-      "src": "/puzzles/harbor-houses-native-v2-play-11f4b589a747.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "11f4b589a74710ce38fbf1fdfe7c069918ac1096167babc3f5c6293694d58c82",
-      "bytes": 1900896,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/harbor-houses-native-v2-thumbnail-9fad6c135239.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "9fad6c1352398444f765403297d64cd7d10826a7308180383c5ee6085873c94a",
-      "bytes": 26824,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/harbor-houses-native-v2-optimized-e85bac4bd1d5.webp",
+      "src": "/puzzles/harbor-houses-native-v2-optimized-8d3a57025a0b.webp",
+      "sha256": "8d3a57025a0bd1ad2b136f26bb13079e77735ffc6b0d6bfdcb2ec2cf78aec2da",
+      "bytes": 172274,
       "width": 1774,
       "height": 887,
-      "sha256": "e85bac4bd1d5e020495f2338de3757a0b99bf4b7babe3d27bacafd07a9a7fe50",
-      "bytes": 277296,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
       "inputSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/harbor-houses-native-v2-compact-a43d861ab7f4.webp",
+      "sha256": "a43d861ab7f42253d501d8248618481e31c9c0ad54c9c594d80af14f21af118c",
+      "bytes": 130168,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "inputSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/harbor-houses-native-v2-thumbnail-bc6cda85f6a1.webp",
+      "sha256": "bc6cda85f6a13327dcf710c5d329c05be584efad03ec6a5b178466f76a5902a4",
+      "bytes": 18288,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "inputSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

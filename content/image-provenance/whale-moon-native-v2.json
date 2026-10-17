@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
-    "play": {
-      "src": "/puzzles/whale-moon-native-v2-play-ce2c82a89b21.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "ce2c82a89b21a02f8ce73adbe0853cc604e46bafb351c38ff860339a453614f7",
-      "bytes": 1624662,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/whale-moon-native-v2-thumbnail-2dc9dbddd901.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "2dc9dbddd901de8563a3bb58b01e0734f83b4601ef2c5ab2cc70c48cb7628490",
-      "bytes": 18182,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/whale-moon-native-v2-optimized-dab1cbdec1a5.webp",
+      "src": "/puzzles/whale-moon-native-v2-optimized-8d8bc6a60c23.webp",
+      "sha256": "8d8bc6a60c236fc3b952f4f6110865f97bf721652b5d07c911c9fe9e2f81db82",
+      "bytes": 129174,
       "width": 1774,
       "height": 887,
-      "sha256": "dab1cbdec1a5b96802fad60da0a8b99beda4ab1aed37db90b512ac8d016aa1ba",
-      "bytes": 205898,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
       "inputSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/whale-moon-native-v2-compact-b182f072e4f6.webp",
+      "sha256": "b182f072e4f607cb5f1761318de1b139d6893b08e46d42723ff43b0db590b9d2",
+      "bytes": 99332,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "inputSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/whale-moon-native-v2-thumbnail-6ca0f30aa4cd.webp",
+      "sha256": "6ca0f30aa4cdb8d1edf1f0b1cfc9f891467a564c8c488250405d707e4e8b6b2f",
+      "bytes": 11780,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "inputSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

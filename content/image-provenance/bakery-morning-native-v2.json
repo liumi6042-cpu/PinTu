@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
-    "play": {
-      "src": "/puzzles/bakery-morning-native-v2-play-d489b8334683.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "d489b8334683e7debb23dc45e674c5bc0498c3944a78c6313d9aed697501d58f",
-      "bytes": 1790878,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/bakery-morning-native-v2-thumbnail-bdc949984254.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "bdc9499842546a4c46212e1d13a7cc96a5aace78614b9496d619582beeefe7dd",
-      "bytes": 28128,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/bakery-morning-native-v2-optimized-c286d84dd455.webp",
+      "src": "/puzzles/bakery-morning-native-v2-optimized-253b8ec9c751.webp",
+      "sha256": "253b8ec9c751ee13cb005c4cf8d5df09d53db3aac8f1d47f83b645c11766e0c8",
+      "bytes": 159152,
       "width": 1774,
       "height": 887,
-      "sha256": "c286d84dd45502159a7736031564334d8b4edda1aecb22ff8ba3ee65c9085e87",
-      "bytes": 257424,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
       "inputSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/bakery-morning-native-v2-compact-1a47ad0b7c61.webp",
+      "sha256": "1a47ad0b7c617baed82a51c18bf83be6a9c6198d0e6626e26311e0403e22d3a0",
+      "bytes": 122900,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
+      "inputSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/bakery-morning-native-v2-thumbnail-e7debe689136.webp",
+      "sha256": "e7debe689136d0d6ee092268c7a7643358f58b9433b9f608cab70e3c5960e40b",
+      "bytes": 19270,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
+      "inputSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

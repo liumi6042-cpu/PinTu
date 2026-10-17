@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
-    "play": {
-      "src": "/puzzles/rainforest-waterfall-haven-v1-play-ce215b9fa66e.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "ce215b9fa66e50a426cd874101765ac84d586c3d408b270a2d6db9c7b6278888",
-      "bytes": 2654238,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/rainforest-waterfall-haven-v1-thumbnail-2dee811487d0.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "2dee811487d0c470546313266df1985c9149c1367dced8ff54d2e8b751457c22",
-      "bytes": 71820,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/rainforest-waterfall-haven-v1-optimized-788a4ce49ed9.webp",
+      "src": "/puzzles/rainforest-waterfall-haven-v1-optimized-e5ed2a21a34e.webp",
+      "sha256": "e5ed2a21a34e41ae98f50845d484b8dda00002c8f97bd503521777873aa8cc51",
+      "bytes": 374906,
       "width": 1448,
       "height": 1086,
-      "sha256": "788a4ce49ed9b2fd49a54bcadaff0779a58f8bbee992bb3a3e1a13e37e3bdf2e",
-      "bytes": 547262,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
       "inputSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/rainforest-waterfall-haven-v1-compact-bed4cdd005e8.webp",
+      "sha256": "bed4cdd005e82d66a6c6b3344c992ff5d11bd0ca516d2f3a72c6cb1f1b7b3eaf",
+      "bytes": 335016,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "inputSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/rainforest-waterfall-haven-v1-thumbnail-1fab914649c9.webp",
+      "sha256": "1fab914649c93a792d6c1c47ca0f8baf065efd5a6e562d0809ee5a7abf2def31",
+      "bytes": 47570,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "inputSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

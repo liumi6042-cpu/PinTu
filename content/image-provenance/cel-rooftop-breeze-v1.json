@@ -44,45 +44,65 @@
   },
   "delivery": {
     "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
-    "play": {
-      "src": "/puzzles/cel-rooftop-breeze-v1-play-100766915aab.webp",
-      "width": 1536,
-      "height": 1024,
-      "sha256": "100766915aab8af90fb0f425b2a117ebf151b6f978c79651c0bca2b97b7f3043",
-      "bytes": 1818052,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cel-rooftop-breeze-v1-thumbnail-b3996a66f057.webp",
-      "width": 480,
-      "height": 320,
-      "sha256": "b3996a66f057299d3d236e19f5bc51990ff2cc841bc8a23c7b559c9b6fb4406b",
-      "bytes": 34970,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cel-rooftop-breeze-v1-optimized-0346f0ab18f9.webp",
+      "src": "/puzzles/cel-rooftop-breeze-v1-optimized-409f8f380a2c.webp",
+      "sha256": "409f8f380a2c8917725689afcb84d010a8fe499949d99da9515fc935b4ead02b",
+      "bytes": 154382,
       "width": 1536,
       "height": 1024,
-      "sha256": "0346f0ab18f90e31abe5590c3c0e4cfc476df005a1e7d45f6ddee7b62a94dd37",
-      "bytes": 252044,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
       "inputSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cel-rooftop-breeze-v1-compact-36ae0115a591.webp",
+      "sha256": "36ae0115a59180277377735e25880be2232eef21e658152e9d80e582247969f4",
+      "bytes": 135362,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "inputSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rooftop-breeze-v1-thumbnail-c4581502ba03.webp",
+      "sha256": "c4581502ba03bec0764c6fe3ac97132dd8fb46b0a8c7fc73a9a91a455faa52ce",
+      "bytes": 24274,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "inputSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

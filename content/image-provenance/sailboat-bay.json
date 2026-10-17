@@ -37,45 +37,65 @@
   },
   "delivery": {
     "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
-    "play": {
-      "src": "/puzzles/sailboat-bay-play-6a73f7ec1f43.webp",
-      "width": 1402,
-      "height": 1122,
-      "sha256": "6a73f7ec1f431844b85abeb9491ca616ad6267ea0c6fa1f60a7bd356cabdc432",
-      "bytes": 1751658,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/sailboat-bay-thumbnail-daacaea1f9fe.webp",
-      "width": 480,
-      "height": 384,
-      "sha256": "daacaea1f9fe320c76e3b2e8bee35e14b0560d76ff56d6fd22ff66538884fd10",
-      "bytes": 30632,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/sailboat-bay-optimized-944a369ee381.webp",
+      "src": "/puzzles/sailboat-bay-optimized-9eee6b548cd9.webp",
+      "sha256": "9eee6b548cd9de35327bcc2bc8a5138d43035e2bdbd5f8d7e9a20b2883307349",
+      "bytes": 107234,
       "width": 1402,
       "height": 1122,
-      "sha256": "944a369ee38195a86483814f78681fabdf6298c38fa73217eec30e9c94f8b2b4",
-      "bytes": 178054,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
       "inputSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/sailboat-bay-compact-2c0fb06ba29b.webp",
+      "sha256": "2c0fb06ba29b525e19eaf46be620cb05b9b9327f71551cc47ac1dc52c2701df4",
+      "bytes": 92538,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "inputSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/sailboat-bay-thumbnail-ce2dad0e62c8.webp",
+      "sha256": "ce2dad0e62c8c6dce7e344ddcba30e17057b6c0bea25d40ba2be44ab7be9edf8",
+      "bytes": 21658,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "inputSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

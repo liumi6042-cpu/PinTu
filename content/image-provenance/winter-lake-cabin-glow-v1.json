@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
-    "play": {
-      "src": "/puzzles/winter-lake-cabin-glow-v1-play-c14c4b1e2cb7.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "c14c4b1e2cb7121112a7287f201ec9a23988eabb234f0e279cbf51d64119e946",
-      "bytes": 2449248,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/winter-lake-cabin-glow-v1-thumbnail-f6ded2e7cc41.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "f6ded2e7cc4157df48544894f71dec2dbe5071a8d9a96a81f054c25c4096f4b3",
-      "bytes": 67764,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/winter-lake-cabin-glow-v1-optimized-66bb3073ca40.webp",
+      "src": "/puzzles/winter-lake-cabin-glow-v1-optimized-eaf1141011d1.webp",
+      "sha256": "eaf1141011d14106a8c8ce3d66fc93b6f67a13cb5960cedf49baa2f870c44401",
+      "bytes": 320808,
       "width": 1448,
       "height": 1086,
-      "sha256": "66bb3073ca4061c9af7f524501016953a9f2fe986f888307286ed1d045541325",
-      "bytes": 477002,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
       "inputSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/winter-lake-cabin-glow-v1-compact-392032c919e0.webp",
+      "sha256": "392032c919e0bb60cd3196cb3ce0c6347a00c6fb47a73a8c8b487f6e81d22d5a",
+      "bytes": 285774,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+      "inputSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/winter-lake-cabin-glow-v1-thumbnail-1c532330b24d.webp",
+      "sha256": "1c532330b24d722496629097d89d33a76a36bda803998eaf0685ec2d14a5c9be",
+      "bytes": 44188,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+      "inputSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

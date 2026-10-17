@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
-    "play": {
-      "src": "/puzzles/alpine-turquoise-reflections-v1-play-8c0300168766.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "8c0300168766cc312fd6fa092f91c63170fa503e424751171fd026e8ffc33cbc",
-      "bytes": 2584088,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/alpine-turquoise-reflections-v1-thumbnail-68ee1b368644.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "68ee1b368644b7a974ffb605dc9dde476ea32de6a9d108d2465f758b3f5a71a3",
-      "bytes": 72484,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/alpine-turquoise-reflections-v1-optimized-0f752cf9eac4.webp",
+      "src": "/puzzles/alpine-turquoise-reflections-v1-optimized-c4a4535b9d22.webp",
+      "sha256": "c4a4535b9d22f294797d1a77abf45337414fa6508bd0301b4cca9501e32f3b3e",
+      "bytes": 363170,
       "width": 1448,
       "height": 1086,
-      "sha256": "0f752cf9eac414a1ccdec452482db4f807240cdc5237e98f8f6144b67d28fd23",
-      "bytes": 522310,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
       "inputSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/alpine-turquoise-reflections-v1-compact-1062888aa94c.webp",
+      "sha256": "1062888aa94c119192b9f333283567b81a6d5f06abbd0a08b21b67ffbe1627f4",
+      "bytes": 326946,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "inputSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/alpine-turquoise-reflections-v1-thumbnail-2635c9c0811b.webp",
+      "sha256": "2635c9c0811b683297b7d7183b0b963273b95cdf5589237b6cb7faf793a68745",
+      "bytes": 47520,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "inputSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

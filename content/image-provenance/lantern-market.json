@@ -49,45 +49,65 @@
   },
   "delivery": {
     "sourceSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
-    "play": {
-      "src": "/puzzles/lantern-market-play-a08e167238cb.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "a08e167238cba65879670b898968c70e6e92561aa063999d88fb254227d4f8be",
-      "bytes": 2705566,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/lantern-market-thumbnail-2493faf2382d.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "2493faf2382db2408d0275b9e807ba3845b62ca1ed135b671e3034a8510043c2",
-      "bytes": 72540,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/lantern-market-optimized-bec35d733845.webp",
+      "src": "/puzzles/lantern-market-optimized-89b61ee2d25a.webp",
+      "sha256": "89b61ee2d25ac344304ffc2896b969232548940ae218734042bfc7b3d2d1e774",
+      "bytes": 402860,
       "width": 1448,
       "height": 1086,
-      "sha256": "bec35d733845bddecb67d8a1b0756e36b764b71315eaea443a0df8dadc2c55ed",
-      "bytes": 581850,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
       "inputSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/lantern-market-compact-21e9d4b2434d.webp",
+      "sha256": "21e9d4b2434d82c2aedada895c80d1ce1a8a611e25bbbe543da00c6f4dad769c",
+      "bytes": 357444,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+      "inputSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/lantern-market-thumbnail-658ba89e8669.webp",
+      "sha256": "658ba89e86691eb51b0c40fd87b2b1948a3595cbd02ef0e6328125cb67a307e9",
+      "bytes": 47604,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+      "inputSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

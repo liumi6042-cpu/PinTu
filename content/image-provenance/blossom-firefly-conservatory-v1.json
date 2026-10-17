@@ -115,53 +115,17 @@
   },
   "delivery": {
     "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
-    "play": {
-      "src": "/puzzles/blossom-firefly-conservatory-v1-play-8f82ba376201.webp",
-      "width": 2144,
-      "height": 2144,
-      "sha256": "8f82ba3762017c1e61e0d70224bb019e975850ff8c354058c5e67f20c5bf8959",
-      "bytes": 7548418,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
-      "inputSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/blossom-firefly-conservatory-v1-thumbnail-d6d20d499bf9.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "d6d20d499bf954ec87fd2b4507ba2e152493fc21b7663fe7e61dc8c75b28a939",
-      "bytes": 56700,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
-      "inputSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "kernel": "lanczos3"
-      }
-    },
     "optimized": {
       "src": "/puzzles/blossom-firefly-conservatory-v1-optimized-bde5f4d5b3b2.webp",
-      "width": 2144,
-      "height": 2144,
       "sha256": "bde5f4d5b3b219c63c99e33c6b2a40297dc7aeaf1e9e40a7ec40b00328d15de9",
       "bytes": 746536,
+      "width": 2144,
+      "height": 2144,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
       "inputSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
       "encoding": {
@@ -169,6 +133,47 @@
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/blossom-firefly-conservatory-v1-compact-6b69ab4c6c95.webp",
+      "sha256": "6b69ab4c6c9558d926dbcee7c13480ff1557eb0abc25d4689e2e3b9f8178226e",
+      "bytes": 436282,
+      "width": 1600,
+      "height": 1600,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "inputSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/blossom-firefly-conservatory-v1-thumbnail-d6d20d499bf9.webp",
+      "sha256": "d6d20d499bf954ec87fd2b4507ba2e152493fc21b7663fe7e61dc8c75b28a939",
+      "bytes": 56700,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "inputSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

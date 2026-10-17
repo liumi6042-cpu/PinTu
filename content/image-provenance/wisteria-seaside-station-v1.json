@@ -39,61 +39,65 @@
   },
   "delivery": {
     "sourceSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
-    "play": {
-      "src": "/puzzles/wisteria-seaside-station-v1-play-78e722eafab4.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "78e722eafab40b13af6e8e6ed4a9a4637b9ed8663ba9d01e5355b1128726de28",
-      "bytes": 2743362,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
-      "inputSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/wisteria-seaside-station-v1-thumbnail-b81ea48bcdbb.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "b81ea48bcdbb1fe9eec718b164e90849000276592b0a4430806a0c6410c038e8",
-      "bytes": 65126,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
-      "inputSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
     "optimized": {
       "src": "/puzzles/wisteria-seaside-station-v1-optimized-abb600cd9aa3.webp",
-      "width": 1254,
-      "height": 1254,
       "sha256": "abb600cd9aa38681731ecaffc85d56b04c745ee3d9a0e67dba3fcfd4f998880f",
       "bytes": 383712,
+      "width": 1254,
+      "height": 1254,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
       "inputSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
-      "effort": 6,
-      "smartSubsample": true,
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/wisteria-seaside-station-v1-compact-42edfef04e62.webp",
+      "sha256": "42edfef04e62fb1bddad1fef743b5ea6e5e84f66fb5a29413e0f2f97b41ff540",
+      "bytes": 341486,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
+      "inputSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/wisteria-seaside-station-v1-thumbnail-b81ea48bcdbb.webp",
+      "sha256": "b81ea48bcdbb1fe9eec718b164e90849000276592b0a4430806a0c6410c038e8",
+      "bytes": 65126,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
+      "inputSha256": "c9d8569a94c8510353fb9dea5d61c7db95a8389113afe853ef07f88609c88839",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
-    "play": {
-      "src": "/puzzles/cel-coastal-family-v1-play-3043a3edd2fa.webp",
-      "width": 1536,
-      "height": 1024,
-      "sha256": "3043a3edd2fab36eba8c9fd847ef00c9e112732425430f83f2462d2b926df4cc",
-      "bytes": 2302716,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cel-coastal-family-v1-thumbnail-52f2b7947655.webp",
-      "width": 480,
-      "height": 320,
-      "sha256": "52f2b79476553e003e301bede3fa69d2288b44382928a77af636485956510b94",
-      "bytes": 54996,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cel-coastal-family-v1-optimized-a9c3bd49fd5f.webp",
+      "src": "/puzzles/cel-coastal-family-v1-optimized-6adf26e946c7.webp",
+      "sha256": "6adf26e946c7c337355a17c083ec53b306d24b41277c99a2130033f4e1a0e16c",
+      "bytes": 268028,
       "width": 1536,
       "height": 1024,
-      "sha256": "a9c3bd49fd5fa5f19db52754298e69ea9c5f83ccbeed96028a8449624a1e4995",
-      "bytes": 413338,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
       "inputSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cel-coastal-family-v1-compact-86a8cc54eae7.webp",
+      "sha256": "86a8cc54eae77e4d638a15b7ae7661e276ee49e460976bcf30ed19179eaae056",
+      "bytes": 236944,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "inputSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-coastal-family-v1-thumbnail-820f758a09c3.webp",
+      "sha256": "820f758a09c3305622bb436f6851d2e7d23770c54e024442b48c746901ccc1b3",
+      "bytes": 36048,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "inputSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

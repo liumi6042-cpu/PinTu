@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
-    "play": {
-      "src": "/puzzles/peach-breakfast-native-v2-play-3e08b520b58c.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "3e08b520b58ce5d3c8c4586261f4f34ddf350898fdc8fe36c96446be1d3bc794",
-      "bytes": 1632014,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/peach-breakfast-native-v2-thumbnail-08303e3534ca.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "08303e3534ca9729c9f40940916e93c32df9a5f4ae14a06d075b1eb825925b8e",
-      "bytes": 22654,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/peach-breakfast-native-v2-optimized-00f127b51434.webp",
+      "src": "/puzzles/peach-breakfast-native-v2-optimized-6f4201f515ed.webp",
+      "sha256": "6f4201f515edb016c4b80d8fea81aeb49ba687ffbf601f7a6b5115c3e297e524",
+      "bytes": 117294,
       "width": 1774,
       "height": 887,
-      "sha256": "00f127b51434b12d82a57a31d89dea0eb60db4095c53b7d165991917692ec0da",
-      "bytes": 197610,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
       "inputSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/peach-breakfast-native-v2-compact-b481c797686c.webp",
+      "sha256": "b481c797686ccc50d9b39b40e4314e831de3dc86b612488195fd028c750a0a6c",
+      "bytes": 88524,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+      "inputSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/peach-breakfast-native-v2-thumbnail-1c4cdcdd776a.webp",
+      "sha256": "1c4cdcdd776a25d5a111662fb554e79def35e5ce07da6f91754cfc776c39ce63",
+      "bytes": 15640,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+      "inputSha256": "b15e13e29ae008251aab6077c962842759670ccf7032726b7f6c476d8d9ede5e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
-    "play": {
-      "src": "/puzzles/golden-sand-dunes-native-v2-play-54dd8775f62c.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "54dd8775f62cf2154a21e81d920eeff3f6d0306b82a71c707c5ca433af5c8799",
-      "bytes": 1634816,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/golden-sand-dunes-native-v2-thumbnail-47662e08216d.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "47662e08216d48d608d33a4556e6cfb953a217be00b9363c90ef6f24312c31ad",
-      "bytes": 13960,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/golden-sand-dunes-native-v2-optimized-d2fc1961d7a6.webp",
+      "src": "/puzzles/golden-sand-dunes-native-v2-optimized-6cc2e3bd7f09.webp",
+      "sha256": "6cc2e3bd7f09502d868977a71fe3c6a8c182b330c49157f7fc4d43a85a27e3e6",
+      "bytes": 101194,
       "width": 1774,
       "height": 887,
-      "sha256": "d2fc1961d7a607f6a34d634e83b7bcabf1787c7fc8fcf70ce7e2a1fa2257eb88",
-      "bytes": 172224,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
       "inputSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/golden-sand-dunes-native-v2-compact-1de5a6ca8214.webp",
+      "sha256": "1de5a6ca82144ce670a58302e6e2a7e60c52a6ee39326d34475527efb349b808",
+      "bytes": 74804,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+      "inputSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/golden-sand-dunes-native-v2-thumbnail-0d27413b5775.webp",
+      "sha256": "0d27413b577562ed9bba4b13d5a626d1881e66db06c6614d812d452dd060f2df",
+      "bytes": 8824,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+      "inputSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

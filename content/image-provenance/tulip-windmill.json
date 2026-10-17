@@ -49,45 +49,65 @@
   },
   "delivery": {
     "sourceSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
-    "play": {
-      "src": "/puzzles/tulip-windmill-play-96d1fb95e025.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "96d1fb95e0256fa3f86b46d34dc622701b7859b7b815fd45fceca6cd0ed7afbe",
-      "bytes": 2723112,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/tulip-windmill-thumbnail-116adeb7c698.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "116adeb7c698e44394de3f1896bae5db7a668d91f8b294aefe15d4e3367bd3a1",
-      "bytes": 77360,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/tulip-windmill-optimized-f329d9b4ade4.webp",
+      "src": "/puzzles/tulip-windmill-optimized-d9ab4fd886e0.webp",
+      "sha256": "d9ab4fd886e0cb41107778dc4c731b3386bf2569b780880d87d4c0252ec4b96d",
+      "bytes": 397056,
       "width": 1448,
       "height": 1086,
-      "sha256": "f329d9b4ade47f4478c5b500d24305dd10055077a9f08a17248fa56949ee938c",
-      "bytes": 575010,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
       "inputSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/tulip-windmill-compact-efbe7c407484.webp",
+      "sha256": "efbe7c4074844b71f1aa4449356f334fd7faf5bab5e83f1fe887a441189294e2",
+      "bytes": 358868,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+      "inputSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/tulip-windmill-thumbnail-bafddeb75412.webp",
+      "sha256": "bafddeb7541248c262bccd8324d31dfffcbb5bfe50121a01a1a72a216c127a3d",
+      "bytes": 51010,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+      "inputSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

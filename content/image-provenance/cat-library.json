@@ -46,45 +46,65 @@
   },
   "delivery": {
     "sourceSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
-    "play": {
-      "src": "/puzzles/cat-library-play-0807df1a38a1.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "0807df1a38a1b1aea8e3957a2a1970c4c88c2ba267976aec89e86593b8c5e91e",
-      "bytes": 2562108,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-library-thumbnail-d2661e89cd92.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "d2661e89cd92c740f992c9cb53ac05ed19d8f1517f3b0e7007b12f455bdd1af6",
-      "bytes": 46694,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cat-library-optimized-f8cd932c094b.webp",
+      "src": "/puzzles/cat-library-optimized-d2399a007a9e.webp",
+      "sha256": "d2399a007a9e32258d5c0d71dafcbf2f04bcb34efbb377fd2022e8983b1bf4f3",
+      "bytes": 364044,
       "width": 1774,
       "height": 887,
-      "sha256": "f8cd932c094bb930d4565ab8e08db7efc041bb55879b8f9a8164d11d9927d5db",
-      "bytes": 527378,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
       "inputSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-library-compact-bb5c900c8fa8.webp",
+      "sha256": "bb5c900c8fa8b99fb130ea56fd2c9198dd67802a2aeb3519143c3d538f9fec5e",
+      "bytes": 277038,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+      "inputSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-library-thumbnail-81aab1831449.webp",
+      "sha256": "81aab1831449716331c99d0f992b9ca1d9866253abcbe8bc6fefa1b61748ccb0",
+      "bytes": 30230,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+      "inputSha256": "a8c936dba967d30a14f58442e7f49770bd799c1f9b5b6b4ed15eae24fa1e7f02",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

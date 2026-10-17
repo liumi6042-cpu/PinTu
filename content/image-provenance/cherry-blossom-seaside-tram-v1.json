@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
-    "play": {
-      "src": "/puzzles/cherry-blossom-seaside-tram-v1-play-25c711accea6.webp",
-      "width": 1672,
-      "height": 941,
-      "sha256": "25c711accea6e65573e946221c47691bc56d836084120d961cf6d081c0238f0a",
-      "bytes": 2816960,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cherry-blossom-seaside-tram-v1-thumbnail-c2466bfe8a0b.webp",
-      "width": 480,
-      "height": 270,
-      "sha256": "c2466bfe8a0bdd8b962ab61f9ca0048835cd4d7baa2a1661ae943ac7b298d4db",
-      "bytes": 65944,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cherry-blossom-seaside-tram-v1-optimized-4c937684842b.webp",
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-optimized-69b940d38e40.webp",
+      "sha256": "69b940d38e403d2d37a5b20b9074c345bebba2c7b1ab121a2adefb175245ba7f",
+      "bytes": 421248,
       "width": 1672,
       "height": 941,
-      "sha256": "4c937684842b6d7c0899df2d7f34313e52590daafbce265489f614c8a65275bb",
-      "bytes": 602582,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
       "inputSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-compact-ea83d4c0774b.webp",
+      "sha256": "ea83d4c0774be67c664791d73e2ce0333dad0bdfa595cdbb78d47703bcdbeac2",
+      "bytes": 356570,
+      "width": 1600,
+      "height": 900,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "inputSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-thumbnail-01cf19df5676.webp",
+      "sha256": "01cf19df5676f9f9f9c7f22cc9d9ee0be538d4b9bd9a38e370f5454a55642e63",
+      "bytes": 42920,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "inputSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

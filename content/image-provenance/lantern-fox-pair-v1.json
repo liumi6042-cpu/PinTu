@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
-    "play": {
-      "src": "/puzzles/lantern-fox-pair-v1-play-882b590a8a78.webp",
-      "width": 1672,
-      "height": 941,
-      "sha256": "882b590a8a78ea3d731116b00e4a6e4c8626d623795a43ef44d75a0c5e0f2839",
-      "bytes": 1757710,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/lantern-fox-pair-v1-thumbnail-50ed6e40a0a9.webp",
-      "width": 480,
-      "height": 270,
-      "sha256": "50ed6e40a0a9321a6a3d61338081182be8a356989334dc1bcd4bf9d669ef5658",
-      "bytes": 33176,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/lantern-fox-pair-v1-optimized-a4f5339c4b63.webp",
+      "src": "/puzzles/lantern-fox-pair-v1-optimized-884325e1adcc.webp",
+      "sha256": "884325e1adcc7e58b846a19415a95deb01f73cd3786acc48b502115e8abcde6f",
+      "bytes": 148598,
       "width": 1672,
       "height": 941,
-      "sha256": "a4f5339c4b639ea666997ce4551c001f0162ed143a470c98d15ccb3f15072fbf",
-      "bytes": 238780,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
       "inputSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/lantern-fox-pair-v1-compact-38625d1c8b9e.webp",
+      "sha256": "38625d1c8b9e8fffa93ed103d8d221d152edf3b6d8718f4516292601765cc642",
+      "bytes": 125740,
+      "width": 1600,
+      "height": 900,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "inputSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/lantern-fox-pair-v1-thumbnail-6582db178808.webp",
+      "sha256": "6582db1788081c48dbe783629b28e8977c9035ce0fffd0e6c002997ad718d962",
+      "bytes": 22810,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "inputSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

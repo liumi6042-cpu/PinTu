@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
-    "play": {
-      "src": "/puzzles/autumn-farm-festival-v1-play-a1a745a17579.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "a1a745a17579c250ba0405a46bede19f73611f09a2fe6d97b6904848fb83d371",
-      "bytes": 2887578,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/autumn-farm-festival-v1-thumbnail-a30f98a16372.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "a30f98a163729a6bdfc06211d982b3687776904b20bdb4ef92be020576003c84",
-      "bytes": 74176,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/autumn-farm-festival-v1-optimized-b28051563c57.webp",
+      "src": "/puzzles/autumn-farm-festival-v1-optimized-a9367e7c25dc.webp",
+      "sha256": "a9367e7c25dcc8a0dbab2db3cafd5e66fc7eb6e0ad04c208ac237041bfada787",
+      "bytes": 487052,
       "width": 1254,
       "height": 1254,
-      "sha256": "b28051563c5743cab7971eb854d77992218ac59613ee019df279d70e36d820d5",
-      "bytes": 667684,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
       "inputSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/autumn-farm-festival-v1-compact-2c3c10275a73.webp",
+      "sha256": "2c3c10275a732b14af3fccb58972ebd8c724d201f29487ef54bdc975430301c4",
+      "bytes": 438300,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "inputSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/autumn-farm-festival-v1-thumbnail-f844859aa97c.webp",
+      "sha256": "f844859aa97ceb51757b953476843dd4f08bca09aa56dd8ebf79e7510ea9c35c",
+      "bytes": 74334,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "inputSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

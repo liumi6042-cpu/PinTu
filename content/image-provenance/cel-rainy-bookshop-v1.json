@@ -44,45 +44,65 @@
   },
   "delivery": {
     "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
-    "play": {
-      "src": "/puzzles/cel-rainy-bookshop-v1-play-6a41282fe92e.webp",
-      "width": 1536,
-      "height": 1024,
-      "sha256": "6a41282fe92ebf1982600a6d46df52638d9ff0d0cb6b9883a82c17292f9b9e14",
-      "bytes": 1760628,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cel-rainy-bookshop-v1-thumbnail-ef6947ff1369.webp",
-      "width": 480,
-      "height": 320,
-      "sha256": "ef6947ff136995da7418b567279f46f1268992853e02839286005fbaf99e2602",
-      "bytes": 31046,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cel-rainy-bookshop-v1-optimized-3ef7b9fdf1e4.webp",
+      "src": "/puzzles/cel-rainy-bookshop-v1-optimized-0e61f71c1b34.webp",
+      "sha256": "0e61f71c1b34496884e534e80260cc56cf22000d88e55e8c0b946e18f0b4d3c3",
+      "bytes": 149072,
       "width": 1536,
       "height": 1024,
-      "sha256": "3ef7b9fdf1e4294a7126472b604cb2f33b46386dcdd4640b93ae83e77fae1519",
-      "bytes": 239846,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
       "inputSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cel-rainy-bookshop-v1-compact-aebec2e30278.webp",
+      "sha256": "aebec2e30278013b7a444d20c51af944aa00f33109711d2a8d3bfb4b97976590",
+      "bytes": 130542,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "inputSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rainy-bookshop-v1-thumbnail-e3905de97d8b.webp",
+      "sha256": "e3905de97d8ba496f8c467a5742f4fd82bfba717ad120f787f0e1f7c31857c68",
+      "bytes": 20856,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "inputSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -39,61 +39,65 @@
   },
   "delivery": {
     "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
-    "play": {
-      "src": "/puzzles/ink-mountain-palace-v1-play-8fde05c16c68.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "8fde05c16c680326dd88352e05f573e1606d2830325d4ce986e0624d4ab6696d",
-      "bytes": 2695074,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
-      "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/ink-mountain-palace-v1-thumbnail-e60427c37745.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "e60427c37745ca9e7b9c9bdb5e531df98b3fffa6a4315e28e738f9dae6d033b8",
-      "bytes": 57730,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
-      "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
     "optimized": {
       "src": "/puzzles/ink-mountain-palace-v1-optimized-d2a59e9037fc.webp",
-      "width": 1254,
-      "height": 1254,
       "sha256": "d2a59e9037fc5194dfa541bf9a3f20545f272befc02e9b6c87af8b54990e82a4",
       "bytes": 369798,
+      "width": 1254,
+      "height": 1254,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
       "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
-      "effort": 6,
-      "smartSubsample": true,
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/ink-mountain-palace-v1-compact-2d54df5cc68e.webp",
+      "sha256": "2d54df5cc68e56fcd8474f3301f7141e1cee33f01d118a542097de149a26c193",
+      "bytes": 330824,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/ink-mountain-palace-v1-thumbnail-e60427c37745.webp",
+      "sha256": "e60427c37745ca9e7b9c9bdb5e531df98b3fffa6a4315e28e738f9dae6d033b8",
+      "bytes": 57730,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "inputSha256": "5241bf345ab7bb255e33651ccfe1b69d8e1db42a533595a3ee2b82bbf634c676",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

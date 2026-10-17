@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
-    "play": {
-      "src": "/puzzles/enchanted-library-garden-v1-play-7e889217c10a.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "7e889217c10a36f771c316ad2fdda17f016d61fc2964b0d97f5f4d314aa5a0ef",
-      "bytes": 2559686,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/enchanted-library-garden-v1-thumbnail-1d560b5f7061.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "1d560b5f706149762999f062023b453e0cb50d41a7fcf2927ac4a4c44053ed7d",
-      "bytes": 65398,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/enchanted-library-garden-v1-optimized-ebcf66da3b83.webp",
+      "src": "/puzzles/enchanted-library-garden-v1-optimized-e93098790fa9.webp",
+      "sha256": "e93098790fa9a040625b6b7a6fe38842f3fa78213128fd6884db2588aab16abf",
+      "bytes": 357220,
       "width": 1254,
       "height": 1254,
-      "sha256": "ebcf66da3b832529a21cd8fd0013d3df738194a52332b7080fd27c710cd52905",
-      "bytes": 520308,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
       "inputSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/enchanted-library-garden-v1-compact-5521b3c1b7dd.webp",
+      "sha256": "5521b3c1b7dda764d530d2764f8e661ed66d15d00dee6f661b2fb77af7b77611",
+      "bytes": 321346,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "inputSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/enchanted-library-garden-v1-thumbnail-e9831c82443a.webp",
+      "sha256": "e9831c82443ada841a9fccb9a42db3e8f4cfdb5c1233aae7e1ef290288587b3c",
+      "bytes": 65406,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "inputSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

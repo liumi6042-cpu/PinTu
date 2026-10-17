@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
-    "play": {
-      "src": "/puzzles/cat-video-call-v1-play-4eb1b2603437.webp",
-      "width": 1122,
-      "height": 1402,
-      "sha256": "4eb1b2603437f7c123242a2c08445ebeb698192c57171792345c6d58fc880561",
-      "bytes": 1669510,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-video-call-v1-thumbnail-30f2fe02f81c.webp",
-      "width": 307,
-      "height": 384,
-      "sha256": "30f2fe02f81c1888b94a6ae9606cbfb484f28d1754380453b1cfd5a8b6320d4d",
-      "bytes": 38324,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cat-video-call-v1-optimized-164a8edd1bef.webp",
+      "src": "/puzzles/cat-video-call-v1-optimized-2f1fa05c97f4.webp",
+      "sha256": "2f1fa05c97f450aa64953bc7626291a4ded782b426efde90499fd5364b93cd4d",
+      "bytes": 183866,
       "width": 1122,
       "height": 1402,
-      "sha256": "164a8edd1bef6e8386c48303727066007c9a0da053182bfc45e6ed7eb7cfe471",
-      "bytes": 275092,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
       "inputSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-video-call-v1-compact-925e275968cd.webp",
+      "sha256": "925e275968cd0fa7dc6915d0fa960c47f7fd18e8ce3b96c045bbbed447df5cc3",
+      "bytes": 166100,
+      "width": 1122,
+      "height": 1402,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "inputSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-video-call-v1-thumbnail-b37de33622aa.webp",
+      "sha256": "b37de33622aad00fa499574fb9c76810e0f3207e3759cfb53c319bb842058e2e",
+      "bytes": 38362,
+      "width": 307,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "inputSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
-    "play": {
-      "src": "/puzzles/orbital-market-v1-play-c02a94cc453c.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "c02a94cc453cc5339e99833534ddbc78a336eb3ae73459709f6e066e4dec1ba1",
-      "bytes": 2596482,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/orbital-market-v1-thumbnail-29274227b9c2.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "29274227b9c255a59cc46cbcaee0561ebdfdb8f619b4b4aefd3f557388bf6ebf",
-      "bytes": 66252,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/orbital-market-v1-optimized-e02ffe344c41.webp",
+      "src": "/puzzles/orbital-market-v1-optimized-35781554d209.webp",
+      "sha256": "35781554d209fd37d1bb624b2df0ad0a856544eb7f422fd07891c0bddd2587a9",
+      "bytes": 386710,
       "width": 1254,
       "height": 1254,
-      "sha256": "e02ffe344c417c95860a071f124fc184945e08828cdec0d3c61c5189ff913522",
-      "bytes": 542856,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
       "inputSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/orbital-market-v1-compact-6543b0f8e758.webp",
+      "sha256": "6543b0f8e758e9a79a2e588bd782c2a9507966f3715e030f73665b03e9e348e2",
+      "bytes": 351044,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "inputSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/orbital-market-v1-thumbnail-c546b8c64fac.webp",
+      "sha256": "c546b8c64facc2a2d2457e7304ef38fd5b8ad3da5db03aa09ad4d86ee3a72b69",
+      "bytes": 66292,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "inputSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

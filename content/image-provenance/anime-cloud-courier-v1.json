@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
-    "play": {
-      "src": "/puzzles/anime-cloud-courier-v1-play-9ad629944b49.webp",
-      "width": 1536,
-      "height": 1024,
-      "sha256": "9ad629944b499dca9177c9bf1fee5b5603615f62d659a838d903488ee8e26a3e",
-      "bytes": 2141434,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/anime-cloud-courier-v1-thumbnail-719d468e46dd.webp",
-      "width": 480,
-      "height": 320,
-      "sha256": "719d468e46dda090be2d1994345ce7398cfe840bcf1fef025fcdba6a4701d081",
-      "bytes": 52560,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/anime-cloud-courier-v1-optimized-f276ebe07916.webp",
+      "src": "/puzzles/anime-cloud-courier-v1-optimized-df35a3342e94.webp",
+      "sha256": "df35a3342e948d9d2c625fd22b3a9be1aaa53efd96c106916ecbfdd75c9c03d0",
+      "bytes": 239756,
       "width": 1536,
       "height": 1024,
-      "sha256": "f276ebe0791665b08e463eb8b74fee90ef2d55f0617f6421830d2fda6a2d8459",
-      "bytes": 372624,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
       "inputSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/anime-cloud-courier-v1-compact-b8d19e315249.webp",
+      "sha256": "b8d19e31524944061be393887454e06cbe50d8936526fbea359514077a50d412",
+      "bytes": 211264,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+      "inputSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/anime-cloud-courier-v1-thumbnail-877c5536026b.webp",
+      "sha256": "877c5536026b93dec7cdc52a97df9d44fb84899ffad181611043a3403563f521",
+      "bytes": 35170,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+      "inputSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
-    "play": {
-      "src": "/puzzles/underwater-city-fair-v1-play-e4288523b017.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "e4288523b01751e5bf6dbdf77c5cf396ad5dae702cc1f047a5756bd18f83c7c5",
-      "bytes": 2910678,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/underwater-city-fair-v1-thumbnail-8b9aba675fba.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "8b9aba675fba7041393f3ccb1c853e73f145c07a81bc739257fb897a90d1af26",
-      "bytes": 72744,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/underwater-city-fair-v1-optimized-d286f9679e67.webp",
+      "src": "/puzzles/underwater-city-fair-v1-optimized-257de10dccab.webp",
+      "sha256": "257de10dccabf515aea3b9466aa2747988c3ab4e82d0dd6ae4f6d255ba260292",
+      "bytes": 466132,
       "width": 1254,
       "height": 1254,
-      "sha256": "d286f9679e67d1a93ebf7023130f72dd620a03f20b3539742c38a35fe03ab3c0",
-      "bytes": 644758,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
       "inputSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/underwater-city-fair-v1-compact-eb407d063ce5.webp",
+      "sha256": "eb407d063ce50f5e99671ceb7ad1ff866225274f2d396f4a4356c44b25fe1423",
+      "bytes": 420004,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "inputSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/underwater-city-fair-v1-thumbnail-f714e57227cf.webp",
+      "sha256": "f714e57227cf9903a6ba4d0185b798a478b8e744567bf5024bd9fe02636227d6",
+      "bytes": 72452,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "inputSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -34,45 +34,65 @@
   },
   "delivery": {
     "sourceSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
-    "play": {
-      "src": "/puzzles/seaside-play-ca7174e77276.webp",
-      "width": 1448,
-      "height": 1086,
-      "sha256": "ca7174e7727683be785fd3b8da00fd8af76ec3617367e344cccbdc1b2c25fbca",
-      "bytes": 2547368,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/seaside-thumbnail-ed9549cc365d.webp",
-      "width": 480,
-      "height": 360,
-      "sha256": "ed9549cc365d77bb80874ca1f38e3d2f06ff4e0b04ecb41b38ab9ea613dcd09d",
-      "bytes": 71014,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/seaside-optimized-daee3d7abdfb.webp",
+      "src": "/puzzles/seaside-optimized-a756472017a3.webp",
+      "sha256": "a756472017a3d4f42da582ed62c02321c15788cf03d12514dd733f22e5183bc0",
+      "bytes": 313916,
       "width": 1448,
       "height": 1086,
-      "sha256": "daee3d7abdfb910a290d3b9b22f417d3a53feb0707df925be0b18a0c3ea88747",
-      "bytes": 480002,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
       "inputSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/seaside-compact-505a42b0e8d4.webp",
+      "sha256": "505a42b0e8d4237d0b27fb1b0238cbdaa9c40ab8a0e3adb08c93c68a734a51bb",
+      "bytes": 280512,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+      "inputSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/seaside-thumbnail-edddc96bea44.webp",
+      "sha256": "edddc96bea4423c35247dd434f007fd653b91d172f530b0c003967b8c74a6633",
+      "bytes": 46330,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+      "inputSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

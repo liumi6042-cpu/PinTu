@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
-    "play": {
-      "src": "/puzzles/desert-sun-native-v2-play-aa03b034ca8d.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "aa03b034ca8d82cd3e84640a569d85917fb6391612689a7aa9165bb52533f9d5",
-      "bytes": 1761924,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/desert-sun-native-v2-thumbnail-35e54945d5f4.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "35e54945d5f46e275a5d2190dd47d31ea772e7771b75c4303bc293612851f557",
-      "bytes": 20168,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/desert-sun-native-v2-optimized-f8acca556f70.webp",
+      "src": "/puzzles/desert-sun-native-v2-optimized-0529159bebc8.webp",
+      "sha256": "0529159bebc8b058a3799ae189e00c5dee1b4de62576a9d0a1302c0ab26116cb",
+      "bytes": 139996,
       "width": 1774,
       "height": 887,
-      "sha256": "f8acca556f70b69182379fffb72e35539963d9c9deb0ae2e27f7e08cd605587a",
-      "bytes": 226448,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
       "inputSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/desert-sun-native-v2-compact-64feb0328330.webp",
+      "sha256": "64feb032833049d075315ce312d2ad0f3446796ed8d11d34a3d86d3ba8ee2eba",
+      "bytes": 103402,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+      "inputSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/desert-sun-native-v2-thumbnail-ff45bd319187.webp",
+      "sha256": "ff45bd3191870ed3cdcf6c3d8ddba7e498de508dc9b90d424b7dc937bbdd9d4f",
+      "bytes": 13818,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+      "inputSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

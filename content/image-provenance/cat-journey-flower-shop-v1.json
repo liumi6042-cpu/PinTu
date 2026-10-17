@@ -39,53 +39,17 @@
   },
   "delivery": {
     "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
-    "play": {
-      "src": "/puzzles/cat-journey-flower-shop-v1-play-6b687fc38975.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "6b687fc3897516672a4715c5ac70964ee57e8b79f208c58898a5655d0305cf7d",
-      "bytes": 11567154,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false,
-      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
-      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6
-      }
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "ac7c3c356ffdf963956216fe917240a2cf7a4cd033c2190c90067a77cc90dad5",
-      "bytes": 59310,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false,
-      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
-      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "kernel": "lanczos3"
-      }
-    },
     "optimized": {
-      "src": "/puzzles/cat-journey-flower-shop-v1-optimized-68b036b3e867.webp",
-      "width": 3840,
-      "height": 3840,
-      "sha256": "68b036b3e8673ad61dacf734d7a186f0b6ca9445b381c64ca9b48d791d653d40",
-      "bytes": 994268,
+      "src": "/puzzles/cat-journey-flower-shop-v1-optimized-c7b52f7c5a6e.webp",
+      "sha256": "c7b52f7c5a6ee3e85b1844c2e8ef625b70389b4ac418ce6dfb64428eccf9cc05",
+      "bytes": 642730,
+      "width": 2560,
+      "height": 2560,
       "format": "webp",
       "lossless": false,
       "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
       "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
       "encoding": {
@@ -93,6 +57,47 @@
         "version": "0.34.5",
         "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-journey-flower-shop-v1-compact-a3d8c90b0928.webp",
+      "sha256": "a3d8c90b09282767eefd02d72555eca8590cbc786f58e017a99f975fd13585e5",
+      "bytes": 351754,
+      "width": 1600,
+      "height": 1600,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
+      "sha256": "ac7c3c356ffdf963956216fe917240a2cf7a4cd033c2190c90067a77cc90dad5",
+      "bytes": 59310,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "inputSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
-    "play": {
-      "src": "/puzzles/peach-blossom-fan-v1-play-9ffa70212265.webp",
-      "width": 1672,
-      "height": 941,
-      "sha256": "9ffa702122657f9f57be7db525451725cfcabac511b1d1ddacfb0dee070da50a",
-      "bytes": 1975566,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/peach-blossom-fan-v1-thumbnail-60094937426c.webp",
-      "width": 480,
-      "height": 270,
-      "sha256": "60094937426cad2f426f83dbd5e69bd55eef83f1312b583c84c8ba0a6c76521d",
-      "bytes": 41454,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/peach-blossom-fan-v1-optimized-2e43ae7eeb29.webp",
+      "src": "/puzzles/peach-blossom-fan-v1-optimized-bb7406f4c41a.webp",
+      "sha256": "bb7406f4c41a9c8bb8ef182222648b8ff607358f73953414e0ff21bc0ebe9c2e",
+      "bytes": 193026,
       "width": 1672,
       "height": 941,
-      "sha256": "2e43ae7eeb29897a33950ab15ef9fd18b00926d1896775ab0437bc75d2dd3c38",
-      "bytes": 295408,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
       "inputSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/peach-blossom-fan-v1-compact-86d1e9c0bb8a.webp",
+      "sha256": "86d1e9c0bb8a9047ec167bd84f291db3c96dc4146ce5e13802274e662a0f57ab",
+      "bytes": 160372,
+      "width": 1600,
+      "height": 900,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "inputSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/peach-blossom-fan-v1-thumbnail-1a4cf87c6ced.webp",
+      "sha256": "1a4cf87c6ced8565fba926caa17621f6da654610111f166abc1a7efb07b1417f",
+      "bytes": 27996,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "inputSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

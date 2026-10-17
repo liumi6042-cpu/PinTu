@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
-    "play": {
-      "src": "/puzzles/clear-sand-bay-native-v2-play-69dfac64dbbe.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "69dfac64dbbe7c4c3dc9bcdd70f8654305c65ef8ca3a2047d419c26d8b4bdd6e",
-      "bytes": 2301930,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/clear-sand-bay-native-v2-thumbnail-a19a624dc4c7.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "a19a624dc4c7a94361de841a140f02aa368d0be46f288a9b1da3676dc61ecdaf",
-      "bytes": 32704,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/clear-sand-bay-native-v2-optimized-bacaad35fb44.webp",
+      "src": "/puzzles/clear-sand-bay-native-v2-optimized-5dfe93b21e85.webp",
+      "sha256": "5dfe93b21e857b6bdf92a540a58cf3fcaf6bbbbedecac44a0d84f2c73a2b71bc",
+      "bytes": 271298,
       "width": 1774,
       "height": 887,
-      "sha256": "bacaad35fb44ef3afbc13c2efda410611e1d5cec64e7d3b535c18533bb746854",
-      "bytes": 428410,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
       "inputSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/clear-sand-bay-native-v2-compact-d1097dbcc37f.webp",
+      "sha256": "d1097dbcc37f48145d6da411e4315182b91fd594caeb41c73f17e27a1c109a42",
+      "bytes": 200854,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "inputSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/clear-sand-bay-native-v2-thumbnail-dd4ec116035f.webp",
+      "sha256": "dd4ec116035fd066fc886b8770ed55b23a6181d902dcf60901502c100638d6b0",
+      "bytes": 20988,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "inputSha256": "6b18b258acc1207a08f7ce1e87cd5f0440bdfd181701b1fb777c94a0b8deef57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

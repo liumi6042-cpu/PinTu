@@ -26,45 +26,65 @@
   },
   "delivery": {
     "sourceSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
-    "play": {
-      "src": "/puzzles/riverside-park-festival-v1-play-d1bacf8c521e.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "d1bacf8c521e235f5573059a0d6d8122b412482fffc537c088c124fa66bb3eaf",
-      "bytes": 2934080,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/riverside-park-festival-v1-thumbnail-409d3ee391a9.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "409d3ee391a99d5fc0d1df5a056c33b92d0762108a4de43e6e15c42ec9b556b2",
-      "bytes": 76308,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/riverside-park-festival-v1-optimized-3e478cefefc9.webp",
+      "src": "/puzzles/riverside-park-festival-v1-optimized-713afd4cfabe.webp",
+      "sha256": "713afd4cfabe72cec78c64fbf7d4e0f591d6335dc3c96b7f76087cd2a7346c6e",
+      "bytes": 487930,
       "width": 1254,
       "height": 1254,
-      "sha256": "3e478cefefc9678f489cb2752e28da332549b74905d172ebf039cb7384b8d4d4",
-      "bytes": 660348,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
       "inputSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/riverside-park-festival-v1-compact-194c4457054e.webp",
+      "sha256": "194c4457054e5b4b80848210170f72744fde1e78a70c02283dd6f0663e9bcf0a",
+      "bytes": 441674,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "inputSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/riverside-park-festival-v1-thumbnail-05ca932f90b1.webp",
+      "sha256": "05ca932f90b17f912c00620408bf76d6255347711266152df8cbe8668c03ceb4",
+      "bytes": 76374,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "inputSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

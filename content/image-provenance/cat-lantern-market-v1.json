@@ -24,45 +24,65 @@
   },
   "delivery": {
     "sourceSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
-    "play": {
-      "src": "/puzzles/cat-lantern-market-v1-play-bba0ab3d10d5.webp",
-      "width": 1254,
-      "height": 1254,
-      "sha256": "bba0ab3d10d57d2a15c255e1f2800817b50a0348a2aeac3f18a05b1e98cc33b1",
-      "bytes": 2523128,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/cat-lantern-market-v1-thumbnail-79f1d1b348ef.webp",
-      "width": 384,
-      "height": 384,
-      "sha256": "79f1d1b348efef03c195c636f4361ff55b73397b548228361c29c5fc4ac1b36a",
-      "bytes": 58632,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/cat-lantern-market-v1-optimized-d91f042d75b8.webp",
+      "src": "/puzzles/cat-lantern-market-v1-optimized-bd18337b903f.webp",
+      "sha256": "bd18337b903fa7ad252e12a89fb6766539093adea79f27aa9a0c622e5193f001",
+      "bytes": 335600,
       "width": 1254,
       "height": 1254,
-      "sha256": "d91f042d75b8fdcf3a9468818cafea630afa7a52f7da12999033777a83b26a2a",
-      "bytes": 502152,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
       "inputSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/cat-lantern-market-v1-compact-25f79f31ecfa.webp",
+      "sha256": "25f79f31ecfa588e140c5b0702dc3bdcc0cbf381507390010284b5d50911f044",
+      "bytes": 293710,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+      "inputSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-lantern-market-v1-thumbnail-539111667dc3.webp",
+      "sha256": "539111667dc353e1952570716a229b33a75e92cd2c18eceab6670539cc79a42a",
+      "bytes": 58688,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+      "inputSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }

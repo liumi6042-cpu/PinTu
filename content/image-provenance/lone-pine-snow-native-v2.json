@@ -36,45 +36,65 @@
   },
   "delivery": {
     "sourceSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
-    "play": {
-      "src": "/puzzles/lone-pine-snow-native-v2-play-09aa4e7d9e31.webp",
-      "width": 1774,
-      "height": 887,
-      "sha256": "09aa4e7d9e31fd33d307444f7af6a687bf29925462b6249ea741582fba003b32",
-      "bytes": 1863760,
-      "format": "webp",
-      "lossless": true,
-      "quality": null,
-      "upscaled": false
-    },
-    "thumbnail": {
-      "src": "/puzzles/lone-pine-snow-native-v2-thumbnail-4ef8a6c6f399.webp",
-      "width": 480,
-      "height": 240,
-      "sha256": "4ef8a6c6f399acaeeef9f18ecd72ae25bb8b8a85bbd1d116d132c4218bd96e7d",
-      "bytes": 23626,
-      "format": "webp",
-      "lossless": false,
-      "quality": 82,
-      "upscaled": false
-    },
     "optimized": {
-      "src": "/puzzles/lone-pine-snow-native-v2-optimized-34ef3dd60c61.webp",
+      "src": "/puzzles/lone-pine-snow-native-v2-optimized-7f154ae9128b.webp",
+      "sha256": "7f154ae9128b3f05d78924ba671a266b25280953e57a85a98f89f9e925fb2bc1",
+      "bytes": 159512,
       "width": 1774,
       "height": 887,
-      "sha256": "34ef3dd60c61d4c9392638f8daba1fbaf170ae9a5c8dd3d1a2ebfead435bd6f9",
-      "bytes": 257568,
       "format": "webp",
       "lossless": false,
-      "quality": 84,
+      "quality": 70,
       "upscaled": false,
+      "downsampled": true,
       "sourceSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
       "inputSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 5,
+        "effort": 6,
         "smartSubsample": true
+      }
+    },
+    "compact": {
+      "src": "/puzzles/lone-pine-snow-native-v2-compact-6d0eac7f6faa.webp",
+      "sha256": "6d0eac7f6faab049787c8b9885fe579cb30ee942d9fd3494d2298cbf773daa9c",
+      "bytes": 119198,
+      "width": 1600,
+      "height": 800,
+      "format": "webp",
+      "lossless": false,
+      "quality": 60,
+      "upscaled": false,
+      "downsampled": true,
+      "maximumPieces": 300,
+      "sourceSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "inputSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/lone-pine-snow-native-v2-thumbnail-717e7bccc8d7.webp",
+      "sha256": "717e7bccc8d7ebf4bc4a284b747767faf6776114681262f8cef7bb95c16c947c",
+      "bytes": 16100,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "inputSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
       }
     }
   }
