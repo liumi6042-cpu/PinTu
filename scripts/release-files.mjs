@@ -34,9 +34,11 @@ export function walk(root) {
 export function runtimeAssets(catalog, config) {
   const urls=new Set(config.static);
   for(const photo of catalog.filter(p=>isPlayableOrigin(p.origin)&&RETAINED_STATUSES.includes(p.status))){
-    for(const name of ['playSrc','thumbSrc','optimizedSrc',...(photo.standardSrc?['standardSrc','optimizedStandardSrc']:[])]){
+    // Since 2026-10-17 playSrc points at the optimized file; only count it once.
+    for(const [name,kind] of [['optimizedSrc','optimized'],['thumbSrc','thumbnail'],
+      ...(photo.optimizedStandardSrc?[['optimizedStandardSrc','compact']]:[]),
+      ...(photo.playSrc&&photo.playSrc!==photo.optimizedSrc?[['playSrc','play']]:[])]){
       const url=photo[name];
-      const kind={playSrc:'play',thumbSrc:'thumbnail',standardSrc:'standard',optimizedSrc:'optimized',optimizedStandardSrc:'compact'}[name];
       if(!/^[a-z0-9-]+$/.test(photo.id)||typeof url!=='string'||!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Missing runtime artwork: '+photo.id);
       urls.add(url);
     }
