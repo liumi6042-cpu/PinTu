@@ -2,7 +2,8 @@
 import {useRef,useState} from 'react';
 import {ImagePlus,Loader2,Check} from 'lucide-react';
 import {useAccount} from './account-gate';
-import {useLanguage} from './language-switch';
+import {usePathname} from 'next/navigation';
+import {isChinesePath} from '@/lib/site-paths';
 import {apiJson} from '@/lib/community-client';
 import {saveTicket} from '@/lib/room-client';
 import {USER_IMAGE_MAX_BYTES,USER_IMAGE_MAX_SIDE,USER_THUMB_MAX_BYTES} from '@/lib/custom-images';
@@ -40,7 +41,9 @@ async function encode(file:File,maxSide:number,quality:number,maxBytes:number):P
  * borrows that page's paper palette and card rhythm instead of a separate layout.
  */
 export default function UploadPanel(){
- const language=useLanguage(),zh=language!=='en';
+ // The address decides the language here, like the rest of the help page:
+ // during server rendering the stored preference is not available yet.
+ const zh=isChinesePath(usePathname()||'');
  const {account}=useAccount();
  const input=useRef<HTMLInputElement>(null);
  const [prepared,setPrepared]=useState<{full:Prepared;thumb:Prepared}|null>(null);
@@ -96,7 +99,7 @@ export default function UploadPanel(){
 
   {!account?<div className="upload-signin">
     <p>{zh?'上传图片需要登录，普通账号即可，免费。':'Sign in to upload a picture. A normal account is enough and it is free.'}</p>
-    <a className="primary" href={'/account?returnTo='+encodeURIComponent(zh?'/zh/help':'/help')}>{zh?'登录后上传':'Sign in to upload'}</a>
+    <a className="primary" href={'/account?returnTo='+encodeURIComponent(zh?'/zh/help#upload':'/help#upload')}>{zh?'登录后上传':'Sign in to upload'}</a>
    </div>:<>
    <button type="button" className={'upload-drop'+(prepared?' has-image':'')} disabled={busy} onClick={()=>input.current?.click()}>
     {prepared?<img src={prepared.thumb.url} alt=""/>:<><ImagePlus size={30} strokeWidth={1.4}/><span>{zh?'选择一张图片':'Choose a picture'}</span><small>{zh?'JPG / PNG / WebP，最大 2MB':'JPG / PNG / WebP, up to 2MB'}</small></>}
