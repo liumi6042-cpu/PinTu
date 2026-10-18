@@ -10,7 +10,8 @@ import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {basename, dirname, join} from 'node:path';
 
 const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
-const LONG_SIDE = 2560, QUALITY = 70, THUMB = 384, THUMB_QUALITY = 82, EFFORT = 6;
+import {deliveryDimensions, MAX_DELIVERY_PIXELS} from '../delivery-spec.mjs';
+const QUALITY = 70, THUMB = 384, THUMB_QUALITY = 82, EFFORT = 6;
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 
 export async function normalisePending({projectRoot = 'D:/chat/拼图', ids = null, apply = false} = {}) {
@@ -26,22 +27,24 @@ export async function normalisePending({projectRoot = 'D:/chat/拼图', ids = nu
     const source = join(pendingRoot, asset.source.path);
     if (!existsSync(source)) { report.skipped.push({id: asset.id, reason: '原图缺失'}); continue; }
 
-    const needsWork = !asset.delivery?.optimized
+    const budget = deliveryDimensions(asset.source.width, asset.source.height, MAX_DELIVERY_PIXELS);
+    const current = asset.delivery?.optimized;
+    const needsWork = !current
       || asset.delivery.play !== undefined
-      || asset.delivery.optimized.quality !== QUALITY
-      || Math.max(asset.delivery.optimized.width, asset.delivery.optimized.height) > LONG_SIDE
-      || Math.max(asset.delivery.optimized.width, asset.delivery.optimized.height) < Math.min(LONG_SIDE, Math.max(asset.source.width, asset.source.height));
+      || current.quality !== QUALITY
+      || current.width !== budget.width
+      || current.height !== budget.height;
     if (!needsWork) continue;
 
     const encode = async (kind, box, quality) => {
       const buffer = await sharp(source, {failOn: 'error'}).rotate()
-        .resize({width: box, height: box, fit: 'inside', withoutEnlargement: true})
+        .resize({width: box.width, height: box.height, fit: 'inside', withoutEnlargement: true})
         .webp({quality, effort: EFFORT, smartSubsample: kind === 'optimized'}).toBuffer();
       const meta = await sharp(buffer).metadata();
       return {buffer, width: meta.width, height: meta.height, digest: sha(buffer)};
     };
-    const optimized = await encode('optimized', LONG_SIDE, QUALITY);
-    const thumbnail = await encode('thumbnail', THUMB, THUMB_QUALITY);
+    const optimized = await encode('optimized', budget, QUALITY);
+    const thumbnail = await encode('thumbnail', {width: THUMB, height: THUMB}, THUMB_QUALITY);
 
     const place = (kind, result, quality, extra) => {
       const name = `${asset.id}-${kind}-${result.digest.slice(0, 12)}.webp`;

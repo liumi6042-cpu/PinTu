@@ -4,7 +4,7 @@
 // generate them, write a catalogue entry and drop files in place, with its own
 // encoder settings. Whatever produced them, the two runtimes need exactly
 //
-//   optimized  Q70, longest side 2560 (or the native size when smaller)
+//   optimized  Q70, total pixels at most 6,553,600 (or the native size when smaller)
 //   thumbnail  Q82, 384 box
 //
 // so this module re-encodes anything that does not match, straight from the
@@ -15,9 +15,10 @@ import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {copyFileSync, existsSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import {basename, join, resolve} from 'node:path';
+import {deliveryDimensions, MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
 
 const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
-export const DELIVERY_SPEC = {longSide: 2560, quality: 70, thumbBox: 384, thumbQuality: 82, effort: 6};
+export const DELIVERY_SPEC = {maxPixels: MAX_DELIVERY_PIXELS, quality: 70, thumbBox: 384, thumbQuality: 82, effort: 6};
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 
@@ -51,10 +52,6 @@ function webpFacts(bytes) {
   return frame && lossless !== null ? {...frame, lossless} : null;
 }
 
-function expectedLongSide(nativeWidth, nativeHeight) {
-  return Math.min(DELIVERY_SPEC.longSide, Math.max(nativeWidth, nativeHeight));
-}
-
 /** Why a catalogue photo's delivery is not acceptable, or null when it is fine. */
 function inspect(root, photo) {
   const problems = [];
@@ -84,10 +81,14 @@ function inspect(root, photo) {
     if (facts.width !== entry.width || facts.height !== entry.height) problems.push(kind + ' 尺寸与记录不一致');
     if (kind === 'optimized') {
       if (facts.width > record.width || facts.height > record.height) problems.push('压缩图被放大');
-      // 2560 is a ceiling, not a target: smaller originals keep their own size.
-      const capped = expectedLongSide(record.width, record.height);
-      if (Math.max(facts.width, facts.height) > capped) problems.push('压缩图长边超过 2560');
-      else if (Math.max(facts.width, facts.height) < capped) problems.push('压缩图比原图小，不该再缩');
+      // The delivery must use the full pixel budget, not merely stay under it:
+      // a smaller file throws away detail the budget already allows.
+      const budget = deliveryDimensions(record.width, record.height, DELIVERY_SPEC.maxPixels);
+      if (facts.width !== budget.width || facts.height !== budget.height) {
+        problems.push(facts.width * facts.height > DELIVERY_SPEC.maxPixels
+          ? '压缩图超过总像素上限'
+          : '压缩图小于像素预算，浪费了可用的清晰度');
+      }
     } else if (facts.width > 384 || facts.height > 384 || facts.width > record.width || facts.height > record.height) {
       problems.push('缩略图超出尺寸预算');
     }
@@ -111,7 +112,11 @@ export async function healDeliveries({projectRoot = 'D:/chat/拼图'} = {}) {
   const web = join(project, 'work/dual-managed-release-20261014');
   const mobile = join(project, 'jigsaw-nook-taptap');
   const registryPath = join(project, 'content-admin/work/pending-assets/registry.json');
-  const trees = [web, mobile].filter(tree => existsSync(join(tree, 'content/puzzle-catalog.json')));
+  // The admin compares the retired PC baseline (puzzle-play) with the mobile
+  // project, and the build reads the Web worktree. All three have to carry the
+  // same catalogue and provenance, so every write goes to all of them.
+  const pcBaseline = join(project, 'puzzle-play');
+  const trees = [web, mobile, pcBaseline].filter(tree => existsSync(join(tree, 'content/puzzle-catalog.json')));
 
   const cataloguePath = join(web, 'content/puzzle-catalog.json');
   const catalogue = JSON.parse(readFileSync(cataloguePath, 'utf8'));
@@ -146,7 +151,7 @@ export async function healDeliveries({projectRoot = 'D:/chat/拼图'} = {}) {
 
     const encode = async (kind, box, quality) => {
       const pipeline = sharp(original, {failOn: 'error'}).rotate()
-        .resize({width: box, height: box, fit: 'inside', withoutEnlargement: true});
+        .resize({width: box.width, height: box.height, fit: 'inside', withoutEnlargement: true});
       const buffer = await pipeline.webp({quality, effort: DELIVERY_SPEC.effort, smartSubsample: kind === 'optimized'}).toBuffer();
       const meta = await sharp(buffer).metadata();
       return {buffer, width: meta.width, height: meta.height, digest: sha(buffer)};
@@ -154,8 +159,8 @@ export async function healDeliveries({projectRoot = 'D:/chat/拼图'} = {}) {
 
     let optimized, thumbnail;
     try {
-      optimized = await encode('optimized', DELIVERY_SPEC.longSide, DELIVERY_SPEC.quality);
-      thumbnail = await encode('thumbnail', DELIVERY_SPEC.thumbBox, DELIVERY_SPEC.thumbQuality);
+      optimized = await encode('optimized', deliveryDimensions(record.width, record.height, DELIVERY_SPEC.maxPixels), DELIVERY_SPEC.quality);
+      thumbnail = await encode('thumbnail', {width: DELIVERY_SPEC.thumbBox, height: DELIVERY_SPEC.thumbBox}, DELIVERY_SPEC.thumbQuality);
     } catch (error) {
       skipped.push({id: photo.id, reason: '编码失败：' + error.message});
       continue;
@@ -223,6 +228,16 @@ export async function healDeliveries({projectRoot = 'D:/chat/拼图'} = {}) {
         snapshot.width = record.width;
         snapshot.height = record.height;
       }
+    }
+    // The legacy fallback must stay byte-identical to the base snapshot, otherwise
+    // the artwork check refuses it; re-point it at the same file.
+    const legacy = revisions?.legacy?.[photo.id];
+    if (legacy) {
+      legacy.revision = record.sha256;
+      legacy.src = optimizedEntry.src;
+      legacy.thumbSrc = thumbnailEntry.src;
+      legacy.width = record.width;
+      legacy.height = record.height;
     }
 
     // The private registry only describes pictures waiting to be imported; an
