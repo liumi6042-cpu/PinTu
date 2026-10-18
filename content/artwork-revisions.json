@@ -238,6 +238,48 @@
       "thumbSrc": "/puzzles/new-cc532d03d405abd6-v1-thumbnail-fa72788253f0.webp",
       "width": 3840,
       "height": 2160
+    },
+    "cat-journey-magic-bookshop-v1": {
+      "revision": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-24e847b8f149.webp",
+      "thumbSrc": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-27cf37e7e4e9.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "cat-journey-cloud-roof-v1": {
+      "revision": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-390a1e773ad6.webp",
+      "thumbSrc": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-69392793b4cc.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "cat-journey-spirit-blackcat-v1": {
+      "revision": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3",
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-0c2c8134ace2.webp",
+      "thumbSrc": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-47de28bd4d2e.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "cat-journey-flower-shop-v1": {
+      "revision": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34",
+      "src": "/puzzles/cat-journey-flower-shop-v1-optimized-c7b52f7c5a6e.webp",
+      "thumbSrc": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "cat-journey-paper-garden-v1": {
+      "revision": "579ec70cd216f37a97b35888bc32644fe9c49f1b6b38329794f0a5f5e9b4b902",
+      "src": "/puzzles/cat-journey-paper-garden-v1-optimized-532ef39f44d9.webp",
+      "thumbSrc": "/puzzles/cat-journey-paper-garden-v1-thumbnail-ca50663c3f46.webp",
+      "width": 3840,
+      "height": 3840
+    },
+    "cat-journey-pixel-nightmarket-v1": {
+      "revision": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b",
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-70b1096b1c2f.webp",
+      "thumbSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
+      "width": 3840,
+      "height": 3840
     }
   },
   "versions": {
@@ -2196,6 +2238,13 @@
         "thumbSrc": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-27cf37e7e4e9.webp",
         "width": 3840,
         "height": 3840
+      },
+      {
+        "revision": "51f0a7fa487bbbb0b2e1fab8e9c3f5b0a62bfaa67013c82b1dd7f8f9b722827c",
+        "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-3f2d9b0eb1ef.webp",
+        "thumbSrc": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-7f0226d554a7.webp",
+        "width": 2144,
+        "height": 2144
       }
     ],
     "cat-journey-cloud-roof-v1": [
@@ -2205,6 +2254,13 @@
         "thumbSrc": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-69392793b4cc.webp",
         "width": 3840,
         "height": 3840
+      },
+      {
+        "revision": "2869d9e972915ca4e599a00c6ca5ab91dc0c6023a6e3b82f6516ff0e1653423b",
+        "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-bdd2ba089ba6.webp",
+        "thumbSrc": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-906dfc5a7a87.webp",
+        "width": 2144,
+        "height": 2144
       }
     ],
     "cat-journey-spirit-blackcat-v1": [
@@ -2214,6 +2270,13 @@
         "thumbSrc": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-47de28bd4d2e.webp",
         "width": 3840,
         "height": 3840
+      },
+      {
+        "revision": "3fd843fec8e2fb811ce34144948f8ac4f1eaaad86cda64fbf7b4ad44e40dccb0",
+        "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-57044f3c2366.webp",
+        "thumbSrc": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-30bf201e8879.webp",
+        "width": 2144,
+        "height": 2144
       }
     ],
     "cat-journey-flower-shop-v1": [
@@ -2223,6 +2286,13 @@
         "thumbSrc": "/puzzles/cat-journey-flower-shop-v1-thumbnail-ac7c3c356ffd.webp",
         "width": 3840,
         "height": 3840
+      },
+      {
+        "revision": "2653c894a60fbcb5b6cbd121d1176cc17f5cdb5beb06d1a770dd674f41e8ec04",
+        "src": "/puzzles/cat-journey-flower-shop-v1-optimized-901bee32df47.webp",
+        "thumbSrc": "/puzzles/cat-journey-flower-shop-v1-thumbnail-5729c612f285.webp",
+        "width": 2144,
+        "height": 2144
       }
     ],
     "cat-journey-paper-garden-v1": [
@@ -2232,6 +2302,13 @@
         "thumbSrc": "/puzzles/cat-journey-paper-garden-v1-thumbnail-ca50663c3f46.webp",
         "width": 3840,
         "height": 3840
+      },
+      {
+        "revision": "e614b9423f37a6ecead305ed45187b49f674d38fc2370d9b306a3f16fb4128da",
+        "src": "/puzzles/cat-journey-paper-garden-v1-optimized-3e2543fae0fd.webp",
+        "thumbSrc": "/puzzles/cat-journey-paper-garden-v1-thumbnail-3c9099c9cd54.webp",
+        "width": 2144,
+        "height": 2144
       }
     ],
     "cat-journey-pixel-nightmarket-v1": [
@@ -2241,6 +2318,13 @@
         "thumbSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-5418f580178e.webp",
         "width": 3840,
         "height": 3840
+      },
+      {
+        "revision": "556e73acbdd6eabfd321364efe812f3cebc2d9018ebf38e281c544cb09bfb0a3",
+        "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-3489d57ab414.webp",
+        "thumbSrc": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-4e41c6130dc2.webp",
+        "width": 2144,
+        "height": 2144
       }
     ],
     "ink-mountain-palace-v1": [
@@ -2305,7 +2389,13 @@
     "new-20a4b922bbb578e8-v1": "e778559830398a3b5d2c95d7683624143ea52fc1f5a2971db76e30c681c3d6d1",
     "new-79565e08fd397b1e-v1": "3d707ed73c7c60c08a187d37723668146d8a9bd86ba7a0e0bdd8318a800e9d5c",
     "new-48413157ae051c95-v1": "11842b4b691e22b66139e19cdb0ef92eab5eee2e39f19b3fa54b4d2f21523c74",
-    "new-cc532d03d405abd6-v1": "f41b83be13532edc5b0204c86923eed2636247528b58a54a832993dc0c09d7a5"
+    "new-cc532d03d405abd6-v1": "f41b83be13532edc5b0204c86923eed2636247528b58a54a832993dc0c09d7a5",
+    "cat-journey-magic-bookshop-v1": "51f0a7fa487bbbb0b2e1fab8e9c3f5b0a62bfaa67013c82b1dd7f8f9b722827c",
+    "cat-journey-cloud-roof-v1": "2869d9e972915ca4e599a00c6ca5ab91dc0c6023a6e3b82f6516ff0e1653423b",
+    "cat-journey-spirit-blackcat-v1": "3fd843fec8e2fb811ce34144948f8ac4f1eaaad86cda64fbf7b4ad44e40dccb0",
+    "cat-journey-flower-shop-v1": "2653c894a60fbcb5b6cbd121d1176cc17f5cdb5beb06d1a770dd674f41e8ec04",
+    "cat-journey-paper-garden-v1": "e614b9423f37a6ecead305ed45187b49f674d38fc2370d9b306a3f16fb4128da",
+    "cat-journey-pixel-nightmarket-v1": "556e73acbdd6eabfd321364efe812f3cebc2d9018ebf38e281c544cb09bfb0a3"
   },
   "files": {
     "/puzzles/lantern-market-optimized-a87a42d468d1.webp": {
@@ -3055,6 +3145,138 @@
       "quality": 82,
       "lossless": false,
       "sourceSha256": "f41b83be13532edc5b0204c86923eed2636247528b58a54a832993dc0c09d7a5"
+    },
+    "/puzzles/cat-journey-magic-bookshop-v1-optimized-3f2d9b0eb1ef.webp": {
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-3f2d9b0eb1ef.webp",
+      "sha256": "3f2d9b0eb1ef8db187320240908407a7546391ed525cd55dcf39830b87a1d0f0",
+      "bytes": 925074,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "51f0a7fa487bbbb0b2e1fab8e9c3f5b0a62bfaa67013c82b1dd7f8f9b722827c"
+    },
+    "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-7f0226d554a7.webp": {
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-7f0226d554a7.webp",
+      "sha256": "7f0226d554a7c7b399c17b064149bea566a04462580429504575c43d4565d0e1",
+      "bytes": 63440,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "51f0a7fa487bbbb0b2e1fab8e9c3f5b0a62bfaa67013c82b1dd7f8f9b722827c"
+    },
+    "/puzzles/cat-journey-cloud-roof-v1-optimized-bdd2ba089ba6.webp": {
+      "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-bdd2ba089ba6.webp",
+      "sha256": "bdd2ba089ba68e2164c00fcacbf11f63c9fe63ae70c952587a55965c64ddc035",
+      "bytes": 622816,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "2869d9e972915ca4e599a00c6ca5ab91dc0c6023a6e3b82f6516ff0e1653423b"
+    },
+    "/puzzles/cat-journey-cloud-roof-v1-thumbnail-906dfc5a7a87.webp": {
+      "src": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-906dfc5a7a87.webp",
+      "sha256": "906dfc5a7a8787e72188937d9cd769135d949f803c1be6bf25b482913b486e8a",
+      "bytes": 56070,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "2869d9e972915ca4e599a00c6ca5ab91dc0c6023a6e3b82f6516ff0e1653423b"
+    },
+    "/puzzles/cat-journey-spirit-blackcat-v1-optimized-57044f3c2366.webp": {
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-optimized-57044f3c2366.webp",
+      "sha256": "57044f3c23665835c8821545e9214565b851100654026bdb068fbf92e9cee1a4",
+      "bytes": 624024,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "3fd843fec8e2fb811ce34144948f8ac4f1eaaad86cda64fbf7b4ad44e40dccb0"
+    },
+    "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-30bf201e8879.webp": {
+      "src": "/puzzles/cat-journey-spirit-blackcat-v1-thumbnail-30bf201e8879.webp",
+      "sha256": "30bf201e8879854e15b11b63bb23739e64df14abe47db501b700db6217e6b9cc",
+      "bytes": 51068,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "3fd843fec8e2fb811ce34144948f8ac4f1eaaad86cda64fbf7b4ad44e40dccb0"
+    },
+    "/puzzles/cat-journey-flower-shop-v1-optimized-901bee32df47.webp": {
+      "src": "/puzzles/cat-journey-flower-shop-v1-optimized-901bee32df47.webp",
+      "sha256": "901bee32df475ffef49e2fde1b25fa8c15ae49d0e9445567efd8ffb8f1eeb559",
+      "bytes": 803782,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "2653c894a60fbcb5b6cbd121d1176cc17f5cdb5beb06d1a770dd674f41e8ec04"
+    },
+    "/puzzles/cat-journey-flower-shop-v1-thumbnail-5729c612f285.webp": {
+      "src": "/puzzles/cat-journey-flower-shop-v1-thumbnail-5729c612f285.webp",
+      "sha256": "5729c612f28509642aa2d0cfd6120b61c27d0663a179703c35946e51bf465f3e",
+      "bytes": 65752,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "2653c894a60fbcb5b6cbd121d1176cc17f5cdb5beb06d1a770dd674f41e8ec04"
+    },
+    "/puzzles/cat-journey-paper-garden-v1-optimized-3e2543fae0fd.webp": {
+      "src": "/puzzles/cat-journey-paper-garden-v1-optimized-3e2543fae0fd.webp",
+      "sha256": "3e2543fae0fd4b234d0aec22f6107beeaef131c83fa7818db8f8385ec5356d8f",
+      "bytes": 855190,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "e614b9423f37a6ecead305ed45187b49f674d38fc2370d9b306a3f16fb4128da"
+    },
+    "/puzzles/cat-journey-paper-garden-v1-thumbnail-3c9099c9cd54.webp": {
+      "src": "/puzzles/cat-journey-paper-garden-v1-thumbnail-3c9099c9cd54.webp",
+      "sha256": "3c9099c9cd54f43d3565caedf13d1f5252369069fd5ceebb90fae224a51a8682",
+      "bytes": 63776,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "e614b9423f37a6ecead305ed45187b49f674d38fc2370d9b306a3f16fb4128da"
+    },
+    "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-3489d57ab414.webp": {
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-optimized-3489d57ab414.webp",
+      "sha256": "3489d57ab4143b706a5e630e161f39bad5ed27e18e03fdb298ca5f491c29658a",
+      "bytes": 671746,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "quality": 70,
+      "lossless": false,
+      "sourceSha256": "556e73acbdd6eabfd321364efe812f3cebc2d9018ebf38e281c544cb09bfb0a3"
+    },
+    "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-4e41c6130dc2.webp": {
+      "src": "/puzzles/cat-journey-pixel-nightmarket-v1-thumbnail-4e41c6130dc2.webp",
+      "sha256": "4e41c6130dc2f09e19a8ee7f0ceff81f2551ad204a870cc4d63d9ed0597c0534",
+      "bytes": 79628,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "quality": 82,
+      "lossless": false,
+      "sourceSha256": "556e73acbdd6eabfd321364efe812f3cebc2d9018ebf38e281c544cb09bfb0a3"
     }
   }
 }
