@@ -32,6 +32,17 @@ export function renderReleaseAssets(assets) {
   return `<div class="release-assets"><strong>需要上传图片</strong><span>${esc(detail)}。上传后 Web 与小程序才认识这些图片；确认提交时会自动先上传。</span><button type="button" data-release="upload-assets">立即上传</button></div>`;
 }
 
+/**
+ * Pictures that arrived with another tool's encoder settings are re-encoded
+ * during preparation; the panel says so, because it changes the image files.
+ */
+function renderHealing(healing) {
+  if (!healing || !healing.healed?.length) return '';
+  const rows = healing.healed.slice(0, 8).map(item => `<li>${esc(item.id)} — ${esc((item.problems || []).join('、'))}</li>`).join('');
+  const more = healing.healed.length > 8 ? `<li>…另有 ${healing.healed.length - 8} 张</li>` : '';
+  return `<div class="release-assets"><strong>已自动压缩 ${esc(healing.healed.length)} 张图片</strong><span>这些图片原来是别的编码参数，提交前统一成 Q70 / 长边 2560 并重新生成缩略图。原图保留。</span><ul class="release-healed">${rows}${more}</ul></div>`;
+}
+
 export function renderReleasePreview(prepared, status, assets) {
   const summary = prepared.summary ?? {};
   const ready = pendingAssets(assets) === 0;
@@ -39,6 +50,7 @@ export function renderReleasePreview(prepared, status, assets) {
     <div class="release-summary"><div><strong>${esc(summary.albumCount ?? 0)}</strong><span>相册</span></div><div><strong>${esc(summary.playableImageCount ?? 0)}</strong><span>可进入游戏的图片</span></div><div><strong>4</strong><span>共用设置</span></div></div>
     <ul class="release-includes"><li>相册、购买设置与每个相册的奖励</li><li>每日图片与自动首发</li><li>任务的金币、经验与小程序体力奖励</li><li>成长、装饰与收集设置</li></ul>
     ${renderReleaseAssets(assets)}
+    ${renderHealing(prepared.healing)}
     <p class="notice">提交不会上传程序代码、界面改动或特效；玩家账号、拼图进度和已有奖励不会被替换。${ready ? '' : '图片文件会随本次提交一起上传到两端。'}</p>
     ${summary.pendingImageCount ? `<p class="notice">另有 ${esc(summary.pendingImageCount)} 张图片尚未入库交付到游戏，本次不会上架。它们在后台的相册归属会保留。</p>` : ''}
     ${renderReleaseTargets(null)}

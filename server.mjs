@@ -20,6 +20,7 @@ import {createReleaseCoordinator} from './releases.mjs';
 import {publishRelease,validatePublishTransportConfig} from './publish-transport.mjs';
 import {createAssetDelivery} from './asset-delivery.mjs';
 import {createImageImporter} from './image-import.mjs';
+import {healDeliveries} from './asset-heal.mjs';
 import {contentValueDigest,validContentReleaseId} from './contracts/content-release.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
@@ -187,7 +188,16 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    if(path.startsWith('/api/releases/')){
     if([...url.searchParams.keys()].length)throw problem(400,'发布请求不接受额外参数');
     if(path==='/api/releases/status'&&method==='GET')return response(res,200,await releaseStatus());
-    if(path==='/api/releases/prepare'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,201,await releases.prepare(current.username));}
+    if(path==='/api/releases/prepare'&&method==='POST'){
+     inputFields(await jsonBody(req),[]);
+     // Pictures may arrive from another tool with its own encoder settings, so the
+     // delivery is brought up to spec here rather than failing later in the build.
+     const healing=await healDeliveries({projectRoot});
+     if(healing.skipped.length)throw problem(409,'这些图片无法自动压缩：'+healing.skipped.map(item=>item.id+'（'+item.reason+'）').join('；'),'ASSET_HEAL_BLOCKED');
+     if(healing.healed.length){source=readSource(projectRoot);syncContent();}
+     const prepared=await releases.prepare(current.username);
+     return response(res,201,{...prepared,healing:{checked:healing.checked,healed:healing.healed.map(item=>({id:item.id,problems:item.problems,bytes:item.optimizedBytes}))}});
+    }
     if(path==='/api/releases/confirm'&&method==='POST'){const input=inputFields(await jsonBody(req),['releaseId','manifestSha256']);return response(res,200,await releases.confirm(input,current.username));}
    }
    if(path.startsWith('/api/assets/')){
