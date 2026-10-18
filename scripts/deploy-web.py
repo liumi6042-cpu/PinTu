@@ -27,22 +27,41 @@ WORK = pathlib.Path('D:/chat/拼图/content-admin/work/deploy-web-20261017')
 IDENTITY = r'C:\Users\Administrator\.ssh\webhosting_186_241_106_176_ed25519'
 HOST = 'root@162.251.94.145'
 SLOT = '3104'
+# Connection multiplexing was tried and removed: this link resets the shared
+# control socket. Each call opens its own connection and retries on a drop.
 SSH = ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', '-o', 'StrictHostKeyChecking=yes', '-i', IDENTITY, HOST]
 SCP = ['scp', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-i', IDENTITY]
 
 
-def run(command, cwd=None, capture=True):
-    result = subprocess.run(command, cwd=cwd, capture_output=capture, text=True)
-    if result.returncode != 0:
-        raise SystemExit('failed: %s\n%s' % (' '.join(map(str, command))[:200], (result.stdout or '')[-800:] + (result.stderr or '')[-800:]))
-    return result.stdout
+def attempt(command, tries=3, cwd=None):
+    """Run one command, retrying a dropped connection instead of failing the deploy."""
+    last = None
+    for index in range(tries):
+        try:
+            result = subprocess.run(command, cwd=cwd, capture_output=True, text=True)
+        except subprocess.TimeoutExpired:
+            last = 'timeout'
+        else:
+            if result.returncode == 0:
+                return result.stdout
+            last = ((result.stdout or '')[-600:] + (result.stderr or '')[-600:]).strip()
+            lowered = last.lower()
+            if not any(word in lowered for word in ('connection closed', 'connection reset', 'broken pipe', 'kex_exchange', 'timed out')):
+                break
+        if index < tries - 1:
+            wait = 5 * (index + 1)
+            print('    connection dropped, retrying in %ds…' % wait, flush=True)
+            time.sleep(wait)
+    raise SystemExit('failed: ' + ' '.join(map(str, command))[:200] + ' | ' + str(last))
 
 
-def remote(command, timeout=600):
-    result = subprocess.run(SSH + [command], capture_output=True, text=True, timeout=timeout)
-    if result.returncode != 0:
-        raise SystemExit('remote failed: %s\n%s' % (command[:160], (result.stderr or '')[-800:]))
-    return result.stdout
+def run(command, tries=3, cwd=None):
+    return attempt(command, tries=tries, cwd=cwd)
+
+
+def remote(command, tries=3):
+    return attempt(SSH + [command], tries=tries)
+
 
 
 def sha256(path):
@@ -114,11 +133,11 @@ def main():
     delta_archive = work / 'delta.tar.gz'
     run(['tar', '-czf', str(delta_archive), '-T', str(listing)], cwd=staging)
     digest = sha256(delta_archive)
-    run(SCP + ['-q', str(delta_archive), str(manifest_path), HOST + ':/tmp/'])
+    run(SCP + ['-q', str(delta_archive), str(manifest_path), HOST + ':/tmp/'], tries=4)
 
     print('5/6 installing the new release…')
     output = remote('python3 /tmp/deploy-delta.py --delta /tmp/delta.tar.gz --sha256 %s --manifest /tmp/next-release.json --release %s --base %s --expect-base-commit %s --slot %s'
-                    % (digest, next_release, live_release, live_commit, SLOT), timeout=1200)
+                    % (digest, next_release, live_release, live_commit, SLOT))
     receipt = json.loads(output.strip().splitlines()[-1])
     if not receipt.get('ok'):
         raise SystemExit('install failed: ' + output[-800:])
