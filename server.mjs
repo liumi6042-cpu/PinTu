@@ -19,6 +19,7 @@ import {buildTaskRewardConfiguration} from '../jigsaw-nook-taptap/server/task-re
 import {createReleaseCoordinator} from './releases.mjs';
 import {publishRelease,validatePublishTransportConfig} from './publish-transport.mjs';
 import {createAssetDelivery} from './asset-delivery.mjs';
+import {createImageImporter} from './image-import.mjs';
 import {contentValueDigest,validContentReleaseId} from './contracts/content-release.mjs';
 
 const appRoot=dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,44 @@ function revision(value){if(!Number.isSafeInteger(value)||value<1)throw problem(
 function reason(value){if(typeof value!=='string'||value.trim().length<4||value.trim().length>500)throw problem(400,'请填写 4–500 个字符的操作原因');return value.trim();}
 function title(value,fallback){if(value===undefined)return fallback;if(typeof value!=='string'||!value.trim()||value.trim().length>100)throw problem(400,'名称需为 1–100 个字符');return value.trim();}
 async function jsonBody(req){if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']??''))throw problem(415,'此操作需要 JSON 数据');let size=0,parts=[];for await(const part of req){size+=part.length;if(size>2*1024*1024)throw problem(413,'内容过大，请分批整理');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw problem(400,'请求数据无法读取');}}
+/**
+ * Minimal multipart/form-data reader for the admin console's own upload form.
+ * One picture per request keeps memory bounded: the largest original is ~40 MB.
+ * Returns {fields: {name: string}, files: [{name, type, bytes}]}.
+ */
+const MULTIPART_MAX_BYTES=64*1024*1024;
+const CRLF=String.fromCharCode(13,10);
+async function multipartBody(req){
+ const type=req.headers['content-type']??'';
+ const match=/^multipart\/form-data;\s*boundary=(?:"([^"]+)"|([^;]+))/i.exec(type);
+ if(!match)throw problem(415,'上传格式无效');
+ const boundary=Buffer.from('--'+(match[1]||match[2]).trim());
+ const separator=Buffer.from(CRLF+CRLF);
+ let size=0,parts=[];
+ for await(const part of req){size+=part.length;if(size>MULTIPART_MAX_BYTES)throw problem(413,'图片过大，请单张上传');parts.push(part);}
+ const body=Buffer.concat(parts),fields={},files=[];
+ let at=body.indexOf(boundary);
+ while(at>=0){
+  const start=at+boundary.length;
+  if(body.slice(start,start+2).toString()==='--')break;
+  const headEnd=body.indexOf(separator,start);
+  if(headEnd<0)break;
+  const next=body.indexOf(boundary,headEnd+4);
+  if(next<0)break;
+  const head=body.slice(start,headEnd).toString('utf8');
+  const content=body.slice(headEnd+4,next-2);
+  const nameField=/name="([^"]*)"/i.exec(head);
+  const name=nameField?nameField[1]:'';
+  const filename=/filename="([^"]*)"/i.exec(head);
+  if(filename&&filename[1]){
+   files.push({field:name,name:filename[1].slice(0,200),type:/content-type:\s*([^\r\n;]+)/i.exec(head)?.[1]?.trim()??'',bytes:content});
+  }else if(name){
+   fields[name]=content.toString('utf8');
+  }
+  at=next;
+ }
+ return {fields,files};
+}
 function response(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 const ID=/^[a-f0-9]{32}$/;
 const PUBLISH_MESSAGES={
@@ -56,7 +95,7 @@ function publicPublishReceipt(value){
  };
 }
 
-export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),albumBridgeDir=join(dataDir,'albums'),releaseDir=join(dataDir,'content-releases'),publishConfigPath=join(dataDir,'publish-config.json'),publisher=publishRelease,assetDelivery:providedAssetDelivery,appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
+export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=join(appRoot,'work'),source:providedSource,bridgeDir=join(dataDir,'daily-bridge'),taskRewardBridgeDir=join(dataDir,'task-rewards'),gameSettingsBridgeDir=join(dataDir,'game-settings'),albumBridgeDir=join(dataDir,'albums'),releaseDir=join(dataDir,'content-releases'),publishConfigPath=join(dataDir,'publish-config.json'),publisher=publishRelease,assetDelivery:providedAssetDelivery,imageImporter:providedImageImporter,appearanceDir=join(projectRoot,'jigsaw-nook-taptap/work/daily-appearances'),now=Date.now}={}){
  let source=providedSource??readSource(projectRoot);const store=createStore(dataDir,source),auth=createAuth(store);
  const taskRewards=createTaskRewardCoordinator({store,bridgeDir:taskRewardBridgeDir,now});taskRewards.sync();
  const gameSettings=createGameSettingsCoordinator({store,bridgeDir:gameSettingsBridgeDir,now});gameSettings.sync();
@@ -98,6 +137,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    summary:{totalImageCount:source.assets.length,retainedImageCount:retained.length,pendingImageCount:source.assets.length-retained.length,assignedImageCount:new Set(document.albums.flatMap(album=>album.imageIds)).size}};
  }
  const assets=providedAssetDelivery??createAssetDelivery({projectRoot,dataDir,configPath:publishConfigPath,now});
+ const importer=providedImageImporter??createImageImporter({projectRoot,dataDir});
  const releases=createReleaseCoordinator({releaseDir,readSnapshot:savedReleaseSnapshot,now,publish:async(release,actor)=>{
   const state=publishConfiguration();if(!state.configured)throw problem(503,state.configurationMessage,state.code);
   try{
@@ -154,6 +194,32 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
     if([...url.searchParams.keys()].length)throw problem(400,'图片交付请求不接受额外参数');
     if(path==='/api/assets/status'&&method==='GET')return response(res,200,await assets.plan());
     if(path==='/api/assets/deliver'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,200,await assets.deliver({actor:current.username}));}
+    if(path==='/api/import/context'&&method==='GET'){
+    if([...url.searchParams.keys()].length)throw problem(400,'请求不接受额外参数');
+    let receipts=[];
+    try{const parsed=JSON.parse(readFileSync(join(dataDir,'admin-imports.json'),'utf8'));receipts=Array.isArray(parsed?.imports)?parsed.imports:[parsed];}catch{}
+    return response(res,200,{styles:source.baseline?.styles??[],spec:importer.spec,receipts:receipts.filter(Boolean).slice(0,20)});
+   }
+   if(path==='/api/assets/import'&&method==='POST'){
+     const form=await multipartBody(req);
+     const file=form.files[0];
+     if(!file)throw problem(400,'请选择要导入的图片');
+     const draft={};
+     for(const key of ['title','subtitle','styleGroupId','prompt','origin','id','notes']){
+      const value=form.fields[key];
+      if(typeof value==='string'&&value.trim())draft[key]=value.trim();
+     }
+     const tags=form.fields.subjectTags;
+     if(typeof tags==='string'&&tags.trim())draft.subjectTags=tags.split(/[,，]/).map(t=>t.trim()).filter(Boolean).slice(0,30);
+     if(!draft.origin)draft.origin='project-ai-generated';
+     draft.reviewer=current.username;
+     const receipt=await importer.run([file],[draft],{actor:current.username});
+     // Write it into both catalogues straight away: otherwise the picture sits in
+     // the private registry and never appears in 全部图片 or in an album.
+     const ids=receipt.imported.map(item=>item.id);
+     const registered=importer.register(ids,{actor:current.username});
+     return response(res,201,{...receipt,registered});
+    }
    }
    if(path==='/api/audit'&&method==='GET')return response(res,200,{audit:store.listAudit()});
    if(path==='/api/versions'&&method==='GET')return response(res,200,{versions:store.listVersions()});

@@ -72,3 +72,30 @@
 .release-assets.is-ready strong{color:var(--green)}
 .release-assets.is-blocked{border-color:#d9b6a8;background:#fbf1ec}
 .release-assets button{justify-self:start;margin-top:4px}
+
+/* Import panel: compress local originals into the delivery set */
+.import-panel{max-width:980px;margin:24px 0 60px;display:grid;gap:20px}
+.import-drop{display:grid;place-items:center;gap:8px;min-height:190px;padding:24px;border:1.5px dashed var(--line);border-radius:16px;background:#fbfaf4;color:var(--muted);cursor:pointer;text-align:center;transition:border-color .15s,background .15s}
+.import-drop:hover,.import-drop.is-over{border-color:var(--green);background:#f0f5ea;color:var(--green)}
+.import-drop-icon{font-size:30px;line-height:1;color:var(--green)}
+.import-drop strong{font-size:15px;color:var(--ink)}
+.import-drop small{font-size:12px;color:var(--muted);line-height:1.7}
+.import-queue{display:grid;gap:12px;border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
+.import-row{display:grid;grid-template-columns:minmax(150px,1.2fr) 1.4fr .8fr 1fr auto;gap:12px;align-items:end;padding-bottom:12px;border-bottom:1px solid #eee8da}
+.import-row:last-of-type{border-bottom:0;padding-bottom:0}
+.import-name{display:grid;gap:3px;font-size:13px;overflow-wrap:anywhere}
+.import-name small{font-size:11px;color:var(--muted)}
+.import-row .field{margin:0}
+.import-row .field b{font-size:11px;color:var(--muted);font-weight:600}
+.import-row input,.import-row select{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;font-size:13px;background:#fff}
+.import-actions{display:flex;gap:12px;align-items:center;margin-top:4px;flex-wrap:wrap}
+.import-result{border:1px solid #8fa784;border-radius:14px;padding:18px;background:#f4f8ef}
+.import-result h2{font-size:15px;margin:0 0 12px;color:var(--green)}
+.import-result-rows{display:grid;gap:8px}
+.import-result-row{display:grid;grid-template-columns:1.2fr 1.6fr auto;gap:12px;font-size:12px;align-items:center;color:var(--muted)}
+.import-result-row strong{color:var(--ink);font-size:13px;font-weight:600}
+.import-result-row code{font-size:11px;opacity:.7;overflow-wrap:anywhere}
+.import-history{margin-top:6px;font-size:12px;color:var(--muted)}
+.import-history summary{cursor:pointer;margin-bottom:8px}
+@media(max-width:860px){.import-row{grid-template-columns:1fr 1fr}.import-row .import-name{grid-column:1/-1}}
+@media(max-width:560px){.import-row{grid-template-columns:1fr}.import-result-row{grid-template-columns:1fr}}
