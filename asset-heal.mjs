@@ -84,7 +84,10 @@ function inspect(root, photo) {
     if (facts.width !== entry.width || facts.height !== entry.height) problems.push(kind + ' 尺寸与记录不一致');
     if (kind === 'optimized') {
       if (facts.width > record.width || facts.height > record.height) problems.push('压缩图被放大');
-      if (Math.max(facts.width, facts.height) !== expectedLongSide(record.width, record.height)) problems.push('压缩图长边不符');
+      // 2560 is a ceiling, not a target: smaller originals keep their own size.
+      const capped = expectedLongSide(record.width, record.height);
+      if (Math.max(facts.width, facts.height) > capped) problems.push('压缩图长边超过 2560');
+      else if (Math.max(facts.width, facts.height) < capped) problems.push('压缩图比原图小，不该再缩');
     } else if (facts.width > 384 || facts.height > 384 || facts.width > record.width || facts.height > record.height) {
       problems.push('缩略图超出尺寸预算');
     }
