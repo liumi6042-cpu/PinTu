@@ -18,6 +18,13 @@ document.body.append(confirmation);
 let resolveConfirmation = null;
 const TARGETS = { pc: 'PC 网页', 'mobile-shared': '小程序' };
 const FIELD_NAMES = { name: '名称', title: '标题', subtitle: '副标题', description: '说明', styleGroupId: '画风分组', subjectTags: '题材标签', visible: '旧相册显示', showOnPc: '在 PC 显示', showOnMobile: '在小程序显示', purchasable: '设为购买包', deleted: '移入回收站', status: '历史展示状态', galleryVisible: '历史图库展示', dailyOnly: '每日专用', category: '原分类', imageIds: '图片与顺序', coverImageId: '封面', price: '金币价格', decorationId: '奖励装饰', packId: '历史图包关联', milestones: '里程碑', added: '新增', removed: '移除', packOrder: '历史图包顺序', albumOrder: '相册顺序' };
+// Every album starts with the same collection rewards: three pictures pay 30
+// coins, six pay 60. The album settings dialog can still add, change or remove
+// tiers; this is only the starting point for a new album.
+const ALBUM_DEFAULT_MILESTONES = () => [
+  { id: 'milestone-3', target: 3, coins: 30, decorationId: null },
+  { id: 'milestone-6', target: 6, coins: 60, decorationId: null },
+];
 const ENTITY_NAMES = { draft: '工作内容', style: '画风', asset: '图片', pack: '历史图包', album: '相册', target: '内容目标' };
 const AUDIT_NAMES = { 'import-baseline': '导入内容基线', 'initialize-admin': '创建管理员', login: '管理员登录', logout: '管理员退出', 'create-draft': '建立工作内容', 'save-draft': '保存相册整理', 'reimport-source': '同步原项目内容', 'generate-candidate': '生成游戏更新文件', 'save-snapshot': '保存完整备份', 'restore-version': '恢复备份为当前工作内容', 'import-pending-assets': '导入新图并整理', 'initialize-task-rewards': '导入任务奖励', 'save-task-rewards': '保存任务奖励' };
 const state = {
@@ -1018,7 +1025,7 @@ document.addEventListener('submit', event => {
   else if (form.id === 'new-album-form') {
     const title = String(data.get('title')).trim();
     if (!title) return;
-    const entity = { id: `album-${crypto.randomUUID().slice(0, 8)}`, title, description: '', imageIds: [], coverImageId: null, styleGroupId: null, showOnPc: true, showOnMobile: true, purchasable: false, price: 0, decorationId: null, milestones: [] };
+    const entity = { id: `album-${crypto.randomUUID().slice(0, 8)}`, title, description: '', imageIds: [], coverImageId: null, styleGroupId: null, showOnPc: true, showOnMobile: true, purchasable: false, price: 0, decorationId: null, milestones: ALBUM_DEFAULT_MILESTONES() };
     targetDoc().albums.push(entity); state.page = 'albums'; state.albumId = null; state.selected.clear(); dirty(); closeModal(); render(); openAlbumSettings(entity.id);
   }
   else if (form.id === 'style-form') {
