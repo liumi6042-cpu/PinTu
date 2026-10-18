@@ -1,4 +1,7 @@
-export const USER_IMAGE_LIMIT=10,USER_IMAGE_MAX_BYTES=1800*1024,USER_THUMB_MAX_BYTES=96*1024,USER_UPLOAD_MAX_BYTES=2*1024*1024;
+// Upload limits. The source file may be up to 3 MB; it is re-encoded to WebP Q70
+// in the browser before it leaves the visitor, so the stored copy is much smaller.
+export const USER_IMAGE_LIMIT=10,USER_IMAGE_MAX_BYTES=1800*1024,USER_THUMB_MAX_BYTES=96*1024,USER_UPLOAD_MAX_BYTES=3*1024*1024;
+export const USER_SOURCE_MAX_BYTES=3*1024*1024,USER_IMAGE_QUALITY=0.70,USER_THUMB_QUALITY=0.72;
 export const USER_IMAGE_MAX_SIDE=3072;
 export type CustomImage={id:string;title:string;width:number;height:number};
 export type UserImage=CustomImage&{bytes:number;createdAt:number;src:string;thumbSrc:string};

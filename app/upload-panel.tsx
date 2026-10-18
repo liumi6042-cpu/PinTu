@@ -6,7 +6,7 @@ import {usePathname} from 'next/navigation';
 import {isChinesePath} from '@/lib/site-paths';
 import {apiJson} from '@/lib/community-client';
 import {saveTicket} from '@/lib/room-client';
-import {USER_IMAGE_MAX_BYTES,USER_IMAGE_MAX_SIDE,USER_THUMB_MAX_BYTES} from '@/lib/custom-images';
+import {USER_IMAGE_MAX_BYTES,USER_IMAGE_MAX_SIDE,USER_THUMB_MAX_BYTES,USER_SOURCE_MAX_BYTES,USER_IMAGE_QUALITY,USER_THUMB_QUALITY} from '@/lib/custom-images';
 
 const PIECES=[108,300,500];
 
@@ -26,6 +26,7 @@ async function encode(file:File,maxSide:number,quality:number,maxBytes:number):P
  const context=canvas.getContext('2d');
  if(!context)throw new Error('浏览器无法处理图片');
  context.drawImage(bitmap,0,0,width,height);
+ // Start at the target quality and step down only if the result is still too large.
  let current=quality;
  for(let attempt=0;attempt<7;attempt+=1){
   const blob=await new Promise<Blob|null>(done=>canvas.toBlob(done,'image/webp',current));
@@ -58,10 +59,11 @@ export default function UploadPanel(){
   if(!file)return;
   setError('');setNote('');
   if(!file.type.startsWith('image/')){setError(zh?'请选择图片文件':'Please choose an image file');return;}
+  if(file.size>USER_SOURCE_MAX_BYTES){setError(zh?'图片不能超过 3MB，请换一张或先压缩':'The picture must be 3MB or smaller');return;}
   setBusy(true);
   try{
-   const full=await encode(file,USER_IMAGE_MAX_SIDE,0.86,USER_IMAGE_MAX_BYTES);
-   const thumb=await encode(file,480,0.78,USER_THUMB_MAX_BYTES);
+   const full=await encode(file,USER_IMAGE_MAX_SIDE,USER_IMAGE_QUALITY,USER_IMAGE_MAX_BYTES);
+   const thumb=await encode(file,480,USER_THUMB_QUALITY,USER_THUMB_MAX_BYTES);
    if(Math.min(full.width,full.height)<240)throw new Error(zh?'图片太小，短边至少 240 像素':'The short side must be at least 240px');
    setPrepared({
     full:{...full,url:URL.createObjectURL(full.blob)},
@@ -102,7 +104,7 @@ export default function UploadPanel(){
     <a className="primary" href={'/account?returnTo='+encodeURIComponent(zh?'/zh/help#upload':'/help#upload')}>{zh?'登录后上传':'Sign in to upload'}</a>
    </div>:<>
    <button type="button" className={'upload-drop'+(prepared?' has-image':'')} disabled={busy} onClick={()=>input.current?.click()}>
-    {prepared?<img src={prepared.thumb.url} alt=""/>:<><ImagePlus size={30} strokeWidth={1.4}/><span>{zh?'选择一张图片':'Choose a picture'}</span><small>{zh?'JPG / PNG / WebP，最大 2MB':'JPG / PNG / WebP, up to 2MB'}</small></>}
+    {prepared?<img src={prepared.thumb.url} alt=""/>:<><ImagePlus size={30} strokeWidth={1.4}/><span>{zh?'选择一张图片':'Choose a picture'}</span><small>{zh?'JPG / PNG / WebP，最大 3MB。上传时自动压缩':'JPG / PNG / WebP up to 3MB, compressed automatically'}</small></>}
    </button>
    <input ref={input} type="file" accept="image/*" hidden onChange={event=>void pick(event.target.files?.[0])}/>
 
