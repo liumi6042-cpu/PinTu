@@ -2,22 +2,22 @@
 // register it in the private pending registry, so 「提交到双端」 can ship it.
 //
 // The whole point is that the operator keeps only the original PNG. Everything
-// the runtimes need (Q70 / longest side 2560, plus a 384 thumbnail) is produced
+// the runtimes need (Q70 / total pixels at most 6,553,600, plus a 384 thumbnail) is produced
 // here with sharp, using the same parameters the release checker verifies.
 import {createHash, randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {dirname, join, resolve} from 'node:path';
+import {deliveryDimensions, MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
 
 const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
-const MAX_LONG_SIDE = 2560;
 const QUALITY = 70;
 const THUMB_BOX = 384;
 const THUMB_QUALITY = 82;
 
 // Delivery spec, kept in one place so the importer and the checkers agree.
-export const IMAGE_SPEC = {longSide: MAX_LONG_SIDE, quality: QUALITY, thumbBox: THUMB_BOX, thumbQuality: THUMB_QUALITY, effort: 6};
+export const IMAGE_SPEC = {maxPixels: MAX_DELIVERY_PIXELS, quality: QUALITY, thumbBox: THUMB_BOX, thumbQuality: THUMB_QUALITY, effort: 6};
 
 const failure = (message, code = 'INVALID_IMPORT', status = 409) => Object.assign(new Error(message), {code, status});
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -48,10 +48,10 @@ async function decode(sharp, bytes) {
 
 async function encode(sharp, bytes, {width, height}, {quality, box, smartSubsample = true}) {
   let pipeline = sharp(bytes, {failOn: 'error'}).rotate();
-  // `fit: inside` on a square box caps the longest side and keeps the aspect ratio;
+  // Optimized delivery uses a total-pixel cap; thumbnails keep their fixed box.
   // `withoutEnlargement` leaves smaller pictures at their own size.
-  const limit = box ?? MAX_LONG_SIDE;
-  pipeline = pipeline.resize({width: limit, height: limit, fit: 'inside', withoutEnlargement: true});
+  const limit = box ?? deliveryDimensions(width, height, IMAGE_SPEC.maxPixels);
+  pipeline = pipeline.resize({width: limit.width ?? limit, height: limit.height ?? limit, fit: 'inside', withoutEnlargement: true});
   const buffer = await pipeline.webp({quality, effort: IMAGE_SPEC.effort, smartSubsample}).toBuffer();
   const meta = await sharp(buffer).metadata();
   return {buffer, width: meta.width, height: meta.height};
@@ -88,7 +88,7 @@ async function importOne({sharp, bytes, originalName, draft, pendingRoot, batchD
   const sourceHash = sha(sourceBytes);
 
   const playable = await encode(sharp, sourceBytes, {width: meta.width, height: meta.height}, {quality: QUALITY, box: null});
-  const thumb = await encode(sharp, sourceBytes, {width: meta.width, height: meta.height}, {quality: THUMB_QUALITY, box: THUMB_BOX, smartSubsample: false});
+  const thumb = await encode(sharp, sourceBytes, {width: meta.width, height: meta.height}, {quality: THUMB_QUALITY, box: {width: THUMB_BOX, height: THUMB_BOX}, smartSubsample: false});
 
   const deliveryOf = (kind, result, extra) => {
     const digest = sha(result.buffer);

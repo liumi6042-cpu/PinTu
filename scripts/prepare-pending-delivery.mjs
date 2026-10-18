@@ -110,6 +110,11 @@ const additions = selected.map(asset => {
     assert.equal(asset.export.isUpscaled,false);assert.ok(stages[0].evidence.length&&stages[1].evidence.length===2);
   // `admin-upload` is a picture the operator supplied through the console; it has
   // no generation prompt, and its provenance says so instead of inventing one.
+  // A single-stage Doubao redraw records its provider and model directly; accept it
+  // only when those two facts match the model family, never an arbitrary tool name.
+  }else if(asset.generation.tool==='Ark Images Generations API'){
+    assert.equal(asset.generation.provider,'ByteDance Doubao','Unknown provider for the Ark adapter.');
+    assert.match(asset.generation.model,/^doubao-seedream-[a-z0-9.-]+$/);
   }else assert.ok(['image_gen','admin-upload'].includes(asset.generation.tool),'Unknown generation tool requires its own reviewed import adapter.');
   const sourcePath = copyPlan(join(pending.root, asset.source.path), 'public/puzzles/' + id + '.png', asset.source);
   const nativePath = copyPlan(join(pending.root, native.path), 'content/artwork/gallery-hd/' + id + '/native.png', native);
@@ -125,17 +130,26 @@ const additions = selected.map(asset => {
     delivery[kind] = {src, ...facts};
   }
   const extraGenerated=[];
-  const referenceImages = asset.generation.referencePaths.map(path => {
+  const arkReference=asset.generation.tool==='Ark Images Generations API';
+  // A concept reference the operator supplied is not part of any catalogue, so it
+  // cannot be registered as a gallery image. Its bytes are still verified here, and
+  // the provenance says plainly that it was not distributed with the artwork.
+  let unregisteredReference=false;
+  const referenceImages = asset.generation.referencePaths.flatMap(path => {
     const bytes = readFileSync(join(pending.root, path)), digest = sha(bytes), parent = nativeParents.get(digest);
     if(hybrid){
       assert.equal(digest,stages[0].native.sha256,'The reference redraw must use its verified built-in original.');
       const location='content/artwork/gallery-hd/'+id+'/reference-original.png';
       copyPlan(join(pending.root,path),location,stages[0].native);
-      return {origin:'project-ai-generated',path:location,sha256:digest,purpose:'same-artwork-reference-redraw',resolution:'native-generation'};
+      return [{origin:'project-ai-generated',path:location,sha256:digest,purpose:'same-artwork-reference-redraw',resolution:'native-generation'}];
     }
-    assert.ok(parent && parent.id !== id, 'A style reference must match another registered project generation native; unknown references require separate review.');
-    const location = 'content/artwork/gallery-hd/' + parent.id + '/native.png';
-    return {origin: 'project-ai-generated', imageId: parent.id, path: location, sha256: digest, purpose: 'rendering-style-only', resolution: 'native-generation'};
+    if(parent&&parent.id!==id){
+      const location = 'content/artwork/gallery-hd/' + parent.id + '/native.png';
+      return [{origin: 'project-ai-generated', imageId: parent.id, path: location, sha256: digest, purpose: 'rendering-style-only', resolution: 'native-generation'}];
+    }
+    assert.ok(arkReference, 'A style reference must match another registered project generation native; unknown references require separate review.');
+    unregisteredReference=true;
+    return [];
   });
   const catalog = {id, title: asset.title, subtitle: asset.subtitle, category: '插画', src: sourcePath.slice(6), origin: asset.origin,
     status: 'archived', galleryVisible: false, dailyOnly: false, playSrc: (delivery.play ?? delivery.optimized).src, thumbSrc: delivery.thumbnail.src, optimizedSrc: delivery.optimized.src};
@@ -144,8 +158,14 @@ const additions = selected.map(asset => {
     generation: {provider: asset.generation.provider, tool: asset.generation.tool, generatedDate: asset.generation.generatedAt.slice(0, 10), generatedAt: asset.generation.generatedAt,
       threadId: asset.generation.threadId, promptPath: 'content/image-prompts/' + id + '.txt', referenceImages,
       native: {...native, path: nativePath}, originalFile: sourcePath, importedRegistrySha256: pending.fingerprint},
-    resolutionNote: '原始生成 ' + native.width + '×' + native.height + '；保存成品 ' + asset.source.width + '×' + asset.source.height + (asset.export.isUpscaled ? '，已放大，放大尺寸不代表新增原生细节。' : '，未放大。'),
-    review: structuredClone(asset.review), commercialUse: {basis: 'provider-output-terms', termsUrl: hybrid ? DOUBAO_TERMS : OPENAI_TERMS, exclusiveRightsGuaranteed: false}, delivery};
+    resolutionNote: '原始生成 ' + native.width + '×' + native.height + '；保存成品 ' + asset.source.width + '×' + asset.source.height + (asset.export.isUpscaled ? '，已放大，放大尺寸不代表新增原生细节。' : '，未放大。') + (unregisteredReference ? '参考用的概念图由运营者提供，未在图库登记，也未随成品分发。' : ''),
+    review: structuredClone(asset.review), commercialUse: {basis: 'provider-output-terms', termsUrl: (hybrid||arkReference) ? DOUBAO_TERMS : OPENAI_TERMS, exclusiveRightsGuaranteed: false}, delivery};
+  if(arkReference){
+    // Record which model produced the redraw; the reference image itself is not
+    // registered, so this is the only honest provenance available for it.
+    provenance.generation.model=asset.generation.model;
+    provenance.generation.method=asset.generation.method;
+  }
   if(hybrid){
     assert.equal(referenceImages.length,1,'A built-in reference redraw requires exactly one original.');
     provenance.generation.model=asset.generation.model;provenance.generation.method=asset.generation.method;

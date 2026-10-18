@@ -173,9 +173,12 @@ export function createAssetDelivery({projectRoot,dataDir,configPath,localPuzzles
    if(manifest.guidance)documents.push(join(staging,'guidance.json'));
    const uploadedDocs=await runner('scp',[...options,'--',...documents,host+':'+remoteDir+'/'],{timeoutMs:600000});
    if(uploadedDocs.code!==0)throw failure('图库索引上传未完成：'+(uploadedDocs.stderr.trim()||'连接中断'));
-   if(upload.length){
-    const uploaded=await runner('scp',[...options,'--',...upload.map(item=>join(staging,'assets',basename(item.file))),host+':'+remoteDir+'/assets/'],{timeoutMs:1800000});
+   // Windows caps a command line at ~32k characters, so a large batch is sent in chunks.
+   for(let index=0;index<upload.length;index+=40){
+    const chunk=upload.slice(index,index+40).map(item=>join(staging,'assets',basename(item.file)));
+    const uploaded=await runner('scp',[...options,'--',...chunk,host+':'+remoteDir+'/assets/'],{timeoutMs:1800000});
     if(uploaded.code!==0)throw failure('图片上传未完成：'+(uploaded.stderr.trim()||'连接中断'));
+    console.log('uploaded batch',Math.min(index+40,upload.length),'/',upload.length);
    }
    const applied=await remoteJson('python3 '+quote(REMOTE_TOOL)+' --batch '+quote(remoteDir)+' --apply --restart');
    if(!applied?.ok)throw failure(applied?.message??'服务器未接受这批图片。');
@@ -198,15 +201,17 @@ export function createAssetDelivery({projectRoot,dataDir,configPath,localPuzzles
   const byId=new Map((registry.assets??[]).map(asset=>[asset.id,asset]));
   const missing=new Set(plan.missing.map(item=>item.url));
   const known=new Set(receipt.images.map(image=>image.id));
-  const kinds=['thumbnail','play','optimized'];
+  // Two delivery files since 2026-10-17: the playable file is the optimized one.
+  const kinds=['thumbnail','optimized'];
   const added=[];
   for(const photo of catalog){
    if(known.has(photo.id))continue;
    const asset=byId.get(photo.id);
    if(!asset?.delivery)continue;
+   if(kinds.some(kind=>!asset.delivery[kind]?.path))continue;
    const files=kinds.map(kind=>({url:'/puzzles/'+basename(asset.delivery[kind].path),bytes:asset.delivery[kind].bytes,sha256:asset.delivery[kind].sha256}));
    if(files.some(item=>missing.has(item.url)))continue;
-   if(photo.thumbSrc!==files[0].url||photo.playSrc!==files[1].url||photo.optimizedSrc!==files[2].url)continue;
+   if(photo.thumbSrc!==files[0].url||photo.optimizedSrc!==files[1].url)continue;
    added.push({id:photo.id,sourceSha256:asset.source.sha256,files});
   }
   if(!added.length)return 0;
