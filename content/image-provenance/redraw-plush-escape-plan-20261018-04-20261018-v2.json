@@ -1,0 +1,84 @@
+{
+  "id": "redraw-plush-escape-plan-20261018-04-20261018-v2",
+  "origin": "project-ai-generated",
+  "width": 2144,
+  "height": 2144,
+  "sha256": "2c071d9cb66501524a75896d98246c0d4051362702dfa24f659d71355159a065",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "ByteDance Doubao",
+    "tool": "Ark Images Generations API",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T13:02:19.350Z",
+    "threadId": "recent-albums-redraw-20261018",
+    "promptPath": "content/image-prompts/redraw-plush-escape-plan-20261018-04-20261018-v2.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/redraw-plush-escape-plan-20261018-04-20261018-v2/native.png",
+      "sha256": "2c071d9cb66501524a75896d98246c0d4051362702dfa24f659d71355159a065",
+      "bytes": 8687776,
+      "width": 2144,
+      "height": 2144,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/redraw-plush-escape-plan-20261018-04-20261018-v2.png",
+    "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "Reference redraw from the original concept image; continuous illustration with detail reconstruction"
+  },
+  "resolutionNote": "原始生成 2144×2144；保存成品 2144×2144，未放大。参考用的概念图由运营者提供，未在图库登记，也未随成品分发。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-18T13:07:41.784Z",
+    "notes": "已抽查修正版：保持原构图与比例，未发现拼图块、接缝或网格；原图保留。来源相册：玩偶逃脱计划。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "2c071d9cb66501524a75896d98246c0d4051362702dfa24f659d71355159a065",
+    "thumbnail": {
+      "src": "/puzzles/redraw-plush-escape-plan-20261018-04-20261018-v2-thumbnail-06949163f758.webp",
+      "sha256": "06949163f758f6ed0506b1e73873a483aada7106f83cf552213e824fb5d7b29d",
+      "bytes": 46206,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "2c071d9cb66501524a75896d98246c0d4051362702dfa24f659d71355159a065",
+      "inputSha256": "2c071d9cb66501524a75896d98246c0d4051362702dfa24f659d71355159a065",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/redraw-plush-escape-plan-20261018-04-20261018-v2-optimized-d8481a0bb489.webp",
+      "sha256": "d8481a0bb489975960c4a1b0ab4d2b4176484d12c74b2f73f913c0f6e8c8b378",
+      "bytes": 533450,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "2c071d9cb66501524a75896d98246c0d4051362702dfa24f659d71355159a065",
+      "inputSha256": "2c071d9cb66501524a75896d98246c0d4051362702dfa24f659d71355159a065",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

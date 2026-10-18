@@ -1,0 +1,84 @@
+{
+  "id": "redraw-after-school-wonder-20261018-06-20261018-v2",
+  "origin": "project-ai-generated",
+  "width": 2816,
+  "height": 1584,
+  "sha256": "fd0a58bbdadd11a8a01cdf4d9092e331cec67a2d8b2faa76b164e74a4ce9ad2a",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "ByteDance Doubao",
+    "tool": "Ark Images Generations API",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T12:56:00.411Z",
+    "threadId": "recent-albums-redraw-20261018",
+    "promptPath": "content/image-prompts/redraw-after-school-wonder-20261018-06-20261018-v2.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/redraw-after-school-wonder-20261018-06-20261018-v2/native.png",
+      "sha256": "fd0a58bbdadd11a8a01cdf4d9092e331cec67a2d8b2faa76b164e74a4ce9ad2a",
+      "bytes": 9274348,
+      "width": 2816,
+      "height": 1584,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/redraw-after-school-wonder-20261018-06-20261018-v2.png",
+    "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "Reference redraw from the original concept image; continuous illustration with detail reconstruction"
+  },
+  "resolutionNote": "原始生成 2816×1584；保存成品 2816×1584，未放大。参考用的概念图由运营者提供，未在图库登记，也未随成品分发。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-18T13:07:41.779Z",
+    "notes": "已抽查修正版：保持原构图与比例，未发现拼图块、接缝或网格；原图保留。来源相册：放学后的奇想世界。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "fd0a58bbdadd11a8a01cdf4d9092e331cec67a2d8b2faa76b164e74a4ce9ad2a",
+    "thumbnail": {
+      "src": "/puzzles/redraw-after-school-wonder-20261018-06-20261018-v2-thumbnail-e532f66a95a2.webp",
+      "sha256": "e532f66a95a2ba4f7820251f0da7c7e4ee0f9c4bf85ddf92f8eea0c22ba113b0",
+      "bytes": 34830,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "fd0a58bbdadd11a8a01cdf4d9092e331cec67a2d8b2faa76b164e74a4ce9ad2a",
+      "inputSha256": "fd0a58bbdadd11a8a01cdf4d9092e331cec67a2d8b2faa76b164e74a4ce9ad2a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/redraw-after-school-wonder-20261018-06-20261018-v2-optimized-00bd31f1c6ca.webp",
+      "sha256": "00bd31f1c6ca4a0bd1171030b63e1f5afc79b75fb581f4fa559d2250d69a0d9f",
+      "bytes": 679844,
+      "width": 2560,
+      "height": 1440,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "fd0a58bbdadd11a8a01cdf4d9092e331cec67a2d8b2faa76b164e74a4ce9ad2a",
+      "inputSha256": "fd0a58bbdadd11a8a01cdf4d9092e331cec67a2d8b2faa76b164e74a4ce9ad2a",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "id": "redraw-neon-arcade-street-20261018-02-20261018-v2",
+  "origin": "project-ai-generated",
+  "width": 2144,
+  "height": 2144,
+  "sha256": "b7f2c3c67580cf8a6ea5c1b6057287af5ee627bf66feefc0f0a05042def28966",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "ByteDance Doubao",
+    "tool": "Ark Images Generations API",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T12:56:32.934Z",
+    "threadId": "recent-albums-redraw-20261018",
+    "promptPath": "content/image-prompts/redraw-neon-arcade-street-20261018-02-20261018-v2.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/redraw-neon-arcade-street-20261018-02-20261018-v2/native.png",
+      "sha256": "b7f2c3c67580cf8a6ea5c1b6057287af5ee627bf66feefc0f0a05042def28966",
+      "bytes": 10203305,
+      "width": 2144,
+      "height": 2144,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/redraw-neon-arcade-street-20261018-02-20261018-v2.png",
+    "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "Reference redraw from the original concept image; continuous illustration with detail reconstruction"
+  },
+  "resolutionNote": "原始生成 2144×2144；保存成品 2144×2144，未放大。参考用的概念图由运营者提供，未在图库登记，也未随成品分发。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-18T13:07:41.780Z",
+    "notes": "已抽查修正版：保持原构图与比例，未发现拼图块、接缝或网格；原图保留。来源相册：霓虹电玩街。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "b7f2c3c67580cf8a6ea5c1b6057287af5ee627bf66feefc0f0a05042def28966",
+    "thumbnail": {
+      "src": "/puzzles/redraw-neon-arcade-street-20261018-02-20261018-v2-thumbnail-30850295330b.webp",
+      "sha256": "30850295330bb700a5535b9876179219841bf714004aa94a05eccdb0d7e07738",
+      "bytes": 67708,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "b7f2c3c67580cf8a6ea5c1b6057287af5ee627bf66feefc0f0a05042def28966",
+      "inputSha256": "b7f2c3c67580cf8a6ea5c1b6057287af5ee627bf66feefc0f0a05042def28966",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/redraw-neon-arcade-street-20261018-02-20261018-v2-optimized-ba428de8b82f.webp",
+      "sha256": "ba428de8b82f88c7e2ab1963cdb63dab79afb6d72c280bd42dadb124682fbdc3",
+      "bytes": 983386,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "b7f2c3c67580cf8a6ea5c1b6057287af5ee627bf66feefc0f0a05042def28966",
+      "inputSha256": "b7f2c3c67580cf8a6ea5c1b6057287af5ee627bf66feefc0f0a05042def28966",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}
