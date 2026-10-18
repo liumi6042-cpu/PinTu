@@ -3,3 +3,29 @@
 @media(max-width:1100px){.community-header{flex-wrap:wrap;gap:16px}.community-header nav{order:3;width:100%;flex-wrap:wrap;justify-content:center}.community-header nav a{flex:0 1 auto}.community-tools{margin-left:auto}}
 @media(max-width:620px){.community-header nav{justify-content:flex-start;gap:4px}.community-header nav a{flex:0 1 auto;padding:9px 11px;min-height:44px}.community-tools{max-width:100%;flex-wrap:wrap}.community-tools .account-status{display:flex;max-width:100%}.account-status>a{max-width:100px}}
 @media(max-width:620px){.game .game-header{height:auto;min-height:102px;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:10px 15px}.game .game-title{grid-column:1/-1;grid-row:1;text-align:left;min-width:0}.game .game-title h1{font-size:16px;line-height:1.35;overflow-wrap:anywhere}.game .game-title>span{display:block;font-size:12px}.game .back-button{grid-row:2;grid-column:1;font-size:12px}.game .game-stats{grid-row:2;grid-column:2;gap:6px}.game .room-actions{flex-wrap:wrap;gap:8px 12px}.game .room-actions .text-button{min-height:36px;white-space:nowrap}}
+
+/* Upload-a-picture card, inside the help page's paper layout. */
+.upload-card{scroll-margin-top:24px}
+.upload-lead{margin:0 0 20px;color:#7b6a52;font-size:15px;line-height:1.8}
+.upload-signin{padding:22px;border:1px dashed #ccb998;border-radius:12px;background:#fffaf4aa;text-align:center}
+.upload-signin p{margin:0 0 16px;font-size:14px;color:#826744}
+.upload-drop{display:grid;place-items:center;gap:8px;width:100%;min-height:200px;padding:20px;border:1.5px dashed #ccb998;border-radius:14px;background:#fffaf4aa;color:#8a7457;cursor:pointer;overflow:hidden;transition:border-color .15s,color .15s}
+.upload-drop:hover{border-color:#a26342;color:#8a5433}
+.upload-drop.has-image{padding:0;border-style:solid;border-color:#cdbda3;background:#fff}
+.upload-drop img{display:block;width:100%;max-height:300px;object-fit:contain}
+.upload-drop span{font-size:15px}
+.upload-drop small{font-size:13px;color:#9a8768}
+.upload-field{margin:18px 0 0}
+.upload-field>span{font-size:14px;font-weight:500;color:#55442c}
+.upload-field small{margin-top:8px;font-size:13px;color:#9a8768}
+.upload-pieces{display:flex;flex-wrap:wrap;gap:10px}
+.upload-pieces button{min-width:82px;min-height:42px;padding:8px 16px;border:1px solid #cdbda3;border-radius:9px;background:#fffaf4;color:#5c4a34;font:inherit;font-size:15px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.upload-pieces button:hover{border-color:#a26342}
+.upload-pieces button[aria-pressed=true]{border-color:#a65e3b;background:#a65e3b;color:#fff8e9}
+.upload-error{margin:14px 0 0;padding:11px 14px;border-radius:9px;background:#f6e2d8;color:#8c3f24;font-size:14px}
+.upload-note{margin:14px 0 0;font-size:14px;color:#866b48}
+.upload-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:22px}
+.upload-actions .primary{min-width:150px;justify-content:center}
+.upload-tip{display:flex;align-items:center;gap:7px;margin:18px 0 0;font-size:13px;color:#9a8768}
+.upload-tip svg{flex-shrink:0;color:#8fa784}
+@media(max-width:600px){.upload-drop{min-height:160px}.upload-pieces button{flex:1 1 30%;min-width:0}}

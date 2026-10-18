@@ -1,6 +1,4 @@
-import UploadRoom from '@/app/upload-room';
-import AccountGate from '@/app/account-gate';
-export const metadata = {title:'用一张图片开一桌 · 一起拼图',robots:{index:false,follow:false}};
-export default function Page(){
- return <AccountGate requireLogin><UploadRoom/></AccountGate>;
-}
+import {redirect} from 'next/navigation';
+// The uploader lives inside the help page now; keep the old address working.
+export const metadata = {robots:{index:false,follow:false}};
+export default function Page(){redirect('/zh/help#upload');}

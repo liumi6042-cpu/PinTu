@@ -41,7 +41,7 @@ const sections={
  ['后续收费','Future paid features','如后续提供付费功能，将在付款前展示价格、币种、权益与退款说明。拼图帮助按每局免费次数开放，广告尚未接入。','If paid features launch, pricing, currency, benefits and refund information will be shown before payment. Puzzle assistance is free within each game’s allowances; ads are not integrated.']
  ]
 };
-export default function ServiceDocument({kind}:{kind:keyof typeof sections}){
+export default function ServiceDocument({kind,extra}:{kind:keyof typeof sections;extra?:React.ReactNode}){
  const lang=useLanguage(),pathname=usePathname()||'',zh=isChinesePath(pathname),en=hasChineseAddress(pathname)?!zh:lang==='en';const [info,setInfo]=useState<{operator:string;support:string;policiesReviewed:boolean}|null>(null);
  useEffect(()=>{apiJson<typeof info>('/api/site-info').then(setInfo).catch(()=>{});},[]);
  const title=kind==='help'?(en?'Help & saves':'帮助与存档'):kind==='privacy'?(en?'Privacy information':'隐私说明'):(en?'Terms of use':'服务条款');
@@ -49,6 +49,7 @@ export default function ServiceDocument({kind}:{kind:keyof typeof sections}){
  {kind!=='help'&&<p>{en?'Last updated: ':'更新日期：'}{TEST_SERVICE_POLICY_UPDATED}</p>}
  {kind!=='help'&&(!info?.policiesReviewed||!info.operator||!info.support)&&<p className="service-notice">{!info?.operator||!info?.support?(en?'Test draft — operator details have not finished loading or are incomplete.':'测试草稿：经营者信息尚未加载完成或仍有缺项。'):(en?'Test draft — operator and contact details are provided below; review of the actual protection measures and launch requirements is still incomplete.':'测试草稿：经营者和联系信息见下方，实际保护措施及适用上线要求仍待核实。')}</p>}
  {sections[kind].filter(([zh])=>!(kind==='help'&&zh==='我的庭院'&&!COURTYARD_VISIBLE&&!HATCHING_VISIBLE&&!WARDROBE_VISIBLE)).map(([zh,enTitle,text,enText])=><section key={zh} className="service-card"><h2>{en?enTitle:zh}</h2><p>{en?enText:text}</p></section>)}
+ {extra}
  {info?.operator&&<p>{en?'Operator: ':'经营者：'}{info.operator}</p>}{info?.support&&<p>{en?'Contact, complaints, protection of minors, privacy and account deletion requests: ':'联系、投诉、未成年人保护、隐私与注销申请：'}<a href={'mailto:'+info.support}>{info.support}</a></p>}
  {kind==='privacy'&&<p>{en?'Guardians may contact us without the child’s account password. Please initially provide only the relevant account identifier and a description of the issue; do not email identity-document photos, passwords or recovery codes. Any further verification must be explained and limited to what is necessary.':'监护人可直接联系我们，无需取得孩子的账号密码。首次联系请仅提供相关账号标识和问题描述，不要通过普通邮件发送身份证照片、密码或恢复码；如需进一步核验，会说明原因并限定必要范围。'}</p>}
  <a href="/account/security">{en?'Account & security':'账号与安全'}</a> · <a href="/feedback">{en?'Problem feedback':'问题反馈'}</a>
