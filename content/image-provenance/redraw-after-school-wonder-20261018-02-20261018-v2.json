@@ -41,6 +41,27 @@
   },
   "delivery": {
     "sourceSha256": "c6f56f925f9a2d28bf8010ad3f80b662086a40d64607c1583b946c64d6b9d511",
+    "optimized": {
+      "src": "/puzzles/redraw-after-school-wonder-20261018-02-20261018-v2-optimized-6616f3069e7f.webp",
+      "sha256": "6616f3069e7f37a22df0dc77a8ba66a2046e6549540a7d19e140a6f55b56bcea",
+      "bytes": 729576,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "c6f56f925f9a2d28bf8010ad3f80b662086a40d64607c1583b946c64d6b9d511",
+      "inputSha256": "c6f56f925f9a2d28bf8010ad3f80b662086a40d64607c1583b946c64d6b9d511",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
     "thumbnail": {
       "src": "/puzzles/redraw-after-school-wonder-20261018-02-20261018-v2-thumbnail-bdf1ee3fe6f0.webp",
       "sha256": "bdf1ee3fe6f0b50d2de2ea51eecaccc413ca47ac88b6d5bc776549d1c7c9aaee",
@@ -57,27 +78,6 @@
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6
-      }
-    },
-    "optimized": {
-      "src": "/puzzles/redraw-after-school-wonder-20261018-02-20261018-v2-optimized-71fc8d943144.webp",
-      "sha256": "71fc8d94314459af73b04af5b471837cf1898bd0f743d58203ecfcb65b388e9a",
-      "bytes": 628596,
-      "width": 2560,
-      "height": 1440,
-      "format": "webp",
-      "lossless": false,
-      "quality": 70,
-      "upscaled": false,
-      "sourceSha256": "c6f56f925f9a2d28bf8010ad3f80b662086a40d64607c1583b946c64d6b9d511",
-      "inputSha256": "c6f56f925f9a2d28bf8010ad3f80b662086a40d64607c1583b946c64d6b9d511",
-      "effort": 6,
-      "smartSubsample": true,
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
       }
     }
   }

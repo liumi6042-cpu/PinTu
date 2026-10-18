@@ -41,6 +41,27 @@
   },
   "delivery": {
     "sourceSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+    "optimized": {
+      "src": "/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2-optimized-fa444993a9a4.webp",
+      "sha256": "fa444993a9a4b392fd38052cc7aeac2938bcfae79eaffba833b7bf9489ceb292",
+      "bytes": 671038,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+      "inputSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
     "thumbnail": {
       "src": "/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2-thumbnail-75009f6d1270.webp",
       "sha256": "75009f6d127067db029e40c2bdcb9f64150ad16fc636e12563a26e39ddb3d261",
@@ -57,27 +78,6 @@
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6
-      }
-    },
-    "optimized": {
-      "src": "/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2-optimized-427ef2b24f1b.webp",
-      "sha256": "427ef2b24f1b6f4e389896b2dddaef36abcf0e156902417ff010f4d62d7b04ac",
-      "bytes": 577958,
-      "width": 2560,
-      "height": 1440,
-      "format": "webp",
-      "lossless": false,
-      "quality": 70,
-      "upscaled": false,
-      "sourceSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
-      "inputSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
-      "effort": 6,
-      "smartSubsample": true,
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
       }
     }
   }

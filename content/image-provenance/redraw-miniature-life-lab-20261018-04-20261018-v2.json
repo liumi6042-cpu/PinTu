@@ -41,6 +41,27 @@
   },
   "delivery": {
     "sourceSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+    "optimized": {
+      "src": "/puzzles/redraw-miniature-life-lab-20261018-04-20261018-v2-optimized-81002e7c0497.webp",
+      "sha256": "81002e7c0497b11e31c80b049cfa075d6db9c041fd4fdd7a4e5a9c02d53b678e",
+      "bytes": 582226,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+      "inputSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
     "thumbnail": {
       "src": "/puzzles/redraw-miniature-life-lab-20261018-04-20261018-v2-thumbnail-8b6c2ad94da7.webp",
       "sha256": "8b6c2ad94da79e450ae6b394f87078b9e114f421c754ea09ab8c79cae05b876c",
@@ -57,27 +78,6 @@
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6
-      }
-    },
-    "optimized": {
-      "src": "/puzzles/redraw-miniature-life-lab-20261018-04-20261018-v2-optimized-6d5c965b1169.webp",
-      "sha256": "6d5c965b1169cf000637a2e310eb318eb193d97d186df198cf387ede614d0d77",
-      "bytes": 496292,
-      "width": 2560,
-      "height": 1440,
-      "format": "webp",
-      "lossless": false,
-      "quality": 70,
-      "upscaled": false,
-      "sourceSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
-      "inputSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
-      "effort": 6,
-      "smartSubsample": true,
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
       }
     }
   }

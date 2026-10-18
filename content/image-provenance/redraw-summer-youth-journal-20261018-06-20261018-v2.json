@@ -41,6 +41,27 @@
   },
   "delivery": {
     "sourceSha256": "8a9a91ef707dba9a32c47f65fc19e7f976cb42dff37f23ecde3a456c881f1d85",
+    "optimized": {
+      "src": "/puzzles/redraw-summer-youth-journal-20261018-06-20261018-v2-optimized-190cbb7103fb.webp",
+      "sha256": "190cbb7103fb61e318aef55077ccdea7510da4a64a4c966b37abda9b80f67c66",
+      "bytes": 794846,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "8a9a91ef707dba9a32c47f65fc19e7f976cb42dff37f23ecde3a456c881f1d85",
+      "inputSha256": "8a9a91ef707dba9a32c47f65fc19e7f976cb42dff37f23ecde3a456c881f1d85",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
     "thumbnail": {
       "src": "/puzzles/redraw-summer-youth-journal-20261018-06-20261018-v2-thumbnail-7829cecb5765.webp",
       "sha256": "7829cecb576505c57ee3cecbe40d85895b19547398881c2eb26bdcedac9356a2",
@@ -57,27 +78,6 @@
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6
-      }
-    },
-    "optimized": {
-      "src": "/puzzles/redraw-summer-youth-journal-20261018-06-20261018-v2-optimized-b2ed57c65841.webp",
-      "sha256": "b2ed57c65841fcad60ff8a8a49bfbbdeba0434a11f9a1b75e89887cee14cb73e",
-      "bytes": 682188,
-      "width": 2560,
-      "height": 1440,
-      "format": "webp",
-      "lossless": false,
-      "quality": 70,
-      "upscaled": false,
-      "sourceSha256": "8a9a91ef707dba9a32c47f65fc19e7f976cb42dff37f23ecde3a456c881f1d85",
-      "inputSha256": "8a9a91ef707dba9a32c47f65fc19e7f976cb42dff37f23ecde3a456c881f1d85",
-      "effort": 6,
-      "smartSubsample": true,
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
       }
     }
   }

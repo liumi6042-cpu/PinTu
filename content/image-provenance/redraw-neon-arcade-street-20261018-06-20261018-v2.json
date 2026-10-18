@@ -41,6 +41,27 @@
   },
   "delivery": {
     "sourceSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+    "optimized": {
+      "src": "/puzzles/redraw-neon-arcade-street-20261018-06-20261018-v2-optimized-fd6be0335a62.webp",
+      "sha256": "fd6be0335a62c90b5402129fefa87f5fa242afbcf6ec04f3238a4575db35058f",
+      "bytes": 840988,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+      "inputSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
     "thumbnail": {
       "src": "/puzzles/redraw-neon-arcade-street-20261018-06-20261018-v2-thumbnail-9b63c58eacb6.webp",
       "sha256": "9b63c58eacb6df42feedc4bb6d49fe8b7b1d8c223a3beaf16c93533266722430",
@@ -57,27 +78,6 @@
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6
-      }
-    },
-    "optimized": {
-      "src": "/puzzles/redraw-neon-arcade-street-20261018-06-20261018-v2-optimized-e7fb494c98ee.webp",
-      "sha256": "e7fb494c98ee20ac0047f83f2a79b6a8f4d96ed9d7aafb14c1a7982c5fad6d81",
-      "bytes": 719314,
-      "width": 2560,
-      "height": 1440,
-      "format": "webp",
-      "lossless": false,
-      "quality": 70,
-      "upscaled": false,
-      "sourceSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
-      "inputSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
-      "effort": 6,
-      "smartSubsample": true,
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
       }
     }
   }

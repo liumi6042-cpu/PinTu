@@ -41,6 +41,27 @@
   },
   "delivery": {
     "sourceSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+    "optimized": {
+      "src": "/puzzles/redraw-wind-in-room-20261018-02-20261018-v2-optimized-60bcafba8769.webp",
+      "sha256": "60bcafba8769386a5173b8d29577173ebce42b33119c182f5bdcd2af48bc3e4b",
+      "bytes": 740056,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+      "inputSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
     "thumbnail": {
       "src": "/puzzles/redraw-wind-in-room-20261018-02-20261018-v2-thumbnail-d976c3b81b96.webp",
       "sha256": "d976c3b81b9660409c841447531ea24f6c6d89238ff85b12fda389027ce097e6",
@@ -57,27 +78,6 @@
         "library": "sharp",
         "version": "0.34.5",
         "effort": 6
-      }
-    },
-    "optimized": {
-      "src": "/puzzles/redraw-wind-in-room-20261018-02-20261018-v2-optimized-20502dd51cad.webp",
-      "sha256": "20502dd51cad7469371fb26d1eb7a2e0ecb5d569b9558b25e688512644483943",
-      "bytes": 635230,
-      "width": 2560,
-      "height": 1440,
-      "format": "webp",
-      "lossless": false,
-      "quality": 70,
-      "upscaled": false,
-      "sourceSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
-      "inputSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
-      "effort": 6,
-      "smartSubsample": true,
-      "encoding": {
-        "library": "sharp",
-        "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": true
       }
     }
   }
