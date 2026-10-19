@@ -21,6 +21,7 @@ import * as cursorRoute from '../app/api/rooms/[id]/cursors/route';
 import * as assistanceRoute from '../app/api/rooms/[id]/assistance/route';
 import * as lobbyRoute from '../app/api/lobby/route';
 import * as myRoomsRoute from '../app/api/my-rooms/route';
+import {webDiagnosticsAllowed,createWebDiagnostic,webDiagnosticRoom} from './shared-diagnostics';
 
 type Data=Record<string,any>;
 const phrases=['大家好！','我来找边缘','这块放这里','稍等一下','一起加油！','我来拼边缘','我来拼中间','请稍等一下','这一块在这里','谢谢你！','拼得真棒！','我要离开了','👏','👍','😊','🧩'];
@@ -36,12 +37,12 @@ async function context(request:Request){
  const view=await managedPlayerView(player.id,content,origin) as Data;
  const owners=[...new Set([player.id,guest?.id].filter((id):id is string=>!!id))];
  const owned=(await Promise.all(owners.map(id=>managedRooms(id)))).flat().map((room:Data)=>({...room,compatUrl:roomLink(room.id),canClose:false}));
- const state=await playerState(player.id),profile=sharedProfile(view,player,account,owned,state);
+ const state=await playerState(player.id),profile={...sharedProfile(view,player,account,owned,state),diagnostics:webDiagnosticsAllowed(account)};
  return {content,player,account,origin,view,state,profile};
 }
 type Context=Awaited<ReturnType<typeof context>>;
 function answer(value:unknown,ctx:Context,status=200){return withPlayerCookie(json(value,status),ctx.player);}
-async function refresh(ctx:Context){ctx.view=await managedPlayerView(ctx.player.id,ctx.content,ctx.origin,{recover:false}) as Data;ctx.state=await playerState(ctx.player.id);ctx.profile=sharedProfile(ctx.view,ctx.player,ctx.account,ctx.profile.ownedRooms,ctx.state);return ctx;}
+async function refresh(ctx:Context){ctx.view=await managedPlayerView(ctx.player.id,ctx.content,ctx.origin,{recover:false}) as Data;ctx.state=await playerState(ctx.player.id);ctx.profile={...sharedProfile(ctx.view,ctx.player,ctx.account,ctx.profile.ownedRooms,ctx.state),diagnostics:webDiagnosticsAllowed(ctx.account)};return ctx;}
 async function action(ctx:Context,input:Data){await securityLimit('managed-content-actions',ctx.player.id,300);await managedPlayerAction(ctx.player.id,input,ctx.content);await refresh(ctx);}
 function forwarded(request:Request,path:string,input?:Data){const headers=new Headers(request.headers);headers.delete('content-length');if(input)headers.set('Content-Type','application/json');return new Request(new URL(path,new URL(request.url).origin),{method:request.method,headers,...(input?{body:JSON.stringify(input)}:{})});}
 async function responseData(response:Response){return await response.json() as Data;}
@@ -155,7 +156,7 @@ export async function sharedClientApi(request:Request,path:string){
   if(!/^\/api\/[a-zA-Z0-9/_-]+$/.test(path))return json({error:'接口不存在'},404);
   const method=request.method,input=method==='GET'?{}:await body(request);
   if(path==='/api/rooms'&&method==='POST')return await createSharedRoom(request,input);
-  if(path.startsWith('/api/rooms/')){const result=await sharedRoom(request,path,input);if(result)return result;}
+  if(path.startsWith('/api/rooms/')){const diagnostic=await webDiagnosticRoom(request,path,input);if(diagnostic)return diagnostic;const result=await sharedRoom(request,path,input);if(result)return result;}
   if(path==='/api/lobby'&&method==='GET'){
    const response=await lobbyRoute.GET();if(!response.ok)return response;const data=await responseData(response),url=new URL(request.url);
    const direction=url.searchParams.get('direction'),limit=Math.max(1,Math.min(48,Number(url.searchParams.get('limit'))||16)),rawCursor=url.searchParams.get('cursor')??'0';if(!/^\d{1,5}$/.test(rawCursor))throw new RoomError('大厅翻页位置无效');
@@ -172,6 +173,12 @@ export async function sharedClientApi(request:Request,path:string){
   if(path==='/api/my-rooms'&&method==='GET')return await myRoomsRoute.GET(request);
   if(!path.startsWith('/api/mobile/'))return json({error:'接口不存在'},404);
   const ctx=await context(request);
+  if(path==='/api/mobile/diagnostics/room'&&method==='POST'){
+   if(!webDiagnosticsAllowed(ctx.account))throw new RoomError('该测试入口仅对指定账号开放',403);
+   const albums=effectiveManagedAlbums(ctx.content),free=new Set(albums.filter(a=>!a.purchasable||a.price===0).flatMap(a=>a.imageIds));
+   const photo=managedGalleryPhotos(ctx.content).find(p=>free.has(p.id));if(!photo)throw new RoomError('暂无可测试图片',503);
+   return await createWebDiagnostic(request,input,sharedImage(photo,ctx.origin));
+  }
   if(path.startsWith('/api/mobile/social'))return await social(request,path,input,ctx);
   if(path==='/api/mobile/profile')return method==='GET'?answer(ctx.profile,ctx):unsupported('昵称与账号安全请在原账号管理页面设置',SHARED_COMPAT_URLS.security);
   if(path==='/api/mobile/tasks'&&method==='GET')return answer(taskView(ctx),ctx);
