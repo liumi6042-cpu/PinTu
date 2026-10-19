@@ -7,6 +7,7 @@ import {worldFor,type PuzzleState} from './puzzle-engine';
 import {recordRoomChange,roomUpdate} from './room-sync';
 import {RoomWriteQueue} from './room-write-queue';
 import {securityLimit} from './account-security';
+import {applySharedAction,disconnectSharedActions,clearSharedActionLease,requireSharedActionChannel,sharedActionStreamWrite,checkSharedActionFrontier,sharedActionFrontierCommand,type SharedActionResult} from './shared-actions';
 
 const writes=new RoomWriteQueue();
 type DiagnosticRoom=Room&{diagnostic:true};
@@ -41,22 +42,31 @@ export async function webDiagnosticRoom(request:Request,path:string,input:Record
  const digest=await getDigest(request);let room=JSON.parse(row.data) as DiagnosticRoom;
  authenticate(room,digest,Date.now());
  if(part==='cursors'){
-  const response=json({cursors:[],serverTime:Date.now()});response.headers.set('x-jigsaw-cursor-player',row.player_id);response.headers.set('x-jigsaw-cursor-world',JSON.stringify(worldFor(room.puzzle)));response.headers.set('x-jigsaw-cursor-sequences','[]');return response;
+  const response=json({cursors:[],serverTime:Date.now()});response.headers.set('x-jigsaw-cursor-player',row.player_id);response.headers.set('x-jigsaw-cursor-world',JSON.stringify(worldFor(room.puzzle)));response.headers.set('x-jigsaw-cursor-sequences','[]');response.headers.set('x-jigsaw-realtime-actions','diagnostic');return response;
  }
  if(part)return json({error:'测试房间不使用此功能'},404);
  if(request.method==='POST'){
-  if(!['heartbeat','leave','claim','move','drop','release'].includes(input.type))throw new RoomError('测试操作无效');
+  if(!['heartbeat','leave','claim','move','drop','release','realtime-action','realtime-disconnect'].includes(input.type))throw new RoomError('测试操作无效');
+  let actionResult:SharedActionResult|undefined;
+  const realtime=input.type==='realtime-action'||input.type==='realtime-disconnect';if(realtime)requireSharedActionChannel(request,input);
   room=await writes.run(id,async()=>{
    for(let attempt=0;attempt<8;attempt++){
     row=await db.prepare('SELECT * FROM puzzle_diagnostic_rooms WHERE id=?').bind(id).first<Row>();
     if(!row||row.closed||row.expires_at<=Date.now())throw new RoomError('测试房间已重置',410);
     const current=JSON.parse(row.data) as DiagnosticRoom,previous=structuredClone(current.puzzle.groups),member=authenticate(current,digest,Date.now());
-    applyAction(current,member,input as RoomAction,Date.now());current.revision++;recordRoomChange(current,previous);current.expiresAt=row.expires_at;
-    const result=await db.prepare('UPDATE puzzle_diagnostic_rooms SET revision=?,data=? WHERE id=? AND revision=? AND closed=0').bind(current.revision,JSON.stringify(current),id,row.revision).run();
+    const stream=realtime?sharedActionStreamWrite(member.id,input):undefined;await checkSharedActionFrontier(db,current,stream);
+    if(input.type==='realtime-action')actionResult=applySharedAction(current,member,input.envelope,input.connectionId,Date.now());
+    else if(input.type==='realtime-disconnect')disconnectSharedActions(current,member,input.connectionId,Date.now());
+    else{applyAction(current,member,input as RoomAction,Date.now());clearSharedActionLease(current,member,input as RoomAction);}
+    current.revision++;recordRoomChange(current,previous);current.expiresAt=row.expires_at;
+    const serialized=JSON.stringify(current),commands=[db.prepare('UPDATE puzzle_diagnostic_rooms SET revision=?,data=? WHERE id=? AND revision=? AND closed=0').bind(current.revision,serialized,id,row.revision)];
+    if(stream)commands.push(sharedActionFrontierCommand(db,current,serialized,stream,true));
+    const [result]=await db.batch(commands);
     if(result.meta.changes===1)return current;
    }
    throw new RoomError('测试房间正在同步，请重试',409);
   });
+  if(actionResult&&actionResult.status>=400)return json(actionResult.error,actionResult.status);
  }else if(request.method!=='GET')return json({error:'请求方式无效'},405);
  const raw=new URL(request.url).searchParams.get('since'),since=raw!==null&&/^\d+$/.test(raw)?Number(raw):null;
  return json({...view(room,since),diagnosticTiming:{serverMs:performance.now()-started}});

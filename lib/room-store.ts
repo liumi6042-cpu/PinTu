@@ -14,6 +14,7 @@ import { RoomReadCache } from './room-read-cache';
 import { RoomWriteQueue } from './room-write-queue';
 import {readManagedContent,type ManagedContentSnapshot} from './managed-content';
 import {prepareManagedRoomEvent,drainManagedRewards} from './managed-economy';
+import {checkSharedActionFrontier,sharedActionFrontierCommand,type SharedActionStreamWrite} from './shared-actions';
 const db=localDb;
 const roomCache=new RoomReadCache();
 const writes=new RoomWriteQueue();
@@ -32,14 +33,15 @@ export async function readRoom(id:string){
  return roomCache.put(room,row.data!.length*2);
 }
 export async function insertRoom(room:Room){await db().prepare('INSERT INTO puzzle_rooms (id,revision,data,expires_at) VALUES (?,0,?,?)').bind(room.id,JSON.stringify(room),room.expiresAt).run();}
-export async function mutateRoom<T>(id:string,fn:(room:Room)=>T){
- return writes.run(id,()=>commitRoom(id,fn));
+export async function mutateRoom<T>(id:string,fn:(room:Room)=>T,stream?:SharedActionStreamWrite){
+ return writes.run(id,()=>commitRoom(id,fn,stream));
 }
-async function commitRoom<T>(id:string,fn:(room:Room)=>T){
+async function commitRoom<T>(id:string,fn:(room:Room)=>T,stream?:SharedActionStreamWrite){
  let content:ManagedContentSnapshot|null|undefined,contentRead=false,contentUnavailable=false;
  for(let attempt=0;attempt<8;attempt++){
   const base=await readRoom(id),room=structuredClone(base),before=room.revision,previousExpiry=room.expiresAt,previousTitle=room.title,previousVisibility=room.visibility,previousDays=roomAchievementDays(room),wasComplete=!!room.completedAt;
   const previous=base.puzzle.groups;
+  await checkSharedActionFrontier(db(),room,stream);
   const result=fn(room);room.revision++;recordRoomChange(room,previous);
   const rewardChanged=(!wasComplete&&!!room.completedAt)||Object.entries(room.achievements?.contributors||{}).some(([owner,value])=>value.count>(base.achievements?.contributors[owner]?.count||0));
   // Capture one content version for this committed gameplay event. A broken
@@ -78,6 +80,7 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T){
       AND NOT EXISTS(SELECT 1 FROM json_each(r.data,'$.members') m
         WHERE json_extract(m.value,'$.id')=puzzle_room_cursors.player_id
         AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)>0))`).bind(id,room.revision));
+  if(stream)commands.push(sharedActionFrontierCommand(database,room,serialized,stream));
   const [updated]=await database.batch(commands);
   if(becomingPrivate&&updated.meta.changes!==1){
    if(!canCreateMemberRoom(await membershipFor(room.ownerId!),Date.now()))throw new RoomError(MEMBERSHIP_REQUIRED,403);

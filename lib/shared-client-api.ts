@@ -124,12 +124,16 @@ async function sharedRoom(request:Request,path:string,input:Data){
  const data=await responseData(response);
  if(!part||part==='join'){const target=part==='join'?data.room:data;target.photo=roomPhoto(room,new URL(request.url).origin);}
  if(part==='cursors')data.cursors=(data.cursors??[]).map((cursor:Data)=>({...cursor,decoration:cursor.managedCursor??null}));
+ if(part==='cursors')response.headers.set('x-jigsaw-realtime-actions','normal');
  // The original room mutation commits its reward outbox before this DTO refresh.
- if(!part&&method==='POST'&&input.type==='drop'){
-  try{const ctx=await context(request);data.mobileProfile=ctx.profile;const contribution=await dropContribution(ctx,id,data.revision,input);if(contribution)data.mobileContribution=contribution;
+ const effectiveInput=input.type==='realtime-action'?{...input.envelope?.action,requestId:input.envelope?.id}:input;
+ if(!part&&method==='POST'&&effectiveInput.type==='drop'){
+  try{const ctx=await context(request);data.mobileProfile=ctx.profile;const contribution=data.realtimeActionReplayed?undefined:await dropContribution(ctx,id,data.realtimeActionRevision??data.revision,effectiveInput);if(contribution)data.mobileContribution=contribution;
    if(data.completedAt){const receipts=ctx.state.receipts??{},result=receipts['completion:'+id]??{};data.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:result.coins??0,fragments:result.fragments??0,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0)};}
   }catch{/* A committed room move must stay successful if optional profile reads fail. */}
  }
+ delete data.realtimeActionRevision;
+ delete data.realtimeActionReplayed;
  return replaceResponse(response,data);
 }
 async function createSharedRoom(request:Request,input:Data){
@@ -203,5 +207,5 @@ export async function sharedClientApi(request:Request,path:string){
   if(mutation){await action(ctx,mutation);return answer(collectionView(ctx),ctx);}
   if(path.startsWith('/api/mobile/supply/'))return unsupported('网页版沿用原公开房与会员规则，无需体力或建房券',SHARED_COMPAT_URLS.membership);
   return json({error:'接口不存在'},404);
- }catch(error){if(error instanceof Error&&'status'in error&&!(error instanceof RoomError))return json({error:error.message},Number(error.status));return failure(error);}
+ }catch(error){if(error instanceof Error&&'status'in error&&('code'in error||!(error instanceof RoomError)))return json({error:error.message,...('code'in error?{code:error.code}:{})},Number(error.status));return failure(error);}
 }

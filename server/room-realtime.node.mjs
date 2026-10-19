@@ -1,4 +1,5 @@
 import {createRoomRealtimeHub} from './room-realtime.mjs';
+import {randomUUID} from 'node:crypto';
 
 const fault=(status,code,message)=>Object.assign(new Error(message),{status,code});
 const roomPattern=/^[a-f0-9]{32}$/;
@@ -15,12 +16,20 @@ const normalize=(input,world)=>{
 export function attachWebRoomRealtime({server,port,origin,fetchImpl=fetch,persistIntervalMs=250,authorizeIntervalMs=5000,...transportOptions}){
  const publicOrigin=new URL(origin).origin,loopback='http://127.0.0.1:'+port;
  const contexts=new Set(),rooms=new Map();let stopped=false,hub;
+ const permits=new Map(),gateKey=Symbol.for('jigsaw.shared.action.authorize');
+ const authorizeAction=(req,input)=>{
+  const nonce=req.headers.get('x-jigsaw-action-permit'),permit=permits.get(nonce);if(!permit)return false;permits.delete(nonce);
+  return permit.expires>Date.now()&&req.method==='POST'&&new URL(req.url).pathname.replace(/^\/api\/shared(?=\/api\/)/,'')===permit.path&&req.headers.get('cookie')===permit.cookie&&req.headers.get('authorization')===permit.authorization&&JSON.stringify(input)===permit.body;
+ };
+ globalThis[gateKey]=authorizeAction;
  const counters={authorizations:0,httpReads:0,cursorFlushes:0,coalescedCursorInputs:0};
  const stateFor=id=>{
   let room=rooms.get(id);if(!room){if(rooms.size>=512)throw fault(503,'REALTIME_CAPACITY','实时房间暂满，请稍后重试');room={generation:0,cursors:0,points:new Map(),contexts:new Set(),pending:0,cleanup:null};rooms.set(id,room);}return room;
  };
  const request=async(ctx,path,{method='GET',data}={})=>{
-  const target=new URL(publicOrigin),response=await fetchImpl(loopback+'/api/shared'+path,{method,headers:{Host:target.host,'X-Forwarded-Host':target.host,'X-Forwarded-Proto':target.protocol.slice(0,-1),Origin:publicOrigin,Cookie:ctx.cookie,Authorization:'Bearer '+ctx.token,'X-Jigsaw-Artwork-Snapshot':'1',...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),redirect:'manual',signal:AbortSignal.timeout(5000)});
+  const target=new URL(publicOrigin),body=data?JSON.stringify(data):undefined,realtime=data&&['realtime-action','realtime-disconnect'].includes(data.type),nonce=realtime?randomUUID().replaceAll('-',''):undefined;
+  if(nonce){for(const [key,value]of permits)if(value.expires<=Date.now())permits.delete(key);permits.set(nonce,{expires:Date.now()+10000,path:path.split('?')[0],cookie:ctx.cookie,authorization:'Bearer '+ctx.token,body});}
+  let response;try{response=await fetchImpl(loopback+'/api/shared'+path,{method,headers:{Host:target.host,'X-Forwarded-Host':target.host,'X-Forwarded-Proto':target.protocol.slice(0,-1),Origin:publicOrigin,Cookie:ctx.cookie,Authorization:'Bearer '+ctx.token,'X-Jigsaw-Artwork-Snapshot':'1',...(nonce?{'X-Jigsaw-Action-Permit':nonce}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body}:{}),redirect:'manual',signal:AbortSignal.timeout(5000)});}finally{if(nonce)permits.delete(nonce);}
   const text=await response.text();if(text.length>2*1024*1024)throw fault(503,'REALTIME_RESPONSE_SIZE','实时房间数据过大');let value;try{value=JSON.parse(text);}catch{throw fault(response.status>=400?response.status:503,'REALTIME_HTTP_RESPONSE','房间连接暂不可用');}
   if(!response.ok)throw fault(response.status,value.code??'ROOM_ACCESS_REJECTED',typeof value.error==='string'?value.error:'请重新加入房间');
   return {value,headers:response.headers};
@@ -40,6 +49,7 @@ export function attachWebRoomRealtime({server,port,origin,fetchImpl=fetch,persis
   for(const sequence of ctx.sequences.values()){const live=ctx.state.points.get(sequence.playerId),stored=response.value.cursors?.find(cursor=>cursor.playerId===sequence.playerId);
    if(live&&(sequence.clientId===live.clientId&&sequence.seq>live.seq||sequence.clientId!==live.clientId&&!live.pending&&!live.running)){live.clientId=sequence.clientId;live.seq=sequence.seq;live.point=stored?{x:stored.x,y:stored.y}:null;live.pending=null;}
   }
+  const actionMode=response.headers.get('x-jigsaw-realtime-actions');ctx.actions=actionMode==='normal'?{version:1,diagnosticOnly:false}:actionMode==='diagnostic'?{version:1,diagnosticOnly:true}:undefined;
   ctx.playerId=playerId;ctx.world=world;ctx.cursorSnapshot=response.value;ctx.generation=generation;ctx.cursorVersion=cursorVersion;ctx.authorizedAt=Date.now();
  };
  const ensure=async(ctx,force=false)=>{
@@ -72,20 +82,30 @@ export function attachWebRoomRealtime({server,port,origin,fetchImpl=fetch,persis
   }finally{entry.lastPersisted=Date.now();entry.running=false;schedule(entry);}
  };
  const removeContext=ctx=>{
-  if(!ctx)return;contexts.delete(ctx);ctx.state.contexts.delete(ctx);
+  if(!ctx||ctx.closed)return;ctx.closed=true;contexts.delete(ctx);ctx.state.contexts.delete(ctx);
+  // Only the exact member/connection lease generation is released. This is a
+  // separate original-authority CAS, never a replay of an unacknowledged drop.
+  if(ctx.actions)void request(ctx,'/api/rooms/'+ctx.roomId,{method:'POST',data:{type:'realtime-disconnect',connectionId:ctx.connectionId}}).catch(()=>{});
   if(!ctx.state.contexts.size&&!ctx.state.cleanup){ctx.state.cleanup=setTimeout(()=>{if(!ctx.state.contexts.size){for(const point of ctx.state.points.values())if(point.timer)clearTimeout(point.timer);rooms.delete(ctx.roomId);}ctx.state.cleanup=null;},300000);ctx.state.cleanup.unref();}
  };
  hub=createRoomRealtimeHub({server,path:'/api/shared/realtime',...transportOptions,authorizeIntervalMs,
   allowOrigin:(source,req)=>{try{return source===publicOrigin&&new URL(req.url,publicOrigin).pathname==='/api/shared/realtime'&&req.headers.host&&new URL('http://'+req.headers.host).host===new URL(publicOrigin).host;}catch{return false;}},
   async subscribe(req,message){
    const cookie=req.headers.cookie??'',credential=credentialKey(cookie);if(!credential.replace(':',''))throw fault(401,'IDENTITY_REQUIRED','请先恢复网站账号或游客身份');
-   const ctx={roomId:message.roomId,token:message.token,cookie,credential,generation:-1,cursorVersion:-1,authorizedAt:0,revoked:false,state:stateFor(message.roomId)};
+   const ctx={roomId:message.roomId,token:message.token,cookie,credential,generation:-1,cursorVersion:-1,authorizedAt:0,revoked:false,closed:false,connectionId:randomUUID().replaceAll('-',''),state:stateFor(message.roomId)};
    ctx.state.pending++;let admitted=false;
    try{await readCursorAuthority(ctx);if(req.socket.destroyed)throw fault(499,'REALTIME_CLOSED','连接已关闭');contexts.add(ctx);ctx.state.contexts.add(ctx);admitted=true;if(ctx.state.cleanup){clearTimeout(ctx.state.cleanup);ctx.state.cleanup=null;}req.socket.once('close',()=>removeContext(ctx));return ctx;}
    finally{ctx.state.pending--;if(!admitted&&!ctx.state.pending&&!ctx.state.contexts.size)rooms.delete(ctx.roomId);}
   },
   async readRoom(ctx,since){await ensure(ctx);counters.httpReads++;const query=Number.isSafeInteger(since)&&since>=0?'?since='+since:'';return (await request(ctx,'/api/rooms/'+ctx.roomId+query)).value;},
   readCursors:snapshotCursors,
+  actionCapabilities:ctx=>ctx.actions,
+  async writeAction(ctx,input){
+   if(ctx.closed||ctx.revoked||stopped)throw fault(401,'IDENTITY_REQUIRED','连接已关闭，请重新进入房间');
+   await ensure(ctx);
+   try{const result=await request(ctx,'/api/rooms/'+ctx.roomId+(Number.isSafeInteger(input.since)?'?since='+input.since:''),{method:'POST',data:{type:'realtime-action',connectionId:ctx.connectionId,envelope:input}});return {status:200,data:result.value};}
+   catch(error){if(error.status>=400&&error.status<500)return {status:error.status,data:{code:error.code??'ROOM_ERROR',error:error.message}};throw error;}
+  },
   async writeCursor(ctx,raw){
    await ensure(ctx);const input=normalize(raw,ctx.world);if(!input)throw fault(400,'INVALID_CURSOR','鼠标位置无效');
    let entry=ctx.state.points.get(ctx.playerId);
@@ -120,7 +140,7 @@ export function attachWebRoomRealtime({server,port,origin,fetchImpl=fetch,persis
   });
  };
  server.prependListener('request',onRequest);
- const close=()=>{if(stopped)return;stopped=true;server.off('request',onRequest);for(const state of rooms.values()){if(state.cleanup)clearTimeout(state.cleanup);for(const point of state.points.values())if(point.timer)clearTimeout(point.timer);}hub.close();contexts.clear();rooms.clear();};
+ const close=()=>{if(stopped)return;stopped=true;server.off('request',onRequest);for(const state of rooms.values()){if(state.cleanup)clearTimeout(state.cleanup);for(const point of state.points.values())if(point.timer)clearTimeout(point.timer);}hub.close();contexts.clear();rooms.clear();permits.clear();if(globalThis[gateKey]===authorizeAction)delete globalThis[gateKey];};
  server.once('close',close);
  return {...hub,close,stats:()=>({...hub.stats(),...counters,trackedRooms:rooms.size})};
 }
