@@ -2,6 +2,7 @@ import {spawn} from 'node:child_process';
 import {createHash,randomUUID} from 'node:crypto';
 import {existsSync,lstatSync,mkdirSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from 'node:fs';
 import {basename,isAbsolute,join,relative,resolve,sep} from 'node:path';
+import {webTree} from './project-layout.mjs';
 
 const ASSET_ROOT='/srv/sites/jigsaw-content/assets';
 const REMOTE_TOOL=ASSET_ROOT+'/tools/apply-assets.py';
@@ -44,14 +45,14 @@ function readTransport(configPath){
 
 /** Local artwork directory holding every catalog file; the Web worktree is canonical. */
 function puzzleRoot(projectRoot,override){
- const candidate=override??join(projectRoot,'work/dual-managed-release-20261014/public/puzzles');
+ const candidate=override??join(webTree(projectRoot),'public/puzzles');
  if(!existsSync(candidate))throw failure('本地素材目录不存在：'+candidate,'ASSET_SOURCE_MISSING');
  return realpathSync(candidate);
 }
 
 function readCatalog(projectRoot){
- const file=join(projectRoot,'work/dual-managed-release-20261014/content/puzzle-catalog.json');
- const guidanceFile=join(projectRoot,'work/dual-managed-release-20261014/content/puzzle-guidance.json');
+ const file=join(webTree(projectRoot),'content/puzzle-catalog.json');
+ const guidanceFile=join(webTree(projectRoot),'content/puzzle-guidance.json');
  let catalog,guidance;
  try{catalog=JSON.parse(readFileSync(file,'utf8'));guidance=JSON.parse(readFileSync(guidanceFile,'utf8'));}
  catch{throw failure('本地图库或尺寸记录无法读取。','ASSET_SOURCE_MISSING');}

@@ -10,6 +10,7 @@ import {existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, write
 import {spawnSync} from 'node:child_process';
 import {dirname, join, resolve} from 'node:path';
 import {deliveryDimensions, MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
+import {mobileTree, webTree} from './project-layout.mjs';
 
 const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
 const QUALITY = 70;
@@ -229,7 +230,7 @@ export function createImageImporter({projectRoot, pendingRoot, registryPath, dat
     const evidence = join(work, 'admin-import-register-' + new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15));
     mkdirSync(evidence, {recursive: true});
     const results = [];
-    for (const target of [join(project, 'jigsaw-nook-taptap'), join(project, 'work/dual-managed-release-20261014')]) {
+    for (const target of [mobileTree(project), webTree(project)]) {
       const outcome = spawnSync(process.execPath, [
         script, '--target=' + target, '--ids=' + ids.join(','), '--evidence=' + evidence, '--apply',
       ], {encoding: 'utf8', windowsHide: true, env: {...process.env, NODE_OPTIONS: ''}});

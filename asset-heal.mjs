@@ -16,6 +16,7 @@ import {createRequire} from 'node:module';
 import {copyFileSync, existsSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import {basename, join, resolve} from 'node:path';
 import {deliveryDimensions, MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
+import {webTree} from './project-layout.mjs';
 
 const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
 export const DELIVERY_SPEC = {maxPixels: MAX_DELIVERY_PIXELS, quality: 70, thumbBox: 384, thumbQuality: 82, effort: 6};
@@ -109,7 +110,7 @@ function writeAll(file, text) {
  */
 export async function healDeliveries({projectRoot = 'D:/chat/拼图'} = {}) {
   const project = resolve(projectRoot);
-  const web = join(project, 'work/dual-managed-release-20261014');
+  const web = webTree(project);
   const mobile = join(project, 'jigsaw-nook-taptap');
   const registryPath = join(project, 'content-admin/work/pending-assets/registry.json');
   // The admin compares the retired PC baseline (puzzle-play) with the mobile

@@ -6,11 +6,12 @@ import {createHash, randomUUID} from 'node:crypto';
 import {copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync} from 'node:fs';
 import {basename, dirname, isAbsolute, join, relative, resolve, sep} from 'node:path';
 import {readPendingAssets} from '../pending.mjs';
+import {webTree} from '../project-layout.mjs';
 
 const project = realpathSync(resolve(import.meta.dirname, '../..'));
 const allowed = new Map([
   [realpathSync(join(project, 'jigsaw-nook-taptap')), 'mobile'],
-  [realpathSync(join(project, 'work/dual-managed-release-20261014')), 'web'],
+  [realpathSync(webTree(project)), 'web'],
 ]);
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const json = value => JSON.stringify(value, null, 2) + '\n';

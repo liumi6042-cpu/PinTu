@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {existsSync,lstatSync,readFileSync,realpathSync} from 'node:fs';
 import {basename,join,relative,resolve,sep} from 'node:path';
+import {webTreeName} from './project-layout.mjs';
 
 const fail=message=>{throw Object.assign(new Error(message),{status:409,code:'INVALID_DELIVERY_RECEIPT'});};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -35,7 +36,7 @@ export function readDeliveredAssets(projectRoot,pending){
  if(!existsSync(join(project,receiptPath)))return {availableIds:new Set(),receipt:null};
  let receipt;try{receipt=jsonAt(project,receiptPath);}catch(cause){if(cause.code==='INVALID_DELIVERY_RECEIPT')throw cause;fail('双端图片交付回执无法读取。');}
  if(receipt?.schema!=='jigsaw-delivered-assets/v1'||!Array.isArray(receipt.images)||receipt.images.length>2000||!['webRelease','mobileRelease'].every(key=>typeof receipt[key]==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,159}$/.test(receipt[key]))||typeof receipt.verifiedAt!=='string'||!Number.isFinite(Date.parse(receipt.verifiedAt)))fail('双端图片交付回执结构无效。');
- const roots=['work/dual-managed-release-20261014','jigsaw-nook-taptap'].map(path=>{const root=resolve(project,path);if(!inside(project,root))fail('交付目录无效。');let cursor=project;for(const part of path.split('/')){cursor=join(cursor,part);if(lstatSync(cursor).isSymbolicLink())fail('交付目录不能包含符号链接。');}return realpathSync(root);});
+ const roots=[webTreeName(project),'jigsaw-nook-taptap'].map(path=>{const root=resolve(project,path);if(!inside(project,root))fail('交付目录无效。');let cursor=project;for(const part of path.split('/')){cursor=join(cursor,part);if(lstatSync(cursor).isSymbolicLink())fail('交付目录不能包含符号链接。');}return realpathSync(root);});
  const catalogs=roots.map(root=>jsonAt(root,'content/puzzle-catalog.json'));
  for(const catalog of catalogs)if(!Array.isArray(catalog)||new Set(catalog.map(photo=>photo.id)).size!==catalog.length)fail('双端运行图片登记无效或重复。');
  const availableIds=new Set();

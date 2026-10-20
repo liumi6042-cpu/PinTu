@@ -1,8 +1,4 @@
-// Canonical image sizing rule for every delivery path.
-//
-// It lives with the build so the release check and the admin agree by
-// construction; this file re-exports it so the admin keeps one definition.
-export {
-  MAX_DELIVERY_PIXELS,
-  deliveryDimensions,
-} from '../work/dual-managed-release-20261014/scripts/delivery-spec.mjs';
+// Kept as the admin's public entry point so callers do not care where the
+// rule lives. The authoritative copy is content-admin/contracts/delivery-spec.mjs;
+// the Web build tree keeps a mirrored copy that a test compares against.
+export {MAX_DELIVERY_PIXELS, deliveryDimensions} from './contracts/delivery-spec.mjs';
