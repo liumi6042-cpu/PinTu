@@ -2677,6 +2677,384 @@
         "width": 1824,
         "height": 2432
       }
+    ],
+    "album-cloud-post-office-01-20261020": [
+      {
+        "revision": "c7ab55480b851b8e51f7c5aa598b4e881064a23fdb09eda54070bb7f25d25995",
+        "src": "/puzzles/album-cloud-post-office-01-20261020-optimized-2b2be4f9bf84.webp",
+        "thumbSrc": "/puzzles/album-cloud-post-office-01-20261020-thumbnail-0b0da4f70b37.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "album-cloud-post-office-02-20261020": [
+      {
+        "revision": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+        "src": "/puzzles/album-cloud-post-office-02-20261020-optimized-f7e00c2fab10.webp",
+        "thumbSrc": "/puzzles/album-cloud-post-office-02-20261020-thumbnail-8cbf5cdc3f11.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "album-cloud-post-office-03-20261020": [
+      {
+        "revision": "95367e98680aa420bc3a8717d115703ee0fc42e46dbc0bffacdc2fb5a3252048",
+        "src": "/puzzles/album-cloud-post-office-03-20261020-optimized-c5cbe8b7be78.webp",
+        "thumbSrc": "/puzzles/album-cloud-post-office-03-20261020-thumbnail-b58289da05f2.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-cloud-post-office-04-20261020": [
+      {
+        "revision": "8ee0f22346d7a5285f3689e2eb36af40a34eb07cbd32246933bf7ccbac70d611",
+        "src": "/puzzles/album-cloud-post-office-04-20261020-optimized-1c6fae0d7ab7.webp",
+        "thumbSrc": "/puzzles/album-cloud-post-office-04-20261020-thumbnail-8dff102f5d3b.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-cloud-post-office-05-20261020": [
+      {
+        "revision": "f3cc0328a1862b2d0d29fed70190edce8436370b46bc7ac46290efd96b6344af",
+        "src": "/puzzles/album-cloud-post-office-05-20261020-optimized-aabd9a968f10.webp",
+        "thumbSrc": "/puzzles/album-cloud-post-office-05-20261020-thumbnail-053001e2c14c.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-cloud-post-office-06-20261020": [
+      {
+        "revision": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+        "src": "/puzzles/album-cloud-post-office-06-20261020-optimized-b032512b6e85.webp",
+        "thumbSrc": "/puzzles/album-cloud-post-office-06-20261020-thumbnail-b69a9ac6255c.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-cloud-wonders-01-20261020": [
+      {
+        "revision": "9be8970ab516e12ae57f4908c7a9f4b12369abf8b5763e32897fb0f86fe5be68",
+        "src": "/puzzles/album-cloud-wonders-01-20261020-optimized-02f6929d4d70.webp",
+        "thumbSrc": "/puzzles/album-cloud-wonders-01-20261020-thumbnail-6afde85d05f5.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-cloud-wonders-02-20261020": [
+      {
+        "revision": "0afc25d580371c46d74d250ab8e8a34ee14b4fc7a7ff4ff32f04d7181b22c7c9",
+        "src": "/puzzles/album-cloud-wonders-02-20261020-optimized-23d8add7684c.webp",
+        "thumbSrc": "/puzzles/album-cloud-wonders-02-20261020-thumbnail-73e7cb96d5dd.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-cloud-wonders-03-20261020": [
+      {
+        "revision": "186d8db030fa6e16f3fc6d3c865d74bb3e6f7bce28ac24d9df684d9302fb6636",
+        "src": "/puzzles/album-cloud-wonders-03-20261020-optimized-5bff2a04d100.webp",
+        "thumbSrc": "/puzzles/album-cloud-wonders-03-20261020-thumbnail-203589f05c23.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-cloud-wonders-04-20261020": [
+      {
+        "revision": "055a8a8c7e8c3ad6d75ccfbcc469dc1c8d9e485812855d91657bed0d6c315731",
+        "src": "/puzzles/album-cloud-wonders-04-20261020-optimized-708922e5f718.webp",
+        "thumbSrc": "/puzzles/album-cloud-wonders-04-20261020-thumbnail-5f32b91eb2a2.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-cloud-wonders-05-20261020": [
+      {
+        "revision": "23242c74b1a6ee3881653cdf13608d030243cc5a228b876c72588ad093da9521",
+        "src": "/puzzles/album-cloud-wonders-05-20261020-optimized-a7668ac467dc.webp",
+        "thumbSrc": "/puzzles/album-cloud-wonders-05-20261020-thumbnail-84343474343e.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-cloud-wonders-06-20261020": [
+      {
+        "revision": "d838070c4a8725963b46efc3831c44cbe8cc428ab847446511365c3a47ba18a0",
+        "src": "/puzzles/album-cloud-wonders-06-20261020-optimized-f9fd467a71f7.webp",
+        "thumbSrc": "/puzzles/album-cloud-wonders-06-20261020-thumbnail-d00df6e088a6.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-moon-aquarium-01-20261020": [
+      {
+        "revision": "ee61086c84ddeb35b81668cf071bc80edb2f64244a7678713f81dd7e0f1caa43",
+        "src": "/puzzles/album-moon-aquarium-01-20261020-optimized-7d667a441076.webp",
+        "thumbSrc": "/puzzles/album-moon-aquarium-01-20261020-thumbnail-2823cfbc27ae.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "album-moon-aquarium-02-20261020": [
+      {
+        "revision": "2499c4f9fbaf6eae6a499cab62bf6f55a8958c9807b34c8df89cc1a092829055",
+        "src": "/puzzles/album-moon-aquarium-02-20261020-optimized-cdca45786304.webp",
+        "thumbSrc": "/puzzles/album-moon-aquarium-02-20261020-thumbnail-6e897a8d3fb9.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "album-moon-aquarium-03-20261020": [
+      {
+        "revision": "0bfa35dc48aa92eac601f2b251bf977953c6fcc5c16cfd6dcf115411cbbd079b",
+        "src": "/puzzles/album-moon-aquarium-03-20261020-optimized-04def7dd17b6.webp",
+        "thumbSrc": "/puzzles/album-moon-aquarium-03-20261020-thumbnail-a10ecf874a04.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-moon-aquarium-04-20261020": [
+      {
+        "revision": "b3179938794735cf68a6ab794b3d40d517f75fa577d98ee879c452a04905f6d5",
+        "src": "/puzzles/album-moon-aquarium-04-20261020-optimized-b4044398bf15.webp",
+        "thumbSrc": "/puzzles/album-moon-aquarium-04-20261020-thumbnail-a88d2fff2248.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-moon-aquarium-05-20261020": [
+      {
+        "revision": "2994da21afbace83d10a175fbdfa2a51d249563951eecc6541bd4660cfee9971",
+        "src": "/puzzles/album-moon-aquarium-05-20261020-optimized-29170cd0c3dc.webp",
+        "thumbSrc": "/puzzles/album-moon-aquarium-05-20261020-thumbnail-26def6c58078.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-moon-aquarium-06-20261020": [
+      {
+        "revision": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+        "src": "/puzzles/album-moon-aquarium-06-20261020-optimized-dd157bead8be.webp",
+        "thumbSrc": "/puzzles/album-moon-aquarium-06-20261020-thumbnail-142ff8b1f6eb.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-dream-botanical-institute-01-20261020": [
+      {
+        "revision": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+        "src": "/puzzles/album-dream-botanical-institute-01-20261020-optimized-041362dba85f.webp",
+        "thumbSrc": "/puzzles/album-dream-botanical-institute-01-20261020-thumbnail-91d4197a1b2f.webp",
+        "width": 1086,
+        "height": 1448
+      }
+    ],
+    "album-dream-botanical-institute-02-20261020": [
+      {
+        "revision": "369dea062d503e8efa19b97179d003756a8032d4d4293b0ef6d3e924275f6959",
+        "src": "/puzzles/album-dream-botanical-institute-02-20261020-optimized-13b4f09e0100.webp",
+        "thumbSrc": "/puzzles/album-dream-botanical-institute-02-20261020-thumbnail-dd0c359c5291.webp",
+        "width": 1086,
+        "height": 1448
+      }
+    ],
+    "album-dream-botanical-institute-03-20261020": [
+      {
+        "revision": "f2bdd4666424f83259f8d412b99d8189a93bef89312c74e9ebe0df993aaeff0f",
+        "src": "/puzzles/album-dream-botanical-institute-03-20261020-optimized-7042ba962891.webp",
+        "thumbSrc": "/puzzles/album-dream-botanical-institute-03-20261020-thumbnail-e354958797a9.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-dream-botanical-institute-04-20261020": [
+      {
+        "revision": "7853a00a452b4fa0913cf61b52660116918726a297d6a74b0da30f6d584dc234",
+        "src": "/puzzles/album-dream-botanical-institute-04-20261020-optimized-7a21b657fad0.webp",
+        "thumbSrc": "/puzzles/album-dream-botanical-institute-04-20261020-thumbnail-175efecc3fe2.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-dream-botanical-institute-05-20261020": [
+      {
+        "revision": "82865255cae787f660cd98f1bf3cdcf1651f3beee1cb71ac524a5ab5c0574c32",
+        "src": "/puzzles/album-dream-botanical-institute-05-20261020-optimized-59b38c49accc.webp",
+        "thumbSrc": "/puzzles/album-dream-botanical-institute-05-20261020-thumbnail-e007b1e8dc04.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-dream-botanical-institute-06-20261020": [
+      {
+        "revision": "e5a6e364e488f906aec7ba8ff3ac982277dd0ba5456d8e12bd2fd33265b5d144",
+        "src": "/puzzles/album-dream-botanical-institute-06-20261020-optimized-15eb3fb1f64a.webp",
+        "thumbSrc": "/puzzles/album-dream-botanical-institute-06-20261020-thumbnail-651b5798368d.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-antique-toy-shop-01-20261020": [
+      {
+        "revision": "ebd7fe85c67b2015eefa125bdead30176f93f7d3e6e9080be4d76e0d8e11811a",
+        "src": "/puzzles/album-antique-toy-shop-01-20261020-optimized-3bd1f7d05e6f.webp",
+        "thumbSrc": "/puzzles/album-antique-toy-shop-01-20261020-thumbnail-fd7bbc79cce6.webp",
+        "width": 1086,
+        "height": 1448
+      }
+    ],
+    "album-antique-toy-shop-02-20261020": [
+      {
+        "revision": "742dc7ecdf8c1c8af8f5596b0825ab553153bb16364f1902c798748d4c154f2b",
+        "src": "/puzzles/album-antique-toy-shop-02-20261020-optimized-0b8e9ecd1695.webp",
+        "thumbSrc": "/puzzles/album-antique-toy-shop-02-20261020-thumbnail-7ecaf383a4f5.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-antique-toy-shop-03-20261020": [
+      {
+        "revision": "ee1e029d296d079dbde2b91691db84dc064adedac4fc306109d137a5d665780b",
+        "src": "/puzzles/album-antique-toy-shop-03-20261020-optimized-bd7de04b5e2e.webp",
+        "thumbSrc": "/puzzles/album-antique-toy-shop-03-20261020-thumbnail-7bee0c94a0bc.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-antique-toy-shop-04-20261020": [
+      {
+        "revision": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+        "src": "/puzzles/album-antique-toy-shop-04-20261020-optimized-fd596ae99a8a.webp",
+        "thumbSrc": "/puzzles/album-antique-toy-shop-04-20261020-thumbnail-872dd0a10b78.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-antique-toy-shop-05-20261020": [
+      {
+        "revision": "fe201c988464fa1ed21646f19fa80f76f49d4e57c01b3fee746531a1b8f88218",
+        "src": "/puzzles/album-antique-toy-shop-05-20261020-optimized-27f39a080c34.webp",
+        "thumbSrc": "/puzzles/album-antique-toy-shop-05-20261020-thumbnail-c360dc48ef41.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-antique-toy-shop-06-20261020": [
+      {
+        "revision": "15d24217cf974ff2094422953ad8b0f1c72492c42d1351c953b80de38b673a26",
+        "src": "/puzzles/album-antique-toy-shop-06-20261020-optimized-3e762e19e950.webp",
+        "thumbSrc": "/puzzles/album-antique-toy-shop-06-20261020-thumbnail-b34544013b50.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-floating-breakfast-shop-01-20261020": [
+      {
+        "revision": "cf46613cc2f042ea2e315c5c1a71a86f6fd8cc4e61bf824246ec2ee38d67da0b",
+        "src": "/puzzles/album-floating-breakfast-shop-01-20261020-optimized-41060089158d.webp",
+        "thumbSrc": "/puzzles/album-floating-breakfast-shop-01-20261020-thumbnail-2ab7b68007dc.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "album-floating-breakfast-shop-02-20261020": [
+      {
+        "revision": "ef3769e847ea22a7145ed9945bb4b35090d61faf74d305d8bcb97c605265e429",
+        "src": "/puzzles/album-floating-breakfast-shop-02-20261020-optimized-c5e0c9de39ef.webp",
+        "thumbSrc": "/puzzles/album-floating-breakfast-shop-02-20261020-thumbnail-3a303ba80af8.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-floating-breakfast-shop-03-20261020": [
+      {
+        "revision": "4cbb093e95d09dbce1da53b7df98af514dca73dffd3cbdccb27d8a77f1393297",
+        "src": "/puzzles/album-floating-breakfast-shop-03-20261020-optimized-393e608155c5.webp",
+        "thumbSrc": "/puzzles/album-floating-breakfast-shop-03-20261020-thumbnail-6e39ec99c5de.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-floating-breakfast-shop-04-20261020": [
+      {
+        "revision": "76be854457c618d06018c6e116621dacf227771b2dfc4e93deffe22915aee988",
+        "src": "/puzzles/album-floating-breakfast-shop-04-20261020-optimized-d9d6a0152313.webp",
+        "thumbSrc": "/puzzles/album-floating-breakfast-shop-04-20261020-thumbnail-d89b8f461799.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-floating-breakfast-shop-05-20261020": [
+      {
+        "revision": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+        "src": "/puzzles/album-floating-breakfast-shop-05-20261020-optimized-d6d17c2979b1.webp",
+        "thumbSrc": "/puzzles/album-floating-breakfast-shop-05-20261020-thumbnail-8d25575196dd.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-floating-breakfast-shop-06-20261020": [
+      {
+        "revision": "5c3c4e57cef1973ba9c6d7a8143c80a80af7c9e4fdbfb87c6664b42df6bdadaf",
+        "src": "/puzzles/album-floating-breakfast-shop-06-20261020-optimized-3dede7bac81a.webp",
+        "thumbSrc": "/puzzles/album-floating-breakfast-shop-06-20261020-thumbnail-c9e7e17ddc1f.webp",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "album-time-postman-01-20261020": [
+      {
+        "revision": "cf68fd9e477048424c0a55ce426a5c506b2b312280b5b868d3df1af6252a6f7e",
+        "src": "/puzzles/album-time-postman-01-20261020-optimized-643174e0d337.webp",
+        "thumbSrc": "/puzzles/album-time-postman-01-20261020-thumbnail-ea21c62506c4.webp",
+        "width": 1672,
+        "height": 941
+      }
+    ],
+    "album-time-postman-02-20261020": [
+      {
+        "revision": "1a98d1c85bc9d259d5b003be527b87abec73cae0a072e8802c6cbcc840835ec7",
+        "src": "/puzzles/album-time-postman-02-20261020-optimized-2ad9c430fb5e.webp",
+        "thumbSrc": "/puzzles/album-time-postman-02-20261020-thumbnail-3dce6c115e32.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-time-postman-03-20261020": [
+      {
+        "revision": "28190abb0a70b518f744a57538dd250441e65a4891cb888e29a3fa3f00465fdf",
+        "src": "/puzzles/album-time-postman-03-20261020-optimized-1114a4e90a25.webp",
+        "thumbSrc": "/puzzles/album-time-postman-03-20261020-thumbnail-1ab0573bd1c0.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-time-postman-04-20261020": [
+      {
+        "revision": "657e7f41f1403f9dcb7828fcb9a7f14654b45b92f594ace9c49aa0e7580208d4",
+        "src": "/puzzles/album-time-postman-04-20261020-optimized-636df28cdbae.webp",
+        "thumbSrc": "/puzzles/album-time-postman-04-20261020-thumbnail-c9c311d23c95.webp",
+        "width": 1024,
+        "height": 1536
+      }
+    ],
+    "album-time-postman-05-20261020": [
+      {
+        "revision": "5994811211c65301bd90d42da02a19d8ba1bcbbc6101dea792e3a6e5e5288130",
+        "src": "/puzzles/album-time-postman-05-20261020-optimized-fcc85bca6da8.webp",
+        "thumbSrc": "/puzzles/album-time-postman-05-20261020-thumbnail-2d498d35c6fd.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-time-postman-06-20261020": [
+      {
+        "revision": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+        "src": "/puzzles/album-time-postman-06-20261020-optimized-e5034f9da5d7.webp",
+        "thumbSrc": "/puzzles/album-time-postman-06-20261020-thumbnail-81b04a82d4e8.webp",
+        "width": 1254,
+        "height": 1254
+      }
     ]
   },
   "active": {

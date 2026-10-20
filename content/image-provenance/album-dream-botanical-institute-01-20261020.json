@@ -1,0 +1,82 @@
+{
+  "id": "album-dream-botanical-institute-01-20261020",
+  "origin": "project-ai-generated",
+  "width": 1086,
+  "height": 1448,
+  "sha256": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T19:37:53.530Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-dream-botanical-institute-01-20261020.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-dream-botanical-institute-01-20261020/native.png",
+      "sha256": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+      "bytes": 3672800,
+      "width": 1086,
+      "height": 1448,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/album-dream-botanical-institute-01-20261020.png",
+    "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
+  },
+  "resolutionNote": "原始生成 1086×1448；保存成品 1086×1448，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-19T17:48:07.881Z",
+    "notes": "用户授权整册入库；海底音乐会使用腿部修改版。原生概念图，未标注为4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+    "thumbnail": {
+      "src": "/puzzles/album-dream-botanical-institute-01-20261020-thumbnail-91d4197a1b2f.webp",
+      "width": 288,
+      "height": 384,
+      "sha256": "91d4197a1b2f9b9a5b9941983dbbc26eb8aa3ee141d785b3706ce23b6bd5aa6f",
+      "bytes": 47714,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+      "inputSha256": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-dream-botanical-institute-01-20261020-optimized-041362dba85f.webp",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "041362dba85f998889fcf16e93d37ab85585bbcc0da53b9aa8f9872e9bdc2aed",
+      "bytes": 382412,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+      "inputSha256": "134bb7e3eefaa5e059fbddbc08db3d680596e414eeacd53c8378d3be83b8115c",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

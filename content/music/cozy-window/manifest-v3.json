@@ -1,0 +1,835 @@
+{
+  "title": "午后小窗 · 轻摇版",
+  "version": 3,
+  "durationSeconds": 49.23077097505669,
+  "bpm": 78,
+  "bars": 16,
+  "sampleRate": 44100,
+  "channels": 2,
+  "origin": "Original algorithm-assisted composition and procedural modal synthesis. No external recordings or samples.",
+  "instruments": [
+    "synthesized soft piano-like keys",
+    "sparse synthesized music-box accents"
+  ],
+  "encoding": {
+    "codec": "MP3",
+    "kbps": 64,
+    "encoder": "lameenc 1.9.0"
+  },
+  "peakDbfs": -9.93665516716542,
+  "rmsDbfs": -23.741732867142886,
+  "files": [
+    {
+      "file": "cozy-window-v3-master.wav",
+      "bytes": 8684352,
+      "sha256": "5ab3a3ebb7b9db38e886980cc7d042ce0a3e43883bfbf16d3cbff2f16e92e760"
+    },
+    {
+      "file": "cozy-window-v3.mp3",
+      "bytes": 394368,
+      "sha256": "920c1cc0852a98e4413e9be280b4d916303a2812d13562b258948bf3660f1073"
+    }
+  ],
+  "notes": [
+    {
+      "midi": 60,
+      "beat": 0,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 2,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 0.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 1.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 2.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 3.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 4,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 6,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 4.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 5.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 6.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 7.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 8,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 10,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 8.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 9.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 10.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 11.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 53,
+      "beat": 12,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 53,
+      "beat": 14,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 12.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 13.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 14.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 15.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 16,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 18,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 16.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 65,
+      "beat": 17.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 18.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 65,
+      "beat": 19.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 20,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 22,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 20.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 21.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 22.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 23.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 52,
+      "beat": 24,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 52,
+      "beat": 26,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 24.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 25.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 26.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 27.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 28,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 30,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 28.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 29.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 30.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 31.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 32,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 34,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 32.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 33.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 34.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 35.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 36,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 38,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 36.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 37.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 38.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 39.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 40,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 42,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 40.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 41.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 42.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 43.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 53,
+      "beat": 44,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 53,
+      "beat": 46,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 44.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 45.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 46.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 47.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 48,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 50,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 48.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 65,
+      "beat": 49.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 50.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 65,
+      "beat": 51.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 52,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 54,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 59,
+      "beat": 52.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 53.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 54.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 55.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 52,
+      "beat": 56,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 52,
+      "beat": 58,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 56.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 57.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 60,
+      "beat": 58.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 64,
+      "beat": 59.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 60,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 55,
+      "beat": 62,
+      "velocity": 0.115,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 57,
+      "beat": 60.5,
+      "velocity": 0.105,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 61.5,
+      "velocity": 0.08,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 62,
+      "beat": 62.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 63.5,
+      "velocity": 0.075,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 0.25,
+      "velocity": 0.18,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 2.5,
+      "velocity": 0.13,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 4.25,
+      "velocity": 0.16,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 71,
+      "beat": 6.25,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 8.5,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 76,
+      "beat": 10.5,
+      "velocity": 0.13,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 76,
+      "beat": 12.25,
+      "velocity": 0.16,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 14.75,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 16.5,
+      "velocity": 0.16,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 18.5,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 71,
+      "beat": 20.25,
+      "velocity": 0.15,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 69,
+      "beat": 22.75,
+      "velocity": 0.11,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 24.5,
+      "velocity": 0.14,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 26.25,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 28.5,
+      "velocity": 0.15,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 71,
+      "beat": 30.5,
+      "velocity": 0.11,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 76,
+      "beat": 32.25,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 34.5,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 36.5,
+      "velocity": 0.15,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 71,
+      "beat": 38.25,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 40.25,
+      "velocity": 0.16,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 76,
+      "beat": 42.75,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 77,
+      "beat": 44.5,
+      "velocity": 0.15,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 76,
+      "beat": 46.5,
+      "velocity": 0.11,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 48.25,
+      "velocity": 0.16,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 50.5,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 71,
+      "beat": 52.5,
+      "velocity": 0.15,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 69,
+      "beat": 54.75,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 56.25,
+      "velocity": 0.17,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 74,
+      "beat": 58,
+      "velocity": 0.12,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 72,
+      "beat": 59,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 71,
+      "beat": 60.5,
+      "velocity": 0.13,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 67,
+      "beat": 62.5,
+      "velocity": 0.1,
+      "timbre": "soft-keys"
+    },
+    {
+      "midi": 79,
+      "beat": 7.5,
+      "velocity": 0.04,
+      "timbre": "glass-bell"
+    },
+    {
+      "midi": 76,
+      "beat": 23.5,
+      "velocity": 0.04,
+      "timbre": "glass-bell"
+    },
+    {
+      "midi": 79,
+      "beat": 39.5,
+      "velocity": 0.04,
+      "timbre": "glass-bell"
+    },
+    {
+      "midi": 76,
+      "beat": 55.5,
+      "velocity": 0.04,
+      "timbre": "glass-bell"
+    }
+  ],
+  "listeningApproved": false,
+  "published": false
+}

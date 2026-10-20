@@ -1,0 +1,8 @@
+{
+  "origin": "original-procedural-synthesis",
+  "source": "generate.mjs",
+  "durationMs": 680,
+  "sampleRate": 48000,
+  "channels": 1,
+  "sha256": "89369da8234e6596fc374c57166b15875ef2d3e709a741021bf9ccbbdd82e3d8"
+}
