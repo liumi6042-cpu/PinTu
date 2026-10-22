@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-11",
+  "appId": "wx8d8511fdd7dd5c7e",
+  "gameName": "拼图小窝",
+  "developmentVersion": "0.1.0",
+  "tool": "wechatide upload",
+  "project": "D:/chat/拼图/jigsaw-nook-taptap/outputs/wechat-game",
+  "success": true,
+  "totalBytes": 6978603,
+  "packages": [
+    {
+      "name": "main",
+      "bytes": 3254715
+    },
+    {
+      "name": "/art/",
+      "bytes": 3723888
+    }
+  ],
+  "javascriptTarget": "es2017",
+  "reviewSubmitted": false,
+  "published": false,
+  "domainCheckRestored": true,
+  "legalDomainConfigurationConfirmed": true,
+  "domainCheckedSimulatorLobby": true,
+  "domainCheckedSimulatorRoom": true,
+  "realDeviceVerified": true,
+  "simulatorRoomVerificationSource": "user-confirmed manual test in WeChat DevTools, 2026-10-11",
+  "realDeviceVerificationSource": "user-confirmed WeChat phone preview, 2026-10-11",
+  "realDeviceVerifiedScope": [
+    "image loading",
+    "room entry",
+    "puzzle piece dragging"
+  ],
+  "fullFeatureAcceptanceComplete": false
+}
