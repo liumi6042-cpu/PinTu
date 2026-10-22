@@ -41,3 +41,20 @@ test('the lobby lists seated members and reports online and daily-finished count
  assert.ok(!JSON.stringify(lobby).includes(a)&&!JSON.stringify(lobby).includes(b),'no opaque identities in the lobby');
  assert.equal(lobby.online,2);assert.equal(lobby.dailyFinished,0);
 });
+
+test('room members carry their 拼合 count and the result ranks every contributor',()=>{
+ const f=setup(),a=actor('rank-a'),b=actor('rank-b');
+ const created=f.call(a,'/api/rooms',{mode:'random',pieces:48,visibility:'public'}),path='/api/rooms/'+created.data.room.id,joined=f.call(b,path+'/join',{}).data;
+ let current=created.data.room,turn=0;
+ while(current.completedAt===null){
+  const [who,token]=turn%3===2?[b,joined.token]:[a,created.data.token],group=current.puzzle.groups.find(g=>!g.locked);
+  assert.equal(f.call(who,path,{type:'claim',groupId:group.id},token).status,200);
+  const reply=f.call(who,path,{type:'drop',groupId:group.id,dx:0,dy:0,seq:1},token);assert.equal(reply.status,200,JSON.stringify(reply.data));current=reply.data;turn++;f.advance(500);
+ }
+ const ranking=current.mobileResult.ranking;
+ assert.equal(ranking.length,2);assert.ok(ranking[0].contribution>=ranking[1].contribution);
+ assert.equal(ranking.reduce((n,row)=>n+row.contribution,0),turn);
+ assert.equal(ranking.filter(row=>row.mine).length,1);
+ assert.ok(!JSON.stringify(ranking).includes(a)&&!JSON.stringify(ranking).includes(b),'no opaque identities');
+ const mine=current.members.find(member=>member.code===ranking.find(row=>row.mine).code);assert.equal(typeof mine?.contribution,'number');
+});

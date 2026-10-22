@@ -400,7 +400,7 @@ export class GameApp{
   }});this.room=room;
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;this.detachRoom=room.attach(board);
   const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();
-  this.unsubscribeRoom=room.subscribe(()=>{if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.showModal('completion');void this.client.refresh().catch(()=>{});}}this.invalidate();});
+  this.unsubscribeRoom=room.subscribe(()=>{if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.showModal('completion');void this.client.refresh().catch(()=>{});void this.loadCollection();}}this.invalidate();});
   const photo=activeRoomPhoto(ticket.room,photoMap.get(ticket.room.puzzle.imageId));this.roomImage=this.client.asset(ticket.room.customImage?customPhoto(ticket.room.customImage,ticket.room.id).src:photo?.src??'');
   this.invalidate();if(this.nineGridRoom)board.setUnderlay(Date.now()+86400000);else void this.loadAssistance();
   try{if(!this.roomImage)throw Error('这张拼图的图片暂不可用');await board.setImage(this.roomImage);if(this.room!==room||this.board!==board)return;this.imageReady=board.imagePreparation.phase==='ready';this.roomViewPending=this.imageReady;}catch(error){if(this.room!==room||this.board!==board)return;this.imageError=errorText(error);this.note(this.imageError,true);}this.invalidate();
@@ -565,6 +565,7 @@ export class GameApp{
  draw(){
   const s=this.stage;if(this.route==='room'){s.ctx.fillStyle=boardThemeColors(s.theme).paper;s.ctx.fillRect(0,0,s.w,s.h);}else s.background();
   if(this.needsPrivacyChoice||this.loginDialogActive||this.platform.tapAuthorizationPending?.()){this.drawPrivacyChoice();return;}
+  if(!this.ready&&!this.startupError&&!this.client.authRequired){this.drawLoading();return;}
   this.sceneArea={x:0,y:0,w:s.w,h:s.h};this.listArea={...this.sceneArea};this.listColumn=null;this.albumListArea={x:0,y:0,w:0,h:0};
   this.bodyBottom=s.h-this.platform.viewport().bottom-12;
   if(this.route==='room')this.drawRoom();
@@ -646,6 +647,21 @@ export class GameApp{
    sy+=rh+12;if(!desktop)y=sy;else side=sy;
   });
   this.extent=Math.max(y,desktop?side:0)+this.scroll-this.bodyTop+12;
+ }
+ private loadingStarted=0;private loadingShown=0;
+ /** Full-screen start-up: logo, progress and rotating tips. Progress follows the real steps and eases in between. */
+ private drawLoading(){
+  const s=this.stage,now=Date.now(),v=this.platform.viewport(),ink=this.colors.ink,muted=this.colors.muted;if(!this.loadingStarted)this.loadingStarted=now;
+  const elapsed=(now-this.loadingStarted)/1000,target=this.client.profile?.97:.7,progress=Math.max(this.loadingShown,target*(1-Math.exp(-elapsed/1.4)));this.loadingShown=progress;
+  const glow=s.ctx.createRadialGradient(s.w/2,s.h*.42,0,s.w/2,s.h*.42,Math.max(s.w,s.h)*.7);glow.addColorStop(0,this.colors.cream);glow.addColorStop(1,this.colors.paper);s.ctx.fillStyle=glow;s.ctx.fillRect(0,0,s.w,s.h);
+  const cx=s.w/2,size=Math.min(112,s.w*.26,s.h*.2),top=Math.max(v.top+16,s.h*.42-size-60);
+  s.icon('piece',{x:cx-size/2,y:top,w:size,h:size});
+  const name=this.platform.config.gameName||'拼图小窝',nameSize=Math.min(34,s.w/9);s.text(name,cx-s.measure(name,nameSize,800)/2,top+size+18,nameSize,ink,800);
+  const slogan='和朋友一起拼拼拼';s.text(slogan,cx-s.measure(slogan,15,600)/2,top+size+nameSize+30,15,muted,600);
+  const barW=Math.min(320,s.w-64),barY=top+size+nameSize+76;s.meter({x:cx-barW/2,y:barY,w:barW,h:10},progress);const percent=Math.round(progress*100)+'%';s.text(percent,cx-s.measure(percent,13,700)/2,barY+18,13,ink,700);
+  const tips=['先把边缘拼好，框架出来就快多了','双指缩放，拖空白处可以移动桌面','拼完的图会自动收进图集','公开房免费，叫上朋友一起拼','卡住的时候，试试提示和底图','每天都有一张新的每日拼图','集齐一个图包，有金币和装饰'],tip=tips[Math.floor(elapsed/3)%tips.length];
+  s.text(tip,cx-Math.min(s.w-32,s.measure(tip,13,600))/2,Math.min(s.h-v.bottom-40,barY+64),13,muted,600,s.w-32);
+  setTimeout(()=>{if(!this.destroyed)this.invalidate();},120);
  }
  private drawLobbyStartup(){
   const s=this.stage,left=12,width=Math.min(1120,s.w-24),x=(s.w-width)/2,y=this.bodyTop+8;
@@ -1235,9 +1251,9 @@ export class GameApp{
  private drawRoomPanel(r:Rect){
   const s=this.stage,room=this.room!,ink=this.colors.ink,x=r.x+12,w=r.w-24;s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(r.x,r.y,r.w,r.h);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(r.x,r.y,1,r.h);s.hit(r,()=>{});
   let y=r.y+12;const ratio=room.state.cols/Math.max(1,room.state.rows),artH=Math.min(170,w/Math.max(.6,ratio)),art={x,y,w,h:artH};s.frame(art,'button-linen-normal');if(this.roomImage)s.image(this.roomImage,{x:x+5,y:y+5,w:w-10,h:artH-10},'contain');y+=artH+6;s.text('参考图',x,y,12,this.colors.muted,700);y+=24;
-  const members=room.snapshot.members as Array<(typeof room.snapshot.members)[number]&{code?:string;level?:number}>,me=this.client.profile?.code;
+  const members=room.snapshot.members as Array<(typeof room.snapshot.members)[number]&{code?:string;level?:number;contribution?:number}>,me=this.client.profile?.code;
   s.text('同桌 '+members.length+' / 8',x,y,15,ink,800);y+=26;
-  for(const member of members.slice(0,6)){s.icon('avatar',{x,y,w:26,h:28});s.text(member.name+(member.code&&member.code===me?'（我）':''),x+34,y+1,13,ink,700,w-90);s.text('Lv.'+(member.level??0),x+34,y+17,11,this.colors.muted,600);s.ctx.fillStyle=member.color;s.ctx.fillRect(x+w-10,y+10,8,8);y+=34;}
+  for(const member of members.slice(0,6)){s.icon('avatar',{x,y,w:26,h:28});s.text(member.name+(member.code&&member.code===me?'（我）':''),x+34,y+1,13,ink,700,w-90);s.text('Lv.'+(member.level??0),x+34,y+17,11,this.colors.muted,600);const placed='拼合 '+(member.contribution??0);s.text(placed,x+w-18-s.measure(placed,12,700),y+7,12,ink,700);s.ctx.fillStyle=member.color;s.ctx.fillRect(x+w-10,y+10,8,8);y+=34;}
   if(members.length>6){s.text('还有 '+(members.length-6)+' 人',x+34,y,12,this.colors.muted,600);y+=22;}
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,y+2,w,1);y+=12;s.text('聊天',x,y,15,ink,800);y+=24;
   const free=this.formalWeb,replies=[8,5,9,6],footer=8+Math.ceil(replies.length/2)*36+(free?42:0),bottom=r.y+r.h-footer,messages=this.messages.filter(message=>!this.social.blockedCodes.includes(message.code));
@@ -1370,7 +1386,7 @@ export class GameApp{
   if(this.modal==='tasks'){this.drawTaskWindow();return;}
   if(this.modal==='chat'){this.drawPublicChat();return;}
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
-  const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
+  const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
   const titles:Record<Exclude<Modal,null>,string>={privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.showModal(null);this.invalidate();});
@@ -1490,16 +1506,35 @@ export class GameApp{
     phrases.forEach((text,index)=>{const bw=(width-8)/2;this.button(left+(index%2)*(bw+8),cy+Math.floor(index/2)*45,bw,text,()=>void this.say(index),'cream',35);});cy+=Math.ceil(phrases.length/2)*45+10;break;
    }
    case'completion':{
-    const room=this.room,result=(room?.snapshot as unknown as {mobileResult?:any})?.mobileResult,picture={x:left,y:cy,w:width,h:Math.min(width*.75,240)};
+    const room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
+    const picture={x:left,y:cy,w:width,h:Math.min(width*.62,this.desktop?230:240)};
     s.frame(picture,'panel-cream');const shown=this.board?.drawCompletedPicture(s.ctx,{x:left+6,y:cy+6,w:width-12,h:picture.h-12});
     if(!shown){s.text(this.imageError?'图片加载失败':'正在加载成品…',left+12,cy+picture.h/2-20,13,this.colors.muted,500,width-24);if(this.imageError)this.button(left+12,cy+picture.h/2+4,width-24,'重新加载',()=>void this.run(async()=>{const board=this.board;if(!board)return;await board.setImage(this.roomImage);if(this.board===board){this.imageReady=true;this.imageError='';this.message='';}}),'cream',32);}
-    s.ornaments(picture);cy+=picture.h+20;
-    s.text('谢谢你，一起完成这幅作品',left,cy,17,this.colors.ink,700,width);cy+=37;
-    if(result){s.text('我的贡献：'+result.contribution+' 次有效拼合',left,cy,14);cy+=32;for(const[kind,label,value]of [['coin','金币',result.coins??0],['fragment','碎片',result.fragments??0],['lightning','体力',result.energy??0]] as const){if(kind==='lightning'&&!this.energyEnabled)continue;s.icon(kind,{x:left,y:cy,w:25,h:25});s.text(label+' +'+value,left+36,cy+4,16,this.colors.ink,700);cy+=38;}
-     if(result.catalog?.qualified){cy=this.paragraph(result.catalog.newlyCollected?'这张画作已加入图鉴！':'图鉴与难度记录已更新',left,cy,width,14)+16;}
-     for(const reward of result.catalog?.albumRewards??[]){cy=this.paragraph(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),left,cy,width,13)+6;}
+    s.ornaments(picture,26);cy+=picture.h+20;
+    center((snap?.title||snap?.photo?.title||'这幅画')+'，拼好啦！',cy,20,ink,800);cy+=32;
+    // Only the parts we actually know.
+    const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking as {name:string;code?:string|null;contribution:number;mine?:boolean}[]:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
+    const meta=[pieces?pieces+' 片':'',started&&finished&&finished>started?'用时 '+Math.max(1,Math.round((finished-started)/60000))+' 分钟':'',together?together+' 人同桌':''].filter(Boolean).join(' · ');if(meta){center(meta,cy,13,muted,600);cy+=30;}
+    if(contributors.length){
+     s.text('拼合贡献',left,cy,14,ink,800);cy+=24;const me=this.client.profile?.code,ranked=[...contributors].sort((a,b)=>(b.contribution??0)-(a.contribution??0)).slice(0,6),top=Math.max(1,ranked[0].contribution??0),nameW=Math.min(150,width*.4),barX=left+nameW+12,barW=width-nameW-60;
+     ranked.forEach((member,index)=>{const mine=(member as {mine?:boolean}).mine===true||!!me&&member.code===me,count=member.contribution??0;if(mine){s.ctx.save();s.ctx.globalAlpha=.2;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(left-6,cy-4,width+12,26);s.ctx.restore();}
+      s.text((index+1)+'. '+member.name+(mine?'（我）':''),left,cy,13,ink,mine?800:600,nameW);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(barX,cy+5,barW,8);s.ctx.fillStyle=mine?this.colors.berry:this.colors.gold;s.ctx.fillRect(barX,cy+5,Math.max(4,barW*count/top),8);s.text(String(count),barX+barW+8,cy,13,ink,700,40);cy+=26;});
+     cy+=6;
+    }
+    if(result){
+     const imageId=snap?.puzzle?.imageId,album=imageId?this.collection?.albums.find(item=>item.images.some(image=>image.id===imageId)):undefined;
+     const tiles:{icon:string;label:string;gold?:boolean}[]=[{icon:'coin',label:'金币 +'+(result.coins??0)},{icon:'fragment',label:'碎片 +'+(result.fragments??0)},...(this.energyEnabled&&result.energy?[{icon:'lightning',label:'体力 +'+result.energy}]:[]),...(album?[{icon:'book',label:'图集 '+album.collected+'/'+album.total}]:[]),...((result.catalog?.albumRewards??[]) as {title:string;coins?:number}[]).map(reward=>({icon:reward.coins?'coin':'leaf',label:reward.coins?'集满 +'+reward.coins:'得到装饰',gold:true}))];
+     const gap=8,columns=Math.min(tiles.length,this.desktop||width>=420?5:3),tw=(width-gap*(columns-1))/columns;
+     tiles.forEach((tile,index)=>{const r={x:left+(index%columns)*(tw+gap),y:cy+Math.floor(index/columns)*(64+gap),w:tw,h:64};s.frame(r,tile.gold?'panel-gold':'button-linen-normal');s.icon(tile.icon,{x:r.x+(tw-26)/2,y:r.y+8,w:26,h:26});const size=tw<84?12:13;s.text(tile.label,r.x+Math.max(4,(tw-s.measure(tile.label,size,700))/2),r.y+40,size,ink,700,tw-8);});
+     cy+=Math.ceil(tiles.length/columns)*(64+gap)+4;
+     if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,13,muted,600);cy+=26;}
+     for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,13,ink,700);cy+=24;}
     }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
-    this.button(left,cy,width,'查看收藏',()=>this.navigate('collection'),'cream',40);cy+=51;this.button(left,cy,width,'再拼一局',()=>{this.leaveRoom();this.navigate('gallery');},'berrydark',42);cy+=56;break;
+    cy+=6;s.button({x:left,y:cy,w:width,h:46},'再来一桌',()=>{this.leaveRoom();this.navigate('gallery');},{tone:'berrydark',fontSize:16});cy+=56;
+    const third=(width-16)/3,albumId=(snap?.puzzle?.imageId&&this.collection?.albums.find(item=>item.images.some(image=>image.id===snap.puzzle!.imageId))?.id)||'';
+    s.button({x:left,y:cy,w:third,h:40},'分享成品',()=>void this.run(async()=>{const outcome=await this.shareFromGame({title:'我们拼好了「'+(snap?.title||snap?.photo?.title||'一幅画')+'」，来'+this.platform.config.gameName+'一起拼',inviteCode:this.tasks?.invitation.code});this.note(outcome==='copied'?'链接已复制，可以发给朋友':outcome==='shared'||outcome==='opened'?'已分享':outcome==='cancelled'?'本次分享已取消':'暂时无法分享');}),{fontSize:13});
+    s.button({x:left+third+8,y:cy,w:third,h:40},'查看图集',()=>{this.leaveRoom();this.openCollection('albums');if(albumId)this.openAlbum(albumId);},{fontSize:13});
+    s.button({x:left+(third+8)*2,y:cy,w:third,h:40},'回大厅',()=>{this.leaveRoom();this.navigate('lobby');},{fontSize:13});cy+=54;break;
    }
    case'purchase':{
     const pack=this.purchase;if(!pack)break;if(pack.images[0])this.cardImage(pack.images[0].thumbSrc,{x:left,y:cy,w:width,h:Math.min(220,width*.75)});cy+=Math.min(220,width*.75)+21;s.text(pack.title,left,cy,22,this.colors.ink,700);cy+=39;cy=this.paragraph(pack.images.length+'张图片永久解锁。可免费指定本包图片创建公开房间；私人房仍使用建房券。',left,cy,width,14)+18;s.text('花费 '+pack.price+' 金币',left,cy,20,this.colors.ink,700);cy+=34;s.text('现有 '+(this.collection?.wallet.coins??0)+' 金币',left,cy,13,this.colors.muted);cy+=39;this.button(left,cy,width,(this.collection?.wallet.coins??0)<pack.price?'金币不足':'确认解锁',()=>void this.collectionAction('buy',pack.id),'berry',42,(this.collection?.wallet.coins??0)<pack.price);cy+=57;break;
