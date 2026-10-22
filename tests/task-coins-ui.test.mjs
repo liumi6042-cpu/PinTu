@@ -14,21 +14,18 @@ const view=()=>({profile:{level:10,energy:20,energyCap:60,xp:1,xpToNext:50},day:
 function app(data=view(),width=390){
  const texts=[],icons=[],panels=[],buttons=[],ctx=new Proxy({measureText:text=>({width:String(text).length*7})},{get:(target,key)=>key in target?target[key]:()=>{}});
  const stage={w:width,h:844,ctx,palette:{ink:'#642238',muted:'#a17878',line:'#d4a399',rose:'#c8798c'},text(value,...args){texts.push({value:String(value),args});},icon(kind,r){icons.push({kind,r});},panel(r){panels.push(r);},button(r,label,fn,options){buttons.push({r,label,fn,options});},meter(){},ornaments(){},hit(){},clip(_r,fn){fn();},measure:text=>String(text).length*7,color:value=>value,invalidate(){},wrap(value,_x,_y,_w,_size,_color,lineHeight){texts.push({value:String(value)});return lineHeight;}};
- const instance=Object.create(GameApp.prototype);Object.assign(instance,{stage,client:{profile:data.profile,refresh:async()=>{}},platform:{viewport:()=>({top:0,bottom:0}),randomId:()=> '1'.repeat(32)},tasks:data,taskTab:'tasks',taskDetailsOpen:false,bodyTop:100,bodyBottom:10000,scroll:0,extent:0,busy:false,invalidate:()=>{},attempts:new Map(),modalScroll:0,social:{title:'好友'}});
+ const instance=Object.create(GameApp.prototype);Object.assign(instance,{stage,client:{profile:data.profile,refresh:async()=>{},config:{capabilities:{energy:true,ads:false,albumTarget:'mobile-shared'}}},platform:{config:{id:'taptap',gameName:'拼图小窝'},viewport:()=>({top:0,bottom:0}),randomId:()=> '1'.repeat(32)},tasks:data,taskTab:'tasks',taskDetailsOpen:false,bodyTop:100,bodyBottom:10000,scroll:0,extent:0,busy:false,invalidate:()=>{},attempts:new Map(),modalScroll:0,social:{title:'好友'}});
  return{instance,texts,icons,panels,buttons};
 }
 
 test('shared tasks show configured coin rewards without crowding XP or action buttons, and missing coins keep old geometry',()=>{
  for(const width of [320,390,844]){
   const a=app(view(),width);a.instance.drawTasks();
-  for(const amount of [11,13,17])assert.ok(a.texts.some(text=>text.value==='+'+amount));
-  assert.ok(a.texts.some(text=>text.value.includes('每份小礼')&&text.value.includes('金币 +7')));
-  for(const icon of a.icons.filter(icon=>icon.kind==='coin')){
-   const panel=a.panels.find(panel=>icon.r.y>=panel.y&&icon.r.y<panel.y+panel.h),button=a.buttons.find(button=>button.r.y>=icon.r.y&&button.r.y<panel.y+panel.h);
-   assert.ok(panel.h>=119);assert.ok(icon.r.y+icon.r.h<button.r.y);
-  }
+  // Rewards read as one line per task (体力 · 经验 · 金币); coins only appear when configured.
+  for(const amount of [11,13,17])assert.ok(a.texts.some(text=>text.value.includes('经验 +10')&&text.value.endsWith('金币 +'+amount)),'task coins '+amount);
+  assert.ok(a.texts.some(text=>text.value.includes('小礼')&&text.value.includes('金币 +7')));
   const old=view();delete old.giftCoins;old.inventory.forEach(gift=>{delete gift.coins;delete gift.coinsMin;delete gift.coinsMax;});old.tasks.forEach(task=>delete task.coins);
-  const b=app(old,width);b.instance.drawTasks();assert.equal(b.icons.some(icon=>icon.kind==='coin'),false);assert.ok(b.panels.some(panel=>panel.h===99));assert.equal(b.texts.some(text=>text.value.includes('金币')),false);
+  const b=app(old,width);b.instance.drawTasks();assert.equal(b.texts.some(text=>text.value.includes('金币')),false);assert.deepEqual(b.panels.map(panel=>panel.h),a.panels.map(panel=>panel.h),'missing coins keep the same geometry');
  }
 });
 
@@ -36,7 +33,7 @@ test('shared gift inventory shows mixed old/new coin range and preserves refill 
  const data=view();data.inventory.push({kind:'invite-refill',title:'补满体力包',count:1,effect:'full-energy',energyMin:0,energyMax:0,xp:3,coins:14});
  const a=app(data);a.instance.taskTab='gifts';a.instance.drawTasks();
  assert.ok(a.texts.some(text=>text.value==='金币 +0～9'));assert.ok(a.texts.some(text=>text.value==='金币 +14'));assert.ok(a.texts.some(text=>text.value==='恢复至当前体力上限'));assert.ok(a.texts.some(text=>text.value==='经验 +3'));
- assert.ok(a.panels.filter(panel=>panel.h===104).length>=2);
+ assert.ok(a.panels.length>=2&&a.panels.every(panel=>panel.h===a.panels[0].h),'gift cards share one height');
 });
 
 test('shared invitation rules and actual gift/share receipts include coins only when awarded',async()=>{

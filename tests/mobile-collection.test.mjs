@@ -6,6 +6,7 @@ import {resolve,sep} from 'node:path';
 import {randomBytes} from 'node:crypto';
 import {createMobileCollection,MOBILE_COLLECTION_CATALOG as catalog} from '../server/mobile-collection.mjs';
 import {createMobileService} from '../server/mobile-service.mjs';
+import {BEGINNER_TASKS} from '../server/mobile-tasks.mjs';
 import {GALLERY_VISIBLE_PHOTOS,ONLINE_MS} from '../outputs/mobile/engine.mjs';
 
 const rid=()=>randomBytes(16).toString('hex');
@@ -117,7 +118,7 @@ test('server gameplay awards only valid contributions, rolls back empty-energy d
   const created=h.call(a,'/api/rooms',{mode:'selected',imageId:pack.imageIds[0],pieces:48,visibility:'public',requestId:rid()});assert.equal(created.status,201);
   const ticket=created.data,path='/api/rooms/'+ticket.room.id,bt=h.call(b,path+'/join',{}).data;
   h.call(watcher,path+'/join',{});
-  let current=ticket.room,successfulA=0,successfulB=0;
+  let current=ticket.room,successfulA=0,successfulB=0;const beginnerCoins={a:0,b:0};
   h.patch(a,{energy:0,energyAt:1800000000000,firstRoomCompleted:true});
   const initial=current.puzzle.groups.find(g=>!g.locked);
   assert.equal(h.call(a,path,{type:'claim',groupId:initial.id,requestId:rid()},ticket.token).status,200);
@@ -132,15 +133,17 @@ test('server gameplay awards only valid contributions, rolls back empty-energy d
    const claim=h.call(actor,path,{type:'claim',groupId:group.id,requestId:rid()},admission.token);assert.equal(claim.status,200);
    const input={type:'drop',groupId:group.id,dx:0,dy:0,seq:1,requestId:rid()};
    const result=h.call(actor,path,input,admission.token);assert.equal(result.status,200);
-   assert.equal(result.data.mobileContribution.creditedCoins,1);
+   // One coin per valid contribution, plus the beginner milestone coins (10/50/100 total contributions) on the drop that reaches one.
+   const total=(actor===a?successfulA:successfulB)+1,milestone=BEGINNER_TASKS.find(task=>task.target===total)?.coins??0;beginnerCoins[actor===a?'a':'b']+=milestone;
+   assert.equal(result.data.mobileContribution.creditedCoins,1+milestone);
    assert.deepEqual(h.call(actor,path,input,admission.token),result,'same drop cannot award twice');
    if(actor===a){successfulA++;replayInput=input;replayResponse=result;if(successfulA===3)h.advance(ONLINE_MS+1);}else successfulB++;
    current=result.data;
   }
   assert.equal(successfulA,3);
   const ac=h.call(a,'/api/mobile/collection').data,bc=h.call(b,'/api/mobile/collection').data;
-  assert.equal(ac.wallet.coins,successfulA+Math.ceil(successfulA*.5));assert.equal(ac.wallet.fragments,1);
-  assert.equal(bc.wallet.coins,successfulB+Math.ceil(successfulB*.5));
+  assert.equal(ac.wallet.coins,successfulA+Math.ceil(successfulA*.5)+beginnerCoins.a);assert.equal(ac.wallet.fragments,1);
+  assert.equal(bc.wallet.coins,successfulB+Math.ceil(successfulB*.5)+beginnerCoins.b);
   assert.equal(bc.wallet.fragments,Math.min(10,Math.max(1,Math.floor(successfulB/10))));
   assert.equal(ac.albums[0].images[0].collected,true,'offline contributor collects on completion');
   assert.equal(h.call(watcher,'/api/mobile/collection').data.wallet.coins,0);
