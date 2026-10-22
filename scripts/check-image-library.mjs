@@ -9,6 +9,14 @@ const fullHdOptimizedIds=new Set(['mountain-lake-reflection-hd-v3','morning-mead
 const OPENAI_TERMS='https://openai.com/policies/row-terms-of-use/';
 const DOUBAO_TERMS='https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+// Mirrors content-admin/contracts/delivery-spec.mjs: an optimized build holds at most 2560×2560 pixels in total.
+export const MAX_DELIVERY_PIXELS=6_553_600;
+export function deliveryDimensions(width,height){
+  if(width*height<=MAX_DELIVERY_PIXELS)return {width,height};
+  const scale=Math.sqrt(MAX_DELIVERY_PIXELS/(width*height));let w=Math.max(1,Math.floor(width*scale)),h=Math.max(1,Math.floor(height*scale));
+  while(w*h>MAX_DELIVERY_PIXELS){if(w>=h)w-=1;else h-=1;}
+  return {width:w,height:h};
+}
 
 /** A reference redraw is still project-generated, with both providers recorded.
  * This branch proves the actual local inputs/outputs instead of relabeling an
@@ -125,7 +133,11 @@ export async function checkImageLibrary(root){
       }
     }
     if(record.delivery?.sourceSha256!==record.sha256)throw new Error(`衍生图片缺少原件关联：${photo.id}`);
-    for(const [kind,field] of [['play','playSrc'],['thumbnail','thumbSrc'],...(photo.standardSrc?[['standard','standardSrc']]:[])]){
+    // Since the 2026-10-17 uniform delivery a picture ships one lossy optimized build and a thumbnail, and
+    // playSrc points at the optimized file. Records that still carry lossless play/standard keep the old checks.
+    const uniform=!record.delivery.play;
+    if(uniform&&(photo.playSrc!==photo.optimizedSrc||photo.standardSrc||photo.optimizedStandardSrc))throw new Error(`统一交付须由 playSrc 指向 optimized：${photo.id}`);
+    for(const [kind,field] of [...(uniform?[]:[['play','playSrc']]),['thumbnail','thumbSrc'],...(photo.standardSrc?[['standard','standardSrc']]:[])]){
       const item=record.delivery[kind];
       if(!item||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.upscaled!==false)throw new Error(`衍生图片记录无效：${photo.id}`);
       const data=await readFile(join(root,'public',item.src.slice(1)));
@@ -149,7 +161,8 @@ export async function checkImageLibrary(root){
       if(data.length>(compact?700*1024:2*1024*1024))throw new Error(`压缩交付超过体积预算：${photo.id}`);
       const size=lossyWebpSize(data);
       if(!size)throw new Error(`压缩交付必须是静态 VP8 有损 WebP：${photo.id}`);
-      if(size.width!==item.width||size.height!==item.height||size.width!==source.width||size.height!==source.height)throw new Error(`压缩交付不得改变来源像素尺寸：${photo.id}`);
+      const target=uniform&&!compact?deliveryDimensions(source.width,source.height):source;
+      if(size.width!==item.width||size.height!==item.height||size.width!==target.width||size.height!==target.height)throw new Error(`压缩交付不得改变来源像素尺寸：${photo.id}`);
       if(compact&&(item.downsampled!==true||item.maximumPieces!==1000||size.width>1774||size.height>1774))throw new Error(`压缩小图交付记录无效：${photo.id}`);
       files.add(item.src.slice('/puzzles/'.length));
     }
