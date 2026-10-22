@@ -79,6 +79,7 @@ export function createWechatPlatform(input:PlatformConfig):Platform{
     return await new Promise<'completed'|'closed'|'failed'>(resolve=>{let done=false;const finish=(value:'completed'|'closed'|'failed')=>{if(done)return;done=true;clearTimeout(timer);ad.offClose?.(close);ad.offError?.(error);resolve(value);};const close=(result:{isEnded?:boolean})=>finish(result?.isEnded===true?'completed':'closed'),error=()=>finish('failed');const timer=setTimeout(error,180000);ad.onClose(close);ad.onError(error);void Promise.resolve(ad.load()).then(()=>{if(!done)return ad.show();}).catch(error);});
    }catch{return 'failed';}finally{watching=false;audioPlayback.setAdPlaying(false);}
   },
+  copyText:text=>new Promise<boolean>(resolve=>{try{(wx as unknown as {setClipboardData(options:{data:string;success:()=>void;fail:()=>void}):void}).setClipboardData({data:text,success:()=>resolve(true),fail:()=>resolve(false)});}catch{resolve(false);}}),
   async prompt(title,value='',options){
    if(prompting)return null;prompting=true;
    try{

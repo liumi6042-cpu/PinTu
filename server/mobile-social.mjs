@@ -25,6 +25,8 @@ export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom
  CREATE TABLE IF NOT EXISTS mobile_private_reads(owner TEXT NOT NULL,peer TEXT NOT NULL,through_id INTEGER NOT NULL,PRIMARY KEY(owner,peer));
  CREATE TABLE IF NOT EXISTS mobile_chat_reports(id INTEGER PRIMARY KEY AUTOINCREMENT,reporter TEXT NOT NULL,source TEXT NOT NULL,message_id INTEGER NOT NULL,target TEXT NOT NULL,reason TEXT NOT NULL,evidence TEXT NOT NULL,created_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'pending',UNIQUE(reporter,source,message_id));
  CREATE INDEX IF NOT EXISTS mobile_reports_status ON mobile_chat_reports(status,created_at);
+ CREATE TABLE IF NOT EXISTS mobile_social_recent(owner TEXT NOT NULL,peer TEXT NOT NULL,room_id TEXT NOT NULL,room_title TEXT NOT NULL,seen_at INTEGER NOT NULL,PRIMARY KEY(owner,peer));
+ CREATE INDEX IF NOT EXISTS mobile_social_recent_seen ON mobile_social_recent(owner,seen_at);
  `);
  const prohibited=blockedWords.filter(word=>typeof word==='string'&&word.length).map(normalized);
  /** Run before the enclosing request transaction so failed lookups cannot roll back their rate counters.
@@ -86,6 +88,17 @@ export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom
   const blocked=db.prepare('SELECT peer FROM mobile_social_blocks WHERE owner=? ORDER BY created_at DESC').all(owner).map(row=>person(row.peer,now));
   return {self:person(owner,now),friends,requests:{incoming,outgoing},conversations,blocked,unread:conversations.reduce((count,item)=>count+item.unread,0),serverTime:now};
  }
+ /** Remember who shared a table, in both directions; each player keeps the latest 50. */
+ function recordTablemates(owner,peers,room,now){
+  const title=String(room.title||'一起拼图').slice(0,40),upsert=db.prepare('INSERT INTO mobile_social_recent VALUES(?,?,?,?,?) ON CONFLICT(owner,peer) DO UPDATE SET room_id=excluded.room_id,room_title=excluded.room_title,seen_at=excluded.seen_at'),prune=db.prepare('DELETE FROM mobile_social_recent WHERE owner=? AND peer NOT IN (SELECT peer FROM mobile_social_recent WHERE owner=? ORDER BY seen_at DESC LIMIT 50)');
+  for(const peer of new Set(peers)){if(!peer||peer===owner)continue;upsert.run(owner,peer,room.id,title,now);upsert.run(peer,owner,room.id,title,now);prune.run(peer,peer);}
+  prune.run(owner,owner);
+ }
+ function recent(owner,now){
+  return db.prepare('SELECT peer,room_title,seen_at FROM mobile_social_recent WHERE owner=? ORDER BY seen_at DESC LIMIT 60').all(owner).filter(row=>row.peer!==owner&&!isFriend(owner,row.peer)&&!eitherBlocked(owner,row.peer)).slice(0,20)
+   .map(row=>({...person(row.peer,now),roomTitle:row.room_title,seenAt:row.seen_at,requested:Boolean(db.prepare('SELECT 1 FROM mobile_friend_requests WHERE sender=? AND recipient=?').get(owner,row.peer))}));
+ }
+ const onlineCount=now=>Number(db.prepare('SELECT COUNT(*) n FROM mobile_social_players WHERE last_seen>?').get(now-ONLINE_MS).n);
  const removeFriend=(owner,peer)=>{db.prepare('DELETE FROM mobile_friends WHERE (owner=? AND peer=?) OR (owner=? AND peer=?)').run(owner,peer,peer,owner);db.prepare('DELETE FROM mobile_friend_requests WHERE (sender=? AND recipient=?) OR (sender=? AND recipient=?)').run(owner,peer,peer,owner);};
  const friendCapacity=owner=>{if(Number(db.prepare('SELECT COUNT(*) n FROM mobile_friends WHERE owner=?').get(owner).n)>=100)fail(409,'FRIENDS_FULL','好友数量已达100位');};
  function report(owner,input,request,now){
@@ -112,6 +125,7 @@ export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom
   const prefix='/api/mobile/social',part=url.pathname.slice(prefix.length),method=request.method,owner=p.id;
   if(!url.pathname.startsWith(prefix))return null;
   if(!part&&method==='GET')return view(owner,now);
+  if(part==='/recent'&&method==='GET')return {players:recent(owner,now),serverTime:now};
   if(part==='/search'&&method==='GET'){
    const code=url.searchParams.get('code');if(!validCode(code))fail(400,'INVALID_PLAYER_CODE','请填写9位好友编号');
    const row=db.prepare('SELECT owner FROM mobile_social_players WHERE code=?').get(code);if(!row)fail(404,'PLAYER_NOT_FOUND','没有找到这个玩家');
@@ -175,5 +189,5 @@ export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom
   });
  }
  const areFriends=(owner,peer)=>isFriend(owner,peer)&&isFriend(peer,owner)&&!eitherBlocked(owner,peer);
- return {guard,touch,person,view,route,blocked:ownBlocked,areFriends};
+ return {guard,touch,person,view,route,blocked:ownBlocked,areFriends,recordTablemates,onlineCount};
 }

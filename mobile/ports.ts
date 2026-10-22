@@ -75,6 +75,8 @@ export type Platform={
  showInterstitialAd?(unit:string):Promise<'closed'|'failed'|'unavailable'>;
  prompt(title:string,value?:string,options?:TextPromptOptions):Promise<string|null>;
  alert(message:string):void;
+ /** Copy a short text (player ID, invitation code); false when the host cannot. */
+ copyText?(text:string):Promise<boolean>;
  loadFont?(url:string):Promise<string|null>;
  playSound?(url:string):void;
  audio?:{setLevels(levels:AudioLevels):void;setMusic(url:string|null):void;unlock():void;dispose():void};

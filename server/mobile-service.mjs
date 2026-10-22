@@ -209,11 +209,13 @@ export function createMobileService(options={}){
   view(room,context){const now=clock(),p=readProfile(context.identity,now);return {...snapshotView(room,now,null,p.id),profile:profileView(p,now)};},
  });
  function bindFirstRoom(p,room){if(room.diagnostic!==true&&room.completedAt===null&&!p.firstRoomId&&!p.firstRoomCompleted)p.firstRoomId=room.id;}
+ /** Distinct players who completed a daily room today (Beijing day, matching the daily schedule). */
+ function dailyFinishedCount(now){const day=engine.dailyPuzzleDate(now),start=Date.parse(day+'T00:00:00+08:00');return Number(db.prepare("SELECT COUNT(DISTINCT s.owner) n FROM mobile_settlements s JOIN mobile_rooms r ON r.id=s.room_id WHERE r.completed_at>=? AND json_extract(r.data,'$.mobileMode')='daily' AND json_extract(r.data,'$.mobileDay')=?").get(start,day).n);}
  function join(room,p,input,now,request={}){
   requireArtworkClient(room,request);
   if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
   if(room.visibility==='private'&&room.ownerId!==p.id&&!room.admitted?.[p.id]&&input.inviteCode!==room.mobileInviteCode)fail(403,'INVITE_REQUIRED','私人房间需要有效邀请码');
-  const token=id(),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
+  const token=id(),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
   return {token,playerId:member.id,room:snapshotView(room,now,null,p.id),...(room.ownerId===p.id&&room.mobileInviteCode?{inviteCode:room.mobileInviteCode}:{})};
  }
  function replay(p,scope,input,now,fn){
@@ -371,11 +373,14 @@ export function createMobileService(options={}){
   if(path==='/api/lobby'&&method==='GET'){
    const limit=Math.max(1,Math.min(24,Number(url.searchParams.get('limit'))||12)),cursor=url.searchParams.get('cursor');
    let before=null;if(cursor){try{before=JSON.parse(Buffer.from(cursor,'base64url').toString());if(!Array.isArray(before)||!Number.isSafeInteger(before[0])||!/^[a-f0-9]{32}$/.test(before[1]))throw Error();}catch{fail(400,'INVALID_CURSOR','列表游标无效');}}
-   let cards=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC,id DESC").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))).map(r=>card(r,now));
+   const listed=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC,id DESC").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))),byId=new Map(listed.map(r=>[r.id,r]));
+   let cards=listed.map(r=>card(r,now));
    const dir=url.searchParams.get('direction'),pieces=Number(url.searchParams.get('pieces')),open=url.searchParams.get('open')==='1',active=url.searchParams.get('active')==='1';
    cards=cards.filter(r=>(!dir||dir==='all'||r.direction===dir)&&(!pieces||r.pieces===pieces)&&(!open||r.players<8&&r.acceptingNew)&&(!active||r.players>0));
    const total=cards.length;if(before)cards=cards.filter(r=>r.createdAt<before[0]||r.createdAt===before[0]&&r.id<before[1]);const page=cards.slice(0,limit),last=page.at(-1),nextCursor=cards.length>limit&&last?Buffer.from(JSON.stringify([last.createdAt,last.id])).toString('base64url'):null;
-   return {rooms:page,nextCursor,total,serverTime:now,mode:'mobile-v3-isolated'};
+   // Seated players (up to four) let the lobby show real avatars; plus two small lobby counters.
+   const seated=room=>room.members.filter(m=>m.guestId&&now-m.lastSeen<engine.ONLINE_MS).slice(0,4).map(m=>({name:m.name,level:readProfile(m.guestId,now).level,decoration:collection.equipped(m.guestId)}));
+   return {rooms:page.map(c=>({...c,members:seated(byId.get(c.id))})),nextCursor,total,online:social.onlineCount(now),dailyFinished:dailyFinishedCount(now),serverTime:now,mode:'mobile-v3-isolated'};
   }
   if(path==='/api/rooms'&&method==='POST')return replay(p,'create-room',input,now,()=>{
    const mode=input.mode??'selected',pieces=mode==='daily'?108:input.pieces,visibility=input.visibility??'public';

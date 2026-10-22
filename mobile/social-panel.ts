@@ -44,6 +44,9 @@ export class SocialPanel{
  get playerCode(){return this.snapshot?.self.code??'';}
  get blockedCodes(){return this.snapshot?.blocked.map(player=>player.code)??[];}
  get isOpen(){return this.active;}
+ get state(){return this.snapshot;}
+ /** Ask for a player ID and show the result in the panel. */
+ startSearch(){this.active=true;void this.find();}
  open(tab:SocialTab='friends'){if(tab==='messages'&&!this.privateHistory)tab='friends';this.active=true;this.mode=tab;this.tab=tab;this.resetScroll();void this.refresh();}
  openRoomPeers(){this.active=true;this.mode='peers';this.resetScroll();void this.refresh();}
  openConversation(code:string){this.active=true;void this.loadConversation(code,true);}
