@@ -23,7 +23,7 @@ import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import publicPhrases from '../config/social-phrases.json';
 import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom} from '../h5/mobile-api';
-import type {MobileCollectionView,CollectionPack,CollectionDecoration} from '../h5/mobile-collection-api';
+import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
 
@@ -598,7 +598,7 @@ export class GameApp{
   s.text(title,x+4,25,24,ink,800,w-8);s.text(this.pageSubtitle,x+5,58,12,this.colors.muted,500,w-8);
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,header-4,w,1);this.sceneArea={x,y:header,w,h:s.h-header-12};this.listArea={x,y:header,w,h:s.h-header-12};
  }
- private get pageSubtitle(){switch(this.route){case'lobby':{const count=this.lobbyRooms.length;return count?(this.lobbyCursor?count+'+':count)+' 桌正在拼':'今天，拼一会儿';}case'gallery':return '选好图片和片数，就能开一桌';case'collection':return '图鉴 · 图包 · 装饰';case'tasks':return '拼合攒礼包，邀请得奖励';case'friends':return '加好友、私聊、一起拼';case'supplies':return '体力与建房券';default:return '慢慢拼，慢慢了解';}}
+ private get pageSubtitle(){switch(this.route){case'lobby':{const count=this.lobbyRooms.length;return count?(this.lobbyCursor?count+'+':count)+' 桌正在拼':'今天，拼一会儿';}case'gallery':return '选好图片和片数，就能开一桌';case'collection':return '拼完一张图就收进图集，集满有奖励';case'tasks':return '拼合攒礼包，邀请得奖励';case'friends':return '加好友、私聊、一起拼';case'supplies':return '体力与建房券';default:return '慢慢拼，慢慢了解';}}
  private drawFriends(){
   const s=this.stage,w=Math.min(760,s.w-24),rect={x:(s.w-w)/2,y:this.bodyTop,w,h:Math.max(0,this.bodyBottom-this.bodyTop)};this.extent=0;
   if(!this.social.isOpen)this.social.open();this.social.render(s,rect);
@@ -895,63 +895,96 @@ export class GameApp{
   if(this.formalWeb){this.scrolled(()=>{s.icon('coin',{x:x+12,y:y+8,w:42,h:44});s.text('我的金币 '+(p?.collection?.coins??0),x+67,y+17,22,this.colors.ink,750,w-80);y+=76;y=this.paragraph('金币、相册和已拥有内容继续保留。建房条件以当前账号与会员权限为准。',x+8,y,w-16,14)+24;s.button({x:x+8,y,w:w-16,h:40},'账号与会员',()=>this.openWeb('membership'),{fontSize:14});y+=52;});this.extent=y-(this.bodyTop-this.scroll)+12;return;}
   this.scrolled(()=>{s.panel({x,y,w,h:225});s.icon('supplyTicket',{x:x+14,y:y+22,w:140,h:140});s.text('建房券',x+166,y+24,23,this.colors.ink,750,w-183);s.text('指定图片或创建私人房间',x+167,y+64,12,this.colors.muted,500,w-184);s.text('当前库存 '+(p?.supply.create??0)+' / 3',x+167,y+100,17,this.colors.ink,750,w-184);s.button({x:x+17,y:y+169,w:w-34,h:39},(p?.supply.create??0)>=3?'库存已满':this.shareAvailable?'分享领取1张':'当前浏览器尚未开放分享领取',()=>void this.claimSupply('create'),{tone:'berry',fontSize:13,disabled:this.busy||!this.shareAvailable||(p?.supply.create??0)>=3});y+=247;y=this.paragraph('随机公开房免费创建；已拥有的图包图片，也可免费创建公开房。已有建房券可以正常使用。',x+8,y,w-16,14)+23;s.button({x:x+8,y,w:w-16,h:41},'去挑选图片',()=>this.navigate('gallery'),{icon:'underlay',fontSize:14});y+=55;});this.extent=y-(this.bodyTop-this.scroll)+12;
  }
+ private albumDetailOpen=false;private decorationFilter:'all'|'owned'|'craft'|'album'='all';
  private drawCollection(){
-  const s=this.stage,data=this.collection,pad=12,w=s.w-pad*2;let y=this.bodyTop;
-  if(this.collectionTab==='decorations'&&data&&!this.desktop){s.icon('avatar',{x:pad,y,w:46,h:47});s.text('Lv.'+data.profile.level,pad+51,y+1,15,this.colors.ink,700);s.meter({x:pad+51,y:y+23,w:58,h:7},data.profile.xp/Math.max(1,data.profile.xpToNext));s.text(data.profile.xp+'/'+data.profile.xpToNext,pad+51,y+35,9,this.colors.muted);y+=56;}
-  const tabs=[['albums','图鉴','underlay'],['packs','图包','piece'],['decorations','装饰','leaf']] as const,tw=(w-10)/3;
-  tabs.forEach(([id,label,icon],index)=>s.button({x:pad+index*(tw+5),y,w:tw,h:39},label,()=>this.changeListView(()=>{this.collectionTab=id;}),{tone:this.collectionTab===id?'berry':'linen',icon,fontSize:16}));
-  this.bodyTop=y+54;if(!data){s.text('正在翻开收藏…',pad+8,this.bodyTop+32,15);this.extent=0;return;}
-  if(this.collectionTab==='albums')this.drawAlbums(data);else if(this.collectionTab==='packs')this.drawPacks(data);else this.drawDecorations(data);
- }
- private drawAlbums(data:MobileCollectionView){
-  const s=this.stage;
-  if(this.desktop){
-   const top=this.bodyTop,left=12,navW=176,h=this.bodyBottom-top,area={x:left,y:top,w:navW,h};this.albumListExtent=data.albums.length*65+43;this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-h));this.albumListArea={x:this.sceneArea.x+left,y:this.sceneArea.y+top,w:navW,h};
-   s.panel(area);s.clip(area,()=>{s.text('我的相册 · '+data.albums.length,left+13,top+13-this.albumListScroll,15,this.colors.ink,750);data.albums.forEach((album,index)=>{const y=top+43+index*65-this.albumListScroll,selected=album.id===this.albumId||(!this.albumId&&index===0),r={x:left+7,y,w:navW-14,h:57};s.button(r,'',()=>this.selectAlbum(album.id),{tone:selected?'berry':'cream'});s.text(album.title,left+17,y+10,13,selected?this.colors.onAccent:this.colors.ink,750,navW-37);s.text(album.collected+' / '+album.total+' 张',left+17,y+32,11,selected?this.colors.onAccent:this.colors.muted,500,navW-37);});});
-   const content={x:left+navW+3,y:top,w:s.w-left-navW-3,h};this.listArea={x:this.sceneArea.x+content.x,y:this.sceneArea.y+top,w:content.w,h};
-   s.withViewport(content,()=>{this.bodyTop=0;this.bodyBottom=h;this.drawAlbumContents(data);});this.bodyTop+=top;this.bodyBottom+=top;return;
+  const s=this.stage,data=this.collection,desktop=this.desktop,pad=12,w=s.w-pad*2;let y=this.bodyTop;
+  const tab=this.collectionTab==='decorations'?'decorations':'albums';
+  if(!(tab==='albums'&&this.albumDetailOpen&&!desktop)){
+   const tabs=[['albums','图集','book'],['decorations','装饰','leaf']] as const,tw=Math.min(180,(w-8)/2);
+   tabs.forEach(([id,label,icon],index)=>s.button({x:pad+index*(tw+8),y,w:tw,h:38},label,()=>this.changeListView(()=>{this.collectionTab=id;this.albumDetailOpen=false;}),{tone:tab===id?'berry':'linen',icon,fontSize:15}));
+   if(w>tw*2+200&&!(desktop&&tab==='albums'))s.text(tab==='albums'?'拼完一张图就收进图集，集满有奖励':'装饰会在拖动拼块时展示给同桌',pad+tw*2+24,y+12,13,this.colors.muted,600,w-tw*2-30);
+   y+=50;if(w<=tw*2+200&&tab==='albums'){s.text('拼完一张图就收进图集，集满有奖励',pad+2,y-4,12,this.colors.muted,600,w);y+=20;}
   }
-  s.button({x:12,y:this.bodyTop,w:s.w-24,h:34},'选择相册 · '+(data.albums.find(a=>a.id===this.albumId)?.title??data.albums[0]?.title??'暂无相册'),()=>this.showModal('albums'),{icon:'book',fontSize:12});this.bodyTop+=45;this.drawAlbumContents(data);
+  this.bodyTop=y;if(!data){s.text('正在翻开收藏…',pad+8,y+32,15);this.extent=0;return;}
+  if(tab==='decorations'){this.drawDecorations(data);return;}
+  const albums=this.orderedAlbums(data),selected=albums.find(album=>album.id===this.albumId)??albums.find(album=>this.packFor(data,album.id))??albums[0];
+  if(desktop){
+   const listW=Math.min(560,w*.5),detail={x:pad+listW+16,y,w:w-listW-16,h:this.bodyBottom-y};
+   let ly=y-this.scroll;this.listColumn={x:this.contentOrigin.x+pad-4,w:listW+8};
+   this.scrolled(()=>{for(const album of albums)ly=this.drawAlbumCard(data,album,{x:pad,y:ly,w:listW},album.id===selected?.id)+12;},y,this.bodyBottom);this.extent=ly+this.scroll-y;
+   if(selected){s.panel(detail);this.albumListArea={x:this.contentOrigin.x+detail.x,y:this.contentOrigin.y+detail.y+8,w:detail.w,h:detail.h-16};let dy=detail.y+16-this.albumListScroll;const inner={x:detail.x+16,w:detail.w-32};
+    s.clip({x:detail.x+4,y:detail.y+6,w:detail.w-8,h:detail.h-12},()=>{dy=this.drawAlbumDetail(data,selected,inner.x,dy,inner.w,3);});this.albumListExtent=dy+this.albumListScroll-detail.y;this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-detail.h+16));}
+   return;
+  }
+  let cy=y-this.scroll;
+  this.scrolled(()=>{
+   if(this.albumDetailOpen&&selected){s.button({x:pad,y:cy,w:84,h:34},'‹ 图集',()=>{this.albumDetailOpen=false;this.scroll=0;this.invalidate();},{fontSize:14});cy=this.drawAlbumDetail(data,selected,pad,cy+46,w,2);}
+   else for(const album of albums)cy=this.drawAlbumCard(data,album,{x:pad,y:cy,w},false)+12;
+  },y,this.bodyBottom);this.extent=cy+this.scroll-y+12;
  }
- private drawAlbumContents(data:MobileCollectionView){
-  const s=this.stage,pad=12,w=s.w-24,album=data.albums.find(a=>a.id===this.albumId)??data.albums[0];if(!album){s.text('参与完成作品，点亮第一张图鉴',20,this.bodyTop+35,14);this.extent=0;return;}if(this.albumId!==album.id){this.albumId=album.id;this.scroll=0;}let y=this.bodyTop-this.scroll;
-  this.scrolled(()=>{const countW=Math.min(122,w*.34),countX=s.w-pad-countW;s.icon('book',{x:pad,y:y+3,w:35,h:32});s.text(album.title,pad+42,y+1,s.w<360?19:23,this.colors.ink,700,countX-pad-50);s.hit({x:pad,y:y-3,w:countX-pad-7,h:45},()=>this.showModal('albums'));s.icon('sprig',{x:countX-25,y:y+1,w:18,h:18});s.text(album.description,pad+42,y+35,10,this.colors.muted,countX-pad-40);s.icon('fragment',{x:countX,y:y+2,w:24,h:24});s.text(album.collected+'/'+album.total,countX+31,y+2,23,this.colors.ink,700);s.meter({x:countX,y:y+36,w:countW,h:9},album.collected/Math.max(1,album.total));y+=61;
-   const columns=this.desktop?Math.max(3,Math.min(4,Math.floor(s.w/200))):s.w<600?3:Math.max(4,Math.floor(s.w/145)),gap=this.desktop?14:9,cw=(w-gap*(columns-1))/columns,artH=cw*1.16,ch=artH+55,base=y;
-   album.images.forEach((image,index)=>{const x=pad+(index%columns)*(cw+gap),cy=base+Math.floor(index/columns)*(ch+gap),r={x,y:cy,w:cw,h:ch};if(cy+ch<this.bodyTop||cy>this.bodyBottom)return;s.panel(r);const picture={x:x+5,y:cy+5,w:cw-10,h:artH-5};s.image(this.client.asset(image.thumbSrc),picture,'cover');if(!image.collected){s.ctx.fillStyle=s.color('rgba(232,212,196,.77)');s.ctx.fillRect(picture.x,picture.y,picture.w,picture.h);s.ctx.fillStyle='#b9848d';s.ctx.fillRect(x+cw/2-12,cy+artH/2-12,24,27);s.icon('lock',{x:x+cw/2-9,y:cy+artH/2-10,w:18,h:22},'#fff9ef');}
-    s.text(image.title,x+8,cy+artH+7,s.w<360?10:12,this.colors.ink,700,cw-16);s.ctx.fillStyle=s.color(image.collected?'#efd9d6':'#f7e3d5');s.ctx.fillRect(x+8,cy+ch-24,cw-16,17);const label=image.collected?'已收藏':'未收集';s.text(label,x+(cw-s.measure(label,9))/2,cy+ch-21,9,this.colors.muted,700);
-   });y=base+Math.ceil(album.images.length/columns)*(ch+gap)+5;
-   if(album.milestones.length){
-    const rewardColumns=Math.min(album.milestones.length,Math.max(1,Math.min(4,Math.floor((w-24)/75)))),cellW=(w-28)/rewardColumns,trackH=35+Math.ceil(album.milestones.length/rewardColumns)*88,r={x:pad,y,w,h:trackH};
-    s.panel(r);s.meter({x:pad+18,y:y+18,w:w-36,h:6},album.collected/Math.max(1,album.total));
-    album.milestones.forEach((milestone,index)=>{
-     const cx=pad+14+(index%rewardColumns)*cellW,cy=y+35+Math.floor(index/rewardColumns)*88,reward=data.decorations.find(item=>item.id===milestone.decorationId);
-     s.icon(milestone.earned?'check':'lock',{x:cx+3,y:cy,w:14,h:18},this.colors.rose);s.text(milestone.target+'张',cx+21,cy+3,11,this.colors.ink,700,cellW-25);
-     if(milestone.coins>0){s.icon('coin',{x:cx+3,y:cy+24,w:17,h:18});s.text(milestone.coins,cx+24,cy+28,10,this.colors.ink,700,cellW-28);}
-     if(reward){s.decoration(reward,{x:cx+3,y:cy+45,w:16,h:18});s.text(reward.title,cx+24,cy+49,9,this.colors.ink,700,cellW-28);}
-     s.text(milestone.earned?'已获得':'收集可得',cx+3,cy+71,8,this.colors.muted,400,cellW-6);
-    });y+=trackH+10;
-    const rewards=Array.from(new Set(album.milestones.map(milestone=>milestone.decorationId).filter((id):id is string=>!!id))).map(id=>data.decorations.find(item=>item.id===id)).filter((reward):reward is CollectionDecoration=>!!reward);
-    for(const reward of rewards){
-     const copyW=w-90,h=Math.max(94,65+Math.ceil(reward.description.length*9/Math.max(1,copyW))*13),earned=album.milestones.some(milestone=>milestone.decorationId===reward.id&&milestone.earned),preview={x:pad,y,w,h};
-     s.panel(preview);s.ctx.fillStyle=this.colors.rose;s.ctx.fillRect(pad+12,y+12,59,19);s.text(earned?'已获得':'收集可得',pad+17,y+17,9,'#fff9ed',700);s.text(reward.title,pad+12,y+39,14,this.colors.ink,700,copyW);s.wrap(reward.description,pad+12,y+62,copyW,9,this.colors.muted,13);s.decoration(reward,{x:s.w-pad-67,y:y+18,w:49,h:62});y+=h+10;
-    }
-   }
-   y=this.paragraph('有效参与并完成作品即可收集；图鉴奖励达成后自动存入。',pad+9,y,w-18,10)+12;
+ private packFor(data:MobileCollectionView,albumId:string){return data.packs.find(pack=>pack.id===albumId)??null;}
+ /** 日常拾光 (the album without a pack) first, then the packs in catalogue order. */
+ private orderedAlbums(data:MobileCollectionView){return [...data.albums.filter(album=>!this.packFor(data,album.id)),...data.albums.filter(album=>this.packFor(data,album.id))];}
+ private nextMilestoneText(data:MobileCollectionView,album:CollectionAlbum){
+  const next=album.milestones.find(milestone=>!milestone.earned);if(!next)return album.total&&album.collected>=album.total?'已集齐，奖励已发放':'';
+  const decoration=next.decorationId?data.decorations.find(item=>item.id===next.decorationId)?.title:'',left=Math.max(0,next.target-album.collected);
+  return next.target>=album.total?'集齐送 '+next.coins+' 金币'+(decoration?'和'+decoration:''):'再拼 '+left+' 张得 '+next.coins+' 金币'+(decoration?'和'+decoration:'');
+ }
+ private openAlbum(id:string){this.albumId=id;this.albumDetailOpen=true;this.albumListScroll=0;if(!this.desktop)this.scroll=0;this.invalidate();}
+ private drawAlbumCard(data:MobileCollectionView,album:CollectionAlbum,r:{x:number;y:number;w:number},selected:boolean){
+  const s=this.stage,pack=this.packFor(data,album.id),ink=this.colors.ink;
+  if(!pack){const h=100,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');s.icon('book',{x:r.x+14,y:r.y+18,w:44,h:40});s.text(album.title,r.x+68,r.y+14,17,ink,800,r.w-170);s.text('每日拼图自动收进来',r.x+68,r.y+38,12,this.colors.muted,600,r.w-170);
+   const count=album.collected+' / '+album.total;s.text(count,r.x+r.w-14-s.measure(count,15,800),r.y+16,15,ink,800);s.meter({x:r.x+68,y:r.y+60,w:r.w-84,h:9},album.collected/Math.max(1,album.total));s.text(this.nextMilestoneText(data,album),r.x+68,r.y+76,12,this.colors.muted,600,r.w-84);s.hit(card,()=>this.openAlbum(album.id));return r.y+h;}
+  const coverH=Math.min(170,r.w*.42),h=coverH+52,card={...r,h},cover={x:r.x+6,y:r.y+6,w:r.w-12,h:coverH},locked=!pack.owned&&album.collected===0;
+  s.frame(card,selected?'panel-gold':'button-linen-normal');s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||album.images[0]?.thumbSrc||''),cover,'cover');
+  const c=s.ctx,shade=c.createLinearGradient(0,cover.y+coverH*.35,0,cover.y+coverH);shade.addColorStop(0,'#2a142000');shade.addColorStop(1,'#2a1420d9');c.fillStyle=shade;c.fillRect(cover.x,cover.y,cover.w,cover.h);
+  s.text(album.title,cover.x+14,cover.y+coverH-52,20,'#fff8ec',800,cover.w-130);s.text(album.description,cover.x+14,cover.y+coverH-24,12,'#fff3e2',500,cover.w-28);
+  const badge=locked?'未解锁':album.collected>=album.total?album.collected+' / '+album.total+' ✓':album.collected+' / '+album.total,bw=s.measure(badge,13,800)+18;c.fillStyle=s.color(locked?'#573b40':'#a85567');c.fillRect(cover.x+cover.w-bw-10,cover.y+10,bw,24);s.text(badge,cover.x+cover.w-bw+(-1),cover.y+15,13,'#fffaf0',800);
+  const fy=r.y+coverH+16;s.text(this.nextMilestoneText(data,album),r.x+14,fy+2,13,ink,600,r.w-140);
+  if(!pack.owned){s.button({x:r.x+r.w-116,y:fy-6,w:104,h:34},pack.price+' 解锁',()=>{this.purchase=pack;this.showModal('purchase');},{tone:'berrydark',icon:'coin',fontSize:13,disabled:this.busy});s.hit({x:r.x,y:r.y,w:r.w-120,h},()=>this.openAlbum(album.id));}
+  else{s.text('查看 ›',r.x+r.w-60,fy+2,13,this.colors.berry,700);s.hit(card,()=>this.openAlbum(album.id));}
+  return r.y+h;
+ }
+ private drawAlbumDetail(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,columns:number){
+  const s=this.stage,ink=this.colors.ink;s.text(album.title,x,y,22,ink,800,w-120);const count='已收集 '+album.collected+' / '+album.total;s.text(count,x+w-s.measure(count,14,700),y+6,14,this.colors.muted,700);y+=34;
+  s.meter({x,y,w,h:10},album.collected/Math.max(1,album.total));y+=22;
+  let mx=x;for(const milestone of album.milestones){const decoration=milestone.decorationId?data.decorations.find(item=>item.id===milestone.decorationId)?.title:'',label=(milestone.earned?'✓ ':'')+'集满 '+milestone.target+' 张 · +'+milestone.coins+' 金币'+(decoration?'和'+decoration:''),mw=Math.min(w,s.measure(label,13,700)+24);if(mx+mw>x+w){mx=x;y+=40;}s.frame({x:mx,y,w:mw,h:32},milestone.earned?'segment-berry-selected':'button-linen-normal');s.text(label,mx+12,y+9,13,milestone.earned?this.colors.onAccent:ink,700,mw-20);mx+=mw+8;}
+  y+=46;const gap=12,cw=(w-gap*(columns-1))/columns,ih=cw*.72,ch=ih+44;
+  album.images.forEach((image,index)=>{const cx=x+(index%columns)*(cw+gap),cy=y+Math.floor(index/columns)*(ch+gap),r={x:cx,y:cy,w:cw,h:ch},art={x:cx+5,y:cy+5,w:cw-10,h:ih};if(cy+ch<0||cy>s.h)return;
+   s.frame(r,'button-linen-normal');s.image(this.client.asset(image.thumbSrc),art,'cover');
+   if(image.collected){s.frame({x:art.x+6,y:art.y+6,w:26,h:26},'segment-berry-selected');s.icon('check',{x:art.x+10,y:art.y+10,w:18,h:18},'#fff9ed');s.text(image.title,cx+10,cy+ih+14,13,ink,700,cw-20);}
+   else{s.ctx.save();s.ctx.globalAlpha=.62;s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(art.x,art.y,art.w,art.h);s.ctx.restore();s.text(image.title,cx+10,cy+ih+14,13,this.colors.muted,700,cw-70);s.text('去拼 ›',cx+cw-56,cy+ih+14,13,this.colors.berry,700);s.hit(r,()=>this.playImage(image.id));}
+  });
+  return y+Math.ceil(album.images.length/columns)*(ch+gap)+8;
+ }
+ private playImage(id:string){
+  if(!this.availableGallery().some(photo=>photo.id===id)){this.note('这张图会出现在每日拼图里，留意大厅的今日拼图');return;}
+  this.navigate('gallery',{source:'all',category:'全部',direction:'all',search:'',packId:null});this.selected=id;this.invalidate();
+ }
+ private drawDecorations(data:MobileCollectionView){
+  const s=this.stage,pad=12,w=s.w-24,ink=this.colors.ink,filter=this.decorationFilter,all=data.decorations;
+  const matches=(item:CollectionDecoration)=>filter==='owned'?item.owned:filter==='craft'?!item.owned&&item.source==='craft':filter==='album'?item.source==='album':true;
+  const decorations=all.filter(matches),selected=all.find(item=>item.id===this.decorationId)??all.find(item=>item.equipped)??all[0],hints=selected&&!selected.owned?collectionDecorationRewardHints(selected,data.albums):[];let y=this.bodyTop-this.scroll;
+  this.scrolled(()=>{
+   if(selected){const wide=w>=560,h=wide?190:280,r={x:pad,y,w,h};s.panel(r);
+    const mock={x:pad+12,y:y+12,w:wide?w*.42:w-24,h:wide?h-24:120};s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(mock.x,mock.y,mock.w,mock.h);s.text('同桌看到的样子',mock.x+10,mock.y+8,12,this.colors.muted,700);
+    const cx=mock.x+mock.w*.42,cy=mock.y+mock.h*.5;s.decoration(selected,{x:cx-34,y:cy-30,w:40,h:44});const tag={x:cx+6,y:cy+6,w:Math.min(150,mock.w*.5),h:34};s.frame(tag,'button-linen-normal');s.icon('avatar',{x:tag.x+4,y:tag.y+3,w:24,h:27});s.text(data.profile.name,tag.x+32,tag.y+4,12,ink,700,tag.w-36);s.text('Lv.'+data.profile.level,tag.x+32,tag.y+18,11,this.colors.muted,600);
+    const tx=wide?mock.x+mock.w+16:pad+14,ty=wide?y+16:mock.y+mock.h+12,tw=wide?w-mock.w-40:w-28;s.text(selected.title,tx,ty,18,ink,800,tw);let dy=ty+28+s.wrap(selected.description,tx,ty+28,tw,12,ink,18);for(const hint of hints)dy+=s.wrap(hint,tx,dy,tw,12,this.colors.muted,17);
+    const label=selected.equipped?'使用中':selected.owned?'使用这个装饰':selected.source==='album'?'集齐图集获得':data.wallet.fragments<selected.cost?'碎片不足 · '+data.wallet.fragments+'/'+selected.cost:'制作 · '+selected.cost+' 碎片',disabled=selected.equipped||(!selected.owned&&(selected.source!=='craft'||selected.enabled===false||data.wallet.fragments<selected.cost));
+    s.button({x:tx,y:y+h-52,w:Math.min(240,tw),h:40},label,()=>void this.collectionAction(selected.owned?'equip':'craft',selected.id),{tone:'berrydark',fontSize:14,disabled:disabled||this.busy});y+=h+12;}
+   const tuning=data.tuning;y=this.paragraph('碎片来自拼图：每拼合 '+(tuning?.fragmentContributionStep??10)+' 块得 1 片，拼完一张最多 '+(tuning?.completionFragmentMaximum??10)+' 片 · 现有 '+data.wallet.fragments+' 片',pad+2,y,w,12)+12;
+   const chip=(value:typeof filter,label:string):[string,boolean,()=>void]=>[label,filter===value,()=>this.changeListView(()=>{this.decorationFilter=value;})];
+   y=this.drawChips(pad,y,Math.min(w,440),32,[chip('all','全部 '+all.length),chip('owned','已拥有'),chip('craft','可制作'),chip('album','图集奖励')])+12;
+   const columns=w>=760?4:w>=520?3:2,gap=12,cw=(w-gap*(columns-1))/columns,h=112,base=y;
+   decorations.forEach((item,index)=>{const x=pad+index%columns*(cw+gap),cy=base+Math.floor(index/columns)*(h+gap),r={x,y:cy,w:cw,h};if(cy+h<this.bodyTop||cy>this.bodyBottom)return;
+    s.frame(r,selected?.id===item.id?'panel-gold':'button-linen-normal');s.decoration(item,{x:x+10,y:cy+12,w:44,h:50});s.text(item.title,x+62,cy+14,14,ink,800,cw-70);
+    let status=item.equipped?'使用中':item.owned?'已拥有':'',tone=item.equipped?'#a85567':'#879864';
+    if(!status&&item.source==='craft'){s.icon('fragment',{x:x+62,y:cy+38,w:16,h:18});s.text(item.cost+' 碎片',x+82,cy+40,13,ink,700);}
+    else if(!status){const album=data.albums.find(a=>a.id===item.albumId);status='集齐「'+(album?.title??'图集')+'」获得';tone='#8a5a5f';if(album){s.meter({x:x+62,y:cy+64,w:cw-74,h:7},album.collected/Math.max(1,album.total));s.text(album.collected+'/'+album.total,x+62,cy+76,12,this.colors.muted,700);}}
+    if(status)s.text(status,x+62,cy+40,13,tone,700,cw-70);
+    s.hit(r,()=>{this.decorationId=item.id;this.scroll=0;this.invalidate();});});
+   y=base+Math.ceil(decorations.length/columns)*(h+gap)+8;
   });this.extent=y-(this.bodyTop-this.scroll);
- }
- private drawPacks(data:MobileCollectionView){
-  const s=this.stage,pad=12,w=s.w-24;let y=this.bodyTop-this.scroll;
-  const action=(pack:CollectionPack)=>{if(pack.owned)this.openPackGallery(pack.id);else{this.purchase=pack;this.showModal('purchase');}};
-  this.scrolled(()=>{const first=s.w<640?data.packs[0]:undefined;if(first){const remaining=first.images.slice(3),mainH=Math.min(210,w*.45),thumbH=remaining.length?Math.min(100,Math.max(48,(w-28)/remaining.length*.6)):0,h=100+mainH+thumbH+89,r={x:pad,y,w,h};if(y+h>=this.bodyTop&&y<=this.bodyBottom){s.panel(r);s.text(first.title,pad+14,y+17,23,this.colors.ink,700,w*.48);s.icon('underlay',{x:pad+14,y:y+48,w:15,h:15},this.colors.ink);s.text(first.images.length+'张主题图片',pad+33,y+49,11,this.colors.ink,700);s.wrap(first.description,pad+w*.55,y+23,w*.4,10,this.colors.muted,15);s.icon('sprig',{x:pad+14,y:y+68,w:19,h:18});s.text('永久解锁 · 免费公开建房',pad+37,y+72,10,this.colors.ink,700);
-    const ix=pad+14,iy=y+94,iw=w-28,leftW=iw*.62,preview=(index:number,r:Rect)=>{const image=first.images[index];if(!image)return;this.cardImage(image.thumbSrc,r);s.hit(r,()=>this.openPackPreview(first));};
-    preview(0,{x:ix,y:iy,w:leftW,h:mainH});first.images.slice(1,3).forEach((_image,index)=>preview(index+1,{x:ix+leftW+6,y:iy+index*(mainH/2+3),w:iw-leftW-6,h:mainH/2-3}));
-    const thumbGap=7,thumbW=(iw-thumbGap*(remaining.length-1))/Math.max(1,remaining.length);remaining.forEach((_image,index)=>preview(index+3,{x:ix+index*(thumbW+thumbGap),y:iy+mainH+9,w:thumbW,h:thumbH}));
-    const previewLabel='点图查看全部 '+first.images.length+' 张  ›';s.text(previewLabel,s.w/2-s.measure(previewLabel,11,700)/2,y+h-77,11,this.colors.ink,700);s.hit({x:ix,y:y+h-83,w:iw,h:27},()=>this.openPackPreview(first));
-    s.button({x:s.w/2-89,y:y+h-53,w:178,h:40},first.owned?'已拥有 · 去建房':first.price+' 解锁图包',()=>action(first),{tone:'berry',icon:first.owned?'check':'coin',fontSize:15,disabled:this.busy});}y+=h+13;}
-   const others=first?data.packs.slice(1):data.packs,columns=2,gap=12,cw=(w-(columns-1)*gap)/columns,cardH=80+cw*.53+71,base=y;others.forEach((pack,index)=>{const x=pad+index%columns*(cw+gap),cy=base+Math.floor(index/columns)*(cardH+13),r={x,y:cy,w:cw,h:cardH};if(cy+cardH<this.bodyTop||cy>this.bodyBottom)return;s.panel(r);s.text(pack.title,x+12,cy+15,17,this.colors.ink,700,cw-24);s.icon('underlay',{x:x+12,y:cy+42,w:12,h:12},this.colors.ink);s.text(pack.images.length+'张主题图片',x+27,cy+42,10,this.colors.ink,700,cw-38);const art={x:x+12,y:cy+64,w:cw-24,h:cw*.53};if(pack.images[0]){this.cardImage(pack.images[0].thumbSrc,art);s.hit(art,()=>this.openPackPreview(pack));}
-    const label='查看全部 '+pack.images.length+' 张  ›';s.text(label,x+(cw-s.measure(label,11,700))/2,cy+cardH-70,11,this.colors.ink,700,cw-20);s.hit({x:x+8,y:cy+cardH-76,w:cw-16,h:28},()=>this.openPackPreview(pack));
-    const by=cy+cardH-46,buttonW=Math.max(69,cw*.52);s.icon('coin',{x:x+10,y:by+10,w:20,h:20});s.text(pack.owned?'✓':String(pack.price),x+33,by+13,12,this.colors.ink,700);s.button({x:x+cw-buttonW-10,y:by,w:buttonW,h:35},pack.owned?'去建房':'解锁图包',()=>action(pack),{tone:'berry',fontSize:11,disabled:this.busy});});y=base+Math.ceil(others.length/columns)*(cardH+13);if(!data.packs.length){s.text('新的画作正在路上',22,y+28,16);y+=100;}
-  });this.extent=y-(this.bodyTop-this.scroll)+12;
  }
  private openPackPreview(pack:CollectionPack){if(!pack.images.length)return;this.previewPack=pack;this.previewIndex=-1;this.previewGridScroll=0;this.stage.retryImages();this.showModal('packPreview');}
  private returnToPackGrid(){this.previewIndex=-1;this.modalScroll=this.previewGridScroll;this.invalidate();}
@@ -984,16 +1017,6 @@ export class GameApp{
   const buttonW=Math.min(245,w-40),buttonX=x+(w-buttonW)/2;
   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},pack.owned?'已拥有 · 去建房':pack.price+' 金币 · 解锁图包',()=>{if(pack.owned)this.openPackGallery(pack.id);else{this.purchase=pack;this.showModal('purchase');}},{tone:'berry',icon:pack.owned?'check':'coin',fontSize:14,disabled:this.busy});
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
- }
- private drawDecorations(data:MobileCollectionView){
-  const s=this.stage,pad=12,w=s.w-24,decorations=data.decorations.filter(item=>!this.decorationOwnedOnly||item.owned),selected=decorations.find(item=>item.id===this.decorationId)??decorations.find(item=>item.equipped)??decorations[0],rewardHints=selected&&!selected.owned?collectionDecorationRewardHints(selected,data.albums):[];let y=this.bodyTop-this.scroll;
-  this.scrolled(()=>{s.button({x:pad,y,w:67,h:34},'全部',()=>this.changeListView(()=>{this.decorationOwnedOnly=false;}),{tone:this.decorationOwnedOnly?'linen':'berry',fontSize:13});s.button({x:pad+71,y,w:78,h:34},'已拥有',()=>this.changeListView(()=>{this.decorationOwnedOnly=true;}),{tone:this.decorationOwnedOnly?'berry':'linen',fontSize:13});s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(pad+164,y+17,Math.max(0,w-195),1);s.icon('sprig',{x:s.w-pad-20,y:y+7,w:19,h:18});y+=47;if(selected){const gap=12,leftW=(w-gap)*.58,rightW=w-gap-leftW,hintHeight=rewardHints.reduce((height,hint)=>height+Math.max(1,Math.ceil(hint.length*10/Math.max(1,rightW-24)))*14+8,0),h=Math.max(248,Math.min(290,leftW*1.15),hintHeight?132+selected.description.split('\n').reduce((height,line)=>height+Math.max(1,Math.ceil(line.length*10/Math.max(1,rightW-24)))*15,0)+8+hintHeight+88:0),rx=pad+leftW+gap,r={x:rx,y,w:rightW,h},preview=data.albums.flatMap(a=>a.images).find(i=>i.collected)??data.packs[0]?.images[0]??data.albums[0]?.images[0];
-    if(y+h>=this.bodyTop&&y<=this.bodyBottom){const pr={x:pad,y,w:leftW,h};s.panel(pr);if(preview)s.image(this.client.asset(preview.src||preview.thumbSrc),{x:pad+5,y:y+5,w:leftW-10,h:h-10},'cover');s.ctx.save();s.ctx.strokeStyle='#fff4dd88';s.ctx.lineWidth=.65;for(let i=1;i<5;i++){s.ctx.beginPath();s.ctx.moveTo(pad+5+i*(leftW-10)/5,y+5);s.ctx.lineTo(pad+5+i*(leftW-10)/5,y+h-5);s.ctx.stroke();s.ctx.beginPath();s.ctx.moveTo(pad+5,y+5+i*(h-10)/5);s.ctx.lineTo(pad+leftW-5,y+5+i*(h-10)/5);s.ctx.stroke();}s.ctx.restore();s.panel({x:pad+8,y:y+10,w:53,h:25});s.text('◎ 预览',pad+14,y+17,10,this.colors.ink,700);s.decoration(selected,{x:pad+leftW*.4,y:y+h*.58,w:41,h:44});s.panel({x:pad+leftW*.54,y:y+h*.73,w:leftW*.41,h:38});s.icon('avatar',{x:pad+leftW*.55,y:y+h*.74,w:25,h:28});s.text(data.profile.name,pad+leftW*.55+28,y+h*.75,8,this.colors.ink,700,Math.max(26,leftW*.41-30));s.text('Lv.'+data.profile.level,pad+leftW*.55+28,y+h*.75+13,7,this.colors.ink,700);
-    s.panel(r);s.text(selected.title,rx+12,y+17,16,this.colors.ink,700,rightW-24);s.decoration(selected,{x:rx+rightW/2-39,y:y+48,w:78,h:78});s.icon('create',{x:rx+12,y:y+59,w:9,h:9},this.colors.gold);s.icon('create',{x:rx+rightW-20,y:y+102,w:8,h:8},this.colors.gold);let hintY=y+132+s.wrap(selected.description,rx+12,y+132,rightW-24,10,this.colors.ink,15)+8;for(const hint of rewardHints)hintY+=s.wrap(hint,rx+12,hintY,rightW-24,10,this.colors.muted,14)+8;
-    const label=selected.equipped?'✓ 已装备':selected.owned?'装备':selected.source==='album'?'图鉴奖励':data.wallet.fragments<selected.cost?'碎片不足':'合成装饰';if(!selected.owned&&selected.source==='craft'){s.text(data.wallet.fragments+'/'+selected.cost+' 碎片',rx+12,y+h-75,10,this.colors.muted);s.meter({x:rx+12,y:y+h-59,w:rightW-24,h:7},data.wallet.fragments/Math.max(1,selected.cost));}this.button(rx+10,y+h-45,rightW-20,label,()=>void this.collectionAction(selected.owned?'equip':'craft',selected.id),'berry',34,selected.equipped||(!selected.owned&&(selected.source!=='craft'||selected.enabled===false||data.wallet.fragments<selected.cost)));}y+=h+15;}
-   const columns=s.w<640?2:3,gap=12,cw=(w-(columns-1)*gap)/columns,h=s.w<360?146:134,base=y;
-   decorations.forEach((item,index)=>{const x=pad+index%columns*(cw+gap),cy=base+Math.floor(index/columns)*(h+13),r={x,y:cy,w:cw,h};if(cy+h<this.bodyTop||cy>this.bodyBottom)return;s.panel(r);if(selected?.id===item.id){s.ctx.fillStyle=s.color('#e8c496');s.ctx.fillRect(x+5,cy+h-5,cw-10,2);}s.decoration(item,{x:x+11,y:cy+11,w:18,h:20});s.text(item.title,x+33,cy+16,13,this.colors.ink,700,cw-40);s.decoration(item,{x:x+13,y:cy+46,w:51,h:57});const dx=x+70,dw=cw-80,label=item.equipped?'已装备':item.owned?'可装备':item.source==='album'?'图鉴奖励':'未合成';s.ctx.fillStyle=item.equipped?this.colors.rose:'#f2ddb9';s.ctx.fillRect(dx,cy+45,Math.min(47,dw),18);s.text(label,dx+4,cy+49,8,item.equipped?'#fff9ed':'#a36c2e',700,dw-4);s.wrap(item.description,dx,cy+71,dw,9,this.colors.ink,13);if(!item.owned&&item.source==='craft'){s.icon('fragment',{x:dx,y:cy+h-22,w:13,h:13});s.text(item.cost,dx+16,cy+h-20,9,this.colors.ink,700);}s.hit(r,()=>{this.decorationId=item.id;this.scroll=0;this.invalidate();});});y=base+Math.ceil(decorations.length/columns)*(h+13)+7;y=this.paragraph('装饰会在拖动拼块时展示，让一起拼图的人认出你。',pad+7,y,w-14,10)+12;
-  });this.extent=y-(this.bodyTop-this.scroll);
  }
  private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
   ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；“适配”可找回完整桌面。边缘筛选和整理可帮助寻找拼块。'],
