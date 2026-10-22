@@ -1,4 +1,4 @@
-import type {Platform,Input,Rect,Route,WebLinks} from './ports';
+import type {Platform,Input,Point,Rect,Route,WebLinks} from './ports';
 import {GameClient} from './client';
 import {Stage} from './ui';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
@@ -133,8 +133,38 @@ export class GameApp{
  private webLink(key:WebPage){return this.platform.config.webLinks?.[key]??this.client.config.compatUrls?.[key]??({account:'/account',security:'/account/security',membership:'/membership',uploads:'/upload',terms:'/terms',privacy:'/privacy',feedback:'/feedback'}[key]);}
  private openWeb(key:WebPage){this.platform.openUrl?.(this.webLink(key));}
  private drawWebLinks(x:number,y:number,w:number){const s=this.stage,items:[WebPage,string][]=[['terms','用户协议'],['privacy','隐私政策'],['feedback','反馈']];items.forEach(([key,label],index)=>{const cw=w/items.length,cx=x+index*cw;s.text(label,cx+(cw-s.measure(label,10))/2,y,10,this.colors.muted);s.hit({x:cx,y:y-4,w:cw,h:22},()=>this.openWeb(key));});}
- private get desktop(){const v=this.platform.viewport();return this.platform.config.id==='web'&&v.width>=1000&&v.height>=600;}
+ private get finePointer(){try{return typeof matchMedia==='function'&&matchMedia('(pointer:fine)').matches;}catch{return false;}}
+ private layoutFor(width:number,height:number):'desktop'|'phoneLandscape'|'phonePortrait'{const id=this.platform.config.id;if(width>=1000&&height>=600&&(id==='web'||id==='taptap'&&this.finePointer))return 'desktop';return width>height&&height<500?'phoneLandscape':'phonePortrait';}
+ /** The single layout decision, from the scaled logical viewport; every screen reads it. */
+ private get layout(){const v=this.platform.viewport();return this.layoutFor(v.width,v.height);}
+ private get desktop(){return this.layout==='desktop';}
  private get floatingTasks(){const v=this.platform.viewport();return v.width>v.height&&v.width>=540;}
+ // Primary navigation: five destinations plus settings. The puzzle room never shows it.
+ private readonly navItems:readonly(readonly[Route,string,string])[]=[['lobby','大厅','players'],['gallery','图库','underlay'],['collection','收藏','book'],['tasks','任务','tasks'],['friends','好友','friendArt']];
+ private get tabRoute(){return !this.room&&this.navItems.some(([route])=>route===this.route);}
+ private get navVisible(){return this.ready&&!this.room&&(this.tabRoute||this.route==='supplies');}
+ private contentOrigin={x:0,y:0};
+ private openTab(route:Route){if(route===this.route){this.scroll=0;this.albumListScroll=0;this.invalidate();return;}this.navigate(route);this.routeStack=[];this.routeFrames=[];}
+ private navBadge(route:Route,x:number,y:number){
+  const s=this.stage;if(route==='tasks'&&(this.client.profile?.giftCount??0)>0){s.ctx.fillStyle=s.color('#b46177');s.ctx.fillRect(Math.round(x-4),Math.round(y-4),8,8);return;}
+  const count=route==='friends'?this.social.unread+this.social.requestCount:0;if(!count)return;const label=count>99?'99+':String(count),w=Math.max(17,s.measure(label,9,700)+8);s.frame({x:x-w/2,y:y-8,w,h:17},'segment-berry-selected');s.text(label,x-s.measure(label,9,700)/2,y-6,9,this.colors.onAccent,700);
+ }
+ private drawTabBar(){
+  const s=this.stage,v=this.platform.viewport(),y=s.h-v.bottom-64,tw=s.w/this.navItems.length;if(this.modalBlocksInput)return;
+  s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(0,y,s.w,s.h-y);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(0,y,s.w,2);
+  this.navItems.forEach(([route,label,icon],index)=>{const x=index*tw,selected=this.route===route;
+   if(selected){s.ctx.fillStyle=s.color('#a85567');s.ctx.fillRect(Math.round(x+tw*.22),y,Math.round(tw*.56),3);}
+   s.ctx.save();s.ctx.globalAlpha=selected?1:.7;s.icon(icon,{x:x+(tw-26)/2,y:y+9,w:26,h:26});s.ctx.restore();
+   s.text(label,x+(tw-s.measure(label,11,700))/2,y+39,11,selected?this.colors.ink:this.colors.muted,700);this.navBadge(route,x+tw/2+15,y+11);
+   s.hit({x,y,w:tw,h:s.h-y},()=>this.openTab(route));});
+ }
+ private drawNavRail(){
+  const s=this.stage,v=this.platform.viewport(),w=64,top=v.top+6,itemH=Math.min(56,(s.h-top-v.bottom-6)/6);
+  s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(0,0,w,s.h);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(w-2,0,2,s.h);
+  const item=(r:Rect,label:string,icon:string,selected:boolean,action:()=>void,route?:Route)=>{if(selected)s.frame(r,'button-cream-selected');const iy=r.y+(r.h-37)/2;s.icon(icon,{x:r.x+(r.w-24)/2,y:iy,w:24,h:24});s.text(label,r.x+(r.w-s.measure(label,10,700))/2,iy+26,10,selected?this.colors.ink:this.colors.muted,700);if(route)this.navBadge(route,r.x+r.w/2+14,iy+3);s.hit(r,action);};
+  this.navItems.forEach(([route,label,icon],index)=>item({x:5,y:top+index*itemH,w:w-12,h:itemH-4},label,icon,this.route===route,()=>this.openTab(route),route));
+  item({x:5,y:s.h-v.bottom-itemH-2,w:w-12,h:itemH-4},'设置','tools',false,()=>this.showModal('settings'));
+ }
  private get modalBlocksInput(){return this.modal!==null&&this.modal!=='tasks'&&this.modal!=='chat';}
  private modalContains(x:number,y:number){return this.modalBlocksInput||(this.modal==='tasks'&&inside(this.taskWindowArea,x,y))||(this.modal==='chat'&&inside(this.chatWindowArea,x,y));}
  private get energyEnabled(){return !this.formalWeb&&this.client.config.capabilities?.energy!==false;}
@@ -188,7 +218,7 @@ export class GameApp{
   catch(error){if(!this.destroyed){this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
-  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready)return;if(this.modal==='social')void this.social.refresh();else if(this.modal==='chat')void this.loadChat();},3000));
+  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready)return;if(this.modal==='social'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat')void this.loadChat();},3000));
   this.timers.push(setInterval(()=>this.tickVisibleTime(),1000));
   this.invalidate();
   })().finally(()=>{if(epoch===this.privacyEpoch){this.startupPending=null;this.loginDialogActive=false;if(!this.destroyed)this.invalidate();}});
@@ -206,7 +236,7 @@ export class GameApp{
   if(!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)void this.social.refresh().catch(()=>{});
  }
  resize(){
-  const view=this.platform.viewport(),oldDesktop=this.platform.config.id==='web'&&this.stage.w>=1000&&this.stage.h>=600,newDesktop=this.platform.config.id==='web'&&view.width>=1000&&view.height>=600,rotated=(this.stage.w>this.stage.h)!==(view.width>view.height);
+  const view=this.platform.viewport(),oldDesktop=this.layoutFor(this.stage.w,this.stage.h)==='desktop',newDesktop=this.layoutFor(view.width,view.height)==='desktop',rotated=(this.stage.w>this.stage.h)!==(view.width>view.height);
   this.cancelChatPress();this.clearRoomPointer();this.stage.input({type:'cancel',points:[],changed:[]});
   // A different layout needs a fresh fit; ordinary window resizing keeps the player's zoom.
   if(this.room&&(oldDesktop!==newDesktop||rotated))this.roomViewPending=true;
@@ -238,10 +268,10 @@ export class GameApp{
   if(view.route==='collection')Object.assign(this,{collectionTab:view.collectionTab,albumId:view.albumId,albumListScroll:view.albumListScroll,decorationId:view.decorationId,decorationOwnedOnly:view.decorationOwnedOnly});
   if(view.route==='tasks')this.taskTab=view.taskTab;
  }
- private refreshRoute(){if(this.route==='lobby')void this.loadLobby(false,!!this.rooms.length);if(this.route==='gallery')void this.loadGallery();if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();}
- private finishNavigation(){this.modal=null;this.filterView=null;this.toolsOpen=false;this.message='';this.invalidate();this.refreshRoute();}
+ private refreshRoute(){if(this.route==='lobby')void this.loadLobby(false,!!this.rooms.length);if(this.route==='gallery')void this.loadGallery();if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
+ private finishNavigation(){this.modal=null;this.filterView=null;this.toolsOpen=false;this.message='';if(this.route==='friends'&&!this.social.isOpen)this.social.open();this.invalidate();this.refreshRoute();}
  private navigate(route:Route,context?:Partial<ListView>){
-  if(this.formalWeb&&(route==='privacy'||route==='terms')){this.openWeb(route);return;}if(route==='tasks'&&this.floatingTasks){this.showModal('tasks');return;}
+  if(this.formalWeb&&(route==='privacy'||route==='terms')){this.openWeb(route);return;}if(route==='tasks'&&this.floatingTasks&&this.route==='room'){this.showModal('tasks');return;}
   this.social.close();if(route!=='room')this.clearRoomPointer();const previous=this.saveListView();
   if(route!==this.route){if(route==='lobby'||route==='room'){this.routeStack=[];this.routeFrames=[];}else{this.routeStack.push(this.route);this.routeFrames.push(previous);}this.restoreListView(this.savedRoutes.get(route)??this.defaultListView(route));}
   if(context){const before=this.listViewKey();Object.assign(this,context);if(this.listViewKey()!==before){this.scroll=0;if(route==='gallery')this.selected=null;}}
@@ -532,26 +562,41 @@ export class GameApp{
   this.sceneArea={x:0,y:0,w:s.w,h:s.h};this.listArea={...this.sceneArea};this.albumListArea={x:0,y:0,w:0,h:0};
   this.bodyBottom=s.h-this.platform.viewport().bottom-12;
   if(this.route==='room')this.drawRoom();
-  else if(this.desktop){if(this.ready)this.drawDesktopShell();else s.withoutInput(()=>this.drawDesktopShell());const area=this.sceneArea;if(this.route==='collection'){const width=Math.min(contentMaxWidth+24,area.w);area.x+=(area.w-width)/2;area.w=width;this.listArea={...area};}s.withViewport(area,()=>{this.bodyTop=12;this.bodyBottom=s.h-12;this.drawScene();});this.bodyTop+=area.y;this.bodyBottom+=area.y;this.listArea={x:this.listArea.x||area.x,y:this.bodyTop,w:this.listArea.w||area.w,h:Math.max(0,this.bodyBottom-this.bodyTop)};}
-  else{if(this.ready)this.drawHeader();else s.withoutInput(()=>this.drawHeader());const width=this.route==='collection'?Math.min(contentMaxWidth+24,s.w):s.w,x=(s.w-width)/2;this.sceneArea={x,y:0,w:width,h:s.h};if(x)s.withViewport(this.sceneArea,()=>this.drawScene());else this.drawScene();this.listArea={x,y:this.bodyTop,w:width,h:Math.max(0,this.bodyBottom-this.bodyTop)};}
+  else if(this.desktop){if(this.ready)this.drawDesktopShell();else s.withoutInput(()=>this.drawDesktopShell());const area=this.sceneArea;if(this.route==='collection'){const width=Math.min(contentMaxWidth+24,area.w);area.x+=(area.w-width)/2;area.w=width;this.listArea={...area};}this.contentOrigin={x:area.x,y:area.y};s.withViewport(area,()=>{this.bodyTop=12;this.bodyBottom=s.h-12;this.drawScene();});this.bodyTop+=area.y;this.bodyBottom+=area.y;this.listArea={x:this.listArea.x||area.x,y:this.bodyTop,w:this.listArea.w||area.w,h:Math.max(0,this.bodyBottom-this.bodyTop)};}
+  else{
+   const layout=this.layout,rail=this.navVisible&&layout==='phoneLandscape',bar=this.navVisible&&layout==='phonePortrait',outer={x:rail?72:0,y:0,w:s.w-(rail?72:0),h:s.h-(bar?64:0)};
+   if(rail)this.drawNavRail();
+   // The page draws in local coordinates beside the rail or above the tab bar; hits stay in screen space.
+   const page=()=>{this.bodyBottom=s.h-this.platform.viewport().bottom-12;if(this.ready)this.drawHeader();else s.withoutInput(()=>this.drawHeader());const width=this.route==='collection'?Math.min(contentMaxWidth+24,s.w):s.w,x=(s.w-width)/2,local={x,y:0,w:width,h:s.h};this.sceneArea={...local,x:outer.x+x};this.contentOrigin={x:outer.x+x,y:0};if(x)s.withViewport(local,()=>this.drawScene());else this.drawScene();this.listArea={x:outer.x+x,y:this.bodyTop,w:width,h:Math.max(0,this.bodyBottom-this.bodyTop)};};
+   if(rail||bar)s.withViewport(outer,page);else page();
+   if(bar)this.drawTabBar();
+  }
   if(this.modal)this.drawModal();
   if(this.message&&Date.now()<=this.messageUntil)this.drawNotice();
   if(this.busy){const cancel=this.sharing&&!!this.platform.cancelShare,label=cancel?'等待分享 · 取消等待':'正在处理…',width=cancel?184:144,r={x:(s.w-width)/2,y:Math.max(this.platform.viewport().top+6,this.platform.config.id==='taptap'?44:0),w:width,h:28};s.panel(r,'cream');s.text(label,r.x+(width-s.measure(label,12))/2,r.y+6,12,this.colors.ink);if(cancel)s.hit(r,()=>this.platform.cancelShare?.());}
  }
- private drawScene(){if(!this.ready){this.drawLobbyStartup();return;}switch(this.route){case'lobby':this.drawLobby();break;case'gallery':this.drawGallery();break;case'tasks':this.drawTasks();break;case'supplies':this.drawSupplies();break;case'collection':this.drawCollection();break;default:this.drawPolicy();}this.clampListScroll();}
+ private drawScene(){if(!this.ready){this.drawLobbyStartup();return;}switch(this.route){case'lobby':this.drawLobby();break;case'gallery':this.drawGallery();break;case'tasks':this.drawTasks();break;case'supplies':this.drawSupplies();break;case'collection':this.drawCollection();break;case'friends':this.drawFriends();break;default:this.drawPolicy();}this.clampListScroll();}
  private drawDesktopShell(){
-  const s=this.stage,p=this.client.profile,nav=204,header=84;
-  s.panel({x:12,y:12,w:nav-20,h:s.h-24});s.icon('piece',{x:29,y:32,w:30,h:33});s.text(this.platform.config.gameName,68,35,21,this.colors.ink,800,nav-86);s.text(this.formalWeb?'测试版 · 账号与进度保留':'一起拼出慢时光',30,77,this.formalWeb?10:12,this.colors.muted);
-  const links:[string,string,boolean,()=>void][]=[['拼图大厅','players',this.route==='lobby',()=>this.navigate('lobby')],['挑选图片','underlay',this.route==='gallery',()=>this.navigate('gallery')],['我的相册','book',this.route==='collection'&&this.collectionTab==='albums',()=>this.openCollection('albums')],['任务与礼包','gift',this.route==='tasks',()=>this.navigate('tasks')],['主题图包','bag',this.route==='collection'&&this.collectionTab==='packs',()=>this.openCollection('packs')],['装饰收藏','leaf',this.route==='collection'&&this.collectionTab==='decorations',()=>this.openCollection('decorations')]];
-  links.forEach(([label,icon,selected,action],index)=>s.button({x:25,y:122+index*53,w:nav-47,h:43},label,action,{tone:selected?'berry':'cream',icon,fontSize:15}));
-  const foot=Math.max(452,s.h-125);s.button({x:25,y:foot,w:nav-47,h:37},this.formalWeb?'好友':'好友与消息',()=>this.showModal('social'),{icon:'chat',fontSize:13});s.button({x:25,y:foot+47,w:nav-47,h:37},'玩法与设置',()=>this.showModal('settings'),{icon:'tools',fontSize:13});
-  if(this.formalWeb)this.drawWebLinks(23,s.h-29,nav-44);
-  const x=nav+12,w=s.w-x-20,title=this.route==='lobby'?'今天，拼一会儿':this.route==='gallery'?'挑一幅喜欢的画':this.route==='tasks'?'每一次拼合，都有小收获':this.route==='collection'?'收藏属于你的美好':'慢慢拼，慢慢了解';
-  s.text(title,x+8,25,24,this.colors.ink,800,w-425);s.text('每日一图 · 相册 · 与朋友一起完成',x+9,58,12,this.colors.muted,w-410);
-  const ax=s.w-393;s.icon('coin',{x:ax,y:27,w:22,h:24});s.text(p?(p.collection?.coins??0):'—',ax+28,33,15,this.colors.ink,700,75);s.icon('fragment',{x:ax+108,y:28,w:21,h:24});s.text(p?(p.collection?.fragments??0):'—',ax+136,33,15,this.colors.ink,700,57);
-  s.hit({x:ax-6,y:18,w:108,h:42},()=>this.showModal('coins'));s.hit({x:ax+102,y:18,w:100,h:42},()=>this.showModal('fragments'));
-  s.icon('avatar',{x:s.w-182,y:20,w:42,h:46});s.text(p?.name??'读取玩家信息…',s.w-132,22,14,this.colors.ink,750,112);s.text(p?'Lv.'+p.level:'—',s.w-132,44,12,this.levelColor(p?.level??1),700);s.meter({x:s.w-82,y:48,w:58,h:7},(p?.xp??0)/Math.max(1,p?.xpToNext??1));s.hit({x:s.w-190,y:12,w:172,h:61},()=>this.showModal('settings'));
+  const s=this.stage,p=this.client.profile,nav=200,header=84,ink=this.colors.ink;
+  s.panel({x:10,y:10,w:nav-10,h:s.h-20});
+  // Profile: the avatar art carries its own pixel frame.
+  s.hit({x:18,y:18,w:nav-26,h:96},()=>this.showModal('settings'));
+  s.icon('avatar',{x:24,y:26,w:44,h:48});s.text(p?.name??'读取玩家信息…',76,29,16,ink,800,nav-88);s.text(p?'Lv.'+p.level:'—',76,53,12,this.levelColor(p?.level??1),700,40);s.meter({x:116,y:57,w:nav-130,h:6},(p?.xp??0)/Math.max(1,p?.xpToNext??1));
+  const cy=88;if(this.energyEnabled){s.icon('lightning',{x:24,y:cy-2,w:17,h:24});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=s.measure(label,14,800);s.text(label,45,cy+2,14,ink,800,70);s.button({x:49+tw,y:cy,w:20,h:20},'',()=>this.navigate('supplies'),{tone:'gold'});s.text('+',54+tw,cy+1,16,'#fffaf0',700);}
+  else{s.icon('coin',{x:24,y:cy,w:19,h:21});s.text(p?(p.collection?.coins??0):'—',47,cy+3,14,ink,800,56);s.hit({x:20,y:cy-4,w:84,h:28},()=>this.showModal('coins'));}
+  s.icon('fragment',{x:112,y:cy,w:19,h:21});s.text(p?(p.collection?.fragments??0):'—',135,cy+3,14,ink,800,nav-147);s.hit({x:108,y:cy-4,w:nav-118,h:28},()=>this.showModal('fragments'));
+  s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(22,122,nav-34,1);
+  const item=(y:number,label:string,icon:string,selected:boolean,action:()=>void,route?:Route)=>{const r={x:20,y,w:nav-30,h:48};if(selected)s.frame(r,'button-cream-selected');s.icon(icon,{x:r.x+14,y:y+12,w:24,h:24});s.text(label,r.x+48,y+16,15,ink,selected?800:700,r.w-56);if(route)this.navBadge(route,r.x+40,y+12);s.hit(r,action);};
+  this.navItems.forEach(([route,label,icon],index)=>item(134+index*52,label,icon,this.route===route,()=>this.openTab(route),route));
+  item(s.h-(this.formalWeb?104:72),'设置','tools',false,()=>this.showModal('settings'));
+  if(this.formalWeb)this.drawWebLinks(23,s.h-38,nav-44);
+  const x=nav+16,w=s.w-x-20,title=this.route==='lobby'?'今天，拼一会儿':this.route==='gallery'?'挑一幅喜欢的画':this.route==='tasks'?'每一次拼合，都有小收获':this.route==='collection'?'收藏属于你的美好':this.route==='friends'?'和朋友一起拼':this.route==='supplies'?'补给站':'慢慢拼，慢慢了解';
+  s.text(title,x+4,25,24,ink,800,w-8);s.text('每日一图 · 相册 · 与朋友一起完成',x+5,58,12,this.colors.muted,500,w-8);
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,header-4,w,1);this.sceneArea={x,y:header,w,h:s.h-header-12};this.listArea={x,y:header,w,h:s.h-header-12};
+ }
+ private drawFriends(){
+  const s=this.stage,w=Math.min(760,s.w-24),rect={x:(s.w-w)/2,y:this.bodyTop,w,h:Math.max(0,this.bodyBottom-this.bodyTop)};this.extent=0;
+  if(!this.social.isOpen)this.social.open();this.social.render(s,rect);
  }
  private drawLobbyStartup(){
   const s=this.stage,left=12,width=Math.min(1120,s.w-24),x=(s.w-width)/2,y=this.bodyTop+8;
@@ -575,26 +620,17 @@ export class GameApp{
   const energy=(x:number,y:number,width:number,size=16)=>{if(!this.energyEnabled){s.icon('coin',{x,y:y+7,w:24,h:26});s.text(p?(p.collection?.coins??0):'—',x+29,y+13,size,this.colors.ink,800,Math.max(24,width-30));s.hit({x:x-3,y,w:Math.max(24,width+3),h:42},()=>this.showModal('coins'));return;}s.icon('lightning',{x,y:y+3,w:22,h:31});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=Math.min(s.measure(label,size,800),Math.max(24,width-49));s.text(label,x+25,y+12,size,this.colors.ink,800,tw+1);s.frame({x:x+29+tw,y:y+10,w:19,h:21},'plus-gold-normal');s.text('+',x+33+tw,y+11,17,'#fffaf0',700);s.hit({x,y,w:width,h:42},()=>this.navigate('supplies'));};
   if(this.route==='lobby'||this.route==='gallery'){
    let y=top;const gallery=this.route==='gallery';
-   if(gallery){s.button({x:12,y,w:32,h:32},'',()=>this.back(),{icon:'back'});s.text('创建房间',53,y+3,small?22:24,this.colors.ink,800,s.w-(this.usesCreationTickets?157:65));if(this.usesCreationTickets)s.button({x:s.w-106,y,w:94,h:32},'券 '+(p?.supply.create??0),()=>this.navigate('supplies'),{tone:'linen',icon:'ticket',fontSize:12});line(y+37);y+=43;}
+   if(gallery){s.text('图库',14,y+3,small?22:24,this.colors.ink,800,s.w-(this.usesCreationTickets?126:28));if(this.usesCreationTickets)s.button({x:s.w-106,y,w:94,h:32},'券 '+(p?.supply.create??0),()=>this.navigate('supplies'),{tone:'linen',icon:'ticket',fontSize:12});line(y+37);y+=43;}
    const h=wide?74:56,avatar=wide?64:small?43:49,playerWidth=gallery?(small?127:151):wide?174:small?96:110;
    if(!gallery)line(y);s.icon('avatar',{x:12,y:y+3,w:avatar,h:h-5});s.hit({x:12,y,w:playerWidth,h},()=>this.showModal('settings'));
    const lx=12+avatar+4,lw=gallery?small?66:85:wide?92:small?42:55;
    s.text('Lv.'+(p?.level??'—'),lx,y+5,wide?23:small?14:16,this.levelColor(p?.level??0),800,lw);s.meter({x:lx,y:y+(wide?36:28),w:lw,h:8},p?p.xp/Math.max(1,p.xpToNext):0);s.text(p?p.xp+' / '+p.xpToNext:'—',lx,y+(wide?48:40),wide?12:10,this.colors.ink,500,lw+8);
    if(gallery){energy(12+playerWidth,y+5,Math.min(135,s.w-playerWidth-60),wide?20:16);s.icon('sprig',{x:s.w-45,y:y+h-39,w:30,h:28});}
-   else{const compact=s.w<400,fontSize=wide?16:compact?10:12,padding=wide?8:small?4:7,gap=2,tw=wide?34:small?21:compact?23:27,sw=wide?44:small?26:compact?28:33;
-    const taskWidth=tw+gap+s.measure('任务',fontSize,750)+padding*2,supplyWidth=sw+gap+s.measure('补给站',fontSize,750)+padding*2,supplyX=s.w-12-supplyWidth,taskX=supplyX-taskWidth,ex=12+playerWidth+4;
-    energy(ex,y+(h-43)/2,taskX-ex-6,wide?22:small?14:16);
-    s.ctx.fillStyle=s.color('#c99586');s.ctx.fillRect(taskX,y+7,1,h-14);s.ctx.fillRect(supplyX,y+7,1,h-14);
-    const iy=y+(h-33)/2,ty=y+(h-fontSize)/2-1,taskIconX=taskX+padding,supplyIconX=supplyX+padding;
-    s.icon('gift',{x:taskIconX,y:iy,w:tw,h:33});s.text('任务',taskIconX+tw+gap,ty,fontSize,this.colors.ink,750);s.hit({x:taskX,y,w:taskWidth,h},()=>this.navigate('tasks'));
-    if((p?.giftCount??0)>0){s.ctx.fillStyle='#b46177';s.ctx.fillRect(taskIconX+tw-3,iy-2,13,13);s.text(Math.min(99,p?.giftCount??0),taskIconX+tw,iy-1,9,'#fff9ec',700);}
-    s.icon('store',{x:supplyIconX,y:iy,w:sw,h:34});s.text('补给站',supplyIconX+sw+gap,ty,fontSize,this.colors.ink,750);s.hit({x:supplyX,y,w:supplyWidth,h},()=>this.navigate('supplies'));
-    s.icon('sprig',{x:s.w-30,y:y-14,w:18,h:18});
-   }
+   else{const ex=12+playerWidth+4;energy(ex,y+(h-43)/2,Math.min(220,s.w-ex-50),wide?22:small?14:16);s.icon('sprig',{x:s.w-30,y:y-14,w:18,h:18});}
    line(y+h);this.bodyTop=y+h+9;return;
   }
-  const title=this.route==='tasks'?'任务与礼包':this.route==='supplies'?'补给站':this.route==='collection'?'我的收藏':this.route==='privacy'||this.route==='terms'?'服务与隐私说明':'玩法与设置';
-  s.button({x:12,y:top,w:32,h:34},'',()=>this.back(),{icon:'back'});s.text(title,53,top+6,this.route==='collection'&&small?20:23,this.colors.ink,800,this.route==='collection'?s.w-220:s.w-112);
+  const title=this.route==='tasks'?'任务与礼包':this.route==='friends'?'好友':this.route==='supplies'?'补给站':this.route==='collection'?'我的收藏':this.route==='privacy'||this.route==='terms'?'服务与隐私说明':'玩法与设置';
+  const titleX=this.tabRoute?14:53;if(!this.tabRoute)s.button({x:12,y:top,w:32,h:34},'',()=>this.back(),{icon:'back'});s.text(title,titleX,top+6,this.route==='collection'&&small?20:23,this.colors.ink,800,this.route==='collection'?s.w-220:s.w-112);
   if(this.route==='collection'){const c=this.collection?.wallet??p?.collection;const coin=String(c?.coins??0),fragment=String(c?.fragments??0),fx=s.w-67,cx=fx-Math.max(61,s.measure(coin,12,700)+26);s.icon('coin',{x:cx,y:top+7,w:20,h:22});s.text(coin,cx+23,top+11,12,this.colors.ink,700,fx-cx-25);s.icon('fragment',{x:fx,y:top+7,w:19,h:22});s.text(fragment,fx+22,top+11,12,this.colors.ink,700,42);s.hit({x:cx-5,y:top,w:fx-cx,h:37},()=>this.showModal('coins'));s.hit({x:fx-4,y:top,w:64,h:37},()=>this.showModal('fragments'));}
   else if(this.route==='supplies'){energy(Math.max(151,s.w-169),top-1,104,small?13:15);if(!this.formalWeb){s.icon('ticket',{x:s.w-58,y:top+5,w:24,h:25});s.text(p?.supply.create??0,s.w-30,top+12,13,this.colors.ink,700);}}
   else s.button({x:s.w-52,y:top+1,w:38,h:32},'设置',()=>this.showModal('settings'),{fontSize:10});
@@ -621,12 +657,10 @@ export class GameApp{
 
  private drawLobby(){
   const s=this.stage,narrow=s.w<360,landscape=s.w>s.h,short=landscape&&s.h<=560,large=s.w>=640&&!short,margin=narrow?9:12,width=Math.min(1120,s.w-2*margin),left=(s.w-width)/2;
-  let y=this.bodyTop;const titleSize=large?30:short?25:narrow?20:23,titleIcon=large?34:narrow?25:28,titleWidth=titleIcon+5+s.measure('拼图大厅',titleSize,800),collectionWidth=large?67:48,socialWidth=large?72:49,headingHeight=large?44:short?36:34;
+  let y=this.bodyTop;const titleSize=large?30:short?25:narrow?20:23,titleIcon=large?34:narrow?25:28,titleWidth=titleIcon+5+s.measure('拼图大厅',titleSize,800),collectionWidth=0,socialWidth=0,headingHeight=large?44:short?36:34;
   s.icon('piece',{x:left,y:y+(headingHeight-titleIcon)/2,w:titleIcon,h:titleIcon});s.text('拼图大厅',left+titleIcon+5,y+(headingHeight-titleSize)/2-1,titleSize,this.colors.ink,800);
   const dailyX=left+titleWidth+(narrow?4:7),dailyWidth=Math.min(large?181:short?149:narrow?117:125,width-titleWidth-collectionWidth-socialWidth-19),dailyHeight=large?38:32;
   this.drawPictureButton({x:dailyX,y:y+(headingHeight-dailyHeight)/2,w:dailyWidth,h:dailyHeight},'每日拼图',()=>void this.launch({mode:'daily',pieces:108,visibility:'public'}),'berrydark','daily',large?15:narrow?10:11,large?20:14,this.busy||!this.client.profile);
-  const collectionX=left+width-collectionWidth;s.icon('book',{x:collectionX,y:y+(headingHeight-27)/2,w:25,h:27});s.text('收藏',collectionX+27,y+(headingHeight-(large?16:12))/2,large?16:12,this.colors.ink,800);s.hit({x:collectionX,y,w:collectionWidth,h:headingHeight},()=>this.navigate('collection'));
-  const socialX=collectionX-socialWidth-5;s.icon('players',{x:socialX,y:y+(headingHeight-23)/2,w:21,h:23});s.text('好友',socialX+24,y+(headingHeight-(large?16:12))/2,large?16:12,this.colors.ink,800);s.hit({x:socialX,y,w:socialWidth,h:headingHeight},()=>this.showModal('social'));const unread=this.social.unread+this.social.requestCount;if(unread){s.frame({x:socialX+12,y:y-3,w:17,h:17},'segment-berry-selected');s.text(Math.min(99,unread),socialX+16,y-1,9,this.colors.onAccent,700);}
   y+=headingHeight+6;const groupGap=narrow?5:8,filterGroup=(width-groupGap)*1.18/2.18,filterButton=large?95:narrow?29:58,filterGap=narrow?5:8,controlHeight=large?40:short?36:35,railHeight=large?38:33;
   s.segments({x:left,y:y+(controlHeight-railHeight)/2,w:filterGroup-filterButton-filterGap,h:railHeight},directions.slice(0,3),this.direction,v=>this.changeDirection(v));
   this.drawPictureButton({x:left+filterGroup-filterButton,y:y+(controlHeight-railHeight)/2,w:filterButton,h:railHeight},narrow?'':'筛选',()=>this.showModal('filters'),this.filterCount||this.activeOnly||this.direction==='square'?'berry':'linen','filter',large?15:11,large?18:13);
@@ -672,6 +706,7 @@ export class GameApp{
   const s=this.stage,data=this.tasks,p=this.client.profile,pad=12,w=s.w-24,columns=w>=740?2:1,gap=16,cw=(w-gap*(columns-1))/columns;let y=this.bodyTop;
   if(!this.desktop&&!inWindow){s.icon('avatar',{x:pad,y,w:40,h:43});s.text('Lv.'+(p?.level??1),pad+47,y+3,15,this.colors.ink,700);s.meter({x:pad+47,y:y+26,w:70,h:7},(p?.xp??0)/Math.max(1,p?.xpToNext??1));s.icon(this.energyEnabled?'lightning':'coin',{x:s.w-130,y:y+8,w:23,h:27});s.text(this.energyEnabled?(p?.energy??0)+'/'+(p?.energyCap??0):String(p?.collection?.coins??0),s.w-99,y+14,15,this.colors.ink,700,83);if(!this.energyEnabled)s.hit({x:s.w-134,y,w:118,h:45},()=>this.showModal('coins'));y+=55;}
   const tabW=Math.min(220,(w-8)/2),tabH=inWindow?32:38;s.button({x:pad,y,w:tabW,h:tabH},'拼图任务',()=>this.setTaskTab('tasks'),{tone:this.taskTab==='tasks'?'berry':'cream',icon:'daily',fontSize:inWindow?13:15});s.button({x:pad+tabW+8,y,w:tabW,h:tabH},'我的礼包',()=>this.setTaskTab('gifts'),{tone:this.taskTab==='gifts'?'berry':'cream',icon:'gift',fontSize:inWindow?13:15});
+  if(!inWindow){const label='补给站',bw=s.measure(label,13,750)+50,wide=w>=tabW*2+8+bw+8;s.button({x:wide?pad+w-bw:pad,y:wide?y:y+tabH+8,w:bw,h:wide?tabH:32},label,()=>this.navigate('supplies'),{icon:'store',fontSize:13});if(!wide)y+=40;}
   this.bodyTop=y+tabH+(inWindow?10:15);if(!data){s.text('正在整理任务与礼包…',pad+8,this.bodyTop+25,14);this.extent=0;return;}
   let cy=this.bodyTop-this.scroll;const gifts=data.inventory.filter(gift=>gift.count>0&&this.giftVisible(gift)),giftCount=gifts.reduce((n,g)=>n+g.count,0),full=(p?.energy??0)>=(p?.energyCap??1);
   const drawGift=(gift:typeof gifts[number],r:Rect)=>{s.panel(r);const art=gift.effect==='full-energy'&&this.energyEnabled?'refillGift':gift.kind.startsWith('ten')?'pouch':gift.kind.startsWith('friend')?'goldGift':'xpChest';s.icon(art,{x:r.x+13,y:r.y+17,w:55,h:57});const title=!this.energyEnabled&&gift.effect==='full-energy'?'邀请礼包':gift.title;s.text(title+' ×'+gift.count,r.x+80,r.y+16,15,this.colors.ink,750,r.w-94);let ry=r.y+45;
@@ -1044,7 +1079,7 @@ export class GameApp{
     if(this.performanceInfoVisible&&this.platform.setTouchInputMode){this.button(left,cy,width,'诊断：输入'+(this.platform.inputDiagnostics?.().mode==='touch'?'原生触摸':'指针'),()=>{this.platform.setTouchInputMode?.(this.platform.inputDiagnostics?.().mode!=='touch');this.invalidate();});cy+=48;}
     if(this.performanceInfoVisible&&this.platform.config.id==='taptap'&&this.board&&this.onRenderProbe){this.button(left,cy,width,'一键卡顿对照（约14秒）',()=>{this.showModal(null);this.onRenderProbe?.();});cy+=48;cy=this.paragraph('测试时持续划动屏幕；期间不会移动拼片，结束后显示结果。',left,cy,width,12)+12;}
     }
-    this.button(left,cy,width,(this.formalWeb?'好友':'好友与消息')+(this.social.unread?' · '+this.social.unread+' 条未读':''),()=>this.showModal('social'),'cream',39);cy+=50;
+    this.button(left,cy,width,(this.formalWeb?'好友':'好友与消息')+(this.social.unread?' · '+this.social.unread+' 条未读':''),()=>{if(this.room)this.showModal('social');else this.navigate('friends');},'cream',39);cy+=50;
     if(this.formalWeb||this.client.config.capabilities.customNames===true){this.button(left,cy,width,'修改昵称',()=>this.formalWeb?this.openWeb('account'):void this.run(async()=>{const value=await this.platform.prompt('昵称（1～16字）',p?.name);if(value!==null){await this.client.json('/api/mobile/profile','PATCH',{name:value.trim()},{'Content-Type':'application/json'});await this.client.refresh();this.note('昵称已保存');}}));cy+=48;}else cy=this.paragraph('首测暂停自定义昵称，当前昵称与已有进度保留。',left,cy,width,12)+18;
     if(this.energyEnabled){this.button(left,cy,width,(p?.autoSupply?'✓ ':'')+'体力耗尽自动使用库存包',()=>void this.run(async()=>{await this.client.json('/api/mobile/profile','PATCH',{autoSupply:!p?.autoSupply},{'Content-Type':'application/json'});await this.client.refresh();}));cy+=47;cy=this.paragraph('只消耗已有体力包，不会自动发起分享。',left,cy,width,12)+18;}
     const policyActions=this.formalWeb?[["隐私说明",()=>this.openWeb('privacy')],["服务说明",()=>this.openWeb('terms')]] as const:[["服务与隐私说明",()=>this.navigate('privacy')]] as const;
@@ -1113,11 +1148,12 @@ export class GameApp{
   if(!this.ready)return this.stage.input(input);
   const point=input.changed[0]??input.points[0];
   if(input.type==='key'){
-   if(input.key==='Escape'&&input.keyDown){if(this.modal==='packPreview'&&this.previewIndex>=0){this.returnToPackGrid();return true;}this.cancelChatPress();const handled=this.board?.input(input)??false;this.pointer=null;this.stage.input({type:'cancel',points:[],changed:[]});if(this.modal){this.showModal(null);return true;}if(this.toolsOpen){this.toolsOpen=false;this.invalidate();return true;}return handled;}
+   if(input.key==='Escape'&&input.keyDown){if(this.modal==='packPreview'&&this.previewIndex>=0){this.returnToPackGrid();return true;}this.cancelChatPress();const handled=this.board?.input(input)??false;this.pointer=null;this.stage.input({type:'cancel',points:[],changed:[]});if(this.modal){this.showModal(null);return true;}if(this.toolsOpen){this.toolsOpen=false;this.invalidate();return true;}if(this.route!=='room'&&this.route!=='lobby'){this.back();return true;}return handled;}
    return this.route==='room'&&!this.modalBlocksInput?this.board?.input(input)??false:false;
   }
   if(input.type==='move'&&this.platform.canvas.style&&point){this.platform.canvas.style.cursor=this.pointer?.board?'grabbing':this.stage.hasHit(point.x,point.y)?'pointer':this.route==='room'&&inside(this.roomArea,point.x,point.y)&&!this.modalBlocksInput?'grab':'default';}
   if(this.modal==='social'){this.pointer=null;this.cancelChatPress();return this.social.input(input)||this.stage.input(input);}
+  if(!this.modal&&this.route==='friends'&&this.social.isOpen){this.pointer=null;this.cancelChatPress();const o=this.contentOrigin,local=(p:Point)=>({...p,x:p.x-o.x,y:p.y-o.y});return this.social.input({...input,points:input.points.map(local),changed:input.changed.map(local)})||this.stage.input(input);}
   if(input.type==='wheel'){
    if(!point)return false;this.cancelChatPress();const delta=Number.isFinite(input.deltaY)?input.deltaY!:0;
    // Keep an active board gesture intact, even when it crosses a floating panel.
