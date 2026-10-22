@@ -1,8 +1,8 @@
 /** UI colours only. Artwork and puzzle textures always retain their source colours. */
 export type ThemeId='light'|'dark'|'wood';
 
-export const lightThemeColors=Object.freeze({paper:'#fdf6ed',cream:'#fff9f0',ink:'#642238',muted:'#a67578',rose:'#c7808b',berry:'#c7808b',gold:'#d7ad68',line:'#cda394',green:'#879864',onAccent:'#fffaf0',overlay:'#3c203c80',highlight:'#fffaf3',placeholder:'#efdfcc',disabled:'#9d7b7b'});
-export const darkThemeColors=Object.freeze({paper:'#29232c',cream:'#332a34',ink:'#fff2e3',muted:'#c5a4aa',rose:'#ce8190',berry:'#ce8190',gold:'#dfbb7d',line:'#85616c',green:'#a4b681',onAccent:'#fffaf0',overlay:'#100d18b3',highlight:'#352b36',placeholder:'#463644',disabled:'#a58a92'});
+export const lightThemeColors=Object.freeze({paper:'#fdf6ed',cream:'#fff9f0',ink:'#642238',muted:'#8a5a5f',rose:'#c7808b',berry:'#c7808b',gold:'#d7ad68',line:'#cda394',green:'#879864',onAccent:'#fffaf0',overlay:'#3c203c80',highlight:'#fffaf3',placeholder:'#efdfcc',disabled:'#8b6868'});
+export const darkThemeColors=Object.freeze({paper:'#29232c',cream:'#332a34',ink:'#fff2e3',muted:'#c5a4aa',rose:'#ce8190',berry:'#ce8190',gold:'#dfbb7d',line:'#85616c',green:'#a4b681',onAccent:'#fffaf0',overlay:'#100d18b3',highlight:'#352b36',placeholder:'#463644',disabled:'#ab9097'});
 export type ThemeColors={readonly [Key in keyof typeof lightThemeColors]:string};
 export function themeColors(theme:ThemeId):ThemeColors{return theme==='dark'?darkThemeColors:lightThemeColors;}
 export function isThemeId(value:unknown):value is ThemeId{return value==='light'||value==='dark'||value==='wood';}
@@ -43,7 +43,7 @@ const darkUiColorGroups:readonly(readonly[string,readonly string[]])[]=[
  ['#332a34',['#fff9f0','#fff7ed','#fff8ef','#fff8ed','#fff9ee','#fff8ee']],
  ['#352b36',['#fffaf3']],
  ['#fff2e3',['#642238','#75424f','#704350']],
- ['#c5a4aa',['#a67578','#997a76','#876158','#896c63','#9d7b7b']],
+ ['#c5a4aa',['#a67578','#8a5a5f','#997a76','#876158','#896c63','#9d7b7b','#8b6868']],
  ['#ce8190',['#c7808b','#cb7f90','#bc7889','#cc8996','#b9848d','#b46177']],
  ['#dfbb7d',['#d7ad68']],
  ['#a4b681',['#879864']],

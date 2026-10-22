@@ -1,5 +1,6 @@
 import type {TapBattleManager} from './tap-preview';
 export type PlatformId='web'|'taptap'|'wechat';
+export type UiSize='auto'|'small'|'large'|'xlarge';
 export type Viewport={width:number;height:number;dpr:number;top:number;bottom:number};
 export type Point={id:number;x:number;y:number};
 export type Input={
@@ -35,6 +36,9 @@ export type Platform={
  config:PlatformConfig;
  canvas:HTMLCanvasElement;
  viewport():Viewport;
+ /** Browser hosts: user text-size preference; the viewport follows it at once. */
+ uiSize?():UiSize;
+ setUiSize?(size:UiSize):void;
  createImage():HTMLImageElement;
  /** Host-managed public image loading; cancellation suppresses pending callbacks. */
  setImageSource?(image:HTMLImageElement,src:string):()=>void;

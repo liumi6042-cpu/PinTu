@@ -3,7 +3,7 @@ import {createTapInterstitial,type TapInterstitialHost} from './tap-interstitial
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {setTapOrientation,type TapOrientationHost} from './tap-orientation';
 import {webFullscreen} from './web-fullscreen';
-import type {Platform,PlatformConfig,HttpInput,HttpReply,Input,Point,Viewport} from './ports';
+import type {Platform,PlatformConfig,HttpInput,HttpReply,Input,Point,UiSize,Viewport} from './ports';
 import {platformSocketUrl} from './ports';
 import {themeColors} from './theme';
 import {AudioPlayback} from './audio-playback';
@@ -38,6 +38,11 @@ export async function webGuestSecret():Promise<string>{
  throw Error('浏览器无法保存游客进度，请允许网站存储或登录原站账号');
 }
 
+const uiSizeKey='jn-ui-size',uiSizeFactor:Record<UiSize,number>={auto:1,small:.9,large:1.15,xlarge:1.3};
+export function readUiSize():UiSize{try{const value=localStorage.getItem(uiSizeKey);if(value&&Object.hasOwn(uiSizeFactor,value))return value as UiSize;}catch{}return 'auto';}
+/** Logical zoom for large browser windows. Phones (below 1366×768) stay at 1; only 'small' may shrink. */
+export function uiScale(size:UiSize=readUiSize(),width=window.innerWidth,height=window.innerHeight){const k=Math.min(2,Math.max(1,Math.min(width/1366,height/768)))*uiSizeFactor[size];return size==='small'?k:Math.max(1,k);}
+
 /** Browser/TapTap shell for the shared game. No game rules belong in this file. */
 export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement):Platform{
  const config={...input,apiBase:new URL(input.apiBase,document.baseURI).href.replace(/\/$/,''),assetBase:new URL(input.assetBase,document.baseURI).href.replace(/\/$/,'')};
@@ -59,11 +64,13 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
  };
  const nativeSocial=config.id==='taptap'?(()=>{const openFriends=async()=>{const host=tap();if(typeof host?.openFriendList!=='function')return 'unavailable';try{host.openFriendList();return 'opened';}catch{return 'failed';}};return{prepare:async()=>({state:typeof tap()?.openFriendList==='function'?'ready':'unavailable'} as const),status:()=>({state:typeof tap()?.openFriendList==='function'?'ready':'unavailable'} as const),openFriends};})():undefined;
  const storageMemory=new Map<string,string>();
+ // Every pointer, touch and wheel position is divided by the same zoom used for the viewport.
+ let uiSize=readUiSize(),scale=uiScale(uiSize);const resizeListeners=new Set<()=>void>();
  let shareDiagnostic='尚未尝试分享';
  let shareController:AbortController|undefined;
  const tap=()=>config.id==='taptap'?(window as unknown as {tap?:TapHost}).tap:undefined;
  let identityDiagnostic='尚未开始',authorizationPending=false,identityVisible=true,consentRequest:{accept:()=>void;fail:(error:unknown)=>void}|null=null;const identityListeners=new Set<()=>void>();
- const identityController=config.id==='taptap'?createTapTapIdentity(tap,event=>{if(event.stage==='authorize'&&event.state==='ready'&&consentRequest){const request=consentRequest;consentRequest=null;request.accept();}authorizationPending=event.stage==='authorize'&&event.state==='waiting';for(const listener of identityListeners)listener();identityDiagnostic=({bridge:'等待平台接口',login:'获取登录凭证',getUserInfo:'读取已授权昵称',authorize:'原生昵称授权按钮'}[event.stage])+' · '+({waiting:'等待',requesting:'请求中',retrying:'重试中',ready:'完成',failed:'失败'}[event.state])+(event.kind?' · '+event.kind:'')+(event.errno?' · 码 '+event.errno:'');if(event.state==='failed')console.warn('[TapTap login]',event);},{},()=>{const r=canvas.getBoundingClientRect(),button=tapAuthorizationLayout(r.width,r.height).button;return {...button,left:r.left+button.left,top:r.top+button.top,transparent:true};}):undefined;
+ const identityController=config.id==='taptap'?createTapTapIdentity(tap,event=>{if(event.stage==='authorize'&&event.state==='ready'&&consentRequest){const request=consentRequest;consentRequest=null;request.accept();}authorizationPending=event.stage==='authorize'&&event.state==='waiting';for(const listener of identityListeners)listener();identityDiagnostic=({bridge:'等待平台接口',login:'获取登录凭证',getUserInfo:'读取已授权昵称',authorize:'原生昵称授权按钮'}[event.stage])+' · '+({waiting:'等待',requesting:'请求中',retrying:'重试中',ready:'完成',failed:'失败'}[event.state])+(event.kind?' · '+event.kind:'')+(event.errno?' · 码 '+event.errno:'');if(event.state==='failed')console.warn('[TapTap login]',event);},{},()=>{const r=canvas.getBoundingClientRect(),button=tapAuthorizationLayout(r.width/scale,r.height/scale).button;return {left:r.left+button.left*scale,top:r.top+button.top*scale,width:button.width*scale,height:button.height*scale,transparent:true};}):undefined;
  const tapTapIdentity=(options?:{forceAuthorization?:boolean})=>identityController?.(config.tapAuthorizationTest===true&&options?.forceAuthorization===true)??Promise.resolve(null);
  let ad:RewardedVideo|undefined,adUnit='',watching=false,adDiagnostic='尚未请求广告';
  const reportAd=(stage:string,unit:string,error?:unknown)=>{const value=error as any;const raw=String(value?.errMsg??value?.message??(typeof error==='string'?error:''));
@@ -91,7 +98,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   cancel.onclick=()=>finish(null);form.onsubmit=event=>{event.preventDefault();finish(field.value);};dialog.oncancel=event=>{event.preventDefault();finish(null);};
   actions.appendChild(cancel);actions.appendChild(send);form.appendChild(heading);form.appendChild(field);form.appendChild(actions);dialog.appendChild(form);document.body.appendChild(dialog);dialog.showModal();field.focus();
  });
- const viewport=():Viewport=>{const rect=canvas.getBoundingClientRect();return {width:rect.width||window.innerWidth,height:rect.height||window.innerHeight,dpr:window.devicePixelRatio||1,top:0,bottom:0};};
+ const viewport=():Viewport=>{const rect=canvas.getBoundingClientRect();scale=uiScale(uiSize);return {width:(rect.width||window.innerWidth)/scale,height:(rect.height||window.innerHeight)/scale,dpr:(window.devicePixelRatio||1)*scale,top:0,bottom:0};};
  function query(){const url=new URL(location.href),hash=url.hash.slice(1),at=hash.indexOf('?'),result=Object.fromEntries([...url.searchParams,...new URLSearchParams(at<0?'':hash.slice(at+1))]);try{const native=tap()?.getEnterOptionsSync?.()??tap()?.getLaunchOptionsSync?.();return {...result,...tapShareScene(native?.query?.sceneParam)};}catch{return result;}}
  let apiTransport:'undecided'|'browser'|'native'='undecided';
  let apiProbe:Promise<HttpReply>|null=null;
@@ -140,6 +147,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   return nativeRequest();
  }
  const platform:Platform={config,canvas,viewport,request,audio:audioPlayback.audio,
+  uiSize:()=>uiSize,setUiSize(size){if(!Object.hasOwn(uiSizeFactor,size))return;uiSize=size;try{localStorage.setItem(uiSizeKey,size);}catch{}for(const fn of resizeListeners)fn();},
   networkDiagnostics:()=>({http:config.id==='taptap'&&tap()?.request?apiTransport:'browser'}),
   openSocket(url,handlers){
    const socket=new WebSocket(platformSocketUrl(url,config));let closed=false;
@@ -186,7 +194,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   inputDiagnostics:()=>({pointerMoves:rawPointerMoves,touchMoves:rawTouchMoves,mode:touchInputMode?'touch':'pointer'}),
   setTouchInputMode(enabled){if(touchInputMode===enabled)return;resetInput?.();touchInputMode=enabled;},
   onInput(fn){const active=new Map<number,Point>(),panPointers=new Set<number>();const restore=canvas.style.touchAction,tabIndex=canvas.getAttribute('tabindex');let space=false;canvas.style.touchAction='none';if(tabIndex===null)canvas.tabIndex=0;
-   const handle=(type:'down'|'move'|'up'|'cancel')=>(event:PointerEvent)=>{if(type==='move')rawPointerMoves++;if(touchInputMode&&event.pointerType==='touch')return;if(type==='down'&&event.button!==0&&event.button!==1)return;const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=canvas.getBoundingClientRect(),point={id:event.pointerId,x:event.clientX-r.left,y:event.clientY-r.top};
+   const handle=(type:'down'|'move'|'up'|'cancel')=>(event:PointerEvent)=>{if(type==='move')rawPointerMoves++;if(touchInputMode&&event.pointerType==='touch')return;if(type==='down'&&event.button!==0&&event.button!==1)return;const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=canvas.getBoundingClientRect(),point={id:event.pointerId,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale};
     if(hover){fn({type,points:[],changed:[point]});return;}
     if(type==='down'){canvas.focus({preventScroll:true});if(event.button===1||(event.pointerType==='mouse'&&space))panPointers.add(event.pointerId);}
     const pan=panPointers.has(event.pointerId);
@@ -197,7 +205,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    };
    const down=handle('down'),move=handle('move'),up=handle('up'),cancel=handle('cancel');
    const leave=(event:PointerEvent)=>{if(event.pointerType==='mouse'&&!active.has(event.pointerId))fn({type:'cancel',points:[],changed:[{id:event.pointerId,x:0,y:0}]});};
-   const wheel=(event:WheelEvent)=>{event.preventDefault();const r=canvas.getBoundingClientRect(),unit=event.deltaMode===1?16:event.deltaMode===2?Math.max(1,r.height):1;fn({type:'wheel',points:[],changed:[{id:-1,x:event.clientX-r.left,y:event.clientY-r.top}],deltaX:event.deltaX*unit,deltaY:event.deltaY*unit});};
+   const wheel=(event:WheelEvent)=>{event.preventDefault();const r=canvas.getBoundingClientRect(),unit=event.deltaMode===1?16:event.deltaMode===2?Math.max(1,r.height):1;fn({type:'wheel',points:[],changed:[{id:-1,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale}],deltaX:event.deltaX*unit,deltaY:event.deltaY*unit});};
    const key=(keyDown:boolean)=>(event:KeyboardEvent)=>{
     if(!keyDown&&event.code==='Space')space=false;
     // Native text dialogs own their keyboard; game shortcuts must not consume typing.
@@ -216,7 +224,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     if(!touchInputMode)return;
     if(event.cancelable)event.preventDefault();
     if(type==='cancel'){reset();return;}
-    const r=canvas.getBoundingClientRect(),point=(t:Touch)=>({id:-t.identifier-1,x:t.clientX-r.left,y:t.clientY-r.top});
+    const r=canvas.getBoundingClientRect(),point=(t:Touch)=>({id:-t.identifier-1,x:(t.clientX-r.left)/scale,y:(t.clientY-r.top)/scale});
     const changed=Array.from(event.changedTouches).map(point);
     if(type==='down')for(const p of changed)active.set(p.id,p);
     if(type==='move')for(const t of Array.from(event.touches)){const p=point(t);if(active.has(p.id))active.set(p.id,p);}
@@ -232,7 +240,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   },
   ...(config.id==='web'?{fullscreen:webFullscreen(document)}:{}),
   ...(config.id==='taptap'?{setOrientation:(value:'portrait'|'landscape')=>setTapOrientation(tap(),value)}:{}),
-  onResize(fn){const host=tap(),nativeChange=()=>{identityController?.refreshLayout();fn();};let nativeListening=false;if(host?.onDeviceOrientationChange&&host.offDeviceOrientationChange){try{host.onDeviceOrientationChange(nativeChange);nativeListening=true;}catch{}}window.addEventListener('resize',nativeChange);document.addEventListener('fullscreenchange',nativeChange);const observer=typeof ResizeObserver==='function'?new ResizeObserver(nativeChange):null;observer?.observe(canvas);return()=>{window.removeEventListener('resize',nativeChange);document.removeEventListener('fullscreenchange',nativeChange);if(nativeListening)try{host?.offDeviceOrientationChange?.(nativeChange);}catch{}observer?.disconnect();};},
+  onResize(fn){const host=tap(),nativeChange=()=>{identityController?.refreshLayout();fn();};let nativeListening=false;if(host?.onDeviceOrientationChange&&host.offDeviceOrientationChange){try{host.onDeviceOrientationChange(nativeChange);nativeListening=true;}catch{}}window.addEventListener('resize',nativeChange);document.addEventListener('fullscreenchange',nativeChange);const observer=typeof ResizeObserver==='function'?new ResizeObserver(nativeChange):null;observer?.observe(canvas);resizeListeners.add(nativeChange);return()=>{resizeListeners.delete(nativeChange);window.removeEventListener('resize',nativeChange);document.removeEventListener('fullscreenchange',nativeChange);if(nativeListening)try{host?.offDeviceOrientationChange?.(nativeChange);}catch{}observer?.disconnect();};},
   onHide(fn){const hide=()=>{if(document.hidden){identityController?.setHidden(true);audioPlayback.setHidden(true);fn();}};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},
   onShow(fn){const show=()=>{if(!document.hidden){identityController?.refreshLayout();identityController?.setHidden(!identityVisible);audioPlayback.setHidden(false);fn(query());}};document.addEventListener('visibilitychange',show);window.addEventListener('hashchange',show);return()=>{document.removeEventListener('visibilitychange',show);window.removeEventListener('hashchange',show);};},
   shareDiagnostics:()=>shareDiagnostic,
