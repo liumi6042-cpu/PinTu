@@ -51,3 +51,22 @@ test('mobile panning reuses one overscanned frame until the gesture finishes',()
   assert.equal(copies.length,60,'each gesture frame is one cached bitmap copy');
   table.pan=null;table.finishGesture();table.render();assert.equal(table.scenes,2,'the settled board is redrawn once at full quality');
 });
+
+test('mobile target is visible without an underlay and keeps a thin edge across zoom levels',()=>{
+  const {table}=fixture(12,9),calls=[];
+  table.mobileFeedback=true;table.drag=null;table.state.groups=[];table.underlayUntil=0;
+  const context={setTransform(){},clearRect(){},save(){},restore(){},translate(){},scale(){},setLineDash(){},
+    fillRect(...rect){calls.push({kind:'target-fill',rect,color:this.fillStyle});},
+    strokeRect(...rect){calls.push({kind:'target-edge',rect,width:this.lineWidth});},
+    drawImage(){calls.push({kind:'underlay'});}};
+  for(const z of [.3,1,3]){
+    table.camera.z=z;calls.length=0;
+    PuzzleTable.prototype.renderScene.call(table,context);
+    assert.deepEqual(calls.map(call=>call.kind),['target-fill','target-edge'],'an empty, unassisted mobile board still has its target');
+    for(const call of calls)assert.deepEqual(call.rect,[table.board.x,table.board.y,table.board.width,table.board.height],'target exactly follows the puzzle destination');
+    assert.equal(calls[1].width*z,1.25,'zoom does not thicken the target edge');
+  }
+  table.underlayUntil=Date.now()+60000;calls.length=0;
+  PuzzleTable.prototype.renderScene.call(table,context);
+  assert.deepEqual(calls.map(call=>call.kind),['target-fill','underlay','target-edge'],'the optional picture cannot erase the target edge');
+});

@@ -1,0 +1,20 @@
+# OPTIONAL PREPARATION ONLY. Do not include automatically or replace the live config.
+# First upload outputs/mobile-assets/objects to a new versioned, public-only directory.
+# This location can precede the existing /h5-mobile-v3/ API proxy, so image reads no
+# longer pass through Node. It does not remove server bandwidth charges; an external
+# CDN can use this URL as its origin. Preserve PC/H5 routes and all prior objects.
+location ^~ /h5-mobile-v3/assets/puzzles/ {
+    alias /srv/sites/jigsaw-mobile-assets/current/objects/puzzles/;
+    autoindex off;
+    if ($uri !~ "^/h5-mobile-v3/assets/puzzles/[a-z0-9-]+\.webp$") { return 404; }
+    limit_except GET { deny all; }
+    set $puzzle_cache "public, max-age=86400";
+    if ($uri ~ "-[a-f0-9]{12}\.webp$") {
+        set $puzzle_cache "public, max-age=31536000, immutable";
+    }
+    types { image/webp webp; }
+    add_header Cache-Control $puzzle_cache;
+    add_header Access-Control-Allow-Origin "*";
+    add_header Cross-Origin-Resource-Policy "cross-origin";
+    add_header X-Content-Type-Options "nosniff";
+}

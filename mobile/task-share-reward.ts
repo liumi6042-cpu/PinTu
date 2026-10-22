@@ -7,7 +7,7 @@ export class TaskShareReward{
  private readonly platform:Pick<Platform,'storage'|'randomId'|'config'>;
  private readonly post:(requestId:string)=>Promise<MobileInviteShareResult>;
  private inFlight:Promise<MobileInviteShareResult>|null=null;
- constructor(platform:Pick<Platform,'storage'|'randomId'|'config'>,post:(requestId:string)=>Promise<MobileInviteShareResult>){this.platform=platform;this.post=post;this.key='jigsaw:shared:pending-share:'+platform.config.apiBase;}
+ constructor(platform:Pick<Platform,'storage'|'randomId'|'config'>,post:(requestId:string)=>Promise<MobileInviteShareResult>){this.platform=platform;this.post=post;this.key='jigsaw:shared:pending-share:v2:'+platform.config.apiBase;}
  pending(){const requestId=this.platform.storage.get(this.key);return requestId&&/^[a-f0-9]{32}$/.test(requestId)?requestId:null;}
  claim(){
   if(this.inFlight)return this.inFlight;
@@ -15,5 +15,5 @@ export class TaskShareReward{
   const promise=this.post(requestId).then(result=>{if(this.pending()===requestId)this.platform.storage.remove(this.key);return result;}).finally(()=>{if(this.inFlight===promise)this.inFlight=null;});
   this.inFlight=promise;return promise;
  }
- complete(result:Awaited<ReturnType<Platform['share']>>){return result==='copied'||result==='shared'?this.claim():Promise.resolve(null);}
+ complete(result:Awaited<ReturnType<Platform['share']>>){return result==='shared'?this.claim():Promise.resolve(null);}
 }

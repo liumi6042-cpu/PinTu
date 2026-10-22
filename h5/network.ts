@@ -62,7 +62,7 @@ export async function apiFetch(input:RequestInfo|URL,init?:RequestInit):Promise<
 }
 export async function gatewayConfig() {
   const response=await gatewayRequest(h5Config().apiBase+'/config',{credentials:'omit',signal:AbortSignal.timeout(8000)});
-  if(!response.ok)throw Error('广告暂未开放');return response.json() as Promise<{rewardedAdUnitId?:string;adRewardEnabled:boolean}>;
+  if(!response.ok)throw Error('广告暂未开放');return response.json() as Promise<{rewardedAdUnitId?:string;adRewardEnabled:boolean;mobileMode?:string|null}>;
 }
 
 export async function gatewayFetch(path:string,init?:RequestInit){

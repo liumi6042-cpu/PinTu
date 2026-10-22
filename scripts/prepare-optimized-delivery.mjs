@@ -78,12 +78,21 @@ for (const photo of catalog) {
   async function prepare(kind, field, input, inputSize, quality, byteLimit, extra = {}) {
     const existing = record.delivery[kind];
     const inputSha256 = sha(input);
-    if (existing && photo[field] === existing.src &&
+    // Keep valid historical encodings byte-for-byte; the new default only
+    // applies when a derivative is missing. Corrupt records fail closed.
+    if (existing) {
+      const legacyQuality = kind === 'compact' ? 84 : hdIds.has(photo.id) ? 88 : 84;
+      const validEncoding = (existing.quality === quality && existing.encoding?.effort === 6) ||
+        (existing.quality === legacyQuality && existing.encoding?.effort === 5);
+      assert.ok(validEncoding && existing.encoding?.library === 'sharp' &&
+        typeof existing.encoding.version === 'string' && existing.encoding.version &&
+        existing.encoding.smartSubsample === true, `${photo.id} ${kind}: unsupported encoding record`);
+      assert.ok(photo[field] === existing.src && existing.format === 'webp' &&
         existing.width === inputSize.width && existing.height === inputSize.height &&
-        existing.quality === quality && existing.lossless === false && existing.upscaled === false &&
+        existing.lossless === false && existing.upscaled === false &&
         existing.sourceSha256 === record.sha256 && existing.inputSha256 === inputSha256 &&
-        existing.encoding?.effort === 5 && existing.encoding?.smartSubsample === true &&
-        Object.entries(extra).every(([key, value]) => existing[key] === value)) {
+        Object.entries(extra).every(([key, value]) => existing[key] === value),
+        `${photo.id} ${kind}: invalid existing delivery record`);
       assert.match(existing.src, new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`));
       assert.equal(existing.src, `/puzzles/${photo.id}-${kind}-${existing.sha256.slice(0, 12)}.webp`);
       assert.ok(existing.bytes <= byteLimit, `${photo.id} ${kind}: exceeds byte budget`);
@@ -91,7 +100,7 @@ for (const photo of catalog) {
       skipped++;
       return existing;
     }
-    const data = await sharp(input).webp({ quality, effort: 5, smartSubsample: true }).toBuffer();
+    const data = await sharp(input).webp({ quality, effort: 6, smartSubsample: true }).toBuffer();
     const metadata = await sharp(data).metadata();
     assert.equal(metadata.width, inputSize.width, `${photo.id}: encoding resized width`);
     assert.equal(metadata.height, inputSize.height, `${photo.id}: encoding resized height`);
@@ -105,7 +114,7 @@ for (const photo of catalog) {
       src, width: metadata.width, height: metadata.height,
       sha256: digest, bytes: data.length, format: 'webp', lossless: false,
       quality, upscaled: false, sourceSha256: record.sha256, inputSha256,
-      encoding: { library: 'sharp', version: sharp.versions.sharp, effort: 5, smartSubsample: true },
+      encoding: { library: 'sharp', version: sharp.versions.sharp, effort: 6, smartSubsample: true },
       ...extra,
     };
     assets.push({ src, data, entry });
@@ -114,14 +123,14 @@ for (const photo of catalog) {
     encoded++;
     return entry;
   }
-  const optimized = await prepare('optimized', 'optimizedSrc', original, originalSize, hdIds.has(photo.id) ? 88 : 84, fullLimit);
+  const optimized = await prepare('optimized', 'optimizedSrc', original, originalSize, 70, fullLimit);
   let compact = null;
   if (photo.standardSrc) {
     assert.equal(photo.standardSrc, record.delivery.standard.src);
     assert.equal(record.delivery.standard.lossless, true);
     const standard = await checkedAsset(photo.standardSrc, record.delivery.standard);
     assert.ok(record.delivery.standard.width <= 1774 && record.delivery.standard.height <= 1774);
-    compact = await prepare('compact', 'optimizedStandardSrc', standard, record.delivery.standard, 84, compactLimit, { downsampled: true, maximumPieces: 1000 });
+    compact = await prepare('compact', 'optimizedStandardSrc', standard, record.delivery.standard, 70, compactLimit, { downsampled: true, maximumPieces: 1000 });
   }
   const afterRecord = structuredClone(record);
   delete afterRecord.delivery.optimized;
@@ -164,4 +173,4 @@ for (const item of pending) {
 }
 const nextCatalogText = toJSON(catalog);
 if (nextCatalogText !== originalCatalogText) await fs.writeFile(catalogPath, nextCatalogText, 'utf8');
-console.log(JSON.stringify({ ...totals, encoded, skipped, newBytes, originalHashesVerified: pending.length, policy: { normalQuality: 84, fullHDQuality: 88, compactQuality: 84, fullLimit, compactLimit, noResize: true } }, null, 2));
+console.log(JSON.stringify({ ...totals, encoded, skipped, newBytes, originalHashesVerified: pending.length, policy: { normalQuality: 70, fullHDQuality: 70, compactQuality: 70, effort: 6, preserveExistingEncodings: true, fullLimit, compactLimit, noResize: true } }, null, 2));

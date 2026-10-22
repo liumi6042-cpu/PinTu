@@ -1,8 +1,14 @@
 export type Piece = { id: number; row: number; col: number; edges: number[]; border: boolean };
 export type Group = { id: number; pieces: number[]; dx: number; dy: number; locked: boolean };
-export type PuzzleState = { version: 1; layout?:'square'; imageId: string; cols: number; rows: number; seed: number; groups: Group[]; elapsed: number };
+export type PuzzleState = { version: 1; layout?:'square'; scatterVersion?:2|3; imageId: string; cols: number; rows: number; seed: number; groups: Group[]; elapsed: number };
 export const BOARD = { x: 360, y: 260, width: 800, height: 600 };
-export const WORLD = { width: 1520, height: 1120 };
+// Grow the playable table equally on every side without moving saved puzzles.
+export const WORLD = { x: -100, y: -80, width: 1720, height: 1280 };
+// Formal Web rooms keep their authoritative saved layout and table dimensions.
+export function worldFor(state:Pick<PuzzleState,'scatterVersion'>&Partial<Pick<PuzzleState,'cols'|'rows'>>){
+ if(state.scatterVersion===2)return (state.cols??0)*(state.rows??0)>0&&(state.cols??0)*(state.rows??0)<=12?{x:0,y:0,width:2200,height:1600}:{x:0,y:0,width:1900,height:1420};
+ return WORLD;
+}
 export function boardFor(cols:number,rows:number) {
   const unit=Math.min(BOARD.width/cols,BOARD.height/rows),width=cols*unit,height=rows*unit;
   return {x:BOARD.x+(BOARD.width-width)/2,y:BOARD.y+(BOARD.height-height)/2,width,height};
@@ -47,12 +53,22 @@ export function pathFor(piece:Piece,cols:number,rows:number):string {
     out+=` L ${p(.32,0)} C ${p(.4,0)} ${p(.44,0)} ${p(.42,.16)} C ${p(.30,.70)} ${p(.36,1)} ${p(.50,1)} C ${p(.64,1)} ${p(.70,.70)} ${p(.58,.16)} C ${p(.56,0)} ${p(.60,0)} ${p(.68,0)} L ${p(1,0)}`;
   });return out+' Z';
 }
-function slots(cols:number,rows:number,seed:number) {
+function slots(cols:number,rows:number,seed:number,centered=false,spacing=1.52) {
   const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows, rand=random(seed),result:{x:number;y:number}[]=[];
-  for(let y=h*.68;y<WORLD.height-h*.6;y+=h*1.20) for(let x=w*.68;x<WORLD.width-w*.6;x+=w*1.20) {
-    if(x>board.x-w*.55&&x<board.x+board.width+w*.55&&y>board.y-h*.55&&y<board.y+board.height+h*.55)continue;
-    result.push({x:x+(rand()-.5)*w*.05,y:y+(rand()-.5)*h*.05});
+  // Allow for the full .23-cell tabs on both pieces, a small jitter, and air
+  // between outlines. Never fall back to a pitch that overlaps the tabs.
+  const padX=w*.78,padY=h*.78,stepX=w*spacing,stepY=h*spacing;
+  const startX=WORLD.x+(centered?(WORLD.width-Math.floor((WORLD.width-2*padX)/stepX)*stepX)/2:padX),startY=WORLD.y+(centered?(WORLD.height-Math.floor((WORLD.height-2*padY)/stepY)*stepY)/2:padY);
+  for(let y=startY;y<=WORLD.y+WORLD.height-padY;y+=stepY) for(let x=startX;x<=WORLD.x+WORLD.width-padX;x+=stepX) {
+    if(x>board.x-padX-9&&x<board.x+board.width+padX+9&&y>board.y-padY-9&&y<board.y+board.height+padY+9)continue;
+    result.push({x:x+(rand()-.5)*w*.03,y:y+(rand()-.5)*h*.03});
   }
+  // For a few large-piece grids, centering the same lattice exposes more room
+  // above/below the target without reducing the gap between protruding edges.
+  if(result.length<cols*rows&&!centered)return slots(cols,rows,seed,true,spacing);
+  // The retired 12-piece grids need a slightly wider centered row to clear
+  // both ends of the target. Keep their prior safe spacing instead of overlap.
+  if(result.length<cols*rows&&spacing<1.56)return slots(cols,rows,seed,true,1.56);
   for(let i=result.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
   return result;
 }

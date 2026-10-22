@@ -1,0 +1,4 @@
+/* B2 task artwork combines the original pixel atlas viewports. */
+.mobile-task-art{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:1em;height:1em;vertical-align:middle;pointer-events:none;isolation:isolate}
+.mobile-task-art>.mobile-art{display:block;width:100%;height:100%;pointer-events:none}
+.mobile-task-art>.mobile-task-art-accent{position:absolute;right:-5%;bottom:-3%;width:36%;height:39%;z-index:1}

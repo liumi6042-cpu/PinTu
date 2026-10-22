@@ -1,0 +1,29 @@
+[Unit]
+Description=Jigsaw Nook isolated mobile V3
+After=network.target
+[Service]
+Type=simple
+User=web-jigsaw
+Group=web-jigsaw
+WorkingDirectory=/srv/sites/jigsaw-mobile-v3/current
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/webapps/jigsaw-mobile-v3.env
+ExecStart=/usr/local/bin/node server/h5-gateway.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/sites/jigsaw-mobile-v3/shared
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+MemoryMax=512M
+TasksMax=64
+[Install]
+WantedBy=multi-user.target

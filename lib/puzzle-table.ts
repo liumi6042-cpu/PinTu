@@ -3,7 +3,7 @@ import { PuzzleSprites } from './puzzle-sprites';
 import { pictureCrop, drawPiecePicture } from './puzzle-picture';
 import { t,subscribeLanguage } from './i18n';
 import { TABLE_PALETTES, type TableTheme } from './table-theme';
-import { newConnections } from './connection-feedback';
+import { newConnections, newMobileConnections, type MobileContributionReceipt } from './connection-feedback';
 import { ConnectionGlowRenderer } from './connection-glow';
 import { SnapSound,type SoundPreferences } from './snap-sound';
 import { gestureFrameSample,type GestureFrame } from './puzzle-gesture-cache';
@@ -15,7 +15,7 @@ export class PuzzleTable {
   board:ReturnType<typeof boardFor>;
   image:HTMLImageElement; picture:HTMLCanvasElement; pieces; paths:Path2D[]; camera={x:0,y:0,z:1}; width=0; height=0;
   edges=false; paused=false; selected:number|null=null;
-  private feedback:ConnectionGlowRenderer|null=null;private snapAudio=new SnapSound();
+  private feedback:ConnectionGlowRenderer|null=null;private snapAudio=new SnapSound();private mobileFeedback=false;
   private hintIds:number[]=[]; private hintUntil=0; private underlayUntil=0;
   private underlayTimer:ReturnType<typeof setTimeout>|null=null;
   private sprites:PuzzleSprites|null=null; private background:HTMLCanvasElement; private gestureCanvas:HTMLCanvasElement;
@@ -33,7 +33,8 @@ export class PuzzleTable {
   private canvasRect={left:0,top:0};
   private update:()=>void; private notice:Notice;
   private stopLanguage:()=>void;
-  constructor(canvas:HTMLCanvasElement,state:PuzzleState,image:HTMLImageElement,update:()=>void,notice:Notice) {
+  constructor(canvas:HTMLCanvasElement,state:PuzzleState,image:HTMLImageElement,update:()=>void,notice:Notice,options:{mobileFeedback?:boolean}={}) {
+    this.mobileFeedback=options.mobileFeedback===true;
     this.canvas=canvas;this.state=normalizePuzzle(state);this.board=boardFor(state.cols,state.rows);this.image=image;this.update=update;this.notice=notice;
     this.ctx=canvas.getContext('2d')!;this.hit=document.createElement('canvas').getContext('2d')!;
     this.picture=document.createElement('canvas');this.background=document.createElement('canvas');this.gestureCanvas=document.createElement('canvas');
@@ -41,8 +42,8 @@ export class PuzzleTable {
     this.picture.width=Math.round(crop.width);this.picture.height=Math.round(crop.height);
     this.picture.getContext('2d')!.drawImage(image,crop.x,crop.y,crop.width,crop.height,0,0,this.picture.width,this.picture.height);
     this.pieces=piecesFor(state.cols,state.rows,state.seed);this.paths=this.pieces.map(p=>new Path2D(pathFor(p,state.cols,state.rows)));
-    if(canvas.parentElement)this.feedback=new ConnectionGlowRenderer(canvas.parentElement,state,this.pieces,()=>this.camera);
-    this.sprites=new PuzzleSprites(this.picture,this.pieces,this.paths,state.cols,state.rows);
+    if(canvas.parentElement)this.feedback=new ConnectionGlowRenderer(canvas.parentElement,state,this.pieces,()=>this.camera,this.mobileFeedback);
+    this.sprites=new PuzzleSprites(this.picture,this.pieces,this.paths,state.cols,state.rows,{mobilePaper:this.mobileFeedback});
     this.resize=new ResizeObserver(()=>this.resizeCanvas());this.resize.observe(canvas);
     const opts={signal:this.abort.signal};
     canvas.addEventListener('pointerdown',this.down,opts);canvas.addEventListener('pointermove',this.move,opts);canvas.addEventListener('pointerup',this.up,opts);canvas.addEventListener('pointercancel',this.cancel,opts);canvas.addEventListener('lostpointercapture',this.cancel,opts);
@@ -101,14 +102,14 @@ export class PuzzleTable {
     this.claimSerial++;
     if(this.drag&&this.network){const id=this.drag.id;this.keepOnTable(id);const group=this.state.groups.find(g=>g.id===id);this.drag=null;if(group)void this.network.drop(id,group.dx,group.dy);}
     if(this.drag){this.keepOnTable(this.drag.id);const before=this.state.groups.map(g=>({...g,pieces:[...g.pieces]})),result=dropGroup(this.state,this.drag.id,snapTolerance(this.state));
-      if(result.snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':result.placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
+      if(result.snapped){this.feedback?.show(this.mobileFeedback?newMobileConnections(before,this.state,new Set([this.drag.id])):newConnections(before,this.state));this.playConnectionSound();this.notice(placedCount(this.state)===this.pieces.length?'每一片，都找到了自己的位置。':result.placed?`拼对了！已归位 ${placedCount(this.state)} / ${this.pieces.length} 片`:'拼块连在一起了，可以整组拖动');}
       this.drag=null;this.update();}
     this.pan=null;this.finishGesture();this.canvas.style.cursor='grab';this.draw();
   }
   private keepOnTable(id:number){const g=this.state.groups.find(g=>g.id===id);if(!g||g.locked)return;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     const minX=Math.min(...g.pieces.map(id=>this.board.x+this.pieces[id].col*w)),maxX=Math.max(...g.pieces.map(id=>this.board.x+(this.pieces[id].col+1)*w));
     const minY=Math.min(...g.pieces.map(id=>this.board.y+this.pieces[id].row*h)),maxY=Math.max(...g.pieces.map(id=>this.board.y+(this.pieces[id].row+1)*h));
-    g.dx=Math.max(18-minX,Math.min(WORLD.width-18-maxX,g.dx));g.dy=Math.max(18-minY,Math.min(WORLD.height-18-maxY,g.dy));
+    g.dx=Math.max(WORLD.x+18-minX,Math.min(WORLD.x+WORLD.width-18-maxX,g.dx));g.dy=Math.max(WORLD.y+18-minY,Math.min(WORLD.y+WORLD.height-18-maxY,g.dy));
   }
   private wheel=(e:WheelEvent)=>{e.preventDefault();if(this.drag||this.paused)return;this.zoom(Math.exp(-e.deltaY*.0014),this.point(e));};
   private keydown=(e:KeyboardEvent)=>{
@@ -122,11 +123,55 @@ export class PuzzleTable {
     if(this.network&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter'].includes(e.key)){e.preventDefault();this.notice('多人模式请拖动拼块，方向键移动暂用于单人模式');return;}
     const delta:Record<string,number[]>={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
     if(delta[e.key]){e.preventDefault();const step=e.shiftKey?2:12;g.dx+=delta[e.key][0]*step;g.dy+=delta[e.key][1]*step;this.keepOnTable(g.id);raiseGroup(this.state,g.id);this.draw();this.update();}
-    if(e.key==='Enter'){e.preventDefault();this.unlockSound();const before=this.state.groups.map(group=>({...group,pieces:[...group.pieces]})),r=dropGroup(this.state,g.id,snapTolerance(this.state));if(r.snapped){this.feedback?.show(newConnections(before,this.state));this.playConnectionSound();}this.update();this.draw();}
+    if(e.key==='Enter'){e.preventDefault();this.unlockSound();const before=this.state.groups.map(group=>({...group,pieces:[...group.pieces]})),r=dropGroup(this.state,g.id,snapTolerance(this.state));if(r.snapped){this.feedback?.show(this.mobileFeedback?newMobileConnections(before,this.state,new Set([g.id])):newConnections(before,this.state));this.playConnectionSound();}this.update();this.draw();}
   };
   private clamp(z:number){const max=Math.max(3,Math.min(16,96/Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)));return Math.max(.15,Math.min(max,z));}
   zoom(factor:number,point={x:this.width/2,y:this.height/2}){const w=this.world(point),z=this.clamp(this.camera.z*factor);this.camera={x:point.x-w.x*z,y:point.y-w.y*z,z};this.draw();this.update();}
-  fit(completed=false){const bounds=completed?this.board:{x:0,y:0,...WORLD},z=Math.min(this.width/bounds.width,this.height/bounds.height)*(completed?.76:.94);this.camera={x:(this.width-bounds.width*z)/2-bounds.x*z,y:(this.height-bounds.height*z)/2-bounds.y*z,z};this.draw();this.update();}
+  fit(completed=false,insets:{top?:number;right?:number;bottom?:number;left?:number}={}){const bounds=completed?this.board:WORLD,left=Math.max(0,insets.left??0),top=Math.max(0,insets.top??0),width=Math.max(1,this.width-left-Math.max(0,insets.right??0)),height=Math.max(1,this.height-top-Math.max(0,insets.bottom??0)),z=Math.min(width/bounds.width,height/bounds.height)*(completed?.76:.94);this.camera={x:left+(width-bounds.width*z)/2-bounds.x*z,y:top+(height-bounds.height*z)/2-bounds.y*z,z};this.draw();this.update();}
+  openMobileView(insets:{bottom?:number}={}){
+    if(!this.mobileFeedback)return;
+    if(placedCount(this.state)===this.pieces.length){this.fit(true,insets);return;}
+    const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    const availableHeight=Math.max(1,this.height-Math.max(0,insets.bottom??0));
+    // Whole-table fitting makes a phone's pieces thumbnail-sized. Start with a
+    // playable crop of the existing shared world, without rearranging any piece.
+    const z=this.clamp(Math.max(44/Math.min(w,h),this.width/WORLD.width,availableHeight/WORLD.height));
+    const viewWidth=this.width/z,viewHeight=availableHeight/z;
+    const points=this.state.groups.flatMap(group=>group.pieces.map(id=>({
+      x:this.board.x+(this.pieces[id].col+.5)*w+group.dx,
+      y:this.board.y+(this.pieces[id].row+.5)*h+group.dy,
+      weight:group.locked?2.4:group.pieces.length>1?1.6:1
+    })));
+    const center=(point:{x:number;y:number})=>({
+      x:Math.min(WORLD.x+WORLD.width-viewWidth/2,Math.max(WORLD.x+viewWidth/2,point.x)),
+      y:Math.min(WORLD.y+WORLD.height-viewHeight/2,Math.max(WORLD.y+viewHeight/2,point.y))
+    });
+    let best=center({x:this.board.x+this.board.width/2,y:this.board.y+this.board.height/2}),bestScore=-Infinity;
+    const candidates=[best,...points.map(center)];
+    for(const candidate of candidates){
+      const left=candidate.x-viewWidth/2+w*.35,right=candidate.x+viewWidth/2-w*.35;
+      const top=candidate.y-viewHeight/2+h*.35,bottom=candidate.y+viewHeight/2-h*.35;
+      let score=0;
+      for(const point of points)if(point.x>=left&&point.x<=right&&point.y>=top&&point.y<=bottom){
+        // Prefer pieces distributed through the crop over a stack at one edge.
+        const closeness=1-Math.max(Math.abs(point.x-candidate.x)/(viewWidth/2),Math.abs(point.y-candidate.y)/(viewHeight/2));
+        score+=point.weight*(.8+closeness*.2);
+      }
+      if(score>bestScore){best=candidate;bestScore=score;}
+    }
+    this.camera={x:this.width/2-best.x*z,y:availableHeight/2-best.y*z,z};
+    this.canvas.dataset.mobileInitialPiecePixels=String(Math.min(w,h)*z);
+    this.draw();this.update();
+  }
+  focusMobilePiece(pieceId:number,bottomInset=0){
+    if(!this.mobileFeedback||this.paused)return false;
+    const group=this.state.groups.find(g=>!g.locked&&g.pieces.includes(pieceId)),piece=this.pieces[pieceId];
+    if(!group||!piece)return false;
+    const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,z=this.clamp(Math.max(this.camera.z,54/Math.min(w,h)));
+    const x=this.board.x+(piece.col+.5)*w+group.dx,y=this.board.y+(piece.row+.5)*h+group.dy;
+    this.selected=group.id;this.camera={x:this.width/2-x*z,y:Math.max(48,this.height-bottomInset)/2-y*z,z};
+    this.draw();this.update();return true;
+  }
   setEdges(v:boolean){this.release();this.edges=v;this.draw();}
   setPaused(v:boolean){this.release();this.paused=v;}
   shuffle(){if(this.network){this.notice('多人模式保留大家正在整理的桌面，请直接拖动散片');return;}this.release();const n=shuffleLoose(this.state);this.fit();this.draw();this.update();this.notice(n?`已整理 ${n} 块散片，组合保持完整`:'没有需要整理的散片');}
@@ -148,7 +193,7 @@ export class PuzzleTable {
     this.state.elapsed=next.elapsed;this.remoteOwners=owners;const after=placedCount(this.state);
     if(elapsedChanged||before!==after)this.update();
     if(after>before)this.notice(`一起拼对了！已归位 ${after} / ${this.pieces.length} 片`);
-    if(showFeedback&&beforeGroups.length>this.state.groups.length)this.feedback?.show(newConnections(beforeGroups,this.state));
+    if(showFeedback){if(this.mobileFeedback)this.feedback?.show(newMobileConnections(beforeGroups,this.state,protectIds));else if(beforeGroups.length>this.state.groups.length)this.feedback?.show(newConnections(beforeGroups,this.state));}
     if(changed)this.draw();
   }
   // Returns whether a local drag was actually taken back, and explains it to the player when
@@ -173,6 +218,7 @@ export class PuzzleTable {
     const radius=Math.min(10/z,w*.3,h*.3);c.beginPath();c.arc(w/2,h/2,radius,0,Math.PI*2);c.fillStyle='#8b4e30';c.fill();
     c.fillStyle='#fff8e8';c.font=`bold ${radius*1.4}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(String(number),w/2,h/2);
   }
+  confirmMobileContribution(receipt:MobileContributionReceipt){if(this.mobileFeedback)this.feedback?.confirmContribution(receipt);}
   setSoundPreferences(settings:SoundPreferences){this.snapAudio.setPreferences(settings);}
   unlockSound(){void this.snapAudio.unlock();}
   playConnectionSound(source:'local'|'teammate'='local'){void this.snapAudio.play(source);}
@@ -208,7 +254,7 @@ export class PuzzleTable {
     let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
     for(const id of group.pieces){const p=this.pieces[id];left=Math.min(left,p.col*w);top=Math.min(top,p.row*h);right=Math.max(right,(p.col+1)*w);bottom=Math.max(bottom,(p.row+1)*h);}
     // Include tabs, selected outlines, hints and the small-puzzle drop shadow.
-    const margin=Math.min(w,h)*.26*z+48;
+    const margin=(this.mobileFeedback?Math.max(Math.min(w,h)*.26,this.sprites?.padding??0):Math.min(w,h)*.26)*z+48;
     const x1=Math.max(0,Math.floor((x+(this.board.x+group.dx+left)*z-margin)*dpr));
     const y1=Math.max(0,Math.floor((y+(this.board.y+group.dy+top)*z-margin)*dpr));
     const x2=Math.min(this.canvas.width,Math.ceil((x+(this.board.x+group.dx+right)*z+margin)*dpr));
@@ -237,17 +283,21 @@ export class PuzzleTable {
   }
   private finishGesture(){this.gestureView=null;}
   private renderScene(c:CanvasRenderingContext2D,exclude?:number,view?:RenderView){
-    const palette=TABLE_PALETTES[this.theme];
+    const mobilePaper=this.mobileFeedback&&this.theme==='beige';
+    const palette=mobilePaper?{...TABLE_PALETTES.beige,board:'#fff7ed',border:'#b07882',grid:'#cba69825',hint:'#a8807e80',caption:'#a8807e',owner:'#68293e'}:TABLE_PALETTES[this.theme];
     const dpr=view?.dpr??Math.min(devicePixelRatio||1,2),{x,y,z}=view?.camera??this.camera,width=view?.width??this.width,height=view?.height??this.height,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
     c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,width,height);c.save();c.translate(x,y);c.scale(z,z);
-    c.fillStyle=palette.board;c.strokeStyle=palette.border;c.lineWidth=1/z;c.beginPath();c.roundRect(this.board.x-9,this.board.y-9,this.board.width+18,this.board.height+18,8);c.fill();c.stroke();
+    if(mobilePaper){c.fillStyle=palette.board;c.fillRect(this.board.x,this.board.y,this.board.width,this.board.height);}
+    else{c.fillStyle=palette.board;c.strokeStyle=palette.border;c.lineWidth=1/z;c.beginPath();c.roundRect(this.board.x-9,this.board.y-9,this.board.width+18,this.board.height+18,8);c.fill();c.stroke();}
     const underlay=this.underlayUntil>Date.now();
     if(underlay){c.save();c.globalAlpha=.38;c.drawImage(this.picture,this.board.x,this.board.y,this.board.width,this.board.height);c.restore();}
+    // The target stays visible without the paid underlay; its edge follows the board, not the viewport.
+    if(mobilePaper){c.strokeStyle=palette.border;c.lineWidth=1.25/z;c.strokeRect(this.board.x,this.board.y,this.board.width,this.board.height);}
     c.save();c.setLineDash([4/z,7/z]);c.strokeStyle=palette.grid;c.lineWidth=.6/z;
-    for(let i=1;i<this.state.cols;i++){c.beginPath();c.moveTo(this.board.x+i*w,this.board.y);c.lineTo(this.board.x+i*w,this.board.y+this.board.height);c.stroke();}
-    for(let i=1;i<this.state.rows;i++){c.beginPath();c.moveTo(this.board.x,this.board.y+i*h);c.lineTo(this.board.x+this.board.width,this.board.y+i*h);c.stroke();}c.restore();
-    if(!underlay&&!placedCount(this.state)){c.fillStyle=palette.hint;c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
-    c.fillStyle=palette.caption;c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);
+    if(!mobilePaper){for(let i=1;i<this.state.cols;i++){c.beginPath();c.moveTo(this.board.x+i*w,this.board.y);c.lineTo(this.board.x+i*w,this.board.y+this.board.height);c.stroke();}
+    for(let i=1;i<this.state.rows;i++){c.beginPath();c.moveTo(this.board.x,this.board.y+i*h);c.lineTo(this.board.x+this.board.width,this.board.y+i*h);c.stroke();}}c.restore();
+    if(!this.mobileFeedback&&!underlay&&!placedCount(this.state)){c.fillStyle=palette.hint;c.textAlign='center';c.font='22px "Microsoft YaHei", sans-serif';c.fillText(t('把喜欢的画面，一片片拼回来'),760,550);c.font='16px "Microsoft YaHei", sans-serif';c.fillText(t('从四个角开始，也许会更轻松'),760,582);}
+    if(!this.mobileFeedback){c.fillStyle=palette.caption;c.textAlign='left';c.font='14px "Segoe UI", sans-serif';c.fillText(`${this.state.cols*this.state.rows} PIECES  /  TAKE YOUR TIME`,this.board.x,this.board.y-26);}
     const groups=[...this.state.groups.filter(g=>g.locked),...this.state.groups.filter(g=>!g.locked)];
     const renderView={width,height,camera:{x,y,z},dpr};
     for(const g of groups)if(g.id!==exclude)this.renderGroup(c,g,renderView);
@@ -256,7 +306,8 @@ export class PuzzleTable {
   }
   private renderGroup(c:CanvasRenderingContext2D,g:Group,view?:RenderView){
     if(!visibleGroup(g,this.pieces,this.edges)&&!g.pieces.some(id=>this.hintNumber(id)))return;
-    const {x,y,z}=view?.camera??this.camera,width=view?.width??this.width,height=view?.height??this.height,dpr=view?.dpr??Math.min(devicePixelRatio||1,2),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.26+10/z;
+    const {x,y,z}=view?.camera??this.camera,width=view?.width??this.width,height=view?.height??this.height,dpr=view?.dpr??Math.min(devicePixelRatio||1,2),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;
+    const mobilePaper=this.mobileFeedback&&!!this.sprites,pad=Math.max(Math.min(w,h)*.26+10/z,mobilePaper?this.sprites!.padding:0);
     // During gestures, reuse pre-clipped pieces even at high zoom. Re-clipping
     // the full source per piece per frame makes large connected groups stutter.
     // The settled frame still uses the source whenever the atlas is too small.
@@ -265,13 +316,15 @@ export class PuzzleTable {
     for(const id of g.pieces){
       const p=this.pieces[id],path=this.paths[id],px=this.board.x+p.col*w+g.dx,py=this.board.y+p.row*h+g.dy;
       if(px+w+pad<left||px-pad>right||py+h+pad<top||py-pad>bottom)continue;
-      if(useSprites)this.sprites!.draw(c,id,px,py);
+      // The atlas supplies the baked shadow even when the settled image needs higher resolution.
+      if(useSprites||mobilePaper)this.sprites!.draw(c,id,px,py);
       c.save();c.translate(px,py);
       if(!useSprites){
         if(!this.sprites&&!g.locked){c.shadowColor='#60462a66';c.shadowBlur=this.drag?.id===g.id?14:7;c.shadowOffsetY=this.drag?.id===g.id?7:3;c.fillStyle='#d8d2c2';c.fill(path);c.shadowColor='transparent';}
         c.save();c.clip(path);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';drawPiecePicture(c,this.picture,p,this.state.cols,this.state.rows,this.board.width,this.board.height);c.restore();
+        if(mobilePaper)this.sprites!.drawPaperFinish(c,id);
       }
-      if(!useSprites||((owner||g.id===this.selected)&&!g.locked)){
+      if((!useSprites&&!mobilePaper)||((owner||g.id===this.selected)&&!g.locked)){
         c.strokeStyle=g.locked?'#5c493d66':owner?owner.color:g.id===this.selected?'#ac6246':'#fffbebbb';c.lineWidth=(owner||g.id===this.selected)&&!g.locked?2/z:.85/z;c.stroke(path);
       }
       if(!g.locked)this.hintMarker(c,id,false,z);c.restore();

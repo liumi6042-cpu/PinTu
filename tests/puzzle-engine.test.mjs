@@ -1,7 +1,7 @@
 import { createFixturePuzzle as createPuzzle } from './legacy-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { piecesFor, dropGroup, moveGroup, raiseGroup, placedCount, shuffleLoose, restorePuzzle, visibleGroup, pathFor, LEVELS, boardFor, WORLD } from '../lib/puzzle-engine.ts';
+import { createFittedPuzzle, piecesFor, dropGroup, moveGroup, raiseGroup, placedCount, shuffleLoose, restorePuzzle, visibleGroup, pathFor, LEVELS, boardFor, WORLD } from '../lib/puzzle-engine.ts';
 const fresh=()=>createPuzzle('seaside',4,3,137);
 const park=s=>s.groups.forEach((g,i)=>{g.dx=2500+i*200;g.dy=2200+i*300;});
 const allIds=s=>s.groups.flatMap(g=>g.pieces).sort((a,b)=>a-b);
@@ -10,7 +10,21 @@ test('every shared edge is complementary and only outside edges are flat at ever
  for(const level of LEVELS){const ps=piecesFor(level.cols,level.rows,17);for(const p of ps){assert.equal(p.edges.length,4);if(p.col<level.cols-1)assert.equal(p.edges[1],-ps[p.id+1].edges[3]);if(p.row<level.rows-1)assert.equal(p.edges[2],-ps[p.id+level.cols].edges[0]);assert.equal(p.edges[0]===0,p.row===0);assert.equal(p.edges[1]===0,p.col===level.cols-1);assert.equal(p.edges[2]===0,p.row===level.rows-1);assert.equal(p.edges[3]===0,p.col===0);assert.ok(pathFor(p,level.cols,level.rows).endsWith(' Z'));}}
 });
 test('all pieces start on the table, with distinct positions and no pieces on the board',()=>{
- for(const {cols,rows} of LEVELS){const s=createPuzzle('seaside',cols,rows,72),board=boardFor(cols,rows),centers=new Set();for(const g of s.groups){const id=g.pieces[0],w=board.width/cols,h=board.height/rows,x=board.x+(id%cols+.5)*w+g.dx,y=board.y+(Math.floor(id/cols)+.5)*h+g.dy;assert.ok(x>0&&x<WORLD.width&&y>0&&y<WORLD.height);assert.ok(x<board.x||x>board.x+board.width||y<board.y||y>board.y+board.height);centers.add(`${Math.round(x)},${Math.round(y)}`);}assert.equal(centers.size,cols*rows);}
+ for(const {cols,rows} of LEVELS){const s=createPuzzle('seaside',cols,rows,72),board=boardFor(cols,rows),centers=new Set();for(const g of s.groups){const id=g.pieces[0],w=board.width/cols,h=board.height/rows,x=board.x+(id%cols+.5)*w+g.dx,y=board.y+(Math.floor(id/cols)+.5)*h+g.dy;assert.ok(x>WORLD.x&&x<WORLD.x+WORLD.width&&y>WORLD.y&&y<WORLD.y+WORLD.height);assert.ok(x<board.x||x>board.x+board.width||y<board.y||y>board.y+board.height);centers.add(`${Math.round(x)},${Math.round(y)}`);}assert.equal(centers.size,cols*rows);}
+});
+test('loose pieces leave a visible gap between full tab outlines even in small layouts',()=>{
+ for(const [cols,rows] of [[12,9],[10,5],[8,6],[6,8],[4,3],[3,4]]){
+  const s=createFittedPuzzle('seaside',cols,rows,72),board=boardFor(cols,rows),unit=board.width/cols;
+  const centers=s.groups.map(g=>({x:board.x+(g.id%cols+.5)*unit+g.dx,y:board.y+(Math.floor(g.id/cols)+.5)*unit+g.dy}));
+  assert.equal(centers.length,cols*rows);
+  for(let i=0;i<centers.length;i++){
+   const a=centers[i],halfExtent=unit*.73;
+   assert.ok(a.x-halfExtent>WORLD.x&&a.x+halfExtent<WORLD.x+WORLD.width&&a.y-halfExtent>WORLD.y&&a.y+halfExtent<WORLD.y+WORLD.height,'tabs stay inside the expanded table');
+   assert.ok(a.x+halfExtent<board.x-9||a.x-halfExtent>board.x+board.width+9||a.y+halfExtent<board.y-9||a.y-halfExtent>board.y+board.height+9,'tabs do not overlap the target frame');
+   for(let j=0;j<i;j++){const b=centers[j];assert.ok(Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y))-2*halfExtent>unit*.025,'full protruding outlines keep a narrow visible gap between them');}
+  }
+  assert.deepEqual(createFittedPuzzle('seaside',cols,rows,72),s,'seed recreation must stay deterministic');
+ }
 });
 test('wrong positions and nearby non-neighbors never snap',()=>{const s=fresh();park(s);moveGroup(s,0,100,100);moveGroup(s,11,103,100);assert.equal(dropGroup(s,0,15).snapped,false);assert.equal(s.groups.length,12);assert.equal(placedCount(s),0);});
 test('correct neighbors form a group outside the board and can be moved as a whole',()=>{const s=fresh();park(s);moveGroup(s,0,300,220);moveGroup(s,1,307,226);const r=dropGroup(s,0,15);assert.equal(r.joined,1);const group=s.groups.find(g=>g.id===0);assert.deepEqual(group.pieces,[0,1]);assert.equal(group.dx,307);assert.equal(group.dy,226);assert.equal(group.locked,false);moveGroup(s,0,130,170);assert.equal(group.pieces.length,2);assert.equal(group.dx,130);assert.equal(placedCount(s),0);});

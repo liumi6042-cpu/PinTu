@@ -1,11 +1,16 @@
 'use client';
 import DisplayControls from '../h5/display-controls';
+import { MobileArt } from '../h5/mobile-icons';
+import { MobileTray } from '../h5/mobile-tray';
+import { MobileCompletion, type MobileCompletionResult } from '../h5/mobile-completion';
+import '../h5/mobile-snap-feedback.css';
+import type { MobileContributionReceipt } from '../lib/connection-feedback';
 import PictureDiscoveries from './picture-discoveries';
 import CompletionJourney from './completion-journey';
 import { useAddressCopy } from '@/lib/address-copy';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/app/language-switch';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Puzzle, Moon, Sun, ArrowRight, ArrowLeft, Search, Play, Pause, Images, ImagePlus, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, RotateCcw, Check, X, Clock3, Expand, Minimize, LockKeyhole, PartyPopper } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
@@ -24,7 +29,11 @@ import RoomToolbar from './room-toolbar';
 import RoomCursors from './room-cursors';
 import RoomChat from './room-chat';
 import AchievementBadge from './achievement-badge';
-import { Trophy } from 'lucide-react';
+import { Trophy, MoreHorizontal, Send } from 'lucide-react';
+import { useAssistance } from '@/lib/use-assistance';
+import { activeAssistance } from '@/lib/assistance-policy';
+import { ChatClient, type ChatState } from '@/lib/chat-client';
+import { SNAP_SOUND_KEY, soundPreferences } from '@/lib/snap-sound';
 import { useGameAchievements,AchievementToast,CompletionAchievements } from './game-achievements';
 import MemberRoomGate from './member-room-gate';
 import { MEMBERSHIP_REQUIRED } from '@/lib/membership-policy';
@@ -135,7 +144,7 @@ function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initia
  </main>;
 }
 
-export function Game({ state, photo, persist, leave, restart, saveError, collaboration, onNext }: {
+type GameProps = {
     state: PuzzleState;
     photo: Pick<Photo,'id'|'title'|'src'>&{standardSrc?:string;optimizedSrc?:string;optimizedStandardSrc?:string};
     persist: (s: PuzzleState) => void;
@@ -143,10 +152,15 @@ export function Game({ state, photo, persist, leave, restart, saveError, collabo
     restart: () => void;
     saveError: boolean;
     collaboration?: RoomClient;
-    // Offered after a finished puzzle so the next round starts without another choice. The
-    // caller decides what "next" means (a new table with another picture, at the same size).
     onNext?: () => Promise<void>;
-}) {
+    mobile?: boolean;
+    mobileStatus?: ReactNode;
+    onSupplies?: () => void;
+};
+export function Game(props: GameProps) {
+    return props.mobile ? <MobileGame {...props}/> : <ClassicGame {...props}/>;
+}
+function ClassicGame({ state, photo, persist, leave, restart, saveError, collaboration, onNext }: GameProps) {
     useLanguage();
     const achievements=useGameAchievements(state,collaboration);
     const [celebrating, setCelebrating] = useState(false), [preview, setPreview] = useState(false), completionGate = useRef(new CompletionGate());
@@ -242,4 +256,167 @@ export function Game({ state, photo, persist, leave, restart, saveError, collabo
  {!celebrating&&!complete&&<AchievementToast ids={achievements.toast} onClose={achievements.dismiss} href={achievements.href}/>}
  <PictureDiscoveries getTable={discoveryTable} state={state} client={collaboration} ready={!loading&&!imageError} hidden={paused||help||reset||complete||celebrating||preview}/><CelebrationPreview photo={photo} open={preview} onOpenChange={setPreview} aspectRatio={state.cols / state.rows}/>{t(celebrating && <CelebrationOverlay getBoard={celebrationBoard} onFinish={finishCelebration}/>)}
  </main>;
+}
+
+function MobileGame({ state, photo, persist, leave, collaboration, onNext, mobileStatus, onSupplies }: GameProps) {
+    const canvas = useRef<HTMLCanvasElement>(null), table = useRef<PuzzleTable | null>(null);
+    const [metrics, setMetrics] = useState({ placed: placedCount(state), elapsed: state.elapsed, zoom: 1 });
+    const [loading, setLoading] = useState(true), [imageError, setImageError] = useState(false), [attempt, setAttempt] = useState(0);
+    const [edges, setEdges] = useState(false), [more, setMore] = useState(false), [panel, setPanel] = useState<'tools' | 'members' | 'chat'>('tools');
+    const [message, setMessage] = useState('拖空白移动 · 双指缩放 · 适配看全桌'), [energyEmpty, setEnergyEmpty] = useState(false), [complete, setComplete] = useState(false);
+    const [celebrating, setCelebrating] = useState(false), [nextBusy, setNextBusy] = useState(false), [nextError, setNextError] = useState('');
+    const [theme, setTheme] = useState<TableTheme>('beige'), themeRef = useRef<TableTheme>('beige');
+    const [trayOpen,setTrayOpen] = useState(false), trayOpenRef=useRef(false);
+    trayOpenRef.current=trayOpen;
+    const [, refreshRoom] = useState(0), completionGate = useRef(new CompletionGate());
+    useEffect(()=>{try{const saved=parseTableTheme(localStorage.getItem('mobile:table-background'));setTheme(saved);themeRef.current=saved;table.current?.setTheme(saved);}catch{}},[]);
+    const getTable = useCallback(() => table.current, []), total = state.cols * state.rows, imageSource = puzzleImageSource(photo, total);
+    const fitMobile = useCallback(() => {
+        const engine = table.current;
+        if (!engine || !canvas.current) return;
+        // Keep the fitted desk above the two corner controls without reserving a DOM footer.
+        const bottom = trayOpenRef.current ? 220 : 72;
+        canvas.current.dataset.fitBottom = String(bottom);
+        engine.fit(placedCount(state) === state.cols * state.rows, { bottom });
+    }, [state]);
+    useEffect(() => {
+        let canceled = false, detach: (() => void) | undefined, viewObserver: ResizeObserver | undefined;
+        const img = new Image(); setLoading(true); setImageError(false);
+        img.onload = () => {
+            if (canceled || !canvas.current) return;
+            const engine = new PuzzleTable(canvas.current, state, img, () => {
+                if (canceled) return;
+                setMetrics({ placed: placedCount(state), elapsed: state.elapsed, zoom: table.current?.camera.z ?? 1 }); persist(state);
+            }, setMessage, { mobileFeedback: true });
+            table.current = engine; engine.setTheme(themeRef.current);
+            // Begin at a touch-friendly scale. ResizeCanvas preserves the current
+            // world center on rotation; the explicit fit tool still shows all pieces.
+            let initializedView = false;
+            viewObserver = new ResizeObserver(() => {
+                if (canceled || initializedView || engine.width <= 0 || engine.height <= 0) return;
+                const bottom=trayOpenRef.current?220:72;
+                if(canvas.current)canvas.current.dataset.fitBottom=String(bottom);
+                engine.openMobileView({bottom});
+                initializedView = true;
+            });
+            viewObserver.observe(canvas.current);
+            try { engine.setSoundPreferences(soundPreferences(localStorage.getItem(SNAP_SOUND_KEY))); } catch { /* Default sound works without storage. */ }
+            if (collaboration) detach = collaboration.attach(engine);
+            setLoading(false);
+        };
+        img.onerror = () => { if (!canceled) { setLoading(false); setImageError(true); } };
+        img.crossOrigin = 'anonymous'; img.decoding = 'async'; img.fetchPriority = 'high'; img.src = imageSource;
+        return () => { canceled = true; viewObserver?.disconnect(); img.onload = null; img.onerror = null; table.current?.destroy(); detach?.(); table.current = null; persist(state); };
+    }, [state, imageSource, persist, attempt, collaboration, fitMobile]);
+    useEffect(() => {
+        if (!collaboration) return;
+        const unsubscribe = collaboration.subscribe(() => { refreshRoom(n => n + 1); if (!collaboration.connected) setMessage(collaboration.message); });
+        const timer = window.setInterval(() => { const elapsed = collaboration.elapsedNow(); setMetrics(previous => previous.elapsed === elapsed ? previous : { ...previous, elapsed }); }, 1000);
+        return () => { unsubscribe(); clearInterval(timer); };
+    }, [collaboration]);
+    useEffect(() => {
+        if (!collaboration) return;
+        const confirmed = (event: Event) => {
+            const receipt = (event as CustomEvent<MobileContributionReceipt & { roomId?: string }>).detail;
+            if (receipt?.roomId !== collaboration.snapshot.id) return;
+            table.current?.confirmMobileContribution(receipt);
+        };
+        window.addEventListener('puzzle:successful-drop', confirmed);
+        return () => window.removeEventListener('puzzle:successful-drop', confirmed);
+    }, [collaboration]);
+    useEffect(() => {
+        const empty = () => { setEnergyEmpty(true); setMessage('体力不足，可开启礼包或使用补给'); };
+        const profile = (event: Event) => { const next = (event as CustomEvent<{ energy?: number }>).detail; if ((next?.energy ?? 0) > 0) setEnergyEmpty(false); };
+        window.addEventListener('mobile:energy-empty', empty); window.addEventListener('mobile:profile', profile);
+        return () => { window.removeEventListener('mobile:energy-empty', empty); window.removeEventListener('mobile:profile', profile); };
+    }, []);
+    useEffect(() => {
+        const detail = { ready: !loading && !imageError, pieces: total, complete: metrics.placed === total };
+        document.documentElement.dataset.puzzleGameStatus = JSON.stringify(detail);
+        window.dispatchEvent(new CustomEvent('puzzle:game-status', { detail }));
+        return () => { delete document.documentElement.dataset.puzzleGameStatus; };
+    }, [loading, imageError, total, metrics.placed]);
+    useEffect(() => {
+        if (completionGate.current.observe(metrics.placed, total, !loading && !imageError && (table.current?.width ?? 0) > 0)) {
+            setMore(false); setEdges(false); table.current?.setEdges(false); table.current?.fit(true); setCelebrating(true);
+        }
+    }, [metrics.placed, total, loading, imageError]);
+    useEffect(() => { table.current?.setPaused(more || complete || celebrating); }, [more, complete, celebrating, loading]);
+    const celebrationBoard = useCallback(() => {
+        const rect = canvas.current?.getBoundingClientRect(), camera = table.current?.camera, board = table.current?.board;
+        return rect && camera && board ? { x: rect.left + camera.x + board.x * camera.z, y: rect.top + camera.y + board.y * camera.z, width: board.width * camera.z, height: board.height * camera.z } : null;
+    }, []);
+    const finishCelebration = useCallback(() => { setCelebrating(false); setComplete(true); }, []);
+    const openMore = () => { setPanel('tools'); setMore(true); };
+    const next = async () => { if (!onNext || nextBusy) return; setNextBusy(true); setNextError(''); try { await onNext(); } catch (error) { setNextBusy(false); setNextError(error instanceof Error ? error.message : '暂时无法创建下一局'); } };
+    const connectionMessage = collaboration && !collaboration.connected ? collaboration.message : energyEmpty ? '体力不足，可开启任务礼包或使用补给' : message;
+    const result = (collaboration?.snapshot as (RoomClient['snapshot'] & {mobileResult?:MobileCompletionResult}) | undefined)?.mobileResult;
+    return <main className="mobile-game" data-table-theme={theme} data-tray-open={trayOpen}>
+        <header className="mobile-game-header">
+            <div className="mobile-game-header-main">
+                <div className="mobile-game-title-row"><button className="mobile-game-back" onClick={leave} aria-label="返回大厅"><MobileArt kind="back"/></button><MobileArt kind="piece"/><h1 title={photo.title}>{photo.title}</h1></div>
+                <div className="mobile-game-status">{mobileStatus}</div>
+            </div>
+            <div className="mobile-game-header-progress">
+                <div className="mobile-game-progress" aria-label={`已拼合${metrics.placed}片，共${total}片`}><MobileArt kind="piece"/><strong>{metrics.placed}<small>/{total}</small></strong><span className="mobile-game-progress-meter" role="progressbar" aria-valuenow={metrics.placed} aria-valuemin={0} aria-valuemax={total}><i style={{width:(metrics.placed/total*100)+'%'}}/></span></div>
+                <button className="mobile-game-members-count" aria-label={`房间成员 ${collaboration?.snapshot.members.length ?? 1}人`} onClick={() => { setPanel('members'); setMore(true); }}><MobileArt kind="person"/><span>{collaboration?.snapshot.members.length ?? 1}/8</span></button>
+                <button className="mobile-game-invite" disabled={!collaboration} onClick={()=>{setPanel('members');setMore(true);}}><MobileArt kind="invite"/><span>邀请</span></button>
+            </div>
+        </header>
+        <section className="mobile-game-board" aria-label="拼图游玩区">
+            <canvas ref={canvas} className="puzzle-canvas" tabIndex={0} aria-label={`${photo.title}，${total}片。拖动拼块，双指缩放，空白处拖动桌面。`}/>
+            {collaboration && !loading && !imageError && <RoomCursors client={collaboration} canvas={canvas} getTable={getTable} hidden={more || complete || celebrating} mobile/>}
+            {loading && <div className="mobile-game-overlay" role="status"><Puzzle size={30} className="loading-icon"/><p>正在铺开拼图…</p></div>}
+            {imageError && <div className="mobile-game-overlay"><p role="alert">图片暂时未加载成功</p><button className="primary" onClick={() => setAttempt(n => n + 1)}>重新加载</button><button className="secondary" onClick={leave}>返回大厅</button></div>}
+        </section>
+        {trayOpen && !loading && !imageError && !celebrating && !complete && <MobileTray state={state} getTable={getTable} edges={edges} onClose={()=>setTrayOpen(false)}/>}
+        <div className={"mobile-game-notice" + ((energyEmpty || (collaboration && !collaboration.connected)) ? " has-alert" : "")}><span className="mobile-game-time">{duration(metrics.elapsed)}</span><span role="status" aria-live="polite">{connectionMessage}</span></div>
+        <MobileGameTools state={state} client={collaboration} getTable={getTable} loading={loading} disabled={imageError || celebrating || complete} edges={edges} onEdges={() => { setEdges(!edges); table.current?.setEdges(!edges); }} onFit={fitMobile} onMore={openMore}/>
+        <Dialog open={more} onOpenChange={setMore}><DialogContent className="mobile-game-dialog"><DialogTitle>{panel === 'members' ? '房间成员' : panel === 'chat' ? '合作交流' : '更多'}</DialogTitle><DialogDescription className="sr-only">打开此面板时暂停你的画布操作，房间的其他玩家可以继续拼图。</DialogDescription>
+            <div className="mobile-more-tabs"><button className={panel === 'tools' ? 'active' : ''} onClick={() => setPanel('tools')}>工具</button><button className={panel === 'members' ? 'active' : ''} onClick={() => setPanel('members')}>成员</button><button className={panel === 'chat' ? 'active' : ''} disabled={!collaboration} onClick={() => setPanel('chat')}>聊天</button></div>
+            {panel === 'tools' && <div className="mobile-more-tools"><div className="mobile-more-zoom"><button aria-label="缩小" onClick={() => table.current?.zoom(1 / 1.2)}><ZoomOut size={23}/></button><output>{Math.round(metrics.zoom * 100)}%</output><button aria-label="放大" onClick={() => table.current?.zoom(1.2)}><ZoomIn size={23}/></button><button onClick={fitMobile}><MobileArt kind="fit"/>适配</button></div><button className="mobile-more-setting mobile-tray-setting" aria-pressed={trayOpen} onClick={()=>{setTrayOpen(!trayOpen);setMore(false);}}><span><strong>碎片托盘</strong><small>按需打开，点选散片定位</small></span><span className="mobile-setting-pill">{trayOpen?'已开启':'已关闭'}</span></button><div className="mobile-more-setting"><span>拼合音效</span><SoundControl getTable={getTable} loading={loading}/></div><button className="mobile-more-setting" onClick={() => { const nextTheme = theme === 'beige' ? 'dark' : 'beige'; setTheme(nextTheme); themeRef.current = nextTheme; table.current?.setTheme(nextTheme); try{localStorage.setItem('mobile:table-background',nextTheme);}catch{} }}><span>{theme === 'beige' ? '暗色桌面' : '米色桌面'}</span>{theme === 'beige' ? <Moon size={21}/> : <Sun size={21}/>}</button><p className="mobile-game-help">拖动拼块；双指缩放；拖动空白处移动桌面。</p>{onSupplies && <button className="secondary" onClick={onSupplies}>打开补给站</button>}<button className="secondary" onClick={leave}>退出房间 · 回大厅</button></div>}
+            {panel === 'members' && (collaboration ? <RoomToolbar client={collaboration} mobile/> : <p>当前为单人拼图。</p>)}
+            {panel === 'chat' && collaboration && <MobileRoomConversation client={collaboration}/>}
+        </DialogContent></Dialog>
+        <MobileCompletion open={complete} onOpenChange={setComplete} title={photo.title} imageSource={imageSource} total={total} elapsed={metrics.elapsed} result={result} onNext={onNext?()=>void next():undefined} nextBusy={nextBusy} nextError={nextError} onLeave={leave}/>
+        {celebrating && <CelebrationOverlay getBoard={celebrationBoard} onFinish={finishCelebration}/>}
+    </main>;
+}
+
+function MobileGameTools({ state, client, getTable, loading, disabled, edges, onEdges, onFit, onMore }: { state: PuzzleState; client?: RoomClient; getTable: () => PuzzleTable | null; loading: boolean; disabled: boolean; edges: boolean; onEdges: () => void; onFit: () => void; onMore: () => void }) {
+    const aid = useAssistance(state, client);
+    const [expanded, setExpanded] = useState(false);
+    const toggle = useRef<HTMLButtonElement>(null);
+    const enhanced = aid as typeof aid & { freeRemaining?: { hint: number; underlay: number }; newcomerProtected?: boolean };
+    const underlayUntil = aid.underlay?.expiresAt ?? 0, hint = aid.hint;
+    useEffect(() => { if (!loading) getTable()?.setUnderlay(disabled ? 0 : underlayUntil); }, [loading, disabled, underlayUntil, getTable]);
+    useEffect(() => { if (!loading) getTable()?.setHints(disabled ? [] : hint?.pieceIds ?? [], disabled ? 0 : hint?.expiresAt ?? 0); }, [loading, disabled, hint, getTable]);
+    useEffect(() => {
+        if (!expanded) return;
+        const escape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape' || document.querySelector('[role="dialog"],dialog[open]')) return;
+            setExpanded(false); toggle.current?.focus();
+        };
+        window.addEventListener('keydown', escape);
+        return () => window.removeEventListener('keydown', escape);
+    }, [expanded]);
+    useEffect(() => { if (disabled) setExpanded(false); }, [disabled]);
+    const tool = (kind: 'hint' | 'underlay') => {
+        const active = activeAssistance(aid.grants, kind, aid.now), title = kind === 'hint' ? '提示' : '底图';
+        const free = enhanced.freeRemaining?.[kind] ?? Math.max(0, 2 - aid.grants.filter(grant => grant.kind === kind).length);
+        const counter = active ? `${Math.max(0, Math.ceil((active.expiresAt - aid.now) / 1000))}秒` : !aid.ready ? '读取中' : aid.busy ? '准备中' : enhanced.newcomerProtected ? '新手免费' : free > 0 ? `免费${free}次` : '广告';
+        const badge = active ? 'is-active' : !aid.ready || aid.busy ? 'is-pending' : !enhanced.newcomerProtected && free === 0 ? 'is-ad' : 'is-free';
+        return <button disabled={loading || disabled || !aid.ready || aid.busy || !!active} aria-busy={aid.busy} className={active ? 'active' : ''} aria-label={`${title}，${counter === '广告' ? '看广告解锁' : counter}`} onClick={() => void aid.activate(kind)}><span className="mobile-tool-symbol"><MobileArt kind={kind}/></span><span className="mobile-tool-label">{title}</span><small className={'mobile-tool-badge ' + badge}>{counter}</small></button>;
+    };
+    return <><aside className={'mobile-tool-dock' + (expanded ? ' is-open' : '')} aria-label="拼图工具"><div className="mobile-game-tools" id="mobile-game-tool-panel" hidden={!expanded}><button className={edges ? 'active' : ''} aria-pressed={edges} disabled={loading || disabled} onClick={onEdges}><span className="mobile-tool-symbol"><MobileArt kind="edge"/></span><span className="mobile-tool-label">边缘</span></button>{tool('hint')}{tool('underlay')}<button disabled={loading} onClick={() => { setExpanded(false); onFit(); }}><span className="mobile-tool-symbol"><MobileArt kind="fit"/></span><span className="mobile-tool-label">适配</span></button><button onClick={() => { setExpanded(false); onMore(); }}><span className="mobile-tool-symbol"><MoreHorizontal size={26}/></span><span className="mobile-tool-label">更多</span></button></div><button ref={toggle} className="mobile-tool-toggle" aria-label={expanded ? '收起工具' : '展开工具'} aria-expanded={expanded} aria-controls="mobile-game-tool-panel" onClick={() => setExpanded(value => !value)}>{expanded ? <X size={26}/> : <MobileArt kind="tools"/>}</button></aside>{aid.error && <div className="mobile-assistance-notice" role="alert"><span>{aid.error}</span><button onClick={() => void aid.reload()}>重试</button></div>}</>;
+}
+
+const MOBILE_CHAT_PHRASES = ['大家好！', '我来找边缘', '这块放这里', '一起加油！', '谢谢你！', '稍等一下'];
+function MobileRoomConversation({ client }: { client: RoomClient }) {
+    const [state, setState] = useState<ChatState>({ messages: [], loaded: false, error: '', sending: false }), [error, setError] = useState('');
+    const channel = useRef<ChatClient | null>(null), list = useRef<HTMLDivElement>(null);
+    useEffect(() => { const chat = new ChatClient(client.snapshot.id, client.ticket.token, setState, () => client.connected, () => document.hidden); channel.current = chat; chat.start(); chat.setOpen(true); return () => { channel.current = null; chat.stop(); }; }, [client]);
+    useEffect(() => { if (list.current) list.current.scrollTop = list.current.scrollHeight; }, [state.messages]);
+    const send = async (text: string) => { setError(''); try { await channel.current?.send(text); } catch (failure) { setError(failure instanceof Error ? failure.message : '暂时未发送，请重试'); } };
+    return <section className="mobile-room-conversation"><div className="mobile-chat-feed" ref={list} role="log" aria-label="房间消息" aria-live="polite">{!state.messages.length && <p>{state.loaded ? '发一句问候吧' : '正在连接聊天…'}</p>}{state.messages.map(item => { const member = client.snapshot.members.find(person => person.id === item.playerId) as { level?: number } | undefined; return <div className={item.playerId === client.ticket.playerId ? 'is-own' : ''} key={item.id}><b>{item.name}{typeof member?.level === 'number' && <small> · Lv.{member.level}</small>}</b><p>{item.text}</p></div>; })}</div><div className="mobile-chat-phrases" aria-label="合作短语">{MOBILE_CHAT_PHRASES.map(text => <button key={text} disabled={state.sending || !client.connected} onClick={() => void send(text)}><Send size={13}/>{text}</button>)}</div>{(state.error || error) && <p className="form-error" role="alert">{error || state.error}</p>}</section>;
 }

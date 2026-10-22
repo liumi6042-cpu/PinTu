@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.16.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
     "dev": "vinext dev",
@@ -22,7 +22,20 @@
     "h5:serve": "node server/h5-gateway.mjs",
     "test:h5": "node --test tests/h5-gateway.test.mjs tests/h5-ad-assistance.test.mjs && node --import ./tests/ts-register.mjs --test tests/h5-ads.test.mjs tests/h5-transport.test.mjs tests/h5-orientation.test.mjs",
     "release:h5-server": "node scripts/package-h5-server.mjs",
-    "test:h5:acceptance": "node tests/h5-isolated-run.mjs"
+    "test:h5:acceptance": "node tests/h5-isolated-run.mjs",
+    "build:mobile-server": "node scripts/build-mobile-server.mjs",
+    "build:mobile": "node scripts/build-mobile-server.mjs && node scripts/build-h5.mjs",
+    "build:mobile:shared": "node scripts/build-mobile-shared.mjs",
+    "preview:mobile:shared": "node scripts/serve-mobile-shared.mjs",
+    "test:mobile": "node --test tests/mobile-service.test.mjs && node --import ./tests/ts-register.mjs --test tests/mobile-room-client.test.mjs",
+    "test:mobile:supplies": "node tests/mobile-supply-browser.mjs",
+    "test:mobile:game": "node tests/mobile-game-browser.mjs",
+    "mobile:preview": "node scripts/start-mobile.mjs",
+    "test:mobile:responsive": "node tests/mobile-responsive-browser.mjs",
+    "test:mobile:package": "node tests/mobile-package-smoke.mjs",
+    "test:mobile:package-assets": "node tests/taptap-package-assets.mjs",
+    "ui:pixels": "node scripts/build-pixel-ui.mjs",
+    "check:ui-pixels": "node scripts/build-pixel-ui.mjs --check"
   },
   "dependencies": {
     "react": "19.2.6",

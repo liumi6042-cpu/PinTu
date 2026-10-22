@@ -66,7 +66,7 @@
       "color": "#b66578",
       "cost": 0,
       "source": "default",
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "cream-bow",
@@ -88,7 +88,7 @@
       "color": "#d4a458",
       "cost": 45,
       "source": "craft",
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "rose-butterfly",

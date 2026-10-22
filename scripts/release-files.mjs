@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve, relative, sep, posix } from 'node:path';
 import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
+import artworkRegistry from '../content/artwork-revisions.json' with {type:'json'};
 
 export const hash = data => createHash('sha256').update(data).digest('hex');
 // Tar must be the Windows bsdtar, addressed by absolute path. Git Bash puts GNU
@@ -36,6 +37,20 @@ export function runtimeAssets(catalog, config) {
       const kind={playSrc:'play',thumbSrc:'thumbnail',standardSrc:'standard',optimizedSrc:'optimized',optimizedStandardSrc:'compact'}[name];
       if(!/^[a-z0-9-]+$/.test(photo.id)||typeof url!=='string'||!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Missing runtime artwork: '+photo.id);
       urls.add(url);
+    }
+    const retained=artworkRegistry.legacy[photo.id];
+    if(retained)for(const [kind,url] of [['optimized',retained.src],['thumbnail',retained.thumbSrc]]){
+      if(!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Invalid retained room artwork: '+photo.id);
+      urls.add(url);
+    }
+    const activeRevision=artworkRegistry.active[photo.id];
+    if(activeRevision){
+      const active=artworkRegistry.versions[photo.id]?.find(item=>item.revision===activeRevision);
+      if(!active)throw new Error('Missing active artwork version: '+photo.id);
+      for(const [kind,url] of [['optimized',active.src],['thumbnail',active.thumbSrc]]){
+        if(!new RegExp(`^/puzzles/${photo.id}-${kind}-[a-f0-9]{12}\\.webp$`).test(url))throw new Error('Invalid active room artwork: '+photo.id);
+        urls.add(url);
+      }
     }
   }
   for(const url of urls)if(!url.startsWith('/')||url.startsWith('//')||url.includes('\\')||posix.normalize(url)!==url||url.includes('..'))throw new Error('Invalid runtime asset path');

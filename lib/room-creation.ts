@@ -1,4 +1,4 @@
-import { createPuzzle, createFittedPuzzle, knownGrid, fittedGrid, type PuzzleState } from './puzzle-engine';
+import { createPuzzle, createFittedPuzzle, LEVELS, fittedGrid, type PuzzleState } from './puzzle-engine';
 import type { RoomSnapshot } from './room-engine';
 import type { RoomTicket } from './room-client';
 
@@ -22,7 +22,7 @@ export function expandCreatedTicket(ticket:RoomTicket|SeedRoomTicket):RoomTicket
  // with the same split the server uses on creation: a known fixed grid goes
  // through createPuzzle, a fitted one through createFittedPuzzle, and anything
  // else stays rejected.
- const puzzle=knownGrid(seed.cols,seed.rows)?createPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed):fittedGrid(seed.cols,seed.rows)?createFittedPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed):(()=>{throw new Error('暂时无法开始');})();
+ const puzzle=LEVELS.some(level=>level.cols===seed.cols&&level.rows===seed.rows)?createPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed):fittedGrid(seed.cols,seed.rows)?createFittedPuzzle(seed.imageId,seed.cols,seed.rows,seed.seed):(()=>{throw new Error('暂时无法开始');})();
  return {token:ticket.token,playerId:ticket.playerId,room:{...ticket.room,puzzle}};
 }
 

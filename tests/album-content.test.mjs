@@ -47,7 +47,7 @@ test('a custom free album grants its own decoration once and keeps issued values
   config=document([album('custom-free',ids.slice(0,2),[milestone('milestone-3',2,99,'honey-star')])]);
   const second=transaction(db,()=>c.complete(owner,room(ids[1]),3,now));assert.deepEqual(second.catalog.albumRewards,[]);
   const shown=c.view(owner,now).albums[0].milestones[0];assert.equal(shown.target,1);assert.equal(shown.coins,7);assert.equal(shown.decorationId,'cream-bow');
-  assert.equal(c.view(owner,now).decorations.find(item=>item.id==='honey-star').owned,false);
+  assert.equal(c.view(owner,now).decorations.find(item=>item.id==='honey-star'),undefined);
   assert.deepEqual(c.complete(owner,first,3,now),reward,'completion receipts keep original grants');
   assert.equal(db.prepare('SELECT COUNT(*) n FROM mobile_collection_milestone_rewards').get().n,1);
  }finally{db.close();}
@@ -85,15 +85,70 @@ test('managed PC/mobile flags, unassigned images and new paid albums control act
  }finally{db.close();}
 });
 
+test('free gallery is the visible free album union, including zero-price albums, without changing purchase rights',()=>{
+ const photoIds=RESTORABLE_PHOTOS.slice(0,8).map(photo=>photo.id),db=new DatabaseSync(':memory:');
+ const config=document([
+  album('free',photoIds.slice(0,2)),album('paid',photoIds.slice(1,3),[],{purchasable:true,price:20}),
+  album('zero-price',[photoIds[3]],[],{purchasable:true,price:0}),
+  album('pc-only',[photoIds[4]],[],{showOnMobile:false}),album('mobile-only',[photoIds[5]],[],{showOnPc:false}),
+  album('hidden',[photoIds[6]],[],{showOnPc:false,showOnMobile:false})
+ ]);
+ const mobile=createMobileCollection({db,photos:RESTORABLE_PHOTOS,readAlbums:()=>config}),pc=createMobileCollection({db,photos:RESTORABLE_PHOTOS,readAlbums:()=>config,albumTarget:'pc'});
+ try{
+  assert.deepEqual(new Set(mobile.freeImageIds(now)),new Set([photoIds[0],photoIds[1],photoIds[3],photoIds[5]]));
+  assert.deepEqual(new Set(pc.freeImageIds(now)),new Set([photoIds[0],photoIds[1],photoIds[3],photoIds[4]]));
+  assert.deepEqual(mobile.packedImageIds(now),[photoIds[2]],'free membership wins when an image is also inside a paid album');
+  assert.equal(mobile.randomAllowed(owner,photoIds[1],now),true);assert.equal(mobile.randomAllowed(owner,photoIds[3],now),true);
+  assert.equal(mobile.randomAllowed(owner,photoIds[2],now),false);assert.equal(mobile.randomAllowed(owner,photoIds[7],now),false);
+  db.prepare('INSERT INTO mobile_collection_owned VALUES(?,?,?,?)').run(owner,'image',photoIds[2],now);
+  assert.equal(mobile.randomAllowed(owner,photoIds[2],now),true);assert.ok(!mobile.freeImageIds(now).includes(photoIds[2]),'purchased rights do not turn a paid album into a free one');
+  assert.deepEqual(mobile.view(owner,now).packs.map(pack=>pack.id),['paid']);
+  const before=JSON.stringify(config);mobile.freeImageIds(now);assert.equal(JSON.stringify(config),before,'classification never rewrites administrator settings');
+ }finally{db.close();}
+});
+
 test('daily withholding and enrollment overlays honor current managed membership without duplicate albums',()=>{
  const db=new DatabaseSync(':memory:');let released=new Set(),config=document([album('old-album',[]),album('new-album',[ids[0]])]);
  const dailyContent={managedImageIds:()=>new Set([ids[0]]),releasedImageIds:()=>released,albumEntries:()=>released.size?[{album:{id:'old-album'},imageIds:[ids[0]]}]:[]};
  const c=createMobileCollection({db,photos:RESTORABLE_PHOTOS,readAlbums:()=>config,dailyContent});
  try{
-  assert.deepEqual(c.galleryPhotos(now),[]);released=new Set([ids[0]]);
-  assert.equal(c.view(owner,now).albums[0].total,0);assert.equal(c.view(owner,now).albums[1].total,1,'new assignment wins over old daily album');
+  assert.deepEqual(c.galleryPhotos(now),[]);assert.deepEqual(c.freeImageIds(now),[]);assert.deepEqual(c.view(owner,now).albums,[],'an album containing only unreleased daily images stays hidden');released=new Set([ids[0]]);
+  assert.deepEqual(c.freeImageIds(now),[ids[0]]);
+  assert.deepEqual(c.view(owner,now).albums.map(item=>[item.id,item.total]),[['new-album',1]],'new assignment wins over old daily album');
   config=document([album('old-album',[]),album('new-album',[])]);
-  assert.equal(c.view(owner,now).albums[0].total,1,'the next-day overlay covers CMS enrollment lag');assert.equal(c.view(owner,now).albums[1].total,0);
+  assert.deepEqual(c.view(owner,now).albums.map(item=>[item.id,item.total]),[['old-album',1]],'the next-day overlay automatically reveals the album despite CMS enrollment lag');
+ }finally{db.close();}
+});
+
+test('empty managed albums hide automatically and return with content without changing visibility or purchase rights',()=>{
+ const db=new DatabaseSync(':memory:'),paid=album('custom-paid',[ids[0]],[],{purchasable:true,price:12});
+ const config=document([album('empty-free',[]),paid,album('pc-only',[ids[1]],[],{showOnMobile:false}),album('manually-hidden',[ids[2]],[],{showOnPc:false,showOnMobile:false})]);
+ const c=createMobileCollection({db,photos:RESTORABLE_PHOTOS,readAlbums:()=>config});
+ try{
+  db.prepare("INSERT INTO mobile_collection_wallets VALUES(?,50,0,'berry-spark')").run(owner);
+  transaction(db,()=>c.buy(owner,paid.id,now));
+  const ownedBefore=db.prepare('SELECT * FROM mobile_collection_owned ORDER BY kind,item_id').all();
+  assert.deepEqual(c.view(owner,now).albums.map(item=>item.id),[paid.id]);
+  paid.imageIds=[];
+  assert.deepEqual(c.view(owner,now).albums,[]);assert.deepEqual(c.view(owner,now).packs,[]);
+  assert.equal(paid.showOnMobile,true,'automatic hiding does not rewrite the admin checkbox');
+  assert.equal(c.ownsImage(owner,ids[0],now),true);assert.deepEqual(c.summary(owner,now).ownedPackIds,[paid.id]);
+  assert.deepEqual(db.prepare('SELECT * FROM mobile_collection_owned ORDER BY kind,item_id').all(),ownedBefore);
+  assert.throws(()=>c.buy('b'.repeat(64),paid.id,now),{code:'INVALID_PACK'},'an empty album cannot be bought');
+  paid.imageIds=[ids[0]];config.albums[0].imageIds=[ids[3]];
+  assert.deepEqual(c.view(owner,now).albums.map(item=>item.id),['empty-free',paid.id]);
+  assert.equal(c.view(owner,now).packs[0].owned,true);assert.equal(c.summary(owner,now).coins,38);
+  assert.deepEqual(db.prepare('SELECT * FROM mobile_collection_owned ORDER BY kind,item_id').all(),ownedBefore);
+ }finally{db.close();}
+});
+
+test('legacy albums and packs containing only withheld daily images stay hidden',()=>{
+ const db=new DatabaseSync(':memory:'),original=catalog.packs[0],dailyContent={managedImageIds:()=>new Set(original.imageIds),albumEntries:()=>[],galleryPhotos:()=>GALLERY_VISIBLE_PHOTOS.filter(photo=>!original.imageIds.includes(photo.id))};
+ const c=createMobileCollection({db,photos:RESTORABLE_PHOTOS,dailyContent});
+ try{
+  assert.equal(c.view(owner,now).albums.some(item=>item.id===original.id),false);
+  assert.equal(c.view(owner,now).packs.some(item=>item.id===original.id),false);
+  assert.ok(c.view(owner,now).albums.every(item=>item.total>0));assert.ok(c.view(owner,now).packs.every(item=>item.imageIds.length>0));
  }finally{db.close();}
 });
 
@@ -118,7 +173,7 @@ test('service loads a configured album catalog per operation and leaves configur
  let config=document([album('first',[ids[0]])]);const service=createMobileService({now:()=>now,gameSettings:{read:()=>settings},albumContent:{read:()=>config}});
  const call=url=>service.handle({identity:owner,url,method:'GET'});
  try{
-  assert.deepEqual(call('/api/mobile/gallery').data.imageIds,[ids[0]]);
+  assert.deepEqual(call('/api/mobile/gallery').data.imageIds,[ids[0]]);assert.deepEqual(call('/api/mobile/gallery').data.freeImageIds,[ids[0]]);
   assert.equal(call('/api/mobile/profile').data.energy,30);assert.equal(call('/api/mobile/profile').data.economy.firstRoomFree,false);
   config=document([album('second',[ids[1]])]);assert.equal(call('/api/mobile/collection').data.albums[0].id,'second');assert.deepEqual(call('/api/mobile/gallery').data.imageIds,[ids[1]]);
   assert.equal(call('/api/mobile/profile').data.energy,30);assert.equal(call('/api/mobile/profile').data.economy.naturalRecoveryMinutes,2);

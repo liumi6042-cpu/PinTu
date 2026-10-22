@@ -48,7 +48,7 @@ test('collection settings apply to new grants, stable milestones and issued rewa
   const decor=settings.decorations.find(item=>item.source==='craft');decor.cost=2;db.prepare('UPDATE mobile_collection_wallets SET fragments=10 WHERE owner=?').run(owner);
   c.craft(owner,decor.id,now);decor.enabled=false;decor.cost=100;decor.title='新的装饰名';decor.color='#123456';c.equip(owner,decor.id);
   assert.equal(c.equipped(owner).title,'新的装饰名');assert.equal(c.equipped(owner).color,'#123456');assert.ok(c.view(owner,now).decorations.find(item=>item.id===decor.id).owned);
-  const other=settings.decorations.find(item=>item.source==='craft'&&item.id!==decor.id);other.enabled=false;
+  const other=settings.decorations.find(item=>item.source==='craft'&&item.id!==decor.id&&item.enabled!==false);other.enabled=false;
   assert.throws(()=>c.craft(owner,other.id,now),{code:'DECORATION_DISABLED'});assert.ok(!c.view(owner,now).decorations.some(item=>item.id===other.id));
   const albumDecor=settings.decorations.find(item=>item.id===pack.decorationId);albumDecor.enabled=false;settings.milestones[1].target=3;
   c.complete(owner,completed(pack.imageIds[2]),2,now);assert.equal(c.view(owner,now).decorations.find(item=>item.id===albumDecor.id).owned,true,'hidden shop items can still be earned from albums');

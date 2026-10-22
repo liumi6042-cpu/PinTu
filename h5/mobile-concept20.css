@@ -1,0 +1,151 @@
+/* B2 pale concept alignment. Native nine-slice frames retain fixed pixel corners.
+   Only presentation is shared here; every page keeps its live data and actions. */
+html:root body :is(.mobile-primary,.mobile-green,.mobile-game-invite,.mobile-task-state,.mobile-gift-open,
+ .collection-button-primary,[data-pixel-tone="berry"],.mobile-completion-actions>.is-primary){
+ --pixel-face-sheen:linear-gradient(110deg,#ffffff17,transparent 62%,#63283a0a);
+}
+html:root body :is(.pixel-button,.mobile-button,.collection-button,.mobile-task-state,.mobile-gift-open):is(:active,:disabled){--pixel-face-sheen:none}
+/* The concept differentiates quiet filter frames from dark primary outlines. */
+html:root body :is(.mobile-lobby .mobile-filter-button,.mobile-gallery .mobile-piece-picker>button,
+ .mobile-gallery .mobile-gallery-sources>button,.mobile-gallery .mobile-heading-tickets){
+ --pixel-normal:var(--pixel-linen-normal);--pixel-pressed:var(--pixel-linen-pressed);
+ --pixel-disabled:var(--pixel-linen-disabled);--pixel-face:var(--pixel-surface-linen-normal);
+ --pixel-face-pressed:var(--pixel-surface-linen-pressed);--pixel-face-disabled:var(--pixel-surface-linen-disabled);
+ --pixel-selected:var(--pixel-berry-selected);--pixel-face-selected:var(--pixel-surface-berry-selected);
+ --pixel-text-selected:#fffaf0;--pixel-foot-shadow:transparent;
+}
+html:root body .mobile-lobby .mobile-daily{--pixel-text:#fffaf0;--pixel-text-selected:#fffaf0;--pixel-face-sheen:linear-gradient(#ffffff12,transparent 75%)}
+html:root body .mobile-lobby .mobile-daily .mobile-art{filter:brightness(0) invert(1)}
+html:root body :is(.mobile-gallery-sources,.mobile-piece-picker)>button[aria-pressed="true"]{
+ --pixel-current:var(--pixel-berry-selected);--pixel-face:var(--pixel-surface-berry-selected);--pixel-text:#fffaf0;
+ --pixel-face-sheen:linear-gradient(110deg,#ffffff17,transparent 75%);--pixel-foot-shadow:#75384322;
+}
+html:root body .mobile-gallery .mobile-create-options .mobile-segments>button:not([aria-pressed="true"]){--pixel-normal:var(--pixel-linen-normal)}
+html:root body .mobile-segments>button:not([aria-pressed="true"])+button:not([aria-pressed="true"]){position:relative}
+html:root body .mobile-segments>button:not([aria-pressed="true"])+button:not([aria-pressed="true"])::before{
+ content:'';position:absolute;left:0;top:25%;bottom:25%;width:1px;background:#d4ac99;pointer-events:none;
+}
+html:root body :is(.mobile-xp-meter,.mobile-room-progress>span,.mobile-task-meter,.collection-progress){
+ border-color:#c49a8d;background:#fff9ef;box-shadow:inset 0 1px #ecd0bc;
+}
+html:root body :is(.mobile-xp-meter,.mobile-room-progress>span,.mobile-task-meter,.collection-progress)>i{
+ background:linear-gradient(#d89ba3,#c7808b);box-shadow:inset 0 1px #ecc0c1;
+}
+
+/* Four independent corner ornaments, plus small rose/gold marks inside the card. */
+.mobile-app .mobile-frame-corners .mobile-frame-corner{display:block;width:20px;height:22px}
+.mobile-app :is(.mobile-room-card,.mobile-photo-card){background:var(--b2-cream)}
+.mobile-app :is(.mobile-room-card,.mobile-photo-card)::before,
+.mobile-app :is(.mobile-room-card,.mobile-photo-card)::after{
+ content:'';position:absolute;bottom:0;width:2px;height:2px;background:#f3d9b7;pointer-events:none;
+ box-shadow:0 -2px #cb8a87,2px 0 #cb8a87,2px 2px #89404c;z-index:2;
+}
+.mobile-app :is(.mobile-room-card,.mobile-photo-card)::before{left:-2px}
+.mobile-app :is(.mobile-room-card,.mobile-photo-card)::after{right:-2px;transform:scaleX(-1)}
+
+/* The status strip and controls follow the same compact rhythm as the concepts. */
+.mobile-app.mobile-lobby>.mobile-player-bar{min-height:56px;margin:3px 0 5px;padding:2px 0;gap:5px}
+.mobile-app.mobile-lobby>.mobile-player-bar .mobile-player{padding-block:0}
+.mobile-app.mobile-lobby .mobile-lobby-heading{min-height:34px;margin:3px 0 6px;gap:7px}
+.mobile-app.mobile-lobby .mobile-lobby-heading h1{font-size:23px;gap:5px}
+.mobile-app.mobile-lobby .mobile-lobby-controls{grid-template-columns:minmax(0,1.18fr) minmax(0,1fr);gap:8px;margin-bottom:9px}
+.mobile-app.mobile-lobby .mobile-filter-line{gap:8px}
+.mobile-app.mobile-lobby .mobile-filter-line .mobile-segments button{min-height:25px;font-size:11px;padding:0 1px}
+.mobile-app.mobile-lobby .mobile-filter-button{width:58px;min-width:58px;min-height:33px;font-size:11px!important}
+.mobile-app.mobile-lobby .mobile-filter-button>span:not(.mobile-art){display:inline}
+.mobile-app.mobile-lobby .mobile-primary-actions{gap:6px}
+.mobile-app.mobile-lobby .mobile-primary-actions .mobile-button{min-height:35px;font-size:11px!important;gap:2px;padding:1px 0}
+.mobile-app.mobile-lobby .mobile-primary-actions .mobile-button .mobile-art{width:16px;height:19px}
+.mobile-app.mobile-lobby .mobile-room-grid,.mobile-app.mobile-gallery .mobile-photo-grid{gap:9px 10px}
+.mobile-app.mobile-lobby .mobile-room-picture{aspect-ratio:1.12}
+.mobile-app.mobile-lobby .mobile-room-copy{padding:5px 5px 5px}
+.mobile-app.mobile-lobby .mobile-room-copy h2{font-size:16px;margin-bottom:3px}
+.mobile-app.mobile-lobby .mobile-room-meta{font-size:12px;gap:8px}
+.mobile-app.mobile-lobby .mobile-room-progress{margin-top:4px}
+.mobile-app.mobile-lobby .mobile-room-progress>span{height:8px}
+
+.mobile-app.mobile-gallery>.mobile-page-heading{min-height:35px;margin-bottom:2px;padding-bottom:3px}
+.mobile-app.mobile-gallery>.mobile-page-heading>.mobile-icon-button{width:32px;height:32px;min-width:32px;min-height:32px}
+.mobile-app.mobile-gallery .mobile-heading-tickets{min-height:32px;padding-block:0}
+.mobile-app.mobile-gallery>.mobile-page-heading h1{font-size:24px}
+.mobile-app.mobile-gallery>.mobile-player-bar{min-height:50px;margin:0 0 5px;padding:0;gap:10px;border-top:0}
+.mobile-app.mobile-gallery>.mobile-player-bar .mobile-player{min-height:48px;padding:0}
+.mobile-app.mobile-gallery>.mobile-player-bar .mobile-level-info{width:85px}
+.mobile-app.mobile-gallery>.mobile-player-bar .mobile-energy-status{margin-left:7px}
+.mobile-app.mobile-gallery>.mobile-player-bar .mobile-status-sprig{top:auto;bottom:2px;right:0;width:32px!important;height:30px!important;transform:rotate(-18deg)}
+.mobile-app.mobile-gallery .mobile-gallery-controls{grid-template-columns:minmax(0,.83fr) minmax(0,1.17fr);gap:9px}
+.mobile-app.mobile-gallery .mobile-gallery-controls>.mobile-segments button{min-height:25px;font-size:11px;padding:0 1px}
+.mobile-app.mobile-gallery .mobile-gallery-controls .mobile-piece-picker button{height:33px;min-height:33px;font-size:11px}
+.mobile-app.mobile-gallery .mobile-gallery-controls .mobile-piece-picker .mobile-art{width:12px;height:15px}
+.mobile-app.mobile-gallery .mobile-gallery-sources{margin:5px 0 6px;gap:6px;grid-template-columns:1.1fr 1.05fr .7fr 27px}
+.mobile-app.mobile-gallery .mobile-gallery-sources button{min-height:32px;font-size:12px}
+.mobile-app.mobile-gallery .mobile-gallery-sources .mobile-filter-button{width:27px;min-width:27px}
+.mobile-app.mobile-gallery .mobile-photo-caption{padding:5px 4px 4px;gap:4px}
+.mobile-app.mobile-gallery .mobile-photo-caption strong{font-size:15px}
+.mobile-app.mobile-gallery .mobile-photo-caption small{font-size:10px;background:#f2d5ad;line-height:18px}
+.mobile-app.mobile-gallery .mobile-photo-caption small.is-owned{background:#cc8996}
+.mobile-app.mobile-gallery .mobile-create-dock{background:#fff8f0;width:calc(100% - 24px);gap:6px 8px}
+.mobile-app.mobile-gallery .mobile-create-buttons .mobile-primary{min-height:47px}
+.mobile-app.mobile-gallery .mobile-create-options .mobile-segments>button[aria-pressed="true"]{
+ --pixel-current:var(--pixel-berry-selected);--pixel-face:var(--pixel-surface-berry-selected);--pixel-text:#fffaf0;
+}
+
+@media(min-width:640px){
+ .mobile-app.mobile-lobby>.mobile-player-bar{min-height:74px;padding:4px 0;margin:4px 0 8px;gap:16px}
+ .mobile-app.mobile-lobby .mobile-lobby-heading{min-height:44px;margin-bottom:10px}
+ .mobile-app.mobile-lobby .mobile-lobby-heading h1{font-size:30px;gap:9px}
+ .mobile-app.mobile-lobby .mobile-lobby-heading h1 .mobile-art{width:34px;height:37px}
+ .mobile-app.mobile-lobby .mobile-daily{font-size:16px!important;min-height:38px;padding-inline:8px!important}
+ .mobile-app.mobile-lobby .mobile-daily small{font-size:15px}
+ .mobile-app.mobile-lobby .mobile-lobby-collection{font-size:17px;gap:6px}
+ .mobile-app.mobile-lobby .mobile-filter-line .mobile-segments button{font-size:15px;min-height:30px}
+ .mobile-app.mobile-lobby .mobile-filter-button{width:95px;min-width:95px;min-height:38px;font-size:15px!important}
+ .mobile-app.mobile-lobby .mobile-primary-actions .mobile-button{font-size:16px!important;min-height:40px;gap:5px}
+ .mobile-app.mobile-lobby .mobile-primary-actions .mobile-button .mobile-art{width:22px;height:25px}
+ .mobile-app.mobile-gallery>.mobile-player-bar{min-height:66px}
+ .mobile-app.mobile-gallery .mobile-gallery-controls>.mobile-segments button{font-size:15px;min-height:30px}
+ .mobile-app.mobile-gallery .mobile-gallery-controls .mobile-piece-picker button{font-size:16px;height:38px}
+ .mobile-app.mobile-gallery .mobile-gallery-sources button{font-size:16px;min-height:38px}
+ .mobile-app.mobile-gallery .mobile-gallery-sources{grid-template-columns:1.1fr 1.05fr .7fr 38px}
+ .mobile-app.mobile-gallery .mobile-gallery-sources .mobile-filter-button{width:38px}
+}
+@media(orientation:landscape) and (max-height:560px){
+ .mobile-app.mobile-lobby>.mobile-player-bar,.mobile-app.mobile-gallery>.mobile-player-bar{min-height:50px;padding:1px 0;margin-bottom:5px;gap:12px}
+ .mobile-app:is(.mobile-lobby,.mobile-gallery)>.mobile-player-bar .mobile-avatar{width:49px;height:48px}
+ .mobile-app:is(.mobile-lobby,.mobile-gallery)>.mobile-player-bar .mobile-level{font-size:18px}
+ .mobile-app:is(.mobile-lobby,.mobile-gallery)>.mobile-player-bar .mobile-level-info{min-width:74px;width:74px}
+ .mobile-app:is(.mobile-lobby,.mobile-gallery)>.mobile-player-bar .mobile-xp-copy{font-size:10px}
+ .mobile-app:is(.mobile-lobby,.mobile-gallery)>.mobile-player-bar .mobile-energy-status b,
+ .mobile-app:is(.mobile-lobby,.mobile-gallery)>.mobile-player-bar .mobile-energy-status small{font-size:19px}
+ .mobile-app.mobile-lobby>.mobile-player-bar .mobile-energy-status{margin-left:auto}
+ .mobile-app.mobile-lobby .mobile-lobby-heading{min-height:36px;margin-bottom:6px}
+ .mobile-app.mobile-lobby .mobile-lobby-heading h1{font-size:25px}
+ .mobile-app.mobile-lobby .mobile-daily{min-height:32px;font-size:14px!important}
+ .mobile-app.mobile-lobby .mobile-daily small{font-size:13px}
+ .mobile-app.mobile-lobby .mobile-lobby-controls{margin-bottom:9px}
+ .mobile-app.mobile-lobby .mobile-filter-line .mobile-segments button{min-height:26px;font-size:13px}
+ .mobile-app.mobile-lobby .mobile-filter-button{min-height:34px;font-size:13px!important}
+ .mobile-app.mobile-lobby .mobile-primary-actions .mobile-button{min-height:36px;font-size:14px!important}
+ .mobile-app.mobile-gallery .mobile-gallery-controls>.mobile-segments button{min-height:25px;font-size:13px}
+ .mobile-app.mobile-gallery .mobile-gallery-controls .mobile-piece-picker button{height:33px;font-size:13px}
+ .mobile-app.mobile-gallery .mobile-gallery-sources button{min-height:32px;font-size:13px}
+ .mobile-app.mobile-gallery .mobile-create-buttons .mobile-primary{min-height:45px}
+}
+@media(max-width:359px){
+ .mobile-app.mobile-lobby .mobile-lobby-heading{gap:4px}
+ .mobile-app.mobile-lobby .mobile-lobby-heading h1{font-size:20px;gap:3px}
+ .mobile-app.mobile-lobby .mobile-daily{font-size:10px!important;padding-inline:3px!important}
+ .mobile-app.mobile-lobby .mobile-lobby-controls{grid-template-columns:1.1fr 1fr;gap:5px}
+ .mobile-app.mobile-lobby .mobile-filter-line{gap:5px}
+ .mobile-app.mobile-lobby .mobile-filter-button{width:29px;min-width:29px}
+ .mobile-app.mobile-lobby .mobile-filter-button>span:not(.mobile-art){display:none}
+ .mobile-app.mobile-lobby .mobile-primary-actions .mobile-button{font-size:10px!important}
+ .mobile-app.mobile-lobby .mobile-primary-actions .mobile-button .mobile-art{width:12px}
+ .mobile-app.mobile-lobby .mobile-room-copy h2{font-size:15px}
+ .mobile-app.mobile-gallery .mobile-gallery-controls{grid-template-columns:.77fr 1.23fr;gap:6px}
+ .mobile-app.mobile-gallery .mobile-gallery-controls>.mobile-segments button{font-size:10px}
+ .mobile-app.mobile-gallery .mobile-gallery-controls .mobile-piece-picker button{font-size:10px}
+ .mobile-app.mobile-gallery .mobile-gallery-controls .mobile-piece-picker .mobile-art{width:10px}
+ .mobile-app.mobile-gallery .mobile-photo-caption strong{font-size:14px}
+ .mobile-app.mobile-gallery .mobile-create-dock{width:calc(100% - 16px)}
+}

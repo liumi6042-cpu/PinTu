@@ -7,6 +7,12 @@ import {pathToFileURL} from 'node:url';
 import {isIP} from 'node:net';
 import {Readable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
+import {createRoomRealtimeHub} from '../outputs/mobile/room-realtime.mjs';
+
+// Local-only credentials may be supplied through .env.local during development.
+// This file is ignored by Git and is never bundled into the client package.
+const localEnvPath=resolve('.env.local');
+if(existsSync(localEnvPath)&&typeof process.loadEnvFile==='function')process.loadEnvFile(localEnvPath);
 
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const SESSION_MS=30*86400000;
@@ -84,6 +90,7 @@ export function createH5Gateway(options){
     const headers=new Headers({'Host':new URL(origin).host,'X-Forwarded-Host':new URL(origin).host,'X-Forwarded-Proto':new URL(origin).protocol.slice(0,-1),'Origin':origin,'Cookie':session.cookies,'Accept':request.headers.accept||'*/*'});
     if(request.headers.authorization)headers.set('Authorization',request.headers.authorization);
     if(request.headers['content-type'])headers.set('Content-Type',request.headers['content-type']);
+    if(request.headers['x-jigsaw-artwork-snapshot']==='1')headers.set('X-Jigsaw-Artwork-Snapshot','1');
     // Only the socket peer is forwarded. Arbitrary client proxy headers are not trusted.
     headers.set('cf-connecting-ip',clientAddress(request));
     const upstream=await fetch(new URL(path,target),{method:request.method,headers,body:body?.length?body:undefined,redirect:'manual',signal:AbortSignal.timeout(65000)});
@@ -154,8 +161,8 @@ export function createH5Gateway(options){
         if(!source){json(response,403,{error:'来源未获允许'});return;}
         const method=request.headers['access-control-request-method'];
         const requested=(request.headers['access-control-request-headers']||'').toLowerCase().split(',').map(x=>x.trim()).filter(Boolean);
-        if(!['GET','POST','DELETE','PATCH'].includes(method)||requested.some(x=>!['content-type','authorization','x-jigsaw-h5-session'].includes(x))){json(response,403,{error:'请求未获允许'});return;}
-        response.writeHead(204,{'Access-Control-Allow-Methods':'GET, POST, DELETE, PATCH, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, X-Jigsaw-H5-Session','Access-Control-Max-Age':'600','Cache-Control':'no-store'});response.end();return;
+        if(!['GET','POST','DELETE','PATCH'].includes(method)||requested.some(x=>!['content-type','authorization','x-jigsaw-h5-session','x-jigsaw-artwork-snapshot'].includes(x))){json(response,403,{error:'请求未获允许'});return;}
+        response.writeHead(204,{'Access-Control-Allow-Methods':'GET, POST, DELETE, PATCH, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, X-Jigsaw-H5-Session, X-Jigsaw-Artwork-Snapshot','Access-Control-Max-Age':'600','Cache-Control':'no-store'});response.end();return;
       }
       response.setHeader('Access-Control-Expose-Headers','Retry-After, X-Jigsaw-H5-Session-Expired');
       if(url.pathname==='/config.js'&&request.method==='GET'){
@@ -169,7 +176,7 @@ export function createH5Gateway(options){
           if(!options.assetDir){json(response,404,{error:'独立资源未配置'});return;}
           const base=resolve(options.assetDir),file=resolve(base,'.'+asset);
           if(!file.startsWith(base+sep)||!existsSync(file)||!statSync(file).isFile()){json(response,404,{error:'图片不存在'});return;}
-          const type={'.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.wav':'audio/wav'}[extname(file)]||'application/octet-stream';
+          const type={'.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.wav':'audio/wav','.mp3':'audio/mpeg'}[extname(file)]||'application/octet-stream';
           response.writeHead(200,{'Content-Type':type,'Cache-Control':'public, max-age=86400','Cross-Origin-Resource-Policy':'cross-origin','X-Content-Type-Options':'nosniff'});response.end(readFileSync(file));return;
         }
         const upstream=await fetch(new URL(asset,target),{headers:{Host:new URL(origin).host,'X-Forwarded-Host':new URL(origin).host,'X-Forwarded-Proto':new URL(origin).protocol.slice(0,-1)},redirect:'manual',signal:AbortSignal.timeout(30000)});
@@ -177,8 +184,14 @@ export function createH5Gateway(options){
         response.writeHead(200,{'Content-Type':upstream.headers.get('Content-Type')||'application/octet-stream','Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});
         response.end(Buffer.from(await upstream.arrayBuffer()));return;
       }
-      if(url.pathname==='/healthz'){json(response,200,{ok:true,service:'jigsaw-h5-gateway',mode:options.mobileService?.mode??'legacy-proxy'});return;}
-      if(url.pathname==='/h5/config'&&request.method==='GET'){json(response,200,{rewardedAdUnitId:options.rewardedAdUnitId||'',adRewardEnabled:adsEnabled,mobileMode:options.mobileService?.mode??null});return;}
+      if(url.pathname==='/healthz'){
+        try{const status=options.mobileService?.contentStatus?.()??{contentReleaseId:null};json(response,200,{ok:true,service:'jigsaw-h5-gateway',mode:options.mobileService?.mode??'legacy-proxy',contentReleaseId:status.contentReleaseId});}
+        catch{json(response,503,{ok:false,service:'jigsaw-h5-gateway',mode:options.mobileService?.mode??'legacy-proxy',contentReleaseId:null,code:'CONTENT_RELEASE_UNAVAILABLE'});}return;
+      }
+      if(url.pathname==='/h5/config'&&request.method==='GET'){
+        const capabilities=options.mobileService?.capabilities??{energy:true,ads:adsEnabled,albumTarget:'mobile-shared'},available=adsEnabled&&capabilities.ads!==false;
+        json(response,200,{rewardedAdUnitId:available?options.rewardedAdUnitId||'':'',adRewardEnabled:available,mobileMode:options.mobileService?.mode??null,...(options.mobileService?.realtime?{realtime:{version:1}}:{}),capabilities:{...capabilities,ads:available}});return;
+      }
       if(url.pathname==='/h5/session'&&request.method==='POST'){
         if(!requestLimit(request,'session',30)){json(response,429,{error:'请稍后再试'},{'Retry-After':'60'});return;}
         await readBody(request);cleanup.run(Date.now());
@@ -249,8 +262,13 @@ export function createH5Gateway(options){
         if(!session){json(response,401,{error:'连接凭证已过期'},{'X-Jigsaw-H5-Session-Expired':'1'});return;}
         if(!requestLimit(request,'api:'+session.key,4000)){json(response,429,{error:'请稍后再试'},{'Retry-After':'60'});return;}
         if(path.startsWith('/api/auth/')&&request.method==='POST'&&!requestLimit(request,'auth',20)){json(response,429,{error:'请稍后再试'},{'Retry-After':'60'});return;}
+        if(options.mobileService?.bindTapTap&&path==='/api/taptap/bind'&&request.method==='POST'){
+          if(!requestLimit(request,'taptap-bind:'+session.key,12)){json(response,429,{error:'TapTap登录尝试过于频繁，请稍后再试'},{'Retry-After':'60'});return;}
+          const input=parseJson(await readBody(request,64*1024));
+          const result=await options.mobileService.bindTapTap({identity:session.key,code:input.code,nickname:input.nickname});json(response,result.status,result.data);return;
+        }
         if(options.mobileService){
-          const result=options.mobileService.handle({identity:session.key,method:request.method,url:path+url.search,body:request.method==='GET'?undefined:await readBody(request),authorization:request.headers.authorization});json(response,result.status,result.data);return;
+          const result=options.mobileService.handle({identity:session.key,method:request.method,url:path+url.search,body:request.method==='GET'?undefined:await readBody(request),authorization:request.headers.authorization,artworkSnapshot:request.headers['x-jigsaw-artwork-snapshot']==='1'});json(response,result.status,result.data);return;
         }
         const assistance=/^\/api\/rooms\/([a-f0-9]{32})\/assistance$/.exec(path);
         if(assistance){await serveHelp(request,response,session,'room/'+assistance[1]);return;}
@@ -260,7 +278,7 @@ export function createH5Gateway(options){
         const base=resolve(options.staticDir),relative=decodeURIComponent(url.pathname).replace(/^\//,'')||'index.html',file=resolve(base,relative);
         if(file!==base&&!file.startsWith(base+sep)){json(response,404,{error:'文件不存在'});return;}
         if(existsSync(file)&&statSync(file).isFile()){
-          const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.txt':'text/plain; charset=utf-8','.woff2':'font/woff2','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.ico':'image/x-icon','.wav':'audio/wav'};
+          const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.txt':'text/plain; charset=utf-8','.woff2':'font/woff2','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.ico':'image/x-icon','.wav':'audio/wav','.mp3':'audio/mpeg'};
           response.writeHead(200,{'Content-Type':types[extname(file)]||'application/octet-stream','Cache-Control':relative==='config.js'||relative==='index.html'?'no-store':'public, max-age=3600','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'});
           response.end(readFileSync(file));return;
         }
@@ -268,12 +286,38 @@ export function createH5Gateway(options){
       json(response,404,{error:'接口不存在'});
     }catch(error){if(!response.headersSent)json(response,error.status??502,{error:error.status?error.message:'暂时无法连接，请稍后重试'});else response.end();}
   });
+  let realtime,unwatch;
+  if(options.mobileService?.realtime){
+    const service=options.mobileService.realtime;
+    const requireSession=(request,token)=>{
+      const session=sessionOf({headers:{'x-jigsaw-h5-session':token}});
+      if(!session)throw Object.assign(Error('连接凭证已过期'),{status:401,code:'IDENTITY_REQUIRED'});
+      return session;
+    };
+    realtime=createRoomRealtimeHub({server,path:'/h5/realtime',addressOf:clientAddress,
+      allowOrigin:source=>!source||origins.has(source)&&source!=='null',
+      subscribe(request,message){
+        if(!requestLimit(request,'realtime',60))throw Object.assign(Error('请稍后再试'),{status:429,code:'REALTIME_RATE_LIMIT'});
+        const session=requireSession(request,message.session);
+        return service.subscribe({roomId:message.roomId,identity:session.key,authorization:'Bearer '+message.token,artworkSnapshot:true,sessionToken:message.session});
+      },
+      validate(context){requireSession(null,context.sessionToken);return service.validate(context);},
+      readRoom(context,since){requireSession(null,context.sessionToken);return service.readRoom(context,since);},
+      readCursors:context=>service.readCursors(context),writeCursor:(context,input)=>service.writeCursor(context,input),
+      actionCapabilities:context=>service.actionCapabilities?.(context),
+      writeAction(context,input){requireSession(null,context.sessionToken);return service.writeAction(context,input);},
+      ...options.realtimeOptions,
+      onDisconnect(context){service.disconnectActions?.(context);options.realtimeOptions?.onDisconnect?.(context);},
+    });
+    unwatch=service.onChange((roomId,kind)=>realtime.notify(roomId,kind));
+    server.realtime=realtime;
+  }
   const cleanTimer=setInterval(()=>{
     cleanup.run(Date.now());db.prepare('DELETE FROM h5_ad_watches WHERE expires_at<?').run(Date.now()-86400000);
     db.prepare('DELETE FROM h5_help WHERE expires_at<?').run(Date.now()-86400000);
   },60000);cleanTimer.unref();
   server.once('listening',()=>options.mobileService?.startDaily?.());
-  server.on('close',()=>{clearInterval(cleanTimer);db.close();options.mobileService?.close();});
+  server.on('close',()=>{clearInterval(cleanTimer);unwatch?.();realtime?.close();db.close();options.mobileService?.close();});
   return server;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
@@ -285,7 +329,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
     const engine=await import('../outputs/mobile/engine.mjs');
     dailyContent=createDailyContent({configurationPath:process.env.MOBILE_DAILY_CONFIG,appearanceDir:process.env.MOBILE_DAILY_APPEARANCES||resolve('work/daily-appearances'),photos:engine.RESTORABLE_PHOTOS,fallback:engine.dailyPuzzle});
   }
-  const mobileService=createMobileService({databasePath:process.env.MOBILE_DB||resolve('data/mobile-v3.sqlite'),adEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true'&&Boolean(process.env.H5_REWARDED_AD_UNIT),taskRewardConfigurationPath:process.env.MOBILE_TASK_REWARDS_CONFIG,gameConfigurationPath:process.env.MOBILE_GAME_SETTINGS_CONFIG,albumConfigurationPath:process.env.MOBILE_ALBUMS_CONFIG,albumTarget:process.env.MOBILE_ALBUM_TARGET==='pc'?'pc':'mobile-shared',dailyContent,deferDailyStart:true});
+  const mobileService=createMobileService({databasePath:process.env.MOBILE_DB||resolve('data/mobile-v3.sqlite'),runtimeProfile:process.env.MOBILE_RUNTIME_PROFILE==='web'?'web':'mobile',adEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true'&&Boolean(process.env.H5_REWARDED_AD_UNIT),tapTap:{appId:process.env.TAPTAP_APP_ID,secret:process.env.TAPTAP_APP_SECRET,endpoint:process.env.TAPTAP_CODE2SESSION_URL},taskRewardConfigurationPath:process.env.MOBILE_TASK_REWARDS_CONFIG,gameConfigurationPath:process.env.MOBILE_GAME_SETTINGS_CONFIG,albumConfigurationPath:process.env.MOBILE_ALBUMS_CONFIG,albumTarget:process.env.MOBILE_ALBUM_TARGET==='pc'?'pc':'mobile-shared',contentDirectory:process.env.JIGSAW_CONTENT_DIR,assetDir:process.env.MOBILE_ASSET_DIR||resolve('public'),dailyAppearanceDir:process.env.MOBILE_DAILY_APPEARANCES||resolve('work/daily-appearances'),dailyContent,deferDailyStart:true});
   const server=createH5Gateway({
     publicApiBase:process.env.H5_PUBLIC_API_BASE,publicGameBase:process.env.H5_PUBLIC_GAME_BASE,
     mobileService,assetDir:process.env.MOBILE_ASSET_DIR||resolve('public'),

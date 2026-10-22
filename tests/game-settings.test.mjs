@@ -10,7 +10,7 @@ test('game settings defaults preserve the existing economy and all decoration id
  assert.deepEqual(document.progression,{earlyXp:[1,5,10,18,28,40,55,70,90,110],laterXpStep:10,laterXpMaximum:300});
  assert.equal(document.energy.initial,50);assert.equal(document.energy.upgradeRefill,'full');assert.equal(document.energy.naturalRecoveryMinutes,5);
  assert.deepEqual(document.collection,{...catalog.tuning,completionFragmentMinimum:1});
- assert.deepEqual(document.decorations,catalog.decorations.map(item=>({...item,enabled:true})));
+ assert.deepEqual(document.decorations,catalog.decorations.map(item=>({...item,enabled:!['berry-spark','honey-star'].includes(item.id)})));
  assert.deepEqual(document.milestones,catalog.milestones.map(item=>({id:'milestone-'+item.target,...item,albumDecoration:!!item.albumDecoration})));
  assert.equal(Object.isFrozen(DEFAULT_GAME_SETTINGS.decorations[0]),true);
  document.progression.earlyXp[0]=99;assert.equal(DEFAULT_GAME_SETTINGS.progression.earlyXp[0],1);

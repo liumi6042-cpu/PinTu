@@ -11,12 +11,9 @@ const day=value=>{if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)
 const keys=(value,allowed)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>allowed.includes(key));
 const id=value=>typeof value==='string'&&/^[a-z0-9-]+$/.test(value);
 
-/** Public configuration and appearance receipts only. No account or database access. */
-export function createDailyContent({configurationPath,appearanceDir,photos,fallback,now=Date.now,randomInt=secureRandomInt}){
- const filename=resolve(configurationPath),directory=resolve(appearanceDir),photoById=new Map(photos.filter(photo=>['published','archived'].includes(photo.status)).map(photo=>[photo.id,photo]));
- let timer=null,tickError=null;
- function configuration(){
-  let input;try{input=JSON.parse(readFileSync(filename,'utf8'));}catch{invalid('每日配置无法读取。');}
+/** Validate one complete public configuration without reading or writing runtime data. */
+export function validateDailyConfiguration(input,{photos}){
+  const photoById=new Map(photos.filter(photo=>['published','archived'].includes(photo.status)).map(photo=>[photo.id,photo]));
   const version=input?.schema==='jigsaw-daily-content/v2'?2:input?.schema==='jigsaw-daily-content/v1'?1:0;
   if(!version||!keys(input,version===2?['schema','timezone','entries','automaticCandidates','fallbackImageIds','albums','configDigest']:['schema','timezone','entries','albums','configDigest'])||input.timezone!=='Asia/Shanghai'||!Array.isArray(input.entries)||!Array.isArray(input.albums)||version===2&&(!Array.isArray(input.automaticCandidates)||!Array.isArray(input.fallbackImageIds)))invalid('每日配置格式无效。');
   const {configDigest,...content}=input;
@@ -40,6 +37,15 @@ export function createDailyContent({configurationPath,appearanceDir,photos,fallb
    for(const imageId of input.fallbackImageIds){if(!photoById.has(imageId)||pool.has(imageId))invalid('每日图库包含不可用或重复图片。');pool.add(imageId);}
   }
   return {...input,version,automaticCandidates:input.automaticCandidates??[],fallbackImageIds:input.fallbackImageIds??[],albumById:albums};
+}
+
+/** Public configuration and appearance receipts only. No account or database access. */
+export function createDailyContent({configurationPath,readConfiguration,appearanceDir,photos,fallback,now=Date.now,randomInt=secureRandomInt}){
+ const filename=readConfiguration===undefined?resolve(configurationPath):null,directory=resolve(appearanceDir),photoById=new Map(photos.filter(photo=>['published','archived'].includes(photo.status)).map(photo=>[photo.id,photo]));
+ let timer=null,tickError=null;
+ function configuration(){
+  let input;try{input=readConfiguration===undefined?JSON.parse(readFileSync(filename,'utf8')):readConfiguration();}catch{invalid('每日配置无法读取。');}
+  return validateDailyConfiguration(input,{photos});
  }
  function receipt(date,clock){
   let value;try{value=JSON.parse(readFileSync(join(directory,date+'.json'),'utf8'));}catch(error){if(error.code==='ENOENT')return null;invalid('每日出场记录无法读取。');}
@@ -71,8 +77,8 @@ export function createDailyContent({configurationPath,appearanceDir,photos,fallb
   try{mkdirSync(directory,{recursive:true});writeFileSync(join(directory,date+'.json'),JSON.stringify(value)+'\n',{flag:'wx'});}catch(error){if(error.code==='EEXIST'){const existing=receipt(date,clock);if(existing)return existing;}throw Object.assign(new Error('每日出场记录未能保存。'),{status:503,code:'DAILY_APPEARANCE_UNAVAILABLE',cause:error});}
   tickError=null;return value;
  }
- function albumEntries(clock=now(),target='mobile-shared'){
-  const config=configuration(),today=dailyContentDate(clock),first=new Map();
+ function albumEntriesFor(config,clock,target){
+  const today=dailyContentDate(clock),first=new Map();
   for(const fact of facts(clock))if(fact.planned&&!first.has(fact.imageId))first.set(fact.imageId,fact);
   const groups=new Map();
   for(const fact of first.values()){
@@ -83,15 +89,20 @@ export function createDailyContent({configurationPath,appearanceDir,photos,fallb
   }
   return [...groups.values()];
  }
- function managedImageIds(clock=now()){
-  const config=configuration();
+ function albumEntries(clock=now(),target='mobile-shared'){
+  return albumEntriesFor(configuration(),clock,target);
+ }
+ function managedImageIdsFor(config,clock){
   return new Set([...config.entries,...config.automaticCandidates].map(entry=>entry.imageId).concat(facts(clock).filter(fact=>fact.planned).map(fact=>fact.imageId)));
+ }
+ function managedImageIds(clock=now()){
+  return managedImageIdsFor(configuration(),clock);
  }
  function releasedImageIds(clock=now()){
   const today=dailyContentDate(clock);return new Set(facts(clock).filter(fact=>fact.planned&&fact.date<today).map(fact=>fact.imageId));
  }
  function galleryPhotos(clock=now()){
-  const managed=managedImageIds(clock),visible=new Set(albumEntries(clock).flatMap(entry=>entry.imageIds));
+  const config=configuration(),managed=managedImageIdsFor(config,clock),visible=new Set(albumEntriesFor(config,clock,'mobile-shared').flatMap(entry=>entry.imageIds));
   return [...photoById.values()].filter(photo=>visible.has(photo.id)||photo.status==='published'&&photo.galleryVisible!==false&&!managed.has(photo.id));
  }
  function start(){if(timer)return;tick(now());timer=setInterval(()=>{try{tick(now());}catch(error){tickError=error;console.error('每日配置暂不可用：'+error.message);}},30000);timer.unref();}

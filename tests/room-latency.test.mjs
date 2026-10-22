@@ -5,13 +5,16 @@ import { RoomClient } from '../lib/room-client.ts';
 import { PuzzleTable } from '../lib/puzzle-table.ts';
 import { addMember, applyAction, snapshot } from '../lib/room-engine.ts';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+// PuzzleSprites clips its atlas during construction even when a latency test
+// replaces table.draw. Keep the real Canvas constructor contract explicit.
+const stubContext=()=>({drawImage(){},save(){},restore(){},translate(){},scale(){},clip(){},stroke(){}});
 
 function fakeTable(client){return {state:client.state,network:null,networkReady:true,cancelNetworkDrag(){},syncRemote(next,owners,protect){const ids=protect instanceof Set?protect:new Set(protect===null?[]:[protect]);const previous=new Map(this.state.groups.map(g=>[g.id,g]));this.state.groups=structuredClone(next.groups);for(const g of this.state.groups){const held=previous.get(g.id);if(ids.has(g.id)&&held&&!g.locked){g.dx=held.dx;g.dy=held.dy;}}this.state.elapsed=next.elapsed;}};}
 
 test('a piece follows pointer motion before the claim response arrives',async()=>{
  let resolveClaim;const claimed=new Promise(r=>{resolveClaim=r;});const room=makeRoom('local','seaside-native-v2',12,Date.now());
  const savedGlobals={document:globalThis.document,Path2D:globalThis.Path2D,ResizeObserver:globalThis.ResizeObserver,cancelAnimationFrame:globalThis.cancelAnimationFrame};
- const context={drawImage(){}};const canvas={getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){},style:{}};
+ const context=stubContext();const canvas={getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){},style:{}};
  globalThis.document={createElement:()=>({getContext:()=>context}),addEventListener(){}};globalThis.Path2D=class{};globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.cancelAnimationFrame=()=>{};
  const table=new PuzzleTable(canvas,room.puzzle,{naturalWidth:800,naturalHeight:600},()=>{},()=>{});const group=room.puzzle.groups[0],original={dx:group.dx,dy:group.dy};
  Object.assign(table,{state:room.puzzle,paused:false,networkReady:true,remoteOwners:{},claimSerial:0,selected:null,drag:null,pan:null,space:false,pointers:new Map(),canvas:{focus(){},setPointerCapture(){},getBoundingClientRect:()=>({left:0,top:0,width:800,height:600}),style:{}},network:{acquire:()=>claimed,move(){},release(){},drop:async()=>{}},point:e=>({x:e.clientX,y:e.clientY}),world:p=>p,groupAt:()=>group,draw(){}});
@@ -91,13 +94,16 @@ test('fast connections coalesce high frequency motion without delaying drop',asy
 
 
 // The browser bits a PuzzleTable needs. The table is the real one; only the canvas is a stub.
-function stubCanvas(){const context={drawImage(){}};return {canvas:{getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){},releasePointerCapture(){},hasPointerCapture:()=>false,getBoundingClientRect:()=>({left:0,top:0,width:800,height:600}),style:{}}};}
+function stubCanvas(){const context=stubContext();return {canvas:{getContext:()=>context,addEventListener(){},focus(){},setPointerCapture(){},releasePointerCapture(){},hasPointerCapture:()=>false,getBoundingClientRect:()=>({left:0,top:0,width:800,height:600}),style:{}}};}
 function stubDom(){const saved={document:globalThis.document,Path2D:globalThis.Path2D,ResizeObserver:globalThis.ResizeObserver,cancelAnimationFrame:globalThis.cancelAnimationFrame};
- const context={drawImage(){}};globalThis.document={createElement:()=>({getContext:()=>context}),addEventListener(){}};globalThis.Path2D=class{};globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.cancelAnimationFrame=()=>{};
+ const context=stubContext();globalThis.document={createElement:()=>({getContext:()=>context}),addEventListener(){}};globalThis.Path2D=class{};globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.cancelAnimationFrame=()=>{};
  return {restore(){Object.assign(globalThis,saved);}};}
 
 test('the piece just dropped can be picked up again before the drop is confirmed',async()=>{
  const originalFetch=globalThis.fetch,room=makeRoom('fast-hands','seaside-native-v2',12,Date.now()),member=addMember(room,'a','甲','a',Date.now()),moves=[];
+ // Keep this interaction fixture away from table clamping and random joins:
+ // only group 0 is loose, and both drags stay safely inside the board/world.
+ for(const group of room.puzzle.groups){group.locked=group.id!==0;group.dx=group.id===0?100:0;group.dy=group.id===0?100:0;}
  globalThis.fetch=async(url,options={})=>{const action=options.body?JSON.parse(options.body):null;if(action){moves.push({...action});await wait(120);applyAction(room,member,action,Date.now());room.revision++;}return Response.json(snapshot(room,Date.now()));};
  const {canvas}=stubCanvas(),saved=stubDom(),told=[];
  const client=new RoomClient({token:'a',playerId:'a',room:snapshot(room,Date.now())});

@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-11T06:28:13.0311297Z",
+  "configStatus": 200,
+  "config": {
+    "rewardedAdUnitId": "",
+    "adRewardEnabled": false,
+    "mobileMode": "mobile-v3-isolated"
+  },
+  "assetStatus": 200,
+  "assetBytes": 72484,
+  "assetSha256": "68ee1b368644b7a974ffb605dc9dde476ea32de6a9d108d2465f758b3f5a71a3",
+  "assetHashMatches": true,
+  "legacyH5Status": 200
+}

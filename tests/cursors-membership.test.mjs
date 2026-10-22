@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { cursorInput, cursorWorld, cursorScreen } from '../lib/room-cursors.ts';
+import { WORLD } from '../lib/puzzle-engine.ts';
 import { CursorClient } from '../lib/cursor-client.ts';
 import { requiresRoomMembership, canCreateMemberRoom } from '../lib/membership-policy.ts';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -42,8 +43,18 @@ test('cursor positions use world coordinates across different zooms and reject i
   const world=cursorWorld({x:410,y:300},{left:10,top:20,width:900,height:600},{x:100,y:80,z:2});
   assert.deepEqual(world,{x:150,y:100});assert.deepEqual(cursorScreen(world,{x:-50,y:10,z:.5}),{x:25,y:60});
   const valid={clientId:'a'.repeat(32),seq:1,point:world};assert.deepEqual(cursorInput(valid),valid);
-  for(const point of [{x:NaN,y:0},{x:-1,y:0},{x:1521,y:0},{x:0,y:1121},{x:'3',y:0},undefined])assert.equal(cursorInput({...valid,point}),null);
+  for(const point of [{x:NaN,y:0},{x:WORLD.x-1,y:0},{x:WORLD.x+WORLD.width+1,y:0},{x:0,y:WORLD.y-1},{x:0,y:WORLD.y+WORLD.height+1},{x:'3',y:0},undefined])assert.equal(cursorInput({...valid,point}),null);
   assert.ok(cursorInput({...valid,point:null}));assert.equal(cursorInput({...valid,seq:Infinity}),null);
+});
+test('shared cursors cover the expanded tabletop including negative coordinates and reject points beyond every edge',()=>{
+ const rect={left:10,top:20,width:2200,height:1700},camera={x:200,y:200,z:1},valid={clientId:'b'.repeat(32),seq:1};
+ const project=point=>{const screen=cursorScreen(point,camera);return cursorWorld({x:screen.x+rect.left,y:screen.y+rect.top},rect,camera);};
+ for(const point of [{x:-50,y:500},{x:1570,y:500},{x:500,y:-40},{x:500,y:1160},{x:WORLD.x,y:WORLD.y},{x:WORLD.x+WORLD.width,y:WORLD.y+WORLD.height}]){
+  assert.deepEqual(cursorInput({...valid,point}),{...valid,point});assert.deepEqual(project(point),point);
+ }
+ for(const point of [{x:WORLD.x-1,y:500},{x:WORLD.x+WORLD.width+1,y:500},{x:500,y:WORLD.y-1},{x:500,y:WORLD.y+WORLD.height+1}]){
+  assert.equal(cursorInput({...valid,point}),null);assert.equal(project(point),null);
+ }
 });
 test('member gate covers private and legacy invitations, while public and solo creation remain free',()=>{
   for(const visibility of ['private',undefined])assert.equal(requiresRoomMembership(visibility),true);

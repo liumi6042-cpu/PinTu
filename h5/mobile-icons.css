@@ -1,0 +1,20 @@
+/* B2 pixel illustrations are displayed through SVG viewports; source PNG unchanged. */
+.mobile-art{display:inline-block;flex-shrink:0;width:28px;height:28px;vertical-align:middle;color:var(--b2-ink,#643940)}
+.mobile-art>.mobile-art-svg{display:block;width:100%;height:100%;overflow:hidden;pointer-events:none}
+.mobile-art-illustration image{image-rendering:pixelated}
+.mobile-art-avatar>.mobile-art-illustration{clip-path:none}
+.mobile-art-piece,.mobile-art-fragment{color:var(--b2-rose,#ba7b83)}
+.mobile-art-piece>.mobile-art-vector{shape-rendering:geometricPrecision}
+.mobile-art-create{color:var(--b2-gold,#d3a558)}
+.mobile-art-players,.mobile-art-person{color:#876158}
+.mobile-art-edge,.mobile-art-fit,.mobile-art-tools{color:var(--mg-ink,var(--b2-ink,#643940))}
+.mobile-primary .mobile-art-players,.mobile-green .mobile-art-players{color:#fff9f1}
+
+
+.mobile-art-supplyEnergy image,.mobile-art-supplyTicket image{image-rendering:auto}
+.mobile-art-back{color:#894754}
+.mobile-art-video,.mobile-art-filter,.mobile-art-invite,.mobile-art-giftFlat{color:inherit}
+
+/* Downsample illustrated pixels cleanly at existing slot sizes. Native utility marks keep crispEdges. */
+.mobile-art[data-art-source=concept23] .mobile-art-illustration image{image-rendering:auto}
+html:root body .mobile-art[data-art-source=concept23]{filter:none}

@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "tuning": {
+    "contributionCoins": 1,
+    "completionCoinRatio": 0.5,
+    "fragmentContributionStep": 10,
+    "completionFragmentMaximum": 10,
+    "catalogMinimumContributions": 3
+  },
+  "packs": [
+    {
+      "id": "cloud-wonders",
+      "title": "云端奇遇",
+      "description": "循着云海与星光，收藏六处奇幻秘境。",
+      "price": 180,
+      "imageIds": [
+        "cloud-dragon-ascension-v1",
+        "whale-sunken-city-v1",
+        "floating-house-native-v2",
+        "magic-treehouse-v1",
+        "enchanted-library-garden-v1",
+        "underwater-city-fair-v1"
+      ],
+      "decorationId": "cloud-moon"
+    },
+    {
+      "id": "blossom-lights",
+      "title": "花间灯火",
+      "description": "将花影、灯火和温柔的夜色收入收藏。",
+      "price": 180,
+      "imageIds": [
+        "moonlit-nine-tail-v1",
+        "lantern-fox-pair-v1",
+        "neon-cherry-swordswoman-v1",
+        "peach-blossom-fan-v1",
+        "cherry-blossom-seaside-tram-v1",
+        "blossom-canal-native-v2"
+      ],
+      "decorationId": "blossom-lantern"
+    },
+    {
+      "id": "mountain-journey",
+      "title": "山水漫游",
+      "description": "经过湖泊、梯田和飞瀑，拼出山水之间的悠闲。",
+      "price": 180,
+      "imageIds": [
+        "quiet-cliff-falls-native-v2",
+        "mountain-lake-reflection-hd-v3",
+        "emerald-river-valley-native-v2",
+        "alpine-turquoise-reflections-v1",
+        "misty-terrace-dawn-v1",
+        "rainforest-waterfall-haven-v1"
+      ],
+      "decorationId": "mountain-leaf"
+    }
+  ],
+  "milestones": [
+    {
+      "target": 3,
+      "coins": 30
+    },
+    {
+      "target": 6,
+      "coins": 60,
+      "albumDecoration": true
+    }
+  ],
+  "decorations": [
+    {
+      "id": "berry-spark",
+      "title": "莓色星光",
+      "description": "陪伴每一次拼合的小小星光。",
+      "kind": "cursor",
+      "artKey": "star",
+      "color": "#b66578",
+      "cost": 0,
+      "source": "default"
+    },
+    {
+      "id": "cream-bow",
+      "title": "奶油蝴蝶结",
+      "description": "为指尖系上一份柔软心意。",
+      "kind": "cursor",
+      "artKey": "bow",
+      "color": "#d98b9d",
+      "cost": 30,
+      "source": "craft"
+    },
+    {
+      "id": "honey-star",
+      "title": "蜜糖流星",
+      "description": "一颗温暖的小流星。",
+      "kind": "cursor",
+      "artKey": "star",
+      "color": "#d4a458",
+      "cost": 45,
+      "source": "craft"
+    },
+    {
+      "id": "rose-butterfly",
+      "title": "玫瑰蝶影",
+      "description": "花园里的轻盈伙伴。",
+      "kind": "cursor",
+      "artKey": "butterfly",
+      "color": "#bf748c",
+      "cost": 60,
+      "source": "craft"
+    },
+    {
+      "id": "mint-feather",
+      "title": "薄荷羽毛",
+      "description": "随指尖轻轻划过的青羽。",
+      "kind": "cursor",
+      "artKey": "feather",
+      "color": "#7eaa98",
+      "cost": 60,
+      "source": "craft"
+    },
+    {
+      "id": "cloud-moon",
+      "title": "云间月牙",
+      "description": "集齐云端奇遇图鉴获得。",
+      "kind": "cursor",
+      "artKey": "moon",
+      "color": "#a192c3",
+      "cost": 0,
+      "source": "album",
+      "albumId": "cloud-wonders"
+    },
+    {
+      "id": "blossom-lantern",
+      "title": "花间小灯",
+      "description": "集齐花间灯火图鉴获得。",
+      "kind": "cursor",
+      "artKey": "lantern",
+      "color": "#ce788b",
+      "cost": 0,
+      "source": "album",
+      "albumId": "blossom-lights"
+    },
+    {
+      "id": "mountain-leaf",
+      "title": "山间新叶",
+      "description": "集齐山水漫游图鉴获得。",
+      "kind": "cursor",
+      "artKey": "leaf",
+      "color": "#8aab89",
+      "cost": 0,
+      "source": "album",
+      "albumId": "mountain-journey"
+    }
+  ]
+}

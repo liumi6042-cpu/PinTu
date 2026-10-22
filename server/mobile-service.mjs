@@ -3,23 +3,32 @@ import {createMobileTasks} from './mobile-tasks.mjs';
 import {createTaskRewardSettings} from './task-reward-settings.mjs';
 import {createGameSettings} from './game-settings.mjs';
 import {createAlbumContent} from './album-content.mjs';
+import {createMobileManagedContent} from './mobile-managed-content.mjs';
+import {createManagedDailyContent} from './managed-daily-content.mjs';
 import {createMobileCollection} from './mobile-collection.mjs';
 import {createMobileSocial} from './mobile-social.mjs';
+import {createMobilePrivacy} from './mobile-privacy.mjs';
+import {createMobileRoomHistory} from './mobile-room-history.mjs';
+import {createDiagnosticActions} from './diagnostic-actions.mjs';
+import {createTapPreview} from './tap-preview.mjs';
 import chatPhrases from '../config/social-phrases.json' with {type:'json'};
 import {randomBytes,randomInt as secureRandomInt,createHash} from 'node:crypto';
 import {mkdirSync,chmodSync} from 'node:fs';
 import {dirname,resolve} from 'node:path';
 import * as engine from '../outputs/mobile/engine.mjs';
-import {MOBILE_COUNTS,energyCap,xpForLevel,newProfile,restoreEnergy,adEligible,applyContribution,completionDistribution} from './mobile-economy.mjs';
+import {MOBILE_COUNTS,energyCap,xpForLevel,newProfile,restoreEnergy,applyContribution,completionDistribution} from './mobile-economy.mjs';
 
+// A first-time mobile player starts with one creation ticket. Web play needs none,
+// so the runtime decides the amount instead of baking it into the profile factory.
+export const NEWCOMER_CREATION_TICKETS=1;
 const id=()=>randomBytes(16).toString('hex');
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const fail=(status,code,message,extra={})=>{throw Object.assign(new Error(message),{status,code,...extra});};
 const requestKey=value=>typeof value==='string'&&/^[a-f0-9]{32}$/.test(value);
-const directionOf=photo=>{const d=engine.photoGuidance(photo.id)??photo;return d.width===d.height?'square':d.width>d.height?'landscape':'portrait';};
+const directionOf=photo=>{const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id)??photo;return d.width===d.height?'square':d.width>d.height?'landscape':'portrait';};
 // Keep the artwork aspect ratio and square piece bodies while respecting mobile limits.
 export function mobileGridForPhoto(photo,count){
- const d=engine.photoGuidance(photo.id);if(!d||!MOBILE_COUNTS.includes(count))return null;
+ const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id);if(!d||!MOBILE_COUNTS.includes(count))return null;
  const fitted=engine.gridForDimensions(d.width,d.height,count);if(!fitted)return null;
  if(fitted.count>=48&&fitted.count<=500)return fitted;
  const ratio=d.width/d.height,floor=count<=108?20:30,span=Math.ceil(Math.sqrt(count*Math.max(ratio,1/ratio)))*2+4;let best=null;
@@ -39,17 +48,45 @@ export const CHAT_PHRASES=Object.freeze(chatPhrases);
  */
 export function createMobileService(options={}){
  const clock=options.now??Date.now,randomInt=options.randomInt??secureRandomInt;
+ const tapMultiplayerEnabled=options.runtimeProfile!=='web'&&(options.tapMultiplayerEnabled??process.env.MOBILE_TAP_MULTIPLAYER_ENABLED==='true')===true;
+ const tapPreview=createTapPreview({enabled:tapMultiplayerEnabled,roomIds:options.tapPreviewRoomIds??String(process.env.MOBILE_TAP_PREVIEW_ROOM_IDS??'').split(',').filter(value=>/^[a-f0-9]{32}$/.test(value)),now:clock,notify:roomId=>markRoom(roomId)});
+ const tapTap=options.tapTap??{};
+ const diagnosticAccounts=new Set((options.diagnosticAccountIds??String(process.env.MOBILE_DIAGNOSTIC_ACCOUNT_IDS??'').split(',')).filter(value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value))); 
+ const tapTapExchange=tapTap.exchangeCode??(async code=>{
+  const appId=String(tapTap.appId??process.env.TAPTAP_APP_ID??'').trim();
+  const secret=String(tapTap.secret??process.env.TAPTAP_APP_SECRET??'').trim();
+  const endpoint=String(tapTap.endpoint??process.env.TAPTAP_CODE2SESSION_URL??'https://cloud-miniapp.tapapis.cn/auth/v1/jscode2session').trim();
+  if(!appId||!secret)fail(503,'TAPTAP_LOGIN_NOT_CONFIGURED','TapTap账号登录暂未配置，请稍后再试');
+  if(!/^https:\/\//i.test(endpoint))fail(500,'TAPTAP_ENDPOINT_INVALID','TapTap登录服务地址无效');
+  const url=new URL(endpoint);url.search=new URLSearchParams({appid:appId,secret,js_code:code,grant_type:'authorization_code'}).toString();
+  let response;try{response=await fetch(url,{method:'GET',headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});}catch{fail(503,'TAPTAP_LOGIN_UNAVAILABLE','TapTap登录服务暂时不可用，请稍后再试');}
+  let data={};try{data=await response.json();}catch{}
+  if(!response.ok||typeof data.openid!=='string'||!data.openid)fail(401,'TAPTAP_CODE_INVALID','TapTap登录凭证无效或已过期，请重试');
+  return {openid:data.openid,unionid:typeof data.unionid==='string'&&data.unionid?data.unionid:undefined};
+ });
+ // The host chooses this profile. No request body/header may disable stamina.
+ const web=options.runtimeProfile==='web',energyEnabled=!web,shareRewards=options.shareRewards??!web,adsEnabled=!web&&options.adEnabled===true;
+ // Only a trusted host option can re-enable free text. Local/development hosts
+ // use the same safe mobile default as a public-test package.
+ const customNames=options.publicTestPolicy?.customNames??web,privateMessages=options.publicTestPolicy?.privateMessages??web;
+ if(typeof customNames!=='boolean'||typeof privateMessages!=='boolean')throw new TypeError('publicTestPolicy values must be booleans');
+ const capabilities=Object.freeze({energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
+ const managedContent=options.managedContent??(options.contentDirectory?createMobileManagedContent({directory:options.contentDirectory,photos:engine.RESTORABLE_PHOTOS,assetDir:options.assetDir}):null);
+ let operationRelease=managedContent?.read()??null,requestRelease;
  const taskRewardConfiguration=options.taskRewardSettings??createTaskRewardSettings({configurationPath:options.taskRewardConfigurationPath});
- let operationTaskRewards=taskRewardConfiguration.read();
+ let operationTaskRewards=operationRelease?.taskRewards??taskRewardConfiguration.read();
  const gameConfiguration=options.gameSettings??createGameSettings({configurationPath:options.gameConfigurationPath});
- let operationGameSettings=gameConfiguration.read();
+ let operationGameSettings=operationRelease?.gameSettings??gameConfiguration.read();
  const albumConfiguration=options.albumContent??createAlbumContent({configurationPath:options.albumConfigurationPath,photos:engine.RESTORABLE_PHOTOS,readSettings:()=>operationGameSettings});
- let operationAlbums=albumConfiguration.read();
+ let operationAlbums=operationRelease?.albums??albumConfiguration.read();
  const filename=options.databasePath??':memory:';
  if(filename!==':memory:')mkdirSync(dirname(resolve(filename)),{recursive:true,mode:0o700});
  const db=new DatabaseSync(filename);if(filename!==':memory:')chmodSync(filename,0o600);
  db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
  CREATE TABLE IF NOT EXISTS mobile_profiles(id TEXT PRIMARY KEY,data TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS mobile_taptap_accounts(provider_key TEXT PRIMARY KEY,canonical_identity TEXT NOT NULL,nickname TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL);
+ CREATE TABLE IF NOT EXISTS mobile_taptap_sessions(session_identity TEXT PRIMARY KEY,canonical_identity TEXT NOT NULL,updated_at INTEGER NOT NULL);
+ CREATE TABLE IF NOT EXISTS mobile_taptap_codes(code_hash TEXT PRIMARY KEY,provider_key TEXT NOT NULL,canonical_identity TEXT NOT NULL,created_at INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS mobile_rooms(id TEXT PRIMARY KEY,owner TEXT NOT NULL,visibility TEXT NOT NULL,pieces INTEGER NOT NULL,created_at INTEGER NOT NULL,completed_at INTEGER,closed_at INTEGER,data TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS mobile_rooms_owner ON mobile_rooms(owner,completed_at,closed_at);
  CREATE INDEX IF NOT EXISTS mobile_rooms_lobby ON mobile_rooms(visibility,created_at);
@@ -60,28 +97,123 @@ export function createMobileService(options={}){
  CREATE TABLE IF NOT EXISTS mobile_settlements(room_id TEXT NOT NULL,owner TEXT NOT NULL,energy INTEGER NOT NULL,contribution INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(room_id,owner));
  CREATE TABLE IF NOT EXISTS mobile_chat(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,data TEXT NOT NULL,sent_at INTEGER NOT NULL,UNIQUE(room_id,owner,request_id));
  CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));`);
- const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);const p=row?JSON.parse(row.data):newProfile(identity,now,operationGameSettings);restoreEnergy(p,now,operationGameSettings);return p;};
- const saveProfile=p=>db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(p.id,JSON.stringify(p));
- const tasks=createMobileTasks({db,readProfile,saveProfile,readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings});
- const dailyContent=options.dailyContent??null;
- const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:options.albumTarget??'mobile-shared'});
+ // Only remember persisted bytes for this transaction. Every new request still
+ // reads SQLite, including changes committed by another service instance.
+ let requestProfileData=null,requestRoomChanges=null,requestCursorUndo=null;
+ const roomListeners=new Set(),roomVersions=new Map(),cursorRooms=new Map();
+ const realtimeCounters={roomReads:0,authorizations:0,cursorWrites:0,cursorFlushes:0};
+ const markRoom=(roomId,kind={room:true,cursors:true})=>{if(requestRoomChanges){const old=requestRoomChanges.get(roomId);requestRoomChanges.set(roomId,{room:kind.room||old?.room,cursors:kind.cursors||old?.cursors});}else for(const listener of roomListeners)listener(roomId,kind);};
+ const cursorState=(roomId,refresh=false)=>{
+  let state=cursorRooms.get(roomId);if(!state){state=new Map();cursorRooms.set(roomId,state);refresh=true;}
+  if(refresh)for(const row of db.prepare('SELECT player_id,client_id,seq,data,updated_at FROM mobile_cursors WHERE room_id=?').all(roomId)){
+   const old=state.get(row.player_id);if(!old?.dirty||row.updated_at>old.updatedAt)state.set(row.player_id,{clientId:row.client_id,seq:row.seq,point:JSON.parse(row.data),updatedAt:row.updated_at,dirty:false});
+  }
+  return state;
+ };
+ const rememberCursors=roomId=>{if(requestCursorUndo&&!requestCursorUndo.has(roomId))requestCursorUndo.set(roomId,structuredClone(cursorState(roomId)));};
+ const putCursor=(room,member,input,now)=>{
+  if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
+  const value=engine.cursorInput(input);if(!value)fail(400,'INVALID_CURSOR_POSITION','鼠标位置无效');
+  const state=cursorState(room.id),old=state.get(member.id);
+  if(value.point===null){if(!old||old.clientId!==value.clientId||value.seq<=old.seq)return false;rememberCursors(room.id);state.set(member.id,{...old,seq:value.seq,dirty:true});}
+  else {if(old?.clientId===value.clientId&&value.seq<=old.seq)return false;rememberCursors(room.id);state.set(member.id,{clientId:value.clientId,seq:value.seq,point:value.point,updatedAt:now,dirty:true});}
+  realtimeCounters.cursorWrites++;return true;
+ };
+ const flushCursors=()=>{
+  for(const [roomId,state]of cursorRooms)for(const [playerId,value]of state)if(value.dirty){
+   db.prepare('INSERT INTO mobile_cursors VALUES(?,?,?,?,?,?) ON CONFLICT(room_id,player_id) DO UPDATE SET client_id=excluded.client_id,seq=excluded.seq,data=excluded.data,updated_at=excluded.updated_at WHERE excluded.updated_at>=mobile_cursors.updated_at AND (mobile_cursors.client_id!=excluded.client_id OR excluded.seq>=mobile_cursors.seq)').run(roomId,playerId,value.clientId,value.seq,JSON.stringify(value.point),value.updatedAt);value.dirty=false;realtimeCounters.cursorFlushes++;
+  }
+ };
+ const cursorTimer=setInterval(flushCursors,options.cursorFlushMs??500);cursorTimer.unref();
+ const resolveIdentity=identity=>db.prepare('SELECT canonical_identity FROM mobile_taptap_sessions WHERE session_identity=?').get(identity)?.canonical_identity??identity;
+ const statePresent=identity=>{
+  const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);if(row){const p=JSON.parse(row.data);if(Number(p.totalXp)>0||Number(p.level)>0||Number(p.supply?.energy)>0||Number(p.supply?.create)>NEWCOMER_CREATION_TICKETS||p.firstRoomCompleted===true)return true;}
+  return !!db.prepare("SELECT 1 FROM mobile_rooms WHERE owner=? UNION SELECT 1 FROM mobile_collection_wallets WHERE owner=? AND (coins>0 OR fragments>0 OR equipped IS NOT NULL) UNION SELECT 1 FROM mobile_collection_owned WHERE owner=? LIMIT 1").get(identity,identity,identity);
+ };
+ const displayName=value=>{if(typeof value!=='string')return null;const text=value.trim();if(!text||Array.from(text).length>16||Array.from(text).some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127))return null;return text;};
+ const diagnosticAllowed=identity=>!web&&diagnosticAccounts.has(identity)&&Boolean(db.prepare('SELECT 1 FROM mobile_taptap_accounts WHERE canonical_identity=?').get(identity));
+ const taptapView=identity=>{const row=db.prepare('SELECT nickname FROM mobile_taptap_accounts WHERE canonical_identity=?').get(identity);return row?{bound:true,nickname:row.nickname??null,provider:'taptap',diagnostics:diagnosticAllowed(identity)}:{bound:false,provider:'taptap'};};
+ const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);if(requestProfileData&&!requestProfileData.has(identity))requestProfileData.set(identity,row?.data??null);const p=row?JSON.parse(row.data):newProfile(identity,now,operationGameSettings,{creationTickets:web?0:NEWCOMER_CREATION_TICKETS});if(energyEnabled)restoreEnergy(p,now,operationGameSettings);else if(!row)p.energy=0;return p;};
+ const saveProfile=p=>{const data=JSON.stringify(p);if(requestProfileData?.get(p.id)===data)return;const result=db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data WHERE mobile_profiles.data<>excluded.data').run(p.id,data);requestProfileData?.set(p.id,data);return result;};
+ const tasks=createMobileTasks({db,readProfile,saveProfile,energyEnabled,areFriends:(owner,peer)=>social.areFriends(owner,peer),readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings,awardCoins:(owner,source,coins,now)=>collection.awardTaskCoins(owner,source,coins,now)});
+ const dailyContent=managedContent?createManagedDailyContent({readSnapshot:()=>requestRelease===undefined?managedContent.read():requestRelease,legacy:options.dailyContent??null,photos:engine.RESTORABLE_PHOTOS,galleryPhotos:engine.GALLERY_VISIBLE_PHOTOS,fallback:engine.dailyPuzzle,appearanceDir:options.dailyAppearanceDir??resolve('work/daily-appearances'),now:clock}):options.dailyContent??null;
+ const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:capabilities.albumTarget});
  if(!options.deferDailyStart)dailyContent?.start();
  const galleryPhotos=now=>collection.galleryPhotos(now);
- const readRoom=roomId=>{const row=db.prepare('SELECT data,closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!row||row.closed_at)fail(404,'ROOM_NOT_FOUND','房间不存在或已关闭');return JSON.parse(row.data);};
- const saveRoom=room=>db.prepare('INSERT INTO mobile_rooms VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET completed_at=excluded.completed_at,closed_at=excluded.closed_at,data=excluded.data').run(room.id,room.ownerId,room.visibility,room.mobilePieces,room.createdAt,room.completedAt,room.closedAt??null,JSON.stringify(room));
- const social=createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom:authorize,roomCard:card,blockedWords:options.socialBlockedWords});
- const profileView=(p,now)=>({code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:energyCap(p.level,operationGameSettings),economy:{contributionCost:operationGameSettings.energy.contributionCost,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,autoSupply:p.autoSupply,adEligible:options.adEnabled===true&&adEligible(p,now),name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,naturalRecoveryAt:operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<energyCap(p.level,operationGameSettings)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC').all(p.id).map(row=>{const r=JSON.parse(row.data);return {...card(r,now),inviteCode:r.mobileInviteCode??null};})});
- const photoOf=room=>engine.RESTORABLE_PHOTOS.find(p=>p.id===room.puzzle.imageId);
- function card(room,now){const photo=photoOf(room);return {id:room.id,title:room.title||photo?.title||'一起拼图',imageId:room.puzzle.imageId,pieces:room.mobilePieces,actualPieces:room.puzzle.cols*room.puzzle.rows,visibility:room.visibility,players:room.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length,placed:engine.placedCount(room.puzzle),completed:room.completedAt!==null,acceptingNew:room.acceptingNew!==false,started:room.startedAt!==null,startedAt:room.startedAt,createdAt:room.createdAt,expiresAt:room.expiresAt,lastPlayedAt:room.lastPlayedAt,direction:photo?directionOf(photo):'landscape',thumbSrc:photo?.thumbSrc};}
- function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),identity=member?.guestId||member?.accountId;return {...m,code:identity?social.person(identity,now).code:null,level:identity?readProfile(identity,now).level:0,decoration:identity?collection.equipped(identity):null};});if(identity&&room.completedAt!==null){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id)};}return result;}
+ const readRoom=roomId=>{const row=db.prepare('SELECT data,closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!row||row.closed_at)fail(404,'ROOM_NOT_FOUND','房间不存在或已关闭');const room=JSON.parse(row.data);if(!web&&room.diagnostic!==true)room.persistent=true;return room;};
+ const saveRoom=room=>{if(!web&&room.diagnostic!==true)room.persistent=true;const result=db.prepare('INSERT INTO mobile_rooms VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET completed_at=excluded.completed_at,closed_at=excluded.closed_at,data=excluded.data').run(room.id,room.ownerId,room.visibility,room.mobilePieces,room.createdAt,room.completedAt,room.closedAt??null,JSON.stringify(room));markRoom(room.id);return result;};
+ const pruneRoomCursors=room=>{
+  rememberCursors(room.id);const state=cursorState(room.id);
+  if(room.closedAt){state.clear();db.prepare('DELETE FROM mobile_cursors WHERE room_id=?').run(room.id);return;}
+  for(const [playerId,value]of state){const member=room.members.find(m=>m.id===playerId);if(!member)state.delete(playerId);else if(member.lastSeen<=0)state.set(playerId,{...value,point:null,dirty:true});}
+  // Membership, not pointer age, owns the last decoration position. Keep leave
+  // tombstones until the existing room rules actually remove the member.
+  const members=JSON.stringify(room.members);
+  db.prepare("DELETE FROM mobile_cursors WHERE room_id=? AND NOT EXISTS(SELECT 1 FROM json_each(?) m WHERE json_extract(m.value,'$.id')=mobile_cursors.player_id)").run(room.id,members);
+  db.prepare("UPDATE mobile_cursors SET data='null' WHERE room_id=? AND data!='null' AND EXISTS(SELECT 1 FROM json_each(?) m WHERE json_extract(m.value,'$.id')=mobile_cursors.player_id AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)<=0)").run(room.id,members);
+ };
+ const social=createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom:authorize,roomCard:card,blockedWords:options.socialBlockedWords,privateMessages});
+ const privacy=createMobilePrivacy({db});
+ const roomHistory=createMobileRoomHistory({db,card});
+ const profileView=(p,now)=>({capabilities,code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:energyCap(p.level,operationGameSettings),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<energyCap(p.level,operationGameSettings)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND closed_at IS NULL AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id) ORDER BY created_at DESC').all(p.id).map(row=>{const r=JSON.parse(row.data);return {...card(r,now),...(r.completedAt!==null?{title:'已完成'}:{}),inviteCode:r.mobileInviteCode??null};})});
+ const photoOf=room=>engine.roomArtworkPhoto(room,engine.RESTORABLE_PHOTOS);
+ const displayPhoto=(photo,request)=>photo&&request.artworkSnapshot===true?engine.activeArtworkPhoto(photo):photo;
+ const creationArtwork=(photo,pieces,request)=>engine.currentRoomArtwork(engine.RESTORABLE_PHOTOS.find(item=>item.id===photo.id)??photo,pieces,request.artworkSnapshot!==true);
+ function requireArtworkClient(room,request){if(engine.roomUsesUpgradedArtwork(room)&&request.artworkSnapshot!==true)fail(409,'ARTWORK_CLIENT_UPDATE_REQUIRED','这间拼图使用新版图片，请刷新页面或更新小游戏后重新进入');}
+ function card(room,now){const photo=photoOf(room);return {id:room.id,title:room.title||photo?.title||'一起拼图',imageId:room.puzzle.imageId,pieces:room.mobilePieces,actualPieces:room.puzzle.cols*room.puzzle.rows,visibility:room.visibility,players:room.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length,placed:engine.placedCount(room.puzzle),completed:room.completedAt!==null,acceptingNew:room.acceptingNew!==false,started:room.startedAt!==null,startedAt:room.startedAt,createdAt:room.createdAt,expiresAt:room.expiresAt,lastPlayedAt:room.lastPlayedAt,direction:photo?directionOf(photo):'landscape',artwork:engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS),photo,thumbSrc:photo?.thumbSrc};}
+ function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;const preview=tapPreview.descriptor(room);if(preview)result.tapPreview=preview;if(room.diagnostic===true)result.diagnostic=true;result.artwork=engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS);result.photo=photoOf(room);if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),identity=member?.guestId||member?.accountId;return {...m,code:identity?social.person(identity,now).code:null,level:identity?readProfile(identity,now).level:0,decoration:identity?collection.equipped(identity):null};});if(identity&&room.completedAt!==null&&room.diagnostic!==true){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id)};}return result;}
  function authorize(room,request,now){
+  if(room.diagnostic===true){request.identity=resolveIdentity(request.identity);if(room.ownerId!==request.identity||!diagnosticAllowed(request.identity))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');}
   const token=/^Bearer ([a-f0-9]{32})$/.exec(request.authorization??'')?.[1];if(!token)fail(401,'ROOM_ADMISSION_REQUIRED','请重新加入房间');
   const member=engine.authenticate(room,hash(token),now);if(member.guestId!==request.identity)fail(403,'ROOM_IDENTITY_MISMATCH','请用当前身份重新加入房间');return member;
  }
- function bindFirstRoom(p,room){if(room.completedAt===null&&!p.firstRoomId&&!p.firstRoomCompleted)p.firstRoomId=room.id;}
- function join(room,p,input,now){
+ function cursorMembers(room,now){return room.members.filter(m=>m.lastSeen>0).map(m=>({playerId:m.id,name:m.name,color:m.color,level:readProfile(m.guestId,now).level,decoration:collection.equipped(m.guestId)}));}
+ function cursorsView(room,now,members=cursorMembers(room,now),refresh=false){return {cursors:[...cursorState(room.id,refresh)].flatMap(([playerId,value])=>{const member=members.find(m=>m.playerId===playerId);return value.point&&member?[{...value.point,...member,updatedAt:now,positionUpdatedAt:value.updatedAt}]:[];}),serverTime:now};}
+ function realtimeAuthorize(context){
+  realtimeCounters.authorizations++;const now=clock(),room=readRoom(context.roomId);requireArtworkClient(room,context);const member=authorize(room,context,now);
+  if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
+  context.room=room;context.member=member;context.cursorMembers=cursorMembers(room,now);context.version=roomVersions.get(room.id)??0;return context;
+ }
+ const diagnosticTransport=Symbol('room-action-transport'),diagnosticConnections=new WeakMap(),openActionConnections=new Set();
+ const diagnosticError=(error,context)=>({status:error.status??500,data:{...(context?.room?.diagnostic===true?{diagnostic:true}:{}),error:error.status?error.message:'房间动作暂时不可用',code:error.code??'DIAGNOSTIC_ACTION_FAILED',...(error.profile?{profile:error.profile}:{}),diagnosticTiming:{serverMs:0}}});
+ function requireDiagnosticContext(context){
+  realtimeAuthorize(context);
+ }
+ function writeDiagnostic(context,input){
+  const started=performance.now();
+  try{
+   requireDiagnosticContext(context);let connection=diagnosticConnections.get(context);
+   if(!connection){connection={id:id(),closed:false};diagnosticConnections.set(context,connection);openActionConnections.add(connection.id);}
+   if(connection.closed)fail(409,'DIAGNOSTIC_CONNECTION_CLOSED','测试连接已断开，请重新连接');
+   const result=handle({identity:context.identity,authorization:context.authorization,artworkSnapshot:context.artworkSnapshot,method:'POST',url:'/api/rooms/'+context.roomId,body:input?.action??{},[diagnosticTransport]:{context,connectionId:connection.id,input}});
+   if(context.room.diagnostic===true)result.data.diagnostic=true;result.data.diagnosticTiming={serverMs:Math.max(0,performance.now()-started)};return result;
+  }catch(error){return diagnosticError(error,context);}
+ }
+ function disconnectDiagnostic(context){
+  if(!context)return;const connection=diagnosticConnections.get(context);if(!connection||connection.closed)return;connection.closed=true;openActionConnections.delete(connection.id);
+  return handle({identity:context.identity,authorization:context.authorization,artworkSnapshot:context.artworkSnapshot,method:'POST',url:'/api/rooms/'+context.roomId,body:{},[diagnosticTransport]:{context,connectionId:connection.id,disconnect:true}});
+ }
+ const realtime={
+  subscribe(request){if(typeof request.identity!=='string'||!/^[a-f0-9]{64}$/.test(request.identity))fail(401,'IDENTITY_REQUIRED','连接身份无效');return realtimeAuthorize({...request});},
+  validate:realtimeAuthorize,
+  readRoom(context,since){realtimeCounters.roomReads++;realtimeAuthorize(context);return snapshotView(context.room,clock(),since,context.identity);},
+  readCursors(context){if(context.version!==(roomVersions.get(context.roomId)??0))realtimeAuthorize(context);return cursorsView(context.room,clock(),context.cursorMembers);},
+  writeCursor(context,input){if(context.version!==(roomVersions.get(context.roomId)??0))realtimeAuthorize(context);putCursor(context.room,context.member,input,clock());},
+  actionCapabilities(context){requireDiagnosticContext(context);if(!diagnosticConnections.has(context)){const connection={id:id(),closed:false};diagnosticConnections.set(context,connection);openActionConnections.add(connection.id);}return {version:1,diagnosticOnly:context.room.diagnostic===true};},
+  writeAction:writeDiagnostic,disconnectActions:disconnectDiagnostic,
+  onChange(listener){roomListeners.add(listener);return ()=>roomListeners.delete(listener);},
+  stats:()=>({...realtimeCounters}),flush:flushCursors,
+ };
+ const diagnosticActions=createDiagnosticActions({db,readRoom,saveRoom,now:clock,isConnectionOpen:connectionId=>openActionConnections.has(connectionId),
+  authorize(room,context){const member=authorize(room,context,clock());if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');return member;},
+  view(room,context){const now=clock(),p=readProfile(context.identity,now);return {...snapshotView(room,now,null,p.id),profile:profileView(p,now)};},
+ });
+ function bindFirstRoom(p,room){if(room.diagnostic!==true&&room.completedAt===null&&!p.firstRoomId&&!p.firstRoomCompleted)p.firstRoomId=room.id;}
+ function join(room,p,input,now,request={}){
+  requireArtworkClient(room,request);
+  if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
   if(room.visibility==='private'&&room.ownerId!==p.id&&!room.admitted?.[p.id]&&input.inviteCode!==room.mobileInviteCode)fail(403,'INVITE_REQUIRED','私人房间需要有效邀请码');
-  const token=id(),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);bindFirstRoom(p,room);room.revision++;saveRoom(room);saveProfile(p);
+  const token=id(),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
   return {token,playerId:member.id,room:snapshotView(room,now,null,p.id),...(room.ownerId===p.id&&room.mobileInviteCode?{inviteCode:room.mobileInviteCode}:{})};
  }
  function replay(p,scope,input,now,fn){
@@ -92,11 +224,10 @@ export function createMobileService(options={}){
  }
  function challenge(p,{kind,requestId,context='supply',authorization=''},now){
   if(!requestKey(requestId))fail(400,'REQUEST_ID_REQUIRED','请求编号无效');
-  if(!options.adEnabled)fail(503,'ADS_UNAVAILABLE','广告暂未开放');
-  if(!adEligible(p,now))fail(403,'NEWCOMER_PROTECTED','请先完成新手首局体验');
+  const sharing=context.startsWith('share:');if(sharing?!shareRewards:!adsEnabled)fail(503,sharing?'SHARE_UNAVAILABLE':'ADS_UNAVAILABLE',sharing?'当前平台未开放分享奖励':'当前平台未开放广告');
   const existing=db.prepare('SELECT * FROM mobile_ad_challenges WHERE owner=? AND context=? AND request_id=?').get(p.id,context,requestId);
   if(existing){if(existing.kind!==kind||existing.auth_hash!==hash(authorization))fail(409,'REQUEST_CONFLICT','广告请求与当前操作不匹配');if(existing.used||existing.expires_at<=now)fail(409,'AD_EXPIRED','本次广告机会已失效');return {rewardToken:existing.token,expiresAt:existing.expires_at};}
-  if(context==='supply'){
+  if(context==='supply'||context==='share:supply'){
    if(!['energy','create'].includes(kind))fail(400,'INVALID_SUPPLY','补给种类无效');
    const pending=db.prepare('SELECT COUNT(*) n FROM mobile_ad_challenges WHERE owner=? AND context=? AND kind=? AND used=0 AND expires_at>?').get(p.id,context,kind,now).n;
    if(p.supply[kind]+pending>=3)fail(409,'SUPPLY_FULL','库存已满或已有待领取奖励');
@@ -106,14 +237,15 @@ export function createMobileService(options={}){
  }
  function consumeChallenge(p,input,context,authorization,now){
   const row=typeof input.rewardToken==='string'?db.prepare('SELECT * FROM mobile_ad_challenges WHERE token=?').get(input.rewardToken):null;
-  if(!row||row.owner!==p.id||row.kind!==input.kind||row.context!==context||row.request_id!==input.requestId||row.auth_hash!==hash(authorization??''))fail(403,'AD_REQUIRED','请先完整观看对应广告');
-  if(row.used||row.expires_at<=now||input.completed!==true)fail(403,'AD_EXPIRED','广告机会已失效或尚未完整观看');
+  if(!row||row.owner!==p.id||row.kind!==input.kind||row.context!==context||row.request_id!==input.requestId||row.auth_hash!==hash(authorization??''))fail(403,context.startsWith('share:')?'SHARE_REQUIRED':'AD_REQUIRED',context.startsWith('share:')?'请先完成对应分享':'请先完整观看对应广告');
+  if(row.used||row.expires_at<=now||input.completed!==true)fail(403,context.startsWith('share:')?'SHARE_EXPIRED':'AD_EXPIRED',context.startsWith('share:')?'分享已失效、已取消或尚未完成':'广告机会已失效或尚未完整观看');
   db.prepare('UPDATE mobile_ad_challenges SET used=1 WHERE token=? AND used=0').run(row.token);
  }
  function settle(room,now,current){
-  if(!room.completedAt||room.mobileSettled)return;
+  if(room.diagnostic===true||!room.completedAt||room.mobileSettled)return;
   const counts=Object.fromEntries(Object.entries(room.achievements?.contributors??{}).map(([owner,v])=>[owner,v.count]));
-  for(const reward of completionDistribution(counts,room.mobilePieces,operationGameSettings)){
+  for(const configuredReward of completionDistribution(counts,room.mobilePieces,operationGameSettings)){
+   const reward=energyEnabled?configuredReward:{...configuredReward,energy:0};
    const p=reward.id===current.id?current:readProfile(reward.id,now);
    const result=db.prepare('INSERT OR IGNORE INTO mobile_settlements VALUES(?,?,?,?,?)').run(room.id,p.id,reward.energy,reward.contribution,now);
    if(result.changes){const collected=collection.complete(p.id,room,reward.contribution,now);p.energy+=reward.energy;p.lastReward={...p.lastReward,completion:{roomId:room.id,...reward,...(collected??{})},at:now};}
@@ -132,25 +264,46 @@ export function createMobileService(options={}){
    if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','工具无效');
    if(grants().some(g=>g.kind===input.kind))fail(409,'TOOL_ACTIVE','该功能正在生效');
    const free=protectedRoom||used(input.kind)<2;
-   if(!free&&!input.rewardToken)fail(402,'AD_REQUIRED','免费次数已用完，请主动观看广告',{freeRemaining:view().freeRemaining});
+   if(!free&&!input.rewardToken)fail(402,shareRewards?'SHARE_REQUIRED':'AD_REQUIRED',shareRewards?'免费次数已用完，分享后可开启30秒':'免费次数已用完，请主动观看广告',{freeRemaining:view().freeRemaining});
    let pieceIds=[];if(input.kind==='hint'){const held=new Set(Object.keys(room.leases).map(Number));pieceIds=room.puzzle.groups.filter(g=>!g.locked&&!held.has(g.id)).flatMap(g=>g.pieces).slice(0,3);if(!pieceIds.length)fail(409,'NO_HINT_AVAILABLE','暂时没有可提示的拼块');}
-   if(!free)consumeChallenge(p,input,'room/'+room.id,request.authorization,now);
+   if(!free)consumeChallenge(p,input,(shareRewards?'share:':'')+'room/'+room.id,request.authorization,now);
    if(!protectedRoom&&free)db.prepare('INSERT INTO mobile_tool_uses VALUES(?,?,?,1) ON CONFLICT(room_id,owner,kind) DO UPDATE SET uses=uses+1').run(room.id,p.id,input.kind);
    const grant={requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+30000};db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
   });
  }
  function route(request,p,input,url,now){
   const path=url.pathname,method=request.method;
+  if(path==='/api/mobile/diagnostics/room'&&method==='POST'){
+   if(!diagnosticAllowed(p.id))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试入口仅对指定账号开放');
+   return replay(p,'diagnostic-room',input,now,()=>{
+    // Only retire this owner's disposable test room; normal progress is untouched.
+    for(const row of db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND closed_at IS NULL').all(p.id)){
+     const previous=JSON.parse(row.data);if(previous.diagnostic===true){previous.closedAt=now;saveRoom(previous);pruneRoomCursors(previous);}
+    }
+    const photo=galleryPhotos(now).find(photo=>collection.randomAllowed(p.id,photo.id,now));
+    if(!photo)fail(409,'NO_TEST_IMAGE','暂无可用的免费测试图片');
+    const seed=now>>>0,puzzle={version:1,layout:'square',imageId:photo.id,cols:3,rows:3,seed,elapsed:0,
+     groups:Array.from({length:9},(_,n)=>({id:n,pieces:[n],dx:80+(n%3)*60,dy:80+Math.floor(n/3)*60,locked:false}))};
+    const room={id:id(),ownerId:p.id,visibility:'private',diagnostic:true,title:'老头 · 九格拼合测试',artwork:creationArtwork(photo,48,request),puzzle,mobilePieces:9,mobileMode:'diagnostic',mobileInviteCode:null,revision:0,createdAt:now,expiresAt:now+86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
+    saveRoom(room);return join(room,p,{},now,request);
+   });
+  }
+  if(path==='/api/mobile/privacy-request')return privacy.route(request,input,now);
   if(path==='/api/mobile/social'||path.startsWith('/api/mobile/social/'))return social.route(request,p,input,url,now);
-  if(path==='/api/daily'&&method==='GET'){const photo=dailyContent?.select(now)??engine.dailyPuzzle(now);return {date:engine.dailyPuzzleDate(now),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc},serverTime:now};}
-  if(path==='/api/mobile/gallery'&&method==='GET')return {imageIds:galleryPhotos(now).map(photo=>photo.id),packedImageIds:collection.packedImageIds(now),serverTime:now};
+  if(path==='/api/daily'&&method==='GET'){const photo=displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request);return {date:engine.dailyPuzzleDate(now),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,width:photo.width,height:photo.height},serverTime:now};}
+  if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request)}:{}),serverTime:now};}
   if(path==='/api/mobile/profile'){
    if(method==='PATCH'){
+    if(input.name!==undefined&&!customNames)fail(403,'CUSTOM_NAMES_UNAVAILABLE','公开测试暂不开放自定义昵称');
     if(input.name!==undefined){if(typeof input.name!=='string'||!input.name.trim()||Array.from(input.name.trim()).length>16||Array.from(input.name).some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127))fail(400,'INVALID_NAME','昵称请填写1～16个字');p.name=input.name.trim();}
     if(input.autoSupply!==undefined){if(typeof input.autoSupply!=='boolean')fail(400,'INVALID_SETTING','自动补给设置无效');p.autoSupply=input.autoSupply;}
    }else if(method!=='GET')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');return profileView(p,now);
   }
-  const collectionView=()=>({...collection.view(p.id,now),profile:profileView(p,now)});
+  const collectionView=()=>{
+   const view=collection.view(p.id,now);
+   if(request.artworkSnapshot===true){view.albums=view.albums.map(album=>({...album,images:album.images.map(photo=>displayPhoto(photo,request))}));view.packs=view.packs.map(pack=>{const cover=pack.images.find(photo=>photo.thumbSrc===pack.coverSrc)??pack.images[0];return {...pack,images:pack.images.map(photo=>displayPhoto(photo,request)),coverSrc:cover?displayPhoto(cover,request).thumbSrc:pack.coverSrc};});}
+   return {...view,profile:profileView(p,now)};
+  };
   if(path==='/api/mobile/collection'&&method==='GET')return collectionView();
   if(path==='/api/mobile/collection/buy'&&method==='POST')return replay(p,'collection-buy',input,now,()=>{const purchase=collection.buy(p.id,input.packId,now);return {...collectionView(),purchase};});
   if(path==='/api/mobile/collection/craft'&&method==='POST')return replay(p,'collection-craft',input,now,()=>{const crafted=collection.craft(p.id,input.decorationId,now);return {...collectionView(),crafted};});
@@ -158,12 +311,34 @@ export function createMobileService(options={}){
   const taskView=()=>({...tasks.view(p,now),profile:profileView(p,now)});
   if(path==='/api/mobile/tasks'&&method==='GET')return taskView();
   if(path==='/api/mobile/gifts/open'&&method==='POST')return replay(p,'gift-open',input,now,()=>{const opened=tasks.open(p,input,now);return {...taskView(),opened};});
-  if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{const shared=tasks.share(p,input,now);return {...taskView(),shared};});
+  if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{if(shareRewards&&input.shared!==true)fail(403,'SHARE_REQUIRED','请通过分享面板完成分享，复制链接不计奖励');const shared=tasks.share(p,input,now);return {...taskView(),shared};});
   if(path==='/api/mobile/invitations/accept'&&method==='POST')return replay(p,'invitation-accept',input,now,()=>{const accepted=tasks.accept(p,input,now);return {...taskView(),accepted};});
+  if(path==='/api/mobile/share/challenge'&&method==='POST'){
+   if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
+   if(input.context==='supply'){if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');}
+   else if(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)){
+    if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','分享工具无效');const room=readRoom(input.context.slice(5));authorize(room,request,now);
+    const uses=Number(db.prepare('SELECT uses FROM mobile_tool_uses WHERE room_id=? AND owner=? AND kind=?').get(room.id,p.id,input.kind)?.uses??0);
+    if(p.firstRoomId===room.id&&!p.firstRoomCompleted||uses<2)fail(409,'FREE_TOOL_AVAILABLE','请先使用本局免费次数');
+   }else fail(400,'INVALID_SHARE','分享用途无效');
+   return challenge(p,{...input,context:'share:'+input.context,authorization:input.context==='supply'?'':request.authorization??''},now);
+  }
+  if(path==='/api/mobile/share/cancel'&&method==='POST'){
+   if(!requestKey(input.requestId)||input.context!=='supply'&&!(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)))fail(400,'INVALID_SHARE','分享请求无效');
+   const row=db.prepare('SELECT * FROM mobile_ad_challenges WHERE token=? AND owner=? AND context=? AND kind=? AND request_id=?').get(input.rewardToken??'',p.id,'share:'+input.context,input.kind,input.requestId);
+   if(!row||row.auth_hash!==hash(input.context==='supply'?'':request.authorization??''))fail(403,'SHARE_REQUIRED','分享请求不属于当前身份');
+   if(row.used===0)db.prepare('UPDATE mobile_ad_challenges SET used=2 WHERE token=? AND used=0').run(row.token);return profileView(p,now);
+  }
+  if(path==='/api/mobile/share/redeem'&&method==='POST')return replay(p,'share-supply',input,now,()=>{
+   if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
+   if(input.context!=='supply'||!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
+   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');consumeChallenge(p,input,'share:supply','',now);p.supply[input.kind]++;saveProfile(p);return profileView(p,now);
+  });
   if(path==='/api/mobile/supply/challenge'&&method==='POST')return challenge(p,{kind:input.kind,requestId:input.requestId},now);
   if(path==='/api/mobile/supply/redeem'&&method==='POST')return replay(p,'supply-redeem',input,now,()=>{
+   if(!adsEnabled)fail(503,'ADS_UNAVAILABLE','广告补给已停用，请使用分享领取');
    if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
-   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');consumeChallenge(p,input,'supply','',now);p.supply[input.kind]++;saveProfile(p);return profileView(p,now);
+   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');consumeChallenge(p,input,'supply','',now);p.supply[input.kind]=input.kind==='create'?3:p.supply[input.kind]+1;saveProfile(p);return profileView(p,now);
   });
   if(path==='/api/mobile/supply/cancel'&&method==='POST'){
    if(!['energy','create'].includes(input.kind)||!requestKey(input.requestId)||typeof input.rewardToken!=='string')fail(400,'INVALID_SUPPLY','补给请求无效');
@@ -173,6 +348,7 @@ export function createMobileService(options={}){
    return profileView(p,now);
   }
   if(path==='/api/mobile/supply/use'&&method==='POST')return replay(p,'supply-use',input,now,()=>{
+   if(!energyEnabled)fail(409,'ENERGY_UNAVAILABLE','网页版无需体力补给');
    if(input.kind!=='energy')fail(400,'INVALID_SUPPLY','建房券会在创建成功时使用');if(p.energy>=energyCap(p.level,operationGameSettings))fail(409,'ENERGY_FULL','体力已满，无需使用');if(p.supply.energy<1)fail(409,'SUPPLY_EMPTY','没有体力包');p.supply.energy--;p.energy=energyCap(p.level,operationGameSettings);p.energyAt=now;saveProfile(p);return profileView(p,now);
   });
   if(path==='/api/rewarded/challenge'&&method==='POST'){
@@ -186,10 +362,16 @@ export function createMobileService(options={}){
   if(path==='/api/guest'&&method==='POST')return {ready:true};
   if(path==='/api/connection'&&method==='GET')return {mode:'mobile-v3-isolated',inviteOrigin:null};
   if(path==='/api/my-rooms'&&method==='GET')return {rooms:profileView(p,now).ownedRooms,serverTime:now};
+  if(path==='/api/room-history'&&method==='GET')return {rooms:roomHistory.view(p.id,now),limit:10,serverTime:now};
+  if(path==='/api/my-rooms'&&method==='POST'){
+   if(input.action!=='remove'||typeof input.roomId!=='string'||!requestKey(input.roomId))fail(400,'INVALID_MANAGEMENT','请选择自己的房间');
+   const room=readRoom(input.roomId);if(room.ownerId!==p.id)fail(403,'OWNER_REQUIRED','只能删除自己的房间列表记录');
+   roomHistory.removeOwned(p.id,room.id,now);return {ok:true,rooms:profileView(p,now).ownedRooms,serverTime:now};
+  }
   if(path==='/api/lobby'&&method==='GET'){
    const limit=Math.max(1,Math.min(24,Number(url.searchParams.get('limit'))||12)),cursor=url.searchParams.get('cursor');
    let before=null;if(cursor){try{before=JSON.parse(Buffer.from(cursor,'base64url').toString());if(!Array.isArray(before)||!Number.isSafeInteger(before[0])||!/^[a-f0-9]{32}$/.test(before[1]))throw Error();}catch{fail(400,'INVALID_CURSOR','列表游标无效');}}
-   let cards=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC,id DESC").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now).map(r=>card(r,now));
+   let cards=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC,id DESC").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))).map(r=>card(r,now));
    const dir=url.searchParams.get('direction'),pieces=Number(url.searchParams.get('pieces')),open=url.searchParams.get('open')==='1',active=url.searchParams.get('active')==='1';
    cards=cards.filter(r=>(!dir||dir==='all'||r.direction===dir)&&(!pieces||r.pieces===pieces)&&(!open||r.players<8&&r.acceptingNew)&&(!active||r.players>0));
    const total=cards.length;if(before)cards=cards.filter(r=>r.createdAt<before[0]||r.createdAt===before[0]&&r.id<before[1]);const page=cards.slice(0,limit),last=page.at(-1),nextCursor=cards.length>limit&&last?Buffer.from(JSON.stringify([last.createdAt,last.id])).toString('base64url'):null;
@@ -204,41 +386,53 @@ export function createMobileService(options={}){
    if(mode==='daily')photo=dailyContent?.select(now)??engine.dailyPuzzle(now);
    else if(mode==='random'){
     if(input.imageId)fail(400,'RANDOM_IMAGE_NOT_SELECTABLE','随机模式不能指定图片');
-    const pool=galleryPhotos(now).filter(photo=>{return collection.randomAllowed(p.id,photo.id,now)&&mobileGridForPhoto(photo,pieces)&&(direction==='all'||directionOf(photo)===direction);});if(!pool.length)fail(400,'NO_IMAGE_AVAILABLE','该条件下没有可用图片');photo=pool[randomInt(0,pool.length)];
+    const pool=galleryPhotos(now).filter(photo=>{const bound={...photo,...creationArtwork(photo,pieces,request)};return collection.randomAllowed(p.id,photo.id,now)&&mobileGridForPhoto(bound,pieces)&&(direction==='all'||directionOf(bound)===direction);});if(!pool.length)fail(400,'NO_IMAGE_AVAILABLE','该条件下没有可用图片');photo=pool[randomInt(0,pool.length)];
    }else photo=galleryPhotos(now).find(p=>p.id===input.imageId);
-   if(!photo)fail(400,'INVALID_IMAGE','请选择可用图片');const grid=mobileGridForPhoto(photo,pieces);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
+   if(!photo)fail(400,'INVALID_IMAGE','请选择可用图片');const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
    if(mode==='daily'){
-    const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(now)&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<8&&r.acceptingNew!==false);
-    if(existing)return join(existing,p,{},now);
+    const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(now)&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<8&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
+    if(existing)return join(existing,p,{},now,request);
    }
-   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL').get(p.id).n;if(owned>=3)fail(409,'ROOM_LIMIT','最多同时保留3个未结束的自建房间',{ownedRooms:profileView(p,now).ownedRooms});
-   const needsTicket=visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now),starter=needsTicket&&p.starterSelectionAvailable;
+   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;if(owned>=3)fail(409,'ROOM_LIMIT','最多保留3个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
+   const needsTicket=!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
    if(needsTicket&&!starter&&p.supply.create<1)fail(402,'CREATE_TICKET_REQUIRED','需要1张建房券');
-   const room={id:id(),ownerId:p.id,visibility,title:photo.title,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(now):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
-   if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);return join(room,p,{},now);
+   const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(now):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
+   if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);return join(room,p,{},now,request);
   });
-  const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|chat|assistance|management|continuation|invitation))?$/.exec(path);
+  const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|chat|assistance|management|continuation|invitation|tap-preview))?$/.exec(path);
   if(!match)fail(404,'NOT_FOUND','接口不存在');const room=readRoom(match[1]),part=match[2];
-  if(part==='join'&&method==='POST')return join(room,p,input,now);
+  if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
+  if(part!=='management'&&method!=='DELETE'&&!(method==='POST'&&!part&&input.type==='leave'))requireArtworkClient(room,request);
+  if(part==='join'&&method==='POST')return join(room,p,input,now,request);
   if(part==='assistance')return help(room,p,request,input,now);
   if((method==='DELETE'&&!part)||part==='management'){
    if(room.ownerId!==p.id)fail(403,'OWNER_REQUIRED','只有房主可以管理房间');
    if(method==='GET')return {owner:true,acceptingNew:room.acceptingNew!==false,inviteCode:room.mobileInviteCode};
    if(method==='DELETE'||input.action==='close'){
-    if(room.members.some(m=>m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS))fail(409,'ROOM_STILL_ACTIVE','其他玩家仍在拼图，暂不能关闭');
-    if(room.completedAt===null&&room.puzzle.groups.some(g=>g.locked||g.pieces.length>1))fail(409,'ROOM_HAS_PROGRESS','已有拼合进度，请完成后释放名额');
-    room.closedAt=now;saveRoom(room);
-    for(const row of db.prepare('SELECT id,data FROM mobile_profiles').all()){const profile=row.id===p.id?p:JSON.parse(row.data);if(profile.firstRoomId===room.id&&!profile.firstRoomCompleted){profile.firstRoomId=null;saveProfile(profile);}}
+    roomHistory.removeOwned(p.id,room.id,now);
     return {ok:true};
    }
    if(typeof input.acceptingNew==='boolean'){room.acceptingNew=input.acceptingNew;room.revision++;saveRoom(room);return {ok:true,acceptingNew:room.acceptingNew};}fail(400,'INVALID_MANAGEMENT','管理操作无效');
   }
   const member=authorize(room,request,now);
+  if(part==='tap-preview'){
+   if(method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
+   if(!taptapView(p.id)?.bound||member.lastSeen<=0)fail(403,'TAP_PREVIEW_IDENTITY','仅已绑定的TapTap玩家可使用平台同步');
+   return tapPreview.request(room,member,input);
+  }
   if(part==='invitation'&&method==='GET'){if(room.ownerId!==p.id)fail(403,'OWNER_REQUIRED','只有房主可以查看邀请码');return {inviteCode:room.mobileInviteCode,roomId:room.id};}
   if(part==='cursors'){
-   if(method==='POST'){const point=engine.cursorInput(input);if(!point)fail(400,'INVALID_CURSOR_POSITION','鼠标位置无效');db.prepare('INSERT INTO mobile_cursors VALUES(?,?,?,?,?,?) ON CONFLICT(room_id,player_id) DO UPDATE SET client_id=excluded.client_id,seq=excluded.seq,data=excluded.data,updated_at=excluded.updated_at WHERE mobile_cursors.client_id!=excluded.client_id OR excluded.seq>mobile_cursors.seq').run(room.id,member.id,point.clientId,point.seq,JSON.stringify(point.point),now);}
+   if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
+   if(method==='POST'){
+    // Older clients send null when their pointer leaves the canvas. Membership
+    // owns removal; acknowledge the current writer's sequence without erasing
+    // its position or letting an inactive tab take over another writer.
+    cursorState(room.id,true);if(putCursor(room,member,input,now))markRoom(room.id,{room:false,cursors:true});
+   }
    else if(method!=='GET')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
-   return {cursors:db.prepare('SELECT player_id,data,updated_at FROM mobile_cursors WHERE room_id=? AND updated_at>?').all(room.id,now-engine.CURSOR_TTL).flatMap(row=>{const point=JSON.parse(row.data),m=room.members.find(x=>x.id===row.player_id&&now-x.lastSeen<engine.ONLINE_MS);return point&&m?[{...point,playerId:m.id,name:m.name,color:m.color,level:readProfile(m.guestId,now).level,decoration:collection.equipped(m.guestId),updatedAt:row.updated_at}]:[];}),serverTime:now};
+   // Legacy observers expire by updatedAt. Confirm continuing membership on
+   // each reply while preserving the actual movement time separately.
+   return cursorsView(room,now,undefined,true);
   }
   if(part==='chat'){
    const after=Number(method==='POST'?(input.after??0):(url.searchParams.get('after')??0));if(!Number.isSafeInteger(after)||after<0)fail(400,'INVALID_CHAT_CURSOR','消息游标无效');let message;
@@ -253,7 +447,7 @@ export function createMobileService(options={}){
   }
 
   if(part)fail(404,'NOT_FOUND','请从大厅创建下一局');
-  const sinceText=url.searchParams.get('since'),since=sinceText!==null&&/^\d+$/.test(sinceText)?Number(sinceText):null;
+  const sinceText=url.searchParams.get('since'),since=sinceText!==null?(/^\d+$/.test(sinceText)?Number(sinceText):null):(method==='POST'&&Number.isSafeInteger(input.since)&&input.since>=0?input.since:null);
   if(method==='GET')return snapshotView(room,now,since,p.id);
   if(method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
   if(input.type==='drop'&&!requestKey(input.requestId))fail(400,'REQUEST_ID_REQUIRED','拼合操作缺少有效请求编号');
@@ -261,33 +455,71 @@ export function createMobileService(options={}){
    const before=structuredClone(room.puzzle.groups),oldContrib=room.achievements?.contributors?.[p.id]?.count??0;
    room.mobileContributionXp??=Object.fromEntries(Object.entries(room.achievements?.contributors??{}).map(([owner,value])=>[owner,value.count]));
    member.name=p.name;engine.applyAction(room,member,input,now);
+   if(input.type==='claim'&&tapPreview.allowed(room))room.leases[input.groupId].previewId=id();
+   if(input.type==='heartbeat'&&input.historyJoin===true)roomHistory.joined(p.id,room,now);
+   const streamState=room.diagnostic===true?room.diagnosticActions:room.roomActions;
+   if(streamState?.leases&&['claim','drop','release'].includes(input.type))delete streamState.leases[input.groupId];
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
-   if(added){
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings});if(!reward)fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});
+   if(added&&room.diagnostic!==true){
+    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled});if(!reward)fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});
     room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
     p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
-    const coins=collection.contribution(p.id,room.id,input.requestId,now);p.lastReward.coins=coins;
+    const coins=collection.contribution(p.id,room.id,input.requestId,now)+tasks.beginner(p.id,now).coins;p.lastReward.coins=coins;
     mobileContribution={requestId:input.requestId,groupId:input.groupId,creditedXp:reward.xp,creditedCoins:coins};
    }
-   room.revision++;engine.recordRoomChange(room,before);settle(room,now,p);saveRoom(room);saveProfile(p);return {...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(mobileContribution?{mobileContribution}:{})};
+   room.revision++;engine.recordRoomChange(room,before);settle(room,now,p);saveRoom(room);if(input.type==='leave')pruneRoomCursors(room);saveProfile(p);return {...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(mobileContribution?{mobileContribution}:{})};
   };
   // Only drops affect growth: avoid writing permanent receipts for heartbeat/move polling.
-  return input.type==='drop'&&requestKey(input.requestId)?replay(p,'room-action:'+room.id,input,now,act):act();
+  return input.type==='drop'&&requestKey(input.requestId)&&(!request[diagnosticTransport]||room.diagnostic!==true)?replay(p,'room-action:'+room.id,input,now,act):act();
+ }
+ async function bindTapTap(request){
+  const now=clock(),sessionIdentity=request.identity;
+  try{
+   if(typeof sessionIdentity!=='string'||!/^[a-f0-9]{64}$/.test(sessionIdentity))fail(401,'IDENTITY_REQUIRED','连接身份无效');
+   const code=typeof request.code==='string'?request.code.trim():'';if(!code||code.length>512)fail(400,'TAPTAP_CODE_REQUIRED','TapTap登录凭证无效');
+   const codeHash=hash('taptap-code:'+code);
+   let account=db.prepare('SELECT provider_key,canonical_identity FROM mobile_taptap_codes WHERE code_hash=?').get(codeHash);
+   let providerKey=account?.provider_key;
+   if(!account){
+    const exchanged=await tapTapExchange(code);const providerId=typeof exchanged?.unionid==='string'&&exchanged.unionid?exchanged.unionid:exchanged?.openid;
+    if(typeof providerId!=='string'||!providerId)fail(401,'TAPTAP_CODE_INVALID','TapTap登录凭证无效或已过期，请重试');
+    providerKey=hash('taptap-provider:'+providerId);
+   }
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    const current=resolveIdentity(sessionIdentity),existing=db.prepare('SELECT canonical_identity,nickname FROM mobile_taptap_accounts WHERE provider_key=?').get(providerKey);
+    let canonical=existing?.canonical_identity??current;
+    if(existing&&canonical!==current&&statePresent(current))fail(409,'TAPTAP_ACCOUNT_CONFLICT','该TapTap账号已有其他游戏进度。为保护当前游客数据，请先完成账号选择后再绑定。');
+    if(!existing){db.prepare('INSERT INTO mobile_taptap_accounts VALUES(?,?,?,?,?)').run(providerKey,canonical,displayName(request.nickname),now,now);}
+    else if(request.nickname!==undefined){db.prepare('UPDATE mobile_taptap_accounts SET nickname=?,updated_at=? WHERE provider_key=?').run(displayName(request.nickname),now,providerKey);}
+    db.prepare('INSERT INTO mobile_taptap_sessions VALUES(?,?,?) ON CONFLICT(session_identity) DO UPDATE SET canonical_identity=excluded.canonical_identity,updated_at=excluded.updated_at').run(sessionIdentity,canonical,now);
+    if(!account)db.prepare('INSERT INTO mobile_taptap_codes VALUES(?,?,?,?)').run(codeHash,providerKey,canonical,now);
+    const p=readProfile(canonical,now);const nickname=displayName(request.nickname)||(existing?.nickname??null);if(nickname){p.name=nickname;p.nameSource='taptap';saveProfile(p);}
+    db.exec('COMMIT');return {status:200,data:{bound:true,identity:'taptap',taptap:taptapView(canonical),profile:profileView(p,now)}};
+   }catch(error){db.exec('ROLLBACK');throw error;}
+  }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'TapTap账号绑定暂时失败',code:error.code??'TAPTAP_BIND_FAILED'}};}
  }
  function handle(request){
-  const now=clock();try{
+  const now=clock(),handlingAt=performance.now();try{
    if(typeof request.identity!=='string'||!/^[a-f0-9]{64}$/.test(request.identity))fail(401,'IDENTITY_REQUIRED','连接身份无效');
+   request.identity=resolveIdentity(request.identity);
    const url=new URL(request.url,'http://mobile.invalid');let input=request.body??{};
    if(Buffer.isBuffer(input)||typeof input==='string'){try{input=JSON.parse(String(input)||'{}');}catch{fail(400,'INVALID_JSON','请求格式无效');}}
    if(!input||typeof input!=='object'||Array.isArray(input))fail(400,'INVALID_JSON','请求格式无效');
-   operationTaskRewards=taskRewardConfiguration.read();
-   operationGameSettings=gameConfiguration.read();
-   operationAlbums=albumConfiguration.read();
-   db.exec('BEGIN IMMEDIATE');
-   try{const p=readProfile(request.identity,now);saveProfile(p);social.touch(p.id,now);const data=route(request,p,input,url,now);saveProfile(p);db.exec('COMMIT');return {status:request.method==='POST'&&url.pathname==='/api/rooms'?201:200,data};}
-   catch(error){db.exec('ROLLBACK');throw error;}
+   operationRelease=managedContent?.read()??null;requestRelease=operationRelease;
+   operationTaskRewards=operationRelease?.taskRewards??taskRewardConfiguration.read();
+   operationGameSettings=operationRelease?.gameSettings??gameConfiguration.read();
+   operationAlbums=operationRelease?.albums??albumConfiguration.read();
+   social.guard(request,input,url,now);
+   db.exec('BEGIN IMMEDIATE');requestProfileData=new Map();requestRoomChanges=new Map();requestCursorUndo=new Map();
+   try{const p=readProfile(request.identity,now);saveProfile(p);social.touch(p.id,now);const transport=request[diagnosticTransport];
+    const execute=(action,since)=>{const before=structuredClone(p);try{return route(request,p,{...action,...(since!==undefined?{since}:{})},new URL('/api/rooms/'+transport.context.roomId,'http://mobile.invalid'),now);}catch(error){for(const key of Object.keys(p))delete p[key];Object.assign(p,before);throw error;}};
+    const actionResult=transport?(transport.disconnect?diagnosticActions.disconnect(transport.context,transport.connectionId,execute):diagnosticActions.write(transport.context,transport.input,transport.connectionId,execute)):null;
+    const data=actionResult?actionResult.data:route(request,p,input,url,now);if(data?.room?.puzzle)requireArtworkClient(data.room,request);saveProfile(p);db.exec('COMMIT');for(const [roomId,kind]of requestRoomChanges){if(kind.room)roomVersions.set(roomId,(roomVersions.get(roomId)??0)+1);for(const listener of roomListeners)listener(roomId,kind);}if(data?.diagnostic===true||transport){if(transport?.context.room.diagnostic===true)data.diagnostic=true;data.diagnosticTiming={serverMs:Math.max(0,performance.now()-handlingAt)};}return {status:actionResult?.status??(request.method==='POST'&&url.pathname==='/api/rooms'?201:200),data};}
+   catch(error){db.exec('ROLLBACK');for(const [roomId,state]of requestCursorUndo)cursorRooms.set(roomId,state);throw error;}
   }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'独立拼图服务暂时不可用',code:error.code??(error.status?'ROOM_ERROR':'INTERNAL_ERROR'),...(error.profile?{profile:error.profile}:{}),...(error.freeRemaining?{freeRemaining:error.freeRemaining}:{}),...(error.ownedRooms?{ownedRooms:error.ownedRooms}:{}),...(error.phrases?{phrases:error.phrases}:{})}};}
+  finally{requestRelease=undefined;requestProfileData=null;requestRoomChanges=null;requestCursorUndo=null;}
  }
- return {handle,startDaily(){dailyContent?.start();},close(){dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
+ return {handle,bindTapTap,realtime,capabilities,contentStatus(){const selected=managedContent?.read()??null;return {contentReleaseId:selected?.releaseId??null};},startDaily(){dailyContent?.start();},close(){clearInterval(cursorTimer);flushCursors();tapPreview.clear();roomListeners.clear();dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
 }

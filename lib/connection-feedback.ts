@@ -42,3 +42,38 @@ export function connectionPath(piece:Piece,cols:number,rows:number,side:1|2){
  const p=(t:number,v:number)=>`${x+tx*t+nx*d*v*sign} ${y+ty*t+ny*d*v*sign}`;
  return `M ${p(0,0)} L ${p(.32,0)} C ${p(.4,0)} ${p(.44,0)} ${p(.42,.16)} C ${p(.30,.70)} ${p(.36,1)} ${p(.50,1)} C ${p(.64,1)} ${p(.70,.70)} ${p(.58,.16)} C ${p(.56,0)} ${p(.60,0)} ${p(.68,0)} L ${p(1,0)}`;
 }
+
+export const MOBILE_CONNECTION_GLOW_MS = 500;
+export const MOBILE_REDUCED_GLOW_MS = 170;
+export type MobileConnectionGlow = ConnectionGlow & { outlineIds: number[]; source: 'local' | 'teammate' };
+export type MobileContributionReceipt = { requestId: string; groupId: number; creditedXp: number };
+
+/** Mobile feedback also covers a single piece locking to the board. Position
+ * changes and repeated snapshots remain silent; classic seam feedback is unchanged. */
+export function newMobileConnections(before: readonly Group[], after: PuzzleState, localGroups: ReadonlySet<number> = new Set()): MobileConnectionGlow[] {
+ const previousOwners = new Map<number, Group>();
+ for (const group of before) for (const id of group.pieces) previousOwners.set(id, group);
+ const connections = newConnections(before, after), result: MobileConnectionGlow[] = [];
+ for (const group of after.groups) {
+  const newlyLocked = group.locked ? group.pieces.filter(id => previousOwners.has(id) && !previousOwners.get(id)!.locked) : [];
+  const connection = connections.find(glow => group.pieces.includes(glow.anchor));
+  if (!newlyLocked.length && !connection) continue;
+  const touched = newlyLocked.length ? newlyLocked : connection!.seams.flatMap(seam => [seam.pieceId, seam.pieceId + (seam.side === 1 ? 1 : after.cols)]);
+  // One burst per changed group, not one burst per piece in a large merged group.
+  const outlineIds = [...new Set(touched)].slice(0, 3);
+  result.push({ anchor: outlineIds[0], seams: connection?.seams ?? [], outlineIds, source: [...localGroups].some(id => group.id === id || group.pieces.includes(id)) ? 'local' : 'teammate' });
+  if (result.length === 3) break;
+ }
+ return result;
+}
+
+/** Only positive, authoritative receipts may produce XP text. A gate lives for
+ * one table, so a delayed poll or a replayed request cannot replay the reward. */
+export class MobileContributionGate {
+ private seen = new Set<string>();
+ claim(receipt: MobileContributionReceipt) {
+  if (!receipt || typeof receipt.requestId !== 'string' || !receipt.requestId || receipt.requestId.length > 128 || !Number.isSafeInteger(receipt.groupId) || receipt.groupId < 0 || !Number.isSafeInteger(receipt.creditedXp) || receipt.creditedXp <= 0 || this.seen.has(receipt.requestId)) return false;
+  this.seen.add(receipt.requestId); return true;
+ }
+ clear() { this.seen.clear(); }
+}

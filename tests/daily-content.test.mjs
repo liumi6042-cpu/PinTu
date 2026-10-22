@@ -5,7 +5,7 @@ import {createServer} from 'node:http';
 import {resolve,join,sep} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {randomBytes} from 'node:crypto';
-import {createDailyContent,dailyConfigurationDigest,dailyContentDate} from '../server/daily-content.mjs';
+import {createDailyContent,validateDailyConfiguration,dailyConfigurationDigest,dailyContentDate} from '../server/daily-content.mjs';
 import {createMobileCollection,MOBILE_COLLECTION_CATALOG as catalog} from '../server/mobile-collection.mjs';
 import {createMobileService} from '../server/mobile-service.mjs';
 import {createH5Gateway} from '../server/h5-gateway.mjs';
@@ -22,6 +22,64 @@ function fixture(entries=[{date:'2026-10-13',imageId:daily.id,albumId:'daily-ani
  const content=createDailyContent({configurationPath,appearanceDir,photos:RESTORABLE_PHOTOS,fallback:dailyPuzzle,now:()=>clock,randomInt:(min,max)=>max-1});
  return {content,configurationPath,appearanceDir,write,writeV2,get now(){return clock;},set now(value){clock=value;},close(){content.close();assert.ok(dir.startsWith(root+sep));rmSync(dir,{recursive:true,force:true});}};
 }
+
+test('pure daily validation retains v1/v2 normalization and rejects unavailable photos without mutating input',()=>{
+ const f=fixture();
+ try{
+  for(const version of [1,2]){
+   if(version===2)f.writeV2({candidates:[{imageId:daily.id,albumId:'daily-anime'}],pool:[daily.id]});
+   const input=JSON.parse(readFileSync(f.configurationPath,'utf8')),before=JSON.stringify(input),validated=validateDailyConfiguration(input,{photos:RESTORABLE_PHOTOS});
+   assert.equal(validated.version,version);assert.equal(validated.albumById.get('daily-anime').title,'二次元');assert.equal(JSON.stringify(input),before);
+   assert.deepEqual(validated.automaticCandidates,version===1?[]:input.automaticCandidates);assert.deepEqual(validated.fallbackImageIds,version===1?[]:input.fallbackImageIds);
+   assert.throws(()=>validateDailyConfiguration(input,{photos:RESTORABLE_PHOTOS.map(photo=>photo.id===daily.id?{...photo,status:'draft'}:photo)}),error=>error.code==='DAILY_CONTENT_INVALID');
+   assert.throws(()=>validateDailyConfiguration({...input,configDigest:'0'.repeat(64)},{photos:RESTORABLE_PHOTOS}),error=>error.code==='DAILY_CONTENT_INVALID');
+  }
+ }finally{f.close();}
+});
+
+test('injected complete configuration matches file mode for selection, appearance and next-day album/gallery behavior',()=>{
+ for(const version of [1,2]){
+  const f=fixture();let injected;
+  try{
+   if(version===2)f.writeV2({entries:[{date:'2026-10-13',imageId:daily.id,albumId:'daily-anime'}],candidates:[{imageId:otherDaily.id,albumId:'daily-anime'}],pool:[daily.id,otherDaily.id]});
+   const input=JSON.parse(readFileSync(f.configurationPath,'utf8'));
+   injected=createDailyContent({readConfiguration:()=>input,appearanceDir:join(f.appearanceDir,'injected-'+version),photos:RESTORABLE_PHOTOS,fallback:dailyPuzzle,now:()=>f.now,randomInt:(min,max)=>max-1});
+   const current=Date.parse('2026-10-13T03:00:00Z'),next=Date.parse('2026-10-13T16:00:00Z');
+   const actual=f.content.tick(current),expected=injected.tick(current);
+   assert.deepEqual(actual,expected);
+   assert.equal(injected.select(current).id,f.content.select(current).id);assert.equal(expected.configDigest,input.configDigest);
+   assert.deepEqual(injected.targetAlbums(),f.content.targetAlbums());assert.deepEqual(injected.managedImageIds(next),f.content.managedImageIds(next));
+   assert.deepEqual(injected.albumEntries(next),f.content.albumEntries(next));assert.deepEqual(injected.galleryPhotos(next),f.content.galleryPhotos(next));
+  }finally{injected?.close();f.close();}
+ }
+});
+
+test('injected configuration switches for future selections while the actual current-day receipt stays frozen',()=>{
+ const f=fixture();let injected,reads=0;
+ try{
+  f.writeV2({entries:[{date:'2026-10-12',imageId:daily.id,albumId:'daily-anime'}],pool:[daily.id]});
+  let current=JSON.parse(readFileSync(f.configurationPath,'utf8'));
+  injected=createDailyContent({readConfiguration:()=>{reads++;return current;},appearanceDir:join(f.appearanceDir,'injected'),photos:RESTORABLE_PHOTOS,fallback:dailyPuzzle,now:()=>f.now,randomInt:min=>min});
+  const original=injected.tick(f.now);
+  f.writeV2({entries:[{date:'2026-10-12',imageId:otherDaily.id,albumId:'daily-anime'},{date:'2026-10-13',imageId:otherDaily.id,albumId:'daily-anime'}],pool:[otherDaily.id]});
+  current=JSON.parse(readFileSync(f.configurationPath,'utf8'));
+  assert.deepEqual(injected.tick(f.now),original);
+  f.now=Date.parse('2026-10-13T01:00:00Z');assert.equal(injected.tick(f.now).imageId,otherDaily.id);
+  const before=reads;injected.galleryPhotos(f.now);assert.equal(reads-before,1,'one gallery operation reads one complete configuration');
+ }finally{injected?.close();f.close();}
+});
+
+test('invalid injected digest or unreadable configuration never creates an appearance receipt',()=>{
+ const f=fixture();let injected;
+ try{
+  let input={...JSON.parse(readFileSync(f.configurationPath,'utf8')),configDigest:'0'.repeat(64)},unavailable=false;
+  const appearanceDir=join(f.appearanceDir,'injected');
+  injected=createDailyContent({readConfiguration:()=>{if(unavailable)throw new Error('unavailable');return input;},appearanceDir,photos:RESTORABLE_PHOTOS,fallback:dailyPuzzle,now:()=>f.now});
+  assert.throws(()=>injected.tick(f.now),error=>error.code==='DAILY_CONTENT_INVALID');assert.equal(existsSync(appearanceDir),false);
+  unavailable=true;assert.throws(()=>injected.tick(f.now),error=>error.code==='DAILY_CONTENT_INVALID');assert.equal(existsSync(appearanceDir),false);
+  unavailable=false;input=JSON.parse(readFileSync(f.configurationPath,'utf8'));assert.ok(injected.tick(f.now));assert.deepEqual(readdirSync(appearanceDir),['2026-10-12.json']);
+ }finally{injected?.close();f.close();}
+});
 
 test('public schedule freezes actual current appearance, skips past plans and rejects changed digest/unavailable assets',()=>{
  const f=fixture([{date:'2026-10-11',imageId:daily.id,albumId:'daily-anime'},{date:'2026-10-13',imageId:daily.id,albumId:'daily-anime'}]);

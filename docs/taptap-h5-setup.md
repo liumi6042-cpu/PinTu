@@ -1,6 +1,28 @@
 # TapTap H5 接入与交付说明
 
-## 当前版本（2026-10-09）
+Android真机调试准备与连接步骤见[广告排查记录](2026-10-20-ad-unavailable-diagnosis.md#2026-10-21-真机调试准备)，脚本 `scripts/taptap-device-debug.ps1`；用户已接通真机Console，并确认官方H5位1054324可播放。
+
+独立自测包342314（20261021-SHARE-CANCEL-FIX）修复取消分享后长时间锁定：返回兜底、取消等待按钮及取消不弹诊断；二维码releases/taptap-test-342314.png。其后顶部提示避让修复见[分享取消修复记录](2026-10-20-energy-share-fallback.md#2026-10-21-顶部提示避开摄像头)。未绑定主包或提交审核。
+
+342356自测包（20261021-NOTICE-INSET）将TapTap顶部等待/小提示移到不低于y=44以避开摄像头。配置/资源更新与代码包更新边界见下方“更新范围核对”；用户此后决定暂不扩展UI配置热更新。
+
+最新独立自测包为342474（20261021-BEGINNER-TASKS），增加账号累计10/50/100次有效拼合分别自动发10/50/100金币、达标隐藏的新手任务，保留前述广告、分享取消和摄像头避让修复。正式手机版后端已部署20261021-beginner-tasks-v1，二维码releases/taptap-test-342474.png；未绑定主包、未提审或上线。规则及验证见[新手任务记录](2026-10-21-beginner-tasks.md)。
+
+审核包与正式房间平台同步记录见[2026-10-21正常审核包](2026-10-21-taptap-review-release.md)。2026-10-21广告现状更新：正式 `/h5-mobile-v3/` 已启用官方H5位1054324，补给站保留广告和分享双入口，见[广告体力包记录](2026-10-20-taptap-ad-energy.md#2026-10-21-改用官方h5广告位并恢复双入口)。下方保留旧H5服务的2026-10-09交付记录，请区分 `/h5/` 与 `/h5-mobile-v3/`；历史广告标记不能代表当前开关。
+
+338539再次驳回后的首授权缺口修复及新自测包接续见[登录恢复记录末节](2026-10-20-taptap-startup-login.md#2026-10-21-再次驳回新用户昵称授权缺口)。此修复已通过模拟首授权，目标审核机真机结果待验。
+
+## 更新范围核对（2026-10-21）
+
+用户询问能否避免每次小改都重新上传审核。当前采用TapTap托管H5 ZIP，不能把APK/PC的热更新文档直接当作此H5形态的免审许可。官方入口明确区分三种形态与各自文档，正式代码版本依然走上传、自测、审核、上线流程；本轮未找到官方明确承诺H5可远程替换任意JavaScript且免审的规则，也不将“技术上能加载脚本”解释为平台已允许免审。
+
+当前已经具备一部分数据更新：服务端server/mobile-service.mjs每次请求读取mobile-managed-content/content-release快照，相册显示与价格、每日内容、成长和任务奖励可在已有字段范围内发布；公开/config控制广告位和开关等能力，本次1054324广告启用即无须换客户端包。已支持的图片资源通过版本/哈希路径加载，包内命中则用本地、未命中则请求线上；新增内容仍受客户端协议和服务器图目支持范围约束，不能保证任意全新类型都无需更新代码。生效时间是下次启动或对应页面重新请求，并非已打开页面全部即时刷新。
+
+可继续扩展的方案（尚未实施）：在固定已审核逻辑中增加有范围限制的UI配置，覆盖提示顶部间距、部分文案和现有按钮显隐；客户端有包内默认值，异常配置回退，按客户端版本选择适用字段。这样先更新一次客户端，以后相同字段的小调整可由配置下发。仍需更新代码的例子包括分享取消识别、登录流程、拼图算法和新增交互能力。配置与素材发布仍需符合相应平台内容要求，不将数据发布能力称作免审全部内容。
+
+来源：https://developer.taptap.cn/agents/ （H5与Tap小游戏、APK/PC路径分开）； https://developer.taptap.cn/minigameapidoc/tap-operation/platform/development-agreement/ 第6.1节（初始及更新版本发布审核）； https://developer.taptap.cn/docs/pc/launcher-update-reporting/ 明确仅适用于PC自更新，不适用本项目H5包。此处是能力评估，不代表新增远程代码加载或大规模配置系统已获实现授权。本轮没有修改后端或发布新的内容配置。
+
+## 历史版本（2026-10-09）
 
 独立H5以原站线上20261006-05为基准，保留82张在架图片。原网站工程、机器人试错修改、原站SQL迁移及数据库没有改写。旧 `/taptap` SSR入口和 `__JIGSAW_H5_BRIDGE__` 占位不属于这个静态包的实际运行方式。
 
@@ -103,3 +125,7 @@ h5/transport.ts在宿主提供tap.request时使用该官方回调通道，无该
 官方接口依据：[tap.request](https://developer.taptap.cn/minigameapidoc/dev/api/network/request/tap.request/)、[setDeviceOrientation](https://developer.taptap.cn/minigameapidoc/dev/api/device/orientation/tap.setDeviceOrientation/)、[onAccelerometerChange](https://developer.taptap.cn/minigameapidoc/dev/api/device/accelerometer/tap.onAccelerometerChange/)。
 
 新测试包281321已上传并绑定，游戏未发布；真机入座和方向行为待用户确认。检查失败时的WEB-NET/TAP-NET/TAP-TIMEOUT错误标记可区分所用通道。
+
+## 2026-10-20 首次扫码登录审核修补
+
+V-20261020审核失败，原因是部分设备首进TapTap登录未完成。已核对334515与335371登录逻辑相同，补强当前共享客户端的SDK晚注入等待、回调兼容和有界恢复；新测试包未换主包或重新送审。当前证据、验证与真机待确认项见[首次扫码登录恢复](./2026-10-20-taptap-startup-login.md)。
