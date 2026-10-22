@@ -17,6 +17,7 @@ import {mkdirSync,chmodSync} from 'node:fs';
 import {dirname,resolve} from 'node:path';
 import * as engine from '../outputs/mobile/engine.mjs';
 import {guestName} from './guest-names.mjs';
+const DEFAULT_PLAYER_NAME='拼图朋友';
 import {MOBILE_COUNTS,energyCap,xpForLevel,newProfile,restoreEnergy,applyContribution,completionDistribution} from './mobile-economy.mjs';
 
 // A first-time mobile player starts with one creation ticket. Web play needs none,
@@ -66,7 +67,7 @@ export function createMobileService(options={}){
   return {openid:data.openid,unionid:typeof data.unionid==='string'&&data.unionid?data.unionid:undefined};
  });
  // The host chooses this profile. No request body/header may disable stamina.
- const web=options.runtimeProfile==='web',guestNames=options.guestNames??web,energyEnabled=!web,shareRewards=options.shareRewards??!web,adsEnabled=!web&&options.adEnabled===true;
+ const web=options.runtimeProfile==='web',guestNames=options.guestNames??true,energyEnabled=!web,shareRewards=options.shareRewards??!web,adsEnabled=!web&&options.adEnabled===true;
  // Only a trusted host option can re-enable free text. Local/development hosts
  // use the same safe mobile default as a public-test package.
  const customNames=options.publicTestPolicy?.customNames??web,privateMessages=options.publicTestPolicy?.privateMessages??web;
@@ -134,7 +135,10 @@ export function createMobileService(options={}){
  const displayName=value=>{if(typeof value!=='string')return null;const text=value.trim();if(!text||Array.from(text).length>16||Array.from(text).some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127))return null;return text;};
  const diagnosticAllowed=identity=>!web&&diagnosticAccounts.has(identity)&&Boolean(db.prepare('SELECT 1 FROM mobile_taptap_accounts WHERE canonical_identity=?').get(identity));
  const taptapView=identity=>{const row=db.prepare('SELECT nickname FROM mobile_taptap_accounts WHERE canonical_identity=?').get(identity);return row?{bound:true,nickname:row.nickname??null,provider:'taptap',diagnostics:diagnosticAllowed(identity)}:{bound:false,provider:'taptap'};};
- const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);if(requestProfileData&&!requestProfileData.has(identity))requestProfileData.set(identity,row?.data??null);const p=row?JSON.parse(row.data):newProfile(identity,now,operationGameSettings,{creationTickets:web?0:NEWCOMER_CREATION_TICKETS});if(!row&&guestNames)p.name=guestName(identity,name=>Boolean(db.prepare("SELECT 1 FROM mobile_profiles WHERE json_extract(data,'$.name')=? LIMIT 1").get(name)));if(energyEnabled)restoreEnergy(p,now,operationGameSettings);else if(!row)p.energy=0;return p;};
+ const nameTaken=name=>Boolean(db.prepare("SELECT 1 FROM mobile_profiles WHERE json_extract(data,'$.name')=? LIMIT 1").get(name)),randomName=identity=>guestName(identity,nameTaken);
+ /** Players without a readable platform name still carry the old default; they get a soft random name on their next visit. */
+ const needsName=p=>guestNames&&!p.nameSource&&(typeof p.name!=='string'||!p.name.trim()||p.name===DEFAULT_PLAYER_NAME);
+ const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);if(requestProfileData&&!requestProfileData.has(identity))requestProfileData.set(identity,row?.data??null);const p=row?JSON.parse(row.data):newProfile(identity,now,operationGameSettings,{creationTickets:web?0:NEWCOMER_CREATION_TICKETS});if(!row&&guestNames)p.name=randomName(identity);if(energyEnabled)restoreEnergy(p,now,operationGameSettings);else if(!row)p.energy=0;return p;};
  const saveProfile=p=>{const data=JSON.stringify(p);if(requestProfileData?.get(p.id)===data)return;const result=db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data WHERE mobile_profiles.data<>excluded.data').run(p.id,data);requestProfileData?.set(p.id,data);return result;};
  const tasks=createMobileTasks({db,readProfile,saveProfile,energyEnabled,areFriends:(owner,peer)=>social.areFriends(owner,peer),readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings,awardCoins:(owner,source,coins,now)=>collection.awardTaskCoins(owner,source,coins,now)});
  const dailyContent=managedContent?createManagedDailyContent({readSnapshot:()=>requestRelease===undefined?managedContent.read():requestRelease,legacy:options.dailyContent??null,photos:engine.RESTORABLE_PHOTOS,galleryPhotos:engine.GALLERY_VISIBLE_PHOTOS,fallback:engine.dailyPuzzle,appearanceDir:options.dailyAppearanceDir??resolve('work/daily-appearances'),now:clock}):options.dailyContent??null;
@@ -519,7 +523,7 @@ export function createMobileService(options={}){
    operationAlbums=operationRelease?.albums??albumConfiguration.read();
    social.guard(request,input,url,now);
    db.exec('BEGIN IMMEDIATE');requestProfileData=new Map();requestRoomChanges=new Map();requestCursorUndo=new Map();
-   try{const p=readProfile(request.identity,now);saveProfile(p);social.touch(p.id,now);const transport=request[diagnosticTransport];
+   try{const p=readProfile(request.identity,now);if(needsName(p))p.name=randomName(p.id);saveProfile(p);social.touch(p.id,now);const transport=request[diagnosticTransport];
     const execute=(action,since)=>{const before=structuredClone(p);try{return route(request,p,{...action,...(since!==undefined?{since}:{})},new URL('/api/rooms/'+transport.context.roomId,'http://mobile.invalid'),now);}catch(error){for(const key of Object.keys(p))delete p[key];Object.assign(p,before);throw error;}};
     const actionResult=transport?(transport.disconnect?diagnosticActions.disconnect(transport.context,transport.connectionId,execute):diagnosticActions.write(transport.context,transport.input,transport.connectionId,execute)):null;
     const data=actionResult?actionResult.data:route(request,p,input,url,now);if(data?.room?.puzzle)requireArtworkClient(data.room,request);saveProfile(p);db.exec('COMMIT');for(const [roomId,kind]of requestRoomChanges){if(kind.room)roomVersions.set(roomId,(roomVersions.get(roomId)??0)+1);for(const listener of roomListeners)listener(roomId,kind);}if(data?.diagnostic===true||transport){if(transport?.context.room.diagnostic===true)data.diagnostic=true;data.diagnosticTiming={serverMs:Math.max(0,performance.now()-handlingAt)};}return {status:actionResult?.status??(request.method==='POST'&&url.pathname==='/api/rooms'?201:200),data};}

@@ -29,8 +29,33 @@ test('new Web guests get a soft name that survives later reads; existing players
  assert.ok(names.size>=20,'names spread over the list');
 });
 
-test('mobile (TapTap) profiles keep the default until the platform nickname arrives',()=>{
- const call=setup({});assert.equal(call(actor('tap-a'),'/api/mobile/profile').data.name,'拼图朋友');
+test('mobile players without a platform nickname get a random name too',()=>{
+ const call=setup({}),name=call(actor('tap-a'),'/api/mobile/profile').data.name;
+ assert.notEqual(name,'拼图朋友');assert.ok(GUEST_NAMES.some(base=>name===base||name.startsWith(base)),name);
+});
+
+test('TapTap binding keeps an authorized nickname and falls back to a random one without it',async()=>{
+ let open=0;const service=createMobileService({now:()=>1800000000000,randomInt:min=>min,tapTap:{exchangeCode:async()=>({openid:'open-'+(++open)})}});
+ const bind=(owner,nickname)=>service.bindTapTap({identity:owner,code:'code-'+randomBytes(6).toString('hex'),...(nickname===undefined?{}:{nickname})});
+ const named=await bind(actor('tap-named'),'阿树');assert.equal(named.status,200,JSON.stringify(named.data));
+ assert.equal(named.data.profile.name,'阿树');
+ const anonymous=await bind(actor('tap-anonymous'));assert.equal(anonymous.status,200);
+ assert.notEqual(anonymous.data.profile.name,'拼图朋友');assert.ok(GUEST_NAMES.some(base=>anonymous.data.profile.name.startsWith(base)));
+});
+
+test('an existing player still called 拼图朋友 is renamed on the next visit; chosen names stay',async()=>{
+ const {mkdtempSync,mkdirSync,rmSync}=await import('node:fs');const {resolve}=await import('node:path');const {DatabaseSync}=await import('node:sqlite');
+ mkdirSync(resolve('work'),{recursive:true});const dir=mkdtempSync(resolve('work/guest-names-')),databasePath=resolve(dir,'mobile.sqlite');
+ let service;
+ try{
+  service=createMobileService({databasePath,now:()=>1800000000000,randomInt:min=>min});const call=(owner,path)=>service.handle({identity:owner,method:'GET',url:path});
+  const old=actor('old-default'),kept=actor('old-custom'),tap=actor('old-tap');call(old,'/api/mobile/profile');call(kept,'/api/mobile/profile');call(tap,'/api/mobile/profile');
+  const db=new DatabaseSync(databasePath),set=(id,patch)=>{const p=JSON.parse(db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(id).data);db.prepare('UPDATE mobile_profiles SET data=? WHERE id=?').run(JSON.stringify({...p,...patch}),id);};
+  set(old,{name:'拼图朋友'});set(kept,{name:'山间小屋'});set(tap,{name:'拼图朋友',nameSource:'taptap'});db.close();
+  const renamed=call(old,'/api/mobile/profile').data.name;assert.notEqual(renamed,'拼图朋友');assert.equal(call(old,'/api/mobile/profile').data.name,renamed);
+  assert.equal(call(kept,'/api/mobile/profile').data.name,'山间小屋');
+  assert.equal(call(tap,'/api/mobile/profile').data.name,'拼图朋友','a platform-provided name is never replaced');
+ }finally{service?.close();rmSync(dir,{recursive:true,force:true});}
 });
 
 test('a taken name is not handed to a second Web guest',()=>{
