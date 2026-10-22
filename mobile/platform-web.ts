@@ -210,9 +210,9 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     if(!keyDown&&event.code==='Space')space=false;
     // Native text dialogs own their keyboard; game shortcuts must not consume typing.
     const target=document.activeElement;if(textPromptOpen||(target&&target!==canvas&&target!==document.body)||event.ctrlKey||event.metaKey||event.altKey)return;
-    if(event.code!=='Space'&&event.key!=='Escape')return;
+    if(event.code!=='Space'&&event.key!=='Escape'&&!/^Key[EHBFR]$/.test(event.code))return;
     event.preventDefault();if(event.code==='Space')space=keyDown;
-    fn({type:'key',points:[],changed:[],key:event.code==='Space'?' ':event.key,keyDown,repeat:event.repeat});
+    fn({type:'key',points:[],changed:[],key:event.code==='Space'?' ':event.code.startsWith('Key')?event.code.slice(3).toLowerCase():event.key,keyDown,repeat:event.repeat});
    };
    const keyDown=key(true),keyUp=key(false),reset=()=>{space=false;const changed=[...active.values()],ids=[...active.keys()];active.clear();panPointers.clear();for(const id of ids)try{canvas.releasePointerCapture(id);}catch{}if(changed.length)fn({type:'cancel',points:[],changed});};
    const lost=(event:PointerEvent)=>{if(active.has(event.pointerId))reset();};

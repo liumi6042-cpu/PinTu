@@ -258,6 +258,8 @@ export class RoomClient {
       if(!this.stopped){const delay=this.forcePoll?0:this.deps.realtime?.connected?Math.max(100,5001-(this.deps.now()-this.heartbeatAt)):this.connected?roomPollDelay(this.drags.size>0||Object.keys(this.snapshot.leases).length>0,this.idlePolls,this.deps.hidden()):Math.min(4000,800*this.failures);this.schedulePoll(Math.max(this.retryAt-this.deps.now(),delay));}
     }
   }
+  /** Ask for an immediate resynchronisation (the reconnect banner's 重试). */
+  retryNow(){this.retryAt=0;this.forcePoll=true;this.schedulePoll(0);}
   private schedulePoll(delay:number){if(this.pollTimer)clearTimeout(this.pollTimer);this.pollTimer=null;if(!this.stopped)this.pollTimer=setTimeout(()=>{this.pollTimer=null;void this.poll();},delay);}
   // Keep a group reserved until its drop/release request is acknowledged. A
   // second drag of the same group during that window can otherwise be replaced
