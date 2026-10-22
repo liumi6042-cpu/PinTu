@@ -80,7 +80,7 @@ export class Stage{
  }
  segments<T extends string|number>(r:Rect,options:readonly(readonly[T,string])[],value:T,change:(value:T)=>void){
   this.frame(r,'rail-cream-normal');const inset=4,width=(r.w-inset*2)/options.length;
-  options.forEach(([key,label],index)=>{const item={x:Math.round(r.x+inset+index*width),y:r.y+inset,w:Math.round(width),h:r.h-inset*2},selected=key===value;if(selected)this.frame(item,'segment-berry-selected');else if(index>0&&options[index-1][0]!==value){this.ctx.fillStyle=this.color('#d4ac99');this.ctx.fillRect(item.x,item.y+item.h*.25,1,item.h*.5);}const size=r.h>=38?14:r.w<160?10:11;this.text(label,item.x+(item.w-this.measure(label,size,700))/2,item.y+(item.h-size)/2-1,size,selected?this.palette.onAccent:this.palette.ink,700,item.w-4);this.hit(item,()=>change(key));});
+  options.forEach(([key,label],index)=>{const item={x:Math.round(r.x+inset+index*width),y:r.y+inset,w:Math.round(width),h:r.h-inset*2},selected=key===value;if(selected)this.frame(item,'segment-berry-selected');else if(index>0&&options[index-1][0]!==value){this.ctx.fillStyle=this.color('#d4ac99');this.ctx.fillRect(item.x,item.y+item.h*.25,1,item.h*.5);}const size=r.h>=38?14:r.h>=32?13:12;this.text(label,item.x+(item.w-this.measure(label,size,700))/2,item.y+(item.h-size)/2-1,size,selected?this.palette.onAccent:this.palette.ink,700,item.w-4);this.hit(item,()=>change(key));});
  }
  hasHit(x:number,y:number){return this.hits.some(hit=>inside(hit.r,x,y));}
  ornaments(r:Rect,size=20){const c=this.ctx;for(const [x,y,flipX,flipY]of [[r.x,r.y,1,1],[r.x+r.w,r.y,-1,1],[r.x,r.y+r.h,1,-1],[r.x+r.w,r.y+r.h,-1,-1]]){c.save();c.translate(x,y);c.scale(flipX,flipY);this.icon('frameLeaf',{x:-5,y:-5,w:size,h:size*1.1});c.restore();}}
