@@ -22,6 +22,7 @@ import * as assistanceRoute from '../app/api/rooms/[id]/assistance/route';
 import * as lobbyRoute from '../app/api/lobby/route';
 import {webDiagnosticsAllowed,createWebDiagnostic,webDiagnosticRoom} from './shared-diagnostics';
 import {sharedLobbyExtras} from './shared-lobby-extras';
+import {sharedContributionView} from './shared-contribution-ranking';
 
 type Data=Record<string,any>;
 const phrases=['大家好！','我来找边缘','这块放这里','稍等一下','一起加油！','我来拼边缘','我来拼中间','请稍等一下','这一块在这里','谢谢你！','拼得真棒！','我要离开了','👏','👍','😊','🧩'];
@@ -140,14 +141,17 @@ async function sharedRoom(request:Request,path:string,input:Data){
   if(player)await webRecordJoin(localDb(),[player.id],id);
  }
  const data=await responseData(response);
- if(!part||part==='join'){const target=part==='join'?data.room:data;target.photo=roomPhoto(room,new URL(request.url).origin);}
+ const target=!part?data:part==='join'?data.room:null;
+ const current=target?await readRoom(id):room;
+ const contributionView=target?await sharedContributionView(current,(await currentPlayer(request))?.id):null;
+ if(target){target.photo=roomPhoto(current,new URL(request.url).origin);target.members=(target.members??[]).map((member:Data)=>({...member,...contributionView!.member(member.id)}));}
  if(part==='cursors')data.cursors=(data.cursors??[]).map((cursor:Data)=>({...cursor,decoration:cursor.managedCursor??null}));
  if(part==='cursors')response.headers.set('x-jigsaw-realtime-actions','normal');
  // The original room mutation commits its reward outbox before this DTO refresh.
  const effectiveInput=input.type==='realtime-action'?{...input.envelope?.action,requestId:input.envelope?.id}:input;
- if(!part&&method==='POST'&&effectiveInput.type==='drop'){
-  try{const ctx=await context(request);data.mobileProfile=ctx.profile;const contribution=data.realtimeActionReplayed?undefined:await dropContribution(ctx,id,data.realtimeActionRevision??data.revision,effectiveInput);if(contribution)data.mobileContribution=contribution;
-   if(data.completedAt){const receipts=ctx.state.receipts??{},result=receipts['completion:'+id]??{};data.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:result.coins??0,fragments:result.fragments??0,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0)};}
+ if(target&&(target.completedAt||!part&&method==='POST'&&effectiveInput.type==='drop')){
+  try{const ctx=await context(request);if(!part&&method==='POST'&&effectiveInput.type==='drop'){data.mobileProfile=ctx.profile;const contribution=data.realtimeActionReplayed?undefined:await dropContribution(ctx,id,data.realtimeActionRevision??data.revision,effectiveInput);if(contribution)data.mobileContribution=contribution;}
+   if(target.completedAt){const receipts=ctx.state.receipts??{},result=receipts['completion:'+id]??{};target.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:result.coins??0,fragments:result.fragments??0,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0),ranking:contributionView!.ranking};}
   }catch{/* A committed room move must stay successful if optional profile reads fail. */}
  }
  delete data.realtimeActionRevision;
@@ -170,7 +174,9 @@ async function createSharedRoom(request:Request,input:Data){
  if(ctx.player.cookie){const headers=new Headers(createRequest.headers);headers.set('Cookie',[(headers.get('Cookie')??''),ctx.player.cookie.split(';')[0]].filter(Boolean).join('; '));createRequest=new Request(createRequest,{headers});}
  const response=await roomsRoute.POST(createRequest);
  if(!response.ok){const data=await responseData(response);return replaceResponse(response,{...data,...(response.status===401?{code:'ACCOUNT_REQUIRED',compatUrl:'/account'}:response.status===403&&String(data.error).includes('会员')?{code:'MEMBERSHIP_REQUIRED',compatUrl:'/membership'}:{})});}
- const data=await responseData(response);await webRecordJoin(localDb(),[ctx.player.id],data.room.id);data.room.photo=roomPhoto(data.room,ctx.origin);return withPlayerCookie(replaceResponse(response,data),ctx.player);
+ const data=await responseData(response);await webRecordJoin(localDb(),[ctx.player.id],data.room.id);data.room.photo=roomPhoto(data.room,ctx.origin);
+ const contributionView=await sharedContributionView(await readRoom(data.room.id),ctx.player.id);data.room.members=(data.room.members??[]).map((member:Data)=>({...member,...contributionView.member(member.id)}));
+ return withPlayerCookie(replaceResponse(response,data),ctx.player);
 }
 export async function sharedClientApi(request:Request,path:string){
  try{
