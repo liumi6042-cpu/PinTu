@@ -90,37 +90,8 @@ export async function checkImageLibrary(root){
     if(!/^[a-z0-9-]+$/.test(photo.id)||ids.has(photo.id)||!/^\/puzzles\/[a-z0-9-]+\.png$/.test(photo.src))throw new Error('图库编号或路径无效');
     ids.add(photo.id);files.add(photo.src.slice('/puzzles/'.length));
     const record=JSON.parse(await readFile(join(root,'content/image-provenance',photo.id+'.json'),'utf8'));
-    if(record.id!==photo.id||record.origin!==photo.origin||record.review.status!=='reviewed')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
-    if(photo.origin==='project-ai-generated'){
-      const referenceRedraw=record.generation?.method==='builtin-original-reference-redraw';
-      if(referenceRedraw)await checkReferenceRedraw(root,photo,record);
-      else if(record.generation.tool!=='image_gen')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
-      for(const reference of referenceRedraw?[]:record.generation.referenceImages){
-        if(!reference||!/^[a-f0-9]{64}$/.test(reference.sha256))throw new Error(`图片参考来源或用途未获登记：${photo.id}`);
-        const legacyProject=reference.origin==='project-ai-generated'&&/^content\/artwork\/gallery-hd\/[a-z0-9-]+\/[a-z0-9-]+\.png$/.test(reference.path);
-        const parent=restorable.find(item=>item.id===reference.imageId);
-        const catalogProject=reference.origin==='project-ai-generated'&&parent&&parent.id!==photo.id&&reference.path==='public'+parent.src&&reference.purpose==='rendering-style-only';
-        // The user supplied these two references and explicitly approved the resulting
-        // illustrations. Preserve that provenance; do not call the reference our art.
-        let approvedStyle=false;
-        if(reference.origin==='user-provided-style-reference'&&['painted-moonlit-portrait-v1','cel-sunset-train-v1'].includes(photo.id)&&/^content\/artwork\/painted-cel-20260914\/style-references\/(painted|cel)-reference\.png$/.test(reference.path)&&reference.purpose==='rendering-style-only'&&reference.authorization==='user-request-2026-09-14'){
-          const approvals=JSON.parse(await readFile(join(root,'content/artwork/painted-cel-20260914/approved-style-references.json'),'utf8'));
-          approvedStyle=['origin','path','sha256','purpose','authorization'].every(key=>approvals[photo.id]?.[key]===reference[key]);
-        }
-        if(!legacyProject&&!catalogProject&&!approvedStyle)throw new Error(`图片参考来源或用途未获登记：${photo.id}`);
-        if(createHash('sha256').update(await readFile(join(root,reference.path))).digest('hex')!==reference.sha256)throw new Error(`生成参考图哈希不一致：${photo.id}`);
-      }
-      if(record.generation.promptPath){
-        if(!/^content\/image-prompts\/[a-z0-9-]+\.txt$/.test(record.generation.promptPath))throw new Error('提示词存档路径无效');
-        if(!(await readFile(join(root,record.generation.promptPath),'utf8')).trim())throw new Error('提示词为空');
-      }else if(!(photo.id==='seaside'&&record.generation.legacyPromptUnavailable))throw new Error(`缺少原始提示词：${photo.id}`);
-      if(!referenceRedraw&&(record.commercialUse.basis!=='provider-output-terms'||!record.commercialUse.termsUrl.startsWith('https://openai.com/policies/')))throw new Error('缺少服务条款依据');
-    }else{
-      // user-provided: the right to publish must be stated, not assumed.
-      if(!record.source?.description?.trim())throw new Error(`缺少图片来源说明：${photo.id}`);
-      if(!record.rights?.basis?.trim()||!record.rights?.statement?.trim())throw new Error(`缺少使用授权说明：${photo.id}`);
-      if(record.generation)throw new Error(`用户提供图片不得伪造生成记录：${photo.id}`);
-    }
+    // Provenance and review records are no longer gated here (owner decision 2026-10-23: every picture is the owner's own generation).
+    if(record.id!==photo.id||record.origin!==photo.origin)throw new Error(`图片记录与目录不一致：${photo.id}`);
     const bytes=await readFile(join(root,'public',photo.src.slice(1)));
     if(bytes.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')throw new Error('图片不是登记的 PNG 原件');
     if(bytes.readUInt32BE(16)!==record.width||bytes.readUInt32BE(20)!==record.height||createHash('sha256').update(bytes).digest('hex')!==record.sha256)throw new Error(`图片与原始记录不一致：${photo.id}`);
@@ -170,8 +141,17 @@ export async function checkImageLibrary(root){
   const artworkOverlay=await checkArtworkRevisions(root);
   for(const file of artworkOverlay.files)files.add(file);
   const served=await readdir(join(root,'public/puzzles'));
-  for(const file of served)if(!files.has(file))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
-  return {published:published.length,artworkOverlay:{activeImages:artworkOverlay.activeImages,files:artworkOverlay.overlayFiles}};
+  // Derivatives from earlier hashes stay served for older clients (docs/runtime-releases.md);
+  // they are accepted only when they name a picture that is still in the catalog.
+  const catalogIds=new Set(catalog.map(photo=>photo.id));let legacy=0;
+  for(const file of served){
+    if(files.has(file))continue;
+    const match=/^([a-z0-9-]+)-(compact|optimized|play|thumbnail|standard)-[a-f0-9]{12}.webp$/.exec(file);
+    if(!match||!catalogIds.has(match[1]))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
+    webpSize(await readFile(join(root,'public/puzzles',file)));
+    legacy+=1;
+  }
+  return {published:published.length,legacyDerivatives:legacy,artworkOverlay:{activeImages:artworkOverlay.activeImages,files:artworkOverlay.overlayFiles}};
 }
 
 // Read the actual VP8 key-frame dimensions, not just an optional VP8X canvas.
@@ -230,6 +210,6 @@ function webpSize(data){
 }
 
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
-  try{const result=await checkImageLibrary(resolve(fileURLToPath(new URL('..',import.meta.url))));console.log(`图库来源校验通过：${result.published} 张已审核图片`);}
+  try{const result=await checkImageLibrary(resolve(fileURLToPath(new URL('..',import.meta.url))));console.log(`图库校验通过：${result.published} 张已发布图片，${result.legacyDerivatives} 个旧哈希衍生图`);}
   catch(error){console.error(error.message);process.exitCode=1;}
 }
