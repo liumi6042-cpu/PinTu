@@ -8,17 +8,28 @@ import {buildRoomRealtime} from './build-room-realtime.mjs';
 
 // Code-only upgrade requires byte-for-byte compatibility with every runtime
 // asset in the installed release. New resources require the full API package.
-const release=process.argv[2],baselinePath=process.argv[3]||'work/mobile-backend-releases/20261011-wechat01/release.json';
+const keepInstalled=process.argv.includes('--keep-installed-assets'),positional=process.argv.slice(2).filter(arg=>!arg.startsWith('--'));
+const release=positional[0],baselinePath=positional[1]||'work/mobile-backend-releases/20261011-wechat01/release.json';
 if(!/^\d{8}-[a-z0-9-]{2,32}$/.test(release||''))throw Error('Usage: node scripts/package-mobile-upgrade.mjs YYYYMMDD-name [baseline-release.json]');
 const root=realpathSync(process.cwd()),baselineBytes=readFileSync(baselinePath),baseline=JSON.parse(baselineBytes);
 if(baseline.service!=='jigsaw-mobile-v3'||baseline.frontendIncluded!==false||!/^\d{8}-[a-z0-9-]{2,32}$/.test(baseline.release)||baseline.release===release)throw Error('Invalid baseline release');
 await checkImageLibrary(root);
 const runtime=JSON.parse(readFileSync('config/runtime-assets.json','utf8'));
-const assets=runtimeAssets(JSON.parse(readFileSync('content/puzzle-catalog.json','utf8')),{static:runtime.static.filter(path=>/^\/(?:cosmetics\/|favicon|apple-touch)/.test(path))});
+const wanted=runtimeAssets(JSON.parse(readFileSync('content/puzzle-catalog.json','utf8')),{static:runtime.static.filter(path=>/^\/(?:cosmetics\/|favicon|apple-touch)/.test(path))});
+// --keep-installed-assets: the installed release keeps legacy URLs that old clients still request (it was
+// packaged with --keep-assets). Serve exactly that verified list; current assets must be an unchanged subset.
+let assets=wanted;
+if(keepInstalled){
+ const installedPath=resolve(dirname(resolve(baselinePath)),'h5/asset-manifest.json'),installedBytes=readFileSync(installedPath),record=baseline.files.find(file=>file.path==='h5/asset-manifest.json');
+ if(!record||record.sha256!==hash(installedBytes)||record.bytes!==installedBytes.length)throw Error('Installed asset manifest does not match the baseline release');
+ const installed=JSON.parse(installedBytes),known=new Set(installed),missing=wanted.filter(path=>!known.has(path));
+ if(missing.length)throw Error('New runtime resources need the full package: '+JSON.stringify(missing));
+ assets=installed;
+}
 const previous=new Map(baseline.files.filter(file=>file.path.startsWith('public/')).map(file=>[file.path,file]));
-const current=assets.map(path=>{const name='public'+path,source=realpathSync(resolve(name));if(!source.startsWith(root+sep))throw Error('Asset escapes project');const bytes=readFileSync(source);return {path:name,bytes:bytes.length,sha256:hash(bytes)};});
+const current=wanted.map(path=>{const name='public'+path,source=realpathSync(resolve(name));if(!source.startsWith(root+sep))throw Error('Asset escapes project');const bytes=readFileSync(source);return {path:name,bytes:bytes.length,sha256:hash(bytes)};});
 const changed=current.filter(file=>!previous.has(file.path)||previous.get(file.path).sha256!==file.sha256||previous.get(file.path).bytes!==file.bytes).map(file=>file.path);
-const names=new Set(current.map(file=>file.path)),removed=[...previous.keys()].filter(path=>!names.has(path));
+const names=new Set(current.map(file=>file.path)),removed=keepInstalled?[]:[...previous.keys()].filter(path=>!names.has(path));
 if(changed.length||removed.length)throw Error('Runtime resources differ; use package-mobile-backend.mjs (full package). '+JSON.stringify({changed,removed}));
 const stage=resolve('work/mobile-upgrade-releases',release);
 if(existsSync(stage))throw Error('Upgrade stage already exists; choose a fresh release name');
@@ -28,6 +39,7 @@ await buildRoomRealtime(resolve(stage,'outputs/mobile'));
 const files=['server/h5-gateway.mjs','server/mobile-service.mjs','server/mobile-room-history.mjs','server/tap-preview.mjs','server/mobile-social.mjs','server/mobile-privacy.mjs','config/social-phrases.json','server/daily-content.mjs','server/mobile-collection.mjs','server/mobile-economy.mjs','server/mobile-tasks.mjs','server/task-reward-settings.mjs','config/task-reward-defaults.json','server/game-settings.mjs','config/game-settings-defaults.json','server/album-content.mjs','server/content-release.mjs','server/mobile-managed-content.mjs','server/managed-daily-content.mjs','scripts/check-content-release.mjs','lib/mobile-collection-catalog.json','lib/tap-platform-id.mjs'];
 for(const path of files){const from=realpathSync(resolve(path)),to=resolve(stage,path);if(!from.startsWith(root+sep)||!to.startsWith(stage+sep))throw Error('Unsafe code path');mkdirSync(dirname(to),{recursive:true});copyFileSync(from,to);}
 mkdirSync(resolve(stage,'h5'),{recursive:true});writeFileSync(resolve(stage,'h5/asset-manifest.json'),JSON.stringify(assets,null,2)+'\n');
+mkdirSync(resolve(stage,'server'),{recursive:true});copyFileSync(realpathSync(resolve('server/room-realtime.LICENSE.txt')),resolve(stage,'server/room-realtime.LICENSE.txt'));
 files.push('outputs/mobile/engine.mjs','outputs/mobile/room-realtime.mjs','server/room-realtime.LICENSE.txt','h5/asset-manifest.json');
 const code=files.map(path=>{const bytes=readFileSync(resolve(stage,path));return {path,bytes:bytes.length,sha256:hash(bytes)};});
 const manifest={service:'jigsaw-mobile-v3',release,packageKind:'code-delta',baseRelease:baseline.release,baseManifestSha256:hash(baselineBytes),node:'>=24.0.0',backendMode:'mobile-v3-isolated',frontendIncluded:false,createdAt:new Date().toISOString(),assetCount:assets.length,reusedAssets:true,files:[...code,...current]};
