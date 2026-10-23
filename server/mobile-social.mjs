@@ -189,5 +189,19 @@ export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom
   });
  }
  const areFriends=(owner,peer)=>isFriend(owner,peer)&&isFriend(peer,owner)&&!eitherBlocked(owner,peer);
- return {guard,touch,person,view,route,blocked:ownBlocked,areFriends,recordTablemates,onlineCount};
+ // Cards are true reads: do not use person()/ensure(), which may allocate a code.
+ // Match the search read budget without writing persistent rate counters.
+ const cardReads=new Map();
+ function cardIdentity(owner,code,now){
+  for(const [key,value]of cardReads)if(value.until<=now)cardReads.delete(key);
+  const rate=cardReads.get(owner)??{until:now+60000,hits:0};cardReads.set(owner,rate);
+  if(++rate.hits>60)fail(429,'SEARCH_RATE_LIMIT','查找较频繁，请稍后再试');
+  if(!validCode(code))fail(400,'INVALID_PLAYER_CODE','请填写9位好友编号');
+  const peer=db.prepare('SELECT owner FROM mobile_social_players WHERE code=?').get(code)?.owner;
+  if(!peer)fail(404,'PLAYER_NOT_FOUND','没有找到这个玩家');
+  if(eitherBlocked(owner,peer))fail(403,'PLAYER_BLOCKED','无法查看这位玩家');
+  const relationship=peer===owner?'self':isFriend(owner,peer)?'friend':db.prepare('SELECT 1 FROM mobile_friend_requests WHERE sender=? AND recipient=?').get(peer,owner)?'incoming':db.prepare('SELECT 1 FROM mobile_friend_requests WHERE sender=? AND recipient=?').get(owner,peer)?'outgoing':'none';
+  return {owner:peer,relationship};
+ }
+ return {guard,touch,person,view,route,blocked:ownBlocked,areFriends,recordTablemates,onlineCount,cardIdentity};
 }

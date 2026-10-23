@@ -523,6 +523,16 @@ export function createMobileService(options={}){
    operationTaskRewards=operationRelease?.taskRewards??taskRewardConfiguration.read();
    operationGameSettings=operationRelease?.gameSettings??gameConfiguration.read();
    operationAlbums=operationRelease?.albums??albumConfiguration.read();
+   const playerCard=/^\/api\/mobile\/players\/([^/]+)\/card$/.exec(url.pathname);
+   if(playerCard&&request.method==='GET'){
+    // Bypass the normal write transaction, profile creation and presence touch.
+    const peer=social.cardIdentity(request.identity,playerCard[1],now),row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(peer.owner);
+    if(!row)fail(404,'PLAYER_NOT_FOUND','没有找到这个玩家');
+    const profile=JSON.parse(row.data);let roomContribution=0;
+    const roomId=url.searchParams.get('room');
+    if(roomId){const roomRow=db.prepare('SELECT data FROM mobile_rooms WHERE id=? AND closed_at IS NULL').get(roomId);if(roomRow){const room=JSON.parse(roomRow.data),admitted=room.members.some(member=>(member.guestId||member.accountId)===request.identity);if(admitted&&room.expiresAt>now&&(room.diagnostic!==true||room.ownerId===request.identity))roomContribution=room.achievements?.contributors?.[peer.owner]?.count??0;}}
+    return {status:200,data:{player:{code:playerCard[1],name:profile.name,level:profile.level,decoration:collection.equipped(peer.owner)},stats:{...collection.playerStats(peer.owner,now),roomContribution},relationship:peer.relationship}};
+   }
    social.guard(request,input,url,now);
    db.exec('BEGIN IMMEDIATE');requestProfileData=new Map();requestRoomChanges=new Map();requestCursorUndo=new Map();
    try{const p=readProfile(request.identity,now);if(needsName(p))p.name=randomName(p.id);saveProfile(p);social.touch(p.id,now);const transport=request[diagnosticTransport];

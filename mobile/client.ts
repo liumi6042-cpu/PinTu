@@ -14,6 +14,7 @@ export type FetchLikeReply={status:number;ok:boolean;headers:{get(name:string):s
 const sessionPattern=/^[a-f0-9]{64}$/,roomPattern=/^[a-f0-9]{32}$/;
 const profileOf=(value:any):value is MobileProfile=>!!value&&Number.isFinite(value.level)&&Number.isFinite(value.energy)&&Number.isFinite(value.energyCap)&&!!value.supply;
 type StoredRoomTicket={token:string;playerId:string;ownerIdentity?:string|null};
+export type PlayerCard={player:{code:string;name:string;level:number;decoration:{artKey:string;color:string}|null};stats:{completedPuzzles:number;ownedPacks:number;completedAlbums:number;roomContribution:number};relationship:'self'|'friend'|'outgoing'|'incoming'|'none'};
 
 /** Shared content API; no browser globals or platform SDK imports. */
 export class GameClient{
@@ -99,6 +100,7 @@ export class GameClient{
  }
  async json<T>(path:string,method='GET',body?:unknown,headers:Record<string,string>={}):Promise<T>{const reply=await this.request(path,method,body,headers);if(reply.status<200||reply.status>=300)throw Object.assign(Error(typeof reply.data?.error==='string'?reply.data.error:'暂时无法完成，请重试'),{status:reply.status,code:reply.data?.code,profile:reply.data?.profile,compatUrl:reply.data?.compatUrl});return reply.data as T;}
  post<T>(path:string,body:unknown){return this.json<T>(path,'POST',body,{'Content-Type':'application/json'});}
+ playerCard(code:string,room?:string){return this.json<PlayerCard>('/api/mobile/players/'+encodeURIComponent(code)+'/card'+(room?'?room='+encodeURIComponent(room):''));}
  async refresh(){await this.json<MobileProfile>('/api/mobile/profile');return this.profile;}
  /** Accept only responses from the currently admitted room and account. */
  acceptRoomResponse(ticket:RoomTicket,value:unknown){
