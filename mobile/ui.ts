@@ -72,6 +72,7 @@ export class Stage{
   c.restore();
  }
  panel(r:Rect,tone='cream'){this.frame(r,tone==='gold'?'panel-gold':'panel-cream');}
+ isPressed(r:Rect){return !!this.down?.target&&this.down.target.r.x===r.x+this.offset.x&&this.down.target.r.y===r.y+this.offset.y;}
  button(r:Rect,label:string,fn:()=>void,opts:{tone?:string;icon?:string;iconColor?:string;disabled?:boolean;selected?:boolean;fontSize?:number}={}){
   if(this.inputSuspended)opts={...opts,disabled:true};
   const tone=opts.tone==='green'?'berry':opts.tone||'cream',pressed=!!this.down?.target&&this.down.target.r.x===r.x+this.offset.x&&this.down.target.r.y===r.y+this.offset.y,state=opts.disabled?'disabled':pressed?'pressed':opts.selected?'selected':'normal',c=this.ctx;

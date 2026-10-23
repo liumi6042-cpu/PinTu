@@ -7,7 +7,8 @@ import {SocialPanel} from './social-panel';
 import {TaskShareReward} from './task-share-reward';
 import {contributionCopy,recoveryCopy} from './economy-copy';
 import {collectionDecorationRewardHints} from './collection-copy';
-import {boardThemeColors,isThemeId,type ThemeId} from './theme';
+import {boardThemeColors,isThemeId,landscapeRoomColors as roomColors,type ThemeId} from './theme';
+import {roomRoundPath} from './room-chrome';
 import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-client';
 import {CursorClient} from '../lib/cursor-client';
 import type {ManagedRoomRealtime} from '../lib/room-realtime';
@@ -196,6 +197,7 @@ export class GameApp{
   if(clock&&clock!==this.lastAidClock)changed=true;this.lastAidClock=clock;
   if(this.route==='room'&&this.room&&!this.room.connected)changed=true;
   if(this.chatBubble&&now>this.chatBubble.until){this.chatBubble=null;changed=true;}
+  else if(this.chatBubble&&this.chatBubble.until-now<=1000&&this.route==='room'&&this.platform.config.id!=='web'&&this.layout==='phoneLandscape')changed=true;
   if(this.route==='lobby'){const minute=String(Math.floor(this.dailyNow()/60000));if(minute!==this.lobbyMinute){this.lobbyMinute=minute;changed=true;}}
   if(changed||this.authorizationTesting||this.platform.config.previewTestRoom&&(this.route==='room'||this.modal==='settings'))this.invalidate();
  }
@@ -1228,11 +1230,12 @@ export class GameApp{
    s.button({x:s.w-panel,y:bar+4,w:32,h:32},this.roomPanelCollapsed?'\u2039':'\u203a',()=>this.setRoomPanelCollapsed(!this.roomPanelCollapsed),{fontSize:22});
    this.drawRoomGift(this.roomArea.x+10,safeBottom-62,true);this.drawZoomControl(this.roomArea.x+this.roomArea.w-150,safeBottom-50);
   }else if(layout==='phoneLandscape'){
-   const web=this.platform.config.id==='web',column=web?62:this.landscapeToolsOpen?60:0;this.roomArea={x:0,y:0,w:s.w-column,h:safeBottom};
+   const web=this.platform.config.id==='web',column=web?62:this.landscapeToolsOpen?72:0;this.roomArea={x:0,y:0,w:s.w-column,h:safeBottom};
    this.placeBoard(board,headerTop+58,()=>this.phoneFit(board,'height'));
    this.drawRoomTopBar({x:0,y:headerTop,w:s.w-column,h:52},'landscape');
    if(web){c.fillStyle=this.colors.cream;c.fillRect(s.w-column,0,column,s.h);c.fillStyle=this.colors.line;c.fillRect(s.w-column,0,2,s.h);this.drawToolColumn({x:s.w-column+2,y:headerTop+6,w:column-2,h:safeBottom-headerTop-6});}
-   else this.drawToolColumn({x:s.w-60,y:headerTop+54,w:60,h:safeBottom-headerTop-54});this.drawRoomGift(8,safeBottom-50,false);
+   else this.drawToolColumn({x:s.w-72,y:0,w:72,h:s.h});
+   if(web)this.drawRoomGift(8,safeBottom-50,false);else{this.drawChatBubble(0);this.drawRoomGift(12,safeBottom-(this.landscapeChatVisible?88:50),false);}
   }else{
    const headerBottom=headerTop+76;this.roomArea={x:0,y:headerBottom+1,w:s.w,h:Math.max(90,safeBottom-headerBottom-1)};
    this.placeBoard(board,6,()=>this.phoneFit(board,'width'));
@@ -1252,6 +1255,7 @@ export class GameApp{
  }
  private roomZoomBase=1;
  private placeBoard(board:PuzzleBoard,topInset:number,fit:()=>void){
+  board.phoneLandscapeRoom=this.platform.config.id!=='web'&&this.layout==='phoneLandscape';
   board.selfDecoration=this.client.profile?.collection?.equipped??null;board.previewTopInset=topInset;board.setRect(this.roomArea);
   if(this.roomViewPending){fit();this.roomZoomBase=board.camera.z;this.roomViewPending=false;}board.draw(this.stage.ctx);
  }
@@ -1289,28 +1293,31 @@ export class GameApp{
    items.forEach(([kind,label],index)=>{const b={x:r.x+5,y:r.y+index*h,w:r.w-10,h:h-5},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
     if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+4,w:22,h:22});s.text(label,b.x+(b.w-s.measure(label,12,700))/2,b.y+b.h-17,12,disabled?this.colors.disabled:this.colors.ink,700);if(!disabled)s.hit(b,()=>this.roomTool(kind));});return;
   }
-  const s=this.stage,toggle={x:r.x+12,y:r.y+3,w:36,h:36};this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
+  const s=this.stage,c=s.ctx,toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
   if(this.landscapeToolsOpen){
-   this.drawRoomFloat(r);s.hit(r,()=>{});
-   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),scale=Math.min(1,(r.h-44)/(items.length*40+32));let y=r.y+43;
-   items.forEach(([kind,label])=>{const badge=kind==='hint'||kind==='underlay',height=(badge?56:40)*scale,b={x:r.x+2,y,w:r.w-4,h:height-2},active=this.toolActive(kind),disabled=badge&&this.assistanceUnavailable(kind);y+=height;
-    if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-20)/2,y:b.y+1,w:20,h:20});s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+23,11,disabled?this.colors.disabled:this.colors.ink,700);
-    if(badge)this.drawAidBadge(kind,b.x+b.w,b.y+b.h-16);if(!disabled)s.hit(b,()=>this.roomTool(kind));});
+   c.fillStyle=roomColors.cream;c.fillRect(r.x,0,r.w,s.h);c.fillStyle=roomColors.line;c.fillRect(r.x,0,2,s.h);s.hit(r,()=>{});
+   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),height=58,gap=Math.min(4,Math.max(0,(r.h-items.length*height)/(items.length-1))),top=(r.h-(items.length*height+(items.length-1)*gap))/2;
+   items.forEach(([kind,label],index)=>{const b={x:r.x+6,y:top+index*(height+gap),w:r.w-12,h:height},badge=kind==='hint'||kind==='underlay',active=this.toolActive(kind),disabled=badge&&this.assistanceUnavailable(kind);
+    if(active||s.isPressed(b))this.drawLandscapeSurface(b,8,roomColors.roseL);
+    s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+10,w:22,h:22},roomColors.ink);s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+38,11,roomColors.ink,700);
+    if(badge){const grant=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,text=grant?Math.ceil((grant.expiresAt-Date.now())/1000)+'秒':!this.aid?'读取中':this.aid.newcomerProtected||free>0?'免费':this.shareAvailable?'分享':'暂未开放',bw=s.measure(text,8.5,700)+6;
+     this.drawLandscapeSurface({x:b.x,y:b.y,w:bw,h:13},3,roomColors.goldL);s.text(text,b.x+3,b.y+2,8.5,'#7a4d10',700);
+    }if(!disabled)s.hit(b,()=>this.roomTool(kind));
+   });
   }
-  this.drawRoomToolToggle(toggle,this.landscapeToolsOpen,()=>this.setLandscapeToolsOpen(!this.landscapeToolsOpen));
+  this.drawLandscapeSurface(toggle,18,roomColors.card,roomColors.ink,2,2);s.icon(this.landscapeToolsOpen?'close':'tools',{x:toggle.x+8,y:toggle.y+8,w:20,h:20},roomColors.ink);s.hit(toggle,()=>this.setLandscapeToolsOpen(!this.landscapeToolsOpen));
+ }
+ /** Coordinates are Stage logical pixels, so the host's UI scale also scales this chrome and its hits. */
+ private drawLandscapeSurface(r:Rect,radius:number,fill:string,border?:string,width=0,shadow=0){
+  const c=this.stage.ctx;c.save();if(shadow){roomRoundPath(c,{...r,y:r.y+shadow},radius);c.fillStyle=border||roomColors.ink;c.fill();}
+  roomRoundPath(c,r,radius);c.fillStyle=fill;c.fill();if(border){c.strokeStyle=border;c.lineWidth=width;c.stroke();}c.restore();
+ }
+ private drawLandscapeButton(r:Rect,label:string,action:()=>void,fill:string,size:number){
+  const s=this.stage;this.drawLandscapeSurface(r,8,s.isPressed(r)?roomColors.roseL:fill,roomColors.ink,2,2);
+  s.text(label,r.x+(r.w-s.measure(label,size,900))/2,r.y+(r.h-size)/2-1,size,fill===roomColors.roseD?'#ffffff':roomColors.ink,900);s.hit(r,action);
  }
  private setLandscapeToolsOpen(open:boolean){
   if(this.landscapeToolsOpen===open)return;this.clearRoomPointer();this.landscapeToolsOpen=open;this.platform.storage.set('jigsaw:landscape-tools-open:v1',open?'1':'0');this.roomViewPending=true;this.invalidate();
- }
- /** Floating room chrome lets the real puzzle remain visible through its cream surface. */
- private drawRoomFloat(r:Rect,rounded=false){
-  const s=this.stage,c=s.ctx,k=rounded?Math.min(15,r.h/2):4,x=r.x+.5,y=r.y+.5,w=r.w-1,h=r.h-1;
-  c.save();c.beginPath();c.moveTo(x+k,y);c.lineTo(x+w-k,y);
-  if(rounded)c.quadraticCurveTo(x+w,y,x+w,y+k);else{c.lineTo(x+w-k,y+k);c.lineTo(x+w,y+k);}
-  c.lineTo(x+w,y+h-k);if(rounded)c.quadraticCurveTo(x+w,y+h,x+w-k,y+h);else{c.lineTo(x+w-k,y+h-k);c.lineTo(x+w-k,y+h);}
-  c.lineTo(x+k,y+h);if(rounded)c.quadraticCurveTo(x,y+h,x,y+h-k);else{c.lineTo(x+k,y+h-k);c.lineTo(x,y+h-k);}
-  c.lineTo(x,y+k);if(rounded)c.quadraticCurveTo(x,y,x+k,y);else{c.lineTo(x+k,y+k);c.lineTo(x+k,y);}
-  c.closePath();c.globalAlpha=.85;c.fillStyle=this.colors.cream;c.fill();c.globalAlpha=1;c.strokeStyle=this.colors.line;c.lineWidth=1;c.stroke();c.restore();
  }
  private roomToolsArea:Rect={x:0,y:0,w:0,h:0};private roomMembersArea:Rect={x:0,y:0,w:0,h:0};
  private get chatUnread(){return this.messages.filter(message=>message.id>this.chatSeen&&message.code!==this.client.profile?.code&&!this.social.blockedCodes.includes(message.code)).length;}
@@ -1334,20 +1341,35 @@ export class GameApp{
    const right=r.x+r.w-8,inviteW=64,box={x:right-inviteW-130,y:r.y+4,w:inviteW+130,h:r.h-6};s.frame(box,'button-linen-normal');s.button({x:right-inviteW-4,y:box.y+5,w:inviteW,h:box.h-10},'邀请',()=>this.showModal('invite'),{tone:'berry',icon:'invite',fontSize:13});
    avatars(right-inviteW-12,box.y+8,24);this.roomMembersArea={...box};s.hit({x:box.x,y:box.y,w:box.w-inviteW-8,h:box.h},()=>this.showModal('chat'));
   }else{
-   const size=24,step=size*.7,avatarW=members.length?size+(members.length-1)*step:0,inviteW=64,gap=8,mid=r.x+r.w/2;
-   const left={x:r.x+6,y:r.y,w:Math.min(220,Math.max(116,s.measure(title,14,800)+62),r.w/2-68),h:46},right={x:r.x+r.w-6-(avatarW+inviteW+24),y:r.y,w:avatarW+inviteW+24,h:46};
-   const capsuleW=Math.min(300,2*Math.min(mid-left.x-left.w-gap,right.x-gap-mid)),capsule={x:mid-capsuleW/2,y:r.y,w:capsuleW,h:30};
-   this.drawRoomFloat(left);s.hit(left,()=>{});back(left.x+5,left.y+5);s.text(title,left.x+48,left.y+5,14,ink,800,left.w-56);s.text(total+' 片',left.x+48,left.y+26,11,this.colors.muted,600,left.w-56);
-   this.drawRoomFloat(capsule,true);const count=placed+'/'+total,countW=s.measure(count,12,800),percentText=percent+'%',percentW=s.measure(percentText,12,800);s.text(count,capsule.x+10,capsule.y+8,12,ink,800);s.text(percentText,capsule.x+capsule.w-percentW-10,capsule.y+8,12,ink,800);s.meter({x:capsule.x+countW+18,y:capsule.y+11,w:Math.max(1,capsule.w-countW-percentW-44),h:8},placed/Math.max(1,total));s.hit(capsule,()=>{});
-   this.drawRoomFloat(right);members.forEach((_member,index)=>{const x=right.x+8+index*step,y=right.y+11,c=s.ctx;c.save();c.beginPath();c.arc(x+size/2,y+size/2,size/2,0,Math.PI*2);c.clip();c.fillStyle=this.colors.cream;c.fillRect(x,y,size,size);s.icon('avatar',{x,y:y-1,w:size,h:size*1.08});c.restore();c.save();c.beginPath();c.arc(x+size/2,y+size/2,size/2,0,Math.PI*2);c.strokeStyle=this.colors.line;c.lineWidth=1;c.stroke();c.restore();});
-   this.roomMembersArea={x:right.x,y:right.y,w:avatarW+16,h:right.h};s.hit(this.roomMembersArea,()=>this.showModal('chat'));s.button({x:right.x+right.w-inviteW-5,y:right.y+5,w:inviteW,h:36},'+ 邀请',()=>this.showModal('invite'),{tone:'berry',fontSize:13});
+   const size=26,step=size-7,avatarW=members.length?size+(members.length-1)*step:0,gap=8,inviteW=s.measure('＋ 邀请',13,900)+20;
+   const right=r.x+r.w-12,invite={x:right-inviteW,y:r.y,w:inviteW,h:34},avatarX=invite.x-gap-avatarW;
+   const count=placed+'/'+total,percentText=Math.round(placed/Math.max(1,total)*100)+'%',countW=s.measure(count,13,900),percentW=s.measure(percentText,13,900),capsuleW=24+countW+percentW+16+180;
+   // Keep the approved centre offset and full 180px meter. At a crowded small viewport,
+   // move the capsule below the first row instead of shrinking the meter or overlapping members.
+   const capsule={x:r.x+r.w/2-40-capsuleW/2,y:r.y+2,w:capsuleW,h:25},backRect={x:r.x+12,y:r.y,w:36,h:36},textX=backRect.x+44;
+   const stacked=capsule.x<textX+28||capsule.x+capsule.w+gap>avatarX;if(stacked)capsule.y=r.y+44;
+   const titleRight=stacked?avatarX-gap:capsule.x-gap;
+   this.drawLandscapeButton(backRect,'<',()=>this.exitRoom(),roomColors.card,20);s.text(title,textX,r.y+2,15,roomColors.ink,900,Math.max(1,titleRight-textX));s.text(total+' 片',textX,r.y+21,10.5,roomColors.muted,500,Math.max(1,titleRight-textX));
+   this.drawLandscapeSurface(capsule,16,'rgba(255,250,243,.92)',roomColors.lineD,1.5);
+   s.text(count,capsule.x+12,capsule.y+5,13,roomColors.ink,900);
+   const meter={x:capsule.x+12+countW+8,y:capsule.y+8.5,w:180,h:8};this.drawLandscapeSurface(meter,4,roomColors.meterTrack);const fill=placed/Math.max(1,total);if(fill>0)this.drawLandscapeSurface({...meter,w:meter.w*fill},4,roomColors.green);
+   s.text(percentText,meter.x+meter.w+8,capsule.y+5,13,roomColors.green,900);s.hit(capsule,()=>{});
+   members.forEach((_member,index)=>s.icon('avatar',{x:avatarX+index*step,y:r.y+4,w:size,h:size}));
+   this.roomMembersArea={x:avatarX,y:r.y,w:avatarW,h:34};s.hit(this.roomMembersArea,()=>this.showModal('chat'));this.drawLandscapeButton(invite,'＋ 邀请',()=>this.showModal('invite'),roomColors.roseD,13);
   }
  }
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;
+ private landscapeChatVisible=false;
  private drawChatBubble(y:number){
+  this.landscapeChatVisible=false;
   const s=this.stage,messages=this.messages.filter(message=>!this.social.blockedCodes.includes(message.code)),latest=messages[messages.length-1];
-  if(latest){if(this.bubbleSeen<0)this.bubbleSeen=latest.id;else if(latest.id>this.bubbleSeen){this.bubbleSeen=latest.id;if(latest.code!==this.client.profile?.code)this.chatBubble={message:latest,until:Date.now()+5000};}}
+  if(latest){if(this.bubbleSeen<0)this.bubbleSeen=latest.id;else if(latest.id>this.bubbleSeen){this.bubbleSeen=latest.id;if(latest.code!==this.client.profile?.code||this.platform.config.id!=='web'&&this.layout==='phoneLandscape')this.chatBubble={message:latest,until:Date.now()+5000};}}
   const bubble=this.chatBubble;if(!bubble||Date.now()>bubble.until||this.modal)return;
+  if(this.platform.config.id!=='web'&&this.layout==='phoneLandscape'){
+   const c=s.ctx,name=bubble.message.name,text='：'+bubble.message.text,nameW=Math.min(s.measure(name,12,700),this.roomArea.w*.35),w=Math.min(this.roomArea.w-24,nameW+s.measure(text,12,500)+20),r={x:12,y:this.roomArea.h-32,w,h:20},member=this.room?.snapshot.members.find(member=>member.id===bubble.message.playerId);
+   const remaining=bubble.until-Date.now();c.save();c.globalAlpha=Math.min(1,remaining/1000);this.drawLandscapeSurface(r,14,'rgba(255,250,243,.95)',roomColors.lineD,1.5);if(remaining<1000)this.invalidate();
+   s.text(name,r.x+10,r.y+4,12,member?.color||roomColors.ink,700,nameW);s.text(text,r.x+10+nameW,r.y+4,12,roomColors.ink,500,w-nameW-20);c.restore();s.hit(r,()=>this.showModal('chat'));this.landscapeChatVisible=true;return;
+  }
   const text=bubble.message.name+'：'+bubble.message.text,w=Math.min(s.w-24,s.measure(text,13,600)+48),r={x:(s.w-w)/2,y,w,h:32};s.frame(r,'button-linen-normal');s.icon('chat',{x:r.x+10,y:r.y+8,w:16,h:16});s.text(text,r.x+31,r.y+8,13,this.colors.ink,600,w-40);s.hit(r,()=>this.showModal('chat'));
  }
  private drawRoomGift(x:number,y:number,label:boolean){

@@ -4,7 +4,8 @@ import { newMobileConnections,MobileContributionGate,MOBILE_REDUCED_GLOW_MS,type
 import {cursorWorld,cursorScreen,type CursorPoint,type SharedCursor} from '../lib/room-cursors';
 import type { RoomTable,RoomPieceOwner,RoomDecoration } from '../lib/room-client';
 import type { Platform,Input,Point,Rect } from './ports';
-import {boardThemeColors,type ThemeId} from './theme';
+import {boardThemeColors,landscapeRoomColors,type ThemeId} from './theme';
+import {roomRoundPath} from './room-chrome';
 import {gestureFrameSample,type GestureFrame} from '../lib/puzzle-gesture-cache';
 
 type Command={op:'M'|'L'|'C'|'Z';args:number[]};
@@ -74,6 +75,7 @@ export class PuzzleBoard implements RoomTable {
  private surfaceBuilds=0;private surfaceAllocations=0;
  private paperSurface:PaperSurface|null=null;
  paperCacheEnabled=true;
+ phoneLandscapeRoom=false;
  gestureCacheEnabled=true;
  setGestureCacheEnabled(value:boolean){this.gestureCacheEnabled=value;this.cancelInput(true);if(!value)this.releaseSurfaceBuffer();}
  constructor(platform:Platform,state:PuzzleState,invalidate:()=>void){
@@ -385,7 +387,7 @@ export class PuzzleBoard implements RoomTable {
   }
  }
  private paintPaper(ctx:CanvasRenderingContext2D){
-  const {rect:r}=this,colors=boardThemeColors(this.currentTheme),paper=ctx.createRadialGradient(r.x+r.w*.5,r.y+r.h*.45,0,r.x+r.w*.5,r.y+r.h*.45,Math.max(r.w,r.h)*.75);if(typeof paper?.addColorStop==='function'){paper.addColorStop(0,colors.paper);paper.addColorStop(1,colors.paperEdge);ctx.fillStyle=paper;}else ctx.fillStyle=colors.paper;ctx.fillRect(r.x,r.y,r.w,r.h);this.drawTableDots(ctx);
+  const {rect:r}=this,colors=boardThemeColors(this.currentTheme),centre=this.phoneLandscapeRoom?landscapeRoomColors.table:colors.paper,edge=this.phoneLandscapeRoom?landscapeRoomColors.tableEdge:colors.paperEdge,radius=this.phoneLandscapeRoom?Math.hypot(r.w*.5,r.h*.55):Math.max(r.w,r.h)*.75,paper=ctx.createRadialGradient(r.x+r.w*.5,r.y+r.h*.45,0,r.x+r.w*.5,r.y+r.h*.45,radius);if(typeof paper?.addColorStop==='function'){paper.addColorStop(0,centre);paper.addColorStop(1,edge);ctx.fillStyle=paper;}else ctx.fillStyle=centre;ctx.fillRect(r.x,r.y,r.w,r.h);if(!this.phoneLandscapeRoom)this.drawTableDots(ctx);
  }
  private releasePaperSurface(){const paper=this.paperSurface;this.paperSurface=null;if(paper){paper.close?.();paper.canvas.width=paper.canvas.height=1;}}
  /** The fixed-screen gradient and repeating dots do not depend on the camera.
@@ -397,7 +399,7 @@ export class PuzzleBoard implements RoomTable {
   if(t.b!==0||t.c!==0||!Number.isFinite(t.a)||!Number.isFinite(t.d)||t.a<=0||t.d<=0){this.paintPaper(ctx);return;}
   const x=Math.floor(r.x*t.a+t.e),y=Math.floor(r.y*t.d+t.f),width=Math.ceil((r.x+r.w)*t.a+t.e)-x,height=Math.ceil((r.y+r.h)*t.d+t.f)-y,bytes=width*height*4;
   if(width<1||height<1||width>8192||height>8192||bytes>PAPER_SURFACE_BYTES){this.releasePaperSurface();this.paintPaper(ctx);return;}
-  const key=JSON.stringify([r,this.currentTheme,t.a,t.d,t.e,t.f,ctx.imageSmoothingEnabled,ctx.imageSmoothingQuality]);
+  const key=JSON.stringify([r,this.currentTheme,this.phoneLandscapeRoom,t.a,t.d,t.e,t.f,ctx.imageSmoothingEnabled,ctx.imageSmoothingQuality]);
   if(this.paperSurface?.key!==key){
    this.releasePaperSurface();let canvas:HTMLCanvasElement|undefined;
    try{
@@ -431,14 +433,19 @@ export class PuzzleBoard implements RoomTable {
     if(paint==='overlays'&&!owner&&this.focusedPiece!==id&&hintIndex<0)continue;
     ctx.save();ctx.translate(x,y);if(paint!=='overlays'){if(this.atlas){const t=this.tile;ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
     if(paint!=='pieces'){
-    if(owner||this.drag?.id===group.id||this.focusedPiece===id){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=owner?.color||colors.focus;ctx.lineWidth=2/cam.z;ctx.stroke();}
+    if(owner||this.drag?.id===group.id||this.focusedPiece===id){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=owner?.color||colors.focus;ctx.lineWidth=(owner&&this.phoneLandscapeRoom?2.5:2)/cam.z;ctx.stroke();}
     if(hintIndex>=0){ctx.fillStyle=colors.hint;ctx.font=`bold ${Math.max(13/cam.z,Math.min(w,h)*.3)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(hintIndex+1),w/2,h/2);}}
     ctx.restore();
    }
-   if(paint!=='pieces'&&owner&&group.pieces.length){const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;ctx.save();ctx.translate(x,y-7/cam.z);ctx.scale(1/cam.z,1/cam.z);ctx.font='11px sans-serif';const name=`${owner.name}${owner.level!==undefined?' Lv.'+owner.level:''}`,width=Math.min(190,ctx.measureText(name).width+12);ctx.fillStyle=colors.label;ctx.fillRect(0,-15,width,19);ctx.fillStyle=colors.labelInk;ctx.textBaseline='top';ctx.fillText(name,5,-12,width-10);ctx.restore();}
+   if(paint!=='pieces'&&owner&&group.pieces.length){const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;ctx.save();ctx.translate(x,y-7/cam.z);ctx.scale(1/cam.z,1/cam.z);ctx.font='11px sans-serif';const name=`${owner.name}${owner.level!==undefined?' Lv.'+owner.level:''}`,width=Math.min(190,ctx.measureText(name).width+12);
+    if(this.phoneLandscapeRoom){this.drawPlayerArrow(ctx,owner.color);roomRoundPath(ctx,{x:19,y:-15,w:width,h:20},8);ctx.fillStyle=owner.color;ctx.fill();ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.fillText(name,25,-11,width-12);}
+    else{ctx.fillStyle=colors.label;ctx.fillRect(0,-15,width,19);ctx.fillStyle=colors.labelInk;ctx.textBaseline='top';ctx.fillText(name,5,-12,width-10);}ctx.restore();}
   }
  }
  private releaseDragSurface(){this.dragSurface=null;}
+ private drawPlayerArrow(ctx:CanvasRenderingContext2D,color:string){
+  ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
+ }
  private releaseGestureSurface(){this.gestureSurface=null;}
  private releaseSurfaceBuffer(){this.dragSurface=null;this.gestureSurface=null;if(this.surfaceBuffer){this.surfaceBuffer.width=this.surfaceBuffer.height=1;this.surfaceBuffer=null;}}
  /** One GPU backing store per room, reused across both kinds of gesture.
@@ -530,7 +537,7 @@ export class PuzzleBoard implements RoomTable {
   if(this.hintUntil>now){for(const[idIndex,id]of this.hintIds.entries()){const p=this.pieces[id];ctx.save();ctx.translate(this.board.x+p.col*w,this.board.y+p.row*h);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=2/cam.z;ctx.stroke();ctx.fillStyle=colors.hint;ctx.font=`bold ${14/cam.z}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(idIndex+1),w/2,h/2);ctx.restore();}}
   ctx.restore();
   if(this.preview&&this.ready){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.restore();}
-  ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const cursor of this.cursors.values()){const p=this.worldToScreen(cursor),value=cursor.value;if(p.x<r.x||p.y<r.y||p.x>r.x+r.w||p.y>r.y+r.h)continue;ctx.save();ctx.translate(p.x,p.y);ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=value.color;ctx.fill();ctx.strokeStyle=colors.cursorLine;ctx.lineWidth=1;ctx.stroke();ctx.font='bold 11px sans-serif';const label=`${value.name} · Lv.${value.level??0}`,width=Math.min(190,ctx.measureText(label).width+12);ctx.fillStyle=colors.cursorLabel;ctx.fillRect(19,12,width,21);ctx.fillStyle=colors.labelInk;ctx.textBaseline='top';ctx.fillText(label,25,17,width-12);ctx.restore();if(value.decoration)decorations.push({value:value.decoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}ctx.restore();
+  ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const cursor of this.cursors.values()){const p=this.worldToScreen(cursor),value=cursor.value;if(p.x<r.x||p.y<r.y||p.x>r.x+r.w||p.y>r.y+r.h)continue;ctx.save();ctx.translate(p.x,p.y);ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=value.color;ctx.fill();ctx.strokeStyle=colors.cursorLine;ctx.lineWidth=1;ctx.stroke();ctx.font='bold 11px sans-serif';const label=`${value.name} · Lv.${value.level??0}`,width=Math.min(190,ctx.measureText(label).width+12);if(this.phoneLandscapeRoom){roomRoundPath(ctx,{x:19,y:12,w:width,h:21},8);ctx.fillStyle=value.color;ctx.fill();}else{ctx.fillStyle=colors.cursorLabel;ctx.fillRect(19,12,width,21);}ctx.fillStyle=this.phoneLandscapeRoom?'#ffffff':colors.labelInk;ctx.textBaseline='top';ctx.fillText(label,25,17,width-12);ctx.restore();if(value.decoration)decorations.push({value:value.decoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}ctx.restore();
   if(this.selfDecoration&&this.ownPoint){const p=this.worldToScreen(this.ownPoint);decorations.push({value:this.selfDecoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}
   if(this.drawDecoration&&decorations.length){ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const d of decorations)this.drawDecoration(d.value,d.rect);ctx.restore();}
   if(this.tray)this.drawTray(ctx);

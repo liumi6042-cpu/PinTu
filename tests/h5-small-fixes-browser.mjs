@@ -69,31 +69,37 @@ try{
   const state=createPuzzle('fixture',12,9,16);for(const group of state.groups.slice(0,41)){group.locked=true;group.dx=group.dy=0;}
   const board=new PuzzleBoard(platform,state,()=>{});board.networkReady=true;board.network={acquire:async()=>true,move(){},drop:async()=>{},release(){}};app.board=board;app.room={connected:true,state:board.state,snapshot:{title:'云海鲸歌',visibility:'solo',members:[{id:'p1'}],puzzle:{imageId:'fixture'}}};app.imageReady=true;app.aid={grants:[],freeRemaining:{hint:1,underlay:1}};storage.set('jigsaw:room-guide:v1','done');
   await board.setImage('/puzzles/album-cloud-wonders-04-20261020-optimized-708922e5f718.webp');
-  const records={floats:[],text:[],icons:[],hits:[],buttons:[],meters:[]};let fits=0;
-  const float=app.drawRoomFloat.bind(app);app.drawRoomFloat=(r,rounded)=>{records.floats.push({...r,rounded:!!rounded});return float(r,rounded);};
+  const records={surfaces:[],landscapeButtons:[],text:[],icons:[],hits:[],buttons:[],meters:[],frames:[]};let fits=0;
+  const surface=app.drawLandscapeSurface.bind(app);app.drawLandscapeSurface=(...args)=>{records.surfaces.push(args);return surface(...args);};
+  const landscapeButton=app.drawLandscapeButton.bind(app);app.drawLandscapeButton=(...args)=>{records.landscapeButtons.push(args);return landscapeButton(...args);};
   const fit=app.phoneFit.bind(app);app.phoneFit=(...args)=>{fits++;return fit(...args);};
-  for(const [method,key] of [['text','text'],['icon','icons'],['hit','hits'],['button','buttons'],['meter','meters']]){const original=stage[method].bind(stage);stage[method]=(...args)=>{records[key].push(args);return original(...args);};}
+  for(const [method,key] of [['text','text'],['icon','icons'],['hit','hits'],['button','buttons'],['meter','meters'],['frame','frames']]){const original=stage[method].bind(stage);stage[method]=(...args)=>{records[key].push(args);return original(...args);};}
   function render(){canvas.style.width=width+'px';canvas.style.height=height+'px';stage.resize();stage.begin();for(const list of Object.values(records))list.length=0;app.drawRoom();stage.endFrame();}
-  function setMembers(n){app.room.snapshot.members=Array.from({length:n},(_,index)=>({id:'p'+index,name:'拼友'+index}));}
-  function toggle(){const before=app.landscapeToolsOpen,button=stage.hits.findLast(hit=>hit.r.x>=width-60&&hit.r.w===36);check(button,'round toggle exists');button.fn();check(app.landscapeToolsOpen!==before,'round button toggles');check(storage.get(key)===(app.landscapeToolsOpen?'1':'0'),'toggle persists');}
+  function setMembers(n){app.room.snapshot.members=Array.from({length:n},(_,index)=>({id:'p'+index,name:['小鹿','阿禾','小满','星星'][index%4],code:index?'friend'+index:'self',color:['#a85567','#6f8a4f','#477e9b','#9866a1'][index%4]}));}
+  function toggle(){const before=app.landscapeToolsOpen,button=stage.hits.findLast(hit=>hit.r.x>width-130&&hit.r.w===36);check(button,'round toggle exists');button.fn();check(app.landscapeToolsOpen!==before,'round button toggles');check(storage.get(key)===(app.landscapeToolsOpen?'1':'0'),'toggle persists');}
   check(!app.landscapeToolsOpen,'constructor defaults closed');render();check(records.icons.filter(([name])=>name==='tools').length===1&&!records.text.some(([t])=>t==='边缘'),'collapsed has only tools toggle');
   const checks=[];
   for(const [w,h] of [[844,390],[667,375],[740,360],[932,430]]){
    width=w;height=h;const rightWidths=[];
-   for(const members of [1,3,8]){
+   for(const members of [1,4,8]){
     setMembers(members);app.room.snapshot.title=members===8?'这是用于检查省略和避让的很长很长的拼图房间标题':'云海鲸歌';app.room.snapshot.visibility=members===1?'solo':'public';
     for(const open of [false,true]){
      app.setLandscapeToolsOpen(open);const beforeFits=fits;render();check(fits-beforeFits<=1,'toggle refits at most once');const afterFits=fits;render();check(fits===afterFits,'unrelated redraw never refits');
-     const [left,centre,right]=records.floats;check([left,centre,right].every(r=>r.y===app.roomHeaderTop()),'top inset unchanged');check(!overlap(left,centre)&&!overlap(centre,right)&&!overlap(left,right),'three top blocks never overlap');check(centre.w<=300&&centre.w>90&&centre.h===30&&centre.rounded,'bounded rounded capsule');check(Math.abs(centre.x+centre.w/2-app.roomArea.w/2)<.1,'capsule centred on play width');
-     check(left.w<=220&&right.x+right.w<=app.roomArea.w,'top blocks fit play width');check(records.meters[0][0].w>0,'progress meter remains visible');
-     const hits=stage.hits.filter(({r})=>r.y<app.roomHeaderTop()+46);for(let i=0;i<hits.length;i++)for(let j=i+1;j<hits.length;j++){const a=hits[i].r,b=hits[j].r,block=r=>[left,centre,right].findIndex(box=>r.x>=box.x&&r.x+r.w<=box.x+box.w+.01);if(block(a)!==block(b))check(!overlap(a,b),'hit areas from different top blocks never overlap');}
-     check(!overlap(app.roomToolsArea,left)&&!overlap(app.roomToolsArea,centre)&&!overlap(app.roomToolsArea,right),'tools clear top blocks');
+     const back=records.landscapeButtons.find(([,label])=>label==='<')[0],invite=records.landscapeButtons.find(([,label])=>label==='＋ 邀请')[0],title=records.text.find(([t])=>t===app.room.snapshot.title),avatars=records.icons.filter(([name])=>name==='avatar'),right={x:app.roomMembersArea.x,y:invite.y,w:invite.x+invite.w-app.roomMembersArea.x,h:34};
+     const [centre,radius,fill,border,lineWidth]=records.surfaces.find(([,radius,fill])=>fill==='rgba(255,250,243,.92)'),meter=records.surfaces.find(([,radius,fill])=>fill==='#efe0d6')[0],left={x:back.x,y:back.y,w:title[1]+title[6]-back.x,h:36};
+     check(back.x===12&&back.y===app.roomHeaderTop()&&back.w===36&&back.h===36,'back uses unchanged safe header anchor');check(invite.y===back.y&&invite.h===34&&invite.x+invite.w===app.roomArea.w-12,'invite geometry follows table right');
+     check(!overlap(left,centre)&&!overlap(centre,right)&&!overlap(left,right),'title, capsule and members never overlap');check(radius===16&&fill==='rgba(255,250,243,.92)'&&border==='#b88f84'&&lineWidth===1.5,'approved capsule styling');check(Math.abs(centre.x+centre.w/2-(app.roomArea.w/2-40))<.1,'capsule centred on table then offset left 40');
+     check(meter.w===180&&meter.h===8,'full 180 by 8 meter');check(records.text.some(([t,,,size,color,weight])=>t==='38%'&&size===13&&color==='#6f8a4f'&&weight===900),'progress percentage rounds and uses green');
+     check(avatars.length===members&&avatars.every(([,r])=>r.w===26&&r.h===26),'one unframed 26px avatar per actual member');check(avatars.slice(1).every(([,r],i)=>Math.abs(r.x-avatars[i][1].x-19)<.01),'avatars overlap by exactly 7');check(invite.x-(avatars.at(-1)[1].x+26)===8,'8px gap before invite');
+     const forbidden=[left,app.roomMembersArea];check(records.surfaces.every(([r])=>forbidden.every(box=>!(r.x===box.x&&r.y===box.y&&r.w===box.w&&r.h===box.h)))&&!records.frames.length,'no background frames behind title or avatars');
+     const topHits=stage.hits.filter(({r})=>r.y>=back.y&&r.y<back.y+70&&r.x<app.roomArea.w&&r.h!==58);for(let i=0;i<topHits.length;i++)for(let j=i+1;j<topHits.length;j++)check(!overlap(topHits[i].r,topHits[j].r),'top action targets never overlap');
+     check(!overlap(app.roomToolsArea,left)&&!overlap(app.roomToolsArea,centre)&&!overlap(app.roomToolsArea,right),'tools clear header');
      check(records.text.some(([t])=>t==='整理')===(open&&members===1),'organize only in solo expanded column');check(records.text.some(([t])=>t==='横竖屏')===open,'supported rotation only in expanded column');
-     if(open){check(records.text.some(([t])=>t==='免费1次'),'aid badge retained');check(app.roomArea.w===width-60,'expanded board area');}else{check(app.roomArea.w===width,'collapsed board uses freed width');if(members<=3)rightWidths.push({members,width:right.w});}
+     if(open){check(records.text.some(([t,,,size,color])=>t==='免费'&&size===8.5&&color==='#7a4d10'),'approved free badge');check(app.roomArea.w===width-72&&app.roomToolsArea.w===72&&app.roomToolsArea.y===0&&app.roomToolsArea.h===height,'full-height 72px column');const items=records.hits.filter(([r])=>r.h===58);check(items.length===(members===1?6:5)&&items.every(([r])=>r.x===width-66&&r.w===60&&r.y>=0&&r.y+r.h<=height),'58px items with 6px horizontal inset');check(items.slice(1).every(([r],i)=>r.y>=items[i][0].y+58),'tool items never overlap');if(h===390)check(items.slice(1).every(([r],i)=>r.y-items[i][0].y===62),'design gap is 4px');}else{check(app.roomArea.w===width,'collapsed board uses freed width');if(members<=4)rightWidths.push({members,width:right.w});}
      checks.push({width:w,height:h,members,open,left,centre,right,boardWidth:app.roomArea.w});
     }
    }
-   check(rightWidths[0].width<rightWidths[1].width,'right block grows from one to three members');
+   check(rightWidths[0].width<rightWidths[1].width,'member entry grows from one to four members');
   }
   width=844;height=390;setMembers(1);app.room.snapshot.title='云海鲸歌';app.room.snapshot.visibility='solo';app.setLandscapeToolsOpen(false);render();const closedWidth=app.roomArea.w;toggle();const beforeFits=fits;render();check(fits===beforeFits+1,'one refit on opening');check(app.roomArea.w<closedWidth,'opening narrows board');
   const restored=new GameApp(platform,client,stage);check(restored.landscapeToolsOpen,'next app restores open preference');render();toggle();render();check(!new GameApp(platform,client,stage).landscapeToolsOpen,'next app restores closed preference');toggle();render();
@@ -108,22 +114,43 @@ try{
   event('down',piece);event('move',{...piece,x:piece.x+18});event('up',{...piece,x:piece.x+18});check(app.landscapeToolsOpen,'piece drag preserves column');
   render();background=null;for(let y=110;y<height-60&&!background;y+=9)for(let x=65;x<width-80;x+=9){const p={id:1,x,y};if(!stage.hasHit(x,y)&&!board.groupAt(p)){background=p;break;}}check(background,'empty background after camera gestures');event('down',background);event('up',background);check(!app.landscapeToolsOpen&&storage.get(key)==='0','background tap collapses and persists');render();
   // Exercise actual Canvas action targets for the members/chat and invite entries.
-  const memberHit=stage.hits.find(hit=>hit.r.x===app.roomMembersArea.x&&hit.r.w===app.roomMembersArea.w);memberHit.fn();check(modal==='chat','avatars open existing chat entry');records.buttons.find(([,label])=>label==='+ 邀请')[2]();check(modal==='invite','invite opens invite modal');modal=null;
+  const memberHit=stage.hits.find(hit=>hit.r.x===app.roomMembersArea.x&&hit.r.w===app.roomMembersArea.w);memberHit.fn();check(modal==='chat','avatars open existing chat entry');records.landscapeButtons.find(([,label])=>label==='＋ 邀请')[2]();check(modal==='invite','invite opens invite modal');modal=null;
   app.setLandscapeToolsOpen(true);delete platform.setOrientation;render();check(!records.text.some(([t])=>t==='横竖屏'),'unsupported landscape omits rotation');platform.setOrientation=async value=>{orientation=value;};render();const rotation=records.hits.findLast(([r])=>records.text.some(([text,x,y])=>text==='横竖屏'&&x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<r.y+r.h));rotation[1]();await Promise.resolve();await Promise.resolve();check(orientation==='portrait','landscape rotation uses existing host action');
   width=390;height=844;app.roomViewPending=true;app.toolsOpen=true;render();check(records.text.some(([t])=>t==='横屏')&&records.icons.some(([kind])=>kind==='orientation'),'portrait adds rotate cell');
   const cellHits=records.hits.filter(([r])=>r.h===76);check(cellHits.length===6&&cellHits.every(([r])=>Math.abs(r.w-cellHits[0][0].w)<.01),'six equal portrait tool cells in solo room');
   orientation='';const portraitRotate=cellHits.at(-1);portraitRotate[1]();await Promise.resolve();await Promise.resolve();check(orientation==='landscape','portrait rotate invokes host');app.toolsOpen=true;delete platform.setOrientation;render();check(!records.text.some(([t])=>t==='横屏')&&records.hits.filter(([r])=>r.h===76).length===5,'unsupported portrait retains five equal cells');
-  platform.config.id='web';width=844;height=390;app.landscapeToolsOpen=true;render();check(!records.floats.length&&app.roomArea.w===width-62&&records.text.some(([t])=>t==='更多'),'Web landscape retains its existing header and column layout');platform.config.id='taptap';
+  platform.config.id='web';width=844;height=390;app.landscapeToolsOpen=true;render();check(!records.surfaces.length&&app.roomArea.w===width-62&&records.text.some(([t])=>t==='更多')&&!board.phoneLandscapeRoom,'Web landscape retains its existing header and column layout');platform.config.id='taptap';
+  // Exercise pressed/active paint and inspect real Canvas operations, including lease styles.
+  width=844;height=390;setMembers(4);app.room.snapshot.title='云海鲸歌';app.room.snapshot.visibility='public';app.setLandscapeToolsOpen(true);render();
+  const edge=records.hits.find(([r])=>r.h===58)[0],edgePoint={id:1,x:edge.x+edge.w/2,y:edge.y+edge.h/2};stage.input({type:'down',points:[edgePoint],changed:[edgePoint]});render();check(records.surfaces.some(([r,radius,fill])=>r.x===edge.x&&r.y===edge.y&&radius===8&&fill==='#f4dde0'),'pressed tool uses rose-light rounded fill');stage.input({type:'cancel',points:[],changed:[edgePoint]});board.edgeOnly=true;render();check(records.surfaces.some(([r,,fill])=>r.y===edge.y&&fill==='#f4dde0'),'active edge filter uses rose-light fill');board.edgeOnly=false;
+  const ctx=stage.ctx,arc=ctx.arc.bind(ctx),clip=ctx.clip.bind(ctx);let avatarArcs=0,avatarClips=0;ctx.arc=(...args)=>{avatarArcs++;return arc(...args);};ctx.clip=(...args)=>{avatarClips++;return clip(...args);};app.drawRoomTopBar({x:0,y:app.roomHeaderTop(),w:app.roomArea.w,h:52},'landscape');ctx.arc=arc;ctx.clip=clip;check(avatarArcs===0&&avatarClips===0,'landscape avatars have no circle mask or extra border');
+  const message={id:1,name:'阿禾',text:'这块我来拼',playerId:'p1',code:'friend1'};app.messages=[message];app.bubbleSeen=0;render();
+  let bubble=records.surfaces.find(([,radius,fill])=>fill==='rgba(255,250,243,.95)');check(bubble&&bubble[0].x===12&&bubble[0].y+bubble[0].h===height-12&&bubble[1]===14&&bubble[3]==='#b88f84'&&bubble[4]===1.5,'chat bubble has approved bottom-left geometry and styling');
+  check(records.text.some(([t,,,size,color,weight])=>t==='阿禾'&&size===12&&color==='#6f8a4f'&&weight===700),'speaker is bold in their member colour');const gift=records.icons.find(([kind])=>kind==='gift')[1];check(gift.y+gift.h<bubble[0].y,'gift remains visible above chat');
+  const fill=ctx.fill.bind(ctx),stroke=ctx.stroke.bind(ctx),fillText=ctx.fillText.bind(ctx),curves=ctx.quadraticCurveTo.bind(ctx),radial=ctx.createRadialGradient.bind(ctx);let paints=[],strokes=[],labels=[],corners=0,gradient=[];
+  ctx.fill=(...args)=>{paints.push({color:ctx.fillStyle,alpha:ctx.globalAlpha});return fill(...args);};ctx.stroke=(...args)=>{strokes.push({color:ctx.strokeStyle,width:ctx.lineWidth*ctx.getTransform().a});return stroke(...args);};ctx.fillText=(...args)=>{labels.push({text:args[0],color:ctx.fillStyle});return fillText(...args);};ctx.quadraticCurveTo=(...args)=>{corners++;return curves(...args);};
+  const now=Date.now;try{const start=now();Date.now=()=>start;app.chatBubble={message,until:start+500};render();check(paints.some(p=>p.color==='rgba(255, 250, 243, 0.95)'&&p.alpha===.5),'chat opacity fades in its last second');Date.now=()=>start+501;render();check(!records.surfaces.some(([,radius,fill])=>fill==='rgba(255,250,243,.95)'),'chat expires without an extra bubble');}finally{Date.now=now;}
+  const held=board.state.groups.find(group=>!group.locked),heldPiece=board.pieces[held.pieces[0]],b=board.board;held.dx=32-heldPiece.col*b.width/board.state.cols;held.dy=150-heldPiece.row*b.height/board.state.rows;board.syncRemote(structuredClone(board.state),{[held.id]:{name:'阿禾',color:'#6f8a4f'}},new Set(),false);render();paints=[];strokes=[];labels=[];corners=0;board.draw(stage.ctx);
+  check(strokes.some(s=>s.color==='#6f8a4f'&&Math.abs(s.width-2.5)<.01),'held piece outline is 2.5 screen pixels in owner colour');check(labels.some(l=>l.text==='阿禾'&&l.color==='#ffffff')&&paints.some(p=>p.color==='#6f8a4f')&&corners>=4,'held-piece name tag is white on rounded owner colour');check(strokes.some(s=>s.color==='#ffffff'&&Math.abs(s.width-1)<.01),'held piece includes arrow cursor');
+  ctx.createRadialGradient=(...args)=>{gradient.push(args);const value=radial(...args),stop=value.addColorStop.bind(value);value.addColorStop=(...args)=>{gradient.push(args);return stop(...args);};return value;};board.paintPaper(ctx);check(gradient[0][0]===app.roomArea.w*.5&&gradient[0][1]===height*.45&&gradient[1][1]==='#fbf3e8'&&gradient[2][1]==='#f3e5d4','phone landscape tabletop gradient has exact centre and colours');
+  ctx.fill=fill;ctx.stroke=stroke;ctx.fillText=fillText;ctx.quadraticCurveTo=curves;ctx.createRadialGradient=radial;board.syncRemote(structuredClone(board.state),{},new Set(),false);app.messages=[];app.chatBubble=null;
   platform.setOrientation=async()=>{};
-  window.task16={app,board,stage,records,platform,render,setMembers,setSize(w,h){width=w;height=h;}};
-  return {landscapeCases:checks.length,checks,persistence:true,backgroundTap:true,dragAndPinchPreserved:true,portraitRotation:true};
+  window.task17={app,board,stage,records,platform,render,setMembers,setSize(w,h){width=w;height=h;}};
+  return {landscapeCases:checks.length,checks,persistence:true,backgroundTap:true,dragAndPinchPreserved:true,portraitRotation:true,chatFade:true,remoteHeldPiece:true,avatarFrames:true,pressedTools:true};
  });
- const task16Directory=resolve('work/task16-review');mkdirSync(task16Directory,{recursive:true});
- for(const [name,members,open] of [['landscape-1p-collapsed',1,false],['landscape-1p-expanded',1,true],['landscape-3p-collapsed',3,false],['landscape-3p-expanded',3,true],['portrait-tray-open',1,false]]){
-  const portrait=name==='portrait-tray-open',width=portrait?390:844,height=portrait?844:390;await page.setViewportSize({width,height});
-  await page.evaluate(async({width,height,members,open,portrait})=>{const {app,board,stage,setSize,setMembers,render}=window.task16;setSize(width,height);setMembers(members);app.room.snapshot.visibility=members===1?'solo':'public';app.setLandscapeToolsOpen(open);app.toolsOpen=portrait;app.roomViewPending=true;render();if(!portrait){const b=board.board,z=.78;board.camera={x:(app.roomArea.w-b.width*z)/2-b.x*z,y:14-b.y*z,z};}await new Promise(resolve=>setTimeout(resolve,200));render();},{width,height,members,open,portrait});
-  await page.screenshot({path:resolve(task16Directory,name+'.png')});
+ const task17Directory=resolve('work/task17-review');mkdirSync(task17Directory,{recursive:true});
+ for(const [name,members,open] of [['landscape-1p-collapsed',1,false],['landscape-1p-expanded',1,true],['landscape-4p-collapsed',4,false],['landscape-4p-expanded',4,true]]){
+  const width=844,height=390;await page.setViewportSize({width,height});
+  await page.evaluate(async({width,height,members,open})=>{
+   const {app,board,setSize,setMembers,render}=window.task17;setSize(width,height);setMembers(members);app.room.snapshot.visibility=members===1?'solo':'public';app.setLandscapeToolsOpen(open);app.toolsOpen=false;app.roomViewPending=true;render();
+   const b=board.board,z=.78;board.camera={x:(app.roomArea.w-b.width*z)/2-b.x*z,y:14-b.y*z,z};
+   const message={id:10,name:members===1?'小鹿':'阿禾',text:'这块我来拼，一起加油！',playerId:members===1?'p0':'p1',code:members===1?'self':'friend1'};app.messages=[message];app.bubbleSeen=9;
+   const remote=board.state.groups.find(group=>!group.locked),piece=board.pieces[remote.pieces[0]],pw=b.width/board.state.cols,ph=b.height/board.state.rows;remote.dx=230-piece.col*pw;remote.dy=320-piece.row*ph;
+   board.syncRemote(structuredClone(board.state),members===4?{[remote.id]:{name:'阿禾',color:'#6f8a4f'}}:{},new Set(),false);board.setCursors([]);
+   await new Promise(resolve=>setTimeout(resolve,200));render();
+  },{width,height,members,open});
+  await page.screenshot({path:resolve(task17Directory,name+'.png')});
  }
- writeFileSync(resolve(task16Directory,'checks.json'),JSON.stringify(landscapeResult,null,2));
- console.log(JSON.stringify({...result,task16:{...landscapeResult,checks:undefined}}));
+ writeFileSync(resolve(task17Directory,'checks.json'),JSON.stringify(landscapeResult,null,2));
+ console.log(JSON.stringify({...result,task17:{...landscapeResult,checks:undefined}}));
 }finally{await browser.close();}

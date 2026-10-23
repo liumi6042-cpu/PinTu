@@ -1,6 +1,9 @@
 /** UI colours only. Artwork and puzzle textures always retain their source colours. */
 export type ThemeId='light'|'dark'|'wood';
 
+/** Approved phone-landscape room palette; other layouts keep their own theme. */
+export const landscapeRoomColors=Object.freeze({ink:'#5a1f33',muted:'#8d5f66',roseD:'#a85567',roseL:'#f4dde0',cream:'#fffaf3',card:'#fffdf8',line:'#e3cdbf',lineD:'#b88f84',green:'#6f8a4f',goldL:'#f6e7c8',meterTrack:'#efe0d6',table:'#fbf3e8',tableEdge:'#f3e5d4'});
+
 export const lightThemeColors=Object.freeze({paper:'#fdf6ed',cream:'#fff9f0',ink:'#642238',muted:'#8a5a5f',rose:'#c7808b',berry:'#c7808b',gold:'#d7ad68',line:'#cda394',green:'#879864',onAccent:'#fffaf0',overlay:'#3c203c80',highlight:'#fffaf3',placeholder:'#efdfcc',disabled:'#8b6868'});
 export const darkThemeColors=Object.freeze({paper:'#29232c',cream:'#332a34',ink:'#fff2e3',muted:'#c5a4aa',rose:'#ce8190',berry:'#ce8190',gold:'#dfbb7d',line:'#85616c',green:'#a4b681',onAccent:'#fffaf0',overlay:'#100d18b3',highlight:'#352b36',placeholder:'#463644',disabled:'#ab9097'});
 export type ThemeColors={readonly [Key in keyof typeof lightThemeColors]:string};
