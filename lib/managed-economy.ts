@@ -2,7 +2,7 @@ import {localDb} from './local-db';
 import {RoomError,type Room} from './room-engine';
 import {pieceBand} from './piece-policy';
 import {readManagedContent,effectiveManagedAlbums,managedDailyPuzzle,type ManagedContentSnapshot} from './managed-content';
-import {newManagedProfile,xpForManagedLevel,TASK_DEFINITIONS,managedDay,recordManagedRoom,managedGift,claimManagedGift,purchaseManagedAlbum,craftManagedDecoration,shareManagedInvitation} from './managed-economy-model.mjs';
+import {newManagedProfile,xpForManagedLevel,TASK_DEFINITIONS,managedDay,recordManagedRoom,managedGift,claimManagedGift,purchaseManagedAlbum,craftManagedDecoration,shareManagedInvitation,managedBeginnerTasks} from './managed-economy-model.mjs';
 import {isRetiredDecoration,availableDecorationId} from './decoration-policy.mjs';
 
 type State=Record<string,any>;
@@ -192,7 +192,10 @@ export async function ownedManagedCursor(owner:string,content?:ManagedContentSna
 export async function managedPlayerView(owner:string,content:ManagedContentSnapshot|null,origin:string,options:{recover?:boolean}={}){
  if(!content)return {enabled:false,contentReleaseId:null};
  const now=Date.now();await activate(content);if(options.recover!==false){try{await drainManagedRewards(content,owner);}catch{console.error('Managed reward settlement pending recovery');}}
- const qualified=await issueInvitationGifts(owner,content,now),code=await invitationCode(owner),state=(await stateFor(owner)).state,game=settings(content),rewards=taskRewards(content),day=managedDay(now),daily=state.daily[day]??{cooperation:0,friend:0,shares:[]},allAlbums=managedAlbumImages(content,now),photoById=new Map(photos(content).map(photo=>[photo.id,photo]));
+ const qualified=await issueInvitationGifts(owner,content,now),code=await invitationCode(owner),game=settings(content);
+ // Wallet and once-only receipts are persisted together by updateState's CAS.
+ let beginner:ReturnType<typeof managedBeginnerTasks>=[];
+ const state=await updateState(owner,state=>{beginner=managedBeginnerTasks(state,game,now);}),rewards=taskRewards(content),day=managedDay(now),daily=state.daily[day]??{cooperation:0,friend:0,shares:[]},allAlbums=managedAlbumImages(content,now),photoById=new Map(photos(content).map(photo=>[photo.id,photo]));
  const albums=allAlbums.filter(album=>album.showOnPc!==false).map(album=>({id:album.id,title:album.title,description:album.description,price:album.price,purchasable:album.purchasable,owned:!album.purchasable||album.price===0||!!state.ownedAlbums[album.id],progress:album.imageIds.filter((id:string)=>!!state.artworks[id]).length,total:album.imageIds.length,
   images:album.imageIds.flatMap((id:string)=>{const photo=photoById.get(id);return photo?[{...photo,thumbSrc:photo.thumbSrc??photo.thumbnailSrc??photo.src,collected:!!state.artworks[id],difficulties:state.artworks[id]??[],accessible:ownsManagedImage(state,id,allAlbums)}]:[];}),
   milestones:(album.milestones??[]).map((m:any)=>{const issued=state.milestones[album.id]?.[m.id];return {...m,...(issued?{target:issued.target,coins:issued.coins}:{}),decorationId:availableDecorationId(issued?issued.decorationId:m.decorationId),claimed:!!issued,claimable:false};})}));
@@ -221,7 +224,7 @@ export async function managedPlayerView(owner:string,content:ManagedContentSnaps
  const retainedImages=Object.keys(state.ownedImages).filter(id=>state.ownedImages[id]&&!visibleImages.has(id)).flatMap(id=>{const photo=photoById.get(id);return photo?[{...photo,thumbSrc:photo.thumbSrc??photo.thumbnailSrc??photo.src,collected:!!state.artworks[id],difficulties:state.artworks[id]??[],accessible:true}]:[];});
  const settlement=await managedRewardStatus(owner);
  if(settlement.pending)for(const task of [...tasks.daily,...tasks.friends,...tasks.invitations,...tasks.gifts])task.claimable=false;
- return {enabled:true,contentReleaseId:(content as any).releaseId,profile:{level:state.level,xp:state.totalXp,xpIntoLevel:state.xp,xpForNextLevel:xpForManagedLevel(state.level+1,game),coins:state.coins,fragments:state.fragments,giftProgress:state.giftProgress},albums,retainedImages,tasks,decorations,friends,settlement,inviteUrl:origin+'/lobby?invite='+code,serverTime:now};
+ return {enabled:true,contentReleaseId:(content as any).releaseId,profile:{level:state.level,xp:state.totalXp,xpIntoLevel:state.xp,xpForNextLevel:xpForManagedLevel(state.level+1,game),coins:state.coins,fragments:state.fragments,giftProgress:state.giftProgress},albums,retainedImages,tasks:{...tasks,...(beginner.length?{beginner}:{})},decorations,friends,settlement,inviteUrl:origin+'/lobby?invite='+code,serverTime:now};
 }
 async function acceptInvitation(owner:string,code:unknown){
  if(typeof code!=='string'||!/^[a-f0-9]{12}$/i.test(code))throw new RoomError('请输入 12 位好友邀请码');

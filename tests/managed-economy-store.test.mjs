@@ -22,7 +22,8 @@ source=source.replace(/import \{localDb\} from '\.\/local-db';/,"const localDb=(
  .replace(/import \{RoomError,type Room\} from '\.\/room-engine';/,"class RoomError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}")
  .replace(/import \{pieceBand\} from '\.\/piece-policy';/,"const pieceBand=(count:number)=>count;")
  .replace(/import \{readManagedContent,effectiveManagedAlbums,managedDailyPuzzle,type ManagedContentSnapshot\} from '\.\/managed-content';/,"import {effectiveManagedAlbums} from "+JSON.stringify(managedContentUrl)+";type ManagedContentSnapshot=any;const readManagedContent=()=>null;const managedDailyPuzzle=(snapshot:any)=>snapshot.photos.find((photo:any)=>photo.id==='daily');")
- .replace("from './managed-economy-model.mjs'",'from '+JSON.stringify(modelUrl));
+ .replace("from './managed-economy-model.mjs'",'from '+JSON.stringify(modelUrl))
+ .replace("from './decoration-policy.mjs'",'from '+JSON.stringify(new URL('../lib/decoration-policy.mjs',import.meta.url).href));
 const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
 const store=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
 const owner='a'.repeat(32),guest='guest:'+'b'.repeat(64),bot='guest:'+'c'.repeat(64);
@@ -53,7 +54,7 @@ test('real concurrent task claims, album purchases and permanent retained rights
  const db=createDb(),now=Date.now(),previous=makeRoom('task-room',0,now),committed=makeRoom('task-room',10,now);writeRoom(db,committed);
  db.sql.prepare('INSERT INTO puzzle_managed_recent_activity VALUES(?,?,?,?)').run(committed.id,guest,1,now);
  try{
-  await store.syncManagedRoom(committed,snapshot,previous);const initial=stateFor(db).coins;assert.equal(initial,20);
+  await store.syncManagedRoom(committed,snapshot,previous);const initial=stateFor(db).coins;assert.equal(initial,30);
   await Promise.all([store.managedPlayerAction(owner,{action:'claim-task',taskId:'cooperation-10'},snapshot),store.managedPlayerAction(owner,{action:'claim-task',taskId:'cooperation-10'},snapshot)]);
   assert.equal(stateFor(db).coins,initial+11);assert.equal(stateFor(db).totalXp,35);
   await Promise.all([store.managedPlayerAction(owner,{action:'purchase-album',albumId:paid.id},snapshot),store.managedPlayerAction(owner,{action:'purchase-album',albumId:paid.id},snapshot)]);
@@ -116,12 +117,12 @@ test('durable known-version recovery retains yesterday tasks and exact rewards a
   const pending=await store.managedRewardStatus(owner);assert.equal(pending.pendingEvents,1);assert.equal(pending.unknownSnapshot,0);
   const before=await store.managedPlayerView(owner,later,'http://localhost',{recover:false});assert.equal(before.settlement.status,'pending');assert.equal(before.profile.coins,0);
   await store.drainManagedRewards(later,owner);const state=stateFor(db),yesterday=new Date(occurredAt+8*3600000).toISOString().slice(0,10),today=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
-  assert.equal(state.coins,20);assert.equal(state.totalXp,30);assert.equal(state.daily[yesterday].cooperation,10);assert.equal(state.daily[today],undefined);
+  assert.equal(state.coins,30);assert.equal(state.totalXp,30);assert.equal(state.daily[yesterday].cooperation,10);assert.equal(state.daily[today],undefined);
   assert.equal(state.gifts['daily:'+yesterday+':cooperation-10'].coins,11);assert.equal(state.rooms['finished-before-growth'],undefined);
   assert.deepEqual(state.settlements[event.id],{sourceReleaseId:'night-original',contentReleaseId:'night-original',policy:'original-release',occurredAt,settledAt:state.settlements[event.id].settledAt});
-  await store.drainManagedRewards(later,owner);assert.equal(stateFor(db).coins,20);
+  await store.drainManagedRewards(later,owner);assert.equal(stateFor(db).coins,30);
   await assert.rejects(store.managedPlayerAction(owner,{action:'claim-task',taskId:'cooperation-10'},later),/奖励不存在/);
-  await store.managedPlayerAction(owner,{action:'claim-gift',giftId:'daily:'+yesterday+':cooperation-10'},later);assert.equal(stateFor(db).coins,31);assert.equal(stateFor(db).totalXp,35);
+  await store.managedPlayerAction(owner,{action:'claim-gift',giftId:'daily:'+yesterday+':cooperation-10'},later);assert.equal(stateFor(db).coins,41);assert.equal(stateFor(db).totalXp,35);
  }finally{db.close();delete globalThis.__managedEconomyTestDatabase;}
 });
 test('unknown configuration pins the first valid recovery release and reports that policy explicitly',async()=>{

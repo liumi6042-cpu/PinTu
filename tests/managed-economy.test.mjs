@@ -19,7 +19,7 @@ test('only new committed snap deltas reward; old baseline and duplicate recovery
 });
 test('completion, album reward and task gifts retain snapshots and never pay twice',()=>{
  const state=newManagedProfile();recordManagedRoom(state,room(10,now),{...options,cooperation:true});
- const expected=20+Math.ceil(10*settings.collection.completionCoinRatio)+17;assert.equal(state.coins,expected);assert.deepEqual(state.artworks.a,[108]);assert.ok(state.decorations.includes('cloud-moon'));
+ const expected=20+10+Math.ceil(10*settings.collection.completionCoinRatio)+17;assert.equal(state.coins,expected);assert.deepEqual(state.artworks.a,[108]);assert.ok(state.decorations.includes('cloud-moon'));
  const dailyId='daily:'+managedDay(now)+':cooperation-10';assert.equal(state.gifts[dailyId].coins,11);assert.equal(state.gifts['ten:1'].coins,9);
  const changed=structuredClone(settings);changed.collection.contributionCoins=1000;const updatedAlbum={...album,milestones:[{id:'milestone-stable',target:2,coins:999,decorationId:'mountain-leaf'}]};
  recordManagedRoom(state,room(10,now),{...options,settings:changed,albums:[updatedAlbum]});assert.equal(state.coins,expected);assert.equal(state.milestones[album.id]['milestone-stable'].coins,17);

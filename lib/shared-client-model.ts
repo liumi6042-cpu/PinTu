@@ -31,7 +31,7 @@ export function sharedTasks(view:Data,profile:Data,rewards:Data){
  const inventory=gifts.filter((gift:Data)=>!gift.claimed&&(gift.coins>0||gift.xp>0)).map((gift:Data)=>({kind:gift.id,title:gift.title,count:1,energyMin:0,energyMax:0,xp:gift.xp,xpMin:gift.xp,xpMax:gift.xp,coins:gift.coins,coinsMin:gift.coins,coinsMax:gift.coins,claimable:gift.claimable!==false}));
  const tasks=[...source.daily.map((t:Data)=>({...t,group:'cooperation'})),...source.friends.map((t:Data)=>({...t,group:'friend'})),...source.invitations.map((t:Data)=>({...t,group:t.id==='share-invitation'?'sharing':'invitation'}))].map((task:Data)=>({...task,kind:task.id==='share-invitation'?task.id:'daily:'+day+':'+task.id,earned:task.claimed||task.claimable,energy:0}));
  const sharing=source.invitations.find((t:Data)=>t.id==='share-invitation'),invited=source.invitations.find((t:Data)=>t.id==='invite-friend');
- return {profile,day,giftProgress:profile.giftProgress,giftMinimum:0,giftMaximum:0,giftXp:rewards.tenGrid.xp,giftCoins:rewards.tenGrid.coins??0,giftCount:inventory.length,tasks,inventory,
+ return {profile,day,giftProgress:profile.giftProgress,giftMinimum:0,giftMaximum:0,giftXp:rewards.tenGrid.xp,giftCoins:rewards.tenGrid.coins??0,giftCount:inventory.length,tasks:[...(source.beginner??[]),...tasks],inventory,
   invitation:{...source.invitation,boundToName:null,todayRewarded:invited?.progress??0,shareDailyLimit:rewards.invitationShare.dailyLimit,todayShared:sharing?.progress??0},settlement:view.settlement,serverTime:view.serverTime};
 }
 export function sharedGiftId(input:Data,view:Data){
