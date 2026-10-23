@@ -214,7 +214,7 @@ void test('new invitation reward is an unconsumed refill gift separate from full
   const a=f.player();f.patch(a,{level:10,energy:12,supply:{energy:3,create:3}});qualifyInvitation(f,a);const view=f.tasks(a);
   assert.equal(view.profile.energy,12);assert.equal(view.profile.totalXp,12000);assert.deepEqual(view.inventory,[{kind:'invite-refill',title:'补满体力包',effect:'full-energy',energyMin:0,energyMax:0,xp:0,coins:0,count:1}]);
   assert.deepEqual({kind:task(view,'invite-friend').kind,effect:task(view,'invite-friend').effect,energy:task(view,'invite-friend').energy,xp:task(view,'invite-friend').xp},{kind:'invite-refill',effect:'full-energy',energy:0,xp:0});
-  const opened=f.ok(a,'/api/mobile/gifts/open',{kind:'invite-refill',quantity:1,requestId:rid()});assert.deepEqual(opened.opened,{kind:'invite-refill',effect:'full-energy',quantity:1,energy:48,xp:0,coins:0,levels:0});assert.equal(opened.profile.energy,60);assert.equal(opened.profile.giftCount,0);assert.deepEqual(opened.profile.supply,{energy:3,create:3});assert.equal(opened.profile.lastReward.effect,'full-energy');assert.equal(opened.profile.totalXp,12000);
+  const opened=f.ok(a,'/api/mobile/gifts/open',{kind:'invite-refill',quantity:1,requestId:rid()});assert.deepEqual(opened.opened,{kind:'invite-refill',effect:'full-energy',quantity:1,energy:49,xp:0,coins:0,levels:0});assert.equal(opened.profile.energy,61);assert.equal(opened.profile.giftCount,0);assert.deepEqual(opened.profile.supply,{energy:3,create:3});assert.equal(opened.profile.lastReward.effect,'full-energy');assert.equal(opened.profile.totalXp,12000);
  }finally{f.close();}
 });
 
@@ -222,17 +222,17 @@ void test('refill rejects multiple quantity or already-full energy, preserves ex
  const f=fixture();try{
   const a=f.player();qualifyInvitation(f,a);qualifyInvitation(f,a);const input={kind:'invite-refill',quantity:1,requestId:rid()};
   assert.equal(f.call(a,'/api/mobile/gifts/open',{...input,quantity:2}).data.code,'INVALID_GIFT_QUANTITY');
-  for(const energy of [100,117]){f.patch(a,{energy});const result=f.call(a,'/api/mobile/gifts/open',input);assert.equal(result.status,409);assert.equal(result.data.code,'ENERGY_FULL');assert.equal(f.profile(a).energy,energy);assert.equal(f.profile(a).giftCount,2);}
+  for(const energy of [102,117]){f.patch(a,{energy});const result=f.call(a,'/api/mobile/gifts/open',input);assert.equal(result.status,409);assert.equal(result.data.code,'ENERGY_FULL');assert.equal(f.profile(a).energy,energy);assert.equal(f.profile(a).giftCount,2);}
   assert.equal(f.db.prepare("SELECT COUNT(*) n FROM mobile_requests WHERE owner=? AND scope='gift-open'").get(a).n,0);
-  f.patch(a,{energy:7});const retried=f.ok(a,'/api/mobile/gifts/open',input);assert.equal(retried.opened.energy,93);assert.equal(retried.profile.energy,100);assert.equal(retried.profile.giftCount,1);
+  f.patch(a,{energy:7});const retried=f.ok(a,'/api/mobile/gifts/open',input);assert.equal(retried.opened.energy,95);assert.equal(retried.profile.energy,102);assert.equal(retried.profile.giftCount,1);
  }finally{f.close();}
 });
 
 void test('stored refill uses opening-time capacity after a real level-up and gives no XP',()=>{
  const f=fixture();try{
-  const a=f.player();f.patch(a,{level:0,xp:0,totalXp:0,energy:5});qualifyInvitation(f,a);assert.equal(f.profile(a).energyCap,50);
-  const ticket=f.room(a,48);f.drop(a,ticket);f.drop(a,ticket);const before=f.profile(a);assert.equal(before.level,1);assert.equal(before.energy,50);assert.equal(before.energyCap,51);
-  const opened=f.ok(a,'/api/mobile/gifts/open',{kind:'invite-refill',quantity:1,requestId:rid()});assert.equal(opened.profile.energy,51);assert.equal(opened.opened.energy,1);assert.equal(opened.opened.levels,0);assert.equal(opened.profile.totalXp,before.totalXp);assert.equal(opened.profile.giftProgress,before.giftProgress);
+  const a=f.player();f.patch(a,{level:0,xp:0,totalXp:0,energy:5});qualifyInvitation(f,a);assert.equal(f.profile(a).energyCap,51);
+  const ticket=f.room(a,48);f.drop(a,ticket);f.drop(a,ticket);const before=f.profile(a);assert.equal(before.level,1);assert.equal(before.energy,51);assert.equal(before.energyCap,52);
+  const opened=f.ok(a,'/api/mobile/gifts/open',{kind:'invite-refill',quantity:1,requestId:rid()});assert.equal(opened.profile.energy,52);assert.equal(opened.opened.energy,1);assert.equal(opened.opened.levels,0);assert.equal(opened.profile.totalXp,before.totalXp);assert.equal(opened.profile.giftProgress,before.giftProgress);
  }finally{f.close();}
 });
 
@@ -241,8 +241,8 @@ void test('refill receipts and atomic consumption survive another service instan
   const a=f.player();qualifyInvitation(f,a);qualifyInvitation(f,a);f.patch(a,{energy:20});other=createMobileService(f.options);
   const input={kind:'invite-refill',quantity:1,requestId:rid()},first=f.ok(a,'/api/mobile/gifts/open',input),replayed=f.ok(a,'/api/mobile/gifts/open',input,undefined,other);assert.deepEqual(replayed,first);assert.equal(f.profile(a).giftCount,1);
   const second={...input,requestId:rid()};assert.equal(f.call(a,'/api/mobile/gifts/open',second,undefined,other).data.code,'ENERGY_FULL');assert.equal(f.profile(a).giftCount,1);
-  f.patch(a,{energy:95});const next=f.ok(a,'/api/mobile/gifts/open',second,undefined,other);assert.equal(next.opened.energy,5);assert.equal(f.profile(a).giftCount,0);
-  f.restart();assert.deepEqual(f.ok(a,'/api/mobile/gifts/open',input),first);assert.equal(f.profile(a).giftCount,0);assert.equal(f.profile(a).energy,100);
+  f.patch(a,{energy:95});const next=f.ok(a,'/api/mobile/gifts/open',second,undefined,other);assert.equal(next.opened.energy,7);assert.equal(f.profile(a).giftCount,0);
+  f.restart();assert.deepEqual(f.ok(a,'/api/mobile/gifts/open',input),first);assert.equal(f.profile(a).giftCount,0);assert.equal(f.profile(a).energy,102);
  }finally{other?.close();f.close();}
 });
 

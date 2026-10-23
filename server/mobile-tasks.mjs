@@ -1,5 +1,5 @@
 import {randomBytes} from 'node:crypto';
-import {applyExperience,energyCap} from './mobile-economy.mjs';
+import {applyExperience,effectiveEnergyCap,inviteCapBonus} from './mobile-economy.mjs';
 import {DEFAULT_TASK_REWARD_SETTINGS,tenGridReward} from './task-reward-settings.mjs';
 import {DEFAULT_GAME_SETTINGS} from './game-settings.mjs';
 
@@ -24,7 +24,7 @@ export const mobileTaskDay=now=>new Date(now+8*3600000).toISOString().slice(0,10
 const reject=(status,code,message)=>{throw Object.assign(new Error(message),{status,code});};
 
 /** Called only from the service's IMMEDIATE transaction, with verified identities. */
-export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>false,readSettings=()=>DEFAULT_TASK_REWARD_SETTINGS,readGameSettings=()=>DEFAULT_GAME_SETTINGS,energyEnabled=true,awardCoins=(_owner,_source,coins)=>{if(coins)throw new Error('Task coin wallet unavailable');return 0;}}){
+export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>false,readSettings=()=>DEFAULT_TASK_REWARD_SETTINGS,readGameSettings=()=>DEFAULT_GAME_SETTINGS,energyEnabled=true,readInviteCapBonus=owner=>inviteCapBonus(db,owner),invalidateInviteCapBonus=()=>{},awardCoins=(_owner,_source,coins)=>{if(coins)throw new Error('Task coin wallet unavailable');return 0;}}){
  db.exec(`
  CREATE TABLE IF NOT EXISTS mobile_task_events(owner TEXT NOT NULL,room_id TEXT NOT NULL,request_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(owner,room_id,request_id));
  CREATE INDEX IF NOT EXISTS mobile_task_activity ON mobile_task_events(room_id,created_at,owner);
@@ -37,8 +37,10 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
  CREATE TABLE IF NOT EXISTS mobile_invitation_codes(owner TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE);
  CREATE TABLE IF NOT EXISTS mobile_invitation_bindings(invitee TEXT PRIMARY KEY,inviter TEXT NOT NULL,bound_at INTEGER NOT NULL,contributions INTEGER NOT NULL DEFAULT 0,qualified_at INTEGER,reward_day TEXT,reward_status TEXT NOT NULL DEFAULT 'pending');
  CREATE INDEX IF NOT EXISTS mobile_invitation_rewards ON mobile_invitation_bindings(inviter,reward_day);
+ CREATE INDEX IF NOT EXISTS mobile_invitation_cap ON mobile_invitation_bindings(inviter,qualified_at);
  CREATE TABLE IF NOT EXISTS mobile_invitation_shares(owner TEXT NOT NULL,day TEXT NOT NULL,ordinal INTEGER NOT NULL,request_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(owner,day,ordinal),UNIQUE(owner,request_id));
  `);
+ const bonusFor=p=>energyEnabled?readInviteCapBonus(p.id).count:0;
  const giftCount=owner=>Number(db.prepare('SELECT COUNT(*) n FROM mobile_task_gifts WHERE owner=? AND opened_at IS NULL').get(owner).n);
  function rewardFor(kind,settings){
   const baseline=KINDS.get(kind);if(!baseline)throw new Error('Unknown gift kind');
@@ -94,13 +96,13 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
   tasks.push({id:'invite-friend',kind:'invite-refill',effect:'full-energy',group:'invitation',title:'邀请好友加入',target:3,progress:todayRewarded,earned:todayRewarded>=3,energy:0,xp:settings.invitationFriend.xp,coins:settings.invitationFriend.coins??0});
   tasks.unshift(...beginner(p.id,now).tasks);
   const tenReward=tenGridReward(settings,p.level);
-  return {day,giftProgress:p.giftProgress,giftMinimum:tenReward.energyMin,giftMaximum:tenReward.energyMax,giftXp:tenReward.xp,giftCoins:tenReward.coins,giftCount:giftCount(p.id),tasks,inventory,invitation:{code:invitationCode(p.id),bound:!!bound,boundToName:bound?readProfile(bound.inviter,now).name:null,joinedCount:Number(aggregate.joined),qualifiedCount:Number(aggregate.qualified??0),todayRewarded,dailyLimit:3,requiredContributions:3,overflowPolicy:'no-carryover',shareDailyLimit:settings.invitationShare.dailyLimit,todayShared},serverTime:now};
+  return {day,giftProgress:p.giftProgress,giftMinimum:tenReward.energyMin,giftMaximum:tenReward.energyMax,giftXp:tenReward.xp,giftCoins:tenReward.coins,giftCount:giftCount(p.id),tasks,inventory,invitation:{code:invitationCode(p.id),bound:!!bound,boundToName:bound?readProfile(bound.inviter,now).name:null,joinedCount:Number(aggregate.joined),qualifiedCount:Number(aggregate.qualified??0),...(energyEnabled?{capBonus:bonusFor(p),capBonusMaximum:readInviteCapBonus(p.id).maximum}:{}),todayRewarded,dailyLimit:3,requiredContributions:3,overflowPolicy:'no-carryover',shareDailyLimit:settings.invitationShare.dailyLimit,todayShared},serverTime:now};
  }
  function share(p,input,now){
   const settings=readSettings(),day=mobileTaskDay(now),count=Number(db.prepare('SELECT COUNT(*) n FROM mobile_invitation_shares WHERE owner=? AND day=?').get(p.id,day).n);
   if(count>=settings.invitationShare.dailyLimit)return {energy:0,xp:0,coins:0,levels:0,alreadyRewarded:true};
   db.prepare('INSERT INTO mobile_invitation_shares VALUES(?,?,?,?,?)').run(p.id,day,count+1,input.requestId,now);
-  const gameSettings=readGameSettings(),xp=settings.invitationShare.xp,energy=energyEnabled?settings.invitationShare.energy:0,levels=applyExperience(p,xp,now,gameSettings,{energyEnabled});p.energy+=energy;if(energyEnabled&&p.energy>=energyCap(p.level,gameSettings))p.energyAt=now;
+  const gameSettings=readGameSettings(),inviteBonus=bonusFor(p),xp=settings.invitationShare.xp,energy=energyEnabled?settings.invitationShare.energy:0,levels=applyExperience(p,xp,now,gameSettings,{energyEnabled,inviteBonus});p.energy+=energy;if(energyEnabled&&p.energy>=effectiveEnergyCap(p.level,gameSettings,inviteBonus))p.energyAt=now;
   const coins=awardCoins(p.id,'share:'+input.requestId,settings.invitationShare.coins??0,now);
   p.lastReward={type:'invitation-share',energy,xp,coins,levels,giftsAdded:0,gift:0,energySpent:0,autoUsed:false,at:now};
   return {energy,xp,coins,levels,alreadyRewarded:false};
@@ -136,6 +138,7 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
    if(count>=3){
     const used=Number(db.prepare('SELECT COUNT(*) n FROM mobile_invitation_bindings WHERE inviter=? AND reward_day=?').get(binding.inviter,day).n),eligible=used<3;
     db.prepare('UPDATE mobile_invitation_bindings SET qualified_at=?,reward_day=?,reward_status=? WHERE invitee=? AND qualified_at IS NULL').run(now,eligible?day:null,eligible?'awarded':'daily-limit',p.id);
+    invalidateInviteCapBonus(binding.inviter);
     if(eligible&&grant(binding.inviter,'invite-refill','invite:'+p.id,now)){
      const inviter=readProfile(binding.inviter,now);inviter.lastReward={type:'invitation-gift',giftsAdded:1,xp:0,energySpent:0,gift:0,levels:0,autoUsed:false,at:now};saveProfile(inviter);
     }
@@ -150,13 +153,13 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
   if(effect==='full-energy'&&input.quantity!==1)reject(400,'INVALID_GIFT_QUANTITY','补满体力包每次只能开启1份');
   const gifts=db.prepare("SELECT g.id,g.energy,g.xp,COALESCE(json_extract(r.metadata,'$.coins'),0) coins FROM mobile_task_gifts g LEFT JOIN mobile_task_gift_rewards r ON r.gift_id=g.id WHERE g.owner=? AND g.kind=? AND g.opened_at IS NULL ORDER BY g.created_at,g.id LIMIT ?").all(p.id,input.kind,input.quantity);
   if(gifts.length!==input.quantity)reject(409,'GIFT_EMPTY','剩余礼包数量不足，请刷新后重试');
-  const gameSettings=readGameSettings();
-  if(energyEnabled&&effect==='full-energy'&&p.energy>=energyCap(p.level,gameSettings))reject(409,'ENERGY_FULL','体力已满，补满体力包已为你保留');
-  const xp=gifts.reduce((sum,g)=>sum+g.xp,0),levels=applyExperience(p,xp,now,gameSettings,{energyEnabled}),energy=!energyEnabled?0:effect==='full-energy'?Math.max(0,energyCap(p.level,gameSettings)-p.energy):gifts.reduce((sum,g)=>sum+g.energy,0);
+  const gameSettings=readGameSettings(),inviteBonus=bonusFor(p);
+  if(energyEnabled&&effect==='full-energy'&&p.energy>=effectiveEnergyCap(p.level,gameSettings,inviteBonus))reject(409,'ENERGY_FULL','体力已满，补满体力包已为你保留');
+  const xp=gifts.reduce((sum,g)=>sum+g.xp,0),levels=applyExperience(p,xp,now,gameSettings,{energyEnabled,inviteBonus}),energy=!energyEnabled?0:effect==='full-energy'?Math.max(0,effectiveEnergyCap(p.level,gameSettings,inviteBonus)-p.energy):gifts.reduce((sum,g)=>sum+g.energy,0);
   const effectResult=effect?{effect}:{};
   let coins=0;
   for(const gift of gifts){const change=db.prepare('UPDATE mobile_task_gifts SET opened_at=?,opened_request=? WHERE id=? AND owner=? AND opened_at IS NULL').run(now,input.requestId,gift.id,p.id);if(change.changes!==1)reject(409,'GIFT_EMPTY','礼包已经开启，请刷新后重试');coins+=awardCoins(p.id,'gift:'+gift.id,gift.coins,now);}
-  p.energy+=energy;if(energyEnabled&&p.energy>=energyCap(p.level,gameSettings))p.energyAt=now;
+  p.energy+=energy;if(energyEnabled&&p.energy>=effectiveEnergyCap(p.level,gameSettings,inviteBonus))p.energyAt=now;
   p.lastReward={type:'gift-open',...effectResult,quantity:input.quantity,energy,xp,coins,levels,gift:0,giftsAdded:0,energySpent:0,autoUsed:false,at:now};
   return {kind:input.kind,...effectResult,quantity:input.quantity,energy,xp,coins,levels};
  }

@@ -74,8 +74,9 @@ test('invitation refill XP is captured when issued and old refill gifts still re
   const qualify=invitee=>{const profile=f.readProfile(invitee);f.tasks.accept(profile,{code},f.now);for(let index=0;index<3;index++)f.record(invitee);};qualify('first-invitee');
   const next=f.settings;next.invitationFriend.xp=13;f.write(next);f.now++;qualify('second-invitee');
   const gift=f.tasks.view(owner,f.now).inventory.find(gift=>gift.kind==='invite-refill');assert.equal(gift.xpMin,0);assert.equal(gift.xpMax,13);
-  const old=f.tasks.open(owner,{kind:'invite-refill',quantity:1,requestId:'first-open'},f.now);assert.equal(old.xp,0);assert.equal(old.energy,90);assert.equal(owner.energy,100);
-  owner.energy=10;const latest=f.tasks.open(owner,{kind:'invite-refill',quantity:1,requestId:'second-open'},f.now);assert.equal(latest.xp,13);assert.equal(latest.energy,90);assert.equal(owner.energy,100);assert.equal(owner.totalXp,12013);
+  // Two friends have qualified by now, so the refill reaches the level cap plus the +2 invitation bonus.
+  const old=f.tasks.open(owner,{kind:'invite-refill',quantity:1,requestId:'first-open'},f.now);assert.equal(old.xp,0);assert.equal(old.energy,92);assert.equal(owner.energy,102);
+  owner.energy=10;const latest=f.tasks.open(owner,{kind:'invite-refill',quantity:1,requestId:'second-open'},f.now);assert.equal(latest.xp,13);assert.equal(latest.energy,92);assert.equal(owner.energy,102);assert.equal(owner.totalXp,12013);
  }finally{f.close();}
 });
 
@@ -127,7 +128,7 @@ test('ten-grid and invited-friend gifts freeze configured coins before later edi
   const next=f.settings;next.tenGrid.coins=70;next.invitationFriend.coins=190;f.write(next);
   const view=f.tasks.view(owner,f.now);assert.equal(view.giftCoins,70);assert.equal(view.inventory.find(item=>item.kind==='ten-7').coins,7);assert.equal(view.inventory.find(item=>item.kind==='invite-refill').coins,19);
   const tiny=f.tasks.open(owner,{kind:'ten-7',quantity:1,requestId:'ten-open'},f.now);assert.equal(tiny.coins,7);
-  owner.energy=10;const refill=f.tasks.open(owner,{kind:'invite-refill',quantity:1,requestId:'refill-open'},f.now);assert.equal(refill.coins,19);assert.equal(refill.energy,90);assert.equal(f.collection.summary(owner.id,f.now).coins,26);
+  owner.energy=10;const refill=f.tasks.open(owner,{kind:'invite-refill',quantity:1,requestId:'refill-open'},f.now);assert.equal(refill.coins,19);assert.equal(refill.energy,91);assert.equal(f.collection.summary(owner.id,f.now).coins,26);
  }finally{f.close();}
 });
 

@@ -8,7 +8,7 @@ export type MobileProfile = {
  diagnostics?:boolean;
  code?:string;
  collection?:{coins:number;fragments:number;ownedPackIds:string[];ownedImageIds:string[];equipped:{id:string;title:string;kind:string;artKey:string;color:string}|null};
- name:string; level:number; xp:number; totalXp:number; xpToNext:number; energy:number; energyCap:number; giftProgress:number; giftCount?:number;
+ name:string; level:number; xp:number; totalXp:number; xpToNext:number; energy:number; energyCap:number; inviteCapBonus?:{count:number;maximum:number}; giftProgress:number; giftCount?:number;
  economy?:{contributionCost:number;contributionXp:number;firstRoomFree:boolean;upgradeRefill:'full'|'fixed'|'none';upgradeEnergy:number;naturalRecoveryMinutes:number};
  supply:{energy:number;create:number}; autoSupply:boolean; adEligible:boolean; ownedRooms:MobileOwnedRoom[];
  firstSelectionAvailable?:boolean; newcomer?:boolean; firstRoomId?:string|null; serverTime?:number; updatedAt?:number;
@@ -67,7 +67,7 @@ export type MobileGiftStack={kind:MobileGiftKind;title:string;count:number;energ
 export type MobileTaskView={
  profile:MobileProfile;day:string;giftProgress:number;giftMaximum:number;giftMinimum?:number;giftXp?:number;giftCoins?:number;giftCount:number;
  tasks:MobileTask[];inventory:MobileGiftStack[];
- invitation:{code:string;bound:boolean;boundToName:string|null;joinedCount:number;qualifiedCount:number;todayRewarded:number;dailyLimit:number;requiredContributions:number;shareDailyLimit:number;todayShared:number};serverTime:number;
+ invitation:{code:string;bound:boolean;boundToName:string|null;joinedCount:number;qualifiedCount:number;capBonus?:number;capBonusMaximum?:number;todayRewarded:number;dailyLimit:number;requiredContributions:number;shareDailyLimit:number;todayShared:number};serverTime:number;
 };
 export type MobileGiftReceipt={kind:MobileGiftKind;quantity:number;energy:number;xp:number;coins?:number;levels:number;effect?:'full-energy'};
 export type MobileGiftOpenResult=MobileTaskView & {opened:MobileGiftReceipt};
