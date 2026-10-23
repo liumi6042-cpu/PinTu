@@ -36,6 +36,52 @@ function fixture(){
 }
 const stored=f=>JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_managed_players WHERE owner=?').get(owner).data);
 
+test('shared history records creation, joins and explicit resume heartbeats while removal preserves progress',async()=>{
+ const f=fixture();try{
+  const created=await f.request('/api/rooms',{method:'POST',body:{imageId:f.photos[1].id,pieces:108,visibility:'public'}});
+  assert.equal(created.status,201,JSON.stringify(created.data));
+  const id=created.data.room.id,path='/api/rooms/'+id;
+  const history=await f.request('/api/room-history');
+  assert.equal(history.data.limit,10);assert.equal(typeof history.data.serverTime,'number');assert.equal(history.data.rooms[0].id,id);
+  const joined=await f.request(path+'/join',{method:'POST',cookie:otherToken,body:{name:'历史访客'}});
+  assert.equal(joined.status,200,JSON.stringify(joined.data));
+  const recency=()=>f.db.sql.prepare('SELECT last_joined_at FROM puzzle_shared_room_history WHERE owner_id=? AND room_id=?').get(other,id).last_joined_at;
+  const before=recency(),headers={Authorization:'Bearer '+joined.data.token};
+  assert.equal((await f.request(path,{method:'POST',cookie:otherToken,headers,body:{type:'heartbeat'}})).status,200);
+  assert.equal(recency(),before);
+  assert.equal((await f.request(path,{method:'POST',cookie:otherToken,headers,body:{type:'heartbeat',historyJoin:true}})).status,200);
+  assert.ok(recency()>before);
+  const profile=await f.request('/api/mobile/profile'),owned=profile.data.ownedRooms.find(room=>room.id===id);
+  assert.equal(owned.compatUrl,'/play?room='+id);assert.equal(owned.canClose,false);
+  const bytes=f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data;
+  assert.equal((await f.request('/api/my-rooms',{method:'POST',body:{action:'remove',roomId:id}})).status,200);
+  assert.deepEqual((await f.request('/api/my-rooms')).data.rooms,[]);
+  assert.equal((await f.request('/api/room-history')).data.rooms[0].id,id);
+  assert.equal((await f.request('/api/room-history',{cookie:otherToken})).data.rooms[0].id,id);
+  assert.equal(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data,bytes);
+  const invalid=await f.request('/api/my-rooms',{method:'POST',body:{action:'invalid'}});
+  assert.equal(invalid.status,400);assert.equal(invalid.data.error,'列表操作无效');
+  const unsupported=await f.request('/api/room-history',{method:'POST'});
+  assert.equal(unsupported.status,405);assert.equal(unsupported.data.error,'请求方式无效');
+ }finally{f.close();}
+});
+
+test('persisted expired empty rooms remain playable without storing the marker, but admin suspension still applies',async()=>{
+ const f=fixture();try{
+  const created=await f.request('/api/rooms',{method:'POST',body:{imageId:f.photos[1].id,pieces:108,visibility:'public'}});
+  const id=created.data.room.id,path='/api/rooms/'+id,headers={Authorization:'Bearer '+created.data.token};
+  const room=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data);
+  room.createdAt=1;room.expiresAt=1;room.publicDeadline=1;room.lastPlayedAt=1;
+  f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,expires_at=1,revision=revision+1 WHERE id=?').run(JSON.stringify(room),id);
+  assert.equal((await f.request(path,{headers})).status,200);
+  assert.equal((await f.request(path,{method:'POST',headers,body:{type:'heartbeat'}})).status,200);
+  const persisted=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(id).data);
+  assert.equal(Object.hasOwn(persisted,'persistent'),false);
+  f.db.sql.prepare('INSERT INTO puzzle_room_moderation(room_id,closed) VALUES(?,1)').run(id);
+  assert.equal((await f.request(path,{headers})).status,403);
+ }finally{f.close();}
+});
+
 test('shared public creation reuses an empty table and admits the next account without resetting its board',async()=>{
  const f=fixture();try{
   const input={imageId:f.photos[1].id,pieces:108,visibility:'public',mode:'selected'};

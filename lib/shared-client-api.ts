@@ -7,7 +7,7 @@ import {RoomError,hasRoomAdmission} from './room-engine';
 import {securityLimit} from './account-security';
 import {readManagedContent,managedDailyPuzzle,managedGalleryPhotos,effectiveManagedAlbums} from './managed-content';
 import {managedPlayerView,managedPlayerAction,managedAccessibleImageIds} from './managed-economy';
-import {managedRooms} from './lobby-store';
+import {webRecentRooms,webOwnedRooms,webRecordJoin,webRemoveOwned} from '../server/web-room-history.mjs';
 import {pieceBand} from './piece-policy';
 import {photoGuidance} from './play-guidance';
 import {RESTORABLE_PHOTOS} from './puzzle-catalog';
@@ -20,7 +20,6 @@ import * as chatRoute from '../app/api/rooms/[id]/chat/route';
 import * as cursorRoute from '../app/api/rooms/[id]/cursors/route';
 import * as assistanceRoute from '../app/api/rooms/[id]/assistance/route';
 import * as lobbyRoute from '../app/api/lobby/route';
-import * as myRoomsRoute from '../app/api/my-rooms/route';
 import {webDiagnosticsAllowed,createWebDiagnostic,webDiagnosticRoom} from './shared-diagnostics';
 
 type Data=Record<string,any>;
@@ -36,7 +35,7 @@ async function context(request:Request){
  const player=(await currentPlayer(request,true))!,account=await currentAccount(request),guest=await currentGuest(request),origin=new URL(request.url).origin;
  const view=await managedPlayerView(player.id,content,origin) as Data;
  const owners=[...new Set([player.id,guest?.id].filter((id):id is string=>!!id))];
- const owned=(await Promise.all(owners.map(id=>managedRooms(id)))).flat().map((room:Data)=>({...room,compatUrl:roomLink(room.id),canClose:false}));
+ const owned=await webOwnedRooms(localDb(),owners,(room:Data)=>({photo:roomPhoto(room,origin),thumbSrc:roomPhoto(room,origin)?.thumbSrc,compatUrl:roomLink(room.id),canClose:false}));
  const state=await playerState(player.id),profile={...sharedProfile(view,player,account,owned,state),diagnostics:webDiagnosticsAllowed(account)};
  return {content,player,account,origin,view,state,profile};
 }
@@ -121,6 +120,10 @@ async function sharedRoom(request:Request,path:string,input:Data){
  else if(method==='POST'&&route.POST)response=await route.POST(forwarded(request,path+new URL(request.url).search,input),params);
  else return json({error:'请求方式无效'},405);
  if(!response.ok)return response;
+ if(method==='POST'&&(part==='join'||!part&&input.type==='heartbeat'&&input.historyJoin===true)){
+  const player=await currentPlayer(request);
+  if(player)await webRecordJoin(localDb(),[player.id],id);
+ }
  const data=await responseData(response);
  if(!part||part==='join'){const target=part==='join'?data.room:data;target.photo=roomPhoto(room,new URL(request.url).origin);}
  if(part==='cursors')data.cursors=(data.cursors??[]).map((cursor:Data)=>({...cursor,decoration:cursor.managedCursor??null}));
@@ -152,7 +155,7 @@ async function createSharedRoom(request:Request,input:Data){
  if(ctx.player.cookie){const headers=new Headers(createRequest.headers);headers.set('Cookie',[(headers.get('Cookie')??''),ctx.player.cookie.split(';')[0]].filter(Boolean).join('; '));createRequest=new Request(createRequest,{headers});}
  const response=await roomsRoute.POST(createRequest);
  if(!response.ok){const data=await responseData(response);return replaceResponse(response,{...data,...(response.status===401?{code:'ACCOUNT_REQUIRED',compatUrl:'/account'}:response.status===403&&String(data.error).includes('会员')?{code:'MEMBERSHIP_REQUIRED',compatUrl:'/membership'}:{})});}
- const data=await responseData(response);data.room.photo=roomPhoto(data.room,ctx.origin);return withPlayerCookie(replaceResponse(response,data),ctx.player);
+ const data=await responseData(response);await webRecordJoin(localDb(),[ctx.player.id],data.room.id);data.room.photo=roomPhoto(data.room,ctx.origin);return withPlayerCookie(replaceResponse(response,data),ctx.player);
 }
 export async function sharedClientApi(request:Request,path:string){
  try{
@@ -174,7 +177,17 @@ export async function sharedClientApi(request:Request,path:string){
    });
    data.rooms=filtered.slice(start,start+limit).map((r:Data)=>({...r,...(r.customImage||r.pieces>500?{compatUrl:roomLink(r.id)}:{})}));data.nextCursor=start+limit<filtered.length?String(start+limit):null;return replaceResponse(response,data);
   }
-  if(path==='/api/my-rooms'&&method==='GET')return await myRoomsRoute.GET(request);
+  if(path==='/api/room-history'||path==='/api/my-rooms'){
+   const ctx=await context(request),guest=await currentGuest(request),owners=[...new Set([ctx.player.id,guest?.id].filter((id):id is string=>!!id))];
+   if(path==='/api/my-rooms'&&method==='POST'){
+    if(input.action!=='remove')throw new RoomError('列表操作无效');
+    await webRemoveOwned(localDb(),owners,input.roomId);
+    return answer({ok:true},ctx);
+   }
+   if(method!=='GET')return json({error:'请求方式无效'},405);
+   const decorate=(room:Data)=>({photo:roomPhoto(room,ctx.origin),thumbSrc:roomPhoto(room,ctx.origin)?.thumbSrc});
+   return answer({rooms:path==='/api/room-history'?await webRecentRooms(localDb(),owners,decorate):await webOwnedRooms(localDb(),owners,decorate),limit:10,serverTime:Date.now()},ctx);
+  }
   if(!path.startsWith('/api/mobile/'))return json({error:'接口不存在'},404);
   const ctx=await context(request);
   if(path==='/api/mobile/diagnostics/room'&&method==='POST'){

@@ -12,7 +12,7 @@ const EMPTY_ROOM_GRACE_MS=60*60*1000;
 export async function cleanupPublicRooms(database,now=Date.now()){
   const orphans="SELECT d.room_id FROM puzzle_room_directory d WHERE d.visibility='public' AND NOT EXISTS(SELECT 1 FROM puzzle_rooms r WHERE r.id=d.room_id)";
   const result=await database.batch([
-    database.prepare(`DELETE FROM puzzle_rooms WHERE json_extract(data,'$.visibility')='public'
+    database.prepare(`DELETE FROM puzzle_rooms WHERE json_extract(data,'$.visibility')='public' AND json_extract(data,'$.completedAt') IS NOT NULL
       AND NOT EXISTS(SELECT 1 FROM json_each(data,'$.members') m WHERE json_extract(m.value,'$.lastSeen')>?)
       AND ((NOT EXISTS(SELECT 1 FROM json_each(data,'$.puzzle.groups') g
         WHERE json_extract(g.value,'$.locked')=1 OR json_array_length(json_extract(g.value,'$.pieces'))>1)

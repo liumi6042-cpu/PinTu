@@ -12,7 +12,7 @@ export type Member={id:string;name:string;color:string;digest:string;previousDig
 export type Lease={playerId:string;expires:number;seq:number};
 export type RoomVisibility='public'|'private'|'solo';
 export type BotTask={groupId:number;phase:'claim'|'approach'|'align'|'drop'|'reclaim';wrong:boolean;seq:number};
-export type Room={artwork?:RoomArtwork;continuation?:{choices:string[];votes:Record<string,string>;selected?:string;roomId?:string};lastOrganizedAt?:number;customImage?:import('./custom-images').CustomImage;publicDeadline?:number;publicLastSeenAt?:number;title?:string;acceptingNew?:boolean;admitted?:Record<string,boolean>;achievements?:RoomAchievementState;syncHistory?:import('./room-sync').RoomChange[];retentionVersion?:2;lastPlayedAt?:number;botRoom?:boolean;botRoomSlot?:string;botState?:{nextAt:Record<string,number>;tasks?:Record<string,BotTask>};id:string;puzzle:PuzzleState;revision:number;createdAt:number;expiresAt:number;completedAt:number|null;members:Member[];leases:Record<string,Lease>;visibility?:RoomVisibility;ownerId?:string;startedAt?:number|null;participants?:Record<string,string>};
+export type Room={persistent?:boolean;artwork?:RoomArtwork;continuation?:{choices:string[];votes:Record<string,string>;selected?:string;roomId?:string};lastOrganizedAt?:number;customImage?:import('./custom-images').CustomImage;publicDeadline?:number;publicLastSeenAt?:number;title?:string;acceptingNew?:boolean;admitted?:Record<string,boolean>;achievements?:RoomAchievementState;syncHistory?:import('./room-sync').RoomChange[];retentionVersion?:2;lastPlayedAt?:number;botRoom?:boolean;botRoomSlot?:string;botState?:{nextAt:Record<string,number>;tasks?:Record<string,BotTask>};id:string;puzzle:PuzzleState;revision:number;createdAt:number;expiresAt:number;completedAt:number|null;members:Member[];leases:Record<string,Lease>;visibility?:RoomVisibility;ownerId?:string;startedAt?:number|null;participants?:Record<string,string>};
 export type RoomSnapshot={artwork?:RoomArtwork;customImage?:import('./custom-images').CustomImage;title?:string;acceptingNew?:boolean;achievementDays?:Record<string,string>;id:string;puzzle:PuzzleState;revision:number;serverTime:number;expiresAt:number;members:Omit<Member,'digest'|'previousDigests'|'joinedAt'|'accountId'|'guestId'>[];leases:Record<string,Lease>;visibility?:RoomVisibility;completedAt?:number|null;startedAt?:number|null;participantCount?:number};
 export type RoomAction={type:'heartbeat'|'leave'|'claim'|'move'|'drop'|'release'|'shuffle';groupId?:number;dx?:number;dy?:number;seq?:number};
 export class RoomError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}
@@ -21,8 +21,8 @@ export function makeRoom(id:string,imageId:string,count:number,now:number,allowe
 // A table counts as started once a group has been connected or locked. That is what makes it
 // worth keeping after its lobby day ends, and what lets its players come back to it.
 export function hasTableProgress(puzzle:Pick<PuzzleState,'groups'>){return puzzle.groups.some(group=>group.locked||group.pieces.length>1);}
-export function ensureOpen(room:Pick<Room,'expiresAt'|'visibility'|'puzzle'>,now:number){
- if(room.expiresAt>now)return;
+export function ensureOpen(room:Pick<Room,'persistent'|'expiresAt'|'visibility'|'puzzle'>,now:number){
+ if(room.persistent||room.expiresAt>now)return;
  // Past its lobby day a public table is not gone: everyone who played it can return from My
  // puzzles and pick up where they left off, and it briefly shows in the lobby again while
  // somebody plays. A table with nothing on it is not worth keeping.

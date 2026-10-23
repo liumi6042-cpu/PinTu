@@ -16,3 +16,4 @@ drizzle/0012_courtyard_lobby_chat.sql text eol=crlf
 *.jpg binary
 *.jpeg binary
 *.woff2 binary
+drizzle/0021_shared_room_history.sql -text
