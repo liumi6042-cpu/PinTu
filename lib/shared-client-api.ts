@@ -21,6 +21,7 @@ import * as cursorRoute from '../app/api/rooms/[id]/cursors/route';
 import * as assistanceRoute from '../app/api/rooms/[id]/assistance/route';
 import * as lobbyRoute from '../app/api/lobby/route';
 import {webDiagnosticsAllowed,createWebDiagnostic,webDiagnosticRoom} from './shared-diagnostics';
+import {sharedLobbyExtras} from './shared-lobby-extras';
 
 type Data=Record<string,any>;
 const phrases=['大家好！','我来找边缘','这块放这里','稍等一下','一起加油！','我来拼边缘','我来拼中间','请稍等一下','这一块在这里','谢谢你！','拼得真棒！','我要离开了','👏','👍','😊','🧩'];
@@ -175,7 +176,7 @@ export async function sharedClientApi(request:Request,path:string){
     const dimensions=r.customImage??r.artwork??photoGuidance(r.imageId),ratio=dimensions?dimensions.width/dimensions.height:1;
     return direction==='portrait'?ratio<1/1.1:direction==='landscape'?ratio>1.1:direction==='square'?Math.abs(ratio-1)<=.1:true;
    });
-   data.rooms=filtered.slice(start,start+limit).map((r:Data)=>({...r,...(r.customImage||r.pieces>500?{compatUrl:roomLink(r.id)}:{})}));data.nextCursor=start+limit<filtered.length?String(start+limit):null;return replaceResponse(response,data);
+   data.rooms=filtered.slice(start,start+limit).map((r:Data)=>({...r,...(r.customImage||r.pieces>500?{compatUrl:roomLink(r.id)}:{})}));Object.assign(data,await sharedLobbyExtras(data.rooms));data.nextCursor=start+limit<filtered.length?String(start+limit):null;return replaceResponse(response,data);
   }
   if(path==='/api/room-history'||path==='/api/my-rooms'){
    const ctx=await context(request),guest=await currentGuest(request),owners=[...new Set([ctx.player.id,guest?.id].filter((id):id is string=>!!id))];
