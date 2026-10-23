@@ -5,6 +5,14 @@ import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 
 const root=resolve(import.meta.dirname,'..');
+export function writeBundledArtwork(out,plan){
+ for(const file of plan.files){
+  if(file.path!=='assets'+file.url||!/^\/puzzles\/[a-z0-9-]+-(?:thumbnail|optimized|play|thumb2x)-[a-f0-9]{12}\.webp$/.test(file.url))throw Error('Unsafe bundled artwork output');
+  const bytes=file.data??readFileSync(file.source);
+  if(bytes.length!==file.bytes||createHash('sha256').update(bytes).digest('hex')!==file.sha256)throw Error('Bundled artwork changed during build');
+  const destination=join(out,file.path);mkdirSync(dirname(destination),{recursive:true});writeFileSync(destination,bytes);
+ }
+}
 export function sharedPlatformPlugins(config){
  return config.id==='wechat'&&config.nativeSocialEnabled===true?{MiniGameChat:{version:'latest',provider:'wx2ea687f4258401a9',contexts:[{type:'isolatedContext'}]}}:undefined;
 }
@@ -61,11 +69,7 @@ for(const [platform,out]of Object.entries(outputs)){
  for(const file of [...fonts,'jigsaw-ui-sc.'+(platform==='wechat'?'ttf':'woff2')])copy(join(root,'public/fonts',file),join(out,'assets/fonts',file));
  const obsoleteFont=join(out,'assets/fonts/jigsaw-ui-sc.'+(platform==='wechat'?'woff2':'ttf'));if(existsSync(obsoleteFont))unlinkSync(obsoleteFont);
  const config={...resolvedConfigs[platform],...(platform==='taptap'&&bundledArtwork?{bundledArtwork:bundledArtwork.mapping}:{})};
- if(platform==='taptap'&&bundledArtwork){for(const file of bundledArtwork.files){
-  if(file.path!=='assets'+file.url||!/^\/puzzles\/[a-z0-9-]+-(?:thumbnail|optimized|play)-[a-f0-9]{12}\.webp$/.test(file.url))throw Error('Unsafe bundled artwork output');
-  const bytes=readFileSync(file.source);if(bytes.length!==file.bytes||createHash('sha256').update(bytes).digest('hex')!==file.sha256)throw Error('Bundled artwork changed during build');
-  copy(file.source,join(out,file.path));
- }}
+ if(platform==='taptap'&&bundledArtwork)writeBundledArtwork(out,bundledArtwork);
  // The WeChat upload parser is older than its simulator runtime.
  const target=platform==='wechat'?'es2017':'es2020';
  await build({absWorkingDir:root,entryPoints:['mobile/entry-'+(platform==='wechat'?'wechat':'web')+'.ts'],outfile:join(out,platform==='wechat'?'game.js':'game.js'),bundle:true,format:'iife',target,platform:'browser',minify:true,legalComments:'eof',define:{__GAME_CONFIG__:JSON.stringify(config)},metafile:true}).then(result=>{

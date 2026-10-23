@@ -1,4 +1,5 @@
 import {createTapTapIdentity} from './tap-identity';
+import {isBundledArtworkFile} from './bundled-artwork';
 import {createTapInterstitial,type TapInterstitialHost} from './tap-interstitial';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {setTapOrientation,type TapOrientationHost} from './tap-orientation';
@@ -165,7 +166,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   createImage(){return new Image();},
   setImageSource(image,src){
    const resolved=uiUrl(src);
-   const bundled=config.id==='taptap'&&src.startsWith('assets/puzzles/')&&config.bundledArtwork?.[src.slice('assets'.length)]===src;
+   const bundled=isBundledArtworkFile(src,config);
    let remoteArtwork=false;try{const url=new URL(resolved);remoteArtwork=!bundled&&url.origin!==location.origin&&/(?:^|\/)puzzles\//i.test(url.pathname);}catch{}
    // The uploaded sprite sheets are package-local and may be served by a
    // wrapper without CORS headers. Keep anonymous CORS for remote artwork,

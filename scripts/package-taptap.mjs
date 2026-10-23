@@ -29,7 +29,7 @@ const effective=catalog.map(photo=>{
  if(!version)throw Error('Missing active artwork version: '+photo.id);
  return {...photo,thumbSrc:version.thumbSrc,optimizedSrc:version.src,playSrc:version.src};
 });
-const plan=planTapTapArtwork({root,catalog:effective,albums});
+const plan=await planTapTapArtwork({root,catalog:effective,albums});
 const work=resolve(root,'work/taptap-package-'+name);
 if(existsSync(work))throw Error('Work directory exists; choose a fresh name: '+work);
 const [record]=await buildMobileShared({outputRoot:relative(root,work),production:true,platforms:['taptap'],bundledArtwork:plan});
