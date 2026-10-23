@@ -5,6 +5,7 @@ import { checkRoomAccount } from '@/lib/room-account';
 import { botTick } from '@/lib/bot-runner';
 import { botsEnabled } from '@/lib/bot-settings';
 import {checkArtworkClient} from '@/lib/room-artwork';
+import {recordRecentTablemates} from '@/lib/shared-recent-tablemates';
 import {applySharedAction,disconnectSharedActions,clearSharedActionLease,requireSharedActionChannel,sharedActionStreamWrite,type SharedActionResult} from '@/lib/shared-actions';
 type Context={params:Promise<{id:string}>};
 let lastBotTick = 0;
@@ -23,6 +24,7 @@ export async function POST(request:Request,context:Context){try{
   applyAction(room,member,input,now);clearSharedActionLease(room,member,input);return null;
  },stream);
  if(result&&(result as SharedActionResult).status>=400)return json((result as SharedActionResult).error,(result as SharedActionResult).status);
+ if(input.type==='heartbeat')await recordRecentTablemates(room,authenticate(room,digest,now),now);
  return json({...roomUpdate(room,now,cursor(request)),...(result?{realtimeActionRevision:(result as SharedActionResult).revision,realtimeActionReplayed:!!(result as SharedActionResult).replayed}:{})});
 }catch(error){return artworkFailure(error);}}
 

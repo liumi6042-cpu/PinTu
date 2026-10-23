@@ -21,6 +21,7 @@ import { countsForDimensions,gridForDimensions,PIECE_RESOLUTION_ERROR,MAX_NEW_PI
 import {checkPieceCreation} from '@/lib/room-piece-access';
 import {readManagedContent} from '@/lib/managed-content';
 import {managedImageAllowed} from '@/lib/managed-economy';
+import {recordRecentTablemates} from '@/lib/shared-recent-tablemates';
 export async function POST(request:Request){
  try{
   const input=await body(request),now=Date.now();
@@ -81,6 +82,7 @@ export async function POST(request:Request){
    if(!admission)throw new RoomError('房间刚刚开始或已坐满，请重试',409);
    if(!admission.created){
     const joined=await mutateRoom(admission.id,existing=>addMember(existing,member.id,name,member.digest,Date.now(),player?.accountId,player?.guestId));
+    await recordRecentTablemates(joined.room,joined.result);
     // A reused table must return its authoritative state, never a fresh seed.
     return withPlayerCookie(json({token,playerId:joined.result.id,room:snapshot(joined.room,Date.now()),reused:true},201),player!);
    }

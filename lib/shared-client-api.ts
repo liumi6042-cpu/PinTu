@@ -68,16 +68,30 @@ async function dropContribution(ctx:Context,roomId:string,revision:unknown,input
  if(!receipt||receipt.at!==event.occurredAt||!Number.isSafeInteger(receipt.xp)||receipt.xp<=0)return undefined;
  return {requestId:input.requestId,groupId:input.groupId,creditedXp:receipt.xp};
 }
+async function socialPeople(items:Data[]){
+ const codes=[...new Set<string>(items.map((p:Data)=>p.code))],levels=new Map<string,number>();
+ if(codes.length){const rows=await localDb().prepare(`SELECT c.code,COALESCE(json_extract(p.data,'$.level'),0) level FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_managed_players p ON p.owner=c.owner WHERE c.code IN (${codes.map(()=>'?').join(',')})`).bind(...codes).all<{code:string;level:number}>();for(const row of rows.results)levels.set(row.code,row.level);}
+ return items.map(item=>({...item,code:item.code,level:levels.get(item.code)??0,online:false,lastSeenAt:0,createdAt:0}));
+}
 async function socialView(ctx:Context){
  const sources=ctx.view.friends,self={code:sources.code,name:ctx.player.name,level:ctx.profile.level,online:true,lastSeenAt:Date.now()};
- const codes=[...new Set<string>([...sources.list,...sources.requests,...sources.outgoing].map((p:Data)=>p.code))],levels=new Map<string,number>();
- if(codes.length){const rows=await localDb().prepare(`SELECT c.code,COALESCE(json_extract(p.data,'$.level'),0) level FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_managed_players p ON p.owner=c.owner WHERE c.code IN (${codes.map(()=>'?').join(',')})`).bind(...codes).all<{code:string;level:number}>();for(const row of rows.results)levels.set(row.code,row.level);}
- const person=(item:Data)=>({...item,level:levels.get(item.code)??0,online:false,lastSeenAt:0,createdAt:0});
- return {self,friends:sources.list.map(person),requests:{incoming:sources.requests.map(person),outgoing:sources.outgoing.map(person)},conversations:[],blocked:[],unread:0,capabilities:sharedConfig(ctx.origin).capabilities.social,serverTime:Date.now()};
+ const people=await socialPeople([...sources.list,...sources.requests,...sources.outgoing]),byCode=new Map(people.map(person=>[person.code,person]));
+ const friends=sources.list.map((person:Data)=>byCode.get(person.code)),incoming=sources.requests.map((person:Data)=>byCode.get(person.code)),outgoing=sources.outgoing.map((person:Data)=>byCode.get(person.code));
+ return {self,friends,requests:{incoming,outgoing},conversations:[],blocked:[],unread:0,capabilities:sharedConfig(ctx.origin).capabilities.social,serverTime:Date.now()};
 }
 async function social(request:Request,path:string,input:Data,ctx:Context){
  const method=request.method,url=new URL(request.url);
  if(path==='/api/mobile/social'&&method==='GET')return answer(await socialView(ctx),ctx);
+ if(path==='/api/mobile/social/recent'&&method==='GET'){
+  const rows=await localDb().prepare(`SELECT c.code,COALESCE(u.name,'拼图朋友') name,r.room_title AS roomTitle,r.seen_at AS seenAt,
+   EXISTS(SELECT 1 FROM puzzle_managed_friend_requests q WHERE q.sender=r.owner_id AND q.recipient=r.peer_id) AS requested
+   FROM (SELECT * FROM puzzle_shared_recent_tablemates WHERE owner_id=? ORDER BY seen_at DESC,peer_id LIMIT 60) r
+   JOIN puzzle_managed_invitation_codes c ON c.owner=r.peer_id LEFT JOIN puzzle_users u ON u.id=r.peer_id
+   WHERE r.peer_id<>r.owner_id AND NOT EXISTS(SELECT 1 FROM puzzle_managed_friends f WHERE f.owner=r.owner_id AND f.peer=r.peer_id)
+   ORDER BY r.seen_at DESC,r.peer_id LIMIT 20`).bind(ctx.player.id).all<Data>();
+  const players=await socialPeople(rows.results.map(row=>({...row,requested:!!row.requested})));
+  return answer({players,serverTime:Date.now()},ctx);
+ }
  if(path==='/api/mobile/social/search'&&method==='GET'){
   const code=url.searchParams.get('code');if(!code||!/^[a-f0-9]{12}$/i.test(code))throw new RoomError('请填写12位好友邀请码');
   await securityLimit('shared-friend-search',ctx.player.id,120);

@@ -5,6 +5,7 @@ import { ensureBetaSeat } from '@/lib/beta-seats';
 import { requireSoloAccount } from '@/lib/solo-account';
 import { botsEnabled } from '@/lib/bot-settings';
 import {checkArtworkClient} from '@/lib/room-artwork';
+import {recordRecentTablemates} from '@/lib/shared-recent-tablemates';
 export async function POST(request:Request,context:{params:Promise<{id:string}>}){
  try{
   const {id}=await context.params,input=await body(request),existing=await readRoom(id);
@@ -20,6 +21,7 @@ export async function POST(request:Request,context:{params:Promise<{id:string}>}
    if(room.acceptingNew===false&&guest&&!hasRoomAdmission(room,player?.id)&&hasRoomAdmission(room,guest.id))player=guest;
    return addMember(room,newId(),player?.name||validName(input.name??'游客'),digest,now,player?.accountId,player?.guestId);
   });
+  await recordRecentTablemates(room,member,now);
   const response=json({token,playerId:member.id,room:snapshot(room,now)});return player?withPlayerCookie(response,player):response;
  }catch(error){return error instanceof Error&&'code'in error&&error.code==='ARTWORK_CLIENT_UPDATE_REQUIRED'?json({error:error.message,code:error.code},409):failure(error);}
 }
