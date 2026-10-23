@@ -37,13 +37,13 @@ test('completion freezes official time and counts only active account participan
  for(let i=0;i<12;i++){const g=r.puzzle.groups.find(g=>g.pieces.includes(i));if(g.locked)continue;applyAction(r,a,{type:'claim',groupId:g.id},5000+i*100);applyAction(r,a,{type:'drop',groupId:g.id,dx:0,dy:0,seq:1},5050+i*100);}
  assert.ok(r.completedAt);assert.equal(roomElapsedMs(r,999999),r.completedAt-5000);assert.deepEqual(Object.keys(r.participants),['account-a']);
 });
-test('organization preserves held and placed pieces in solo and public tables',()=>{
+test('organization preserves held and placed pieces in solo tables and rejects public tables',()=>{
  const r=room('solo'),a=addMember(r,'a','甲','da',2000,'owner');
  applyAction(r,a,{type:'claim',groupId:0},3000);const held=structuredClone(r.puzzle.groups[0]);applyAction(r,a,{type:'shuffle'},3001);assert.deepEqual(r.puzzle.groups.find(g=>g.id===0),held);
  applyAction(r,a,{type:'drop',groupId:0,dx:0,dy:0,seq:1},3100);
  const locked=structuredClone(r.puzzle.groups.find(g=>g.locked)),start=r.startedAt;
  applyAction(r,a,{type:'shuffle'},6000);assert.deepEqual(r.puzzle.groups.find(g=>g.locked),locked);assert.equal(r.startedAt,start);
- const publicRoom=room(),b=addMember(publicRoom,'b','乙','db',2000,'owner');assert.doesNotThrow(()=>applyAction(publicRoom,b,{type:'shuffle'},3000));
+ const publicRoom=room(),b=addMember(publicRoom,'b','乙','db',2000,'owner');assert.throws(()=>applyAction(publicRoom,b,{type:'shuffle'},3000),error=>error.status===403&&error.message==='多人房不能整理拼块');
 });
 test('free assistance has limited uses and completion previews still require completion',async()=>{
  assert.equal(ADS_AVAILABLE,false);assert.equal(ASSISTANCE_POLICY.hint.maxPerGame,3);

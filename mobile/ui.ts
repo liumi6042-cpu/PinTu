@@ -103,6 +103,7 @@ export class Stage{
   const paths=mobileSymbolPaths[kind as keyof typeof mobileSymbolPaths];
   if(paths){for(const path of paths){this.drawSvgPath(path.d);c.fill('fillRule'in path?path.fillRule:'nonzero');}}
   else if(['players','person','quick'].includes(kind)){for(const x of kind==='person'?[12]:[6,17]){c.beginPath();c.arc(x,7,3.2,0,Math.PI*2);c.fill();c.fillRect(x-4,12,8,9);}}
+  else if(kind==='orientation'){c.strokeRect(8,6,8,12);c.beginPath();c.arc(12,12,10,-Math.PI/2,0);c.moveTo(19,9);c.lineTo(22,12);c.lineTo(23,8);c.moveTo(5,15);c.lineTo(2,12);c.lineTo(1,16);c.moveTo(2,12);c.arc(12,12,10,Math.PI,Math.PI/2,true);c.stroke();}
   else if(kind==='themeSun'){c.beginPath();c.arc(12,12,4,0,Math.PI*2);c.fill();for(let i=0;i<8;i++){const angle=i*Math.PI/4;c.beginPath();c.moveTo(12+Math.cos(angle)*7,12+Math.sin(angle)*7);c.lineTo(12+Math.cos(angle)*10,12+Math.sin(angle)*10);c.stroke();}}
   else if(kind==='themeMoon'){c.beginPath();c.moveTo(17,3);c.bezierCurveTo(10,5,11,13,17,17);c.bezierCurveTo(10,22,3,17,3,11);c.bezierCurveTo(3,5,9,1,17,3);c.closePath();c.fill();}
   else if(kind==='chat'){c.beginPath();c.moveTo(3,4);c.lineTo(21,4);c.lineTo(21,17);c.lineTo(13,17);c.lineTo(8,21);c.lineTo(8,17);c.lineTo(3,17);c.closePath();c.stroke();for(const x of[7,11,15])c.fillRect(x,9,2,2);}

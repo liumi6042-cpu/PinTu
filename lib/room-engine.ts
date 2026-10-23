@@ -63,10 +63,10 @@ export function applyAction(room:Room,member:Member,action:RoomAction,now:number
  if(action.type==='heartbeat'){const l=action.groupId===undefined?undefined:room.leases[action.groupId];if(l?.playerId===member.id)l.expires=now+LEASE_MS;return;}
  if(action.type==='leave'){member.lastSeen=0;for(const [key,l] of Object.entries(room.leases))if(l.playerId===member.id)delete room.leases[key];return;}
  if(action.type==='shuffle'){
+  if(room.visibility!=='solo')throw new RoomError('多人房不能整理拼块',403);
   if(room.visibility==='solo'&&(!(member.accountId||member.guestId)||(member.accountId||member.guestId)!==room.ownerId))throw new RoomError('只有创建者可以整理这局个人拼图',403);
-  if(room.visibility!=='solo'&&room.lastOrganizedAt!==undefined&&now-room.lastOrganizedAt<ORGANIZE_COOLDOWN_MS)throw new RoomError('刚刚整理过，请稍等 2 秒再试。',409);
   // Active leases are checked inside the same room transaction as the move.
-  // This preserves both teammates' drags and this player's other open windows.
+  // This preserves the owner's active drag and their other open windows.
   const blocked=new Set(Object.keys(room.leases).map(Number));
   const changed=shuffleLoose(room.puzzle,now>>>0,blocked);
   if(changed){room.lastOrganizedAt=now;touchRoom(room,now);}

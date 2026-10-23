@@ -22,6 +22,8 @@ test('mobile rooms pin editions; old clients keep old artwork and cannot join an
  const db=new DatabaseSync(databasePath),a='a'.repeat(64),b='b'.repeat(64),c='c'.repeat(64);
  const call=(identity,url,body,capability=false,token)=>service.handle({identity,url,method:body===undefined?'GET':'POST',body,artworkSnapshot:capability,...(token?{authorization:'Bearer '+token}:{})});
  try{
+  // Selected paid-pack images require the pack; ownership keeps this test about artwork editions.
+  call(a,'/api/mobile/profile');call(b,'/api/mobile/profile');for(const who of [a,b])db.prepare('INSERT OR IGNORE INTO mobile_collection_owned VALUES(?,?,?,?)').run(who,'pack',album.id,1800000000000);
   const input={mode:'selected',imageId:photo.id,pieces:108,visibility:'public',requestId:rid()};
   const gallery=call(a,'/api/mobile/gallery',undefined,true).data;assert.equal(gallery.photos.find(item=>item.id===photo.id).src,latest.src);assert.equal(gallery.daily.src,latest.src);assert.equal(call(a,'/api/mobile/gallery').data.photos,undefined);
   assert.equal(call(a,'/api/daily',undefined,true).data.photo.src,latest.src);assert.equal(call(a,'/api/daily').data.photo.src,original.src);

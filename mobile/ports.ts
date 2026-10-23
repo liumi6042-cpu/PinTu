@@ -36,6 +36,8 @@ export type Platform={
  config:PlatformConfig;
  canvas:HTMLCanvasElement;
  viewport():Viewport;
+ /** Capsule bounds in the same logical coordinates as viewport and input. */
+ menuButtonRect?():Rect|null;
  /** Browser hosts: user text-size preference; the viewport follows it at once. */
  uiSize?():UiSize;
  setUiSize?(size:UiSize):void;

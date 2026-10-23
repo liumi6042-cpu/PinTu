@@ -398,7 +398,9 @@ export function createMobileService(options={}){
     if(input.imageId)fail(400,'RANDOM_IMAGE_NOT_SELECTABLE','随机模式不能指定图片');
     const pool=galleryPhotos(now).filter(photo=>{const bound={...photo,...creationArtwork(photo,pieces,request)};return collection.randomAllowed(p.id,photo.id,now)&&mobileGridForPhoto(bound,pieces)&&(direction==='all'||directionOf(bound)===direction);});if(!pool.length)fail(400,'NO_IMAGE_AVAILABLE','该条件下没有可用图片');photo=pool[randomInt(0,pool.length)];
    }else photo=galleryPhotos(now).find(p=>p.id===input.imageId);
-   if(!photo)fail(400,'INVALID_IMAGE','请选择可用图片');const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
+   if(!photo)fail(400,'INVALID_IMAGE','请选择可用图片');
+   if(!web&&mode==='selected'&&collection.packedImageIds(now).includes(photo.id)&&!collection.freeImageIds(now).includes(photo.id)&&!collection.ownsImage(p.id,photo.id,now))fail(403,'PACK_LOCKED','这张图在未解锁的图包里，请先解锁图包');
+   const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
    if(mode==='daily'){
     const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(now)&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<8&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
     if(existing)return join(existing,p,{},now,request);

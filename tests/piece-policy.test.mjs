@@ -34,7 +34,7 @@ test('old low-resolution large rooms and all retired grids still restore, join, 
   const level=SAVED_LEVELS.find(l=>l.count===n),state=restartPuzzle({...createPuzzle(oldId,12,9,1),cols:level.cols,rows:level.rows},1);
   state.elapsed=123;state.groups[0].locked=true;state.groups[0].dx=0;state.groups[0].dy=0;
   const room=makeRoom('old-'+n,small,108,now);room.puzzle=state;room.revision=17;
-  const before=JSON.stringify(state),player=addMember(room,'player','Guest','digest',now);
+  room.visibility='solo';room.ownerId='owner';const before=JSON.stringify(state),player=addMember(room,'player','Guest','digest',now,'owner');
   applyAction(room,player,{type:'heartbeat'},now+1);assert.equal(JSON.stringify(room.puzzle),before);
   assert.deepEqual(restorePuzzle(before,RESTORABLE_PHOTOS.map(p=>p.id)),state);
   applyAction(room,player,{type:'shuffle'},now+2);assert.equal(state.elapsed,123);assert.equal(state.imageId,oldId);assert.equal(state.groups[0].locked,true);

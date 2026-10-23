@@ -80,9 +80,10 @@ try{
    const delta=await request(path+'?since='+heartbeat.data.revision,undefined,currentToken);assert.equal(delta.status,200);assert.equal(delta.data.kind,'delta');assert.equal(delta.data.groups.length,1);
    const dropped=await request(path,{type:'drop',groupId:3,dx:0,dy:0,seq:2},currentToken);assert.equal(dropped.status,200);assert.ok(dropped.data.puzzle.groups.some(group=>group.locked&&group.pieces.includes(3)));
    const protectedGroups=dropped.data.puzzle.groups.filter(group=>group.locked||group.pieces.length>1);
-   const arranged=await request(path,{type:'shuffle'},currentToken);assert.equal(arranged.status,200);
-   assert.deepEqual(arranged.data.puzzle.groups.filter(group=>group.locked||group.pieces.length>1),protectedGroups);
-   assert.equal(new Set(arranged.data.puzzle.groups.flatMap(group=>group.pieces)).size,count);assert.equal(arranged.data.puzzle.seed,42);assert.ok(arranged.data.puzzle.elapsed>=123);
+   const arranged=await request(path,{type:'shuffle'},currentToken);assert.equal(arranged.status,403);
+   const unchanged=await request(path,undefined,currentToken);assert.equal(unchanged.status,200);
+   assert.deepEqual(unchanged.data.puzzle.groups.filter(group=>group.locked||group.pieces.length>1),protectedGroups);
+   assert.equal(new Set(unchanged.data.puzzle.groups.flatMap(group=>group.pieces)).size,count);assert.equal(unchanged.data.puzzle.seed,42);assert.ok(unchanged.data.puzzle.elapsed>=123);
    legacyGridChecks.push(count);
   }
  }

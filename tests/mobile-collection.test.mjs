@@ -115,6 +115,8 @@ test('collection HTTP mutations are atomic, replay safe and enforce permanent pu
 test('server gameplay awards only valid contributions, rolls back empty-energy drops, and settles offline collaborators once',()=>{
  const h=harness(),a=identity('a'),b=identity('b'),watcher=identity('c'),pack=catalog.packs[0];
  try{
+  // Selected images from a paid pack need the pack (PACK_LOCKED otherwise); this test is about contributions.
+  h.fixture.prepare('INSERT INTO mobile_collection_owned VALUES(?,?,?,?)').run(a,'pack',pack.id,1800000000000);
   const created=h.call(a,'/api/rooms',{mode:'selected',imageId:pack.imageIds[0],pieces:48,visibility:'public',requestId:rid()});assert.equal(created.status,201);
   const ticket=created.data,path='/api/rooms/'+ticket.room.id,bt=h.call(b,path+'/join',{}).data;
   h.call(watcher,path+'/join',{});
