@@ -265,7 +265,13 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    }catch(detail){reportAd('创建广告异常',unit,detail);return 'failed';}finally{if(outcome==='failed'){try{ad?.destroy?.();}catch{}ad=undefined;adUnit='';}watching=false;audioPlayback.setAdPlaying(false);}
   },
   async prompt(title,value='',options){return options?.multiline?textPrompt(title,value,options.maxLength??2000):window.prompt(title,value);},alert:message=>window.alert(message),
-  async copyText(text){try{await navigator.clipboard.writeText(text);return true;}catch{return false;}},
+  async copyText(text){
+   // TapTap first (tt.setClipboardData), then the async clipboard, then a selected textarea.
+   const host=(globalThis as unknown as {tt?:{setClipboardData?:(options:{data:string;success:()=>void;fail:()=>void})=>void}}).tt;
+   if(config.id==='taptap'&&host?.setClipboardData){const ok=await new Promise<boolean>(resolve=>{try{host.setClipboardData!({data:text,success:()=>resolve(true),fail:()=>resolve(false)});}catch{resolve(false);}});if(ok)return true;}
+   try{await navigator.clipboard.writeText(text);return true;}catch{}
+   try{const area=document.createElement('textarea');area.value=text;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const ok=document.execCommand('copy');area.remove();return ok;}catch{return false;}
+  },
   async loadFont(url){try{const name='JigsawSharedFont',face=await new FontFace(name,'url("'+uiUrl(url).replace(/["\\]/g,'')+'")').load();document.fonts.add(face);return name;}catch{return null;}},
   playSound:url=>audioPlayback.playSound(url),
   initialQuery:query(),

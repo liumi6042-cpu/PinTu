@@ -681,6 +681,9 @@ export class GameApp{
   this.extent=top+h-this.bodyTop+18;
  }
  // TapTap H5 shows a floating, movable capsule, so it cannot be used as a layout anchor; keep a fixed 2px inset.
+ private copyInvitationCode(code:string){if(!this.platform.copyText){this.note('邀请码：'+code);return;}void this.platform.copyText(code).then(ok=>this.note(ok?'已复制邀请码 '+code:'复制失败，请手动记下邀请码 '+code));}
+ // Puzzle rooms get the same visible top gap as the lobby header (inset + 12).
+ private roomHeaderTop(){return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
  private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
  private drawHeader(){
   const s=this.stage,p=this.client.profile,safe=this.route==='lobby'?this.headerSafeTop():this.platform.viewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360;
@@ -977,9 +980,9 @@ export class GameApp{
    // 6. 邀请好友
    const invitation=data.invitation,invitationTask=data.tasks.find(task=>task.group==='invitation');
    section(1,'邀请好友',222,(x,y,cw)=>{s.icon('invitationArt',{x,y,w:70,h:66});const copy='好友接受邀请并完成 '+(invitation?.requiredContributions??3)+' 次有效拼合，你可获得 '+(this.energyEnabled?'补满体力包':this.rewardText(0,invitationTask?.xp??0,invitationTask?.coins??0))+'，每日最多 '+(invitation?.dailyLimit??3)+' 位。';this.paragraph(copy,x+82,y,cw-82,12,muted);
-    s.text('我的邀请码',x,y+84,12,muted,700);s.text(invitation?.code??'正在读取…',x+76,y+80,18,ink,800,cw-76);const bw=(cw-10)/2;
+    s.text('我的邀请码',x,y+84,12,muted,700);s.text(invitation?.code??'正在读取…',x+76,y+80,18,ink,800,cw-76);if(invitation?.code)s.hit({x:x+70,y:y+72,w:Math.min(cw-70,s.measure(invitation.code,18,800)+20),h:34},()=>this.copyInvitationCode(invitation.code));const bw=(cw-10)/2;
     s.button({x,y:y+114,w:bw,h:38},'分享邀请',()=>void this.shareInvitation(),{tone:'berry',icon:'invite',fontSize:14,disabled:this.busy});
-    s.button({x:x+bw+10,y:y+114,w:bw,h:38},this.platform.copyText?'复制邀请码':'输入好友邀请码',()=>{if(this.platform.copyText&&invitation?.code)void this.platform.copyText(invitation.code).then(ok=>this.note(ok?'邀请码已复制':'复制失败，请手动记下邀请码'));else this.showModal('invite');},{fontSize:14});
+    s.button({x:x+bw+10,y:y+114,w:bw,h:38},this.platform.copyText?'复制邀请码':'输入好友邀请码',()=>{if(this.platform.copyText&&invitation?.code)this.copyInvitationCode(invitation.code);else this.showModal('invite');},{fontSize:14});
     s.text('输入好友的邀请码 ›',x,y+160,12,this.colors.berry,700);s.hit({x:x-4,y:y+152,w:140,h:26},()=>this.showModal('invite'));});
   });
   this.extent=Math.max(left,right)+this.scroll-this.bodyTop+12;
@@ -1213,7 +1216,7 @@ export class GameApp{
   const s=this.stage,room=this.room,board=this.board,view=this.platform.viewport(),p=this.client.profile;
   if(!room||!board){s.text('尚未加入房间',20,view.top+35,18);this.button(20,view.top+81,s.w-40,'返回大厅',()=>this.navigate('lobby'));return;}
   const visible=!this.hidden&&!this.modalBlocksInput;if(visible!==this.cursorVisible){this.cursorVisible=visible;if(visible)this.cursor?.refresh();else this.clearRoomPointer();}
-  const layout=this.layout,c=s.ctx,safeBottom=s.h-view.bottom,headerTop=this.headerSafeTop();
+  const layout=this.layout,c=s.ctx,safeBottom=s.h-view.bottom,headerTop=this.roomHeaderTop();
   if(layout==='desktop'){
    const rail=84,panel=this.roomPanelCollapsed?32:300,bar=60;this.roomArea={x:rail,y:bar,w:s.w-rail-panel,h:s.h-bar};
    this.placeBoard(board,0,()=>board.fit(false,{bottom:56}));
@@ -1600,7 +1603,7 @@ export class GameApp{
    }
    case'invite':{
     s.icon('invitationArt',{x:left+width/2-46,y:cy,w:92,h:89});cy+=102;s.text('邀请好友，一起攒礼包',left,cy,20,this.colors.ink,700,width);cy+=40;const invitation=this.tasks?.invitation,sharingTask=this.tasks?.tasks.find(task=>task.group==='sharing'),invitationTask=this.tasks?.tasks.find(task=>task.group==='invitation');cy=this.paragraph('好友接受首次邀请并完成'+(invitation?.requiredContributions??3)+'次有效拼合后，'+(this.energyEnabled?'可获得补满体力包'+(invitationTask?.xp?'及 '+invitationTask.xp+' 经验':'')+taskCoinsText(invitationTask?.coins??0):'任务奖励为：'+this.rewardText(0,invitationTask?.xp??0,invitationTask?.coins??0))+'。每日最多'+(invitation?.dailyLimit??3)+'位；新老玩家都可参与。',left,cy,width,14)+19;if(sharingTask){cy=this.paragraph('分享邀请奖励：'+this.rewardText(sharingTask.energy,sharingTask.xp,sharingTask.coins??0)+'，每日最多 '+sharingTask.target+' 次。',left,cy,width,12)+15;}
-    s.text('我的邀请码',left,cy,12,this.colors.muted);cy+=26;s.text(this.tasks?.invitation.code??'正在读取…',left,cy,20,this.colors.ink,700,width);cy+=40;this.button(left,cy,width,'邀请好友',()=>void this.shareInvitation(),'berry',42);cy+=56;
+    s.text('我的邀请码（点击复制）',left,cy,12,this.colors.muted);cy+=26;s.text(this.tasks?.invitation.code??'正在读取…',left,cy,20,this.colors.ink,700,width);{const code=this.tasks?.invitation.code;if(code)s.hit({x:left-6,y:cy-8,w:Math.min(width,s.measure(code,20,700)+24),h:38},()=>this.copyInvitationCode(code));}cy+=40;this.button(left,cy,width,'邀请好友',()=>void this.shareInvitation(),'berry',42);cy+=56;
     cy=this.paragraph('好友任务以真实参与为准，仅打开分享界面不会计为已发出成功或发放奖励。',left,cy,width,12)+18;
     this.button(left,cy,width,this.pendingInvitation?'邀请码：'+this.pendingInvitation:'输入好友邀请码',()=>void this.run(async()=>{const value=await this.platform.prompt('输入好友邀请码',this.pendingInvitation);if(value!==null)this.pendingInvitation=value.trim();}));cy+=48;
     if(this.pendingInvitation){this.button(left,cy,width,'接受好友邀请',()=>void this.acceptInvitation(),'green',40);cy+=52;}

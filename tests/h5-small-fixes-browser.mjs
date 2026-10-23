@@ -42,8 +42,8 @@ try{
   for(const mode of ['portrait','landscape'])for(const native of ['taptap','wechat','web'])for(const available of [false,true]){
    width=mode==='portrait'?320:844;height=mode==='portrait'?900:390;platform.config.id=native;capsule=available?{x:width-100,y:24,w:88,h:32}:null;begin();
    app.room={snapshot:{title:'测试房间',visibility:'public',members:[{id:'a'}],puzzle:{imageId:'test'}},state:{cols:8,rows:6,groups:[],imageId:'test'}};
-   const top=app.headerSafeTop();check(native==='web'?top===20:top===22,'fixed 2px top inset; web unchanged');
-   app.drawRoomTopBar({x:0,y:top,w:width-(mode==='landscape'?62:0),h:mode==='portrait'?76:52},mode);
+   const top=app.headerSafeTop();check(native==='web'?top===20:top===22,'fixed 2px top inset; web unchanged');check(app.roomHeaderTop()===(native==='web'?20:34),'room top gap matches lobby');
+   app.drawRoomTopBar({x:0,y:app.roomHeaderTop(),w:width-(mode==='landscape'?62:0),h:mode==='portrait'?76:52},mode);
   }
   width=844;height=390;platform.config.id='taptap';app.room.snapshot.visibility='public';begin();app.drawToolColumn({x:782,y:64,w:60,h:320});check(records.text.some(([text])=>text==='竖屏'),'orientation replaces chat');check(!records.text.some(([text])=>text==='聊天'||text==='整理'),'multiplayer hides organize and duplicate chat');check(!app.roomTools.some(([kind])=>kind==='organize'),'rail hides organize');
   app.room.snapshot.visibility='solo';check(app.roomTools.some(([kind])=>kind==='organize'),'solo retains organize');
@@ -57,7 +57,7 @@ try{
  assert.equal(result.supplyChecks,662);
  // Save representative renders from the actual shared Canvas renderer.
  for(const [name,width,height,scene] of [['supplies-320',320,900,'supplies'],['supplies-650',650,1000,'supplies'],['supplies-landscape',844,390,'supplies'],['lobby-320',320,900,'lobby'],['room-portrait',320,900,'portrait'],['room-landscape',844,390,'landscape']]){
-  await page.setViewportSize({width,height});await page.evaluate(({width,height,scene})=>{const {app,stage,platform,setSize,begin}=window.task10;setSize(width,height);app.bodyTop=80;app.bodyBottom=height;app.route=scene;app.client.config.capabilities.shareRewards=true;app.client.config.adRewardEnabled=true;app.client.profile.supply.create=1;platform.setOrientation=async()=>{};begin();if(scene==='supplies')app.drawSupplies();else if(scene==='lobby')app.drawHeader();else app.drawRoomTopBar({x:0,y:app.headerSafeTop(),w:width-(scene==='landscape'?62:0),h:scene==='portrait'?76:52},scene);},{width,height,scene});
+  await page.setViewportSize({width,height});await page.evaluate(({width,height,scene})=>{const {app,stage,platform,setSize,begin}=window.task10;setSize(width,height);app.bodyTop=80;app.bodyBottom=height;app.route=scene;app.client.config.capabilities.shareRewards=true;app.client.config.adRewardEnabled=true;app.client.profile.supply.create=1;platform.setOrientation=async()=>{};begin();if(scene==='supplies')app.drawSupplies();else if(scene==='lobby')app.drawHeader();else app.drawRoomTopBar({x:0,y:app.roomHeaderTop(),w:width-(scene==='landscape'?62:0),h:scene==='portrait'?76:52},scene);},{width,height,scene});
   await page.screenshot({path:resolve(directory,name+'.png')});
  }
  console.log(JSON.stringify(result));
