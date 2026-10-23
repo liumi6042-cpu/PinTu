@@ -42,12 +42,14 @@ mkdirSync(resolve(stage,'h5'),{recursive:true});writeFileSync(resolve(stage,'h5/
 mkdirSync(resolve(stage,'server'),{recursive:true});copyFileSync(realpathSync(resolve('server/room-realtime.LICENSE.txt')),resolve(stage,'server/room-realtime.LICENSE.txt'));
 files.push('outputs/mobile/engine.mjs','outputs/mobile/room-realtime.mjs','server/room-realtime.LICENSE.txt','h5/asset-manifest.json');
 const code=files.map(path=>{const bytes=readFileSync(resolve(stage,path));return {path,bytes:bytes.length,sha256:hash(bytes)};});
-const manifest={service:'jigsaw-mobile-v3',release,packageKind:'code-delta',baseRelease:baseline.release,baseManifestSha256:hash(baselineBytes),node:'>=24.0.0',backendMode:'mobile-v3-isolated',frontendIncluded:false,createdAt:new Date().toISOString(),assetCount:assets.length,reusedAssets:true,files:[...code,...current]};
+// Kept installed assets are recorded with their verified baseline entries; the server re-checks every file.
+const publicFiles=keepInstalled?[...previous.values()]:current;
+const manifest={service:'jigsaw-mobile-v3',release,packageKind:'code-delta',baseRelease:baseline.release,baseManifestSha256:hash(baselineBytes),node:'>=24.0.0',backendMode:'mobile-v3-isolated',frontendIncluded:false,createdAt:new Date().toISOString(),assetCount:assets.length,reusedAssets:true,files:[...code,...publicFiles]};
 writeFileSync(resolve(stage,'release.json'),JSON.stringify(manifest,null,2)+'\n');
 mkdirSync('releases',{recursive:true});const archive=resolve('releases/jigsaw-mobile-upgrade-'+release+'.tar.gz'),list=resolve('work/mobile-upgrade-releases',release+'.files');
 if(existsSync(archive))throw Error('Upgrade archive already exists');
 writeFileSync(list,[...files,'release.json'].join('\0')+'\0');
 const packed=spawnSync(TAR,['-czf',archive,'-C',stage,'--null','-T',list],{stdio:'inherit',windowsHide:true});if(packed.status!==0||packed.error)throw Error('Upgrade archive failed');
 const bytes=readFileSync(archive),before=new Map(baseline.files.map(file=>[file.path,file]));
-const report={release,archive,sha256:hash(bytes),bytes:bytes.length,packageKind:'code-delta',baseRelease:baseline.release,baseManifestSha256:hash(baselineBytes),payloadFiles:files.length+1,reusedAssetCount:assets.length,reusedAssetBytes:current.reduce((sum,file)=>sum+file.bytes,0),resourceChanges:[],removedResources:[],newCode:code.filter(file=>!before.has(file.path)).map(file=>file.path),changedCode:code.filter(file=>before.has(file.path)&&before.get(file.path).sha256!==file.sha256).map(file=>file.path),frontendIncluded:false};
+const report={release,archive,sha256:hash(bytes),bytes:bytes.length,packageKind:'code-delta',baseRelease:baseline.release,baseManifestSha256:hash(baselineBytes),payloadFiles:files.length+1,reusedAssetCount:assets.length,reusedAssetBytes:publicFiles.reduce((sum,file)=>sum+file.bytes,0),resourceChanges:[],removedResources:[],newCode:code.filter(file=>!before.has(file.path)).map(file=>file.path),changedCode:code.filter(file=>before.has(file.path)&&before.get(file.path).sha256!==file.sha256).map(file=>file.path),frontendIncluded:false};
 writeFileSync(archive+'.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));
