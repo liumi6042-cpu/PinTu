@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 import hostingConfig from './.openai/hosting.json';
 import { checkImageLibrary } from './scripts/check-image-library.mjs';
 import { fileURLToPath } from 'node:url';
+import { deliveredGuidancePlugin } from './server/delivered-guidance-plugin.mjs';
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   '00000000-0000-4000-8000-000000000000';
@@ -44,7 +45,7 @@ export default defineConfig(async () => {
     build: { copyPublicDir: process.env.PUZZLE_RELEASE_BUILD !== '1' },
     css: { postcss: { plugins: [tailwindcss()] } },
     resolve: { alias: { 'cloudflare:workers': fileURLToPath(new URL('./server/runtime.node.mjs', import.meta.url)) } },
-    plugins: [vinext()],
+    plugins: [deliveredGuidancePlugin(), vinext()],
   };
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
