@@ -61,7 +61,7 @@ export class GameApp{
  private privacyAccepted=false;private privacyDocument:'privacy'|'terms'|null=null;private privacyRefused=false;private privacyEpoch=0;private authorizationTesting=false;private loginDialogActive=false;
  private identityHook=false;private consentPreparing=false;private consentError='';
  private privacyRequests:PrivacyRequest[]=[];private privacyRequestsLoading=false;
- private scroll=0;private extent=0;private bodyTop=100;private bodyBottom=0;private pointer:{x:number;y:number;lastY:number;scroll:boolean;board:boolean;album?:boolean;modal?:boolean}|null=null;
+ private scroll=0;private extent=0;private bodyTop=100;private bodyBottom=0;private pointer:{x:number;y:number;lastY:number;scroll:boolean;board:boolean;album?:boolean;modal?:boolean;landscapeBackgroundTap?:boolean}|null=null;
  private modal:Modal=null;private modalScroll=0;private modalExtent=0;private modalArea:Rect={x:0,y:0,w:0,h:0};private modalStart=0;
  private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;
  private rooms:RoomListing[]=[];private lobbyCursor:string|null=null;private lobbyLoading=false;private lobbyQuiet=false;private lobbySerial=0;private lobbyReload=false;
@@ -75,7 +75,7 @@ export class GameApp{
  private room:RoomClient|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
  private realtime:ManagedRoomRealtime|null=null;
- private roomPanelCollapsed=false;private roomMembersHighlight=0;
+ private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
  private roomArea:Rect={x:0,y:0,w:0,h:0};private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';
  private aid:{grants:AssistanceGrant[];freeRemaining?:{hint:number;underlay:number};newcomerProtected?:boolean;serverTime:number}|null=null;
@@ -109,6 +109,7 @@ export class GameApp{
   const saved=platform.storage.get('jigsaw:shared:theme:'+platform.config.apiBase);stage.setTheme(isThemeId(saved)?saved:'light');if(platform.canvas.style)platform.canvas.style.colorScheme=stage.theme==='dark'?'dark':'light';
   this.renderMode=platform.storage.get('jigsaw:shared:performance:'+platform.config.apiBase)==='power-saving'?'power-saving':'smooth';
   this.roomPanelCollapsed=platform.storage.get('jigsaw:room-panel-collapsed:v1')==='1';
+  this.landscapeToolsOpen=platform.storage.get('jigsaw:landscape-tools-open:v1')==='1';
   this.audioSettings=new AudioSettings(platform);
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>{
    const room=this.room;if(!room)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
@@ -191,7 +192,7 @@ export class GameApp{
   if(this.hidden||this.destroyed)return;
   const now=Date.now();let changed=false;
   if(this.messageUntil&&now>this.messageUntil){this.message='';this.messageUntil=0;changed=true;}
-  const clock=this.route==='room'&&this.toolsOpen?(['hint','underlay'] as const).map(kind=>{const grant=this.activeAid(kind);return grant?Math.max(0,Math.ceil((grant.expiresAt-now)/1000)):0;}).join(':'):'';
+  const clock=this.route==='room'&&(this.toolsOpen||this.platform.config.id!=='web'&&this.layout==='phoneLandscape'&&this.landscapeToolsOpen)?(['hint','underlay'] as const).map(kind=>{const grant=this.activeAid(kind);return grant?Math.max(0,Math.ceil((grant.expiresAt-now)/1000)):0;}).join(':'):'';
   if(clock&&clock!==this.lastAidClock)changed=true;this.lastAidClock=clock;
   if(this.route==='room'&&this.room&&!this.room.connected)changed=true;
   if(this.chatBubble&&now>this.chatBubble.until){this.chatBubble=null;changed=true;}
@@ -1227,11 +1228,11 @@ export class GameApp{
    s.button({x:s.w-panel,y:bar+4,w:32,h:32},this.roomPanelCollapsed?'\u2039':'\u203a',()=>this.setRoomPanelCollapsed(!this.roomPanelCollapsed),{fontSize:22});
    this.drawRoomGift(this.roomArea.x+10,safeBottom-62,true);this.drawZoomControl(this.roomArea.x+this.roomArea.w-150,safeBottom-50);
   }else if(layout==='phoneLandscape'){
-   const column=62;this.roomArea={x:0,y:0,w:s.w-column,h:safeBottom};
+   const web=this.platform.config.id==='web',column=web?62:this.landscapeToolsOpen?60:0;this.roomArea={x:0,y:0,w:s.w-column,h:safeBottom};
    this.placeBoard(board,headerTop+58,()=>this.phoneFit(board,'height'));
    this.drawRoomTopBar({x:0,y:headerTop,w:s.w-column,h:52},'landscape');
-   c.fillStyle=this.colors.cream;c.fillRect(s.w-column,0,column,s.h);c.fillStyle=this.colors.line;c.fillRect(s.w-column,0,2,s.h);
-   this.drawToolColumn({x:s.w-column+2,y:headerTop+6,w:column-2,h:safeBottom-headerTop-6});this.drawRoomGift(8,safeBottom-50,false);
+   if(web){c.fillStyle=this.colors.cream;c.fillRect(s.w-column,0,column,s.h);c.fillStyle=this.colors.line;c.fillRect(s.w-column,0,2,s.h);this.drawToolColumn({x:s.w-column+2,y:headerTop+6,w:column-2,h:safeBottom-headerTop-6});}
+   else this.drawToolColumn({x:s.w-60,y:headerTop+54,w:60,h:safeBottom-headerTop-54});this.drawRoomGift(8,safeBottom-50,false);
   }else{
    const headerBottom=headerTop+76;this.roomArea={x:0,y:headerBottom+1,w:s.w,h:Math.max(90,safeBottom-headerBottom-1)};
    this.placeBoard(board,6,()=>this.phoneFit(board,'width'));
@@ -1283,10 +1284,33 @@ export class GameApp{
    this.drawAidBadge(kind,b.x+b.w+4,b.y-4);if(!disabled)s.hit(b,()=>this.roomTool(kind));});
  }
  private drawToolColumn(r:Rect){
-  const s=this.stage,items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['organize','整理'],['orientation','竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),h=Math.min(58,r.h/items.length);this.roomToolsArea={...r};
-  items.forEach(([kind,label],index)=>{const b={x:r.x+5,y:r.y+index*h,w:r.w-10,h:h-5},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
-   if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+4,w:22,h:22});s.text(label,b.x+(b.w-s.measure(label,12,700))/2,b.y+b.h-17,12,disabled?this.colors.disabled:this.colors.ink,700);
-   if(!disabled)s.hit(b,()=>this.roomTool(kind));});
+  if(this.platform.config.id==='web'){
+   const s=this.stage,items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['organize','整理'],['orientation','竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),h=Math.min(58,r.h/items.length);this.roomToolsArea={...r};
+   items.forEach(([kind,label],index)=>{const b={x:r.x+5,y:r.y+index*h,w:r.w-10,h:h-5},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
+    if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+4,w:22,h:22});s.text(label,b.x+(b.w-s.measure(label,12,700))/2,b.y+b.h-17,12,disabled?this.colors.disabled:this.colors.ink,700);if(!disabled)s.hit(b,()=>this.roomTool(kind));});return;
+  }
+  const s=this.stage,toggle={x:r.x+12,y:r.y+3,w:36,h:36};this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
+  if(this.landscapeToolsOpen){
+   this.drawRoomFloat(r);s.hit(r,()=>{});
+   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),scale=Math.min(1,(r.h-44)/(items.length*40+32));let y=r.y+43;
+   items.forEach(([kind,label])=>{const badge=kind==='hint'||kind==='underlay',height=(badge?56:40)*scale,b={x:r.x+2,y,w:r.w-4,h:height-2},active=this.toolActive(kind),disabled=badge&&this.assistanceUnavailable(kind);y+=height;
+    if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-20)/2,y:b.y+1,w:20,h:20});s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+23,11,disabled?this.colors.disabled:this.colors.ink,700);
+    if(badge)this.drawAidBadge(kind,b.x+b.w,b.y+b.h-16);if(!disabled)s.hit(b,()=>this.roomTool(kind));});
+  }
+  this.drawRoomToolToggle(toggle,this.landscapeToolsOpen,()=>this.setLandscapeToolsOpen(!this.landscapeToolsOpen));
+ }
+ private setLandscapeToolsOpen(open:boolean){
+  if(this.landscapeToolsOpen===open)return;this.clearRoomPointer();this.landscapeToolsOpen=open;this.platform.storage.set('jigsaw:landscape-tools-open:v1',open?'1':'0');this.roomViewPending=true;this.invalidate();
+ }
+ /** Floating room chrome lets the real puzzle remain visible through its cream surface. */
+ private drawRoomFloat(r:Rect,rounded=false){
+  const s=this.stage,c=s.ctx,k=rounded?Math.min(15,r.h/2):4,x=r.x+.5,y=r.y+.5,w=r.w-1,h=r.h-1;
+  c.save();c.beginPath();c.moveTo(x+k,y);c.lineTo(x+w-k,y);
+  if(rounded)c.quadraticCurveTo(x+w,y,x+w,y+k);else{c.lineTo(x+w-k,y+k);c.lineTo(x+w,y+k);}
+  c.lineTo(x+w,y+h-k);if(rounded)c.quadraticCurveTo(x+w,y+h,x+w-k,y+h);else{c.lineTo(x+w-k,y+h-k);c.lineTo(x+w-k,y+h);}
+  c.lineTo(x+k,y+h);if(rounded)c.quadraticCurveTo(x,y+h,x,y+h-k);else{c.lineTo(x+k,y+h-k);c.lineTo(x,y+h-k);}
+  c.lineTo(x,y+k);if(rounded)c.quadraticCurveTo(x,y,x+k,y);else{c.lineTo(x+k,y+k);c.lineTo(x+k,y);}
+  c.closePath();c.globalAlpha=.85;c.fillStyle=this.colors.cream;c.fill();c.globalAlpha=1;c.strokeStyle=this.colors.line;c.lineWidth=1;c.stroke();c.restore();
  }
  private roomToolsArea:Rect={x:0,y:0,w:0,h:0};private roomMembersArea:Rect={x:0,y:0,w:0,h:0};
  private get chatUnread(){return this.messages.filter(message=>message.id>this.chatSeen&&message.code!==this.client.profile?.code&&!this.social.blockedCodes.includes(message.code)).length;}
@@ -1304,11 +1328,19 @@ export class GameApp{
    const start=avatars(inviteX-8,r.y+9,24);this.roomMembersArea={x:start-4,y:r.y+2,w:r.x+r.w-start,h:42};s.hit({x:start-4,y:r.y+2,w:inviteX-start,h:42},()=>this.showModal('chat'));
    s.text(title,r.x+50,r.y+5,16,ink,800,start-r.x-58);s.text(kind,r.x+50,r.y+26,11,this.colors.muted,600,start-r.x-58);
    const line=placed+' / '+total+' · '+percent+'%',lw=s.measure(line,14,800);s.icon('piece',{x:r.x+12,y:r.y+48,w:18,h:20});s.text(line,r.x+34,r.y+50,14,ink,800);s.meter({x:r.x+44+lw,y:r.y+55,w:Math.max(20,r.w-58-lw),h:9},placed/Math.max(1,total));
-  }else{
+  }else if(this.platform.config.id==='web'){
    const panel={x:r.x+6,y:r.y+4,w:Math.min(320,r.w*.48),h:r.h-6};s.frame(panel,'button-linen-normal');back(panel.x+5,panel.y+5);
    s.text(title,panel.x+48,panel.y+5,14,ink,800,panel.w-56);const line=placed+'/'+total+' · '+percent+'%',lw=s.measure(line,12,800);s.text(line,panel.x+48,panel.y+25,12,ink,800);s.meter({x:panel.x+56+lw,y:panel.y+29,w:Math.max(20,panel.w-66-lw),h:7},placed/Math.max(1,total));
    const right=r.x+r.w-8,inviteW=64,box={x:right-inviteW-130,y:r.y+4,w:inviteW+130,h:r.h-6};s.frame(box,'button-linen-normal');s.button({x:right-inviteW-4,y:box.y+5,w:inviteW,h:box.h-10},'邀请',()=>this.showModal('invite'),{tone:'berry',icon:'invite',fontSize:13});
    avatars(right-inviteW-12,box.y+8,24);this.roomMembersArea={...box};s.hit({x:box.x,y:box.y,w:box.w-inviteW-8,h:box.h},()=>this.showModal('chat'));
+  }else{
+   const size=24,step=size*.7,avatarW=members.length?size+(members.length-1)*step:0,inviteW=64,gap=8,mid=r.x+r.w/2;
+   const left={x:r.x+6,y:r.y,w:Math.min(220,Math.max(116,s.measure(title,14,800)+62),r.w/2-68),h:46},right={x:r.x+r.w-6-(avatarW+inviteW+24),y:r.y,w:avatarW+inviteW+24,h:46};
+   const capsuleW=Math.min(300,2*Math.min(mid-left.x-left.w-gap,right.x-gap-mid)),capsule={x:mid-capsuleW/2,y:r.y,w:capsuleW,h:30};
+   this.drawRoomFloat(left);s.hit(left,()=>{});back(left.x+5,left.y+5);s.text(title,left.x+48,left.y+5,14,ink,800,left.w-56);s.text(total+' 片',left.x+48,left.y+26,11,this.colors.muted,600,left.w-56);
+   this.drawRoomFloat(capsule,true);const count=placed+'/'+total,countW=s.measure(count,12,800),percentText=percent+'%',percentW=s.measure(percentText,12,800);s.text(count,capsule.x+10,capsule.y+8,12,ink,800);s.text(percentText,capsule.x+capsule.w-percentW-10,capsule.y+8,12,ink,800);s.meter({x:capsule.x+countW+18,y:capsule.y+11,w:Math.max(1,capsule.w-countW-percentW-44),h:8},placed/Math.max(1,total));s.hit(capsule,()=>{});
+   this.drawRoomFloat(right);members.forEach((_member,index)=>{const x=right.x+8+index*step,y=right.y+11,c=s.ctx;c.save();c.beginPath();c.arc(x+size/2,y+size/2,size/2,0,Math.PI*2);c.clip();c.fillStyle=this.colors.cream;c.fillRect(x,y,size,size);s.icon('avatar',{x,y:y-1,w:size,h:size*1.08});c.restore();c.save();c.beginPath();c.arc(x+size/2,y+size/2,size/2,0,Math.PI*2);c.strokeStyle=this.colors.line;c.lineWidth=1;c.stroke();c.restore();});
+   this.roomMembersArea={x:right.x,y:right.y,w:avatarW+16,h:right.h};s.hit(this.roomMembersArea,()=>this.showModal('chat'));s.button({x:right.x+right.w-inviteW-5,y:right.y+5,w:inviteW,h:36},'+ 邀请',()=>this.showModal('invite'),{tone:'berry',fontSize:13});
   }
  }
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;
@@ -1430,19 +1462,23 @@ export class GameApp{
   if(unread){const x=r.x+r.w-16,y=r.y-4;s.frame({x,y,w:17,h:17},'segment-berry-selected');s.text(Math.min(99,unread),x+4,y+2,9,this.colors.onAccent,700);}
  }
  private assistanceUnavailable(kind:'hint'|'underlay'){return !this.activeAid(kind)&&!!this.aid&&!this.aid.newcomerProtected&&(this.aid.freeRemaining?.[kind]??0)<=0&&!this.shareAvailable;}
- private drawRoomTools(toggle:Rect,landscape:boolean){
-  const s=this.stage,board=this.board;if(!board)return;const c=s.ctx;
+ private drawRoomToolToggle(toggle:Rect,open:boolean,change:()=>void){
+  const s=this.stage,c=s.ctx;
   // The original B2 toggle is an integer-stepped circle, not a rounded rectangle.
   c.save();c.translate(toggle.x,toggle.y);c.scale(toggle.w/54,toggle.h/54);
   const circle=(points:number[],fill:string)=>{c.beginPath();for(let i=0;i<points.length;i+=2){if(i)c.lineTo(points[i],points[i+1]);else c.moveTo(points[i],points[i+1]);}c.closePath();c.fillStyle=s.color(fill);c.fill();};
   circle([18,1,36,1,36,3,42,3,42,6,48,6,48,12,51,12,51,18,53,18,53,36,51,36,51,42,48,42,48,48,42,48,42,51,36,51,36,53,18,53,18,51,12,51,12,48,6,48,6,42,3,42,3,36,1,36,1,18,3,18,3,12,6,12,6,6,12,6,12,3,18,3],'#925363');
   circle([18,3,36,3,36,5,42,5,42,8,46,8,46,12,49,12,49,18,51,18,51,36,49,36,49,42,46,42,46,46,42,46,42,49,36,49,36,51,18,51,18,49,12,49,12,46,8,46,8,42,5,42,5,36,3,36,3,18,5,18,5,12,8,12,8,8,12,8,12,5,18,5],'#e3bda4');
-  circle([19,5,35,5,35,7,41,7,41,10,44,10,44,13,47,13,47,19,49,19,49,35,47,35,47,41,44,41,44,44,41,44,41,47,35,47,35,49,19,49,19,47,13,47,13,44,10,44,10,41,7,41,7,35,5,35,5,19,7,19,7,13,10,13,10,10,13,10,13,7,19,7],this.toolsOpen?'#f4e7db':'#fff8ef');c.restore();
-  s.icon(this.toolsOpen?'close':'tools',{x:toggle.x+12,y:toggle.y+12,w:26,h:26});s.hit(toggle,()=>{this.clearRoomPointer();this.toolsOpen=!this.toolsOpen;this.invalidate();});
+  circle([19,5,35,5,35,7,41,7,41,10,44,10,44,13,47,13,47,19,49,19,49,35,47,35,47,41,44,41,44,44,41,44,41,47,35,47,35,49,19,49,19,47,13,47,13,44,10,44,10,41,7,41,7,35,5,35,5,19,7,19,7,13,10,13,10,10,13,10,13,7,19,7],open?'#f4e7db':'#fff8ef');c.restore();
+  const inset=toggle.w*12/50,size=toggle.w*26/50;s.icon(open?'close':'tools',{x:toggle.x+inset,y:toggle.y+inset,w:size,h:size});s.hit(toggle,change);
+ }
+ private drawRoomTools(toggle:Rect,landscape:boolean){
+  const s=this.stage,board=this.board;if(!board)return;
+  this.drawRoomToolToggle(toggle,this.toolsOpen,()=>{this.clearRoomPointer();this.toolsOpen=!this.toolsOpen;this.invalidate();});
   if(!this.toolsOpen)return;
   const width=Math.min(366,s.w-26),box={x:s.w-13-width,y:Math.max(this.roomArea.y+7,toggle.y-160),w:width,h:150};s.panel(box);s.hit(box,()=>{});
-  const cellW=(box.w-14)/this.roomTools.length;
-  this.roomTools.forEach(([kind,label],index)=>{const x=box.x+7+index*cellW,cx=x+cellW/2,y=box.y+12,disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
+  const items:readonly(readonly[string,string])[]=[...this.roomTools.map(([kind,label])=>[kind,label] as const),...(this.platform.setOrientation?[['orientation','横屏']] as const:[])],cellW=(box.w-14)/items.length;
+  items.forEach(([kind,label],index)=>{const x=box.x+7+index*cellW,cx=x+cellW/2,y=box.y+12,disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
    s.frame({x:cx-21,y:y+8,w:42,h:42},this.toolActive(kind)?'button-cream-selected':disabled?'button-cream-disabled':'button-cream-normal');s.icon(this.roomIcon(kind),{x:cx-13,y:y+16,w:26,h:26});s.text(label,cx-s.measure(label,12,700)/2,y+55,12,disabled?this.colors.disabled:this.colors.ink,700);
    this.drawAidBadge(kind,x+cellW-1,box.y+4);if(!disabled)s.hit({x,y:box.y+5,w:cellW,h:76},()=>this.roomTool(kind));});
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(box.x+12,box.y+88,box.w-24,1);
@@ -1701,13 +1737,13 @@ export class GameApp{
   if(!point){if(input.type==='cancel'){this.pointer=null;this.board?.input(input);}return this.stage.input(input);}
   if(!this.pointer&&this.route==='room'&&this.board&&!this.modalBlocksInput&&(input.type==='move'||input.type==='cancel')){if(this.stage.hasHit(point.x,point.y)&&inside(this.roomArea,point.x,point.y)){this.cursor?.point(null);return this.stage.input(input);}return this.board.input(input);}
   if(input.type==='down'){
-   if(this.pointer?.board&&this.board)return this.board.input(input);
+   if(this.pointer?.board&&this.board){this.pointer.landscapeBackgroundTap=false;return this.board.input(input);}
    const onModal=this.modalContains(point.x,point.y),board=!!this.board&&this.route==='room'&&!this.modalBlocksInput&&inside(this.roomArea,point.x,point.y)&&!this.stage.hasHit(point.x,point.y);
    if(input.pan&&!board)return true;
    this.pointer={x:point.x,y:point.y,lastY:point.y,scroll:false,board,modal:onModal,album:!onModal&&inside(this.albumListArea,point.x,point.y)};
-   if(board)return this.board!.input(input);return this.stage.input(input);
+   if(board){const handled=this.board!.input(input);this.pointer.landscapeBackgroundTap=this.platform.config.id!=='web'&&this.layout==='phoneLandscape'&&this.landscapeToolsOpen&&!input.pan&&input.points.length===1&&this.board!.backgroundPanning;return handled;}return this.stage.input(input);
   }
-  if(this.pointer?.board){const handled=this.board?.input(input)??false;if(input.type==='cancel'||(input.type==='up'&&!input.points.length))this.pointer=null;return handled;}
+  if(this.pointer?.board){const p=this.pointer;if(input.points.length>1||Math.hypot(point.x-p.x,point.y-p.y)>6)p.landscapeBackgroundTap=false;const handled=this.board?.input(input)??false;if(input.type==='cancel'||(input.type==='up'&&!input.points.length)){this.pointer=null;if(input.type==='up'&&p.landscapeBackgroundTap)this.setLandscapeToolsOpen(false);}return handled;}
   if(input.type==='move'&&this.pointer){const p=this.pointer,canScroll=p.modal?inside(this.modalArea,p.x,p.y):this.route!=='room'&&(p.album||inside(this.listArea,p.x,p.y));
    if(canScroll&&(p.scroll||Math.abs(point.y-p.y)>6)){if(!p.scroll)this.stage.input({type:'cancel',points:[],changed:input.changed});p.scroll=true;const delta=p.lastY-point.y;if(p.modal)this.modalScroll=clamp(this.modalScroll+delta,0,Math.max(0,this.modalExtent-this.modalArea.h));else if(p.album)this.albumListScroll=clamp(this.albumListScroll+delta,0,Math.max(0,this.albumListExtent-this.albumListArea.h));else{this.scroll=clamp(this.scroll+delta,0,Math.max(0,this.extent-this.listArea.h));if(this.route==='lobby'&&this.lobbyCursor&&this.scroll>this.extent-this.listArea.h-180)void this.loadLobby(true);}p.lastY=point.y;this.invalidate();return true;}p.lastY=point.y;
   }

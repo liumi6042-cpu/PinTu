@@ -86,6 +86,7 @@ export class PuzzleBoard implements RoomTable {
   this.removeShow=platform.onShow?.(()=>{this.feedbackHidden=false;this.frameAt=null;this.changed();this.animateFeedback();})??(()=>{});
  }
  get theme(){return this.currentTheme;}
+ get backgroundPanning(){return !!this.pan&&!this.drag&&!this.pinch;}
  performanceDetails(){return {gesture:this.pinch?'缩放':this.pan?'移动背景':this.drag?'拖动碎片':'静止',cache:!!(this.dragSurface||this.gestureSurface),pieces:this.pieces.length,pointers:this.pointers.size,builds:this.surfaceBuilds,allocations:this.surfaceAllocations,bufferBytes:this.surfaceBuffer?this.surfaceBuffer.width*this.surfaceBuffer.height*4:0};}
  get imagePreparation():ImagePreparation{return this.preparation;}
  setTheme(theme:ThemeId){if(this.currentTheme===theme)return;this.currentTheme=theme;this.releasePaperSurface();this.changed();}
