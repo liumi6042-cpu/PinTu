@@ -50,4 +50,4 @@ curl -s -H Host:jigsawnook.online -H X-Forwarded-Proto:https http://127.0.0.1:31
 - /intro/dream-horizon.png 线上原本就 404（账号页插图），本次未处理。
 - 真实账号登录流程未在本轮测试。
 - nginx 的 /shared-client 白名单不含 mobile-coin.wav，目前由 Node 提供（200）；如需由 nginx 直出需另改配置。
-- 41→39 之外的旧失败测试仍待处理。
+- 39 项改动前就存在的失败测试仍待处理。
