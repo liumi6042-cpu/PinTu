@@ -10,9 +10,10 @@ const HOUR=60*60*1000,DAY=24*HOUR;
 
 test('cleanup keeps tables with progress after their lobby day, and reclaims the rest',async()=>{
  const db=new SqliteD1(':memory:',resolve('drizzle')),now=Date.now();
-  const seed=(id,{visibility='public',deadline=now+DAY,online=false,progress=false,merged=false,playedAt,createdAt=now-DAY*2}={})=>{
+  const seed=(id,{visibility='public',deadline=now+DAY,online=false,progress=false,merged=false,playedAt,createdAt=now-DAY*2,completed=true}={})=>{
    const room=makeRoom(id,'seaside-native-v2',108,createdAt);room.visibility=visibility;room.expiresAt=deadline;
   if(playedAt!==undefined)room.lastPlayedAt=playedAt;
+  if(completed)room.completedAt=createdAt;
   if(online)room.members=[{id:'player',name:'QA',lastSeen:now,joinedAt:now,digest:'token',color:'#fff'}];
   if(progress)room.puzzle.groups[0].locked=true;
   if(merged){room.puzzle.groups[0].pieces.push(...room.puzzle.groups[1].pieces);room.puzzle.groups.splice(1,1);}
@@ -31,15 +32,17 @@ test('cleanup keeps tables with progress after their lobby day, and reclaims the
   seed('online-stale',{progress:true,online:true,deadline:now-DAY*40,playedAt:now-DAY*40});
   seed('private',{visibility:'private',deadline:now-DAY*2});
   seed('solo',{visibility:'solo',deadline:now-DAY*2});
+  // Room history keeps unfinished public tables; only completed ones are reclaimed.
+  seed('unfinished-stale',{progress:true,deadline:now-DAY*10,playedAt:now-DAY*31,completed:false});
   db.sql.prepare('INSERT INTO puzzle_results VALUES(?,?,?,?,?,?,?,?)').run('played-past','team','seaside',108,2,1000,now,'[]');
   assert.equal(await cleanupPublicRooms(db,now),2,'only empty tables older than the one-hour grace and month-idle tables go');
   const ids=()=>db.sql.prepare('SELECT id FROM puzzle_rooms ORDER BY id').all().map(r=>r.id);
-  assert.deepEqual(ids(),['merged-past','online-past','online-stale','played-past','private','solo','untouched'],'a fresh empty table gets a one-hour grace period');
+  assert.deepEqual(ids(),['merged-past','online-past','online-stale','played-past','private','solo','unfinished-stale','untouched'],'a fresh empty table gets a one-hour grace period');
   assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_room_directory WHERE room_id IN ('unplayed-past','stale-progress')").get().n,0);
   assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_room_cursors WHERE room_id IN ('unplayed-past','stale-progress')").get().n,0);
   assert.equal(db.sql.prepare("SELECT count(*) n FROM puzzle_results WHERE room_id='played-past'").get().n,1,'finished results outlive their table');
   assert.equal(await cleanupPublicRooms(db,now+DAY*31),5,'the one-hour grace does not prevent later cleanup of a still-empty table');
-  assert.deepEqual(ids(),['private','solo'],'only the private and solo rooms are left');
+  assert.deepEqual(ids(),['private','solo','unfinished-stale'],'only the private, solo and unfinished rooms are left');
  }finally{db.close();}
 });
 
@@ -100,7 +103,7 @@ test('a table past its lobby day can still be played while it has progress',()=>
 });
 
 test('cleanup rolls back the room deletion if related-row cleanup fails',async()=>{
- const db=new SqliteD1(':memory:',resolve('drizzle')),room=makeRoom('rollback','seaside-native-v2',108,Date.now()-2*HOUR);room.visibility='public';
+ const db=new SqliteD1(':memory:',resolve('drizzle')),room=makeRoom('rollback','seaside-native-v2',108,Date.now()-2*HOUR);room.visibility='public';room.completedAt=room.createdAt;
  try{
   db.sql.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(room.id,0,JSON.stringify(room),room.expiresAt);
   db.sql.exec("INSERT INTO puzzle_room_directory VALUES('rollback','public',NULL,'QA','seaside',108,0,0,NULL,NULL); INSERT INTO puzzle_room_cursors VALUES('rollback','p','c',1,0,0,0); CREATE TRIGGER fixture_failure BEFORE DELETE ON puzzle_room_cursors BEGIN SELECT RAISE(ABORT,'fixture failure'); END;");
