@@ -3,9 +3,11 @@ import {resolve,sep} from 'node:path';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
 
-// mobile/app.ts: collection viewport <= 1144, padding 24, cover inset 12 => 1108.
-// Album covers are wider than the gallery/room grids. Cap their 2x width for package size.
-export const TAPTAP_THUMBNAIL_WIDTH=Math.min(1108*2,640);
+// TapTap is a phone client: gallery/album cards render at about 180 CSS px wide in portrait, so 2x is
+// about 360. 400 px stays sharper than the 288 px server thumbnails while keeping the package near
+// its previous size (640 px added ~8 MB).
+export const TAPTAP_THUMBNAIL_WIDTH=400;
+export const TAPTAP_THUMBNAIL_QUALITY=78;
 
 /** Snapshot public artwork only. Exact content hashes make later CMS edits fall back online. */
 export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds}){
@@ -42,7 +44,7 @@ export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds}){
   // Transform the exact HD bytes we verified, never the server thumbnail.
   const sourceBytes=readFileSync(puzzle.source);
   if(createHash('sha256').update(sourceBytes).digest('hex')!==puzzle.sha256)throw Error('Bundled artwork changed during thumbnail generation');
-  const data=await sharp(sourceBytes).resize({width:TAPTAP_THUMBNAIL_WIDTH}).webp({quality:80}).toBuffer();
+  const data=await sharp(sourceBytes).resize({width:TAPTAP_THUMBNAIL_WIDTH}).webp({quality:TAPTAP_THUMBNAIL_QUALITY}).toBuffer();
   const sha256=createHash('sha256').update(data).digest('hex'),url='/puzzles/'+photo.id+'-thumb2x-'+sha256.slice(0,12)+'.webp',path='assets'+url;
   files.set(url,{url,path,data,bytes:data.length,sha256,kind:'thumbnail',imageId:photo.id});mapping[photo.thumbSrc]=path;
  }

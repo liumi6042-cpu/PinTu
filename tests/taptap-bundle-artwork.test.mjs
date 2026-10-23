@@ -21,17 +21,17 @@ async function fixture(t){
  return {root,catalog,albums:[{id:'local',title:'Local',showOnMobile:true,imageIds:['landscape','portrait']},{id:'online',title:'Online',showOnMobile:false,imageIds:['online']}]};
 }
 
-test('bundled HD art produces deterministic 640px WebP thumbnails, mapped and written with verified hashes',async t=>{
+test('bundled HD art produces deterministic 400px WebP thumbnails, mapped and written with verified hashes',async t=>{
  const input=await fixture(t),plan=await planTapTapArtwork(input);
- assert.equal(TAPTAP_THUMBNAIL_WIDTH,640);assert.equal(plan.thumbnailCount,3);
+ assert.equal(TAPTAP_THUMBNAIL_WIDTH,400);assert.equal(plan.thumbnailCount,3);
  assert.equal(plan.files.length,5);assert.equal(plan.totalBytes,plan.files.reduce((sum,file)=>sum+file.bytes,0));
- for(const [id,height] of [['landscape',320],['portrait',960]]){
+ for(const [id,height] of [['landscape',200],['portrait',600]]){
   const photo=input.catalog.find(photo=>photo.id===id),file=plan.files.find(file=>file.imageId===id&&file.kind==='thumbnail');
   assert.match(file.path,new RegExp(`^assets/puzzles/${id}-thumb2x-[a-f0-9]{12}\\.webp$`));
   assert.equal(plan.mapping[photo.thumbSrc],file.path);assert.equal(plan.mapping[photo.optimizedSrc],'assets'+photo.optimizedSrc);
   assert.ok(!plan.files.some(file=>file.url===photo.thumbSrc));
   assert.equal(file.sha256,sha(file.data));assert.equal(file.bytes,file.data.length);assert.ok(file.path.endsWith(sha(file.data).slice(0,12)+'.webp'));
-  const metadata=await sharp(file.data).metadata();assert.equal(metadata.format,'webp');assert.equal(metadata.width,640);assert.equal(metadata.height,height);
+  const metadata=await sharp(file.data).metadata();assert.equal(metadata.format,'webp');assert.equal(metadata.width,400);assert.equal(metadata.height,height);
   const {data}=await sharp(file.data).raw().toBuffer({resolveWithObject:true});assert.ok(data[0]>240&&data[1]<10&&data[2]<10,'thumbnail must use red HD art, not the green server thumbnail');
  }
  const online=input.catalog[2];assert.equal(plan.mapping[online.thumbSrc],'assets'+online.thumbSrc);assert.equal(plan.mapping[online.optimizedSrc],undefined);

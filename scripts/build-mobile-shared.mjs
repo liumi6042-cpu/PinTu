@@ -83,7 +83,8 @@ for(const [platform,out]of Object.entries(outputs)){
   writeFileSync(join(out,'art/game.js'),'// Shared supplemental artwork package.\n');
   json(join(out,'project.config.json'),{appid:config.appId,projectname:config.gameName,description:'拼图小窝：TapTap/微信共用内容与Canvas界面的开发测试版',compileType:'game',libVersion:'latest',setting:{es6:false,enhance:false,minified:false,urlCheck:true,coverView:true},packOptions:{ignore:[]},condition:{}});
  }else{
-  if(platform==='taptap')json(join(out,'game.json'),{deviceOrientation:'portrait'});
+  // No game.json for TapTap: it makes the console parse the H5 zip as a native mini-game and reject it.
+  // Portrait is requested at startup by mobile/entry-web.ts instead.
   const title=platform==='web'?'拼图小窝 · 桌面体验':config.gameName;
   writeFileSync(join(out,'index.html'),'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#fdf6ed"><title>'+title+'</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fdf6ed}canvas{width:100%;height:100%;display:block;touch-action:none}</style></head><body><canvas id="game" aria-label="'+title+'"></canvas><script src="game.js"></script></body></html>\n');
  }
