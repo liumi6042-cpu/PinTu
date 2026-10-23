@@ -1012,17 +1012,38 @@ export class GameApp{
  }
  private albumDetailOpen=false;private decorationFilter:'all'|'owned'|'craft'|'album'='all';
  private drawCollection(){
-  const s=this.stage,data=this.collection,desktop=this.desktop,pad=12,w=s.w-pad*2;let y=this.bodyTop;
+  const s=this.stage,data=this.collection,desktop=this.desktop,landscape=this.layout==='phoneLandscape',pad=12,w=s.w-pad*2;let y=this.bodyTop;
   const tab=this.collectionTab==='decorations'?'decorations':'albums';
-  if(!(tab==='albums'&&this.albumDetailOpen&&!desktop)){
+  if(landscape||!(tab==='albums'&&this.albumDetailOpen&&!desktop)){
    const tabs=[['albums','图集','book'],['decorations','装饰','leaf']] as const,tw=Math.min(180,(w-8)/2);
-   tabs.forEach(([id,label,icon],index)=>s.button({x:pad+index*(tw+8),y,w:tw,h:38},label,()=>this.changeListView(()=>{this.collectionTab=id;this.albumDetailOpen=false;}),{tone:tab===id?'berry':'linen',icon,fontSize:15}));
-   if(w>tw*2+200&&!(desktop&&tab==='albums'))s.text(tab==='albums'?'拼完一张图就收进图集，集满有奖励':'装饰会在拖动拼块时展示给同桌',pad+tw*2+24,y+12,13,this.colors.muted,600,w-tw*2-30);
-   y+=50;if(w<=tw*2+200&&tab==='albums'){s.text('拼完一张图就收进图集，集满有奖励',pad+2,y-4,12,this.colors.muted,600,w);y+=20;}
+   tabs.forEach(([id,label,icon],index)=>s.button({x:pad+index*(tw+8),y,w:tw,h:landscape?32:38},label,()=>this.changeListView(()=>{this.collectionTab=id;this.albumDetailOpen=false;}),{tone:tab===id?'berry':'linen',icon,fontSize:15}));
+   if(landscape&&tab==='albums'&&this.albumDetailOpen)s.button({x:pad+tw*2+24,y,w:84,h:32},'‹ 图集',()=>{this.albumDetailOpen=false;this.scroll=0;this.albumListScroll=0;this.invalidate();},{fontSize:12});
+   else if(w>tw*2+200&&!(desktop&&tab==='albums'))s.text(tab==='albums'?'拼完一张图就收进图集，集满有奖励':'装饰会在拖动拼块时展示给同桌',pad+tw*2+24,y+12,13,this.colors.muted,600,w-tw*2-30);
+   y+=landscape?40:50;if(!landscape&&w<=tw*2+200&&tab==='albums'){s.text('拼完一张图就收进图集，集满有奖励',pad+2,y-4,12,this.colors.muted,600,w);y+=20;}
   }
   this.bodyTop=y;if(!data){s.text('正在翻开收藏…',pad+8,y+32,15);this.extent=0;return;}
   if(tab==='decorations'){this.drawDecorations(data);return;}
   const albums=this.orderedAlbums(data),selected=albums.find(album=>album.id===this.albumId)??albums.find(album=>this.packFor(data,album.id))??albums[0];
+  if(landscape){
+   if(this.albumDetailOpen&&selected){
+    const leftW=w*.34,gap=12,grid={x:pad+leftW+gap,y,w:w-leftW-gap,h:this.bodyBottom-y};
+    this.listColumn={x:this.contentOrigin.x+pad,w:leftW};
+    let bottom=y-this.scroll;
+    s.clip({x:pad,y,w:leftW,h:grid.h},()=>{
+     bottom=this.drawAlbumHeader(data,selected,pad,bottom,leftW,true);
+     bottom=this.drawAlbumRewards(data,selected,pad,bottom+6,leftW,true);
+    });this.extent=bottom+this.scroll-y+8;
+    this.albumListArea={...grid,x:grid.x+this.contentOrigin.x,y:grid.y+this.contentOrigin.y};
+    this.albumListExtent=this.albumImageGridHeight(selected,grid.w,3);
+    this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-grid.h));
+    s.clip(grid,()=>this.drawAlbumImages(selected,grid.x,y-this.albumListScroll,grid.w,3));
+   }else{
+    const columns=w>=900?4:3,gap=12,cw=(w-gap*(columns-1))/columns;let bottom=y-this.scroll;
+    this.scrolled(()=>{for(let row=0;row<Math.ceil(albums.length/columns);row++){
+     let rowBottom=bottom;for(let col=0;col<columns;col++){const album=albums[row*columns+col];if(album)rowBottom=Math.max(rowBottom,this.drawAlbumCard(data,album,{x:pad+col*(cw+gap),y:bottom,w:cw},false,true));}bottom=rowBottom+gap;
+    }},y,this.bodyBottom);this.extent=bottom+this.scroll-y;
+   }return;
+  }
   if(desktop){
    const listW=Math.min(560,w*.5),detail={x:pad+listW+16,y,w:w-listW-16,h:this.bodyBottom-y};
    let ly=y-this.scroll;this.listColumn={x:this.contentOrigin.x+pad-4,w:listW+8};
@@ -1046,8 +1067,16 @@ export class GameApp{
   return next.target>=album.total?'集齐送 '+next.coins+' 金币'+(decoration?'和'+decoration:''):'再拼 '+left+' 张得 '+next.coins+' 金币'+(decoration?'和'+decoration:'');
  }
  private openAlbum(id:string){this.albumId=id;this.albumDetailOpen=true;this.albumListScroll=0;if(!this.desktop)this.scroll=0;this.invalidate();}
- private drawAlbumCard(data:MobileCollectionView,album:CollectionAlbum,r:{x:number;y:number;w:number},selected:boolean){
+ private drawAlbumCard(data:MobileCollectionView,album:CollectionAlbum,r:{x:number;y:number;w:number},selected:boolean,compact=false){
   const s=this.stage,pack=this.packFor(data,album.id),ink=this.colors.ink;
+  if(compact){const h=164,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');
+   if(pack)s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||''),{x:r.x+5,y:r.y+5,w:r.w-10,h:65},'cover');else s.icon('book',{x:r.x+12,y:r.y+12,w:46,h:46});
+   s.text(album.title,r.x+10,r.y+77,15,ink,800,r.w-20);s.text('已收集 '+album.collected+'/'+album.total,r.x+10,r.y+100,12,this.colors.muted,700,r.w-20);
+   s.meter({x:r.x+10,y:r.y+121,w:r.w-20,h:8},album.collected/Math.max(1,album.total));
+   if(pack&&!pack.owned)s.button({x:r.x+8,y:r.y+133,w:r.w-16,h:26},pack.price+' 解锁',()=>{this.purchase=pack;this.showModal('purchase');},{icon:'coin',fontSize:12,disabled:this.busy});
+   else s.text(this.nextMilestoneText(data,album),r.x+10,r.y+140,11,this.colors.muted,600,r.w-20);
+   s.hit({...card,h:130},()=>this.openAlbum(album.id));return r.y+h;
+  }
   if(!pack){const h=100,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');s.icon('book',{x:r.x+14,y:r.y+18,w:44,h:40});s.text(album.title,r.x+68,r.y+14,17,ink,800,r.w-170);s.text('每日拼图自动收进来',r.x+68,r.y+38,12,this.colors.muted,600,r.w-170);
    const count=album.collected+' / '+album.total;s.text(count,r.x+r.w-14-s.measure(count,15,800),r.y+16,15,ink,800);s.meter({x:r.x+68,y:r.y+60,w:r.w-84,h:9},album.collected/Math.max(1,album.total));s.text(this.nextMilestoneText(data,album),r.x+68,r.y+76,12,this.colors.muted,600,r.w-84);s.hit(card,()=>this.openAlbum(album.id));return r.y+h;}
   const coverH=Math.min(170,r.w*.42),h=coverH+52,card={...r,h},cover={x:r.x+6,y:r.y+6,w:r.w-12,h:coverH},locked=!pack.owned&&album.collected===0;
@@ -1060,17 +1089,52 @@ export class GameApp{
   else{s.text('查看 ›',r.x+r.w-60,fy+2,13,this.colors.berry,700);s.hit(card,()=>this.openAlbum(album.id));}
   return r.y+h;
  }
- private drawAlbumDetail(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,columns:number){
-  const s=this.stage,ink=this.colors.ink;s.text(album.title,x,y,22,ink,800,w-120);const count='已收集 '+album.collected+' / '+album.total;s.text(count,x+w-s.measure(count,14,700),y+6,14,this.colors.muted,700);y+=34;
-  s.meter({x,y,w,h:10},album.collected/Math.max(1,album.total));y+=22;
-  let mx=x;for(const milestone of album.milestones){const decoration=milestone.decorationId?data.decorations.find(item=>item.id===milestone.decorationId)?.title:'',label=(milestone.earned?'✓ ':'')+'集满 '+milestone.target+' 张 · +'+milestone.coins+' 金币'+(decoration?'和'+decoration:''),mw=Math.min(w,s.measure(label,13,700)+24);if(mx+mw>x+w){mx=x;y+=40;}s.frame({x:mx,y,w:mw,h:32},milestone.earned?'segment-berry-selected':'button-linen-normal');s.text(label,mx+12,y+9,13,milestone.earned?this.colors.onAccent:ink,700,mw-20);mx+=mw+8;}
-  y+=46;const gap=12,cw=(w-gap*(columns-1))/columns,ih=cw*.72,ch=ih+44;
+ private drawAlbumHeader(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,compact=false){
+  const s=this.stage,ink=this.colors.ink,stack=compact||w<430,progressW=stack?w:Math.min(200,w*.38),titleW=stack?w:w-progressW-16;
+  s.icon('book',{x,y,w:compact?26:36,h:compact?28:38});s.text(album.title,x+(compact?32:44),y+4,compact?16:21,ink,800,titleW-(compact?32:44));
+  const descriptionY=y+(compact?32:44),descriptionH=s.wrap(album.description,x,descriptionY,titleW,compact?11:12,this.colors.muted,16);
+  const py=stack?descriptionY+descriptionH+6:y+3,px=stack?x:x+w-progressW;
+  s.icon('piece',{x:px,y:py,w:18,h:20});s.text('已收集 '+album.collected+'/'+album.total,px+24,py+3,compact?12:14,ink,700,progressW-24);
+  // Stage.meter clamps the fraction and paints its rounded fill inside the track.
+  s.meter({x:px,y:py+27,w:progressW,h:9},album.collected/Math.max(1,album.total));
+  let bottom=Math.max(descriptionY+descriptionH,py+36)+12;const pack=this.packFor(data,album.id);
+  if(pack&&!pack.owned){s.button({x,y:bottom,w:Math.min(w,210),h:compact?28:34},pack.price+' 金币 · 解锁图包',()=>{this.purchase=pack;this.showModal('purchase');},{icon:'coin',tone:'berrydark',fontSize:12,disabled:this.busy});bottom+=compact?34:42;}
+  return bottom;
+ }
+ private drawAlbumRewards(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,compact=false){
+  if(!album.milestones.length)return y;
+  const s=this.stage,ink=this.colors.ink,final=[...album.milestones].reverse().find(m=>m.decorationId),decoration=data.decorations.find(d=>d.id===final?.decorationId),tagW=decoration?Math.min(compact?80:150,w*.38):0,h=138;
+  s.panel({x,y,w,h});const left=x+22,right=x+w-tagW-26,trackW=Math.max(1,right-left),ty=y+28,total=Math.max(1,album.total,...album.milestones.map(m=>m.target));
+  s.meter({x:left,y:ty,w:trackW,h:9},album.collected/total);
+  for(const milestone of album.milestones){const nx=left+trackW*clamp(milestone.target/total,0,1),reached=album.collected>=milestone.target;
+   s.frame({x:nx-11,y:ty-7,w:22,h:22},reached?'segment-berry-selected':'button-linen-normal');
+   if(reached)s.icon('check',{x:nx-7,y:ty-3,w:14,h:14});else s.icon('lock',{x:nx-6,y:ty-2,w:12,h:14});
+   s.text(milestone.target+'张',nx-s.measure(milestone.target+'张',11,700)/2,ty+22,11,ink,700);
+   const reward=data.decorations.find(d=>d.id===milestone.decorationId);
+   if(milestone.coins){s.icon('coin',{x:nx-9,y:ty+42,w:18,h:20});s.text(milestone.coins,nx-s.measure(String(milestone.coins),10,700)/2,ty+65,10,ink,700);}
+   if(reward)s.decoration(reward,{x:nx-12,y:ty+(milestone.coins?80:43),w:24,h:26});
+  }
+  if(decoration){const tx=x+w-tagW;s.frame({x:tx,y:y+10,w:tagW-8,h:24},'segment-berry-selected');s.text('集齐可得',tx+5,y+16,compact?10:12,this.colors.onAccent,700,tagW-18);
+   s.decoration(decoration,{x:tx+4,y:y+40,w:28,h:30});s.text(decoration.title,tx+2,y+76,compact?10:13,ink,800,tagW-10);
+   s.clip({x:tx,y:y+94,w:tagW-8,h:h-98},()=>s.wrap(decoration.description,tx+2,y+96,tagW-12,10,this.colors.muted,14));
+  }return y+h+12;
+ }
+ private albumImageGridHeight(album:CollectionAlbum,w:number,columns:number){const cw=(w-12*(columns-1))/columns;return Math.ceil(album.images.length/columns)*(cw*.72+78);}
+ private drawAlbumImages(album:CollectionAlbum,x:number,y:number,w:number,columns:number){
+  const s=this.stage,ink=this.colors.ink,gap=12,cw=(w-gap*(columns-1))/columns,ih=cw*.72,ch=ih+66;
   album.images.forEach((image,index)=>{const cx=x+(index%columns)*(cw+gap),cy=y+Math.floor(index/columns)*(ch+gap),r={x:cx,y:cy,w:cw,h:ch},art={x:cx+5,y:cy+5,w:cw-10,h:ih};if(cy+ch<0||cy>s.h)return;
    s.frame(r,'button-linen-normal');s.image(this.client.asset(image.thumbSrc),art,'cover');
-   if(image.collected){s.frame({x:art.x+6,y:art.y+6,w:26,h:26},'segment-berry-selected');s.icon('check',{x:art.x+10,y:art.y+10,w:18,h:18},'#fff9ed');s.text(image.title,cx+10,cy+ih+14,13,ink,700,cw-20);}
-   else{s.ctx.save();s.ctx.globalAlpha=.62;s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(art.x,art.y,art.w,art.h);s.ctx.restore();s.text(image.title,cx+10,cy+ih+14,13,this.colors.muted,700,cw-70);s.text('去拼 ›',cx+cw-56,cy+ih+14,13,this.colors.berry,700);s.hit(r,()=>this.playImage(image.id));}
-  });
-  return y+Math.ceil(album.images.length/columns)*(ch+gap)+8;
+   if(!image.collected){s.ctx.save();s.ctx.globalAlpha=.62;s.frame(art,'panel-cream');s.ctx.restore();s.icon('lock',{x:art.x+art.w/2-10,y:art.y+art.h/2-12,w:20,h:24});}
+   s.text(image.title,cx+9,cy+ih+13,12,image.collected?ink:this.colors.muted,700,cw-18);
+   const pill={x:cx+8,y:cy+ih+34,w:cw-16,h:24};s.frame(pill,'button-linen-normal');s.icon(image.collected?'leaf':'lock',{x:pill.x+6,y:pill.y+4,w:15,h:16});s.text(image.collected?'已收藏':'未收集',pill.x+25,pill.y+6,11,this.colors.muted,700,pill.w-28);
+   if(image.difficulties.length){const badge=String(Math.max(...image.difficulties)),bw=Math.min(art.w-8,s.measure(badge,11,700)+28);s.frame({x:art.x+art.w-bw-4,y:art.y+4,w:bw,h:22},'button-linen-normal');s.icon('piece',{x:art.x+art.w-bw,y:art.y+8,w:13,h:14});s.text(badge,art.x+art.w-bw+16,art.y+9,11,ink,700,bw-20);}
+   if(!image.collected)s.hit(r,()=>this.playImage(image.id));
+  });return y+this.albumImageGridHeight(album,w,columns);
+ }
+ private drawAlbumDetail(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,columns:number){
+  y=this.drawAlbumHeader(data,album,x,y,w);
+  y=this.drawAlbumImages(album,x,y+4,w,columns);
+  return this.drawAlbumRewards(data,album,x,y+8,w);
  }
  private playImage(id:string){
   if(!this.availableGallery().some(photo=>photo.id===id)){this.note('这张图会出现在每日拼图里，留意大厅的今日拼图');return;}
