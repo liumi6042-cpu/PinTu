@@ -190,6 +190,14 @@ export async function ownedManagedCursors(owners:string[],content:ManagedContent
 }
 export async function ownedManagedCursor(owner:string,content?:ManagedContentSnapshot|null){const snapshot=content===undefined?readManagedContent():content;return (await ownedManagedCursors([owner],snapshot)).get(owner)??null;}
 
+/** Collection counts without activation, reward recovery or profile allocation. */
+export function managedCollectionStats(state:State,content:ManagedContentSnapshot,now=Date.now()){
+ const artworks=state.artworks??{},ownedAlbums=state.ownedAlbums??{};
+ const visible=managedAlbumImages(content,now).filter(album=>album.showOnPc!==false);
+ return {completedPuzzles:Object.keys(artworks).length,ownedPacks:Object.keys(ownedAlbums).length,
+  completedAlbums:visible.filter(album=>album.imageIds.length>0&&album.imageIds.every((id:string)=>!!artworks[id])).length};
+}
+
 export async function managedPlayerView(owner:string,content:ManagedContentSnapshot|null,origin:string,options:{recover?:boolean}={}){
  if(!content)return {enabled:false,contentReleaseId:null};
  const now=Date.now();await activate(content);if(options.recover!==false){try{await drainManagedRewards(content,owner);}catch{console.error('Managed reward settlement pending recovery');}}

@@ -7,7 +7,7 @@ import {body,json,failure,readRoom} from './room-store';
 import {RoomError,hasRoomAdmission} from './room-engine';
 import {securityLimit} from './account-security';
 import {readManagedContent,managedDailyPuzzle,managedGalleryPhotos,effectiveManagedAlbums} from './managed-content';
-import {managedPlayerView,managedPlayerAction,managedAccessibleImageIds} from './managed-economy';
+import {managedPlayerView,managedPlayerAction,managedAccessibleImageIds,managedCollectionStats,ownedManagedCursor} from './managed-economy';
 import {webRecentRooms,webOwnedRooms,webRecordJoin,webRemoveOwned} from '../server/web-room-history.mjs';
 import {pieceBand} from './piece-policy';
 import {photoGuidance} from './play-guidance';
@@ -179,9 +179,32 @@ async function createSharedRoom(request:Request,input:Data){
  const contributionView=await sharedContributionView(await readRoom(data.room.id),ctx.player.id);data.room.members=(data.room.members??[]).map((member:Data)=>({...member,...contributionView.member(member.id)}));
  return withPlayerCookie(replaceResponse(response,data),ctx.player);
 }
+async function playerCard(request:Request,code:string){
+ if(!/^[a-f0-9]{12}$/i.test(code))throw new RoomError('请填写12位好友邀请码');
+ const viewer=await currentPlayer(request,true);
+ await securityLimit('shared-player-card',viewer!.id,120,{readOnly:true});
+ const db=localDb(),peer=await db.prepare("SELECT c.owner,c.code,u.name,p.data FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_users u ON u.id=c.owner LEFT JOIN puzzle_managed_players p ON p.owner=c.owner LEFT JOIN puzzle_account_security a ON a.user_id=c.owner WHERE c.code=? AND COALESCE(a.status,'active')='active'").bind(code.toLowerCase()).first<Data>();
+ if(!peer)throw new RoomError('没有找到这个玩家',404);
+ const content=readManagedContent(supportsArtworkSnapshot(request.headers));
+ if(!content)throw new RoomError('正式内容暂未发布，暂时不能读取玩家奖励',503);
+ const state=peer.data?JSON.parse(peer.data):{},relationship=peer.owner===viewer!.id?'self':
+  await db.prepare('SELECT 1 FROM puzzle_managed_friends WHERE owner=? AND peer=?').bind(viewer!.id,peer.owner).first()?'friend':
+  await db.prepare('SELECT 1 FROM puzzle_managed_friend_requests WHERE sender=? AND recipient=?').bind(peer.owner,viewer!.id).first()?'incoming':
+  await db.prepare('SELECT 1 FROM puzzle_managed_friend_requests WHERE sender=? AND recipient=?').bind(viewer!.id,peer.owner).first()?'outgoing':'none';
+ let roomContribution=0;
+ const roomId=new URL(request.url).searchParams.get('room');
+ if(roomId&&/^[a-f0-9]{32}$/.test(roomId)){
+  // readRoom performs maintenance and completion settlement; cards must be pure reads.
+  const row=await db.prepare('SELECT r.data FROM puzzle_rooms r LEFT JOIN puzzle_room_moderation m ON m.room_id=r.id WHERE r.id=? AND COALESCE(m.closed,0)=0').bind(roomId).first<{data:string}>();
+  if(row){const room=JSON.parse(row.data);if(room.members?.some((member:Data)=>(member.guestId||member.accountId)===viewer!.id))roomContribution=room.achievements?.contributors?.[peer.owner]?.count??0;}
+ }
+ return withPlayerCookie(json({player:{code:peer.code,name:playerName(peer.name,peer.owner),level:state.level??0,decoration:await ownedManagedCursor(peer.owner,content)},stats:{...managedCollectionStats(state,content),roomContribution},relationship}),viewer!);
+}
 export async function sharedClientApi(request:Request,path:string){
  try{
   if(!sharedRequestAllowed(request))return json({error:'请从本网站操作',code:'ORIGIN_REQUIRED'},403);
+  const card=/^\/api\/mobile\/players\/([^/]*)\/card$/.exec(path);
+  if(card)return request.method==='GET'?await playerCard(request,card[1]):json({error:'请求方式无效'},405);
   if(!/^\/api\/[a-zA-Z0-9/_-]+$/.test(path))return json({error:'接口不存在'},404);
   const method=request.method,input=method==='GET'?{}:await body(request);
   if(path==='/api/rooms'&&method==='POST')return await createSharedRoom(request,input);

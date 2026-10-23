@@ -4,7 +4,16 @@ import { equalHash,passwordHash,randomSecret,tokenHash,usernameOf } from './acco
 import { RoomError } from './room-engine';
 
 const RECOVERY_DAYS=180;
-export async function securityLimit(scope:string, identity:string, maximum=8) {
+const readLimits=new Map<string,{hits:number;expiresAt:number}>();
+export async function securityLimit(scope:string, identity:string, maximum=8, options:{readOnly?:boolean}={}) {
+  // Pure read endpoints cannot persist rate counters. This budget is per process.
+  if(options.readOnly){
+    const now=Date.now(),key=scope+':'+await tokenHash(identity);
+    for(const [id,rate] of readLimits)if(rate.expiresAt<=now)readLimits.delete(id);
+    const rate=readLimits.get(key)??{hits:0,expiresAt:now+60000};readLimits.set(key,rate);
+    if(++rate.hits>maximum)throw new RoomError('尝试次数过多，请 1 分钟后再试',429);
+    return;
+  }
   const db=localDb(),now=Date.now(),key=scope+':'+await tokenHash(identity);
   const result=await db.batch([db.prepare(`INSERT INTO puzzle_request_limits (key,hits,expires_at) VALUES (?,1,?)
     ON CONFLICT(key) DO UPDATE SET hits=CASE WHEN expires_at<=? THEN 1 ELSE hits+1 END,
