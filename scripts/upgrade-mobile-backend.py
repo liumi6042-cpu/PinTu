@@ -34,6 +34,8 @@ CODE_PATHS = {
     'lib/decoration-policy.mjs', 'scripts/check-artwork-revisions.mjs',
     'content/artwork-revisions.json', 'content/puzzle-catalog.json',
     'outputs/mobile/artwork.mjs', 'outputs/mobile/room-realtime.mjs', 'server/room-realtime.LICENSE.txt',
+    'server/mobile-room-history.mjs', 'server/tap-preview.mjs', 'server/diagnostic-actions.mjs', 'server/guest-names.mjs',
+    'lib/tap-platform-id.mjs',
 }
 RELEASE_PATTERN = r'\d{8}-[a-z0-9-]{2,32}'
 SHA_PATTERN = r'[a-f0-9]{64}'

@@ -7,12 +7,15 @@ import {TAR} from './release-files.mjs';
 
 const root=resolve(import.meta.dirname,'..'),release=process.argv[2]??'20261015-artwork40';
 assert.match(release,/^\d{8}-[a-z0-9-]{2,32}$/);
-const targetRoot=resolve(root,'work/mobile-backend-releases',release),beforePath=resolve(root,'../content-admin/work/collection-ui-release-20261015/mobile/stage/release.json');
+const targetRoot=resolve(root,'work/mobile-backend-releases',release),beforePath=resolve(root,process.argv[3]??'../content-admin/work/collection-ui-release-20261015/mobile/stage/release.json');
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const beforeBytes=readFileSync(beforePath),before=JSON.parse(beforeBytes),targetBytes=readFileSync(resolve(targetRoot,'release.json')),target=JSON.parse(targetBytes);
 assert.equal(target.packageKind,'full');assert.equal(before.release,target.baseRelease);assert.equal(sha(beforeBytes),target.baseManifestSha256);
 const previous=new Map(before.files.map(file=>[file.path,file]));
-const changed=target.files.filter(file=>{const old=previous.get(file.path);return !old||old.bytes!==file.bytes||old.sha256!==file.sha256;});
+// The server rebuild reuses a file only when its whole declaration is identical (extra keys such as
+// "source" make it a payload file), so mirror that comparison exactly.
+const declaration=item=>JSON.stringify(Object.keys(item).sort().map(key=>[key,item[key]]));
+const changed=target.files.filter(file=>{const old=previous.get(file.path);return !old||declaration(old)!==declaration(file);});
 const reused=target.files.filter(file=>!changed.includes(file));
 const stage=resolve(root,'work/mobile-sparse-transfer',release),archive=resolve(root,'releases/jigsaw-mobile-sparse-'+release+'.tar.gz');
 assert(!existsSync(stage)&&!existsSync(archive),'Sparse preparation needs a fresh output');mkdirSync(stage,{recursive:true});
