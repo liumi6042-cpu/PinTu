@@ -41,6 +41,18 @@ for(const path of files){const from=realpathSync(resolve(path)),to=resolve(stage
 mkdirSync(resolve(stage,'h5'),{recursive:true});writeFileSync(resolve(stage,'h5/asset-manifest.json'),JSON.stringify(assets,null,2)+'\n');
 mkdirSync(resolve(stage,'server'),{recursive:true});copyFileSync(realpathSync(resolve('server/room-realtime.LICENSE.txt')),resolve(stage,'server/room-realtime.LICENSE.txt'));
 files.push('outputs/mobile/engine.mjs','outputs/mobile/room-realtime.mjs','server/room-realtime.LICENSE.txt','h5/asset-manifest.json');
+// The upgrade extracts into an empty release directory, so a delta over a full release must also carry
+// every other installed code/content file. Copy them unchanged from the local baseline copy, hash-checked.
+if(keepInstalled){
+ const baseDir=dirname(resolve(baselinePath)),built=new Set(files);
+ for(const item of baseline.files){
+  if(item.path.startsWith('public/')||item.path==='release.json'||built.has(item.path))continue;
+  const from=resolve(baseDir,item.path),to=resolve(stage,item.path);
+  if(!from.startsWith(baseDir+sep)||!to.startsWith(stage+sep))throw Error('Unsafe baseline path');
+  const bytes=readFileSync(from);if(bytes.length!==item.bytes||hash(bytes)!==item.sha256)throw Error('Local baseline copy differs from its manifest: '+item.path);
+  mkdirSync(dirname(to),{recursive:true});writeFileSync(to,bytes);files.push(item.path);
+ }
+}
 const code=files.map(path=>{const bytes=readFileSync(resolve(stage,path));return {path,bytes:bytes.length,sha256:hash(bytes)};});
 // Kept installed assets are recorded with their verified baseline entries; the server re-checks every file.
 const publicFiles=keepInstalled?[...previous.values()]:current;
