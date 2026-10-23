@@ -19,7 +19,7 @@ try{
   const {GameApp,Stage}=Task10,canvas=document.querySelector('canvas'),overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
   function check(value,label){if(!value)throw Error(label);}
   let width=320,height=900,capsule={x:220,y:24,w:88,h:32},rotated='';
-  const platform={config:{id:'taptap',gameName:'一起拼拼拼'},canvas,viewport:()=>({width,height,top:20,bottom:0,dpr:1}),menuButtonRect:()=>capsule,createImage:()=>new Image(),createCanvas:()=>document.createElement('canvas'),setOrientation:async value=>{rotated=value;}};
+  const platform={config:{id:'taptap',gameName:'一起拼拼拼'},canvas,viewport:()=>({width,height,top:20,bottom:0,dpr:1}),createImage:()=>new Image(),createCanvas:()=>document.createElement('canvas'),setOrientation:async value=>{rotated=value;}};
   const stage=new Stage(platform,x=>x),app=Object.create(GameApp.prototype);
   Object.assign(app,{stage,platform,client:{asset:x=>x,cookieIdentity:false,config:{capabilities:{energy:true,shareRewards:true,createTickets:true,rewardedAd:true},adRewardEnabled:true,rewardedAdUnitId:'test'},profile:{level:10,xp:20,xpToNext:100,energy:70,energyCap:100,supply:{energy:1,create:1},ownedRooms:[]}},route:'supplies',scroll:0,bodyTop:80,bodyBottom:900,busy:false,modal:null,rooms:[],messages:[],social:{blockedCodes:[]},invalidate(){},showModal(){},board:{},pieces:48,visibility:'public'});
   const records={buttons:[],text:[],panels:[]};
@@ -35,16 +35,15 @@ try{
   for(const dimensions of [[651,390],[844,390],[1000,480]]){[width,height]=dimensions;app.bodyBottom=height;begin();app.drawSupplies();const [a,b]=records.panels.slice(0,2).map(args=>args[0]);check(a.y===b.y&&!overlap(a,b),'two supply columns');}
   width=320;height=900;app.bodyBottom=900;begin();app.drawSupplies();await new Promise(resolve=>setTimeout(resolve,250));begin();app.drawSupplies();
   window.task10={app,stage,records,platform,setSize(w,h){width=w;height=h;},begin};
-  app.route='lobby';begin();app.drawHeader();const rotate=records.buttons.find(([,label,fn,opts])=>opts?.icon==='orientation');check(rotate&&rotate[0].w>=40&&rotate[0].h>=40,'lobby rotation hit');check(!overlap(rotate[0],capsule),'lobby clears capsule');
+  app.route='lobby';begin();app.drawHeader();const rotate=records.buttons.find(([,label,fn,opts])=>opts?.icon==='orientation');check(rotate&&rotate[0].w>=40&&rotate[0].h>=40,'lobby rotation hit');
   const otherHits=stage.hits.filter(hit=>hit.fn!==rotate[2]);check(otherHits.every(hit=>!overlap(hit.r,rotate[0])),'rotation clears counters and profile');await rotate[2]();await Promise.resolve();check(rotated==='landscape','lobby toggles host');
   delete platform.setOrientation;begin();app.drawHeader();check(!records.buttons.some(([,,,opts])=>opts?.icon==='orientation'),'unsupported lobby hides rotation');
   platform.setOrientation=async value=>{rotated=value;};
   for(const mode of ['portrait','landscape'])for(const native of ['taptap','wechat','web'])for(const available of [false,true]){
    width=mode==='portrait'?320:844;height=mode==='portrait'?900:390;platform.config.id=native;capsule=available?{x:width-100,y:24,w:88,h:32}:null;begin();
    app.room={snapshot:{title:'测试房间',visibility:'public',members:[{id:'a'}],puzzle:{imageId:'test'}},state:{cols:8,rows:6,groups:[],imageId:'test'}};
-   const top=app.headerSafeTop();check(native==='web'?top===20:top>=(available?64:60),'safe top and web unchanged');
+   const top=app.headerSafeTop();check(native==='web'?top===20:top===22,'fixed 2px top inset; web unchanged');
    app.drawRoomTopBar({x:0,y:top,w:width-(mode==='landscape'?62:0),h:mode==='portrait'?76:52},mode);
-   if(native!=='web'&&capsule)check(stage.hits.every(hit=>!overlap(hit.r,capsule)),'room hits clear capsule');
   }
   width=844;height=390;platform.config.id='taptap';app.room.snapshot.visibility='public';begin();app.drawToolColumn({x:782,y:64,w:60,h:320});check(records.text.some(([text])=>text==='竖屏'),'orientation replaces chat');check(!records.text.some(([text])=>text==='聊天'||text==='整理'),'multiplayer hides organize and duplicate chat');check(!app.roomTools.some(([kind])=>kind==='organize'),'rail hides organize');
   app.room.snapshot.visibility='solo';check(app.roomTools.some(([kind])=>kind==='organize'),'solo retains organize');

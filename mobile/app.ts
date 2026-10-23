@@ -680,7 +680,8 @@ export class GameApp{
   for(let index=0;index<columns;index++){const cx=x+index*(cw+gap);s.panel({x:cx,y:top,w:cw,h});s.ctx.fillStyle=this.colors.line;s.ctx.globalAlpha=.22;s.ctx.fillRect(cx+10,top+10,cw-20,h-55);s.ctx.fillRect(cx+12,top+h-31,cw*.58,8);s.ctx.fillRect(cx+12,top+h-16,cw*.35,5);s.ctx.globalAlpha=1;}
   this.extent=top+h-this.bodyTop+18;
  }
- private headerSafeTop(){const view=this.platform.viewport();if(this.platform.config.id==='web')return view.top;const capsule=this.platform.menuButtonRect?.();return capsule?Math.max(view.top+8,capsule.y+capsule.h+8):view.top+40;}
+ // TapTap H5 shows a floating, movable capsule, so it cannot be used as a layout anchor; keep a fixed 2px inset.
+ private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
  private drawHeader(){
   const s=this.stage,p=this.client.profile,safe=this.route==='lobby'?this.headerSafeTop():this.platform.viewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360;
   if(this.formalWeb){s.text('测试版',13,safe+7,10,this.colors.muted);this.drawWebLinks(Math.max(75,s.w-224),safe+7,Math.min(212,s.w-87));}

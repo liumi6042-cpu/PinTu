@@ -34,7 +34,6 @@ export function createWechatPlatform(input:PlatformConfig):Platform{
  const point=(value:Host):Point=>({id:Number(value.identifier??value.id??0),x:Number(value.clientX??value.x??0),y:Number(value.clientY??value.y??0)});
  const subscribe=(on:string,off:string,listener:(value:any)=>void)=>{wx[on]?.(listener);return()=>wx[off]?.(listener);};
  const platform:Platform={config,canvas,viewport,audio:audioPlayback.audio,
-  menuButtonRect(){try{const r=wx.getMenuButtonBoundingClientRect?.();return r&&[r.left,r.top,r.width,r.height].every(Number.isFinite)&&r.width>0&&r.height>0?{x:r.left,y:r.top,w:r.width,h:r.height}:null;}catch{return null;}},
   openSocket(url,handlers){
    const endpoint=platformSocketUrl(url,config);if(typeof wx.connectSocket!=='function')throw Error('当前宿主暂不支持实时连接');
    let closed=false,opened=false;const task=wx.connectSocket({url:endpoint});if(!task?.onOpen||!task?.onMessage||!task?.onClose||!task?.onError){task?.close?.({});throw Error('当前宿主暂不支持独立实时连接');}

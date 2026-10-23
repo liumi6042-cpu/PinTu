@@ -148,7 +148,6 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   return nativeRequest();
  }
  const platform:Platform={config,canvas,viewport,request,audio:audioPlayback.audio,
-  menuButtonRect(){try{const tt=(globalThis as unknown as {tt?:TapHost}).tt,host=tt?.getMenuButtonBoundingClientRect?tt:tap(),r=config.id==='taptap'?host?.getMenuButtonBoundingClientRect?.():null;if(!r||![r.left,r.top,r.width,r.height].every(Number.isFinite)||r.width<=0||r.height<=0)return null;const origin=canvas.getBoundingClientRect();return {x:(r.left-origin.left)/scale,y:(r.top-origin.top)/scale,w:r.width/scale,h:r.height/scale};}catch{return null;}},
   uiSize:()=>uiSize,setUiSize(size){if(!Object.hasOwn(uiSizeFactor,size))return;uiSize=size;try{localStorage.setItem(uiSizeKey,size);}catch{}for(const fn of resizeListeners)fn();},
   networkDiagnostics:()=>({http:config.id==='taptap'&&tap()?.request?apiTransport:'browser'}),
   openSocket(url,handlers){
