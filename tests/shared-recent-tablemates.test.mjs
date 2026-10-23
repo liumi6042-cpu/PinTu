@@ -127,6 +127,9 @@ test('guest identity matches shared social, and diagnostic/bot rooms never recor
   const players=(await f.request('/api/mobile/social/recent',{headers:{Cookie:'puzzle_guest='+secret}})).data.players;
   assert.equal(players.length,2);
   assert.ok(f.db.sql.prepare('SELECT 1 FROM puzzle_shared_recent_tablemates WHERE owner_id=? AND peer_id=?').get(guest,owner));
+  // Guests have no account row: they must appear under the same name the room shows, never a generic fallback.
+  const seat=joined.data.room.members.find(m=>m.id===joined.data.playerId),seen=(await f.request('/api/mobile/social/recent')).data.players.find(p=>p.name===seat.name);
+  assert.ok(seen,'account sees the guest by its room name');assert.notEqual(seat.name,'拼图朋友');
   const room=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(created.room.id).data);
   f.db.sql.exec('DELETE FROM puzzle_shared_recent_tablemates');
   const member=room.members.find(m=>m.accountId===owner);

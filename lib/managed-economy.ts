@@ -1,4 +1,5 @@
 import {localDb} from './local-db';
+import {playerName} from './player-name';
 import {RoomError,type Room} from './room-engine';
 import {pieceBand} from './piece-policy';
 import {readManagedContent,effectiveManagedAlbums,managedDailyPuzzle,type ManagedContentSnapshot} from './managed-content';
@@ -211,13 +212,15 @@ export async function managedPlayerView(owner:string,content:ManagedContentSnaps
   if(task.id==='share-invitation'){task.goal=(task.coins>0||task.xp>0)?`成功复制或分享邀请链接后领取奖励，每天最多 ${rewards.invitationShare.dailyLimit} 次。`:'邀请朋友一起拼图；当前暂无分享金币或经验奖励。';task.goalEn=(task.coins>0||task.xp>0)?`Claim rewards after copying or sharing an invitation link, up to ${rewards.invitationShare.dailyLimit} times daily.`:'Invite friends to puzzle together. No sharing coins or XP are currently offered.';}
   else if(task.coins===0&&task.xp===0){task.goal='邀请新伙伴并完成至少 3 次有效拼合；当前暂无邀请金币或经验奖励。';task.goalEn='Invite a new player who makes at least 3 successful connections. No invitation coins or XP are currently offered.';}
  }
- const friendDb=localDb(),personSql="SELECT c.code,COALESCE(u.name,'拼图朋友') name FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_users u ON u.id=c.owner";
+ const friendDb=localDb(),personSql="SELECT c.owner,c.code,u.name FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_users u ON u.id=c.owner";
  const [incoming,outgoing,friendList]=await Promise.all([
-  friendDb.prepare(personSql+' WHERE EXISTS(SELECT 1 FROM puzzle_managed_friend_requests r WHERE r.sender=c.owner AND r.recipient=?) ORDER BY c.code LIMIT 50').bind(owner).all<{code:string;name:string}>(),
-  friendDb.prepare(personSql+' WHERE EXISTS(SELECT 1 FROM puzzle_managed_friend_requests r WHERE r.recipient=c.owner AND r.sender=?) ORDER BY c.code LIMIT 50').bind(owner).all<{code:string;name:string}>(),
-  friendDb.prepare(personSql+' WHERE EXISTS(SELECT 1 FROM puzzle_managed_friends f WHERE f.peer=c.owner AND f.owner=?) ORDER BY c.code LIMIT 100').bind(owner).all<{code:string;name:string}>()
+  friendDb.prepare(personSql+' WHERE EXISTS(SELECT 1 FROM puzzle_managed_friend_requests r WHERE r.sender=c.owner AND r.recipient=?) ORDER BY c.code LIMIT 50').bind(owner).all<{owner:string;code:string;name:string|null}>(),
+  friendDb.prepare(personSql+' WHERE EXISTS(SELECT 1 FROM puzzle_managed_friend_requests r WHERE r.recipient=c.owner AND r.sender=?) ORDER BY c.code LIMIT 50').bind(owner).all<{owner:string;code:string;name:string|null}>(),
+  friendDb.prepare(personSql+' WHERE EXISTS(SELECT 1 FROM puzzle_managed_friends f WHERE f.peer=c.owner AND f.owner=?) ORDER BY c.code LIMIT 100').bind(owner).all<{owner:string;code:string;name:string|null}>()
  ]);
- const friends={code,requests:incoming.results,outgoing:outgoing.results,list:friendList.results};
+ // Guests have no account row; name them like every other shared surface.
+ const people=(rows:{owner:string;code:string;name:string|null}[])=>rows.map(row=>({code:row.code,name:playerName(row.name,row.owner)}));
+ const friends={code,requests:people(incoming.results),outgoing:people(outgoing.results),list:people(friendList.results)};
  for(const task of tasks.invitations)Object.assign(task,{titleEn:task.id==='share-invitation'?'Share an invitation':'Invite a new friend'});
  const decorations=game.decorations.filter((item:any)=>!isRetiredDecoration(item.id)).map((item:any)=>({...item,owned:defaultOwned(state,item),equipped:state.equipped===item.id,rewardAlbums:allAlbums.flatMap(album=>(album.milestones??[]).filter((m:any)=>m.decorationId===item.id).map((m:any)=>({id:album.id,title:album.title,target:m.target})))})).filter((item:any)=>item.enabled!==false||item.owned);
  const visibleImages=new Set(albums.flatMap(album=>album.images.map((photo:any)=>photo.id)));

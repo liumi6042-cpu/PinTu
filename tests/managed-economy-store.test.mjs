@@ -23,7 +23,8 @@ source=source.replace(/import \{localDb\} from '\.\/local-db';/,"const localDb=(
  .replace(/import \{pieceBand\} from '\.\/piece-policy';/,"const pieceBand=(count:number)=>count;")
  .replace(/import \{readManagedContent,effectiveManagedAlbums,managedDailyPuzzle,type ManagedContentSnapshot\} from '\.\/managed-content';/,"import {effectiveManagedAlbums} from "+JSON.stringify(managedContentUrl)+";type ManagedContentSnapshot=any;const readManagedContent=()=>null;const managedDailyPuzzle=(snapshot:any)=>snapshot.photos.find((photo:any)=>photo.id==='daily');")
  .replace("from './managed-economy-model.mjs'",'from '+JSON.stringify(modelUrl))
- .replace("from './decoration-policy.mjs'",'from '+JSON.stringify(new URL('../lib/decoration-policy.mjs',import.meta.url).href));
+ .replace("from './decoration-policy.mjs'",'from '+JSON.stringify(new URL('../lib/decoration-policy.mjs',import.meta.url).href))
+ .replace("from './player-name'",'from '+JSON.stringify(new URL('../lib/player-name.ts',import.meta.url).href));
 const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
 const store=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
 const owner='a'.repeat(32),guest='guest:'+'b'.repeat(64),bot='guest:'+'c'.repeat(64);

@@ -1,4 +1,5 @@
 import {currentPlayer,currentGuest,withPlayerCookie} from './player-identity';
+import {playerName} from './player-name';
 import {customPhoto} from '@/lib/custom-images';
 import {currentAccount} from './account-store';
 import {localDb} from './local-db';
@@ -84,22 +85,22 @@ async function social(request:Request,path:string,input:Data,ctx:Context){
  const method=request.method,url=new URL(request.url);
  if(path==='/api/mobile/social'&&method==='GET')return answer(await socialView(ctx),ctx);
  if(path==='/api/mobile/social/recent'&&method==='GET'){
-  const rows=await localDb().prepare(`SELECT c.code,COALESCE(u.name,'拼图朋友') name,r.room_title AS roomTitle,r.seen_at AS seenAt,
+  const rows=await localDb().prepare(`SELECT c.code,r.peer_id AS owner,u.name,r.room_title AS roomTitle,r.seen_at AS seenAt,
    EXISTS(SELECT 1 FROM puzzle_managed_friend_requests q WHERE q.sender=r.owner_id AND q.recipient=r.peer_id) AS requested
    FROM (SELECT * FROM puzzle_shared_recent_tablemates WHERE owner_id=? ORDER BY seen_at DESC,peer_id LIMIT 60) r
    JOIN puzzle_managed_invitation_codes c ON c.owner=r.peer_id LEFT JOIN puzzle_users u ON u.id=r.peer_id
    WHERE r.peer_id<>r.owner_id AND NOT EXISTS(SELECT 1 FROM puzzle_managed_friends f WHERE f.owner=r.owner_id AND f.peer=r.peer_id)
    ORDER BY r.seen_at DESC,r.peer_id LIMIT 20`).bind(ctx.player.id).all<Data>();
-  const players=await socialPeople(rows.results.map(row=>({...row,requested:!!row.requested})));
+  const players=await socialPeople(rows.results.map(({owner,...row})=>({...row,name:playerName(row.name,owner),requested:!!row.requested})));
   return answer({players,serverTime:Date.now()},ctx);
  }
  if(path==='/api/mobile/social/search'&&method==='GET'){
   const code=url.searchParams.get('code');if(!code||!/^[a-f0-9]{12}$/i.test(code))throw new RoomError('请填写12位好友邀请码');
   await securityLimit('shared-friend-search',ctx.player.id,120);
-  const peer=await localDb().prepare("SELECT c.owner,c.code,COALESCE(u.name,'拼图朋友') name,p.data FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_users u ON u.id=c.owner LEFT JOIN puzzle_managed_players p ON p.owner=c.owner LEFT JOIN puzzle_account_security a ON a.user_id=c.owner WHERE c.code=? AND COALESCE(a.status,'active')='active'").bind(code.toLowerCase()).first<Data>();
+  const peer=await localDb().prepare("SELECT c.owner,c.code,u.name,p.data FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_users u ON u.id=c.owner LEFT JOIN puzzle_managed_players p ON p.owner=c.owner LEFT JOIN puzzle_account_security a ON a.user_id=c.owner WHERE c.code=? AND COALESCE(a.status,'active')='active'").bind(code.toLowerCase()).first<Data>();
   if(!peer)throw new RoomError('没有找到这个玩家',404);
   const relationship=peer.owner===ctx.player.id?'self':ctx.view.friends.list.some((p:Data)=>p.code===peer.code)?'friend':ctx.view.friends.requests.some((p:Data)=>p.code===peer.code)?'incoming':ctx.view.friends.outgoing.some((p:Data)=>p.code===peer.code)?'outgoing':'none';
-  return answer({player:{code:peer.code,name:peer.name,level:peer.data?JSON.parse(peer.data).level:0,online:false,lastSeenAt:0},relationship},ctx);
+  return answer({player:{code:peer.code,name:playerName(peer.name,peer.owner),level:peer.data?JSON.parse(peer.data).level:0,online:false,lastSeenAt:0},relationship},ctx);
  }
  if(method==='POST'&&['/api/mobile/social/requests','/api/mobile/social/requests/respond','/api/mobile/social/friends/remove'].includes(path)){
   if(typeof input.code!=='string'||!/^[a-f0-9]{12}$/i.test(input.code))throw new RoomError('请填写12位好友邀请码');
