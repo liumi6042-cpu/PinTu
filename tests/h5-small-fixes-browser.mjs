@@ -7,7 +7,7 @@ const bundle=await build({stdin:{contents:'export {GameApp} from "./mobile/app";
 const browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHANNEL||'chrome'});
 const directory=resolve('work/task10-review');mkdirSync(directory,{recursive:true});
 try{
- const page=await browser.newPage({viewport:{width:1000,height:1000}});
+ const page=await browser.newPage({viewport:{width:1000,height:1000},deviceScaleFactor:Number(process.env.HARNESS_DPR)||1});
  await page.route('http://task10.local/**',async route=>{
   const path=new URL(route.request().url()).pathname;
   if(path==='/')return route.fulfill({contentType:'text/html',body:'<style>body{margin:0}canvas{display:block}</style><canvas></canvas>'});
@@ -23,7 +23,7 @@ try{
   const stage=new Stage(platform,x=>x),app=Object.create(GameApp.prototype);
   Object.assign(app,{stage,platform,client:{asset:x=>x,cookieIdentity:false,config:{capabilities:{energy:true,shareRewards:true,createTickets:true,rewardedAd:true},adRewardEnabled:true,rewardedAdUnitId:'test'},profile:{level:10,xp:20,xpToNext:100,energy:70,energyCap:100,supply:{energy:1,create:1},ownedRooms:[]}},route:'supplies',scroll:0,bodyTop:80,bodyBottom:900,busy:false,modal:null,rooms:[],messages:[],social:{blockedCodes:[]},invalidate(){},showModal(){},board:{},pieces:48,visibility:'public'});
   const records={buttons:[],text:[],panels:[]};
-  for(const [method,key] of [['button','buttons'],['text','text'],['panel','panels']]){const original=stage[method].bind(stage);stage[method]=(...args)=>{records[key].push(args);return original(...args);};}
+  for(const [method,key] of [['button','buttons'],['text','text'],['textMiddle','text'],['panel','panels']]){const original=stage[method].bind(stage);stage[method]=(...args)=>{records[key].push(args);return original(...args);};}
   function begin(){canvas.style.width=width+'px';canvas.style.height=height+'px';stage.resize();stage.begin();for(const list of Object.values(records))list.length=0;}
   let supplyChecks=0;
   for(width=320;width<=650;width++)for(const ads of [false,true]){
@@ -42,7 +42,7 @@ try{
   for(const mode of ['portrait','landscape'])for(const native of ['taptap','wechat','web'])for(const available of [false,true]){
    width=mode==='portrait'?320:844;height=mode==='portrait'?900:390;platform.config.id=native;capsule=available?{x:width-100,y:24,w:88,h:32}:null;begin();
    app.room={snapshot:{title:'测试房间',visibility:'public',members:[{id:'a'}],puzzle:{imageId:'test'}},state:{cols:8,rows:6,groups:[],imageId:'test'}};
-   const top=app.headerSafeTop();check(native==='web'?top===20:top===22,'fixed 2px top inset; web unchanged');check(app.roomHeaderTop()===(native==='web'?20:34),'room top gap matches lobby');
+   const top=app.headerSafeTop();check(native==='web'?top===20:top===22,'fixed 2px top inset; web unchanged');check(app.roomHeaderTop()===(native==='web'?20:mode==='landscape'?30:34),'portrait room gap matches lobby; landscape uses the mockup top 10');
    app.drawRoomTopBar({x:0,y:app.roomHeaderTop(),w:width-(mode==='landscape'?62:0),h:mode==='portrait'?76:52},mode);
   }
   width=844;height=390;platform.config.id='taptap';app.room.snapshot.visibility='public';app.landscapeToolsOpen=true;begin();app.drawToolColumn({x:782,y:64,w:60,h:320});check(records.text.some(([text])=>text==='横竖屏'),'orientation replaces chat');check(!records.text.some(([text])=>text==='聊天'||text==='整理'),'multiplayer hides organize and duplicate chat');check(!app.roomTools.some(([kind])=>kind==='organize'),'rail hides organize');
@@ -73,7 +73,7 @@ try{
   const surface=app.drawLandscapeSurface.bind(app);app.drawLandscapeSurface=(...args)=>{records.surfaces.push(args);return surface(...args);};
   const landscapeButton=app.drawLandscapeButton.bind(app);app.drawLandscapeButton=(...args)=>{records.landscapeButtons.push(args);return landscapeButton(...args);};
   const fit=app.phoneFit.bind(app);app.phoneFit=(...args)=>{fits++;return fit(...args);};
-  for(const [method,key] of [['text','text'],['icon','icons'],['hit','hits'],['button','buttons'],['meter','meters'],['frame','frames']]){const original=stage[method].bind(stage);stage[method]=(...args)=>{records[key].push(args);return original(...args);};}
+  for(const [method,key] of [['text','text'],['textMiddle','text'],['icon','icons'],['hit','hits'],['button','buttons'],['meter','meters'],['frame','frames']]){const original=stage[method].bind(stage);stage[method]=(...args)=>{records[key].push(args);return original(...args);};}
   function render(){canvas.style.width=width+'px';canvas.style.height=height+'px';stage.resize();stage.begin();for(const list of Object.values(records))list.length=0;app.drawRoom();stage.endFrame();}
   function setMembers(n){app.room.snapshot.members=Array.from({length:n},(_,index)=>({id:'p'+index,name:['小鹿','阿禾','小满','星星'][index%4],code:index?'friend'+index:'self',color:['#a85567','#6f8a4f','#477e9b','#9866a1'][index%4]}));}
   function toggle(){const before=app.landscapeToolsOpen,button=stage.hits.findLast(hit=>hit.r.x>width-130&&hit.r.w===36);check(button,'round toggle exists');button.fn();check(app.landscapeToolsOpen!==before,'round button toggles');check(storage.get(key)===(app.landscapeToolsOpen?'1':'0'),'toggle persists');}
@@ -88,7 +88,7 @@ try{
      const back=records.landscapeButtons.find(([,label])=>label==='<')[0],invite=records.landscapeButtons.find(([,label])=>label==='＋ 邀请')[0],title=records.text.find(([t])=>t===app.room.snapshot.title),avatars=records.icons.filter(([name])=>name==='avatar'),right={x:app.roomMembersArea.x,y:invite.y,w:invite.x+invite.w-app.roomMembersArea.x,h:34};
      const [centre,radius,fill,border,lineWidth]=records.surfaces.find(([,radius,fill])=>fill==='rgba(255,250,243,.92)'),meter=records.surfaces.find(([,radius,fill])=>fill==='#efe0d6')[0],left={x:back.x,y:back.y,w:title[1]+title[6]-back.x,h:36};
      check(back.x===12&&back.y===app.roomHeaderTop()&&back.w===36&&back.h===36,'back uses unchanged safe header anchor');check(invite.y===back.y&&invite.h===34&&invite.x+invite.w===app.roomArea.w-12,'invite geometry follows table right');
-     check(!overlap(left,centre)&&!overlap(centre,right)&&!overlap(left,right),'title, capsule and members never overlap');check(radius===16&&fill==='rgba(255,250,243,.92)'&&border==='#b88f84'&&lineWidth===1.5,'approved capsule styling');check(Math.abs(centre.x+centre.w/2-(app.roomArea.w/2-40))<.1,'capsule centred on table then offset left 40');
+     check(!overlap(left,centre)&&!overlap(centre,right)&&!overlap(left,right),'title, capsule and members never overlap');check(radius===16&&fill==='rgba(255,250,243,.92)'&&border==='#b88f84'&&lineWidth===1.5,'approved capsule styling');check(Math.abs(centre.x+centre.w/2-app.roomArea.w/2)<.1,'capsule centred on the table area');
      check(meter.w===180&&meter.h===8,'full 180 by 8 meter');check(records.text.some(([t,,,size,color,weight])=>t==='38%'&&size===13&&color==='#6f8a4f'&&weight===900),'progress percentage rounds and uses green');
      check(avatars.length===members&&avatars.every(([,r])=>r.w===26&&r.h===26),'one unframed 26px avatar per actual member');check(avatars.slice(1).every(([,r],i)=>Math.abs(r.x-avatars[i][1].x-19)<.01),'avatars overlap by exactly 7');check(invite.x-(avatars.at(-1)[1].x+26)===8,'8px gap before invite');
      const forbidden=[left,app.roomMembersArea];check(records.surfaces.every(([r])=>forbidden.every(box=>!(r.x===box.x&&r.y===box.y&&r.w===box.w&&r.h===box.h)))&&!records.frames.length,'no background frames behind title or avatars');

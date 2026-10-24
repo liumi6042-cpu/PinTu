@@ -686,7 +686,7 @@ export class GameApp{
  // TapTap H5 shows a floating, movable capsule, so it cannot be used as a layout anchor; keep a fixed 2px inset.
  private copyInvitationCode(code:string){if(!this.platform.copyText){this.note('邀请码：'+code);return;}void this.platform.copyText(code).then(ok=>this.note(ok?'已复制邀请码 '+code:'复制失败，请手动记下邀请码 '+code));}
  // Puzzle rooms get the same visible top gap as the lobby header (inset + 12).
- private roomHeaderTop(){return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
+ private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+10;return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
  private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
  private drawHeader(){
   const s=this.stage,p=this.client.profile,safe=this.route==='lobby'?this.headerSafeTop():this.platform.viewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360;
@@ -1314,7 +1314,7 @@ export class GameApp{
  }
  private drawLandscapeButton(r:Rect,label:string,action:()=>void,fill:string,size:number){
   const s=this.stage;this.drawLandscapeSurface(r,8,s.isPressed(r)?roomColors.roseL:fill,roomColors.ink,2,2);
-  s.text(label,r.x+(r.w-s.measure(label,size,900))/2,r.y+(r.h-size)/2-1,size,fill===roomColors.roseD?'#ffffff':roomColors.ink,900);s.hit(r,action);
+  s.textMiddle(label,r.x+(r.w-s.measure(label,size,900))/2,r.y+r.h/2-1,size,fill===roomColors.roseD?'#ffffff':roomColors.ink,900);s.hit(r,action);
  }
  private setLandscapeToolsOpen(open:boolean){
   if(this.landscapeToolsOpen===open)return;this.clearRoomPointer();this.landscapeToolsOpen=open;this.platform.storage.set('jigsaw:landscape-tools-open:v1',open?'1':'0');this.roomViewPending=true;this.invalidate();
@@ -1344,16 +1344,16 @@ export class GameApp{
    const size=26,step=size-7,avatarW=members.length?size+(members.length-1)*step:0,gap=8,inviteW=s.measure('＋ 邀请',13,900)+20;
    const right=r.x+r.w-12,invite={x:right-inviteW,y:r.y,w:inviteW,h:34},avatarX=invite.x-gap-avatarW;
    const count=placed+'/'+total,percentText=Math.round(placed/Math.max(1,total)*100)+'%',countW=s.measure(count,13,900),percentW=s.measure(percentText,13,900),capsuleW=24+countW+percentW+16+180;
-   // Keep the approved centre offset and full 180px meter. At a crowded small viewport,
+   // Centred on the table area with the full 180px meter. At a crowded small viewport,
    // move the capsule below the first row instead of shrinking the meter or overlapping members.
-   const capsule={x:r.x+r.w/2-40-capsuleW/2,y:r.y+2,w:capsuleW,h:25},backRect={x:r.x+12,y:r.y,w:36,h:36},textX=backRect.x+44;
+   const capsule={x:r.x+r.w/2-capsuleW/2,y:r.y+2,w:capsuleW,h:25},backRect={x:r.x+12,y:r.y,w:36,h:36},textX=backRect.x+44;
    const stacked=capsule.x<textX+28||capsule.x+capsule.w+gap>avatarX;if(stacked)capsule.y=r.y+44;
    const titleRight=stacked?avatarX-gap:capsule.x-gap;
    this.drawLandscapeButton(backRect,'<',()=>this.exitRoom(),roomColors.card,20);s.text(title,textX,r.y+2,15,roomColors.ink,900,Math.max(1,titleRight-textX));s.text(total+' 片',textX,r.y+21,10.5,roomColors.muted,500,Math.max(1,titleRight-textX));
    this.drawLandscapeSurface(capsule,16,'rgba(255,250,243,.92)',roomColors.lineD,1.5);
-   s.text(count,capsule.x+12,capsule.y+5,13,roomColors.ink,900);
-   const meter={x:capsule.x+12+countW+8,y:capsule.y+8.5,w:180,h:8};this.drawLandscapeSurface(meter,4,roomColors.meterTrack);const fill=placed/Math.max(1,total);if(fill>0)this.drawLandscapeSurface({...meter,w:meter.w*fill},4,roomColors.green);
-   s.text(percentText,meter.x+meter.w+8,capsule.y+5,13,roomColors.green,900);s.hit(capsule,()=>{});
+   s.textMiddle(count,capsule.x+12,capsule.y+capsule.h/2,13,roomColors.ink,900);
+   const meter={x:capsule.x+12+countW+8,y:capsule.y+capsule.h/2-4,w:180,h:8};this.drawLandscapeSurface(meter,4,roomColors.meterTrack);const fill=placed/Math.max(1,total);if(fill>0)this.drawLandscapeSurface({...meter,w:meter.w*fill},4,roomColors.green);
+   s.textMiddle(percentText,meter.x+meter.w+8,capsule.y+capsule.h/2,13,roomColors.green,900);s.hit(capsule,()=>{});
    members.forEach((_member,index)=>s.icon('avatar',{x:avatarX+index*step,y:r.y+4,w:size,h:size}));
    this.roomMembersArea={x:avatarX,y:r.y,w:avatarW,h:34};s.hit(this.roomMembersArea,()=>this.showModal('chat'));this.drawLandscapeButton(invite,'＋ 邀请',()=>this.showModal('invite'),roomColors.roseD,13);
   }

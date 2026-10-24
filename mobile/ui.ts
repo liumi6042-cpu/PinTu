@@ -44,6 +44,8 @@ export class Stage{
    try{draw();}finally{this.w=previous.w;this.h=previous.h;this.offset=previous.offset;}
   });
  }
+ /** Draw one line centred on the vertical line cy using the font's real glyph bounds (device fonts differ). */
+ textMiddle(value:string|number,x:number,cy:number,size=14,color=this.palette.ink,weight:string|number=500){const c=this.ctx;c.save();c.font=`${weight} ${size}px ${this.font}`;c.fillStyle=themeTextColor(this.currentTheme,color);c.textBaseline='alphabetic';const text=String(value??''),m=c.measureText(text),ascent=m.actualBoundingBoxAscent||size*.8,descent=m.actualBoundingBoxDescent||size*.2;c.fillText(text,x,cy+(ascent-descent)/2);c.restore();}
  text(value:string|number,x:number,y:number,size=14,color=this.palette.ink,weight:string|number=500,maxWidth?:number){const c=this.ctx;c.save();c.font=`${weight} ${size}px ${this.font}`;c.fillStyle=themeTextColor(this.currentTheme,color);c.textBaseline='top';let text=String(value??'');if(maxWidth&&c.measureText(text).width>maxWidth){while(text.length>1&&c.measureText(text+'…').width>maxWidth)text=text.slice(0,-1);text+='…';}c.fillText(text,x,y);c.restore();}
  measure(value:string,size=14,weight:string|number=500){this.ctx.font=`${weight} ${size}px ${this.font}`;return this.ctx.measureText(value).width;}
  wrap(value:string,x:number,y:number,width:number,size=14,color=this.palette.muted,lineHeight=size*1.6){let line='',row=0;for(const char of value){if(char==='\n'||this.measure(line+char,size)>width){this.text(line,x,y+row*lineHeight,size,color);row++;line=char==='\n'?'':char;}else line+=char;}if(line)this.text(line,x,y+row*lineHeight,size,color);return (row+1)*lineHeight;}
