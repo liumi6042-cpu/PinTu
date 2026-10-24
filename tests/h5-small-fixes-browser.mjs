@@ -42,7 +42,7 @@ try{
   for(const mode of ['portrait','landscape'])for(const native of ['taptap','wechat','web'])for(const available of [false,true]){
    width=mode==='portrait'?320:844;height=mode==='portrait'?900:390;platform.config.id=native;capsule=available?{x:width-100,y:24,w:88,h:32}:null;begin();
    app.room={snapshot:{title:'测试房间',visibility:'public',members:[{id:'a'}],puzzle:{imageId:'test'}},state:{cols:8,rows:6,groups:[],imageId:'test'}};
-   const top=app.headerSafeTop();check(native==='web'?top===20:top===22,'fixed 2px top inset; web unchanged');check(app.roomHeaderTop()===(native==='web'?20:mode==='landscape'?30:34),'portrait room gap matches lobby; landscape uses the mockup top 10');
+   const top=app.headerSafeTop();check(native==='web'?top===20:top===22,'fixed 2px top inset; web unchanged');check(app.roomHeaderTop()===(native==='web'?20:mode==='landscape'?26:34),'portrait room gap matches lobby; landscape uses the mockup top 10');
    app.drawRoomTopBar({x:0,y:app.roomHeaderTop(),w:width-(mode==='landscape'?62:0),h:mode==='portrait'?76:52},mode);
   }
   width=844;height=390;platform.config.id='taptap';app.room.snapshot.visibility='public';app.landscapeToolsOpen=true;begin();app.drawToolColumn({x:782,y:64,w:60,h:320});check(records.text.some(([text])=>text==='横竖屏'),'orientation replaces chat');check(!records.text.some(([text])=>text==='聊天'||text==='整理'),'multiplayer hides organize and duplicate chat');check(!app.roomTools.some(([kind])=>kind==='organize'),'rail hides organize');
