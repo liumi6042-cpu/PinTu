@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
-import {resolve} from 'node:path';
+import {resolve,sep} from 'node:path';
 import {runtimeAssets,selectRuntimeFiles,inventory,inside,SERVER_RUNTIME_HELPERS,CONTENT_RUNTIME_FILES} from '../scripts/release-files.mjs';
 
 test('runtime artwork retains archived saves but excludes PNG originals and unpublished artwork',()=>{
@@ -34,4 +34,14 @@ test('release allowlist excludes source, credentials, raw images, duplicate publ
     rmSync(resolve(root,'node_modules/native/binding.node'));
     put('dist/server/.env');assert.throws(()=>selectRuntimeFiles(root,assets),/Private data/);
   }finally{assert.ok(root.startsWith(parent));rmSync(root,{recursive:true,force:true});}
+});
+
+test('every intro image the app references ships in the runtime package',async()=>{
+  const {readdirSync,readFileSync,existsSync}=await import('node:fs');
+  const allow=new Set(JSON.parse(readFileSync(new URL('../config/runtime-assets.json',import.meta.url),'utf8')).static);
+  const app=new URL('../app/',import.meta.url);
+  const used=new Set();
+  for(const name of readdirSync(app,{recursive:true}))if(/\.(tsx?|css)$/.test(name))for(const [url] of readFileSync(new URL(name.split(sep).join('/'),app),'utf8').matchAll(/\/intro\/[\w.-]+\.(?:png|webp|jpe?g)/g))used.add(url);
+  assert.ok(used.size>0);
+  for(const url of used){assert.ok(allow.has(url),'not in runtime-assets.json: '+url);assert.ok(existsSync(new URL('../public'+url,import.meta.url)),'missing file: '+url);}
 });

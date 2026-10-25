@@ -1,0 +1,11 @@
+{
+  "source": "public\\intro\\dream-horizon.png",
+  "sourceSha256": "45c9629ba9bda16d6d5cc8aedf33bea92df155b687f2e677f824d38af437cfb5",
+  "sourceBytes": 2042823,
+  "output": "public\\intro\\dream-horizon-3c402b70b693.webp",
+  "sha256": "3c402b70b69320e6dee5a3ef1166d83c62f125d4edca4ccde912c5ea5d351fc3",
+  "bytes": 142958,
+  "width": 1672,
+  "height": 941,
+  "encoding": "WebP quality 88, original dimensions; source PNG preserved"
+}
