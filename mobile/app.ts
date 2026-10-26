@@ -28,7 +28,7 @@ import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT
 import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import publicPhrases from '../config/social-phrases.json';
-import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom} from '../h5/mobile-api';
+import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom,MobileLevelsView} from '../h5/mobile-api';
 import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
@@ -75,6 +75,8 @@ export class GameApp{
  private pieces:48|108|300|500=108;private selected:string|null=null;private visibility:'public'|'private'='public';private category='全部';private search='';private source:'free'|'owned'|'all'='free';private packId:string|null=null;
  private galleryIds:Set<string>|null=null;private freeGalleryIds:Set<string>|null=null;private packedIds=packed;
  private sharedPhotos:SharedPhoto[]|null=null;
+ private levels:MobileLevelsView|null=null;private levelsOwner='';private levelsSerial=0;private autoLevelChecked=false;
+ private chapterFoldOwner='';private chapterFolded=false;
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
  private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
  private previewPack:CollectionPack|null=null;private previewIndex=-1;private previewGridScroll=0;
@@ -248,12 +250,15 @@ export class GameApp{
  private async loadInitialContent(query:Record<string,string>,epoch=this.privacyEpoch){
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
   const direct=/^[a-f0-9]{32}$/.test(query.room||query.roomId||'')||/^[a-zA-Z0-9-]{6,64}$/.test(query.invite||query.inviteCode||query.friend||query.ref||'');
-  if(direct)await this.handleQuery(query);
+  if(direct){this.autoLevelChecked=true;await this.handleQuery(query);}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
+  const levels=this.loadLevels();
   // Gallery metadata must not hold up the lobby or an invited room's image.
   void this.loadGallery();
   if(this.route==='lobby'){void this.loadRoomHistory();await this.loadLobby();}
   if(!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)void this.social.refresh().catch(()=>{});
+  await levels;
+  if(!direct&&!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)await this.autoLaunchLevel();
  }
  resize(){
   const view=this.platform.viewport(),oldDesktop=this.layoutFor(this.stage.w,this.stage.h)==='desktop',newDesktop=this.layoutFor(view.width,view.height)==='desktop',rotated=(this.stage.w>this.stage.h)!==(view.width>view.height);
@@ -275,7 +280,7 @@ export class GameApp{
  private ensureListOwner(){
   const owner=this.ownerKey();this.savedRoutes??=new Map();this.routeFrames??=[];this.routeStack??=[];
   if(this.listOwner===undefined){this.listOwner=owner;return;}
-  if(owner===this.listOwner)return;this.listOwner=owner;this.savedRoutes.clear();this.routeFrames=[];this.routeStack=[];this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.filterView=null;
+  if(owner===this.listOwner)return;this.listOwner=owner;this.savedRoutes.clear();this.routeFrames=[];this.routeStack=[];this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.filterView=null;this.levels=null;this.levelsSerial=(this.levelsSerial??0)+1;
   this.restoreListView(this.defaultListView(this.route));this.taskTab='tasks';this.lobbySerial=(this.lobbySerial??0)+1;this.rooms=[];this.lobbyCursor=null;
  }
  private captureListView():ListView{const base=this.defaultListView(this.route);for(const key of Object.keys(base) as Array<keyof ListView>){const value=this[key as keyof this];if(value!==undefined)(base as any)[key]=value;}return base;}
@@ -288,7 +293,7 @@ export class GameApp{
   if(view.route==='collection')Object.assign(this,{collectionTab:view.collectionTab,albumId:view.albumId,albumListScroll:view.albumListScroll,decorationId:view.decorationId,decorationOwnedOnly:view.decorationOwnedOnly});
   if(view.route==='tasks')this.taskTab=view.taskTab;
  }
- private refreshRoute(){if(this.route==='lobby'){void this.loadLobby(false,!!this.rooms.length);if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
+ private refreshRoute(){if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
  private finishNavigation(){this.modal=null;this.filterView=null;this.toolsOpen=false;this.message='';if(this.route==='friends')void this.loadRecentPlayers();this.invalidate();this.refreshRoute();}
  private navigate(route:Route,context?:Partial<ListView>){
   if(route==='supplies'&&(this.energyEnabled||this.usesCreationTickets)){this.supplyFocus=true;route='tasks';}
@@ -376,13 +381,36 @@ export class GameApp{
   }catch(error){if(!quiet&&owner===this.ownerKey()&&!this.destroyed)this.note(errorText(error));}finally{this.lobbyLoading=false;this.lobbyQuiet=false;if(changed||showLoading)this.invalidate();if(this.lobbyReload&&!this.destroyed){this.lobbyReload=false;void this.loadLobby();}}
  }
  private get lobbyBusy(){return this.lobbyLoading&&!this.lobbyQuiet;}
+ private async loadLevels(){
+  const owner=this.ownerKey(),serial=this.levelsSerial=(this.levelsSerial??0)+1;
+  try{const data=await this.client.json<MobileLevelsView>('/api/levels');if(this.destroyed||owner!==this.ownerKey()||serial!==this.levelsSerial)return;this.levels=data;this.levelsOwner=owner;this.invalidate();}
+  catch{if(!this.destroyed&&owner===this.ownerKey()&&serial===this.levelsSerial){this.levels=null;this.invalidate();}}
+ }
+ private get beginnerChapter(){
+  if(this.levelsOwner!==this.ownerKey())return null;
+  const chapter=this.levels?.chapters.find(item=>item.id==='ch1');return chapter?.status==='available'&&chapter.levels.some(level=>level.status!=='cleared')?chapter:null;
+ }
+ private chapterStorageKey(kind:'auto'|'folded'){return 'jigsaw:level:'+kind+':v1:'+this.platform.config.apiBase+':'+this.ownerKey();}
+ private get chapterCollapsed(){
+  const key=this.chapterStorageKey('folded');if(this.chapterFoldOwner!==key){this.chapterFoldOwner=key;this.chapterFolded=false;try{this.chapterFolded=this.platform.storage.get(key)==='1';}catch{}}
+  return this.chapterFolded;
+ }
+ private setChapterCollapsed(value:boolean){
+  this.chapterFoldOwner=this.chapterStorageKey('folded');this.chapterFolded=value;try{this.platform.storage.set(this.chapterFoldOwner,value?'1':'0');}catch{}this.invalidate();
+ }
+ private async autoLaunchLevel(){
+  if(this.autoLevelChecked)return;this.autoLevelChecked=true;
+  if(this.route!=='lobby'||this.room||this.modal||this.busy||!this.ownerKey()||this.client.profile?.newcomer!==true||!this.beginnerChapter||this.levels?.chapters.some(chapter=>chapter.levels.some(level=>level.status==='cleared'))||this.beginnerChapter.levels.find(level=>level.id==='ch1-1')?.status!=='unlocked')return;
+  try{const key=this.chapterStorageKey('auto');if(this.platform.storage.get(key)==='1')return;this.platform.storage.set(key,'1');}catch{return;}
+  await this.launch({mode:'level',levelId:'ch1-1'});
+ }
  private changeDirection(value:Direction){if(value===this.direction)return;this.changeListView(()=>{this.direction=value;});if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}
  private async loadTasks(){try{await this.loadView('tasks',()=>this.client.json<MobileTaskView>('/api/mobile/tasks'),data=>{this.tasks=data;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private async loadCollection(){try{await this.loadView('collection',()=>this.client.json<MobileCollectionView>('/api/mobile/collection'),data=>{this.collection=data;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private async loadGallery(){try{await this.loadView('gallery',()=>this.client.json<{imageIds?:string[];accessibleImageIds?:string[];freeImageIds?:string[];packedImageIds:string[];photos?:SharedPhoto[];daily?:SharedPhoto|null;serverTime?:number}>('/api/mobile/gallery'),data=>{if(typeof data.serverTime==='number')this.serverOffset=data.serverTime-Date.now();if(data.daily?.id)this.dailyPhoto=data.daily;this.galleryIds=new Set(data.imageIds??data.accessibleImageIds??[]);this.packedIds=new Set(data.packedImageIds);this.freeGalleryIds=Array.isArray(data.freeImageIds)?new Set(data.freeImageIds):new Set([...this.galleryIds].filter(id=>!this.packedIds.has(id)));if(Array.isArray(data.photos)){this.sharedPhotos=data.photos.filter(photo=>!!photo&&typeof photo.id==='string'&&typeof photo.src==='string'&&typeof photo.thumbSrc==='string').map(photo=>({...photo,title:photo.title||photo.id,category:photo.category||'其他'}));for(const photo of this.sharedPhotos)photoMap.set(photo.id,photo);if(data.daily?.id)photoMap.set(data.daily.id,data.daily);}if(this.selected&&!this.galleryIds.has(this.selected))this.selected=null;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private availableGallery():SharedPhoto[]{if(this.sharedPhotos)return this.sharedPhotos.filter(photo=>!this.galleryIds||this.galleryIds.has(photo.id));if(!this.galleryIds)return GALLERY_PHOTOS;const baseIds=new Set(GALLERY_PHOTOS.map(photo=>photo.id));return [...GALLERY_PHOTOS,...RESTORABLE_PHOTOS.filter(photo=>!baseIds.has(photo.id))].filter(photo=>this.galleryIds!.has(photo.id));}
  private async launch(input:MobileRoomInput){
-  if(!this.formalWeb&&this.ownedRoomCount>=3){this.showModal('manage');return;}
+  if(input.mode!=='level'&&!this.formalWeb&&this.ownedRoomCount>=3){this.showModal('manage');return;}
   await this.run(async()=>{const key='create:'+JSON.stringify(input),ticket=await this.client.createRoom({...input,requestId:this.attempt(key)});this.attempts.delete(key);await this.attachTicket(ticket);});
  }
  private async enterRoom(id:string,invite?:string){await this.run(async()=>{const ticket=await this.client.joinRoom(id,invite);await this.attachTicket(ticket);});}
@@ -783,9 +811,10 @@ export class GameApp{
  private drawLobby(){
   const s=this.stage,layout=this.layout,gap=layout==='phoneLandscape'?10:14,top=this.bodyTop,bottom=this.bodyBottom,width=Math.min(1400,s.w-24),left=(s.w-width)/2;
   if(layout==='phonePortrait'){
-   // One scrolling column: hero, last room, actions, then the public rooms.
+   // One scrolling column: chapter, hero, last room, actions, then the public rooms.
    let y=top-this.scroll;const columns=width>=520?3:2;
    this.scrolled(()=>{
+    if(this.beginnerChapter)y=this.drawBeginnerChapter({x:left,y,w:width,h:this.chapterCollapsed?38:152},false)+gap;
     const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
     const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
     this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
@@ -795,7 +824,8 @@ export class GameApp{
   }
   // Desktop and phone landscape: a fixed left column and a room list that scrolls by itself.
   const landscape=layout==='phoneLandscape',leftW=landscape?Math.min(300,width*.42):Math.min(380,width*.36),rightX=left+leftW+gap+6,rightW=left+width-rightX;
-  let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,rest=(last?continueH+gap:0)+actionH+gap,heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
+  let y=top;const chapter=this.beginnerChapter,chapterH=chapter?(this.chapterCollapsed?38:landscape?112:152)+gap:0,last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,rest=(last?continueH+gap:0)+actionH+gap,heroH=Math.max(chapter&&landscape?58:this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest)-chapterH);
+  if(chapter)y=this.drawBeginnerChapter({x:left,y,w:leftW,h:chapterH-gap},landscape)+gap;
   y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
   if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
   this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
@@ -805,6 +835,26 @@ export class GameApp{
   this.extent=end+this.scroll-header+12;
  }
  private lobbyColumn(){return this.listColumn;}
+ private drawBeginnerChapter(r:Rect,compact:boolean){
+  const chapter=this.beginnerChapter;if(!chapter)return r.y;
+  const s=this.stage,cleared=chapter.levels.filter(level=>level.status==='cleared').length,progress=cleared+'/'+chapter.levels.length,title='新手章节 · '+chapter.title;
+  if(this.chapterCollapsed){s.button(r,title+'  '+progress,()=>this.setChapterCollapsed(false),{fontSize:compact?11:13});return r.y+r.h;}
+  s.panel(r);const x=r.x+12,w=r.w-24,numberSize=compact?12:14;
+  s.text(title,x,r.y+8,compact?12:14,this.colors.ink,800,w-38);s.text(progress,x+w-30,r.y+8,12,this.colors.muted,700,30);
+  const current=chapter.levels.find(level=>level.id===this.levels?.current?.id&&level.status==='unlocked')??chapter.levels.find(level=>level.status==='unlocked'),gap=6,size=Math.min(compact?24:40,(w-gap*5)/6),step=(w-size)/5;
+  chapter.levels.forEach((level,index)=>{
+   const node={x:x+index*step,y:r.y+(compact?25:36),w:size,h:size},active=level.id===current?.id,thumb=level.imageId?photoMap.get(level.imageId)?.thumbSrc:undefined;
+   s.frame(node,active?'button-berry-selected':'button-linen-normal');
+   if(thumb)s.image(this.client.asset(thumb),{x:node.x+3,y:node.y+3,w:size-6,h:size-6},'cover');
+   if(level.status==='cleared'){const badge=compact?16:20,bx=node.x+size-badge,by=node.y+size-badge;s.ctx.save();s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(bx,by,badge,badge);s.ctx.strokeStyle=this.colors.ink;s.ctx.lineWidth=1;s.ctx.strokeRect(bx+.5,by+.5,badge-1,badge-1);s.ctx.restore();s.text('✓',bx+2,by+1,badge-3,this.colors.ink,800,badge-2);}
+   else if(!thumb)s.text(index+1,node.x+(size-numberSize)/2,node.y+(size-numberSize)/2-1,numberSize,this.colors.ink,active?800:500,numberSize+2);
+   if(level.status==='locked'||level.status==='unavailable'){s.ctx.save();s.ctx.globalAlpha=.55;s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(node.x+3,node.y+3,size-6,size-6);s.ctx.restore();}
+  });
+  const label=current?'继续 · 第 '+(chapter.levels.indexOf(current)+1)+' 关（'+current.pieces+' 片）':'暂未解锁';
+  s.button({x,y:r.y+(compact?55:88),w,h:compact?30:34},label,()=>{if(current)void this.launch({mode:'level',levelId:current.id});},{tone:'berry',fontSize:compact?11:13,disabled:this.busy||!this.client.profile||!current});
+  s.button({x,y:r.y+(compact?88:126),w,h:20},'去大厅逛逛',()=>this.setChapterCollapsed(true),{fontSize:11});
+  return r.y+r.h;
+ }
  private get continueRoom(){return this.historyRooms?.find(room=>!room.completed&&!room.unavailable)??null;}
  private dailyNow(){return Date.now()+this.serverOffset;}
  private get dailyLabel(){const day=new Date(this.dailyNow()+8*3600000);return '今日拼图 · '+(day.getUTCMonth()+1)+'月'+day.getUTCDate()+'日';}
@@ -815,10 +865,16 @@ export class GameApp{
  // The invite flow shares the current room, so the daily table is opened first.
  private async inviteToDaily(){await this.launch({mode:'daily',pieces:108,visibility:'public'});if(this.room)this.showModal('invite');}
  private drawDailyHero(r:Rect,compact:boolean){
-  const s=this.stage,photo=this.dailyPhoto,ink=this.colors.ink,textH=this.heroTextHeight(compact),imageH=Math.max(0,r.h-textH-8),busy=this.busy||!this.client.profile;
+  const s=this.stage,photo=this.dailyPhoto,ink=this.colors.ink,textH=this.heroTextHeight(compact),imageH=Math.max(0,r.h-textH-8),hasImage=imageH>=(compact?24:40),busy=this.busy||!this.client.profile;
+  if(compact&&!hasImage)r={...r,h:58};
   s.frame(r,'panel-cream');
-  if(imageH>=40){const art={x:r.x+8,y:r.y+8,w:r.w-16,h:imageH};if(photo)s.image(this.client.asset(photo.src||photo.thumbSrc),art,'cover');else{s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(art.x,art.y,art.w,art.h);}s.hit(art,()=>{if(!busy)this.launchDaily();});}
-  let y=r.y+(imageH>=40?imageH+8:0)+(compact?8:10);const x=r.x+14,w=r.w-28,left=this.dailyLeft,leftW=s.measure(left,11,600);
+  if(compact&&!hasImage){
+   const x=r.x+12,w=r.w-24,primary=Math.round(w*.58);s.text(this.dailyLabel+' · '+(photo?.title??'正在读取今日拼图…'),x,r.y+7,11,ink,700,w);
+   s.button({x,y:r.y+28,w:primary,h:24},'开始拼 · 108 片',()=>this.launchDaily(),{tone:'berrydark',icon:'daily',fontSize:10,disabled:busy});
+   s.button({x:x+primary+8,y:r.y+28,w:w-primary-8,h:24},'叫上朋友',()=>void this.inviteToDaily(),{icon:'invite',fontSize:10,disabled:busy});return r.y+r.h;
+  }
+  if(hasImage){const art={x:r.x+8,y:r.y+8,w:r.w-16,h:imageH};if(photo)s.image(this.client.asset(photo.src||photo.thumbSrc),art,'cover');else{s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(art.x,art.y,art.w,art.h);}s.hit(art,()=>{if(!busy)this.launchDaily();});}
+  let y=r.y+(hasImage?imageH+8:0)+(compact?8:10);const x=r.x+14,w=r.w-28,left=this.dailyLeft,leftW=s.measure(left,11,600);
   const finished=this.dailyFinished?' · 今天已有 '+this.dailyFinished+' 人拼完':'';s.text(this.dailyLabel+finished,x,y,11,this.colors.muted,700,w-leftW-10);s.text(left,x+w-leftW,y,11,this.colors.muted,600);y+=compact?16:18;
   const title=photo?.title??'正在读取今日拼图…',size=compact?15:22;s.text(title,x,y,size,ink,800,w);y+=size+(compact?6:8);
   const description=(photo as {description?:unknown}|null)?.description;if(!compact&&typeof description==='string'&&description){s.text(description,x,y,12,this.colors.muted,500,w);y+=20;}

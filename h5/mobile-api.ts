@@ -13,7 +13,7 @@ export type MobileProfile = {
  supply:{energy:number;create:number}; autoSupply:boolean; adEligible:boolean; ownedRooms:MobileOwnedRoom[];
  firstSelectionAvailable?:boolean; newcomer?:boolean; firstRoomId?:string|null; serverTime?:number; updatedAt?:number;
  taptap?:{provider:'taptap';bound:boolean;nickname?:string|null;diagnostics?:boolean};
- lastReward?:{id?:string;type?:string;energy?:number;amount?:number;xp?:number;levelUp?:boolean;message?:string;[key:string]:unknown}|null;
+ lastReward?:{id?:string;type?:string;energy?:number;amount?:number;xp?:number;levelUp?:boolean;message?:string;levelClear?:{levelId:string;energy:number;firstClear:boolean;nextLevelId:string|null};[key:string]:unknown}|null;
 };
 export function requestId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');}
 export function isMobileProfile(value:unknown):value is MobileProfile{
@@ -37,7 +37,11 @@ export async function mobileJson<T>(path:string,init?:RequestInit):Promise<T>{
  return data as T;
 }
 export function mobilePost<T>(path:string,body:unknown){return mobileJson<T>(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
-export type MobileRoomInput={mode:'random'|'selected'|'daily';imageId?:string;pieces:48|108|300|500;visibility?:'public'|'private';direction?:'all'|'portrait'|'landscape'|'square';requestId?:string};
+export type MobileLevelStatus='locked'|'unlocked'|'cleared'|'unavailable';
+export type MobileLevel={id:string;imageId:string|null;title:string|null;pieces:number;status:MobileLevelStatus};
+export type MobileChapter={id:string;title:string;albumId:string;coverImageId:string|null;coverSrc:string|null;status:'available'|'unavailable';levels:MobileLevel[]};
+export type MobileLevelsView={chapters:MobileChapter[];current:MobileLevel|null;firstClearEnergy:number};
+export type MobileRoomInput=({mode:'random'|'selected'|'daily';imageId?:string;pieces:48|108|300|500;direction?:'all'|'portrait'|'landscape'|'square'}|{mode:'level';levelId:string;pieces?:never})&{visibility?:'public'|'private';requestId?:string};
 export async function createMobileRoom(input:MobileRoomInput):Promise<RoomTicket>{
  const raw=await mobilePost<RoomTicket|SeedRoomTicket>('/api/rooms',{...input,requestId:input.requestId||requestId()});
  const expanded=expandCreatedTicket(raw);const inviteCode=(raw as RoomTicket & {inviteCode?:string}).inviteCode;const ticket={...expanded,...(inviteCode?{inviteCode}:{})};rememberCreatedTicket(ticket);saveTicket(ticket);return ticket;
