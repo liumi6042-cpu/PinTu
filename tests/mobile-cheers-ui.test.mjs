@@ -43,10 +43,14 @@ test('bubbles merge within 2.5s, refresh life, pop in, fade, then expire',()=>{
  at(5050);assert.equal(fx.bubbleAlpha(first),.5);
  at(5200);assert.equal(fx.alive(),false);
 });
-test('same player/emote after merge window creates a new bubble',()=>{
+test('same player/emote after merge window replaces the fading bubble with a new one',()=>{
  const {effects:fx,at}=clock();fx.receive(cheer());at(2501);fx.receive(cheer());
- assert.equal(fx.bubbles.length,2);assert.deepEqual(fx.bubbles.map(b=>b.count),[1,1]);
- at(2700);fx.update();assert.equal(fx.bubbles.length,1);at(5201);assert.equal(fx.alive(),false);
+ assert.equal(fx.bubbles.length,1);assert.equal(fx.bubbles[0].born,2501);assert.equal(fx.bubbles[0].count,1);
+ at(5200);assert.equal(fx.alive(),true);at(5201);assert.equal(fx.alive(),false);
+});
+test('a different emote replaces that player\'s bubble and leaves other players\' bubbles alone',()=>{
+ const {effects:fx,at}=clock();fx.receive(cheer('a','popper'));fx.receive(cheer('b','heart'));at(100);fx.receive(cheer('a','clap'));
+ assert.deepEqual(fx.bubbles.map(b=>b.playerId+':'+b.emote),['b:heart','a:clap']);
 });
 test('combo requires three distinct players in 3s; storm stays bounded and expires',()=>{
  const {effects:fx,at}=clock();fx.receive(cheer('a'));at(1000);fx.receive(cheer('a'));fx.receive(cheer('b'));assert.equal(fx.combo,null);

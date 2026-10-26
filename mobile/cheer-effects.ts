@@ -22,7 +22,8 @@ export class CheerEffects{
  receive(cheer:Cheer,own=false){
   const at=this.now();this.update(at);
   const bubble=this.bubbles.find(item=>item.playerId===cheer.playerId&&item.emote===cheer.emote&&at-item.updated<=2500);
-  if(bubble){bubble.count++;bubble.updated=at;bubble.own ||= own;}else this.bubbles.push({playerId:cheer.playerId,emote:cheer.emote,own,count:1,born:at,updated:at});
+  // One bubble per player: a different emote replaces the previous one instead of stacking on it.
+  if(bubble){bubble.count++;bubble.updated=at;bubble.own ||= own;}else{this.bubbles=this.bubbles.filter(item=>item.playerId!==cheer.playerId);this.bubbles.push({playerId:cheer.playerId,emote:cheer.emote,own,count:1,born:at,updated:at});}
   this.bubbles=this.bubbles.slice(-60);this.hops.set(cheer.playerId,at);
   if(cheer.emote==='popper')this.burst(60,'confetti',cheer.playerId,at);
   if(cheer.emote==='heart')this.burst(3,'heart',cheer.playerId,at);
