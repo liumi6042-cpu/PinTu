@@ -1,5 +1,6 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createMobileTasks} from './mobile-tasks.mjs';
+import {createMobileEvents} from './mobile-events.mjs';
 import {createTaskRewardSettings} from './task-reward-settings.mjs';
 import {createGameSettings} from './game-settings.mjs';
 import {createAlbumContent} from './album-content.mjs';
@@ -99,6 +100,9 @@ export function createMobileService(options={}){
  CREATE TABLE IF NOT EXISTS mobile_settlements(room_id TEXT NOT NULL,owner TEXT NOT NULL,energy INTEGER NOT NULL,contribution INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(room_id,owner));
  CREATE TABLE IF NOT EXISTS mobile_chat(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,data TEXT NOT NULL,sent_at INTEGER NOT NULL,UNIQUE(room_id,owner,request_id));
  CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));`);
+ const events=createMobileEvents({db});
+ // Energy rejection must survive the action's rollback (including savepoints).
+ let requestEnergyEmpty=null;
  // Only remember persisted bytes for this transaction. Every new request still
  // reads SQLite, including changes committed by another service instance.
  let requestProfileData=null,requestRoomChanges=null,requestCursorUndo=null,requestInviteBonuses=null;
@@ -246,7 +250,7 @@ export function createMobileService(options={}){
   requireArtworkClient(room,request);
   if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
   if(room.visibility==='private'&&room.ownerId!==p.id&&!room.admitted?.[p.id]&&input.inviteCode!==room.mobileInviteCode)fail(403,'INVITE_REQUIRED','私人房间需要有效邀请码');
-  const token=id(),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
+  const token=id(),known=room.members.some(m=>m.guestId===p.id),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);if(!known)events.record(p.id,'room-join',room.id,{},now);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
   return {token,playerId:member.id,room:snapshotView(room,now,null,p.id),...(room.ownerId===p.id&&room.mobileInviteCode?{inviteCode:room.mobileInviteCode}:{})};
  }
  function replay(p,scope,input,now,fn){
@@ -281,7 +285,7 @@ export function createMobileService(options={}){
    const reward=energyEnabled?configuredReward:{...configuredReward,energy:0};
    const p=reward.id===current.id?current:readProfile(reward.id,now);
    const result=db.prepare('INSERT OR IGNORE INTO mobile_settlements VALUES(?,?,?,?,?)').run(room.id,p.id,reward.energy,reward.contribution,now);
-   if(result.changes){const collected=collection.complete(p.id,room,reward.contribution,now);p.energy+=reward.energy;p.lastReward={...p.lastReward,completion:{roomId:room.id,...reward,...(collected??{})},at:now};}
+   if(result.changes){events.record(p.id,'room-complete',room.id,{contribution:reward.contribution},now);const collected=collection.complete(p.id,room,reward.contribution,now);p.energy+=reward.energy;p.lastReward={...p.lastReward,completion:{roomId:room.id,...reward,...(collected??{})},at:now};}
    if(p.firstRoomId===room.id)p.firstRoomCompleted=true;saveProfile(p);
   }
   for(const row of db.prepare('SELECT id,data FROM mobile_profiles').all()){const p=row.id===current.id?current:JSON.parse(row.data);if(p.firstRoomId===room.id&&!p.firstRoomCompleted){p.firstRoomCompleted=true;saveProfile(p);}}
@@ -435,7 +439,7 @@ export function createMobileService(options={}){
    const needsTicket=!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
    if(needsTicket&&!starter&&p.supply.create<1)fail(402,'CREATE_TICKET_REQUIRED','需要1张建房券');
    const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(now):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
-   if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);return join(room,p,{},now,request);
+   if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);events.record(p.id,'room-create',room.id,{mode,pieces,visibility},now);return join(room,p,{},now,request);
   });
   const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|cheers|chat|assistance|management|continuation|invitation|tap-preview))?$/.exec(path);
   if(!match)fail(404,'NOT_FOUND','接口不存在');const room=readRoom(match[1]),part=match[2];
@@ -505,7 +509,7 @@ export function createMobileService(options={}){
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
    if(added&&room.diagnostic!==true){
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward)fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});
+    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
     room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
     p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
     const coins=collection.contribution(p.id,room.id,input.requestId,now)+tasks.beginner(p.id,now).coins;p.lastReward.coins=coins;
@@ -569,10 +573,10 @@ export function createMobileService(options={}){
    try{const p=readProfile(request.identity,now);if(needsName(p))p.name=randomName(p.id);saveProfile(p);social.touch(p.id,now);const transport=request[diagnosticTransport];
     const execute=(action,since)=>{const before=structuredClone(p);try{return route(request,p,{...action,...(since!==undefined?{since}:{})},new URL('/api/rooms/'+transport.context.roomId,'http://mobile.invalid'),now);}catch(error){for(const key of Object.keys(p))delete p[key];Object.assign(p,before);throw error;}};
     const actionResult=transport?(transport.disconnect?diagnosticActions.disconnect(transport.context,transport.connectionId,execute):diagnosticActions.write(transport.context,transport.input,transport.connectionId,execute)):null;
-    const data=actionResult?actionResult.data:route(request,p,input,url,now);if(data?.room?.puzzle)requireArtworkClient(data.room,request);saveProfile(p);db.exec('COMMIT');for(const [roomId,kind]of requestRoomChanges){if(kind.room)roomVersions.set(roomId,(roomVersions.get(roomId)??0)+1);for(const listener of roomListeners)listener(roomId,kind);}if(data?.diagnostic===true||transport){if(transport?.context.room.diagnostic===true)data.diagnostic=true;data.diagnosticTiming={serverMs:Math.max(0,performance.now()-handlingAt)};}return {status:actionResult?.status??(request.method==='POST'&&url.pathname==='/api/rooms'?201:200),data};}
-   catch(error){db.exec('ROLLBACK');for(const [roomId,state]of requestCursorUndo)cursorRooms.set(roomId,state);throw error;}
+    const data=actionResult?actionResult.data:route(request,p,input,url,now);if(data?.room?.puzzle)requireArtworkClient(data.room,request);saveProfile(p);db.exec('COMMIT');if(requestEnergyEmpty)events.record(...requestEnergyEmpty);for(const [roomId,kind]of requestRoomChanges){if(kind.room)roomVersions.set(roomId,(roomVersions.get(roomId)??0)+1);for(const listener of roomListeners)listener(roomId,kind);}if(data?.diagnostic===true||transport){if(transport?.context.room.diagnostic===true)data.diagnostic=true;data.diagnosticTiming={serverMs:Math.max(0,performance.now()-handlingAt)};}return {status:actionResult?.status??(request.method==='POST'&&url.pathname==='/api/rooms'?201:200),data};}
+   catch(error){db.exec('ROLLBACK');if(requestEnergyEmpty)events.record(...requestEnergyEmpty);for(const [roomId,state]of requestCursorUndo)cursorRooms.set(roomId,state);throw error;}
   }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'独立拼图服务暂时不可用',code:error.code??(error.status?'ROOM_ERROR':'INTERNAL_ERROR'),...(error.profile?{profile:error.profile}:{}),...(error.freeRemaining?{freeRemaining:error.freeRemaining}:{}),...(error.ownedRooms?{ownedRooms:error.ownedRooms}:{}),...(error.phrases?{phrases:error.phrases}:{})}};}
-  finally{requestRelease=undefined;requestProfileData=null;requestRoomChanges=null;requestCursorUndo=null;requestInviteBonuses=null;}
+  finally{requestRelease=undefined;requestEnergyEmpty=null;requestProfileData=null;requestRoomChanges=null;requestCursorUndo=null;requestInviteBonuses=null;}
  }
  return {handle,bindTapTap,realtime,capabilities,contentStatus(){const selected=managedContent?.read()??null;return {contentReleaseId:selected?.releaseId??null};},startDaily(){dailyContent?.start();},close(){clearInterval(cursorTimer);clearInterval(cheerTimer);cheerRooms.clear();cheerRates.clear();flushCursors();tapPreview.clear();roomListeners.clear();dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
 }

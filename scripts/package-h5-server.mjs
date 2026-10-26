@@ -17,6 +17,7 @@ if(!Array.isArray(build.fontNotices)||build.fontNotices.length!==4)throw Error('
 files.add('lib/decoration-policy.mjs');
 files.add('lib/tap-platform-id.mjs');
 files.add('server/mobile-privacy.mjs');
+files.add('server/mobile-events.mjs');
 files.add('outputs/mobile/room-realtime.mjs');
 files.add('server/room-realtime.LICENSE.txt');
 for(const path of build.fontNotices){if(!/^licenses\/fonts\/[A-Za-z0-9._-]+$/.test(path))throw Error('Unsafe font notice path');files.add('outputs/h5/'+path);}
