@@ -12,6 +12,7 @@ import {createMobileSocial} from './mobile-social.mjs';
 import {createMobilePrivacy} from './mobile-privacy.mjs';
 import {createMobileRoomHistory} from './mobile-room-history.mjs';
 import {createDiagnosticActions} from './diagnostic-actions.mjs';
+import {createSoloBatch} from './mobile-solo-batch.mjs';
 import {createTapPreview} from './tap-preview.mjs';
 import chatPhrases from '../config/social-phrases.json' with {type:'json'};
 import {randomBytes,randomInt as secureRandomInt,createHash} from 'node:crypto';
@@ -72,11 +73,12 @@ export function createMobileService(options={}){
  });
  // The host chooses this profile. No request body/header may disable stamina.
  const web=options.runtimeProfile==='web',guestNames=options.guestNames??true,energyEnabled=!web,shareRewards=options.shareRewards??!web,adsEnabled=!web&&options.adEnabled===true;
+ const soloLocalPlay=!web&&(options.soloLocalPlay??process.env.MOBILE_SOLO_LOCAL_PLAY!=='false')===true;
  // Only a trusted host option can re-enable free text. Local/development hosts
  // use the same safe mobile default as a public-test package.
  const customNames=options.publicTestPolicy?.customNames??web,privateMessages=options.publicTestPolicy?.privateMessages??web;
  if(typeof customNames!=='boolean'||typeof privateMessages!=='boolean')throw new TypeError('publicTestPolicy values must be booleans');
- const capabilities=Object.freeze({energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
+ const capabilities=Object.freeze({energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,soloLocalPlay,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
  const managedContent=options.managedContent??(options.contentDirectory?createMobileManagedContent({directory:options.contentDirectory,photos:engine.RESTORABLE_PHOTOS,assetDir:options.assetDir}):null);
  let operationRelease=managedContent?.read()??null,requestRelease;
  const taskRewardConfiguration=options.taskRewardSettings??createTaskRewardSettings({configurationPath:options.taskRewardConfigurationPath});
@@ -263,6 +265,7 @@ export function createMobileService(options={}){
   if(old){if(old.input_hash!==fingerprint)fail(409,'REQUEST_CONFLICT','同一请求编号不能用于其他操作');return JSON.parse(old.response);}
   const result=fn();db.prepare('INSERT INTO mobile_requests VALUES(?,?,?,?,?,?)').run(p.id,scope,input.requestId,fingerprint,JSON.stringify(result),now);return result;
  }
+ const soloBatch=createSoloBatch({enabled:soloLocalPlay,replay,snapshotView,profileView,engine,fail,requestKey});
  function challenge(p,{kind,requestId,context='supply',authorization=''},now){
   if(!requestKey(requestId))fail(400,'REQUEST_ID_REQUIRED','请求编号无效');
   const sharing=context.startsWith('share:');if(sharing?!shareRewards:!adsEnabled)fail(503,sharing?'SHARE_UNAVAILABLE':'ADS_UNAVAILABLE',sharing?'当前平台未开放分享奖励':'当前平台未开放广告');
@@ -523,7 +526,8 @@ export function createMobileService(options={}){
   if(method==='GET')return snapshotView(room,now,since,p.id);
   if(method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
   if(input.type==='drop'&&!requestKey(input.requestId))fail(400,'REQUEST_ID_REQUIRED','拼合操作缺少有效请求编号');
-  const act=()=>{
+  const requestInput=input;
+  const act=(input=requestInput)=>{
    const before=structuredClone(room.puzzle.groups),oldContrib=room.achievements?.contributors?.[p.id]?.count??0;
    room.mobileContributionXp??=Object.fromEntries(Object.entries(room.achievements?.contributors??{}).map(([owner,value])=>[owner,value.count]));
    member.name=p.name;engine.applyAction(room,member,input,now);
@@ -543,6 +547,7 @@ export function createMobileService(options={}){
    room.revision++;engine.recordRoomChange(room,before);settle(room,now,p);saveRoom(room);if(input.type==='leave')pruneRoomCursors(room);saveProfile(p);return {...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(mobileContribution?{mobileContribution}:{})};
   };
   // Only drops affect growth: avoid writing permanent receipts for heartbeat/move polling.
+  if(input.type==='batch')return soloBatch({room,member,p,input,now,since,act});
   return input.type==='drop'&&requestKey(input.requestId)&&(!request[diagnosticTransport]||room.diagnostic!==true)?replay(p,'room-action:'+room.id,input,now,act):act();
  }
  async function bindTapTap(request){
