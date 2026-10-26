@@ -1,6 +1,7 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createMobileTasks} from './mobile-tasks.mjs';
 import {createMobileEvents} from './mobile-events.mjs';
+import {createMobileLevels,readLevelConfiguration} from './mobile-levels.mjs';
 import {createTaskRewardSettings} from './task-reward-settings.mjs';
 import {createGameSettings} from './game-settings.mjs';
 import {createAlbumContent} from './album-content.mjs';
@@ -50,6 +51,7 @@ export const CHAT_PHRASES=Object.freeze(chatPhrases);
  * Reward completion is a client SDK report, not a platform-signed receipt.
  */
 export function createMobileService(options={}){
+ const levelConfiguration=readLevelConfiguration(options.levels);
  const clock=options.now??Date.now,randomInt=options.randomInt??secureRandomInt;
  const tapMultiplayerEnabled=options.runtimeProfile!=='web'&&(options.tapMultiplayerEnabled??process.env.MOBILE_TAP_MULTIPLAYER_ENABLED==='true')===true;
  const tapPreview=createTapPreview({enabled:tapMultiplayerEnabled,roomIds:options.tapPreviewRoomIds??String(process.env.MOBILE_TAP_PREVIEW_ROOM_IDS??'').split(',').filter(value=>/^[a-f0-9]{32}$/.test(value)),now:clock,notify:roomId=>markRoom(roomId)});
@@ -171,6 +173,7 @@ export function createMobileService(options={}){
  const tasks=createMobileTasks({db,readProfile,saveProfile,energyEnabled,readInviteCapBonus,invalidateInviteCapBonus:owner=>requestInviteBonuses?.delete(owner),areFriends:(owner,peer)=>social.areFriends(owner,peer),readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings,awardCoins:(owner,source,coins,now)=>collection.awardTaskCoins(owner,source,coins,now)});
  const dailyContent=managedContent?createManagedDailyContent({readSnapshot:()=>requestRelease===undefined?managedContent.read():requestRelease,legacy:options.dailyContent??null,photos:engine.RESTORABLE_PHOTOS,galleryPhotos:engine.GALLERY_VISIBLE_PHOTOS,fallback:engine.dailyPuzzle,appearanceDir:options.dailyAppearanceDir??resolve('work/daily-appearances'),now:clock}):options.dailyContent??null;
  const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:capabilities.albumTarget});
+ const levels=createMobileLevels({db,photos:engine.RESTORABLE_PHOTOS,collection,configuration:levelConfiguration});
  if(!options.deferDailyStart)dailyContent?.start();
  const galleryPhotos=now=>collection.galleryPhotos(now);
  const readRoom=roomId=>{const row=db.prepare('SELECT data,closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!row||row.closed_at)fail(404,'ROOM_NOT_FOUND','房间不存在或已关闭');const room=JSON.parse(row.data);if(!web&&room.diagnostic!==true)room.persistent=true;return room;};
@@ -329,6 +332,7 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/social'||path.startsWith('/api/mobile/social/'))return social.route(request,p,input,url,now);
   if(path==='/api/daily'&&method==='GET'){const photo=displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request);return {date:engine.dailyPuzzleDate(now),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,width:photo.width,height:photo.height},serverTime:now};}
   if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request)}:{}),serverTime:now};}
+  if(path==='/api/levels'&&method==='GET')return levels.view(p.id,now);
   if(path==='/api/mobile/profile'){
    if(method==='PATCH'){
     if(input.name!==undefined&&!customNames)fail(403,'CUSTOM_NAMES_UNAVAILABLE','公开测试暂不开放自定义昵称');

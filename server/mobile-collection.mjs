@@ -54,6 +54,10 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const additions=overlay(now);
   return document.albums.map(album=>({...album,imageIds:[...new Set([...album.imageIds,...additions.filter(entry=>entry.album.id===album.id).flatMap(entry=>entry.imageIds).filter(imageId=>!assigned.has(imageId))])].filter(imageId=>!planned.has(imageId)||released.has(imageId))}));
  }
+ function albumImages(albumId,now=Date.now()){
+  const managed=managedAlbums(now),album=managed?managed.find(album=>album.id===albumId):packById.get(albumId);
+  return album?{imageIds:[...album.imageIds],coverImageId:album.coverImageId??null}:null;
+ }
  function packImages(pack,now){return [...new Set([...pack.imageIds,...overlay(now).filter(entry=>entry.album.id===pack.id).flatMap(entry=>entry.imageIds)])];}
  function summary(owner,now=Date.now()){
   const w=wallet(owner),ownedPackIds=db.prepare("SELECT item_id FROM mobile_collection_owned WHERE owner=? AND kind='pack' ORDER BY created_at,item_id").all(owner).map(row=>row.item_id);
@@ -198,6 +202,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,equipped,awardTaskCoins,playerStats};
+ return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,equipped,awardTaskCoins,playerStats};
 }
 
