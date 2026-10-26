@@ -20,6 +20,10 @@ export function createMobileLevels({db,photos,collection,configuration}){
  db.exec('CREATE TABLE IF NOT EXISTS mobile_level_progress(owner TEXT,level_id TEXT,room_id TEXT,cleared_at INTEGER,energy INTEGER,PRIMARY KEY(owner,level_id));');
  function progress(owner){return db.prepare('SELECT level_id,room_id,cleared_at,energy FROM mobile_level_progress WHERE owner=? ORDER BY level_id').all(owner);}
  function recordClear(owner,levelId,roomId,clearedAt,energy){return db.prepare('INSERT OR IGNORE INTO mobile_level_progress(owner,level_id,room_id,cleared_at,energy) VALUES(?,?,?,?,?)').run(owner,levelId,roomId,clearedAt,energy).changes===1;}
+ function destination(levelId){
+  const ordered=config.chapters.flatMap(chapter=>chapter.pieces.map((_,index)=>chapter.id+'-'+(index+1))),index=ordered.indexOf(levelId);
+  return {nextLevelId:index<0?null:ordered[index+1]??null,chapterComplete:config.chapters.some(chapter=>levelId===chapter.id+'-'+chapter.pieces.length)};
+ }
  function view(owner,now=Date.now()){
   const cleared=new Set(progress(owner).filter(row=>row.cleared_at!==null).map(row=>row.level_id));let previous=null,current=null;
   const chapters=config.chapters.map(chapter=>{
@@ -33,5 +37,5 @@ export function createMobileLevels({db,photos,collection,configuration}){
    });return {id:chapter.id,title:chapter.title,albumId:chapter.albumId,coverImageId:cover?.id??null,coverSrc:cover?.thumbSrc??null,status:available?'available':'unavailable',levels};
   });return {chapters,current,firstClearEnergy:config.firstClearEnergy};
  }
- return {progress,recordClear,view};
+ return {progress,recordClear,destination,view};
 }

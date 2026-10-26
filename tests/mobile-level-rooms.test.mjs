@@ -116,11 +116,31 @@ test('first clear adds 30 above the cap, replay adds none, and normal completion
  assert.deepEqual(f.events('level-clear').map(event=>event.data),[{levelId:'ch1-1',firstClear:true,energy:30},{levelId:'ch1-1',firstClear:false,energy:0}]);
 });
 
+test('owner completion snapshots derive first-clear energy from persisted room progress after refresh and rejoin',t=>{
+ const f=fixture(t),ticket=f.make(),path='/api/rooms/'+ticket.room.id,expected={levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false};
+ assert.equal(ticket.room.mobileResult,undefined);assert.deepEqual(f.finish(ticket).mobileResult.levelClear,expected);
+ f.patch(owner,{lastReward:{message:'another reward'}});
+ assert.deepEqual(f.ok(owner,path,undefined,ticket.token).mobileResult.levelClear,expected);
+ assert.deepEqual(f.ok(owner,path+'/join',{}).room.mobileResult.levelClear,expected);
+ const replay=f.make(),again=f.finish(replay);assert.deepEqual(again.mobileResult.levelClear,{...expected,energy:0,firstClear:false});
+ assert.deepEqual(f.ok(owner,'/api/rooms/'+replay.room.id,undefined,replay.token).mobileResult.levelClear,again.mobileResult.levelClear);
+ assert.deepEqual(f.ok(owner,path,undefined,ticket.token).mobileResult.levelClear,expected);
+});
+
+test('last chapter level snapshot marks chapter complete and has no next level',t=>{
+ const f=fixture(t,{levels:{...configuration(),chapters:[chapter('ch1')]}});for(let index=1;index<6;index++)f.clear('ch1-'+index);
+ const ticket=f.make('ch1-6'),result=f.finish(ticket);
+ assert.deepEqual(result.mobileResult.levelClear,{levelId:'ch1-6',energy:30,firstClear:true,nextLevelId:null,chapterComplete:true});
+});
+
 test('a helper completing the room clears only the offline owner even with no owner contribution',t=>{
  const f=fixture(t),ticket=f.make(),before=f.stored(owner).energy;
  f.ok(owner,'/api/rooms/'+ticket.room.id,{type:'leave'},ticket.token);const result=f.finish(ticket,peer),profile=f.ok(owner,'/api/mobile/profile');
  assert.deepEqual(profile.lastReward.levelClear,{levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2'});assert.equal(profile.energy,before+30);
  assert.equal(result.profile.lastReward.levelClear,undefined);assert.ok(result.profile.lastReward.completion);assert.equal(result.profile.lastReward.completion.contribution,1);
+ assert.equal(Object.hasOwn(result.mobileResult,'levelClear'),false);
+ assert.equal(Object.hasOwn(f.ok(peer,'/api/rooms/'+ticket.room.id+'/join',{inviteCode:ticket.inviteCode}).room.mobileResult,'levelClear'),false);
+ assert.deepEqual(f.ok(owner,'/api/rooms/'+ticket.room.id+'/join',{}).room.mobileResult.levelClear,{levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false});
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_level_progress WHERE owner=?').get(peer).n,0);
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_settlements WHERE owner=?').get(owner).n,0);
  assert.equal(f.events('level-clear')[0].owner,owner);assert.equal(f.events('room-complete')[0].owner,peer);
@@ -131,6 +151,7 @@ test('next level follows configured order across chapters and ends at null',t=>{
  for(const [chapterId,nextLevelId]of [['ch1','ch2-1'],['ch2',null]]){
   for(let index=1;index<6;index++)f.clear(chapterId+'-'+index);
   const ticket=f.make(chapterId+'-6');f.finish(ticket,peer);assert.equal(f.stored(owner).lastReward.levelClear.nextLevelId,nextLevelId);
+  const result=f.ok(owner,'/api/rooms/'+ticket.room.id+'/join',{}).room.mobileResult.levelClear;assert.equal(result.nextLevelId,nextLevelId);assert.equal(result.chapterComplete,true);
  }
 });
 
@@ -146,6 +167,7 @@ test('web level completion records first clear without adding energy',t=>{
  const f=fixture(t,{runtimeProfile:'web'}),ticket=f.make(),before=f.stored(owner).energy,result=f.finish(ticket);
  assert.deepEqual(result.profile.lastReward.levelClear,{levelId:'ch1-1',energy:0,firstClear:true,nextLevelId:'ch1-2'});assert.equal(result.profile.energy,before);
  assert.equal(f.db.prepare('SELECT energy FROM mobile_level_progress WHERE owner=?').get(owner).energy,0);
+ assert.deepEqual(result.mobileResult.levelClear,{levelId:'ch1-1',energy:0,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false});
 });
 
 test('level creation and events share the existing request transaction',t=>{
