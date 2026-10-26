@@ -27,6 +27,24 @@ function fixture(){
 }
 const task=(view,id)=>view.tasks.find(t=>t.id===id);
 
+void test('solo valid contributions advance daily 10/30/60 milestones and issue unchanged rewards once',()=>{
+ const f=fixture();try{
+  const a=f.player(),ticket=f.room(a),expected=[['cooperation-10','小试身手',10,10,2,0],['cooperation-30','渐入佳境',30,15,5,0],['cooperation-60','心手相合',60,20,8,0]];
+  assert.deepEqual(f.tasks(a).tasks.filter(t=>t.group==='cooperation').map(t=>[t.id,t.title,t.target,t.energy,t.xp,t.coins]),expected);
+  for(let n=1;n<=60;n++){
+   const dropped=f.drop(a,ticket);f.ok(a,dropped.path,dropped.input,ticket.token);
+   if([1,9,10,29,30,59,60].includes(n)){
+    const v=f.tasks(a);for(const [id,,target] of expected){assert.equal(task(v,id).progress,Math.min(n,target));assert.equal(task(v,id).earned,n>=target);}
+    assert.equal(task(v,'friend-30').progress,0);
+   }
+  }
+  f.restart();const v=f.tasks(a);
+  assert.deepEqual(v.inventory.filter(g=>g.kind.startsWith('cooperation')).map(g=>[g.kind,g.count]),expected.map(([id])=>[id,1]));
+  assert.equal(task(v,'cooperation-60').progress,60);assert.equal(task(v,'friend-30').progress,0);
+  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_task_events WHERE owner=?').get(a).n,60);
+ }finally{f.close();}
+});
+
 void test('beginner solo milestones count real contributions, credit 10/50/100 once and disappear across days/restarts',()=>{
  const f=fixture();try{
   const owner=f.player(),peer=f.player(),ticket=f.room(owner),starting=f.profile(owner).collection.coins;
@@ -108,7 +126,7 @@ void test('accepted social friends count only real active cooperation, preserve 
   }
   assert.equal(f.tasks(a).inventory.find(g=>g.kind==='friend-10').count,1);
   assert.equal(f.tasks(a).inventory.some(g=>g.kind==='invite-refill'),false);
-  f.ok(a,'/api/mobile/social/friends/remove',{code:bc,requestId:rid()});f.drop(a,ticket);assert.equal(task(f.tasks(a),'friend-30').progress,10);assert.equal(task(f.tasks(a),'cooperation-30').progress,11);
+  f.ok(a,'/api/mobile/social/friends/remove',{code:bc,requestId:rid()});f.drop(a,ticket);assert.equal(task(f.tasks(a),'friend-30').progress,10);assert.equal(task(f.tasks(a),'cooperation-30').progress,12);
   f.now+=3000;befriend();f.drop(a,ticket);assert.equal(task(f.tasks(a),'friend-30').progress,11);
   f.ok(b,'/api/mobile/social/block',{code:ac,requestId:rid()});f.drop(b,bt);f.drop(a,ticket);assert.equal(task(f.tasks(a),'friend-30').progress,11);assert.equal(task(f.tasks(b),'friend-30').progress,10);
   // Old invitation bindings keep their historical collaboration eligibility even after social removal.
@@ -118,21 +136,22 @@ void test('accepted social friends count only real active cooperation, preserve 
  }finally{f.close();}
 });
 
-void test('same identity tabs, invalid actions, stale successes and departed partners do not qualify',()=>{
+void test('daily tasks count solo tabs once per valid drop while friend tasks require a recent active friend at the table',()=>{
  const f=fixture();try{
-  const a=f.player(),b=f.player(),ticket=f.room(a),tab=f.join(a,ticket.room.id);f.drop(a,ticket);f.drop(a,tab);assert.equal(task(f.tasks(a),'cooperation-10').progress,0);
-  const bt=f.join(b,ticket.room.id);f.drop(b,bt);f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,1);
-  const path='/api/rooms/'+ticket.room.id,unchanged=f.profile(a).totalXp;f.ok(a,path,{type:'heartbeat'},ticket.token);assert.equal(f.call(a,path,{type:'drop',groupId:-1,seq:1,dx:0,dy:0,requestId:rid()},ticket.token).status,409);assert.equal(f.profile(a).totalXp,unchanged);
-  f.now+=120001;f.ok(b,path,{type:'heartbeat'},bt.token);f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,1);
-  f.drop(b,bt);f.ok(b,path,{type:'leave'},bt.token);f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,1);
+  const a=f.player(),b=f.player(),ticket=f.room(a),tab=f.join(a,ticket.room.id);f.accept(b,f.tasks(a).invitation.code);
+  f.drop(a,ticket);f.drop(a,tab);assert.equal(task(f.tasks(a),'cooperation-10').progress,2);assert.equal(task(f.tasks(a),'friend-10').progress,0);
+  const bt=f.join(b,ticket.room.id);f.drop(b,bt);f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,3);assert.equal(task(f.tasks(a),'friend-10').progress,1);
+  const path='/api/rooms/'+ticket.room.id,unchanged=f.profile(a).totalXp;f.ok(a,path,{type:'heartbeat'},ticket.token);assert.equal(f.call(a,path,{type:'drop',groupId:-1,seq:1,dx:0,dy:0,requestId:rid()},ticket.token).status,409);assert.equal(f.profile(a).totalXp,unchanged);assert.equal(task(f.tasks(a),'cooperation-10').progress,3);assert.equal(task(f.tasks(a),'friend-10').progress,1);
+  f.now+=120001;f.ok(b,path,{type:'heartbeat'},bt.token);f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,4);assert.equal(task(f.tasks(a),'friend-10').progress,1);
+  f.drop(b,bt);f.ok(b,path,{type:'leave'},bt.token);f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,5);assert.equal(task(f.tasks(a),'friend-10').progress,1);
   assert.equal(f.tasks(a).giftProgress,5);
  }finally{f.close();}
 });
 
-void test('daily reset is Beijing midnight, keeps inventory and ten remainder, and never backfills solo events',()=>{
+void test('daily reset is Beijing midnight and keeps inventory and ten remainder',()=>{
  const f=fixture();try{
   f.now=Date.parse('2026-10-10T15:59:59.000Z');const a=f.player(),b=f.player(),ticket=f.room(a),bt=f.join(b,ticket.room.id);
-  for(let i=0;i<3;i++)f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,0);
+  for(let i=0;i<3;i++)f.drop(a,ticket);assert.equal(task(f.tasks(a),'cooperation-10').progress,3);
   f.drop(b,bt);for(let i=0;i<10;i++)f.drop(a,ticket);
   const prior=f.tasks(a);assert.equal(prior.day,'2026-10-10');assert.equal(prior.giftProgress,3);assert.equal(prior.giftCount,2);
   f.now=Date.parse('2026-10-10T16:00:00.000Z');const reset=f.tasks(a);assert.equal(reset.day,'2026-10-11');assert.equal(task(reset,'cooperation-10').progress,0);assert.equal(task(reset,'cooperation-10').earned,false);assert.equal(reset.giftProgress,3);assert.equal(reset.giftCount,2);

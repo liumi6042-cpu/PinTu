@@ -7,9 +7,9 @@ export const INVITATION_SHARE_DAILY_LIMIT=3;
 export const INVITATION_SHARE_REWARD=Object.freeze({energy:20,xp:10,coins:0});
 export const BEGINNER_TASKS=Object.freeze([10,50,100].map(target=>Object.freeze({id:'beginner-'+target,kind:'beginner-'+target,group:'beginner',title:'累计拼合'+target+'次',target,energy:0,xp:0,coins:target})));
 export const TASK_REWARDS=[
- {id:'cooperation-10',group:'cooperation',title:'伙伴初遇',target:10,energy:10,xp:2,coins:0},
- {id:'cooperation-30',group:'cooperation',title:'伙伴默契',target:30,energy:15,xp:5,coins:0},
- {id:'cooperation-60',group:'cooperation',title:'伙伴同心',target:60,energy:20,xp:8,coins:0},
+ {id:'cooperation-10',group:'cooperation',title:'小试身手',target:10,energy:10,xp:2,coins:0},
+ {id:'cooperation-30',group:'cooperation',title:'渐入佳境',target:30,energy:15,xp:5,coins:0},
+ {id:'cooperation-60',group:'cooperation',title:'心手相合',target:60,energy:20,xp:8,coins:0},
  {id:'friend-10',group:'friend',title:'好友相伴',target:10,energy:5,xp:2,coins:0},
  {id:'friend-30',group:'friend',title:'好友默契',target:30,energy:10,xp:5,coins:0},
 ];
@@ -125,12 +125,10 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
   const partners=room.members.filter(m=>m.guestId!==p.id&&!m.bot&&m.guestId&&now-m.lastSeen<onlineMs&&active.has(m.guestId));
   // Invite bindings retain their historical rules; accepted social friendships are checked live.
   // Merely accepting a request never creates an event or an invitation qualification.
-  const cooperation=partners.length>0?1:0,friend=partners.some(m=>isLinked(p.id,m.guestId)||areFriends(p.id,m.guestId)===true)?1:0,day=mobileTaskDay(now);
-  if(cooperation){
-   db.prepare('INSERT INTO mobile_task_daily VALUES(?,?,?,?) ON CONFLICT(owner,day) DO UPDATE SET cooperation=cooperation+excluded.cooperation,friend=friend+excluded.friend').run(p.id,day,cooperation,friend);
-   const daily=db.prepare('SELECT cooperation,friend FROM mobile_task_daily WHERE owner=? AND day=?').get(p.id,day);
-   for(const task of TASK_REWARDS)if(daily[task.group]>=task.target)giftsAdded+=grant(p.id,task.id,'daily:'+day+':'+task.id,now);
-  }
+  const friend=partners.some(m=>isLinked(p.id,m.guestId)||areFriends(p.id,m.guestId)===true)?1:0,day=mobileTaskDay(now);
+  db.prepare('INSERT INTO mobile_task_daily VALUES(?,?,?,?) ON CONFLICT(owner,day) DO UPDATE SET cooperation=cooperation+excluded.cooperation,friend=friend+excluded.friend').run(p.id,day,1,friend);
+  const daily=db.prepare('SELECT cooperation,friend FROM mobile_task_daily WHERE owner=? AND day=?').get(p.id,day);
+  for(const task of TASK_REWARDS)if(daily[task.group]>=task.target)giftsAdded+=grant(p.id,task.id,'daily:'+day+':'+task.id,now);
   const binding=db.prepare('SELECT * FROM mobile_invitation_bindings WHERE invitee=?').get(p.id);
   if(binding&&binding.qualified_at===null){
    const count=binding.contributions+1;
