@@ -11,6 +11,11 @@ import {boardThemeColors,isThemeId,landscapeRoomColors as roomColors,type ThemeI
 import {roomRoundPath} from './room-chrome';
 import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-client';
 import {CursorClient} from '../lib/cursor-client';
+import {CheerClient,CHEER_LABELS} from './cheer-client';
+import {CHEER_EMOTES,type CheerEmote} from '../lib/room-realtime';
+import {completionSeats,type CompletionSeat} from './completion-seats';
+import {CheerEffects} from './cheer-effects';
+import {drawCheerIcon} from './cheer-icons';
 import type {ManagedRoomRealtime} from '../lib/room-realtime';
 import type {MobileContributionReceipt} from '../lib/connection-feedback';
 import {GALLERY_PHOTOS,RESTORABLE_PHOTOS,CATEGORIES} from '../lib/puzzle-catalog';
@@ -75,6 +80,8 @@ export class GameApp{
  private previewPack:CollectionPack|null=null;private previewIndex=-1;private previewGridScroll=0;
  private room:RoomClient|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
+ private cheer:CheerClient|null=null;private readonly cheerEffects=new CheerEffects();private cheerFrame:number|null=null;
+ private completionSeatRects=new Map<string,Rect>();private completionPicture:Rect={x:0,y:0,w:0,h:0};private completionBar:Rect={x:0,y:0,w:0,h:0};
  private realtime:ManagedRoomRealtime|null=null;
  private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;private desktopToolsOpen=true;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
@@ -192,6 +199,7 @@ export class GameApp{
  private applyCollection(value:MobileCollectionView){this.pendingViews?.invalidate();this.collection=value;this.invalidate();}
  private tickVisibleTime(){
   if(this.hidden||this.destroyed)return;
+  if(this.modal==='completion'&&this.cheerEffects.alive())this.animateCheers();
   const now=Date.now();let changed=false;
   if(this.messageUntil&&now>this.messageUntil){this.message='';this.messageUntil=0;changed=true;}
   const clock=this.route==='room'&&(this.toolsOpen||this.platform.config.id!=='web'&&this.layout==='phoneLandscape'&&this.landscapeToolsOpen)?(['hint','underlay'] as const).map(kind=>{const grant=this.activeAid(kind);return grant?Math.max(0,Math.ceil((grant.expiresAt-now)/1000)):0;}).join(':'):'';
@@ -302,7 +310,7 @@ export class GameApp{
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();this.modal=modal;this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();}
+ private showModal(modal:Modal){if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();this.modal=modal;this.cheer?.setActive(modal==='completion');if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
   const owner=this.ownerKey(),serial=++this.historySerial;this.historyLoading=true;this.historyError='';this.invalidate();
@@ -391,7 +399,7 @@ export class GameApp{
    if(this.room===room)await network.drop(group.id,0,0);
   });
  }
- private leaveRoom(){this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.room=null;this.board=null;this.aid=null;}
+ private leaveRoom(){this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.room=null;this.board=null;this.aid=null;}
  private async attachTicket(ticket:RoomTicket){
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
   this.social.close();
@@ -407,6 +415,8 @@ export class GameApp{
   }});this.room=room;
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;this.detachRoom=room.attach(board);
   const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();
+  this.cheer=new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>{if(this.modal!=='completion'||this.room!==room)return;this.cheerEffects.receive(cheer,own);this.animateCheers();}});
+  this.cheer.setActive(this.modal==='completion');
   this.unsubscribeRoom=room.subscribe(()=>{if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.showModal('completion');void this.client.refresh().catch(()=>{});void this.loadCollection();}}this.invalidate();});
   const photo=activeRoomPhoto(ticket.room,photoMap.get(ticket.room.puzzle.imageId));this.roomImage=this.client.asset(ticket.room.customImage?customPhoto(ticket.room.customImage,ticket.room.id).src:photo?.src??'');
   this.invalidate();if(this.nineGridRoom)board.setUnderlay(Date.now()+86400000);else void this.loadAssistance();
@@ -1604,7 +1614,98 @@ export class GameApp{
   try{s.withViewport(area,()=>{this.scroll=this.modalScroll;this.extent=this.modalExtent;this.bodyTop=6;this.bodyBottom=s.h-8;this.drawTasks(true);this.scroll=clamp(this.scroll,0,Math.max(0,this.extent-(this.bodyBottom-this.bodyTop)));this.modalScroll=this.scroll;this.modalExtent=this.extent;this.modalArea={x:area.x,y:area.y+this.bodyTop,w:area.w,h:Math.max(0,this.bodyBottom-this.bodyTop)};});}
   finally{Object.assign(this,saved);}
  }
+ private stopCheers(){if(this.cheerFrame!==null)this.platform.cancelFrame(this.cheerFrame);this.cheerFrame=null;this.cheerEffects.clear();}
+ private animateCheers(){
+  if(this.cheerFrame!==null||this.hidden||this.destroyed||this.modal!=='completion')return;
+  this.invalidate();this.cheerFrame=this.platform.frame(()=>{this.cheerFrame=null;if(this.modal!=='completion'||this.hidden||this.destroyed)return;const alive=this.cheerEffects.alive();this.invalidate();if(alive)this.animateCheers();});
+ }
+ private sendCompletionCheer(emote:CheerEmote){if(this.modal==='completion'&&this.room?.snapshot.members.some(member=>member.id===this.room!.ticket.playerId&&member.lastSeen>0))this.cheer?.send(emote);}
+ private completionSeats(){const snap=this.room?.snapshot;return completionSeats(snap?.members??[],(snap as typeof snap&{mobileResult?:{ranking?:Parameters<typeof completionSeats>[1]}})?.mobileResult?.ranking,this.room?.ticket.playerId??'',this.client.profile?.code);}
+ private completionOutsideSeats(x:number,w:number){return this.desktop&&x>=194&&this.stage.w-x-w>=194;}
+ private drawCompletionSeat(seat:CompletionSeat,r:Rect,vertical=false){
+  const s=this.stage,c=s.ctx,avatar=vertical?34:this.layout==='phoneLandscape'?38:50;r={...r,y:r.y+this.cheerEffects.hop(seat.playerId)};this.completionSeatRects.set(seat.playerId,r);
+  c.save();if(!seat.present)c.globalAlpha=.45;s.frame(r,seat.me?'button-cream-selected':'button-linen-normal');
+  if(seat.me){c.save();c.globalAlpha*=.12;c.fillStyle=this.colors.berry;c.fillRect(r.x+4,r.y+4,r.w-8,r.h-8);c.restore();}
+  const mirror=!vertical&&seat.column==='right',ax=vertical?r.x+(r.w-avatar)/2:mirror?r.x+r.w-avatar-6:r.x+6,ay=vertical?r.y+3:r.y+(r.h-avatar)/2;
+  s.icon('avatar',{x:ax,y:ay,w:avatar,h:avatar});if(seat.crown)drawCheerIcon(c,'crown',{x:ax+(avatar-24)/2,y:ay-10,w:24,h:24});
+  const tx=vertical?r.x+3:mirror?r.x+5:ax+avatar+5,tw=vertical?r.w-6:r.w-avatar-16;
+  s.text(seat.name,tx,vertical?r.y+39:r.y+12,vertical?11:12,this.colors.ink,seat.me?800:600,tw);
+  s.text('拼合 '+seat.contribution,tx,vertical?r.y+56:r.y+34,vertical?10:11,this.colors.muted,600,tw);
+  if(seat.me){const tag={x:r.x+r.w-17,y:r.y+2,w:14,h:13};c.fillStyle=this.colors.berry;c.fillRect(tag.x,tag.y,tag.w,tag.h);s.text('我',tag.x+2,tag.y+1,9,this.colors.onAccent,700);}
+  c.restore();
+ }
+ private drawCompletionSeats(panel:Rect){
+  const seats=this.completionSeats(),landscape=this.layout==='phoneLandscape',v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},w=landscape?108:176,h=landscape?60:70,gap=landscape?12:16;
+  for(const seat of seats){const rows=Math.ceil(seats.length/2),x=landscape?seat.column==='left'?10+(v.left??0):this.stage.w-10-(v.right??0)-w:seat.column==='left'?panel.x-18-w:panel.x+panel.w+18,y=panel.y+(panel.h-(rows*h+(rows-1)*gap))/2+seat.row*(h+gap);this.drawCompletionSeat(seat,{x,y,w,h});}
+ }
+ private drawCompletionPicture(r:Rect){
+  const s=this.stage;this.completionPicture=r;s.frame(r,'panel-cream');const shown=this.board?.drawCompletedPicture(s.ctx,{x:r.x+6,y:r.y+6,w:r.w-12,h:r.h-12});
+  if(!shown){s.text(this.imageError?'图片加载失败':'正在加载成品…',r.x+12,r.y+r.h/2-20,13,this.colors.muted,500,r.w-24);if(this.imageError)this.button(r.x+12,r.y+r.h/2+4,r.w-24,'重新加载',()=>void this.run(async()=>{const board=this.board;if(!board)return;await board.setImage(this.roomImage);if(this.board===board){this.imageReady=true;this.imageError='';this.message='';}}),'cream',32);}
+  s.ornaments(r,26);
+ }
+ private drawCompletionBar(r:Rect){
+  this.completionBar=r;const s=this.stage,vertical=this.layout==='phonePortrait',enabled=!!this.room?.snapshot.members.some(member=>member.id===this.room!.ticket.playerId&&member.lastSeen>0),gap=4,bw=(r.w-5*gap)/6;
+  CHEER_EMOTES.forEach((emote,i)=>{const b={x:r.x+i*(bw+gap),y:r.y,w:bw,h:r.h};s.ctx.save();if(!enabled)s.ctx.globalAlpha=.45;s.frame(b,this.cheerEffects.pressed(emote)?'button-cream-pressed':'button-cream-normal');
+   const size=vertical?24:22,label=CHEER_LABELS[emote],font=vertical?11:this.desktop?14:13,iw=16,lw=s.measure(label,font,700),horizontal=bw>=iw+lw+10;
+   drawCheerIcon(s.ctx,emote,{x:vertical||!horizontal?b.x+(bw-size)/2:b.x+(bw-iw-lw-4)/2,y:vertical?b.y+5:horizontal?b.y+(b.h-size)/2:b.y+3,w:size,h:size});
+   s.text(label,vertical||!horizontal?b.x+(bw-lw)/2:b.x+(bw-iw-lw-4)/2+iw+6,vertical?b.y+35:horizontal?b.y+(b.h-font)/2:b.y+26,font,this.colors.ink,700,bw-4);
+   if(this.desktop)s.text(i+1,b.x+4,b.y+3,9,this.colors.muted);
+   const count=this.cheerEffects.count(emote);if(count){const badge='×'+count;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(b.x+b.w-25,b.y-4,27,16);s.text(badge,b.x+b.w-23,b.y-3,10,this.colors.onAccent,700,25);}
+   if(enabled)s.hit(b,()=>this.sendCompletionCheer(emote));s.ctx.restore();});
+ }
+ private drawCompletionContent(left:number,cy:number,width:number,landscape=false,panel?:Rect){
+  const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
+  const seats=this.completionSeats();
+  if(landscape&&panel){const side=Math.min(240,panel.h-134,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+40,w:side,h:side});left=panel.x+16+side+16;width=panel.x+panel.w-16-left;cy=panel.y+42;}
+  else if(seats.length&&!this.completionOutsideSeats(left-20,width+40)){
+   const side=width-146,rows=Math.ceil(seats.length/2),height=Math.max(side,rows*74+(rows-1)*8);this.drawCompletionPicture({x:left+73,y:cy,w:side,h:side});
+   for(const seat of seats)this.drawCompletionSeat(seat,{x:seat.column==='left'?left:left+width-66,y:cy+seat.row*82,w:66,h:74},true);cy+=height+20;
+  }else{const picture={x:left,y:cy,w:width,h:Math.min(width*.62,this.desktop?230:240)};this.drawCompletionPicture(picture);cy+=picture.h+20;}
+  center((snap?.title||snap?.photo?.title||'这幅画')+'，拼好啦！',cy,landscape?17:20,ink,800);cy+=landscape?27:32;
+  const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
+  const meta=[pieces?pieces+' 片':'',started&&finished&&finished>started?'用时 '+Math.max(1,Math.round((finished-started)/60000))+' 分钟':'',together?together+' 人同桌':''].filter(Boolean).join(' · ');if(meta){center(meta,cy,landscape?12:13,muted,600);cy+=landscape?25:30;}
+  if(!landscape){this.drawCompletionBar({x:left,y:cy,w:width,h:this.layout==='phonePortrait'?58:46});cy+=this.layout==='phonePortrait'?72:60;}
+    if(result){
+     const imageId=snap?.puzzle?.imageId,album=imageId?this.collection?.albums.find(item=>item.images.some(image=>image.id===imageId)):undefined;
+     const tiles:{icon:string;label:string;gold?:boolean}[]=[{icon:'coin',label:'金币 +'+(result.coins??0)},{icon:'fragment',label:'碎片 +'+(result.fragments??0)},...(this.energyEnabled&&result.energy?[{icon:'lightning',label:'体力 +'+result.energy}]:[]),...(album?[{icon:'book',label:'图集 '+album.collected+'/'+album.total}]:[]),...(landscape?[]:((result.catalog?.albumRewards??[]) as {title:string;coins?:number}[]).map(reward=>({icon:reward.coins?'coin':'leaf',label:reward.coins?'集满 +'+reward.coins:'得到装饰',gold:true})))];
+     const gap=8,columns=Math.min(tiles.length,landscape?4:this.desktop||width>=420?5:3),tileH=landscape?58:64,tw=(width-gap*(columns-1))/columns;
+     tiles.forEach((tile,index)=>{const r={x:left+(index%columns)*(tw+gap),y:cy+Math.floor(index/columns)*(tileH+gap),w:tw,h:tileH};s.frame(r,tile.gold?'panel-gold':'button-linen-normal');s.icon(tile.icon,{x:r.x+(tw-26)/2,y:r.y+6,w:24,h:24});const size=tw<84?12:13;s.text(tile.label,r.x+Math.max(4,(tw-s.measure(tile.label,size,700))/2),r.y+35,size,ink,700,tw-8);});
+     cy+=Math.ceil(tiles.length/columns)*(tileH+gap)+4;
+     if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,landscape?12:13,muted,600);cy+=landscape?18:26;}
+     for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,landscape?12:13,ink,700);cy+=landscape?18:24;}
+    }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
+    cy+=landscape?2:6;s.button({x:left,y:cy,w:width,h:landscape?40:46},'再来一桌',()=>{this.leaveRoom();this.navigate('gallery');},{tone:'berrydark',fontSize:16});cy+=landscape?46:56;
+    const third=(width-16)/3,albumId=(snap?.puzzle?.imageId&&this.collection?.albums.find(item=>item.images.some(image=>image.id===snap.puzzle!.imageId))?.id)||'';
+    s.button({x:left,y:cy,w:third,h:landscape?34:40},'分享成品',()=>void this.run(async()=>{const outcome=await this.shareFromGame({title:'我们拼好了「'+(snap?.title||snap?.photo?.title||'一幅画')+'」，来'+this.platform.config.gameName+'一起拼',inviteCode:this.tasks?.invitation.code});this.note(outcome==='copied'?'链接已复制，可以发给朋友':outcome==='shared'||outcome==='opened'?'已分享':outcome==='cancelled'?'本次分享已取消':'暂时无法分享');}),{fontSize:13});
+    s.button({x:left+third+8,y:cy,w:third,h:landscape?34:40},'查看图集',()=>{this.leaveRoom();this.openCollection('albums');if(albumId)this.openAlbum(albumId);},{fontSize:13});
+    s.button({x:left+(third+8)*2,y:cy,w:third,h:landscape?34:40},'回大厅',()=>{this.leaveRoom();this.navigate('lobby');},{fontSize:13});cy+=landscape?40:54;
+  if(landscape&&panel){const bar={x:panel.x+16,y:Math.max(this.completionPicture.y+this.completionPicture.h+8,cy+2),w:panel.w-32,h:44};this.drawCompletionBar(bar);const hint='点一下就能喝彩，同桌都看得到';s.text(hint,bar.x+(bar.w-s.measure(hint,11))/2,bar.y+49,11,muted,500);}
+  return cy;
+ }
+ private drawLandscapeCompletion(){
+  const s=this.stage,v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},available=s.w-(v.left??0)-(v.right??0),w=Math.min(640,available-252),panel={x:(v.left??0)+(available-w)/2,y:Math.max(8,v.top),w,h:s.h-Math.max(8,v.top)-Math.max(8,v.bottom)};
+  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.frame(panel,'panel-cream');this.modalArea=panel;this.modalExtent=0;this.modalScroll=0;this.completionSeatRects.clear();this.drawCompletionSeats(panel);
+  s.text('拼图完成',panel.x+16,panel.y+12,17,this.colors.ink,700);s.button({x:panel.x+panel.w-38,y:panel.y+7,w:28,h:28},'',()=>this.showModal(null),{icon:'close'});
+  this.drawCompletionContent(panel.x+16,panel.y+40,panel.w-32,true,panel);this.drawCompletionEffects();
+ }
+ private drawCompletionEffects(){
+  const fx=this.cheerEffects,now=Date.now();fx.update(now);const s=this.stage,c=s.ctx,p=this.completionPicture,bar=this.completionBar;
+  // Cups meet above the image; only show them while its top is in the scroll viewport.
+  if(fx.tea&&p.y>=this.modalArea.y){const t=(now-fx.tea.start)/1000,spread=40*(1-Math.min(1,t*2));for(const direction of [-1,1])drawCheerIcon(c,'tea',{x:p.x+p.w/2-16+direction*(16+spread),y:p.y-28-Math.sin(t*Math.PI)*8,w:32,h:32});}
+  const outside=this.layout==='phoneLandscape'||this.completionOutsideSeats(this.modalArea.x-12,this.modalArea.w+24);
+  s.clip(outside?{x:0,y:0,w:s.w,h:s.h}:this.modalArea,()=>{
+  const origin=(id:string)=>{const seat=this.completionSeatRects.get(id);return seat?{x:seat.x+seat.w/2,y:seat.y+seat.h/2}:{x:bar.x+bar.w/2,y:bar.y};};
+  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();c.globalAlpha=1-t;if(particle.kind==='confetti'){c.fillStyle=['#f4c24f','#e05a6e','#7fb069','#6fa3d8','#b98ad6','#f28aa6'][particle.color];const x=this.modalArea.x+particle.x*this.modalArea.w+Math.sin(t*8+particle.spin)*12,y=this.modalArea.y+(t*(.7+particle.y*.6)-particle.y*.2)*(this.modalArea.h+20);if(y>=this.modalArea.y)c.fillRect(Math.round(x),Math.round(y),3+particle.spin%3,5);}else{const o=origin(particle.playerId);drawCheerIcon(c,'heart',{x:o.x+(particle.x-.5)*60,y:o.y-t*100-particle.y*20,w:24,h:24});}c.restore();}
+  if(now<fx.starsUntil){const size=16+Math.round(8*Math.abs(Math.sin(now/95)));for(const [x,y] of [[p.x,p.y],[p.x+p.w,p.y],[p.x,p.y+p.h],[p.x+p.w,p.y+p.h]])drawCheerIcon(c,'star',{x:x-size/2,y:y-size/2,w:size,h:size});}
+  for(const bubble of fx.bubbles){const seat=this.completionSeatRects.get(bubble.playerId),o=origin(bubble.playerId),index=CHEER_EMOTES.indexOf(bubble.emote),w=bubble.count>1?64:42,h=38;
+   const x=seat?seat.x+seat.w/2<s.w/2?seat.x+seat.w+3:seat.x-w-3:clamp(bar.x+index*(bar.w/6)+(bar.w/6-w)/2,4,s.w-w-4),y=seat?o.y-h/2:bar.y-46,scale=fx.bubbleScale(bubble),r={x:x+w*(1-scale)/2,y:y+h*(1-scale)/2,w:w*scale,h:h*scale};if(scale<=0)continue;
+   // Stage.frame paints in physical pixels, so animate its rectangle explicitly.
+   c.save();c.globalAlpha=fx.bubbleAlpha(bubble);s.frame(r,'button-cream-normal');if(scale>.5){c.fillStyle=this.colors.cream;if(seat)c.fillRect(r.x+(x>o.x?-4:r.w-2),r.y+r.h/2,6,6);else c.fillRect(r.x+r.w/2-3,r.y+r.h-2,6,6);drawCheerIcon(c,bubble.emote,{x:r.x+6*scale,y:r.y+7*scale,w:24*scale,h:24*scale});if(bubble.count>1)s.text('×'+bubble.count,r.x+32*scale,r.y+12*scale,13*scale,this.colors.berry,800,30);}c.restore();}
+  if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',w=Math.min(p.w+60,s.measure(label,14,800)+58),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
+  });
+ }
  private drawModal(){
+  if(this.modal==='completion'&&this.layout==='phoneLandscape'){this.drawLandscapeCompletion();return;}
   if(this.modal==='playerCard'){this.drawPlayerCard();return;}
   if(this.modal==='history'){this.drawHistoryWindow();return;}
   if(this.modal==='tasks'){this.drawTaskWindow();return;}
@@ -1618,6 +1719,7 @@ export class GameApp{
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
   this.modalStart=y+59;this.modalArea={x:x+12,y:this.modalStart,w:w-24,h:h-73};let cy=this.modalStart-this.modalScroll;const left=x+20,width=w-40;
   if(this.modal==='social'){this.modalExtent=0;this.modalScroll=0;this.social.render(s,this.modalArea);return;}
+  if(this.modal==='completion'){this.completionSeatRects.clear();if(this.completionOutsideSeats(x,w))this.drawCompletionSeats({x,y,w,h});}
   s.clip(this.modalArea,()=>{switch(this.modal){
    case'members':{
     for(const member of this.room?.snapshot.members??[]){s.icon('avatar',{x:left,y:cy,w:30,h:32});s.text(member.name,left+42,cy+2,15,this.colors.ink,700,width-52);s.text('Lv.'+((member as {level?:number}).level??0),left+42,cy+23,12,this.colors.muted);s.hit({x:left,y:cy,w:width,h:49},()=>void this.openPlayerCard(member));cy+=57;}break;
@@ -1735,41 +1837,11 @@ export class GameApp{
     const last=this.messages.slice(-8);for(const item of last){s.text(item.name,left,cy,12,this.colors.muted,700);cy+=22;cy=this.paragraph(item.text,left+7,cy,width-14,14,this.colors.ink)+12;}if(!last.length){s.text('发一句问候吧',left,cy,14,this.colors.muted);cy+=36;}
     phrases.forEach((text,index)=>{const bw=(width-8)/2;this.button(left+(index%2)*(bw+8),cy+Math.floor(index/2)*45,bw,text,()=>void this.say(index),'cream',35);});cy+=Math.ceil(phrases.length/2)*45+10;break;
    }
-   case'completion':{
-    const room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
-    const picture={x:left,y:cy,w:width,h:Math.min(width*.62,this.desktop?230:240)};
-    s.frame(picture,'panel-cream');const shown=this.board?.drawCompletedPicture(s.ctx,{x:left+6,y:cy+6,w:width-12,h:picture.h-12});
-    if(!shown){s.text(this.imageError?'图片加载失败':'正在加载成品…',left+12,cy+picture.h/2-20,13,this.colors.muted,500,width-24);if(this.imageError)this.button(left+12,cy+picture.h/2+4,width-24,'重新加载',()=>void this.run(async()=>{const board=this.board;if(!board)return;await board.setImage(this.roomImage);if(this.board===board){this.imageReady=true;this.imageError='';this.message='';}}),'cream',32);}
-    s.ornaments(picture,26);cy+=picture.h+20;
-    center((snap?.title||snap?.photo?.title||'这幅画')+'，拼好啦！',cy,20,ink,800);cy+=32;
-    // Only the parts we actually know.
-    const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking as {name:string;code?:string|null;contribution:number;mine?:boolean}[]:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
-    const meta=[pieces?pieces+' 片':'',started&&finished&&finished>started?'用时 '+Math.max(1,Math.round((finished-started)/60000))+' 分钟':'',together?together+' 人同桌':''].filter(Boolean).join(' · ');if(meta){center(meta,cy,13,muted,600);cy+=30;}
-    if(contributors.length){
-     s.text('拼合贡献',left,cy,14,ink,800);cy+=24;const me=this.client.profile?.code,ranked=[...contributors].sort((a,b)=>(b.contribution??0)-(a.contribution??0)).slice(0,6),top=Math.max(1,ranked[0].contribution??0),nameW=Math.min(150,width*.4),barX=left+nameW+12,barW=width-nameW-60;
-     ranked.forEach((member,index)=>{const mine=(member as {mine?:boolean}).mine===true||!!me&&member.code===me,count=member.contribution??0;if(mine){s.ctx.save();s.ctx.globalAlpha=.2;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(left-6,cy-4,width+12,26);s.ctx.restore();}
-      s.text((index+1)+'. '+member.name+(mine?'（我）':''),left,cy,13,ink,mine?800:600,nameW);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(barX,cy+5,barW,8);s.ctx.fillStyle=mine?this.colors.berry:this.colors.gold;s.ctx.fillRect(barX,cy+5,Math.max(4,barW*count/top),8);s.text(String(count),barX+barW+8,cy,13,ink,700,40);cy+=26;});
-     cy+=6;
-    }
-    if(result){
-     const imageId=snap?.puzzle?.imageId,album=imageId?this.collection?.albums.find(item=>item.images.some(image=>image.id===imageId)):undefined;
-     const tiles:{icon:string;label:string;gold?:boolean}[]=[{icon:'coin',label:'金币 +'+(result.coins??0)},{icon:'fragment',label:'碎片 +'+(result.fragments??0)},...(this.energyEnabled&&result.energy?[{icon:'lightning',label:'体力 +'+result.energy}]:[]),...(album?[{icon:'book',label:'图集 '+album.collected+'/'+album.total}]:[]),...((result.catalog?.albumRewards??[]) as {title:string;coins?:number}[]).map(reward=>({icon:reward.coins?'coin':'leaf',label:reward.coins?'集满 +'+reward.coins:'得到装饰',gold:true}))];
-     const gap=8,columns=Math.min(tiles.length,this.desktop||width>=420?5:3),tw=(width-gap*(columns-1))/columns;
-     tiles.forEach((tile,index)=>{const r={x:left+(index%columns)*(tw+gap),y:cy+Math.floor(index/columns)*(64+gap),w:tw,h:64};s.frame(r,tile.gold?'panel-gold':'button-linen-normal');s.icon(tile.icon,{x:r.x+(tw-26)/2,y:r.y+8,w:26,h:26});const size=tw<84?12:13;s.text(tile.label,r.x+Math.max(4,(tw-s.measure(tile.label,size,700))/2),r.y+40,size,ink,700,tw-8);});
-     cy+=Math.ceil(tiles.length/columns)*(64+gap)+4;
-     if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,13,muted,600);cy+=26;}
-     for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,13,ink,700);cy+=24;}
-    }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
-    cy+=6;s.button({x:left,y:cy,w:width,h:46},'再来一桌',()=>{this.leaveRoom();this.navigate('gallery');},{tone:'berrydark',fontSize:16});cy+=56;
-    const third=(width-16)/3,albumId=(snap?.puzzle?.imageId&&this.collection?.albums.find(item=>item.images.some(image=>image.id===snap.puzzle!.imageId))?.id)||'';
-    s.button({x:left,y:cy,w:third,h:40},'分享成品',()=>void this.run(async()=>{const outcome=await this.shareFromGame({title:'我们拼好了「'+(snap?.title||snap?.photo?.title||'一幅画')+'」，来'+this.platform.config.gameName+'一起拼',inviteCode:this.tasks?.invitation.code});this.note(outcome==='copied'?'链接已复制，可以发给朋友':outcome==='shared'||outcome==='opened'?'已分享':outcome==='cancelled'?'本次分享已取消':'暂时无法分享');}),{fontSize:13});
-    s.button({x:left+third+8,y:cy,w:third,h:40},'查看图集',()=>{this.leaveRoom();this.openCollection('albums');if(albumId)this.openAlbum(albumId);},{fontSize:13});
-    s.button({x:left+(third+8)*2,y:cy,w:third,h:40},'回大厅',()=>{this.leaveRoom();this.navigate('lobby');},{fontSize:13});cy+=54;break;
-   }
+   case'completion':{cy=this.drawCompletionContent(left,cy,width);break;}
    case'purchase':{
     const pack=this.purchase;if(!pack)break;if(pack.images[0])this.cardImage(pack.images[0].thumbSrc,{x:left,y:cy,w:width,h:Math.min(220,width*.75)});cy+=Math.min(220,width*.75)+21;s.text(pack.title,left,cy,22,this.colors.ink,700);cy+=39;cy=this.paragraph(pack.images.length+'张图片永久解锁。可免费指定本包图片创建公开房间；私人房仍使用建房券。',left,cy,width,14)+18;s.text('花费 '+pack.price+' 金币',left,cy,20,this.colors.ink,700);cy+=34;s.text('现有 '+(this.collection?.wallet.coins??0)+' 金币',left,cy,13,this.colors.muted);cy+=39;this.button(left,cy,width,(this.collection?.wallet.coins??0)<pack.price?'金币不足':'确认解锁',()=>void this.collectionAction('buy',pack.id),'berry',42,(this.collection?.wallet.coins??0)<pack.price);cy+=57;break;
    }
-  }});this.modalExtent=cy-(this.modalStart-this.modalScroll)+7;const next=clamp(this.modalScroll,0,Math.max(0,this.modalExtent-this.modalArea.h));if(next!==this.modalScroll){this.modalScroll=next;this.invalidate();}
+  }});if(this.modal==='completion')this.drawCompletionEffects();this.modalExtent=cy-(this.modalStart-this.modalScroll)+7;const next=clamp(this.modalScroll,0,Math.max(0,this.modalExtent-this.modalArea.h));if(next!==this.modalScroll){this.modalScroll=next;this.invalidate();}
  }
 
  input(input:Input):boolean{
@@ -1784,6 +1856,7 @@ export class GameApp{
   if(!this.ready)return this.stage.input(input);
   const point=input.changed[0]??input.points[0];
   if(input.type==='key'){
+   if(this.modal==='completion'&&input.keyDown&&!input.repeat&&/^[1-6]$/.test(input.key??'')){this.sendCompletionCheer(CHEER_EMOTES[Number(input.key)-1]);return true;}
    if(input.key==='Escape'&&input.keyDown){if(this.modal==='packPreview'&&this.previewIndex>=0){this.returnToPackGrid();return true;}this.cancelChatPress();const handled=this.board?.input(input)??false;this.pointer=null;this.stage.input({type:'cancel',points:[],changed:[]});if(this.modal){this.showModal(null);return true;}if(this.toolsOpen){this.toolsOpen=false;this.invalidate();return true;}if(this.route!=='room'&&this.route!=='lobby'){this.back();return true;}return handled;}
    if(this.route==='room'&&!this.modalBlocksInput&&input.keyDown&&!input.repeat&&input.key){const key=input.key.toLowerCase();if(key==='t'&&this.layout==='desktop'){this.setDesktopToolsOpen(!this.desktopToolsOpen);return true;}const tool=({e:'edge',h:'hint',b:'underlay',f:'fit',r:'organize'} as Record<string,string>)[key];if(tool&&(tool!=='organize'||this.soloRoom)){this.roomTool(tool);return true;}}
    return this.route==='room'&&!this.modalBlocksInput?this.board?.input(input)??false:false;
