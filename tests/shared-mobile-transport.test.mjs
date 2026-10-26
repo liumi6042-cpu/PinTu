@@ -46,19 +46,20 @@ test('TapTap identity is bound before startup and profile reads',async()=>{
  assert.equal(profileReads,0);
 });
 
-test('TapTap startup refuses to create a guest when platform identity is missing',async()=>{
- const requests=[];const port=platform(async input=>{requests.push(input.url);return ok({mobileMode:'mobile-v3-isolated'});},'taptap');
+// 2026-10-26 player decision: when TapTap identity cannot complete, enter as a guest on the stored session instead of blocking at reconnect.
+test('TapTap startup enters as a guest without binding when platform identity is missing',async()=>{
+ const requests=[];const port=platform(async input=>{requests.push(input.url);if(input.url.endsWith('/config'))return ok({mobileMode:'mobile-v3-isolated'});if(input.url.endsWith('/session'))return ok({token});if(input.url.endsWith('/api/mobile/profile'))return ok(profile);throw new Error('unexpected request '+input.url);},'taptap');
  port.tapTapIdentity=async()=>null;
  const client=new GameClient(port);
- await assert.rejects(client.start(),error=>error?.code==='TAPTAP_IDENTITY_REQUIRED'&&/未获取到TapTap账号信息/.test(error.message));
- assert.deepEqual(requests,['https://game.test/h5/config']);
+ await client.start();assert.equal(client.tapGuest,true);assert.equal(client.profile.name,'拼友');
+ assert.deepEqual(requests,['https://game.test/h5/config','https://game.test/h5/session','https://game.test/h5/api/mobile/profile']);
 });
 
-test('TapTap startup refuses a login without public nickname',async()=>{
- const port=platform(async input=>{if(input.url.endsWith('/config'))return ok({mobileMode:'mobile-v3-isolated'});throw new Error('unexpected request');},'taptap');
+test('TapTap startup never binds a login without public nickname; it plays as a guest instead',async()=>{
+ const requests=[];const port=platform(async input=>{requests.push(input.url);if(input.url.endsWith('/config'))return ok({mobileMode:'mobile-v3-isolated'});if(input.url.endsWith('/session'))return ok({token});if(input.url.endsWith('/api/mobile/profile'))return ok(profile);throw new Error('unexpected request '+input.url);},'taptap');
  port.tapTapIdentity=async()=>({code:'one-time-code'});
  const client=new GameClient(port);
- await assert.rejects(client.start(),error=>error?.code==='TAPTAP_NICKNAME_REQUIRED'&&/未返回公开昵称/.test(error.message));
+ await client.start();assert.equal(client.tapGuest,true);assert.ok(!requests.some(url=>url.endsWith('/api/taptap/bind')));
 });
 
 test('profile applies before actionable errors; stale profile cannot undo energy',async()=>{

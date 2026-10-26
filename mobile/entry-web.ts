@@ -13,8 +13,8 @@ if(config.development&&config.identityMode!=='web-cookie'&&['127.0.0.1','localho
 }
 host.__JIGSAW_SHARED__?.destroy();
 const platform=createWebPlatform(config,canvas);
-// TapTap H5 hosts may not read game.json; request the same portrait default once.
-if(config.id==='taptap')void platform.setOrientation?.('portrait').catch(()=>{});
+// TapTap H5 hosts may not read game.json; request the landscape default once. Players can still rotate in game.
+if(config.id==='taptap')void platform.setOrientation?.('landscape').catch(()=>{});
 // 仅独立自测包携带房间邀请，登录后自动进入同一间测试私房。
 if(config.id==='taptap'&&new URL(config.apiBase).pathname==='/h5-tap-preview'&&config.previewTestRoom&&/^[a-f0-9]{32}$/.test(config.previewTestRoom.id)&&/^[a-f0-9]{32}$/.test(config.previewTestRoom.inviteCode))platform.initialQuery={room:config.previewTestRoom.id,roomInvite:config.previewTestRoom.inviteCode};
 host.__JIGSAW_SHARED__=boot(platform);

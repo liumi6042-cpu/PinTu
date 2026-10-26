@@ -59,7 +59,7 @@ export class GameApp{
  private routeFrames:ListView[]=[];private savedRoutes=new Map<Route,ListView>();private listOwner?:string;private roomReturn:ListView|null=null;private roomReturnStack:Route[]=[];private roomReturnFrames:ListView[]=[];
  private ready=false;private destroyed=false;private busy=false;private sharing=false;private message='';private messageUntil=0;
  private startupPending:Promise<void>|null=null;private startupError='';private startupHooks=false;private startupQuery:Record<string,string>|null=null;
- private privacyAccepted=false;private privacyDocument:'privacy'|'terms'|null=null;private privacyRefused=false;private privacyEpoch=0;private authorizationTesting=false;private loginDialogActive=false;
+ private privacyAccepted=false;private privacyDocument:'privacy'|'terms'|null=null;private privacyRefused=false;private privacyEpoch=0;private authorizationTesting=false;private loginDialogActive=false;private authorizationNudged=false;private loginLogOpen=false;private loginLogReturnScroll=0;
  private identityHook=false;private consentPreparing=false;private consentError='';
  private privacyRequests:PrivacyRequest[]=[];private privacyRequestsLoading=false;
  private scroll=0;private extent=0;private bodyTop=100;private bodyBottom=0;private pointer:{x:number;y:number;lastY:number;scroll:boolean;board:boolean;album?:boolean;modal?:boolean;landscapeBackgroundTap?:boolean}|null=null;
@@ -225,7 +225,7 @@ export class GameApp{
   this.startupError='';this.invalidate();
   const epoch=this.privacyEpoch;
   this.startupPending=(async()=>{
-  try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;this.ready=true;this.message='';this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);}
+  try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;this.ready=true;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);}
   catch(error){if(!this.destroyed){this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
@@ -528,8 +528,39 @@ export class GameApp{
  }
  private prepareConsentButton(){
   if(this.platform.config.id!=='taptap'||!this.platform.prepareTapConsent||this.consentPreparing||this.privacyRefused)return;
-  this.consentPreparing=true;this.consentError='';this.platform.setIdentityButtonVisible?.(!this.privacyDocument);
+  this.consentPreparing=true;this.consentError='';this.authorizationNudged=false;this.platform.setIdentityButtonVisible?.(!this.privacyDocument);
+  this.platform.loginLog?.add('登录弹窗显示 · '+(this.platform.tapAuthorizationDebug?.()??''));
   this.platform.prepareTapConsent(()=>{if(this.destroyed)return;this.consentPreparing=false;this.acceptPrivacy();},error=>{if(this.destroyed)return;this.consentPreparing=false;this.consentError=errorText(error);this.invalidate();});
+ }
+ /** 玩家已点“同意并登录”，但TapTap登录无法完成：这次点击即为同意隐私协议，以游客身份进入，下次启动再尝试TapTap。 */
+ private enterAsTapGuest(reason:string){
+  if(this.destroyed||this.privacyRefused||!this.needsPrivacyChoice||this.platform.config.id!=='taptap')return;
+  this.platform.loginLog?.add('转入游客模式 · '+reason);this.client.tapGuestRequested=true;this.consentPreparing=false;this.authorizationNudged=false;this.platform.cancelIdentity?.();this.acceptPrivacy();
+ }
+ /** 此客户端没有昵称接口（TapTap PC）：这次点击即同意协议，登录凭证在点击之后才获取，只用它绑定账号；失败再转游客。 */
+ private acceptLoginOnly(){
+  if(this.destroyed||this.privacyRefused||!this.needsPrivacyChoice||this.platform.config.id!=='taptap')return;
+  this.platform.loginLog?.add('同意并登录 · 昵称接口不可用，改为仅登录绑定');this.consentPreparing=false;this.authorizationNudged=false;this.acceptPrivacy();
+ }
+ private openLoginLog(){this.loginLogReturnScroll=this.scroll;this.scroll=0;this.loginLogOpen=true;this.pointer=null;this.platform.setIdentityButtonVisible?.(false);this.invalidate();}
+ private closeLoginLog(){this.loginLogOpen=false;this.scroll=this.loginLogReturnScroll;this.pointer=null;this.platform.setIdentityButtonVisible?.(true);this.invalidate();}
+ private async copyLoginLog(){
+  const text=['拼图小窝 登录日志 '+(this.platform.config.buildVersion??''),...(this.platform.loginLog?.lines()??[]),'当前 · '+(this.platform.tapAuthorizationDebug?.()??'')].join('\n');
+  const copied=await (this.platform.copyText?.(text)??Promise.resolve(false)).catch(()=>false);this.note(copied?'登录日志已复制':'复制失败，请截图发送');
+ }
+ private drawLoginLog(){
+  const s=this.stage,v=this.platform.viewport(),w=Math.min(640,s.w-24),x=(s.w-w)/2,top=v.top+12,bottom=s.h-v.bottom-12;
+  // 面板盖住登录弹窗时，透明原生按钮不能留在上面。
+  this.platform.setIdentityButtonVisible?.(false);
+  s.panel({x,y:top,w,h:bottom-top});
+  s.text('登录日志',x+16,top+16,19,this.colors.ink,800,w-32);
+  this.bodyTop=top+54;this.bodyBottom=bottom-70;this.listArea={x:x+15,y:this.bodyTop,w:w-30,h:Math.max(30,this.bodyBottom-this.bodyTop)};this.sceneArea={...this.listArea};
+  const lines=this.platform.loginLog?.lines()??[];let y=this.bodyTop-this.scroll;
+  s.clip(this.listArea,()=>{if(!lines.length)y=this.paragraph('暂无记录。',x+18,y,w-36,12)+6;for(const line of lines)y=this.paragraph(line,x+18,y,w-36,11,this.colors.ink)+5;y=this.paragraph('当前 · '+(this.platform.tapAuthorizationDebug?.()??''),x+18,y+4,w-36,11)+6;});
+  this.extent=y-(this.bodyTop-this.scroll);this.scroll=clamp(this.scroll,0,Math.max(0,this.extent-this.listArea.h));
+  const gap=8,half=(w-32-gap)/2;
+  s.button({x:x+16,y:bottom-54,w:half,h:38},'关闭',()=>this.closeLoginLog(),{fontSize:12});
+  s.button({x:x+24+half,y:bottom-54,w:half,h:38},'复制',()=>void this.copyLoginLog(),{fontSize:13,tone:'berrydark'});
  }
  private drawPrivacyChoice(){
   const s=this.stage,v=this.platform.viewport(),detail=this.privacyDocument!==null,entry=tapAuthorizationLayout(s.w,s.h,v.top,v.bottom),combined=this.platform.config.id==='taptap'&&!!this.platform.prepareTapConsent,waiting=this.platform.tapAuthorizationPending?.()===true;
@@ -548,16 +579,22 @@ export class GameApp{
    s.text(prefix,start,y,size,this.colors.ink,500);s.text('协议',start+prefixWidth,y,size,this.colors.berry,700);
    s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(start+prefixWidth,y+21,linkWidth,1);
    s.hit({x:start+prefixWidth-5,y:y-8,w:linkWidth+10,h:38},()=>{this.privacyDocument='privacy';this.scroll=0;this.platform.setIdentityButtonVisible?.(false);this.invalidate();});
-   if(combined||waiting)this.paragraph(!this.needsPrivacyChoice&&!waiting?'正在登录TapTap，已有进度会保留。':this.consentError?'登录准备失败，请点重新连接。':'同时授权TapTap昵称，用于显示玩家名称。',x+20,top+78,w-40,11);
+   if(combined||waiting)this.paragraph(waiting&&this.authorizationNudged?'登录按钮已重新准备，请再点一次“同意并登录”；仍无反应将以游客身份进入。':!this.needsPrivacyChoice&&!waiting?'正在登录TapTap，已有进度会保留。':this.consentError&&!this.privacyRefused?(this.platform.tapNicknameUnavailable?.()?'此客户端不支持昵称授权，点“同意并登录”直接用TapTap账号登录。':'TapTap登录暂不可用，点“同意并登录”将以游客身份进入，进度会保留。'):'同时授权TapTap昵称，用于显示玩家名称。',x+20,top+78,w-40,11);
+   // 登录日志入口放在面板右上角，远离透明原生按钮所在的右下按钮。
+   if(this.platform.config.id==='taptap'&&this.platform.loginLog){const label='登录日志',width=s.measure(label,11),lx=x+w-16-width,ly=top+12;s.text(label,lx,ly,11,this.colors.berry,700);s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(lx,ly+15,width,1);s.hit({x:lx-8,y:ly-8,w:width+16,h:30},()=>this.openLoginLog());}
   }
   const gap=8,half=(w-32-gap)/2,back=()=>{this.privacyDocument=null;this.scroll=0;this.platform.setIdentityButtonVisible?.(true);this.invalidate();};
   s.button({x:x+16,y:bottom-54,w:half,h:38},detail?'返回':this.needsPrivacyChoice?'暂不同意':'取消登录',()=>{if(detail){back();return;}this.privacyRefused=true;this.platform.cancelIdentity?.();this.invalidate();},{fontSize:12});
   const right={x:x+24+half,y:bottom-54,w:half,h:38};
   if(detail&&combined){s.button(right,'返回登录',back,{fontSize:13,tone:'berrydark'});return;}
   if(!detail&&(waiting||combined)){
-   if(waiting){s.frame(right,'button-berrydark-normal');s.text('同意并登录',right.x+(right.w-s.measure('同意并登录',13,750))/2,right.y+11,13,this.colors.onAccent,750);}
+   if(waiting){s.frame(right,'button-berrydark-normal');s.text('同意并登录',right.x+(right.w-s.measure('同意并登录',13,750))/2,right.y+11,13,this.colors.onAccent,750);
+    // 原生透明按钮应先接住这次点击；画布收到说明它没对准或未就绪，重建后请玩家再点一次。
+    // 第一次：在这次点击内同步重建原生按钮；第二次仍落到画布：以游客身份进入。
+    s.hit(right,()=>{this.platform.loginLog?.add('画布接到“同意并登录”点击（原生按钮未接住）· '+(this.platform.tapAuthorizationDebug?.()??''));if(!this.authorizationNudged){this.authorizationNudged=true;this.platform.retryTapAuthorizationButton?.();}else this.enterAsTapGuest('原生按钮两次未接住点击');this.invalidate();});}
    else if(this.consentPreparing||!this.needsPrivacyChoice)s.button(right,'正在连接…',()=>{},{fontSize:13,tone:'berrydark',disabled:true});
-   else s.button(right,'重新连接',()=>{this.privacyRefused=false;this.prepareConsentButton();this.invalidate();},{fontSize:13,tone:'berrydark'});
+   else if(this.privacyRefused)s.button(right,'重新连接',()=>{this.privacyRefused=false;this.prepareConsentButton();this.invalidate();},{fontSize:13,tone:'berrydark'});
+   else s.button(right,'同意并登录',()=>{if(this.platform.tapNicknameUnavailable?.())this.acceptLoginOnly();else this.enterAsTapGuest('TapTap登录准备失败');},{fontSize:13,tone:'berrydark'});
   }else s.button(right,'同意',()=>this.acceptPrivacy(),{fontSize:13,tone:'berrydark'});
  }
  private async loadPrivacyRequests(){
@@ -570,6 +607,7 @@ export class GameApp{
  drawForRenderProbe(directPaper:boolean){const board=this.board;if(!board||!directPaper){this.draw();return;}const enabled=board.paperCacheEnabled;board.paperCacheEnabled=false;try{this.draw();}finally{board.paperCacheEnabled=enabled;}}
  draw(){
   const s=this.stage;if(this.route==='room'){s.ctx.fillStyle=boardThemeColors(s.theme).paper;s.ctx.fillRect(0,0,s.w,s.h);}else s.background();
+  if(this.loginLogOpen){this.drawLoginLog();return;}
   if(this.needsPrivacyChoice||this.loginDialogActive||this.platform.tapAuthorizationPending?.()){this.drawPrivacyChoice();return;}
   if(!this.ready&&!this.startupError&&!this.client.authRequired){this.drawLoading();return;}
   this.sceneArea={x:0,y:0,w:s.w,h:s.h};this.listArea={...this.sceneArea};this.listColumn=null;this.albumListArea={x:0,y:0,w:0,h:0};
@@ -1630,6 +1668,7 @@ export class GameApp{
     if(this.formalWeb){this.button(left,cy,width,'用我的图片开一桌',()=>this.openWeb('uploads'),'berry',42);cy+=52;cy=this.paragraph('上传一张图片，选好片数，开一张自己的公开拼图桌。图片只在房间有效期内保留。',left,cy,width,12)+18;}
     for(const [label,action]of [['拼图历史',()=>this.showModal('history')],['玩法帮助',()=>this.navigate('help')],...policyActions] as const){this.button(left,cy,width,label,action);cy+=48;}
     if(this.formalWeb){this.button(left,cy,width,'问题反馈',()=>this.openWeb('feedback'));cy+=48;cy=this.paragraph('账号、进度与收藏会持续保存在当前网站。',left,cy+4,width,12)+10;}else{this.button(left,cy,width,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));cy+=48;cy=this.paragraph('当前为本机游客身份，尚未绑定平台账号存档。清除本机数据可能丢失进度。',left,cy+4,width,12)+10;}
+    if(this.platform.config.id==='taptap'&&this.platform.loginLog){this.button(left,cy,width,'登录日志',()=>this.openLoginLog());cy+=48;}
     if(this.adTestingAllowed||this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest||this.platform.config.previewTestRoom||this.nineGridAvailable||this.platform.config.id==='taptap'&&p?.taptap?.diagnostics===true||this.diagnosticsAvailable){cy+=10;heading('测试与诊断');}
     if(this.adTestingAllowed){s.button({x:left,y:cy,w:width,h:40},'广告观看测试',()=>void this.testRewardedAd(),{tone:'berry',disabled:this.busy});cy+=52;s.button({x:left,y:cy,w:width,h:40},'插屏广告测试',()=>void this.testInterstitialAd(),{tone:'berry',disabled:this.busy});cy+=52;cy=this.paragraph('仅当前测试账号可见，只测试展示，不发放奖励。',left,cy,width,11)+17;}
     if(this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest){s.button({x:left,y:cy,w:width,h:40},this.authorizationTesting?'取消昵称授权测试':'重新走昵称授权',()=>void this.reauthorizeNickname(),{tone:'berry',disabled:!!this.room||this.busy&&!this.authorizationTesting});cy+=52;cy=this.paragraph((this.room?'请回大厅后进行授权自测。':this.platform.tapIdentityDiagnostics?.()??'仅当前自测包开放，不清除账号和进度。')+'\n版本 '+(this.platform.config.buildVersion??'自测'),left,cy,width,11)+17;}
@@ -1725,7 +1764,7 @@ export class GameApp{
  }
 
  input(input:Input):boolean{
-  if(this.needsPrivacyChoice){
+  if(this.needsPrivacyChoice||this.loginLogOpen){
    const point=input.changed[0]??input.points[0];
    if(input.type==='wheel'&&point&&inside(this.listArea,point.x,point.y)){this.scroll=clamp(this.scroll+(Number.isFinite(input.deltaY)?input.deltaY!:0),0,Math.max(0,this.extent-this.listArea.h));this.stage.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.invalidate();return true;}
    if(input.type==='down'&&point)this.pointer={x:point.x,y:point.y,lastY:point.y,scroll:false,board:false};

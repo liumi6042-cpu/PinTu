@@ -239,8 +239,10 @@ export class PuzzleBoard implements RoomTable {
   if(this.trayInput(input)){this.publishCursor(null);return true;}
   if(input.type==='cancel'){const active=!!this.pointers.size;this.cancelInput(true);return active;}
   if(input.type==='down'){
+   const added=input.changed.filter(p=>inside(p,this.rect)&&!this.pointers.has(p.id));
    for(const p of input.changed)if(inside(p,this.rect))this.pointers.set(p.id,p);
    if(!this.pointers.size)return false;
+   if(this.drag&&this.pointers.has(this.drag.pointer)){if(!this.pan||this.pan.pointer===this.drag.pointer){const p=added.find(p=>p.id!==this.drag!.pointer);if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}this.publishCursor(this.pointers.get(this.drag.pointer)!);this.changed();return true;}
    if(this.pointers.size>=2){this.beginPinch();return true;}
    const p=[...this.pointers.values()][0],world=this.world(p),group=input.pan?null:this.groupAt(p);
    this.publishCursor(p);
@@ -256,16 +258,18 @@ export class PuzzleBoard implements RoomTable {
   if(input.type==='move'){
    for(const p of input.points)if(this.pointers.has(p.id))this.pointers.set(p.id,p);
    if(this.pinch&&this.pointers.size>=2){const[a,b]=[...this.pointers.values()],center={x:(a.x+b.x)/2-this.rect.x,y:(a.y+b.y)/2-this.rect.y},z=Math.min(5,Math.max(.08,this.pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/this.pinch.distance));this.camera={x:center.x-this.pinch.worldX*z,y:center.y-this.pinch.worldY*z,z};}
-   else if(this.drag){const p=this.pointers.get(this.drag.pointer);if(p){const v=this.world(p),dx=this.drag.dx+v.x-this.drag.x,dy=this.drag.dy+v.y-this.drag.y;moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);}}
-   else if(this.pan){const p=this.pointers.get(this.pan.pointer);if(p){const v=this.local(p);this.camera.x=this.pan.cx+v.x-this.pan.x;this.camera.y=this.pan.cy+v.y-this.pan.y;}}
-   if(this.pointers.size===1)this.publishCursor([...this.pointers.values()][0]);else this.publishCursor(null);this.changed();return true;
+   else{
+    if(this.pan){const p=this.pointers.get(this.pan.pointer);if(p){const v=this.local(p);this.camera.x=this.pan.cx+v.x-this.pan.x;this.camera.y=this.pan.cy+v.y-this.pan.y;}}
+    if(this.drag){const p=this.pointers.get(this.drag.pointer);if(p){const v=this.world(p),dx=this.drag.dx+v.x-this.drag.x,dy=this.drag.dy+v.y-this.drag.y;moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);}}
+   }
+   if(this.drag)this.publishCursor(this.pointers.get(this.drag.pointer)??null);else if(this.pointers.size===1)this.publishCursor([...this.pointers.values()][0]);else this.publishCursor(null);this.changed();return true;
   }
   if(input.type==='up'){
    if(this.drag&&input.changed.some(p=>p.id===this.drag!.pointer)){const drag=this.drag,group=this.state.groups.find(g=>g.id===drag.id);this.drag=null;this.releaseDragSurface();if(group&&this.network){this.pendingDrops.set(group.id,drag.serial);void this.network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial)this.pendingDrops.delete(group.id);});}}
    for(const p of input.changed)this.pointers.delete(p.id);this.pan=null;this.pinch=null;
-   if(this.pointers.size){const p=[...this.pointers.values()][0],v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}else this.releaseGestureSurface();
+   if(this.pointers.size){const p=[...this.pointers.values()].find(p=>p.id!==this.drag?.pointer);if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}else this.releaseGestureSurface();
    // A release outside the board retains the last valid room position.
-   const point=this.pointers.size===1?[...this.pointers.values()][0]:this.pointers.size===0?input.changed[0]:null;
+   const point=this.drag?this.pointers.get(this.drag.pointer):this.pointers.size===1?[...this.pointers.values()][0]:this.pointers.size===0?input.changed[0]:null;
    this.publishCursor(point&&inside(point,this.rect)?point:null);this.changed();return true;
   }
   return false;
@@ -277,7 +281,7 @@ export class PuzzleBoard implements RoomTable {
   this.pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:this.camera.z,worldX:world.x,worldY:world.y};this.publishCursor(null);this.changed();
  }
  private cancelInput(release:boolean){if(release&&this.drag)this.network?.release(this.drag.id);this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.trayTouch=null;this.pointers.clear();this.publishCursor(null);++this.serial;this.changed();}
- cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
+ cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
  syncRemote(next:PuzzleState,owners:Record<string,Owner>,protectedIds:ReadonlySet<number>,showFeedback=true){
   const before=cloneGroups(this.state.groups),previous=new Map(this.state.groups.map(g=>[g.id,g]));
   this.state.groups=next.groups.map(incoming=>{const old=previous.get(incoming.id),group={...incoming,pieces:[...incoming.pieces]};if(old&&!group.locked&&protectedIds.has(group.id)){group.dx=old.dx;group.dy=old.dy;}return group;});
@@ -493,7 +497,7 @@ export class PuzzleBoard implements RoomTable {
   * Other drag orders and Canvas implementations keep the original draw path. */
  private cachedDragSurface(ctx:CanvasRenderingContext2D,now:number):DragSurface|null{
   const drag=this.drag,groups=this.state.groups;let last:Group|undefined;for(let i=groups.length-1;i>=0;i--)if(!groups[i].locked&&visibleGroup(groups[i],this.pieces,this.edges)){last=groups[i];break;}
-  if(!drag||last?.id!==drag.id||!this.atlas||typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'||ctx.globalAlpha!==1||ctx.globalCompositeOperation!=='source-over'||ctx.shadowBlur!==0||ctx.shadowColor!=='rgba(0, 0, 0, 0)'||(ctx.filter!==undefined&&ctx.filter!=='none')){this.releaseDragSurface();return null;}
+  if(!drag||this.pan||last?.id!==drag.id||!this.atlas||typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'||ctx.globalAlpha!==1||ctx.globalCompositeOperation!=='source-over'||ctx.shadowBlur!==0||ctx.shadowColor!=='rgba(0, 0, 0, 0)'||(ctx.filter!==undefined&&ctx.filter!=='none')){this.releaseDragSurface();return null;}
   // Stage rounds each backing dimension independently. Fractional phone DPRs
   // therefore produce slightly different X/Y scales; both remain axis-aligned
   // and can be copied exactly into the cache without resampling.

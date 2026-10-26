@@ -2,7 +2,8 @@ import type {AudioLevels} from './ports';
 
 export type AudioVoice={volume:number;play():void|Promise<unknown>;pause():void;rewind():void;dispose():void};
 type MusicVoice={voice:AudioVoice;playing:boolean;pending:boolean;resumeRequested:boolean};
-const effectVolume=.1375;
+// Effects were quiet next to the host UI (user feedback 2026-10-26): doubled from .1375. Slider level still scales it; music is separate.
+const effectVolume=.275;
 const safely=(action:()=>void)=>{try{action();}catch{}};
 const level=(value:number,fallback:number)=>Number.isFinite(value)?Math.max(0,Math.min(1,value)):fallback;
 

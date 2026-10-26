@@ -11,8 +11,8 @@ function globals(t,values){for(const [key,value]of Object.entries(values)){const
 test('music selection is silent until both a volume and user unlock exist; effects retain their original baseline',async()=>{
  const f=voiceFactory(),playback=new AudioPlayback(f.create),audio=playback.audio;
  audio.setMusic('music.mp3');audio.unlock();assert.equal(f.voices.length,0,'default music volume is zero');
- playback.playSound('snap.wav');const effect=f.voices[0];assert.equal(effect.loop,false);assert.equal(effect.volume,.1375);assert.equal(effect.rewinds,1);
- audio.setLevels({music:.4,effects:.5});const music=f.voices[1];assert.equal(music.loop,true);assert.equal(music.volume,.4);assert.equal(music.plays,1);assert.equal(effect.volume,.1375*.5);
+ playback.playSound('snap.wav');const effect=f.voices[0];assert.equal(effect.loop,false);assert.equal(effect.volume,.275);assert.equal(effect.rewinds,1);
+ audio.setLevels({music:.4,effects:.5});const music=f.voices[1];assert.equal(music.loop,true);assert.equal(music.volume,.4);assert.equal(music.plays,1);assert.equal(effect.volume,.275*.5);
  music.position=27;audio.setMusic('music.mp3');audio.setLevels({music:.7,effects:.5});audio.unlock();assert.equal(f.voices.length,2);assert.equal(music.plays,1);assert.equal(music.position,27);assert.equal(music.rewinds,0);
  playback.playSound('snap.wav');assert.equal(effect.plays,2);assert.equal(effect.rewinds,2);audio.dispose();
 });
@@ -35,7 +35,7 @@ test('rejected browser play promises are handled without retry loops, and late p
 
 test('audio levels clamp independently and a track change releases the old native voice once',()=>{
  const f=voiceFactory(),p=new AudioPlayback(f.create);p.audio.setMusic('one.mp3');p.audio.setLevels({music:2,effects:-1});p.audio.unlock();assert.equal(f.voices[0].volume,1);p.playSound('muted.wav');assert.equal(f.voices.length,1);
- p.audio.setMusic('two.mp3');assert.equal(f.voices[0].disposed,1);assert.equal(f.voices[1].plays,1);p.audio.setLevels({music:NaN,effects:.8});assert.equal(f.voices[1].volume,1);p.playSound('snap.wav');assert.equal(f.voices[2].volume,.1375*.8);p.audio.dispose();p.audio.dispose();assert.ok(f.voices.every(voice=>voice.disposed===1));
+ p.audio.setMusic('two.mp3');assert.equal(f.voices[0].disposed,1);assert.equal(f.voices[1].plays,1);p.audio.setLevels({music:NaN,effects:.8});assert.equal(f.voices[1].volume,1);p.playSound('snap.wav');assert.equal(f.voices[2].volume,.275*.8);p.audio.dispose();p.audio.dispose();assert.ok(f.voices.every(voice=>voice.disposed===1));
 });
 
 test('browser adapter resolves bundled music beside game.js and restores it after cancelled/failed ads',async t=>{
@@ -47,7 +47,7 @@ test('browser adapter resolves bundled music beside game.js and restores it afte
  globals(t,{document,window:{tap:{createRewardedVideoAd:()=>ad},addEventListener(){},removeEventListener(){}},location:{href:'https://wrapper.test/game',origin:'https://wrapper.test'},Audio});
  p=createWebPlatform({id:'taptap',gameName:'test',apiBase:'https://game.test/h5',assetBase:'https://game.test/assets'},{style:{}});offHide=p.onHide(()=>{});offShow=p.onShow(()=>{});
  p.audio.setMusic('assets/audio/music.mp3');p.audio.setLevels({music:.25,effects:1});p.audio.unlock();await settle();const music=media[0];assert.equal(music.src,'https://package.test/games/assets/audio/music.mp3');assert.equal(music.loop,true);music.currentTime=18;
- p.playSound('assets/audio/mobile-snap.wav');assert.equal(media[1].volume,.1375);
+ p.playSound('assets/audio/mobile-snap.wav');assert.equal(media[1].volume,.275);
  const watching=p.watchAd('tap-unit');assert.equal(music.pauses,1);await settle();closeAd({});assert.equal(await watching,'closed');await settle();assert.equal(music.plays,2);assert.equal(music.currentTime,18);
  failLoad=true;assert.equal(await p.watchAd('tap-unit'),'failed');await settle();assert.equal(music.plays,3);
  document.hidden=true;events.dispatchEvent(new Event('visibilitychange'));assert.ok(music.pauses>=3);document.hidden=false;events.dispatchEvent(new Event('visibilitychange'));await settle();assert.equal(music.plays,4);assert.equal(music.currentTime,18);
@@ -62,7 +62,7 @@ test('WeChat uses native loop audio without DOM and resumes only when foreground
  globals(t,{wx,document:undefined,window:undefined,Audio:undefined});
  p=createWechatPlatform({id:'wechat',gameName:'test',apiBase:'https://game.test/h5',assetBase:'https://game.test/assets',rewardedAdUnitId:'adunit-123abc'});offHide=p.onHide(()=>{});offShow=p.onShow(()=>{});
  p.audio.setMusic('assets/audio/music.mp3');p.audio.setLevels({music:.4,effects:.5});assert.equal(media.length,0);p.audio.unlock();const music=media[0];assert.equal(music.src,'assets/audio/music.mp3');assert.equal(music.loop,true);assert.equal(music.volume,.4);music.currentTime=22;
- p.playSound('assets/audio/mobile-snap.wav');assert.equal(media[1].volume,.1375*.5);assert.equal(media[1].stops,1);
+ p.playSound('assets/audio/mobile-snap.wav');assert.equal(media[1].volume,.275*.5);assert.equal(media[1].stops,1);
  const watching=p.watchAd('adunit-123abc');hooks.get('Hide')();await settle();closeAd({});assert.equal(await watching,'closed');assert.equal(music.plays,1);hooks.get('Show')({query:{}});assert.equal(music.plays,2);assert.equal(music.currentTime,22);
  failLoad=true;assert.equal(await p.watchAd('adunit-123abc'),'failed');assert.equal(music.plays,3);p.audio.setLevels({music:0,effects:1});hooks.get('Hide')();hooks.get('Show')({});assert.equal(music.plays,3);
  p.audio.dispose();assert.ok(media.every(sound=>sound.destroys===1));hooks.get('Show')({});p.playSound('late.wav');assert.equal(media.length,2);

@@ -146,3 +146,52 @@ test('settings expose the real ad test button only for the server allowlisted Ta
  f.client.profile.taptap={bound:true,diagnostics:true};f.client.config.rewardedAdUnitId='1071218';let ads=0;f.platform.watchAd=async unit=>{assert.equal(unit,'1071218');ads++;return 'completed';};f.platform.alert=()=>{};f.draw();assert.equal(f.buttons.some(b=>b.label==='广告观看测试'),true);const before=f.calls.length;f.click('广告观看测试');await settle();assert.equal(ads,1);assert.equal(f.calls.length,before);
  f.platform.showInterstitialAd=async unit=>{assert.equal(unit,'1071588');ads++;return 'closed';};f.draw();f.click('插屏广告测试');await settle();assert.equal(ads,2);assert.equal(f.calls.length,before);
 });
+
+function tapConsentFixture(t,{prepare='pending'}={}){
+ const f=fixture(t),listeners=new Set(),lines=[];const state={pending:false,retries:0,cancels:0,identityCalls:0,failed:null};
+ f.platform.config.id='taptap';f.platform.tapAuthorizationPending=()=>state.pending;f.platform.onIdentityChange=fn=>(listeners.add(fn),()=>listeners.delete(fn));
+ f.platform.loginLog={add:text=>lines.push(text),lines:()=>lines};f.platform.tapAuthorizationDebug=()=>'视口 390×844';
+ f.platform.prepareTapConsent=(yes,no)=>{state.failed=no;if(prepare==='fail'){queueMicrotask(()=>no(Error('TapTap登录接口尚未就绪')));return;}state.pending=true;for(const fn of listeners)fn();};
+ f.platform.retryTapAuthorizationButton=()=>{state.retries++;return true;};
+ f.platform.cancelIdentity=()=>{state.cancels++;if(state.pending){state.pending=false;const no=state.failed;queueMicrotask(()=>no?.(Error('cancelled')));}};
+ f.platform.tapTapIdentity=async()=>{state.identityCalls++;throw Error('the guest path must not ask TapTap again');};
+ // 画布上的“同意并登录”与“暂不同意”同宽同高，位于其右侧。
+ const tapRight=()=>{f.draw();const refuse=f.buttons.find(b=>b.label==='暂不同意');assert.ok(refuse);const point={id:1,x:refuse.r.x+refuse.r.w+8+refuse.r.w/2,y:refuse.r.y+refuse.r.h/2};assert.equal(f.stage.hasHit(point.x,point.y),true);f.app.input({type:'down',points:[point],changed:[point]});f.app.input({type:'up',points:[],changed:[point]});};
+ return {...f,state,lines,tapRight};
+}
+
+test('a 同意并登录 tap the native button missed twice enters as a guest with the agreement recorded',async t=>{
+ const f=tapConsentFixture(t);await f.app.start();assert.ok(f.draw().includes('同意并登录'));assert.ok(f.lines.some(line=>line.startsWith('登录弹窗显示')));
+ // 第一次落到画布：同步重建原生按钮并提示再点一次，不发请求、不记录同意。
+ f.tapRight();assert.equal(f.state.retries,1);assert.equal(f.calls.length,0);assert.equal(f.platform.storage.get(privacyKey),null);assert.ok(f.draw().join('').includes('仍无反应将以游客身份进入'));
+ // 第二次仍落到画布：这次点击即同意协议，取消原生授权，以游客身份进入。
+ f.tapRight();await settle();await f.app.start();assert.equal(f.state.cancels,1);assert.equal(f.state.identityCalls,0);assert.ok(f.platform.storage.get(privacyKey));
+ assert.equal(f.app.ready,true);assert.equal(f.client.tapGuest,true);assert.equal(f.app.message,'TapTap登录暂时不可用，已用游客身份进入，进度会保留');
+ assert.deepEqual(f.calls.slice(0,3).map(c=>new URL(c.url).pathname),['/h5/config','/h5/session','/h5/api/mobile/profile']);assert.equal(f.calls.filter(c=>c.url.endsWith('/api/taptap/bind')).length,0);
+ assert.ok(f.lines.some(line=>line.startsWith('转入游客模式 · 原生按钮两次未接住点击')));
+});
+
+test('暂不同意 never enters the game, and a failed TapTap preparation turns 同意并登录 into a guest entry',async t=>{
+ const refused=tapConsentFixture(t);await refused.app.start();refused.draw();refused.click('暂不同意');await settle();
+ assert.equal(refused.state.cancels,1);const text=refused.draw();assert.ok(refused.buttons.some(b=>b.label==='重新连接'));assert.ok(!refused.buttons.some(b=>b.label==='同意并登录'));assert.ok(!text.includes('同意并登录'));
+ refused.click('重新连接');await settle();assert.equal(refused.calls.length,0);assert.equal(refused.platform.storage.get(privacyKey),null);assert.equal(refused.app.ready,false);
+ const failed=tapConsentFixture(t,{prepare:'fail'});await failed.app.start();await settle();failed.draw();assert.ok(failed.draw().join('').includes('将以游客身份进入'));
+ failed.click('同意并登录');await settle();await failed.app.start();assert.ok(failed.platform.storage.get(privacyKey));assert.equal(failed.app.ready,true);assert.equal(failed.client.tapGuest,true);assert.equal(failed.state.identityCalls,0);
+});
+
+test('the login log opens from the login dialog and from settings, hides the native button and copies without player data',async t=>{
+ const f=tapConsentFixture(t);let visible=true,copied='';f.platform.setIdentityButtonVisible=v=>{visible=v;};f.platform.copyText=async text=>{copied=text;return true;};
+ await f.app.start();f.draw();const link=f.stage.hits.find(hit=>hit.r.h===30),point={id:1,x:link.r.x+link.r.w/2,y:link.r.y+link.r.h/2};f.app.input({type:'down',points:[point],changed:[point]});f.app.input({type:'up',points:[],changed:[point]});
+ const text=f.draw();assert.ok(text.includes('登录日志'));assert.equal(visible,false);assert.ok(text.some(line=>line.includes('登录弹窗显示')));f.click('复制');await settle();assert.ok(copied.includes('登录弹窗显示'));assert.equal(f.app.message,'登录日志已复制');
+ f.click('关闭');f.draw();assert.equal(visible,true);assert.ok(f.draw().includes('同意并登录'));
+});
+
+test('on a host without nickname APIs one 同意并登录 click logs in with the login code only',async t=>{
+ const f=tapConsentFixture(t,{prepare:'fail'});const bodies=[];f.platform.tapNicknameUnavailable=()=>true;
+ f.platform.tapTapIdentity=async()=>{f.state.identityCalls++;return {code:'pc-after-click',nickname:'',nicknameUnavailable:true};};
+ const standard=f.standard;f.platform.request=async input=>{f.calls.push(input);if(input.url.endsWith('/api/taptap/bind'))bodies.push(input.body);return standard(input);};
+ await f.app.start();await settle();assert.ok(f.draw().join('').includes('此客户端不支持昵称授权'));assert.equal(f.calls.length,0);assert.equal(f.state.identityCalls,0);
+ f.click('同意并登录');await settle();await f.app.start();
+ assert.ok(f.platform.storage.get(privacyKey));assert.equal(f.app.ready,true);assert.equal(f.state.identityCalls,1);assert.equal(f.client.tapGuest,false);assert.deepEqual(bodies,[{code:'pc-after-click'}]);
+ assert.ok(f.lines.some(line=>line.includes('改为仅登录绑定')));assert.notEqual(f.app.message,'TapTap登录暂时不可用，已用游客身份进入，进度会保留');
+});

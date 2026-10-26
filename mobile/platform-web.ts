@@ -1,4 +1,5 @@
 import {createTapTapIdentity} from './tap-identity';
+import {createLoginLog} from './login-log';
 import {isBundledArtworkFile} from './bundled-artwork';
 import {createTapInterstitial,type TapInterstitialHost} from './tap-interstitial';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
@@ -70,8 +71,17 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
  let shareDiagnostic='尚未尝试分享';
  let shareController:AbortController|undefined;
  const tap=()=>config.id==='taptap'?(window as unknown as {tap?:TapHost}).tap:undefined;
+ const loginLog=createLoginLog();
  let identityDiagnostic='尚未开始',authorizationPending=false,identityVisible=true,consentRequest:{accept:()=>void;fail:(error:unknown)=>void}|null=null;const identityListeners=new Set<()=>void>();
- const identityController=config.id==='taptap'?createTapTapIdentity(tap,event=>{if(event.stage==='authorize'&&event.state==='ready'&&consentRequest){const request=consentRequest;consentRequest=null;request.accept();}authorizationPending=event.stage==='authorize'&&event.state==='waiting';for(const listener of identityListeners)listener();identityDiagnostic=({bridge:'等待平台接口',login:'获取登录凭证',getUserInfo:'读取已授权昵称',authorize:'原生昵称授权按钮'}[event.stage])+' · '+({waiting:'等待',requesting:'请求中',retrying:'重试中',ready:'完成',failed:'失败'}[event.state])+(event.kind?' · '+event.kind:'')+(event.errno?' · 码 '+event.errno:'');if(event.state==='failed')console.warn('[TapTap login]',event);},{},()=>{const r=canvas.getBoundingClientRect(),button=tapAuthorizationLayout(r.width/scale,r.height/scale).button;return {left:r.left+button.left*scale,top:r.top+button.top*scale,width:button.width*scale,height:button.height*scale,transparent:true};}):undefined;
+ const identityController=config.id==='taptap'?createTapTapIdentity(tap,event=>{if(event.stage==='authorize'&&event.state==='ready'&&consentRequest){const request=consentRequest;consentRequest=null;request.accept();}authorizationPending=event.stage==='authorize'&&event.state==='waiting';for(const listener of identityListeners)listener();identityDiagnostic=({bridge:'等待平台接口',login:'获取登录凭证',getUserInfo:'读取已授权昵称',authorize:'原生昵称授权按钮'}[event.stage])+' · '+({waiting:'等待',requesting:'请求中',retrying:'重试中',ready:'完成',failed:'失败'}[event.state])+(event.kind?' · '+event.kind:'')+(event.errno?' · 码 '+event.errno:'');if(event.state==='failed')console.warn('[TapTap login]',event);if(event.stage!=='authorize'||event.state!=='waiting')loginLog.add(identityDiagnostic);},{},()=>{const r=canvas.getBoundingClientRect(),button=tapAuthorizationLayout(r.width/scale,r.height/scale).button;return {left:r.left+button.left*scale,top:r.top+button.top*scale,width:button.width*scale,height:button.height*scale,transparent:true};},text=>loginLog.add(text)):undefined;
+ // Host and layout snapshot for the login trail. Only sizes, element names and host API presence; nothing from the player.
+ const tapAuthorizationDebug=()=>{
+  const round=(value:number)=>Math.round(value),host=tap() as (TapHost&Record<string,unknown>)|undefined,state=identityController?.debugState(),r=canvas.getBoundingClientRect(),safe=(value:unknown)=>typeof value==='string'&&/^[\w.\- ]{1,24}$/.test(value)?value:'?';
+  let element='none';try{const b=state?.rect;if(b){const hit=document.elementFromPoint(b.left+b.width/2,b.top+b.height/2);if(hit)element=hit.tagName.toLowerCase()+(hit.id?'#'+hit.id:'')+(typeof hit.className==='string'&&hit.className?'.'+hit.className.split(/\s+/).slice(0,2).join('.'):'');}}catch{}
+  let system='系统信息无';try{const info=typeof host?.getSystemInfoSync==='function'?(host.getSystemInfoSync as ()=>any)():null;if(info&&typeof info==='object'&&!info.errMsg)system='系统 '+safe(info.platform)+'/'+safe(info.SDKVersion)+'/'+safe(info.version);}catch{}
+  const apis=(['login','getSetting','getUserInfo','createUserInfoButton'] as const).map(name=>name+(typeof host?.[name]==='function'?'✓':'✗')).join(' ');
+  return '视口 '+innerWidth+'×'+innerHeight+(innerWidth>innerHeight?' 横':' 竖')+' dpr '+devicePixelRatio+' 屏 '+screen.width+'×'+screen.height+' · 画布 '+[r.left,r.top,r.width,r.height].map(round).join(',')+' · 按钮 '+(state?.rect?[state.rect.left,state.rect.top,state.rect.width,state.rect.height].map(round).join(','):'无')+' 建'+(state?.mounts??0)+'/重建'+(state?.forced??0)+'/回调'+(state?.taps??0)+' · 中心元素 '+element+' · body子节点 '+document.body.childElementCount+' · 按钮键 '+(state?.keys.join('/')||'无')+' style '+(state?.styleType||'?')+(state?.handle?' handle '+state.handle:'')+' · '+system+' · '+apis;
+ };
  const tapTapIdentity=(options?:{forceAuthorization?:boolean})=>identityController?.(config.tapAuthorizationTest===true&&options?.forceAuthorization===true)??Promise.resolve(null);
  let ad:RewardedVideo|undefined,adUnit='',watching=false,adDiagnostic='尚未请求广告';
  const reportAd=(stage:string,unit:string,error?:unknown)=>{const value=error as any;const raw=String(value?.errMsg??value?.message??(typeof error==='string'?error:''));
@@ -147,7 +157,15 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   }
   return nativeRequest();
  }
- const platform:Platform={config,canvas,viewport,request,audio:audioPlayback.audio,
+ // The login trail records connection steps that decide whether the player gets in: path, status and duration only.
+ const loggedRequest=async(input:HttpInput):Promise<HttpReply>=>{
+  let path='';try{path=new URL(input.url,location.href).pathname;}catch{}
+  if(config.id!=='taptap'||!/\/(?:session|config|api\/taptap\/[\w-]+|api\/mobile\/profile)$/.test(path))return request(input);
+  const started=Date.now(),label=(input.method||'GET').toUpperCase()+' '+path.replace(/^.*?(\/(?:session|config|api\/.*))$/,'$1');
+  try{const reply=await request(input);loginLog.add(label+' · '+reply.status+' · '+(Date.now()-started)+'ms');return reply;}
+  catch(error){loginLog.add(label+' · 网络失败 · '+(Date.now()-started)+'ms');throw error;}
+ };
+ const platform:Platform={config,canvas,viewport,request:loggedRequest,audio:audioPlayback.audio,loginLog,...(config.id==='taptap'?{tapAuthorizationDebug,tapNicknameUnavailable:()=>identityController?.nicknameUnavailable()===true}:{}),
   uiSize:()=>uiSize,setUiSize(size){if(!Object.hasOwn(uiSizeFactor,size))return;uiSize=size;try{localStorage.setItem(uiSizeKey,size);}catch{}for(const fn of resizeListeners)fn();},
   networkDiagnostics:()=>({http:config.id==='taptap'&&tap()?.request?apiTransport:'browser'}),
   openSocket(url,handlers){
@@ -155,7 +173,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    socket.onopen=()=>{if(!closed)handlers.open();};socket.onmessage=event=>{if(!closed&&typeof event.data==='string')handlers.message(event.data);};socket.onerror=()=>{if(!closed)handlers.error();};socket.onclose=()=>{if(!closed){closed=true;socket.onopen=socket.onmessage=socket.onerror=socket.onclose=null;handlers.close();}};
    return{send(data){if(closed||socket.readyState!==WebSocket.OPEN)throw Error('实时连接尚未就绪');if(socket.bufferedAmount>16*1024)throw Error('实时连接发送拥堵，请重连');socket.send(data);},close(){if(closed)return;closed=true;socket.onopen=socket.onmessage=socket.onerror=socket.onclose=null;socket.close();}};
   },
-  prepareTapConsent(accept,fail){if(!identityController||consentRequest)return;consentRequest={accept,fail};void identityController(true).catch(error=>{const request=consentRequest;consentRequest=null;request?.fail(error);});},setIdentityButtonVisible(visible){identityVisible=visible;identityController?.setHidden(document.hidden||!visible);},tapAuthorizationPending:()=>authorizationPending,onIdentityChange(fn){identityListeners.add(fn);return()=>identityListeners.delete(fn);},tapTapIdentity,cancelIdentity:()=>identityController?.cancel(),...(config.tapAuthorizationTest?{tapIdentityDiagnostics:()=>identityDiagnostic+' · 原生按钮接口'+(typeof (tap() as any)?.createUserInfoButton==='function'?'已提供':'未提供')} :{}),
+  prepareTapConsent(accept,fail){if(!identityController||consentRequest)return;consentRequest={accept,fail};void identityController(true).catch(error=>{const request=consentRequest;consentRequest=null;request?.fail(error);});},setIdentityButtonVisible(visible){identityVisible=visible;identityController?.setHidden(document.hidden||!visible);},tapAuthorizationPending:()=>authorizationPending,onIdentityChange(fn){identityListeners.add(fn);return()=>identityListeners.delete(fn);},tapTapIdentity,cancelIdentity:()=>identityController?.cancel(),retryTapAuthorizationButton:()=>identityController?.retryButton(),...(config.tapAuthorizationTest?{tapIdentityDiagnostics:()=>identityDiagnostic+' · 原生按钮接口'+(typeof (tap() as any)?.createUserInfoButton==='function'?'已提供':'未提供')} :{}),
   ...(config.id==='taptap'?{onlineBattleManager:()=>{const host=tap() as (TapHost&{getOnlineBattleManager?:()=>TapBattleManager})|undefined;return host?.getOnlineBattleManager?.();},onlineBattleDiagnostics:()=>{
    const host=tap() as (TapHost&{getOnlineBattleManager?:unknown;getSystemInfoSync?:()=>{tapSDKVersion?:unknown;version?:unknown}})|undefined;
    let info:{tapSDKVersion?:unknown;version?:unknown}={};try{info=host?.getSystemInfoSync?.()??{};}catch{}

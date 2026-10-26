@@ -30,6 +30,11 @@ export class GameClient{
  private sessionPending:Promise<string>|null=null;
  private startPending:Promise<void>|null=null;
  private starting=false;
+ /** TapTap could not be confirmed this launch: the stored session plays as a guest, and a later launch binds TapTap to that same session. */
+ tapGuest=false;
+ /** Set by the login dialog when the player agreed but TapTap login cannot complete. */
+ tapGuestRequested=false;
+ tapNotice='';
  constructor(platform:Platform){this.platform=platform;}
  get cookieIdentity(){return this.platform.config.id==='web'&&this.platform.config.identityMode==='web-cookie';}
  private sessionKey(){return 'jigsaw:h5-session:'+this.platform.config.apiBase;}
@@ -51,7 +56,13 @@ export class GameClient{
    // Public configuration can load while the native identity bridge warms up.
    // Catch early transport failures: the native request API may appear with login.
    const configPending=this.platform.config.id==='taptap'?loadConfig().then(reply=>({reply}),()=>({reply:null})):null;
-   const tapIdentity=this.platform.config.id==='taptap'?await this.requireTapTapIdentity(forceAuthorization):null;
+   const taptap=this.platform.config.id==='taptap',log=(text:string)=>this.platform.loginLog?.add(text);
+   let tapIdentity:Awaited<ReturnType<NonNullable<Platform['tapTapIdentity']>>>=null,guestReason='';
+   if(taptap){
+    if(this.tapGuestRequested&&!forceAuthorization)guestReason='登录弹窗中选择继续';
+    // 玩家要求：TapTap身份拿不到时直接以游客进入，不再卡在重新连接。自测重授权仍严格失败。
+    else try{tapIdentity=await this.requireTapTapIdentity(forceAuthorization);}catch(error){if(forceAuthorization)throw error;guestReason=String((error as {code?:string}).code??'TAPTAP_IDENTITY_REQUIRED');}
+   }
    const reply=configPending?(await configPending).reply??await loadConfig():await loadConfig();if(reply.status!==200)throw Error('游戏服务暂时无法连接');if(reply.data?.mobileMode!==(this.cookieIdentity?'web-managed-shared':'mobile-v3-isolated'))throw Error(this.cookieIdentity?'网站共享服务尚未连接':'独立手机版服务尚未连接');
    const wechat=this.platform.config.id==='wechat',web=this.platform.config.id==='web',unit=web?'':wechat?(this.platform.config.rewardedAdUnitId||''):String(reply.data.rewardedAdUnitId||this.platform.config.rewardedAdUnitId||'');
    const capabilities:GameCapabilities={energy:this.cookieIdentity?false:reply.data.capabilities?.energy!==false,shareRewards:!web&&reply.data.capabilities?.shareRewards===true,ads:!web&&reply.data.capabilities?.ads!==false&&reply.data.adRewardEnabled===true&&!!unit,albumTarget:this.cookieIdentity||reply.data.capabilities?.albumTarget==='pc'?'pc':'mobile-shared',createTickets:this.cookieIdentity?false:reply.data.capabilities?.createTickets??!web,
@@ -63,11 +74,21 @@ export class GameClient{
     ...(this.cookieIdentity?{supportedPieces:reply.data.capabilities?.supportedPieces??[108,300,500]}:{})};
    this.config={...reply.data,rewardedAdUnitId:unit,adRewardEnabled:capabilities.ads,identityMode:this.platform.config.id==='taptap'?'taptap':this.cookieIdentity?'web-cookie':'guest-device',wechatLoginConfigured:false,capabilities};
    if(this.cookieIdentity){await this.platform.restoreWebIdentity?.();await this.refresh();}
-   else if(this.platform.config.id==='taptap'){
-    // A TapTap session must be bound before any profile is read. This avoids
-    // creating a guest profile that can race the platform account mapping.
-    await this.session();
-    await this.json('/api/taptap/bind','POST',{code:tapIdentity!.code,nickname:tapIdentity!.nickname},{'Content-Type':'application/json'});
+   else if(taptap){
+    // Bind before reading a profile when TapTap answered, so the session maps to the platform account first.
+    // Otherwise the same stored session plays as a guest; the server keeps that progress and a later launch binds it.
+    await this.session();let bound=false,conflict=false;
+    if(tapIdentity){
+     // Without a nickname the server keeps an existing account's name, and a new account keeps the guest's random name.
+     const loginOnly=tapIdentity.nicknameUnavailable===true&&!tapIdentity.nickname;if(loginOnly)log('昵称接口不可用 → 仅用登录凭证绑定');
+     try{await this.json('/api/taptap/bind','POST',loginOnly?{code:tapIdentity.code}:{code:tapIdentity.code,nickname:tapIdentity.nickname},{'Content-Type':'application/json'});bound=true;log(loginOnly?'TapTap仅登录绑定成功':'TapTap绑定成功');}
+     catch(error){if(forceAuthorization)throw error;const detail=error as {status?:number;code?:string};conflict=detail.code==='TAPTAP_ACCOUNT_CONFLICT';guestReason='绑定失败 '+(detail.status??'网络')+(detail.code?' '+detail.code:'');log('TapTap绑定失败 · '+(detail.status??'网络')+(detail.code?' · '+detail.code:''));}
+    }
+    if(!bound)await this.refresh();
+    // A session bound on an earlier launch already resolves to the TapTap account on the server.
+    this.tapGuest=!bound&&this.profile?.taptap?.bound!==true;
+    this.tapNotice=this.tapGuest?(conflict?'该TapTap账号已有其他进度，本次继续以游客身份游玩，进度会保留':'TapTap登录暂时不可用，已用游客身份进入，进度会保留'):'';
+    if(!bound)log(this.tapGuest?'游客模式进入 · '+guestReason:'TapTap未确认，但本机会话已绑定账号 · '+guestReason);
    }else await this.refresh();
   })().catch(error=>{this.startPending=null;throw error;}).finally(()=>{this.starting=false;});return this.startPending;
  }
@@ -82,7 +103,7 @@ export class GameClient{
   try{identity=await this.platform.tapTapIdentity?.(forceAuthorization?{forceAuthorization:true}:undefined)??null;}
   catch(error){throw Object.assign(Error(error instanceof Error?error.message:'TapTap账号信息读取失败，请从TapTap内重新打开后重试'),{code:'TAPTAP_IDENTITY_REQUIRED'});}
   if(!identity?.code)throw Object.assign(Error('未获取到TapTap账号信息，请确认从TapTap App内打开此自测包后重试'),{code:'TAPTAP_IDENTITY_REQUIRED'});
-  if(!identity.nickname)throw Object.assign(Error('TapTap登录成功，但未返回公开昵称；请检查TapTap用户信息权限后重试'),{code:'TAPTAP_NICKNAME_REQUIRED'});
+  if(!identity.nickname&&identity.nicknameUnavailable!==true)throw Object.assign(Error('TapTap登录成功，但未返回公开昵称；请检查TapTap用户信息权限后重试'),{code:'TAPTAP_NICKNAME_REQUIRED'});
   return identity;
  }
  private applyProfile(value:any){const profile=profileOf(value?.profile)?value.profile:profileOf(value?.mobileProfile)?value.mobileProfile:profileOf(value)?value:null;if(!profile)return;

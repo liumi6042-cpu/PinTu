@@ -1,4 +1,5 @@
 import type {TapBattleManager} from './tap-preview';
+import type {LoginLog} from './login-log';
 export type PlatformId='web'|'taptap'|'wechat';
 export type UiSize='auto'|'small'|'large'|'xlarge';
 export type Viewport={width:number;height:number;dpr:number;top:number;bottom:number};
@@ -27,7 +28,7 @@ export function platformSocketUrl(url:string,config:Pick<PlatformConfig,'apiBase
 export type TextPromptOptions={multiline?:boolean;maxLength?:number};
 export type NativeSocialStatus={state:'idle'|'loading'|'ready'|'unavailable'|'failed';error?:{kind:'plugin-unavailable'|'plugin-load-failed'|'invalid-plugin'|'initialization-error'|'initialization-timeout'|'opening-error'|'opening-timeout';code?:number}};
 export type NativeSocialOpenResult='opened'|'unsupported'|'unavailable'|'failed';
-export type TapTapIdentity={code:string;nickname?:string};
+export type TapTapIdentity={code:string;nickname?:string;/** The host has no nickname API (TapTap PC): bind with the login code only. */nicknameUnavailable?:boolean};
 /** Hidden preparation and an optional official native private-chat entry. */
 export type NativeSocial={prepare():Promise<NativeSocialStatus>;status():NativeSocialStatus;openPrivate?():Promise<NativeSocialOpenResult>;openFriends?():Promise<NativeSocialOpenResult>};
 export type WebLinks={account?:string;security?:string;membership?:string;uploads?:string;legacyLobby?:string;legacyRoom?:string;largePuzzles?:string;terms?:string;privacy?:string;feedback?:string};
@@ -92,6 +93,14 @@ export type Platform={
  prepareTapConsent?(accept:()=>void,fail:(error:unknown)=>void):void;
  setIdentityButtonVisible?(visible:boolean):void;
  cancelIdentity?():void;
+ /** The Canvas caught a tap meant for the transparent native button: rebuild it at the current layout. */
+ retryTapAuthorizationButton?():boolean|void;
+ /** Startup login trail shown in the login dialog and settings. */
+ loginLog?:LoginLog;
+ /** One-line layout/host snapshot for the login trail; no user data. */
+ tapAuthorizationDebug?():string;
+ /** The host cannot provide a TapTap nickname (PC client); login binds with the login code only. */
+ tapNicknameUnavailable?():boolean;
 };
 export type Rect={x:number;y:number;w:number;h:number};
 export type AudioLevels={music:number;effects:number};
