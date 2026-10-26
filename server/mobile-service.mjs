@@ -108,9 +108,27 @@ export function createMobileService(options={}){
   const bonus=inviteCapBonus(db,owner);requestInviteBonuses?.set(owner,bonus);return bonus;
  };
  const playerEnergyCap=p=>effectiveEnergyCap(p.level,operationGameSettings,readInviteCapBonus(p.id).count);
- const roomListeners=new Set(),roomVersions=new Map(),cursorRooms=new Map();
+ const roomListeners=new Set(),roomVersions=new Map(),cursorRooms=new Map(),cheerRooms=new Map(),cheerRates=new Map();let cheerSeq=clock();
  const realtimeCounters={roomReads:0,authorizations:0,cursorWrites:0,cursorFlushes:0};
- const markRoom=(roomId,kind={room:true,cursors:true})=>{if(requestRoomChanges){const old=requestRoomChanges.get(roomId);requestRoomChanges.set(roomId,{room:kind.room||old?.room,cursors:kind.cursors||old?.cursors});}else for(const listener of roomListeners)listener(roomId,kind);};
+ const markRoom=(roomId,kind={room:true,cursors:true})=>{if(requestRoomChanges){const old=requestRoomChanges.get(roomId);requestRoomChanges.set(roomId,{room:kind.room||old?.room,cursors:kind.cursors||old?.cursors,cheers:kind.cheers||old?.cheers});}else for(const listener of roomListeners)listener(roomId,kind);};
+ const pruneCheers=(roomId,now)=>{
+  const state=cheerRooms.get(roomId);if(state){state.items=state.items.filter(item=>item.at>now-15000).slice(-60);if(!state.items.length)cheerRooms.delete(roomId);}
+  // Rate windows outlive the visible items, including when a sweep drops an empty room.
+  const rates=cheerRates.get(roomId);if(rates){for(const [playerId,times]of rates){const recent=times.filter(at=>at>now-60000);if(recent.length)rates.set(playerId,recent);else rates.delete(playerId);}if(!rates.size)cheerRates.delete(roomId);}
+ };
+ const putCheer=(room,member,input,now)=>{
+  pruneCheers(room.id,now);
+  if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
+  if(!room.completedAt)fail(409,'ROOM_NOT_COMPLETED','拼图完成后才能喝彩');
+  if(!requestKey(input?.id)||!['clap','popper','heart','star','tea','cat'].includes(input?.emote))fail(400,'INVALID_CHEER','喝彩内容无效');
+  let state=cheerRooms.get(room.id);if(state?.items.some(item=>item.playerId===member.id&&item.id===input.id))return;
+  const rates=cheerRates.get(room.id)??new Map(),times=rates.get(member.id)??[];
+  if(times.length>=40||times.filter(at=>at>now-2000).length>=4)fail(429,'CHEER_RATE_LIMIT','喝彩太快啦，歇一下');
+  if(!state){state={items:[]};cheerRooms.set(room.id,state);}cheerRates.set(room.id,rates);rates.set(member.id,[...times,now]);
+  state.items.push({seq:++cheerSeq,id:input.id,playerId:member.id,name:member.name,emote:input.emote,at:now});if(state.items.length>60)state.items.shift();markRoom(room.id,{room:false,cursors:false,cheers:true});
+ };
+ const cheersView=(roomId,after,now)=>{pruneCheers(roomId,now);const value=typeof after==='string'||typeof after==='number'?Number(after):0,cursor=Number.isSafeInteger(value)&&value>=0?value:0;return {cheers:(cheerRooms.get(roomId)?.items??[]).filter(item=>item.seq>cursor),cursor:cheerSeq,serverTime:now};};
+ const cheerTimer=setInterval(()=>{const now=clock();for(const roomId of new Set([...cheerRooms.keys(),...cheerRates.keys()])){const room=db.prepare('SELECT closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!room||room.closed_at){cheerRooms.delete(roomId);cheerRates.delete(roomId);}else pruneCheers(roomId,now);}},30000);cheerTimer.unref();
  const cursorState=(roomId,refresh=false)=>{
   let state=cursorRooms.get(roomId);if(!state){state=new Map();cursorRooms.set(roomId,state);refresh=true;}
   if(refresh)for(const row of db.prepare('SELECT player_id,client_id,seq,data,updated_at FROM mobile_cursors WHERE room_id=?').all(roomId)){
@@ -210,6 +228,8 @@ export function createMobileService(options={}){
   readRoom(context,since){realtimeCounters.roomReads++;realtimeAuthorize(context);return snapshotView(context.room,clock(),since,context.identity);},
   readCursors(context){if(context.version!==(roomVersions.get(context.roomId)??0))realtimeAuthorize(context);return cursorsView(context.room,clock(),context.cursorMembers);},
   writeCursor(context,input){if(context.version!==(roomVersions.get(context.roomId)??0))realtimeAuthorize(context);putCursor(context.room,context.member,input,clock());},
+  readCheers(context,after){if(context.version!==(roomVersions.get(context.roomId)??0))realtimeAuthorize(context);const data=cheersView(context.roomId,after,clock());return after===null?{...data,cheers:[]}:data;},
+  writeCheer(context,input){if(context.version!==(roomVersions.get(context.roomId)??0))realtimeAuthorize(context);putCheer(context.room,context.member,input,clock());},
   actionCapabilities(context){requireDiagnosticContext(context);if(!diagnosticConnections.has(context)){const connection={id:id(),closed:false};diagnosticConnections.set(context,connection);openActionConnections.add(connection.id);}return {version:1,diagnosticOnly:context.room.diagnostic===true};},
   writeAction:writeDiagnostic,disconnectActions:disconnectDiagnostic,
   onChange(listener){roomListeners.add(listener);return ()=>roomListeners.delete(listener);},
@@ -417,7 +437,7 @@ export function createMobileService(options={}){
    const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(now):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
    if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);return join(room,p,{},now,request);
   });
-  const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|chat|assistance|management|continuation|invitation|tap-preview))?$/.exec(path);
+  const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|cheers|chat|assistance|management|continuation|invitation|tap-preview))?$/.exec(path);
   if(!match)fail(404,'NOT_FOUND','接口不存在');const room=readRoom(match[1]),part=match[2];
   if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
   if(part!=='management'&&method!=='DELETE'&&!(method==='POST'&&!part&&input.type==='leave'))requireArtworkClient(room,request);
@@ -439,6 +459,11 @@ export function createMobileService(options={}){
    return tapPreview.request(room,member,input);
   }
   if(part==='invitation'&&method==='GET'){if(room.ownerId!==p.id)fail(403,'OWNER_REQUIRED','只有房主可以查看邀请码');return {inviteCode:room.mobileInviteCode,roomId:room.id};}
+  if(part==='cheers'){
+   if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
+   if(method==='POST')putCheer(room,member,input,now);else if(method!=='GET')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
+   return cheersView(room.id,method==='POST'?input.after:url.searchParams.get('after'),now);
+  }
   if(part==='cursors'){
    if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
    if(method==='POST'){
@@ -549,5 +574,5 @@ export function createMobileService(options={}){
   }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'独立拼图服务暂时不可用',code:error.code??(error.status?'ROOM_ERROR':'INTERNAL_ERROR'),...(error.profile?{profile:error.profile}:{}),...(error.freeRemaining?{freeRemaining:error.freeRemaining}:{}),...(error.ownedRooms?{ownedRooms:error.ownedRooms}:{}),...(error.phrases?{phrases:error.phrases}:{})}};}
   finally{requestRelease=undefined;requestProfileData=null;requestRoomChanges=null;requestCursorUndo=null;requestInviteBonuses=null;}
  }
- return {handle,bindTapTap,realtime,capabilities,contentStatus(){const selected=managedContent?.read()??null;return {contentReleaseId:selected?.releaseId??null};},startDaily(){dailyContent?.start();},close(){clearInterval(cursorTimer);flushCursors();tapPreview.clear();roomListeners.clear();dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
+ return {handle,bindTapTap,realtime,capabilities,contentStatus(){const selected=managedContent?.read()??null;return {contentReleaseId:selected?.releaseId??null};},startDaily(){dailyContent?.start();},close(){clearInterval(cursorTimer);clearInterval(cheerTimer);cheerRooms.clear();cheerRates.clear();flushCursors();tapPreview.clear();roomListeners.clear();dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
 }

@@ -15,7 +15,7 @@ export function createRoomRealtimeHub(options){
  const {server,path,allowOrigin,subscribe,readRoom,readCursors,writeCursor,validate}=options;
  const wss=new WebSocketServer({noServer:true,maxPayload:Math.min(options.maxPayload??4096,4096),perMessageDeflate:false});
  const peers=new Set(),rooms=new Map(),pending=new Map();let closed=false;
- const counters={connections:0,roomReads:0,cursorReads:0,cursorWrites:0,actionWrites:0,validations:0,rejected:0};
+ const counters={connections:0,roomReads:0,cursorReads:0,cursorWrites:0,cheerReads:0,cheerWrites:0,actionWrites:0,validations:0,rejected:0};
  const capabilities=async context=>{
   if(typeof options.writeAction!=='function'||typeof options.actionCapabilities!=='function')return undefined;
   const value=await options.actionCapabilities(context);return value?.version===1&&typeof value?.diagnosticOnly==='boolean'?{version:1,diagnosticOnly:value.diagnosticOnly}:undefined;
@@ -32,11 +32,12 @@ export function createRoomRealtimeHub(options){
   try{
    if(kind.room){counters.roomReads++;const data=await readRoom(peer.context,peer.since);if(peer.ws.readyState!==1)return;if(Number.isSafeInteger(data?.revision))peer.since=data.revision;send(peer,{type:'room',data});}
    if(kind.cursors){counters.cursorReads++;const data=await readCursors(peer.context);send(peer,{type:'cursors',data});}
+   if(kind.cheers&&typeof options.readCheers==='function'){counters.cheerReads++;const data=await options.readCheers(peer.context,peer.cheerSince);peer.cheerSince=data.cursor;if(data.cheers.length)send(peer,{type:'cheers',data});}
   }catch(error){reject(peer,error);}
  };
- const notify=(roomId,{room=true,cursors=false}={})=>{
+ const notify=(roomId,{room=true,cursors=false,cheers=false}={})=>{
   if(closed||!rooms.has(roomId))return;
-  const old=pending.get(roomId);pending.set(roomId,{room:room||old?.room,cursors:cursors||old?.cursors});
+  const old=pending.get(roomId);pending.set(roomId,{room:room||old?.room,cursors:cursors||old?.cursors,cheers:cheers||old?.cheers});
   if(old)return;
   queueMicrotask(async()=>{const kind=pending.get(roomId);pending.delete(roomId);if(!kind)return;await Promise.all([...rooms.get(roomId)??[]].map(peer=>{peer.chain=peer.chain.then(()=>refresh(peer,kind));return peer.chain;}));});
  };
@@ -54,15 +55,17 @@ export function createRoomRealtimeHub(options){
  };
  server.on('upgrade',upgrade);
  wss.on('connection',(ws,request,address)=>{
-  const peer={ws,request,address,context:null,since:null,chain:Promise.resolve(),alive:true,window:Date.now(),count:0,cursors:0,actions:0,actionCapabilities:undefined,queued:0,queuedActions:0};peers.add(peer);counters.connections++;
+  const peer={ws,request,address,context:null,since:null,cheerSince:null,chain:Promise.resolve(),alive:true,window:Date.now(),count:0,cursors:0,cheers:0,actions:0,actionCapabilities:undefined,queued:0,queuedActions:0};peers.add(peer);counters.connections++;
   const admission=setTimeout(()=>{if(!peer.context)reject(peer,fault(408,'SUBSCRIBE_REQUIRED','请先订阅房间'));},options.subscribeTimeoutMs??5000);admission.unref();
   ws.on('pong',()=>{peer.alive=true;});
   ws.on('error',()=>{});
   ws.on('close',()=>{clearTimeout(admission);peers.delete(peer);if(peer.context){const set=rooms.get(peer.context.roomId);set?.delete(peer);if(!set?.size)rooms.delete(peer.context.roomId);}options.onDisconnect?.(peer.context);});
   ws.on('message',(bytes,binary)=>{
-   const now=Date.now();if(now-peer.window>=1000){peer.window=now;peer.count=0;peer.cursors=0;peer.actions=0;}
+   const now=Date.now();if(now-peer.window>=1000){peer.window=now;peer.count=0;peer.cursors=0;peer.cheers=0;peer.actions=0;}
    if(++peer.count>(peer.actionCapabilities?96:40)){reject(peer,fault(429,'REALTIME_RATE_LIMIT','实时消息发送较快'));return;}
    let input;try{if(binary)throw Error();input=JSON.parse(bytes.toString());if(!input||typeof input!=='object'||Array.isArray(input))throw Error();}catch{reject(peer,fault(400,'INVALID_REALTIME_MESSAGE','实时消息格式无效'));return;}
+   const cheerError=(status,code,error)=>send(peer,{type:'cheer-error',id:input.data?.id??null,status,code,error});
+   if(input.type==='cheer'&&++peer.cheers>4){cheerError(429,'CHEER_RATE_LIMIT','喝彩太快啦，歇一下');return;}
    if(input.type==='cursor'&&++peer.cursors>25){reject(peer,fault(429,'CURSOR_RATE_LIMIT','光标发送较快'));return;}
    const isAction=input.type==='action';
    const actionResult=(status,data)=>send(peer,{type:'action-result',id:input.id,status,data});
@@ -79,9 +82,16 @@ export function createRoomRealtimeHub(options){
      if(!peer.context){
       if(input.type!=='subscribe'||typeof input.roomId!=='string'||!/^[a-f0-9]{32}$/.test(input.roomId)||typeof input.token!=='string'||!/^[a-f0-9]{32}$/.test(input.token)||input.since!==undefined&&(!Number.isSafeInteger(input.since)||input.since<0))throw fault(400,'INVALID_SUBSCRIPTION','房间订阅无效');
       const context=await subscribe(request,input);if(!context||context.roomId!==input.roomId)throw fault(403,'ROOM_IDENTITY_MISMATCH','请重新加入房间');
-      if(ws.readyState!==1)return;peer.context=context;peer.since=input.since??null;peer.actionCapabilities=await capabilities(context);clearTimeout(admission);roomFor(peer).add(peer);send(peer,{type:'ready',...(peer.actionCapabilities?{actions:peer.actionCapabilities}:{})});await refresh(peer,{room:true,cursors:true});return;
+      if(ws.readyState!==1)return;peer.context=context;peer.since=input.since??null;peer.actionCapabilities=await capabilities(context);if(typeof options.readCheers==='function'){counters.cheerReads++;peer.cheerSince=(await options.readCheers(context,null)).cursor;}clearTimeout(admission);roomFor(peer).add(peer);send(peer,{type:'ready',...(peer.actionCapabilities?{actions:peer.actionCapabilities}:{})});await refresh(peer,{room:true,cursors:true});return;
      }
      if(input.type==='ping'){send(peer,{type:'pong'});return;}
+     if(input.type==='cheer'){
+      if(typeof options.writeCheer!=='function'){cheerError(404,'CHEERS_UNSUPPORTED','当前服务暂不支持喝彩');return;}
+      if(!input.data||typeof input.data!=='object'||Array.isArray(input.data)){cheerError(400,'INVALID_CHEER','喝彩内容无效');return;}
+      try{counters.cheerWrites++;await options.writeCheer(peer.context,{id:input.data.id,emote:input.data.emote});notify(peer.context.roomId,{room:false,cheers:true});}
+      catch(error){if([400,409,429].includes(error.status))cheerError(error.status,error.code??'INVALID_CHEER',error.message);else throw error;}
+      return;
+     }
      if(isAction){
       // Revalidate the authenticated session before each write. A business
       // rejection has an acknowledgement; a lost identity closes the channel.

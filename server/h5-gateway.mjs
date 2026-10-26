@@ -304,6 +304,8 @@ export function createH5Gateway(options){
       validate(context){requireSession(null,context.sessionToken);return service.validate(context);},
       readRoom(context,since){requireSession(null,context.sessionToken);return service.readRoom(context,since);},
       readCursors:context=>service.readCursors(context),writeCursor:(context,input)=>service.writeCursor(context,input),
+      ...(typeof service.readCheers==='function'?{readCheers:(context,after)=>service.readCheers(context,after)}:{}),
+      ...(typeof service.writeCheer==='function'?{writeCheer(context,input){requireSession(null,context.sessionToken);return service.writeCheer(context,input);}}:{}),
       actionCapabilities:context=>service.actionCapabilities?.(context),
       writeAction(context,input){requireSession(null,context.sessionToken);return service.writeAction(context,input);},
       ...options.realtimeOptions,
