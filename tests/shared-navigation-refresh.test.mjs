@@ -72,6 +72,25 @@ test('quiet unchanged lobby reads preserve references and do not redraw; display
  const many=Array.from({length:32},(_,i)=>card(String(i)));app.rooms=many;response={rooms:many.slice(0,16).map(room=>({...room,serverTime:500})),nextCursor:'other'};const before=redraws();await app.loadLobby(false,true);assert.equal(app.rooms,many);assert.equal(app.lobbyCursor,'later');assert.equal(redraws(),before);
 });
 
+test('lobby refresh follows server order and load-more deduplicates rooms by id',async()=>{
+ const {app}=fixture();delete app.loadLobby;const a=card('a'),b=card('b'),c=card('c');app.rooms=[a,b];
+ let response={rooms:[b,a],nextCursor:'next'};app.client.json=async()=>response;
+ await app.loadLobby(false,true);assert.deepEqual(app.rooms.map(r=>r.id),['b','a'],'order-only changes reach roomListKey');
+ response={rooms:[{...a,players:3},c],nextCursor:null};await app.loadLobby(true);
+ assert.deepEqual(app.rooms.map(r=>r.id),['b','a','c']);assert.equal(app.rooms[1].players,3);
+});
+
+test('quiet lobby refresh beyond sixteen tables preserves order and updates matching content',async()=>{
+ const {app}=fixture();delete app.loadLobby;const rooms=Array.from({length:20},(_,i)=>card(String(i)));app.rooms=rooms;app.lobbyCursor='older';
+ app.client.json=async()=>({rooms:[...rooms.slice(0,16)].reverse().map(r=>({...r,players:3})),nextCursor:'new'});
+ await app.loadLobby(false,true);assert.deepEqual(app.rooms.map(r=>r.id),rooms.map(r=>r.id));assert.equal(app.rooms[0].players,3);assert.equal(app.rooms[19].players,2);assert.equal(app.lobbyCursor,'older');
+});
+
+test('lobby joinability is a stable partition of server order',()=>{
+ const {app}=fixture(),full={...card('full'),players:8},a=card('a'),closed={...card('closed'),acceptingNew:false},b=card('b');
+ app.lobbyPieces='all';app.rooms=[full,a,closed,b];assert.deepEqual(app.lobbyRooms.map(r=>r.id),['a','b','full','closed']);assert.deepEqual(app.rooms.map(r=>r.id),['full','a','closed','b']);
+});
+
 test('lobby loading and errors clear visibly, and obsolete account responses cannot overwrite lists',async()=>{
  const {app,redraws}=fixture();delete app.loadLobby;const pending=deferred();app.client.json=()=>pending.promise;
  const loading=app.loadLobby();assert.equal(app.lobbyBusy,true);assert.equal(redraws(),1);pending.resolve({rooms:[]});await loading;assert.equal(app.lobbyBusy,false);assert.equal(redraws(),2);
