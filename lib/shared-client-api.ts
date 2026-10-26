@@ -19,6 +19,7 @@ import * as roomRoute from '../app/api/rooms/[id]/route';
 import * as joinRoute from '../app/api/rooms/[id]/join/route';
 import * as chatRoute from '../app/api/rooms/[id]/chat/route';
 import * as cursorRoute from '../app/api/rooms/[id]/cursors/route';
+import * as cheersRoute from '../app/api/rooms/[id]/cheers/route';
 import * as assistanceRoute from '../app/api/rooms/[id]/assistance/route';
 import * as lobbyRoute from '../app/api/lobby/route';
 import {webDiagnosticsAllowed,createWebDiagnostic,webDiagnosticRoom} from './shared-diagnostics';
@@ -122,7 +123,7 @@ async function social(request:Request,path:string,input:Data,ctx:Context){
  return unsupported('网页版暂未接入私信、消息举报和屏蔽；好友关系及原有奖励已保留',SHARED_COMPAT_URLS.security);
 }
 async function sharedRoom(request:Request,path:string,input:Data){
- const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|chat|cursors|assistance))?$/.exec(path);if(!match)return null;
+ const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|chat|cursors|cheers|assistance))?$/.exec(path);if(!match)return null;
  const id=match[1],part=match[2],method=request.method,params={params:Promise.resolve({id})};
  if(method==='DELETE')return unsupported('网页版暂不支持删除房间，已有进度会保留',roomLink(id));
  const room=await readRoom(id);
@@ -134,7 +135,7 @@ async function sharedRoom(request:Request,path:string,input:Data){
   if(guest&&!hasRoomAdmission(room,player?.id)&&hasRoomAdmission(room,guest.id))return json({error:'这间历史拼图目前尚未支持，游客进度和奖励仍归原身份保留',code:'LEGACY_ROOM_REQUIRED',compatUrl:roomLink(id)},409);
  }
  let response:Response;
- const route:( {GET?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>;POST?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>})=part==='join'?joinRoute:part==='chat'?chatRoute:part==='cursors'?cursorRoute:part==='assistance'?assistanceRoute:roomRoute;
+ const route:( {GET?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>;POST?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>})=part==='join'?joinRoute:part==='chat'?chatRoute:part==='cursors'?cursorRoute:part==='cheers'?cheersRoute:part==='assistance'?assistanceRoute:roomRoute;
  if(part==='chat'&&method==='POST'&&input.phraseId!==undefined){if(!Number.isSafeInteger(input.phraseId)||!phrases[input.phraseId])throw new RoomError('快捷消息无效');input={...input,text:phrases[input.phraseId]};}
  if(method==='GET'&&route.GET)response=await route.GET(forwarded(request,path+new URL(request.url).search),params);
  else if(method==='POST'&&route.POST)response=await route.POST(forwarded(request,path+new URL(request.url).search,input),params);
@@ -281,5 +282,5 @@ export async function sharedClientApi(request:Request,path:string){
   if(mutation){await action(ctx,mutation);return answer(collectionView(ctx),ctx);}
   if(path.startsWith('/api/mobile/supply/'))return unsupported('网页版沿用原公开房与会员规则，无需体力或建房券',SHARED_COMPAT_URLS.membership);
   return json({error:'接口不存在'},404);
- }catch(error){if(error instanceof Error&&'status'in error&&('code'in error||!(error instanceof RoomError)))return json({error:error.message,...('code'in error?{code:error.code}:{})},Number(error.status));return failure(error);}
+ }catch(error){if(error instanceof RoomError&&error.status===400&&error.message==='请求格式无效'&&/^\/api\/rooms\/[a-f0-9]{32}\/cheers$/.test(path))return json({error:'喝彩内容无效',code:'INVALID_CHEER'},400);if(error instanceof Error&&'status'in error&&('code'in error||!(error instanceof RoomError)))return json({error:error.message,...('code'in error?{code:error.code}:{})},Number(error.status));return failure(error);}
 }

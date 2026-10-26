@@ -99,6 +99,13 @@ export function attachWebRoomRealtime({server,port,origin,fetchImpl=fetch,persis
   },
   async readRoom(ctx,since){await ensure(ctx);counters.httpReads++;const query=Number.isSafeInteger(since)&&since>=0?'?since='+since:'';return (await request(ctx,'/api/rooms/'+ctx.roomId+query)).value;},
   readCursors:snapshotCursors,
+  // Route calls keep HTTP and WebSocket on the exact same ephemeral store and
+  // recheck current membership on every read/write, without a second authority.
+  async readCheers(ctx,after){return (await request(ctx,'/api/rooms/'+ctx.roomId+'/cheers'+(after===undefined?'':'?after='+after))).value;},
+  async writeCheer(ctx,input){
+   if(ctx.closed||ctx.revoked||stopped)throw fault(401,'IDENTITY_REQUIRED','连接已关闭，请重新进入房间');
+   return (await request(ctx,'/api/rooms/'+ctx.roomId+'/cheers',{method:'POST',data:input&&typeof input==='object'&&!Array.isArray(input)?input:{}})).value;
+  },
   actionCapabilities:ctx=>ctx.actions,
   async writeAction(ctx,input){
    if(ctx.closed||ctx.revoked||stopped)throw fault(401,'IDENTITY_REQUIRED','连接已关闭，请重新进入房间');
@@ -134,7 +141,8 @@ export function attachWebRoomRealtime({server,port,origin,fetchImpl=fetch,persis
    }
    const ids=match?[match[1]]:[...rooms.keys()];
    for(const id of ids){const state=rooms.get(id);if(!state)continue;
-    if(match?.[2]==='cursors'){state.cursors++;hub.notify(id,{room:false,cursors:true});}
+    if(match?.[2]==='cheers'){hub.notify(id,{room:false,cursors:false,cheers:true});}
+    else if(match?.[2]==='cursors'){state.cursors++;hub.notify(id,{room:false,cursors:true});}
     else{state.generation++;state.cursors++;hub.notify(id,{room:true,cursors:true});}
    }
   });

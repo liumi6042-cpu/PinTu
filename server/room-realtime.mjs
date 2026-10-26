@@ -32,11 +32,12 @@ export function createRoomRealtimeHub(options){
   try{
    if(kind.room){counters.roomReads++;const data=await readRoom(peer.context,peer.since);if(peer.ws.readyState!==1)return;if(Number.isSafeInteger(data?.revision))peer.since=data.revision;send(peer,{type:'room',data});}
    if(kind.cursors){counters.cursorReads++;const data=await readCursors(peer.context);send(peer,{type:'cursors',data});}
+   if(kind.cheers&&options.readCheers){const data=await options.readCheers(peer.context,peer.cheerSince);peer.cheerSince=data.cursor;if(data.cheers?.length)send(peer,{type:'cheers',data});}
   }catch(error){reject(peer,error);}
  };
- const notify=(roomId,{room=true,cursors=false}={})=>{
+ const notify=(roomId,{room=true,cursors=false,cheers=false}={})=>{
   if(closed||!rooms.has(roomId))return;
-  const old=pending.get(roomId);pending.set(roomId,{room:room||old?.room,cursors:cursors||old?.cursors});
+  const old=pending.get(roomId);pending.set(roomId,{room:room||old?.room,cursors:cursors||old?.cursors,cheers:cheers||old?.cheers});
   if(old)return;
   queueMicrotask(async()=>{const kind=pending.get(roomId);pending.delete(roomId);if(!kind)return;await Promise.all([...rooms.get(roomId)??[]].map(peer=>{peer.chain=peer.chain.then(()=>refresh(peer,kind));return peer.chain;}));});
  };
@@ -61,15 +62,18 @@ export function createRoomRealtimeHub(options){
   ws.on('close',()=>{clearTimeout(admission);peers.delete(peer);if(peer.context){const set=rooms.get(peer.context.roomId);set?.delete(peer);if(!set?.size)rooms.delete(peer.context.roomId);}options.onDisconnect?.(peer.context);});
   ws.on('message',(bytes,binary)=>{
    const now=Date.now();if(now-peer.window>=1000){peer.window=now;peer.count=0;peer.cursors=0;peer.actions=0;}
-   if(++peer.count>(peer.actionCapabilities?96:40)){reject(peer,fault(429,'REALTIME_RATE_LIMIT','实时消息发送较快'));return;}
    let input;try{if(binary)throw Error();input=JSON.parse(bytes.toString());if(!input||typeof input!=='object'||Array.isArray(input))throw Error();}catch{reject(peer,fault(400,'INVALID_REALTIME_MESSAGE','实时消息格式无效'));return;}
+   const isCheer=input.type==='cheer';
+   const cheerError=error=>send(peer,{type:'cheer-error',id:input.data?.id??null,status:error.status??500,code:error.code??'CHEER_ERROR',error:error.status?error.message:'喝彩暂时无法发送'});
+   if(++peer.count>(peer.actionCapabilities?96:40)){if(isCheer)cheerError(fault(429,'CHEER_RATE_LIMIT','喝彩太快啦，歇一下'));else reject(peer,fault(429,'REALTIME_RATE_LIMIT','实时消息发送较快'));return;}
    if(input.type==='cursor'&&++peer.cursors>25){reject(peer,fault(429,'CURSOR_RATE_LIMIT','光标发送较快'));return;}
    const isAction=input.type==='action';
    const actionResult=(status,data)=>send(peer,{type:'action-result',id:input.id,status,data});
    if(isAction&&!actionId(input.id)){reject(peer,fault(400,'INVALID_ACTION_INPUT','动作请求编号无效'));return;}
    if(isAction&&++peer.actions>64){actionResult(429,{code:'ACTION_RATE_LIMIT',error:'动作发送较快，请稍后再试'});return;}
    if(peer.queued>=64||isAction&&peer.queuedActions>=64){
-    if(isAction)actionResult(429,{code:'ACTION_BACKPRESSURE',error:'尚有动作等待确认，请稍后再试'});
+    if(isCheer)cheerError(fault(429,'CHEER_RATE_LIMIT','喝彩太快啦，歇一下'));
+    else if(isAction)actionResult(429,{code:'ACTION_BACKPRESSURE',error:'尚有动作等待确认，请稍后再试'});
     else reject(peer,fault(429,'REALTIME_BACKPRESSURE','实时消息积压，请重新连接'));return;
    }
    peer.queued++;if(isAction)peer.queuedActions++;
@@ -79,9 +83,17 @@ export function createRoomRealtimeHub(options){
      if(!peer.context){
       if(input.type!=='subscribe'||typeof input.roomId!=='string'||!/^[a-f0-9]{32}$/.test(input.roomId)||typeof input.token!=='string'||!/^[a-f0-9]{32}$/.test(input.token)||input.since!==undefined&&(!Number.isSafeInteger(input.since)||input.since<0))throw fault(400,'INVALID_SUBSCRIPTION','房间订阅无效');
       const context=await subscribe(request,input);if(!context||context.roomId!==input.roomId)throw fault(403,'ROOM_IDENTITY_MISMATCH','请重新加入房间');
-      if(ws.readyState!==1)return;peer.context=context;peer.since=input.since??null;peer.actionCapabilities=await capabilities(context);clearTimeout(admission);roomFor(peer).add(peer);send(peer,{type:'ready',...(peer.actionCapabilities?{actions:peer.actionCapabilities}:{})});await refresh(peer,{room:true,cursors:true});return;
+      if(ws.readyState!==1)return;peer.context=context;peer.since=input.since??null;peer.actionCapabilities=await capabilities(context);peer.cheerSince=options.readCheers?(await options.readCheers(context)).cursor:0;clearTimeout(admission);roomFor(peer).add(peer);send(peer,{type:'ready',...(peer.actionCapabilities?{actions:peer.actionCapabilities}:{})});await refresh(peer,{room:true,cursors:true});return;
      }
      if(input.type==='ping'){send(peer,{type:'pong'});return;}
+     if(isCheer){
+      try{
+       if(!options.writeCheer)throw fault(404,'CHEERS_UNSUPPORTED','当前房间暂不支持喝彩');
+       await options.writeCheer(peer.context,input.data);
+       notify(peer.context.roomId,{room:false,cursors:false,cheers:true});
+      }catch(error){cheerError(error);}
+      return;
+     }
      if(isAction){
       // Revalidate the authenticated session before each write. A business
       // rejection has an acknowledgement; a lost identity closes the channel.
@@ -98,7 +110,7 @@ export function createRoomRealtimeHub(options){
      }
      if(input.type!=='cursor')throw fault(400,'INVALID_REALTIME_MESSAGE','实时消息类型无效');
      counters.cursorWrites++;await writeCursor(peer.context,input.data);notify(peer.context.roomId,{room:false,cursors:true});
-    }catch(error){reject(peer,error);}
+    }catch(error){if(isCheer)cheerError(error);else reject(peer,error);}
    }).finally(()=>{peer.queued--;if(isAction)peer.queuedActions--;});
   });
  });

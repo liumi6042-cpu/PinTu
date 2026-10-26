@@ -13,7 +13,7 @@ import {attachWebRoomRealtime} from '../server/room-realtime.node.mjs';
 
 const origin='http://localhost',root=fileURLToPath(new URL('../',import.meta.url));
 globalThis.__webRealtimeEnv={PUZZLE_LOCAL_ORIGIN:origin,PUZZLE_BETA_CAPACITY:'0'};
-const built=await build({absWorkingDir:root,stdin:{contents:'export {sharedClientApi} from "./lib/shared-client-api";export {sharedConfig} from "./lib/shared-client-model";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";export {applyRoomUpdate} from "./lib/room-sync";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:'export const env=globalThis.__webRealtimeEnv;',loader:'js'}));}}]});
+const built=await build({absWorkingDir:root,stdin:{contents:'export {sharedClientApi} from "./lib/shared-client-api";export {sharedConfig} from "./lib/shared-client-model";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";export {applyRoomUpdate} from "./lib/room-sync";export {GET as cheersGET,POST as cheersPOST} from "./app/api/rooms/[id]/cheers/route";export {GET as cursorsGET} from "./app/api/rooms/[id]/cursors/route";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:'export const env=globalThis.__webRealtimeEnv;',loader:'js'}));}}]});
 const api=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
 const owner='a'.repeat(32),other='b'.repeat(32),token='c'.repeat(64),otherToken='d'.repeat(64),hash=s=>createHash('sha256').update(s).digest('hex');
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -29,14 +29,14 @@ async function fixture(options={}){
  const server=createServer(async(req,res)=>{try{
   const parts=[];for await(const data of req)parts.push(data);
   const request=new Request(origin+req.url,{method:req.method,headers:req.headers,...(parts.length?{body:Buffer.concat(parts)}:{})});
-  const path=new URL(request.url).pathname.slice('/api/shared'.length);
-  const response=path==='/config'?new Response(JSON.stringify(api.sharedConfig(origin)),{headers:{'Content-Type':'application/json'}}):await api.sharedClientApi(request,path);
+  const pathname=new URL(request.url).pathname,direct=/^\/api\/rooms\/([^/]+)\/(cheers|cursors)$/.exec(pathname),path=pathname.slice('/api/shared'.length);
+  const response=direct?await api[direct[2]==='cursors'?'cursorsGET':req.method==='POST'?'cheersPOST':'cheersGET'](request,{params:Promise.resolve({id:direct[1]})}):path==='/config'?new Response(JSON.stringify(api.sharedConfig(origin)),{headers:{'Content-Type':'application/json'}}):await api.sharedClientApi(request,path);
   res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
  }catch(error){res.writeHead(500,{'Content-Type':'application/json'});res.end(JSON.stringify({error:String(error)}));}});
  server.listen(0,'127.0.0.1');await once(server,'listening');const port=server.address().port;
  const hub=attachWebRoomRealtime({server,port,origin,...options}),sockets=[];
- const request=async(path,{method='GET',body,cookie=token,roomToken,headers={}}={})=>{
-  const response=await fetch('http://127.0.0.1:'+port+'/api/shared'+path,{method,headers:{Host:'localhost',Origin:origin,Cookie:'puzzle_session='+cookie,...(roomToken?{Authorization:'Bearer '+roomToken}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},...(body?{body:JSON.stringify(body)}:{})});
+ const request=async(path,{method='GET',body,cookie=token,roomToken,headers={},direct=false}={})=>{
+  const response=await fetch('http://127.0.0.1:'+port+(direct?'':'/api/shared')+path,{method,headers:{Host:'localhost',Origin:origin,Cookie:'puzzle_session='+cookie,...(roomToken?{Authorization:'Bearer '+roomToken}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},...(body?{body:JSON.stringify(body)}:{})});
   return {status:response.status,data:await response.json(),headers:response.headers};
  };
  const socket=async(ticket,cookie=token,headers={},query='')=>{
@@ -45,7 +45,7 @@ async function fixture(options={}){
   ws.send(JSON.stringify({type:'subscribe',roomId:ticket.room?.id??ticket.roomId,token:ticket.token,session:'ignored-for-web'}));
   return {ws,messages,send:input=>ws.send(JSON.stringify(input)),next:predicate=>until(()=>messages.find(predicate))};
  };
- const create=async(visibility='public')=>{const made=await request('/api/rooms',{method:'POST',body:{mode:'selected',imageId:photos[0].id,pieces:108,visibility}});assert.equal(made.status,201,JSON.stringify(made.data));return made.data;};
+ const create=async(visibility='public',imageIndex=0)=>{const made=await request('/api/rooms',{method:'POST',body:{mode:'selected',imageId:photos[imageIndex].id,pieces:108,visibility}});assert.equal(made.status,201,JSON.stringify(made.data));return made.data;};
  const join=async ticket=>{const joined=await request('/api/rooms/'+ticket.room.id+'/join',{method:'POST',body:{},cookie:otherToken});assert.equal(joined.status,200,JSON.stringify(joined.data));return joined.data;};
  return {db,server,hub,request,socket,create,join,async close(){for(const ws of sockets)ws.terminate();hub.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));db.close();delete globalThis.__webRealtimeEnv.PUZZLE_DB;}};
 }
@@ -122,4 +122,100 @@ test('private membership, suspended identity, invalid coordinates and handshake 
   f.db.sql.prepare("INSERT INTO puzzle_account_security(user_id,status) VALUES(?,'suspended') ON CONFLICT(user_id) DO UPDATE SET status='suspended'").run(owner);
   assert.equal((await valid.next(m=>m.type==='error')).status,401,'the original account route rejects suspended sessions');
  }finally{await f.close();}
+});
+
+function editRoom(f,id,edit){
+ const saved=f.db.sql.prepare('SELECT data,revision FROM puzzle_rooms WHERE id=?').get(id),room=JSON.parse(saved.data);
+ edit(room);room.revision=saved.revision+1;
+ f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=? WHERE id=?').run(JSON.stringify(room),room.revision,id);
+}
+const cheerId=n=>n.toString(16).padStart(32,'0');
+
+test('cheers native and shared HTTP routes preserve cursor authority and completion/input rules',async()=>{
+ const f=await fixture();try{
+  const first=await f.create(),path='/api/rooms/'+first.room.id,opts={roomToken:first.token};
+  for(const direct of [true,false]){
+   const call=(suffix,options={})=>f.request(path+suffix,{...opts,direct,...options});
+   assert.deepEqual((await call('/cheers')).data.cheers,[],'GET works before completion');
+   for(const credentials of [{roomToken:undefined},{roomToken:'f'.repeat(32)},{cookie:otherToken},{cookie:''}]){
+    const cheers=await call('/cheers',credentials),cursors=await call('/cursors',credentials);
+    assert.equal(cheers.status,cursors.status);assert.equal(cheers.data.error,cursors.data.error);assert.equal(cheers.status,401);
+    const post=await call('/cheers',{...credentials,method:'POST',body:{id:cheerId(1),emote:'clap'}});assert.equal(post.status,cheers.status);assert.equal(post.data.error,cheers.data.error);
+   }
+   const early=await call('/cheers',{method:'POST',body:{}});assert.equal(early.status,409);assert.equal(early.data.code,'ROOM_NOT_COMPLETED');
+  }
+  assert.equal((await f.request('/api/rooms/not-an-id/cheers',{...opts,direct:true})).status,404);
+  editRoom(f,first.room.id,room=>{room.completedAt=Date.now();});
+  const saved=f.db.sql.prepare('SELECT data,revision FROM puzzle_rooms WHERE id=?').get(first.room.id);
+  for(const direct of [true,false])for(const body of [[],{},'invalid',{id:'A'.repeat(32),emote:'clap'},{id:cheerId(1),emote:'invalid'},{id:4,emote:'tea'}]){
+   const invalid=await f.request(path+'/cheers',{...opts,direct,method:'POST',body});assert.equal(invalid.status,400);assert.equal(invalid.data.code,'INVALID_CHEER');
+  }
+  const posted=await f.request(path+'/cheers',{...opts,direct:true,method:'POST',body:{id:cheerId(1),emote:'tea',playerId:'spoof',name:'spoof',at:0}});
+  assert.equal(posted.status,200);assert.equal(posted.headers.get('cache-control'),'no-store');assert.equal(posted.data.cheers.length,1);
+  assert.equal(posted.data.cheers[0].playerId,first.playerId);assert.equal(posted.data.cheers[0].name,'甲');assert.ok(posted.data.cheers[0].at>0);
+  const retried=await f.request(path+'/cheers',{...opts,method:'POST',body:{id:cheerId(1),emote:'tea'}});assert.deepEqual(retried.data.cheers,posted.data.cheers);assert.equal(retried.data.cursor,posted.data.cursor);
+  const filtered=await f.request(path+'/cheers?after='+posted.data.cursor,opts);assert.deepEqual(filtered.data.cheers,[]);assert.equal(filtered.data.cursor,posted.data.cursor);
+  assert.equal((await f.request(path+'/cheers?after=invalid',opts)).data.cheers.length,1);
+  for(let n=2;n<=4;n++)assert.equal((await f.request(path+'/cheers',{...opts,method:'POST',body:{id:cheerId(n),emote:'clap',after:posted.data.cursor}})).status,200);
+  const limited=await f.request(path+'/cheers',{...opts,method:'POST',body:{id:cheerId(5),emote:'clap'}});assert.equal(limited.status,429);assert.equal(limited.data.code,'CHEER_RATE_LIMIT');assert.equal(limited.headers.get('retry-after'),'2');
+  assert.equal((await f.request(path+'/cheers',{...opts,method:'POST',body:{id:cheerId(1),emote:'tea'}})).status,200,'dedupe before rate limit');
+  assert.deepEqual(f.db.sql.prepare('SELECT data,revision FROM puzzle_rooms WHERE id=?').get(first.room.id),saved,'cheers never enter room snapshot or revision');
+  assert.equal(f.db.sql.prepare('SELECT count(*) AS n FROM puzzle_room_cursors WHERE room_id=?').get(first.room.id).n,0);
+  for(const lastSeen of [Date.now()-60000,0]){
+   editRoom(f,first.room.id,room=>{room.members.find(m=>m.id===first.playerId).lastSeen=lastSeen;});
+   for(const direct of [true,false])for(const method of ['GET','POST']){
+    const result=await f.request(path+'/cheers',{...opts,direct,method,...(method==='POST'?{body:{id:cheerId(6),emote:'cat'}}:{})});
+    const cursor=await f.request(path+'/cursors',{...opts,direct});assert.equal(result.status,409);assert.equal(result.data.error,cursor.data.error);
+    if(lastSeen===0)assert.equal(result.data.code,'ROOM_ADMISSION_REQUIRED');
+   }
+  }
+ }finally{await f.close();}
+});
+
+test('cheers use one HTTP/WS store, skip subscribe replay, isolate rooms and reject without disconnect',async()=>{
+ const f=await fixture();try{
+  const first=await f.create(),second=await f.join(first),otherRoom=await f.create('public',1),path='/api/rooms/'+first.room.id;
+  assert.notEqual(otherRoom.room.id,first.room.id);
+  const a=await f.socket(first);await a.next(m=>m.type==='room');
+  a.send({type:'cheer',data:{id:cheerId(10),emote:'clap'}});
+  assert.equal((await a.next(m=>m.type==='cheer-error'&&m.id===cheerId(10))).code,'ROOM_NOT_COMPLETED');
+  a.send({type:'ping'});await a.next(m=>m.type==='pong');assert.equal(a.ws.readyState,WebSocket.OPEN);
+  editRoom(f,first.room.id,room=>{room.completedAt=Date.now();});
+  const before=await f.request(path+'/cheers',{roomToken:first.token,direct:true,method:'POST',body:{id:cheerId(11),emote:'heart'}});assert.equal(before.status,200);
+  await a.next(m=>m.type==='cheers'&&m.data.cheers.some(c=>c.id===cheerId(11)));
+  const b=await f.socket(second,otherToken),c=await f.socket(otherRoom);await b.next(m=>m.type==='room');await c.next(m=>m.type==='room');
+  const normalFrames=b.messages.filter(m=>['room','cursors'].includes(m.type)).length;
+  a.send({type:'cheer',data:{id:cheerId(12),emote:'cat'}});
+  const echoed=await a.next(m=>m.type==='cheers'&&m.data.cheers.some(c=>c.id===cheerId(12))),received=await b.next(m=>m.type==='cheers');
+  assert.deepEqual(received.data.cheers.map(c=>c.id),[cheerId(12)]);assert.equal(received.data.cheers[0].playerId,first.playerId);
+  assert.equal(echoed.data.cursor,received.data.cursor);assert.ok(received.data.cursor>before.data.cursor);
+  assert.ok(!c.messages.some(m=>m.type==='cheers'),'another room never receives cheers');
+  const http=await f.request(path+'/cheers?after='+before.data.cursor,{roomToken:second.token,cookie:otherToken});assert.deepEqual(http.data.cheers,received.data.cheers);
+  a.send({type:'cheer',data:{id:cheerId(12),emote:'cat'}});a.send({type:'cheer',data:{id:cheerId(13),emote:'bad'}});
+  assert.equal((await a.next(m=>m.type==='cheer-error'&&m.id===cheerId(13))).code,'INVALID_CHEER');
+  assert.equal(b.messages.filter(m=>m.type==='cheers').length,1,'duplicate emits no empty/repeated push');
+  for(const n of [14,15])a.send({type:'cheer',data:{id:cheerId(n),emote:'star'}});
+  await b.next(m=>m.type==='cheers'&&m.data.cheers.some(c=>c.id===cheerId(15)));
+  a.send({type:'cheer',data:{id:cheerId(16),emote:'star'}});
+  const limited=await a.next(m=>m.type==='cheer-error'&&m.id===cheerId(16));assert.equal(limited.status,429);assert.equal(limited.code,'CHEER_RATE_LIMIT');
+  assert.equal(a.ws.readyState,WebSocket.OPEN);assert.ok(!a.messages.some(m=>m.type==='error'));
+  assert.equal(b.messages.filter(m=>['room','cursors'].includes(m.type)).length,normalFrames,'cheers do not broadcast room or cursor snapshots');
+  editRoom(f,otherRoom.room.id,room=>{room.completedAt=Date.now();});
+  const isolated=await f.request('/api/rooms/'+otherRoom.room.id+'/cheers',{roomToken:otherRoom.token,method:'POST',body:{id:cheerId(17),emote:'popper'}});
+  assert.equal(isolated.status,200);assert.equal(isolated.data.cheers.length,1);assert.ok(isolated.data.cursor>received.data.cursor);
+ }finally{await f.close();}
+});
+
+test('diagnostic rooms retain their existing realtime admission and use ephemeral cheers',async()=>{
+ globalThis.__webRealtimeEnv.PUZZLE_DIAGNOSTIC_ACCOUNT_IDS=owner;
+ const f=await fixture();try{
+  const created=await f.request('/api/mobile/diagnostics/room',{method:'POST',body:{requestId:cheerId(100)}});assert.equal(created.status,201);
+  const ticket=created.data,a=await f.socket(ticket);await a.next(m=>m.type==='room');
+  a.send({type:'cheer',data:{id:cheerId(101),emote:'clap'}});assert.equal((await a.next(m=>m.type==='cheer-error')).code,'ROOM_NOT_COMPLETED');
+  const row=f.db.sql.prepare('SELECT data,revision FROM puzzle_diagnostic_rooms WHERE id=?').get(ticket.room.id),room=JSON.parse(row.data);room.completedAt=Date.now();
+  const data=JSON.stringify(room);f.db.sql.prepare('UPDATE puzzle_diagnostic_rooms SET data=? WHERE id=?').run(data,ticket.room.id);
+  a.send({type:'cheer',data:{id:cheerId(102),emote:'popper'}});await a.next(m=>m.type==='cheers'&&m.data.cheers.some(c=>c.id===cheerId(102)));
+  const unchanged=f.db.sql.prepare('SELECT data,revision FROM puzzle_diagnostic_rooms WHERE id=?').get(ticket.room.id);assert.equal(unchanged.data,data);assert.equal(unchanged.revision,row.revision);
+  assert.ok(!a.messages.some(m=>m.type==='error'));
+ }finally{await f.close();delete globalThis.__webRealtimeEnv.PUZZLE_DIAGNOSTIC_ACCOUNT_IDS;}
 });

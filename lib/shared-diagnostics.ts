@@ -7,6 +7,7 @@ import {worldFor,type PuzzleState} from './puzzle-engine';
 import {recordRoomChange,roomUpdate} from './room-sync';
 import {RoomWriteQueue} from './room-write-queue';
 import {securityLimit} from './account-security';
+import {CheerError,roomCheers} from './room-cheers';
 import {applySharedAction,disconnectSharedActions,clearSharedActionLease,requireSharedActionChannel,sharedActionStreamWrite,checkSharedActionFrontier,sharedActionFrontierCommand,type SharedActionResult} from './shared-actions';
 
 const writes=new RoomWriteQueue();
@@ -33,14 +34,20 @@ export async function createWebDiagnostic(request:Request,input:Record<string,an
 /** Same Cookie identity, HTTP transport, original engine and SQLite CAS as Web.
  * Saves are isolated so test placements cannot count as player achievements. */
 export async function webDiagnosticRoom(request:Request,path:string,input:Record<string,any>){
- const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|chat|assistance))?$/.exec(path);if(!match)return null;
+ const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|cheers|chat|assistance))?$/.exec(path);if(!match)return null;
  const started=performance.now(),id=match[1],part=match[2],db=localDb();
  let row=await db.prepare('SELECT * FROM puzzle_diagnostic_rooms WHERE id=?').bind(id).first<Row>();if(!row)return null;
  const account=await owner(request);if(row.owner!==account.id)throw new RoomError('该测试房间仅限创建账号使用',403);
  if(row.closed||row.expires_at<=Date.now())throw new RoomError('测试房间已重置，请重新创建',410);
  if(part==='join')return request.method==='POST'?json(ticket(row)):json({error:'请求方式无效'},405);
  const digest=await getDigest(request);let room=JSON.parse(row.data) as DiagnosticRoom;
- authenticate(room,digest,Date.now());
+ const member=authenticate(room,digest,Date.now());
+ if(part==='cheers'){
+  const now=Date.now();if(member.lastSeen<=0)throw new CheerError(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
+  if(request.method==='POST')roomCheers.putCheer(room,member,input,now);
+  else if(request.method!=='GET')return json({error:'请求方式无效'},405);
+  return json(roomCheers.cheersView(id,request.method==='POST'?input.after:new URL(request.url).searchParams.get('after'),now));
+ }
  if(part==='cursors'){
   const response=json({cursors:[],serverTime:Date.now()});response.headers.set('x-jigsaw-cursor-player',row.player_id);response.headers.set('x-jigsaw-cursor-world',JSON.stringify(worldFor(room.puzzle)));response.headers.set('x-jigsaw-cursor-sequences','[]');response.headers.set('x-jigsaw-realtime-actions','diagnostic');return response;
  }
