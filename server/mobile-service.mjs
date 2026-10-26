@@ -31,10 +31,11 @@ const fail=(status,code,message,extra={})=>{throw Object.assign(new Error(messag
 const requestKey=value=>typeof value==='string'&&/^[a-f0-9]{32}$/.test(value);
 const directionOf=photo=>{const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id)??photo;return d.width===d.height?'square':d.width>d.height?'landscape':'portrait';};
 // Keep the artwork aspect ratio and square piece bodies while respecting mobile limits.
-export function mobileGridForPhoto(photo,count){
- const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id);if(!d||!MOBILE_COUNTS.includes(count))return null;
+export function mobileGridForPhoto(photo,count,mode='gallery'){
+ const small=mode==='level'&&[12,16,20,24,30,35].includes(count);
+ const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id);if(!d||!MOBILE_COUNTS.includes(count)&&!small)return null;
  const fitted=engine.gridForDimensions(d.width,d.height,count);if(!fitted)return null;
- if(fitted.count>=48&&fitted.count<=500)return fitted;
+ if(small||fitted.count>=48&&fitted.count<=500)return fitted;
  const ratio=d.width/d.height,floor=count<=108?20:30,span=Math.ceil(Math.sqrt(count*Math.max(ratio,1/ratio)))*2+4;let best=null;
  for(let rows=2;rows<=span;rows++)for(let cols=2;cols<=span;cols++){
   const total=cols*rows,pixels=Math.min(Math.floor(d.width/cols),Math.floor(d.height/rows));
@@ -291,6 +292,13 @@ export function createMobileService(options={}){
    if(result.changes){events.record(p.id,'room-complete',room.id,{contribution:reward.contribution},now);const collected=collection.complete(p.id,room,reward.contribution,now);p.energy+=reward.energy;p.lastReward={...p.lastReward,completion:{roomId:room.id,...reward,...(collected??{})},at:now};}
    if(p.firstRoomId===room.id)p.firstRoomCompleted=true;saveProfile(p);
   }
+  if(room.mobileMode==='level'){
+   const p=room.ownerId===current.id?current:readProfile(room.ownerId,now),configuredEnergy=energyEnabled?levelConfiguration.firstClearEnergy:0;
+   const firstClear=levels.recordClear(p.id,room.mobileLevelId,room.id,now,configuredEnergy),energy=firstClear?configuredEnergy:0;
+   const ordered=levelConfiguration.chapters.flatMap(chapter=>chapter.pieces.map((_,index)=>chapter.id+'-'+(index+1))),index=ordered.indexOf(room.mobileLevelId),nextLevelId=index<0?null:ordered[index+1]??null;
+   p.energy+=energy;p.lastReward={...p.lastReward,levelClear:{levelId:room.mobileLevelId,energy,firstClear,nextLevelId},at:now};saveProfile(p);
+   events.record(p.id,'level-clear',room.id,{levelId:room.mobileLevelId,firstClear,energy},now);
+  }
   for(const row of db.prepare('SELECT id,data FROM mobile_profiles').all()){const p=row.id===current.id?current:JSON.parse(row.data);if(p.firstRoomId===room.id&&!p.firstRoomCompleted){p.firstRoomCompleted=true;saveProfile(p);}}
   room.mobileSettled=true;
  }
@@ -424,28 +432,39 @@ export function createMobileService(options={}){
    return {rooms:page.map(c=>({...c,members:seated(byId.get(c.id))})),nextCursor,total,online:social.onlineCount(now),dailyFinished:dailyFinishedCount(now),serverTime:now,mode:'mobile-v3-isolated'};
   }
   if(path==='/api/rooms'&&method==='POST')return replay(p,'create-room',input,now,()=>{
-   const mode=input.mode??'selected',pieces=mode==='daily'?108:input.pieces,visibility=input.visibility??'public';
-   if(!['random','selected','daily'].includes(mode)||!MOBILE_COUNTS.includes(pieces)||!['public','private'].includes(visibility))fail(400,'INVALID_ROOM_OPTIONS','请选择48、108、300或500片及有效房间类型');
+   const mode=input.mode??'selected';let level;
+   if(mode==='level'){
+    level=levels.view(p.id,now).chapters.flatMap(chapter=>chapter.levels).find(item=>item.id===input.levelId);
+    if(!level)fail(400,'INVALID_LEVEL','请选择有效关卡');
+    if(level.status==='unavailable')fail(409,'LEVEL_UNAVAILABLE','关卡暂不可用');
+    if(level.status==='locked')fail(403,'LEVEL_LOCKED','请先完成前一关');
+    const existing=db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC').all(p.id).map(row=>JSON.parse(row.data)).find(room=>room.mobileMode==='level'&&room.mobileLevelId===level.id&&room.expiresAt>now);
+    if(existing)return join(existing,p,{},now,request);
+   }
+   const pieces=level?level.pieces:mode==='daily'?108:input.pieces,visibility=level?'private':input.visibility??'public';
+   if(!['random','selected','daily','level'].includes(mode)||!level&&!MOBILE_COUNTS.includes(pieces)||!['public','private'].includes(visibility))fail(400,'INVALID_ROOM_OPTIONS','请选择48、108、300或500片及有效房间类型');
    if(mode==='daily'&&visibility!=='public')fail(400,'INVALID_ROOM_OPTIONS','每日拼图为公开房间');
    const direction=input.direction??'all';if(!['all','portrait','landscape','square'].includes(direction))fail(400,'INVALID_DIRECTION','图片方向无效');
    let photo;
-   if(mode==='daily')photo=dailyContent?.select(now)??engine.dailyPuzzle(now);
+   if(level)photo=engine.RESTORABLE_PHOTOS.find(photo=>photo.id===level.imageId);
+   else if(mode==='daily')photo=dailyContent?.select(now)??engine.dailyPuzzle(now);
    else if(mode==='random'){
     if(input.imageId)fail(400,'RANDOM_IMAGE_NOT_SELECTABLE','随机模式不能指定图片');
     const pool=galleryPhotos(now).filter(photo=>{const bound={...photo,...creationArtwork(photo,pieces,request)};return collection.randomAllowed(p.id,photo.id,now)&&mobileGridForPhoto(bound,pieces)&&(direction==='all'||directionOf(bound)===direction);});if(!pool.length)fail(400,'NO_IMAGE_AVAILABLE','该条件下没有可用图片');photo=pool[randomInt(0,pool.length)];
    }else photo=galleryPhotos(now).find(p=>p.id===input.imageId);
    if(!photo)fail(400,'INVALID_IMAGE','请选择可用图片');
    if(!web&&mode==='selected'&&collection.packedImageIds(now).includes(photo.id)&&!collection.freeImageIds(now).includes(photo.id)&&!collection.ownsImage(p.id,photo.id,now))fail(403,'PACK_LOCKED','这张图在未解锁的图包里，请先解锁图包');
-   const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
+   const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces,mode);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
    if(mode==='daily'){
     const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(now)&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<8&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
     if(existing)return join(existing,p,{},now,request);
    }
-   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;if(owned>=3)fail(409,'ROOM_LIMIT','最多保留3个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
-   const needsTicket=!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
+   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,\'$.mobileMode\') IS NOT \'level\' AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;if(mode!=='level'&&owned>=3)fail(409,'ROOM_LIMIT','最多保留3个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
+   const needsTicket=mode!=='level'&&!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
    if(needsTicket&&!starter&&p.supply.create<1)fail(402,'CREATE_TICKET_REQUIRED','需要1张建房券');
    const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(now):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
-   if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);events.record(p.id,'room-create',room.id,{mode,pieces,visibility},now);return join(room,p,{},now,request);
+   if(level)room.mobileLevelId=level.id;
+   if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);events.record(p.id,'room-create',room.id,{mode,pieces,visibility},now);if(level)events.record(p.id,'level-start',room.id,{levelId:level.id,pieces},now);return join(room,p,{},now,request);
   });
   const match=/^\/api\/rooms\/([a-f0-9]{32})(?:\/(join|cursors|cheers|chat|assistance|management|continuation|invitation|tap-preview))?$/.exec(path);
   if(!match)fail(404,'NOT_FOUND','接口不存在');const room=readRoom(match[1]),part=match[2];
