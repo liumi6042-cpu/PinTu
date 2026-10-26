@@ -10,6 +10,7 @@ import {collectionDecorationRewardHints} from './collection-copy';
 import {boardThemeColors,isThemeId,landscapeRoomColors as roomColors,type ThemeId} from './theme';
 import {roomRoundPath} from './room-chrome';
 import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-client';
+import {flushStoredSoloOutboxes} from '../lib/solo-play';
 import {CursorClient} from '../lib/cursor-client';
 import {CheerClient,CHEER_LABELS} from './cheer-client';
 import {CHEER_EMOTES,type CheerEmote} from '../lib/room-realtime';
@@ -66,6 +67,7 @@ export class GameApp{
  private routeFrames:ListView[]=[];private savedRoutes=new Map<Route,ListView>();private listOwner?:string;private roomReturn:ListView|null=null;private roomReturnStack:Route[]=[];private roomReturnFrames:ListView[]=[];
  private ready=false;private destroyed=false;private busy=false;private sharing=false;private message='';private messageUntil=0;
  private startupPending:Promise<void>|null=null;private startupError='';private startupHooks=false;private startupQuery:Record<string,string>|null=null;
+ private soloOutboxesFlushed=false;
  private privacyAccepted=false;private privacyDocument:'privacy'|'terms'|null=null;private privacyRefused=false;private privacyEpoch=0;private authorizationTesting=false;private loginDialogActive=false;private authorizationNudged=false;private loginLogOpen=false;private loginLogReturnScroll=0;
  private identityHook=false;private consentPreparing=false;private consentError='';
  private privacyRequests:PrivacyRequest[]=[];private privacyRequestsLoading=false;
@@ -238,12 +240,12 @@ export class GameApp{
   if(!this.startupHooks){
    this.startupHooks=true;
    this.client.onChange=()=>{if(this.destroyed)return;const owner=this.ownerKey();this.ensureListOwner();if(owner!==this.lastDataOwner){this.lastDataOwner=owner;this.pendingViews?.invalidate();this.historyRooms=null;this.historySerial++;this.historyLoading=false;this.historyError='';this.tasks=null;this.collection=null;this.galleryIds=null;this.freeGalleryIds=null;this.sharedPhotos=null;this.selected=null;}if(this.formalWeb&&this.client.authRequired){this.ready=false;this.stage.input?.({type:'cancel',points:[],changed:[]});this.pointer=null;this.modal=null;this.leaveRoom();this.route='lobby';}else if(this.formalWeb&&this.room&&!this.client.ticket){this.modal=null;this.leaveRoom();this.navigate('lobby');this.note('账号已切换，请重新进入房间');}this.invalidate();};
-   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});void this.social.refresh();void this.handleQuery(query);}this.invalidate();}));
+   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});void this.social.refresh();void this.handleQuery(query);}this.invalidate();}));
   }
   this.startupError='';this.invalidate();
   const epoch=this.privacyEpoch;
   this.startupPending=(async()=>{
-  try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;this.ready=true;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);}
+  try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;if(this.client.profile&&!this.soloOutboxesFlushed){this.soloOutboxesFlushed=true;void flushStoredSoloOutboxes({storage:this.platform.storage,fetch:this.client.fetchLike,now:()=>Date.now(),randomId:()=>this.platform.randomId(),skipRoomId:this.room?.ticket.room.id}).catch(()=>{});}this.ready=true;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);}
   catch(error){if(!this.destroyed){this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
@@ -441,7 +443,7 @@ export class GameApp{
   const source=this.saveListView();if(source.route!=='room'){this.roomReturn=source;this.roomReturnStack=[...this.routeStack];this.roomReturnFrames=[...this.routeFrames];}
   this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;
   const realtime=this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision)??null;this.realtime=realtime;
-  const room=new RoomClient(ticket,{fetch:this.client.fetchLike,realtime:realtime??undefined,profile:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+  const room=new RoomClient(ticket,{solo:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:this.client.fetchLike,realtime:realtime??undefined,profile:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='puzzle:successful-drop'&&this.room===room)this.board?.confirmMobileContribution(detail as MobileContributionReceipt);
    if(name==='mobile:profile')this.invalidate();
    if(name==='room:request-timing'&&this.room===room){const timing=detail as RoomRequestTiming;if(timing.action==='drop-start'){for(const key of ['drop','drop-queue','drop-total'])this.nineTimings.delete(key);}this.nineTimings.set(timing.action,timing);this.invalidate();}
