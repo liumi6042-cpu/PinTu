@@ -1,6 +1,6 @@
 import type {CursorInput,SharedCursor} from '../lib/room-cursors';
 import type {RoomSnapshot} from '../lib/room-engine';
-import type {ManagedRoomRealtime,RealtimeActionInput,RealtimeActionReply} from '../lib/room-realtime';
+import type {CheerEmote,CheerSnapshot,ManagedRoomRealtime,RealtimeActionInput,RealtimeActionReply} from '../lib/room-realtime';
 import {applyRoomUpdate} from '../lib/room-sync';
 import type {MovePreview,RoomPreview,TapPreviewDescriptor} from '../lib/room-preview';
 import {validTapPlatformId,normalizeTapPlatformId} from '../lib/tap-platform-id.mjs';
@@ -98,6 +98,8 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
  private activeMembers(){return this.room.members.filter(m=>m.lastSeen>0&&this.serverNow()-m.lastSeen<22000);}
  subscribeRoom:ManagedRoomRealtime['subscribeRoom']=fn=>this.opts.authority.subscribeRoom(fn);
  subscribeState:ManagedRoomRealtime['subscribeState']=fn=>this.opts.authority.subscribeState(fn);
+ subscribeCheers(fn:(data:CheerSnapshot)=>void){return this.opts.authority.subscribeCheers?.(fn)??(()=>{});}
+ sendCheer(data:{id:string;emote:CheerEmote}){return this.opts.authority.sendCheer?.(data)??false;}
  subscribeCursors:ManagedRoomRealtime['subscribeCursors']=fn=>{this.cursorListeners.add(fn);return()=>{this.cursorListeners.delete(fn);};};
  subscribeMoves(fn:(moves:MovePreview[])=>void){this.moveListeners.add(fn);return()=>{this.moveListeners.delete(fn);};}
  async sendAction(input:RealtimeActionInput):Promise<RealtimeActionReply>{

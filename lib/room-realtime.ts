@@ -3,6 +3,19 @@ import type {CursorInput,SharedCursor} from './room-cursors';
 import type {RoomPreview} from './room-preview';
 
 export type CursorSnapshot={cursors:SharedCursor[];serverTime?:number};
+export const CHEER_EMOTES=['clap','popper','heart','star','tea','cat'] as const;
+export type CheerEmote=typeof CHEER_EMOTES[number];
+export type Cheer={seq:number;id:string;playerId:string;name:string;emote:CheerEmote;at:number};
+export type CheerSnapshot={cheers:Cheer[];cursor:number;serverTime:number};
+/** Shared validation for ephemeral WS pushes and HTTP fallback responses. */
+export function parseCheerSnapshot(value:unknown):CheerSnapshot|null{
+ if(!value||typeof value!=='object'||Array.isArray(value))return null;
+ const data=value as CheerSnapshot;
+ if(!Array.isArray(data.cheers)||data.cheers.length>60||!Number.isSafeInteger(data.cursor)||!Number.isFinite(data.serverTime))return null;
+ const cheers=data.cheers.filter((item):item is Cheer=>!!item&&typeof item==='object'&&!Array.isArray(item)&&
+  Number.isSafeInteger(item.seq)&&typeof item.id==='string'&&/^[a-f0-9]{32}$/.test(item.id)&&typeof item.playerId==='string'&&typeof item.name==='string'&&CHEER_EMOTES.includes(item.emote)&&Number.isFinite(item.at));
+ return {cheers,cursor:data.cursor,serverTime:data.serverTime};
+}
 export type RealtimeActionInput={id:string;clientId:string;gestureId:string;ordinal:number;action:{type:'claim'|'move'|'drop'|'release';groupId:number;seq?:number;dx?:number;dy?:number};since?:number};
 export type RealtimeActionReply={status:number;data:any};
 export type RealtimeActionError=Error&{code:string;sent:boolean};
@@ -18,8 +31,10 @@ export type RealtimeRoomStream={
  resetActions?():void;
  subscribeRoom(listener:(data:RoomUpdate)=>void):()=>void;
  subscribeCursors(listener:(data:CursorSnapshot)=>void):()=>void;
+ subscribeCheers?(listener:(data:CheerSnapshot)=>void):()=>void;
  subscribeState(listener:(connected:boolean)=>void):()=>void;
  sendCursor(data:CursorInput):boolean;
+ sendCheer?(data:{id:string;emote:CheerEmote}):boolean;
 };
 export type ManagedRoomRealtime=RealtimeRoomStream&{start():void;setHidden(hidden:boolean):void;close():void;diagnostics():Record<string,unknown>;setPreviewSendHz?(hz:number):void;resetPreviewStats?():void};
 type Credentials={roomId:string;token:string;session?:string;since?:number};
@@ -45,7 +60,8 @@ export class RoomRealtime implements RealtimeRoomStream{
  private actionDiagnosticOnly=true;
  private pendingActions=new Map<string,{resolve:(reply:RealtimeActionReply)=>void;reject:(error:RealtimeActionError)=>void;timer:ReturnType<typeof setTimeout>}>();
  private roomListeners=new Set<(data:RoomUpdate)=>void>();private cursorListeners=new Set<(data:CursorSnapshot)=>void>();private stateListeners=new Set<(connected:boolean)=>void>();
- private counts={connections:0,roomMessages:0,cursorMessages:0,sentCursors:0,reconnects:0};private lastError='';
+ private cheerListeners=new Set<(data:CheerSnapshot)=>void>();
+ private counts={connections:0,roomMessages:0,cursorMessages:0,sentCursors:0,cheerMessages:0,sentCheers:0,cheerErrors:0,reconnects:0};private lastError='';
  private readonly options:Options;
  constructor(options:Options){this.options=options;}
  get connected(){return this.online;}
@@ -55,6 +71,7 @@ export class RoomRealtime implements RealtimeRoomStream{
  resetActions(){this.disconnect(true,'ACTION_TRANSPORT_RESET');}
  subscribeRoom(listener:(data:RoomUpdate)=>void){this.roomListeners.add(listener);return()=>{this.roomListeners.delete(listener);};}
  subscribeCursors(listener:(data:CursorSnapshot)=>void){this.cursorListeners.add(listener);return()=>{this.cursorListeners.delete(listener);};}
+ subscribeCheers(listener:(data:CheerSnapshot)=>void){this.cheerListeners.add(listener);return()=>{this.cheerListeners.delete(listener);};}
  subscribeState(listener:(connected:boolean)=>void){this.stateListeners.add(listener);return()=>{this.stateListeners.delete(listener);};}
  private now(){return this.options.now?.()??Date.now();}
  private state(value:boolean){if(this.online===value)return;this.online=value;for(const listener of this.stateListeners)listener(value);}
@@ -100,6 +117,11 @@ export class RoomRealtime implements RealtimeRoomStream{
    const pending=this.pendingActions.get(message.id);if(!pending)return;this.pendingActions.delete(message.id);clearTimeout(pending.timer);pending.resolve({status:message.status,data:message.data});return;
   }
   if(message.type==='pong')return;
+  if(message.type==='cheer-error'){this.counts.cheerErrors++;return;}
+  if(message.type==='cheers'){
+   const data=parseCheerSnapshot(message.data);if(!data)return;
+   this.counts.cheerMessages++;for(const listener of this.cheerListeners){try{listener(data);}catch{}}return;
+  }
   if(message.type==='error'){
    if([401,403,404,410].includes(message.status))this.terminal=true;
    this.lastError=typeof message.code==='string'?message.code:'server-error';this.disconnect(true);return;
@@ -128,5 +150,6 @@ export class RoomRealtime implements RealtimeRoomStream{
   });
  }
  sendCursor(data:CursorInput){if(!this.online||!this.socket||this.hidden||this.stopped)return false;try{this.socket.send(JSON.stringify({type:'cursor',data}));this.counts.sentCursors++;return true;}catch{this.disconnect(true);return false;}}
- close(){if(this.stopped)return;this.stopped=true;this.disconnect(false);this.roomListeners.clear();this.cursorListeners.clear();this.stateListeners.clear();}
+ sendCheer(data:{id:string;emote:CheerEmote}){if(!this.online||!this.socket||this.hidden||this.stopped)return false;try{this.socket.send(JSON.stringify({type:'cheer',data}));this.counts.sentCheers++;return true;}catch{this.disconnect(true);return false;}}
+ close(){if(this.stopped)return;this.stopped=true;this.disconnect(false);this.roomListeners.clear();this.cursorListeners.clear();this.cheerListeners.clear();this.stateListeners.clear();}
 }
