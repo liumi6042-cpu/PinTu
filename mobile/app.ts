@@ -76,7 +76,7 @@ export class GameApp{
  private room:RoomClient|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
  private realtime:ManagedRoomRealtime|null=null;
- private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;
+ private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;private desktopToolsOpen=true;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
  private roomArea:Rect={x:0,y:0,w:0,h:0};private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';
  private aid:{grants:AssistanceGrant[];freeRemaining?:{hint:number;underlay:number};newcomerProtected?:boolean;serverTime:number}|null=null;
@@ -110,6 +110,7 @@ export class GameApp{
   const saved=platform.storage.get('jigsaw:shared:theme:'+platform.config.apiBase);stage.setTheme(isThemeId(saved)?saved:'light');if(platform.canvas.style)platform.canvas.style.colorScheme=stage.theme==='dark'?'dark':'light';
   this.renderMode=platform.storage.get('jigsaw:shared:performance:'+platform.config.apiBase)==='power-saving'?'power-saving':'smooth';
   this.roomPanelCollapsed=platform.storage.get('jigsaw:room-panel-collapsed:v1')==='1';
+  this.desktopToolsOpen=platform.storage.get('jigsaw:desktop-tools-open:v1')!=='0';
   this.landscapeToolsOpen=platform.storage.get('jigsaw:landscape-tools-open:v1')==='1';
   this.audioSettings=new AudioSettings(platform);
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>{
@@ -1260,10 +1261,10 @@ export class GameApp{
   const visible=!this.hidden&&!this.modalBlocksInput;if(visible!==this.cursorVisible){this.cursorVisible=visible;if(visible)this.cursor?.refresh();else this.clearRoomPointer();}
   const layout=this.layout,c=s.ctx,safeBottom=s.h-view.bottom,headerTop=this.roomHeaderTop();
   if(layout==='desktop'){
-   const rail=84,panel=this.roomPanelCollapsed?32:300,bar=60;this.roomArea={x:rail,y:bar,w:s.w-rail-panel,h:s.h-bar};
-   this.placeBoard(board,0,()=>board.fit(false,{bottom:56}));
-   c.fillStyle=this.colors.cream;c.fillRect(0,0,s.w,bar);c.fillRect(0,bar,rail,s.h-bar);c.fillStyle=this.colors.line;c.fillRect(0,bar-1,s.w,1);c.fillRect(rail-1,bar,1,s.h-bar);
-   this.drawRoomTopBar({x:0,y:0,w:s.w,h:bar},'desktop');this.drawToolRail({x:0,y:bar,w:rail,h:s.h-bar});
+   const panel=this.roomPanelCollapsed?32:300,bar=60;this.roomArea={x:0,y:bar,w:s.w-panel,h:s.h-bar};
+   this.placeBoard(board,0,()=>this.desktopFit(board));
+   c.fillStyle=this.colors.cream;c.fillRect(0,0,s.w,bar);c.fillStyle=this.colors.line;c.fillRect(0,bar-1,s.w,1);
+   this.drawRoomTopBar({x:0,y:0,w:s.w,h:bar},'desktop');this.drawDesktopTools(this.roomArea.x+12,bar+12,safeBottom);
    if(!this.roomPanelCollapsed)this.drawRoomPanel({x:s.w-panel,y:bar,w:panel,h:s.h-bar});
    s.button({x:s.w-panel,y:bar+4,w:32,h:32},this.roomPanelCollapsed?'\u2039':'\u203a',()=>this.setRoomPanelCollapsed(!this.roomPanelCollapsed),{fontSize:22});
    this.drawRoomGift(this.roomArea.x+10,safeBottom-62,true);this.drawZoomControl(this.roomArea.x+this.roomArea.w-150,safeBottom-50);
@@ -1297,7 +1298,8 @@ export class GameApp{
   board.selfDecoration=this.client.profile?.collection?.equipped??null;board.previewTopInset=topInset;board.setRect(this.roomArea);
   if(this.roomViewPending){fit();this.roomZoomBase=board.camera.z;this.roomViewPending=false;}board.draw(this.stage.ctx);
  }
- private fitRoom(){const board=this.board;if(!board)return;if(this.layout==='desktop')board.fit(false,{bottom:56});else this.phoneFit(board,this.layout==='phonePortrait'?'width':'height');this.roomZoomBase=board.camera.z;}
+ private desktopFit(board:PuzzleBoard){board.fit(false,{bottom:56,left:this.desktopToolsOpen?104:72});}
+ private fitRoom(){const board=this.board;if(!board)return;if(this.layout==='desktop')this.desktopFit(board);else this.phoneFit(board,this.layout==='phonePortrait'?'width':'height');this.roomZoomBase=board.camera.z;}
  /** Phones open on the target itself (full width in portrait, full height in landscape) instead of the whole scatter. */
  private phoneFit(board:PuzzleBoard,axis:'width'|'height'){
   board.openMobileView({bottom:axis==='width'?72:8});if(board.state.groups.every(g=>g.locked))return;
@@ -1319,9 +1321,13 @@ export class GameApp{
   c.fillStyle=s.color(ad?'#ba667e':active?'#fae7b8':pending?'#eee7db':'#f2efd8');c.fillRect(bx,y,bw,16);s.text(badge,bx+4,y+2,10,ad?'#fffaf0':active?'#83542f':'#7a7244',600,bw-6);
  }
  private roomIcon(kind:string){return kind==='orientation'?'orientation':kind==='organize'?'piece':kind==='more'?'tools':kind==='chat'?'chat':kind;}
- private drawToolRail(r:Rect){
-  const s=this.stage,items=[...this.roomTools,['more','更多','']] as const,h=Math.min(78,(r.h-16)/items.length);this.roomToolsArea={...r};
-  items.forEach(([kind,label,key],index)=>{const b={x:r.x+8,y:r.y+10+index*h,w:r.w-16,h:h-8},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
+ private drawDesktopTools(x:number,y:number,safeBottom:number){
+  const s=this.stage;
+  if(!this.desktopToolsOpen){const toggle={x,y,w:48,h:48};this.roomToolsArea=toggle;s.frame(toggle,'button-cream-normal');s.icon('tools',{x:x+12,y:y+6,w:24,h:24});s.text('T',x+20,y+31,11,this.colors.muted,700);s.hit(toggle,()=>this.setDesktopToolsOpen(true));return;}
+  const items=[...this.roomTools,['more','更多','']] as const,header=36,padding=8,available=safeBottom-80-y-header-padding,h=Math.min(66,available/items.length),r={x,y,w:80,h:header+items.length*h+padding};this.roomToolsArea=r;
+  s.hit(r,()=>{});this.drawLandscapeSurface(r,10,this.colors.cream,this.colors.line,1,2);
+  s.text('工具',x+10,y+12,12,this.colors.ink,700);s.button({x:x+r.w-34,y:y+4,w:28,h:28},'‹',()=>this.setDesktopToolsOpen(false),{fontSize:22});
+  items.forEach(([kind,label,key],index)=>{const b={x:r.x+8,y:r.y+header+index*h,w:r.w-16,h:h-8},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
    s.frame(b,active?'button-cream-selected':disabled?'button-cream-disabled':'button-cream-normal');s.icon(this.roomIcon(kind),{x:b.x+(b.w-26)/2,y:b.y+8,w:26,h:26});const text=label+(key?' '+key:'');s.text(label,b.x+(b.w-s.measure(text,12,700))/2,b.y+b.h-21,12,disabled?this.colors.disabled:this.colors.ink,700);if(key)s.text(key,b.x+(b.w+s.measure(text,12,700))/2-s.measure(key,11,700),b.y+b.h-20,11,this.colors.muted,700);
    this.drawAidBadge(kind,b.x+b.w+4,b.y-4);if(!disabled)s.hit(b,()=>this.roomTool(kind));});
  }
@@ -1356,6 +1362,9 @@ export class GameApp{
  }
  private setLandscapeToolsOpen(open:boolean){
   if(this.landscapeToolsOpen===open)return;this.clearRoomPointer();this.landscapeToolsOpen=open;this.platform.storage.set('jigsaw:landscape-tools-open:v1',open?'1':'0');this.roomViewPending=true;this.invalidate();
+ }
+ private setDesktopToolsOpen(open:boolean){
+  if(this.desktopToolsOpen===open)return;this.clearRoomPointer();this.desktopToolsOpen=open;this.platform.storage.set('jigsaw:desktop-tools-open:v1',open?'1':'0');this.invalidate();
  }
  private roomToolsArea:Rect={x:0,y:0,w:0,h:0};private roomMembersArea:Rect={x:0,y:0,w:0,h:0};
  private get chatUnread(){return this.messages.filter(message=>message.id>this.chatSeen&&message.code!==this.client.profile?.code&&!this.social.blockedCodes.includes(message.code)).length;}
@@ -1657,7 +1666,7 @@ export class GameApp{
     cy=this.drawAudioLevel('effects','游戏音效',left,cy,width);
     cy=this.paragraph('控制拼合、金币等游戏音效，设置会自动记住。',left,cy,width,12)+18;
     s.text('画面',left,cy,15,this.colors.ink,750);cy+=28;this.rowOptions([['smooth','流畅'],['power-saving','省电']],this.performanceMode,left,cy,width,value=>this.setPerformanceMode(value),39);cy+=48;cy=this.paragraph(this.performanceMode==='power-saving'?'持续画面最高30帧，拖动流畅度略有降低。':'跟随设备正常刷新频率，优先保证拖动流畅。',left,cy,width,12)+18;
-    if(this.platform.config.id==='web'||this.desktop||this.platform.config.id==='taptap'){heading('操作');if(this.desktop){cy=this.paragraph('快捷键（电脑）：E 边缘 · H 提示 · B 底图 · F 适配 · '+(this.soloRoom?'R 整理 · ':'')+'空格或中键拖动平移 · 滚轮缩放 · Esc 返回',left,cy,width,12)+12;}
+    if(this.platform.config.id==='web'||this.desktop||this.platform.config.id==='taptap'){heading('操作');if(this.desktop){cy=this.paragraph('快捷键（电脑）：E 边缘 · H 提示 · B 底图 · F 适配 · '+(this.soloRoom?'R 整理 · ':'')+'T 收起/展开工具 · 空格或中键拖动平移 · 滚轮缩放 · Esc 返回',left,cy,width,12)+12;}
      if(this.platform.config.id==='web'&&this.platform.fullscreen?.available()){this.button(left,cy,width,this.platform.fullscreen.active()?'退出全屏':'全屏',()=>void this.toggleFullscreen(),'cream',39);cy+=51;}
     if(this.platform.config.id==='taptap'){this.button(left,cy,width,this.stage.w>this.stage.h?'切换竖屏':'切换横屏',()=>void this.toggleOrientation(),'cream',39);cy+=51;}
     }
@@ -1776,7 +1785,7 @@ export class GameApp{
   const point=input.changed[0]??input.points[0];
   if(input.type==='key'){
    if(input.key==='Escape'&&input.keyDown){if(this.modal==='packPreview'&&this.previewIndex>=0){this.returnToPackGrid();return true;}this.cancelChatPress();const handled=this.board?.input(input)??false;this.pointer=null;this.stage.input({type:'cancel',points:[],changed:[]});if(this.modal){this.showModal(null);return true;}if(this.toolsOpen){this.toolsOpen=false;this.invalidate();return true;}if(this.route!=='room'&&this.route!=='lobby'){this.back();return true;}return handled;}
-   if(this.route==='room'&&!this.modalBlocksInput&&input.keyDown&&!input.repeat&&input.key){const tool=({e:'edge',h:'hint',b:'underlay',f:'fit',r:'organize'} as Record<string,string>)[input.key.toLowerCase()];if(tool&&(tool!=='organize'||this.soloRoom)){this.roomTool(tool);return true;}}
+   if(this.route==='room'&&!this.modalBlocksInput&&input.keyDown&&!input.repeat&&input.key){const key=input.key.toLowerCase();if(key==='t'&&this.layout==='desktop'){this.setDesktopToolsOpen(!this.desktopToolsOpen);return true;}const tool=({e:'edge',h:'hint',b:'underlay',f:'fit',r:'organize'} as Record<string,string>)[key];if(tool&&(tool!=='organize'||this.soloRoom)){this.roomTool(tool);return true;}}
    return this.route==='room'&&!this.modalBlocksInput?this.board?.input(input)??false:false;
   }
   if(input.type==='move'&&this.platform.canvas.style&&point){this.platform.canvas.style.cursor=this.pointer?.board?'grabbing':this.stage.hasHit(point.x,point.y)?'pointer':this.route==='room'&&inside(this.roomArea,point.x,point.y)&&!this.modalBlocksInput?'grab':'default';}

@@ -229,7 +229,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     if(!keyDown&&event.code==='Space')space=false;
     // Native text dialogs own their keyboard; game shortcuts must not consume typing.
     const target=document.activeElement;if(textPromptOpen||(target&&target!==canvas&&target!==document.body)||event.ctrlKey||event.metaKey||event.altKey)return;
-    if(event.code!=='Space'&&event.key!=='Escape'&&!/^Key[EHBFR]$/.test(event.code))return;
+    if(event.code!=='Space'&&event.key!=='Escape'&&!/^Key[EHBFRT]$/.test(event.code))return;
     event.preventDefault();if(event.code==='Space')space=keyDown;
     fn({type:'key',points:[],changed:[],key:event.code==='Space'?' ':event.code.startsWith('Key')?event.code.slice(3).toLowerCase():event.key,keyDown,repeat:event.repeat});
    };
