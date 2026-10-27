@@ -67,6 +67,7 @@ test('speech bubbles wrap to at most two lines and only then ellipsize',()=>{
  const short=bubble('这就是奶奶的店');assert.deepEqual(short.map(glyph=>glyph.value),['这就是奶奶的店']);
  const long='爷'.repeat(30),wrapped=bubble(long);assert.equal(wrapped.length,2);assert.equal(wrapped.map(glyph=>glyph.value).join(''),long);assert.ok(wrapped[1].y>wrapped[0].y);
  const longer='爷'.repeat(60),capped=bubble(longer);assert.equal(capped.length,2);assert.ok(capped[0].value.length<60);
+ const fits=wrapped[0].value.length,punct=bubble('爷'.repeat(fits)+'。');assert.equal(punct.length,2);assert.ok(!punct[1].value.startsWith('。'));assert.equal(punct[1].value,'爷。');assert.equal(punct.map(glyph=>glyph.value).join(''),'爷'.repeat(fits)+'。');
 });
 test('chapter uses the lobby header without phone navigation and handles canvas filter and dash support being absent in a dark palette',async()=>{
  for(const [width,height]of [[390,844],[844,390]]){
