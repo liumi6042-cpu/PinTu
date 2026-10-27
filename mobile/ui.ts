@@ -6,6 +6,7 @@ import {mobileSymbolPaths} from '../h5/mobile-symbol-paths';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import {lightThemeColors,themeColors,themeUiColor,themeFrameColor,themeTextColor,type ThemeId} from './theme';
 import {StageImageCache} from './image-cache';
+import {cropCover,type ComicCrop} from './story-comic';
 
 // Compatibility for existing imports; each Stage owns its active theme.
 export const palette=lightThemeColors;
@@ -93,6 +94,20 @@ export class Stage{
  clip(r:Rect,draw:()=>void){this.ctx.save();this.ctx.beginPath();this.ctx.rect(r.x,r.y,r.w,r.h);this.ctx.clip();this.clips.push({...r,x:r.x+this.offset.x,y:r.y+this.offset.y});try{draw();}finally{this.clips.pop();this.ctx.restore();}}
  retryImages(){this.images.retryFailed();this.invalidate();}
  private load(src:string){const ui=src.startsWith('/mobile-icons/'),extra=/b2-(supply-scenes|pixel-atlas)\.png$/.test(src);const url=ui?(extra?'art/':'assets/ui/')+src.split('/').pop():src.startsWith('/')?this.asset(src):src;return this.images.use(url,ui);}
+ /** Reuse either cached resolution; an unavailable image never blocks the page. */
+ comicImage(src:string,thumb:string,r:Rect,crop:ComicCrop,zoom=1,decoded?:HTMLCanvasElement|null){
+  const key=(value:string)=>value.startsWith('/')?this.asset(value):value;
+  const cached=(src?this.images.cached(key(src)):undefined)??(thumb?this.images.cached(key(thumb)):undefined);
+  const pending=!decoded&&!cached&&(thumb||src)?this.load(thumb||src):undefined;
+  const image=decoded??cached?.image??(pending?.loaded?pending.image:undefined);
+  if(!image){this.ctx.fillStyle=this.palette.placeholder;this.ctx.fillRect(r.x,r.y,r.w,r.h);return;}
+  const iw=('naturalWidth'in image?image.naturalWidth:0)||image.width,ih=('naturalHeight'in image?image.naturalHeight:0)||image.height,cover=cropCover(iw,ih,crop,r),raw={x:crop[0]*iw,y:crop[1]*ih,w:crop[2]*iw,h:crop[3]*ih},source={x:raw.x+(cover.x-raw.x)*zoom,y:raw.y+(cover.y-raw.y)*zoom,w:raw.w+(cover.w-raw.w)*zoom,h:raw.h+(cover.h-raw.h)*zoom};
+  this.clip(r,()=>this.ctx.drawImage(image,source.x,source.y,source.w,source.h,r.x,r.y,r.w,r.h));
+ }
+ comicImageSize(src:string,thumb:string,decoded?:HTMLCanvasElement|null){
+  const key=(value:string)=>value.startsWith('/')?this.asset(value):value,image=decoded??(src?this.images.cached(key(src))?.image:undefined)??(thumb?this.images.cached(key(thumb))?.image:undefined);
+  return image?{w:('naturalWidth'in image?image.naturalWidth:0)||image.width,h:('naturalHeight'in image?image.naturalHeight:0)||image.height}:null;
+ }
  image(src:string,r:Rect,mode='cover'){if(!src)return;const e=this.load(src),c=this.ctx;if(!e.loaded){c.fillStyle=this.palette.placeholder;c.fillRect(r.x,r.y,r.w,r.h);if(e.failed)this.text('图片暂不可用',r.x+5,r.y+r.h/2-7,11,this.palette.muted,400,r.w-10);return;}const im=e.image,iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1;c.save();c.beginPath();c.rect(r.x,r.y,r.w,r.h);c.clip();const s=mode==='contain'?Math.min(r.w/iw,r.h/ih):Math.max(r.w/iw,r.h/ih);c.drawImage(im,r.x+(r.w-iw*s)/2,r.y+(r.h-ih*s)/2,iw*s,ih*s);c.restore();}
  /** Draw atlas art on whole device pixels; enlarged art stays hard-edged, reduced art is filtered once at high quality. */
  private sprite(image:CanvasImageSource,sx:number,sy:number,sw:number,sh:number,r:Rect){

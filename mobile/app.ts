@@ -2,6 +2,7 @@ import type {Platform,Input,Rect,Route,WebLinks} from './ports';
 import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
 import {timeLabelFor,nodeState} from './story-timeline';
+import {comicFor,comicTextCount,drawComicPage,drawComicText,type ComicPageState} from './story-comic';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {PuzzleBoard} from './puzzle-board';
 import {SocialPanel} from './social-panel';
@@ -37,7 +38,7 @@ import type {AssistanceGrant} from '../lib/assistance-policy';
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
-type Modal='members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|'orientation'|null;
+type Modal='members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|'orientation'|null;
 type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
@@ -80,6 +81,8 @@ export class GameApp{
  private sharedPhotos:SharedPhoto[]|null=null;
  private levels:MobileLevelsView|null=null;private levelsOwner='';private levelsSerial=0;private autoLevelChecked=false;
  private chapterEntryChecked=false;
+ private comicPage:ComicPageState|null=null;private storyFrame:number|null=null;
+ private storyIntro:{text:string;until:number}|null=null;
  private orientationEntryReady=false;private orientationPickerState:'unknown'|'offered'|'done'='unknown';private orientationChoice:ScreenOrientation|null=null;private orientationSwitching=false;
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
  private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
@@ -321,11 +324,11 @@ export class GameApp{
  private openPackGallery(id:string){this.navigate('gallery',{packId:id,source:'owned'});}
  private selectAlbum(id:string){this.changeListView(()=>{this.albumId=id;});}
  private exitRoom(){this.ensureListOwner();const level=this.room?.snapshot.levelId,complete=this.room?.snapshot.mobileResult?.levelClear?.chapterComplete,target=this.roomReturn;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level)this.navigate(complete||!this.beginnerChapter?'lobby':'chapter');else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
- private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='completion'&&this.room?.snapshot.levelId)this.exitRoom();else this.showModal(null);}
+ private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&this.room?.snapshot.levelId)this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;this.cheer?.setActive(modal==='completion');if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();}
+ private showModal(modal:Modal){if(modal!=='levelComic'){this.comicPage=null;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;this.cheer?.setActive(modal==='completion');if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
   const owner=this.ownerKey(),serial=++this.historySerial;this.historyLoading=true;this.historyError='';this.invalidate();
@@ -436,7 +439,7 @@ export class GameApp{
    if(this.room===room)await network.drop(group.id,0,0);
   });
  }
- private leaveRoom(){this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.room=null;this.board=null;this.aid=null;}
+ private leaveRoom(){this.storyIntro=null;this.stopStoryFrame();this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.room=null;this.board=null;this.aid=null;}
  private async attachTicket(ticket:RoomTicket){
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
   this.social.close();
@@ -456,6 +459,7 @@ export class GameApp{
   this.cheer?.setActive(this.modal==='completion');
   this.unsubscribeRoom=room.subscribe(()=>{if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.showModal('completion');void this.client.refresh().catch(()=>{});void this.loadCollection();}}this.invalidate();});
   const photo=activeRoomPhoto(ticket.room,photoMap.get(ticket.room.puzzle.imageId));this.roomImage=this.client.asset(ticket.room.customImage?customPhoto(ticket.room.customImage,ticket.room.id).src:photo?.src??'');
+  this.beginStoryIntro((ticket.room as typeof ticket.room&{levelId?:string}).levelId);
   this.invalidate();if(this.nineGridRoom)board.setUnderlay(Date.now()+86400000);else void this.loadAssistance();
   try{if(!this.roomImage)throw Error('这张拼图的图片暂不可用');await board.setImage(this.roomImage);if(this.room!==room||this.board!==board)return;this.imageReady=board.imagePreparation.phase==='ready';this.roomViewPending=this.imageReady;}catch(error){if(this.room!==room||this.board!==board)return;this.imageError=errorText(error);this.note(this.imageError,true);}this.invalidate();
  }
@@ -938,13 +942,66 @@ export class GameApp{
    s.button({x:left+width-bw,y:by,w:bw,h:26},mainLabel,mainAction,{tone:'berrydark',fontSize:13,disabled:this.busy||!this.client.profile||(!current&&!complete)});
   }
  }
- /** Compatibility stub: the next story task will replace previews with comics. */
- private openLevelComic(levelId:string,_options?:{sequence?:boolean}){
-  const chapter=this.storyChapter;if(chapter)this.openChapterPreview(chapter,levelId);
+ /** Synchronous entry, also used by offline play. No refresh or API request. */
+ openLevelComic(levelId:string,options:{sequence?:boolean;fromClear?:boolean}={}){
+  const chapter=this.storyChapter;if(!chapter)return;
+  const index=options.sequence?0:chapter.levels.findIndex(level=>level.id===levelId),level=chapter.levels[index];
+  if(!level||!comicFor(chapter,index,level))return;
+  const returnTo=this.modal==='completion'?'completion':this.modal==='levelComic'?this.comicPage?.returnTo??null:null;
+  this.stopStoryFrame();this.comicPage={levelId:level.id,index,sequence:!!options.sequence,fromClear:!!options.fromClear,started:Date.now(),shown:0,returnTo};this.showModal('levelComic');
  }
- private openChapterPreview(chapter:NonNullable<GameApp['beginnerChapter']>,levelId:string){
-  const images=chapter.levels.filter(level=>level.status==='cleared').flatMap(level=>{const photo=level.imageId?photoMap.get(level.imageId):undefined;return photo&&(photo.src||photo.thumbSrc)?[{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,collected:true,difficulties:[]}]:[];}),index=images.findIndex(image=>image.id===chapter.levels.find(level=>level.id===levelId)?.imageId);if(index<0)return;
-  this.openPackPreview({id:'chapter:'+chapter.id,title:chapter.title,description:'',imageIds:images.map(image=>image.id),price:0,owned:true,images,coverSrc:images[0].thumbSrc});this.previewReadOnly=true;this.previewIndex=index;
+ private stopStoryFrame(){if(this.storyFrame!=null)this.platform.cancelFrame?.(this.storyFrame);this.storyFrame=null;}
+ private animateStory(){
+  if(this.storyFrame!=null||this.destroyed||this.hidden||!this.platform.frame)return;
+  this.storyFrame=this.platform.frame(()=>{this.storyFrame=null;if(this.destroyed||this.hidden)return;if(this.modal==='levelComic'||this.storyIntro)this.invalidate();});
+ }
+ private turnComic(index:number){
+  const page=this.comicPage,chapter=this.storyChapter,level=chapter?.levels[index];if(!page||!chapter||!level||!comicFor(chapter,index,level))return;
+  this.comicPage={...page,index,levelId:level.id,fromClear:false,started:Date.now(),shown:0};this.invalidate();
+ }
+ private advanceComic(skip=false){
+  const page=this.comicPage,chapter=this.storyChapter;if(!page||!chapter)return;const comic=comicFor(chapter,page.index,chapter.levels[page.index]);if(!comic)return;
+  const total=comicTextCount(comic);
+  if(page.shown<total){page.shown=skip?total:page.shown+1;page.started=Math.min(page.started,Date.now()-(page.fromClear?1320:520));}
+  else if(skip)this.closeModal();else if(page.sequence)this.turnComic(page.index+1);
+  this.invalidate();
+ }
+ private drawLevelComic(){
+  const page=this.comicPage,chapter=this.storyChapter;if(!page||!chapter)return;const level=chapter.levels[page.index],comic=comicFor(chapter,page.index,level);if(!comic)return;
+  const s=this.stage,view=this.platform.viewport(),photo=level.imageId?photoMap.get(level.imageId):undefined,src=photo?.src?this.client.asset(photo.src):'',thumb=photo?.thumbSrc?this.client.asset(photo.thumbSrc):'',roomLevel=this.room?.snapshot.levelId??this.room?.snapshot.mobileResult?.levelClear?.levelId,decoded=roomLevel===level.id?this.board?.comicPicture:null;
+  s.ctx.fillStyle='#3d2129';s.ctx.fillRect(0,0,s.w,s.h);
+  s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});
+  const next=chapter.levels[page.index+1],ending=next?'下一格 · '+(timeLabelFor(chapter,page.index+1,next)??'第 '+(page.index+2)+' 格'):'第 1 章 完';
+  // Safe-area coordinates remain local to this full-screen modal.
+  const safeH=s.h-view.top-view.bottom;{const originalH=s.h;s.ctx.save();s.ctx.translate(0,view.top);s.h=safeH;
+   try{
+    const result=drawComicPage(s,page,comic,ending,(r,crop,zoom)=>s.comicImage(src,thumb,r,crop,zoom,decoded),Date.now(),s.comicImageSize(src,thumb,decoded));
+    this.modalArea={...result.page,y:result.page.y+view.top};this.modalExtent=0;
+    if(result.animating)this.animateStory();
+   }finally{s.h=originalH;s.ctx.restore();}}
+  const area=this.modalArea;s.hit(area,()=>this.advanceComic());
+  s.text('第 '+(page.index+1)+' 格 · '+(timeLabelFor(chapter,page.index,level)??chapter.title),area.x,view.top+15,16,'#fffdf8',800,s.w-170);
+  s.button({x:s.w-144,y:view.top+9,w:68,h:30},page.shown<comicTextCount(comic)?'跳过':'结束',()=>this.advanceComic(true),{fontSize:12});
+  s.button({x:s.w-68,y:view.top+9,w:52,h:30},'关闭',()=>this.closeModal(),{fontSize:12});
+  const landscape=s.w>s.h,y=area.y+area.h+10,by=landscape?y:y+36,clear=this.room?.snapshot.mobileResult?.levelClear;
+  const current=clear&&chapter.levels.some(l=>l.id===clear.levelId)?clear.chapterComplete?null:chapter.levels.find(l=>l.id===clear.nextLevelId):chapter.levels.find(l=>l.id===this.levels?.current?.id&&l.status==='unlocked')??chapter.levels.find(l=>l.status==='unlocked');
+  const dotsW=chapter.levels.length*18,dotsX=landscape?(s.w-dotsW)/2:area.x;
+  chapter.levels.forEach((_level,index)=>{const x=dotsX+index*18;s.ctx.fillStyle=index===page.index?'#fff4cf':'#a85567';s.ctx.beginPath();s.ctx.arc(x+7,y+14,4,0,Math.PI*2);s.ctx.fill();s.hit({x,y:y+2,w:18,h:26},()=>this.turnComic(index));});
+  const smallW=landscape?100:Math.min(100,(area.w-8)/2);
+  s.button({x:area.x,y:by,w:smallW,h:34},'上一页',()=>this.turnComic(page.index-1),{disabled:page.index===0,fontSize:12});
+  s.button({x:area.x+smallW+8,y:by,w:smallW,h:34},'回时间线',()=>{this.showModal(null);if(this.room)this.leaveRoom();this.navigate('chapter');},{fontSize:12});
+  if(current){const label='拼第 '+(chapter.levels.indexOf(current)+1)+' 格（'+current.pieces+' 片）',w=landscape?Math.min(230,s.w*.3):area.w,py=landscape?by:by+44;
+   s.button({x:landscape?area.x+area.w-w:area.x,y:py,w,h:38},label,()=>{this.showModal(null);if(this.room)this.leaveRoom();void this.launch({mode:'level',levelId:current.id});},{tone:'berrydark',fontSize:14,disabled:this.busy});
+  }
+ }
+ private beginStoryIntro(levelId:string|undefined){
+  this.storyIntro=null;const chapter=this.storyChapter,index=chapter?.levels.findIndex(level=>level.id===levelId)??-1;if(!chapter||index<0)return;
+  const intro=comicFor(chapter,index,chapter.levels[index])?.intro;if(intro){this.storyIntro={text:intro,until:0};this.invalidate();}
+ }
+ private drawStoryIntro(){
+  const intro=this.storyIntro;if(!intro||!this.imageReady||this.modal)return;
+  if(!intro.until)intro.until=Date.now()+2000;if(Date.now()>=intro.until){this.storyIntro=null;return;}
+  const s=this.stage,r=this.roomArea;s.ctx.save();s.ctx.fillStyle='rgba(42,26,31,.48)';s.ctx.fillRect(r.x,r.y,r.w,r.h);drawComicText(s,{kind:'caption',at:'tl',text:intro.text},{x:r.x+16,y:r.y+70,w:Math.min(r.w-32,480),h:120});s.ctx.restore();this.animateStory();
  }
  private get continueRoom(){return this.historyRooms?.find(room=>!room.completed&&!room.unavailable)??null;}
  private dailyNow(){return Date.now()+this.serverOffset;}
@@ -1442,7 +1499,8 @@ export class GameApp{
    s.hit({x,y,w,h:43},()=>this.showModal('settings'));
   }
   if(!room.connected)this.drawReconnectBanner(room);
-  if(this.roomGuideStep)this.drawRoomGuide();else if(this.imageReady&&!this.modal&&!this.roomGuideSeen()){this.roomGuideStep=1;this.invalidate();}
+  this.drawStoryIntro();
+  if(!this.storyIntro){if(this.roomGuideStep)this.drawRoomGuide();else if(this.imageReady&&!this.modal&&!this.roomGuideSeen()){this.roomGuideStep=1;this.invalidate();}}
  }
  private roomZoomBase=1;
  private placeBoard(board:PuzzleBoard,topInset:number,fit:()=>void){
@@ -1828,7 +1886,9 @@ export class GameApp{
      if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,landscape?12:13,muted,600);cy+=levelLandscape?16:landscape?18:26;}
      for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,landscape?12:13,ink,700);cy+=landscape?18:24;}
     }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
-    cy+=landscape?2:6;s.button({x:left,y:cy,w:width,h:landscape?40:46},levelClear?chapterComplete?'去大厅':'下一关':'再来一桌',()=>{this.leaveRoom();if(levelClear){if(chapterComplete)this.navigate('lobby');else void this.launch({mode:'level',levelId:levelClear.nextLevelId!});}else this.navigate('gallery');},{tone:'berrydark',fontSize:16});cy+=landscape?46:56;
+    cy+=landscape?2:6;const primaryW=levelClear?(width-8)/2:width;
+    s.button({x:left,y:cy,w:primaryW,h:landscape?40:46},levelClear?chapterComplete?'去大厅':'下一关':'再来一桌',()=>{this.leaveRoom();if(levelClear){if(chapterComplete)this.navigate('lobby');else void this.launch({mode:'level',levelId:levelClear.nextLevelId!});}else this.navigate('gallery');},{tone:'berrydark',fontSize:16});
+    if(levelClear)s.button({x:left+primaryW+8,y:cy,w:primaryW,h:landscape?40:46},'翻开这一页',()=>this.openLevelComic(levelClear.levelId,{fromClear:true}),{fontSize:landscape?13:14});cy+=landscape?46:56;
     const third=(width-16)/3,albumId=(snap?.puzzle?.imageId&&this.collection?.albums.find(item=>item.images.some(image=>image.id===snap.puzzle!.imageId))?.id)||'';
     s.button({x:left,y:cy,w:third,h:landscape?34:40},'分享成品',()=>void this.run(async()=>{const outcome=await this.shareFromGame({title:'我们拼好了「'+(snap?.title||snap?.photo?.title||'一幅画')+'」，来'+this.platform.config.gameName+'一起拼',inviteCode:this.tasks?.invitation.code});this.note(outcome==='copied'?'链接已复制，可以发给朋友':outcome==='shared'||outcome==='opened'?'已分享':outcome==='cancelled'?'本次分享已取消':'暂时无法分享');}),{fontSize:13});
     s.button({x:left+third+8,y:cy,w:third,h:landscape?34:40},'查看图集',()=>{this.leaveRoom();this.openCollection('albums');if(albumId)this.openAlbum(albumId);},{fontSize:13});
@@ -1876,6 +1936,7 @@ export class GameApp{
   centered('之后也能点右上角的旋转按钮随时切换',cy+tileH+12,12,this.colors.muted);s.button({x:left,y:cy+tileH+42,w:width,h:42},'确认',()=>this.confirmOrientation(),{tone:'berry',fontSize:15,disabled:this.orientationSwitching});
  }
  private drawModal(){
+  if(this.modal==='levelComic'){this.drawLevelComic();return;}
   if(this.modal==='orientation'){this.drawOrientationPicker();return;}
   if(this.modal==='completion'&&this.layout==='phoneLandscape'){this.drawLandscapeCompletion();return;}
   if(this.modal==='playerCard'){this.drawPlayerCard();return;}
@@ -1885,7 +1946,7 @@ export class GameApp{
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
   const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const titles:Record<Exclude<Modal,null>,string>={orientation:'选择屏幕方向',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
+  const titles:Record<Exclude<Modal,null>,string>={levelComic:'小窝的故事',orientation:'选择屏幕方向',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
   // A vector cross has the same visible size and center with browser and wx fonts.
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
@@ -2029,6 +2090,7 @@ export class GameApp{
   }
   if(this.loginDialogActive||this.platform.tapAuthorizationPending?.())return this.stage.input(input);
   if(!this.ready)return this.stage.input(input);
+  if(input.type==='down'&&this.storyIntro){this.storyIntro=null;this.stopStoryFrame();this.invalidate();}
   const point=input.changed[0]??input.points[0];
   if(input.type==='key'){
    if(this.cheersEnabled&&this.modal==='completion'&&input.keyDown&&!input.repeat&&/^[1-6]$/.test(input.key??'')){this.sendCompletionCheer(CHEER_EMOTES[Number(input.key)-1]);return true;}

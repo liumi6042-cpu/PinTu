@@ -72,8 +72,8 @@ test('narrow landscape cards scale proportionally, keep minimum size and stay on
  }
 });
 
-test('sequence stub opens the first cleared preview and ignores stale account data',async()=>{
+test('sequence opens the first comic and ignores stale account data',async()=>{
  const f=fixture({data:levels(6)});await artwork(f);f.app.stopCheers=()=>{};f.app.drawChapter();f.buttons.find(button=>button.label==='从头看').fn();
- assert.equal(f.app.modal,'packPreview');assert.equal(f.app.previewReadOnly,true);assert.equal(f.app.previewIndex,0);assert.equal(f.app.previewPack.images.length,6);
+ assert.equal(f.app.modal,'levelComic');assert.equal(f.app.comicPage.index,0);assert.equal(f.app.comicPage.sequence,true);
  f.app.modal=null;f.client.account={id:'other'};f.app.openLevelComic('ch1-1',{sequence:true});assert.equal(f.app.modal,null);
 });

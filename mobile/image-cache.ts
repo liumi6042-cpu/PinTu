@@ -16,6 +16,8 @@ export class StageImageCache{
   this.maxBytes=Math.max(1,options.maxBytes??64*MIB);this.maxEntries=Math.max(1,options.maxEntries??96);this.maxLoading=Math.max(1,options.maxLoading??6);this.loadTimeout=Math.max(1,options.loadTimeoutMs??20_000);
  }
  beginFrame(){this.frame++;this.drawing=true;}
+ /** Touch a decoded image without starting a request (e.g. offline story pages). */
+ cached(url:string):CachedImage|undefined{const entry=this.entries.get(url);if(!entry?.loaded)return;entry.frame=this.frame;entry.used=++this.serial;return entry;}
  use(url:string,pinned=false):CachedImage{
   let entry=this.entries.get(url);
   if(!entry){entry={url,image:this.platform.createImage(),loaded:false,failed:false,state:'queued',frame:this.frame,used:++this.serial,pinned,bytes:0};if(this.destroyed)return entry;this.entries.set(url,entry);}

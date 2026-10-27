@@ -165,6 +165,7 @@ export class PuzzleBoard implements RoomTable {
  }
  /** Reuse the image already decoded for this puzzle, including its actual crop.
   * Completion must not depend on a second network request or image decode. */
+ get comicPicture(){return !this.destroyed&&this.ready?this.picture:null;}
  drawCompletedPicture(ctx:CanvasRenderingContext2D,rect:Rect){
   if(this.destroyed||!this.ready||rect.w<=0||rect.h<=0)return false;
   const scale=Math.min(rect.w/this.board.width,rect.h/this.board.height),width=this.board.width*scale,height=this.board.height*scale;

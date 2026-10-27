@@ -53,11 +53,12 @@ test('chapter uses the lobby header without phone navigation and handles canvas 
  const f=fixture({data:levels(0)});await artwork(f);delete f.stage.ctx.filter;f.stage.ctx.setLineDash=undefined;Object.assign(f.stage.palette,{ink:'#fff2e3',cream:'#332a34',placeholder:'#463644',line:'#85616c'});f.app.drawChapter();assert.equal(f.images.length,1);assert.equal(f.dashes.length,0);const label=f.glyphs.find(glyph=>glyph.value==='第 1 格');assert.equal(label.color,f.stage.palette.cream);assert.notEqual(label.color,f.stage.palette.ink);assert.equal(f.stage.ctx.globalAlpha,1);
 });
 
-test('cleared cells open a read-only large preview containing only cleared artwork and close directly with Escape or the cross',async()=>{
- const f=fixture();await artwork(f);f.app.stopCheers=()=>{};f.app.drawChapter();f.hits[1].fn();assert.equal(f.app.modal,'packPreview');assert.equal(f.app.previewReadOnly,true);assert.equal(f.app.previewPack.id,'chapter:ch1');assert.equal(f.app.previewPack.title,'开张');assert.equal(f.app.previewPack.images.length,3);assert.equal(f.app.previewIndex,1);f.clear();f.app.drawPackPreview();assert.equal(f.images.length,1);assert.equal(f.images[0].src,'/chapter-1.webp');assert.ok(!f.buttons.some(button=>button.label.includes('解锁')||button.label.includes('建房')||button.label==='‹ 返回全部图片'));assert.ok(!f.texts.some(text=>text.includes('永久解锁')||text.includes('开拼')));
- f.buttons.find(button=>button.label==='›').fn();assert.equal(f.app.previewIndex,2);f.app.stepPackPreview(1);assert.equal(f.app.previewIndex,2);f.app.stepPackPreview(-10);assert.equal(f.app.previewIndex,0);f.app.input({type:'key',key:'Escape',keyDown:true,points:[],changed:[]});assert.equal(f.app.modal,null);assert.equal(f.app.previewReadOnly,false);assert.equal(f.app.route,'lobby');
- f.app.openChapterPreview(f.app.beginnerChapter,'ch1-1');f.clear();f.app.drawPackPreview();f.buttons.find(button=>button.label==='').fn();assert.equal(f.app.modal,null);assert.equal(f.app.previewReadOnly,false);
- const noPhoto=fixture();noPhoto.app.drawChapter();assert.equal(noPhoto.hits.length,1);noPhoto.app.openChapterPreview(noPhoto.app.beginnerChapter,'ch1-1');assert.equal(noPhoto.app.modal,null);
+test('cleared cells open their comic without requests and close directly with Escape or the cross',async()=>{
+ const f=fixture();await artwork(f);f.app.stopCheers=()=>{};f.app.drawChapter();const reads=f.reads.length;f.hits[1].fn();assert.equal(f.app.modal,'levelComic');assert.equal(f.app.comicPage.levelId,'ch1-2');assert.equal(f.app.comicPage.index,1);assert.equal(f.reads.length,reads);
+ f.clear();f.app.drawModal();assert.equal(f.images.length,4);assert.ok(f.images.every(image=>image.src==='/chapter-1.webp'));assert.ok(!f.buttons.some(button=>button.label.includes('解锁')||button.label.includes('建房')));
+ f.app.input({type:'key',key:'Escape',keyDown:true,points:[],changed:[]});assert.equal(f.app.modal,null);assert.equal(f.app.route,'lobby');
+ f.app.openLevelComic('ch1-1');f.clear();f.app.drawModal();f.buttons.find(button=>button.label==='关闭').fn();assert.equal(f.app.modal,null);
+ const noPhoto=fixture();noPhoto.app.drawChapter();assert.equal(noPhoto.hits.length,1);noPhoto.app.openLevelComic('ch1-1');assert.equal(noPhoto.app.modal,'levelComic');assert.equal(noPhoto.reads.length,0);
 });
 
 test('returning players enter the chapter once, while complete, unavailable, invited, busy and modal starts stay in place',async()=>{

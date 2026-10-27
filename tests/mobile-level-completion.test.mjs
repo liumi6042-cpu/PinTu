@@ -43,10 +43,18 @@ test('level rewards fit all layouts with eight seats, album milestones, six chee
  for(const [width,height]of [[390,844],[844,390],[1280,800]])for(const levelClear of [clear,{...clear,levelId:'ch1-6',chapterComplete:true,nextLevelId:null}]){
   const f=fixture({width,height,levelClear});f.draw();assert.equal(f.app.completionSeatRects.size,8);
   const cheers=f.calls.filter(call=>call.kind==='hit'&&call.r.y===f.app.completionBar.y&&call.r.h===f.app.completionBar.h);assert.equal(cheers.length,6);
-  for(const label of ['分享成品','查看图集','回大厅'])assert.ok(f.button(label));
+  for(const label of ['翻开这一页','分享成品','查看图集','回大厅'])assert.ok(f.button(label));
   for(const call of f.calls.filter(call=>call.kind==='button'||call.kind==='frame')){assert.ok(call.r.w>0&&call.r.h>0);assert.ok(call.r.x>=0&&call.r.x+call.r.w<=width+.01);}
-  if(width===844){for(const label of ['下一关','去大厅','分享成品','查看图集','回大厅']){const button=f.button(label);if(button)assert.ok(button.r.y+button.r.h<=f.app.completionBar.y,label);}assert.ok(f.app.completionBar.y+f.app.completionBar.h+22<=382);}
+  if(width===844){for(const label of ['翻开这一页','下一关','去大厅','分享成品','查看图集','回大厅']){const button=f.button(label);if(button)assert.ok(button.r.y+button.r.h<=f.app.completionBar.y,label);}assert.ok(f.app.completionBar.y+f.app.completionBar.h+22<=382);}
   if(width===390)assert.ok(f.app.modalExtent>f.app.modalArea.h,'portrait content remains scrollable');
+ }
+});
+
+test('completion story action opens the cleared level with fromClear without leaving or changing original actions',()=>{
+ for(const [width,height]of [[390,844],[844,390],[1280,800]]){
+  const f=fixture({width,height}),opened=[];f.app.openLevelComic=(...args)=>opened.push(args);f.draw();f.button('翻开这一页').fn();assert.deepEqual(opened,[['ch1-1',{fromClear:true}]]);assert.deepEqual(f.events,[]);
+  const primary=f.button('下一关').r,comic=f.button('翻开这一页').r;assert.equal(primary.y,comic.y);assert.equal(primary.h,comic.h);assert.ok(primary.x+primary.w<comic.x);
+  for(const label of ['下一关','分享成品','查看图集','回大厅'])assert.ok(f.button(label));
  }
 });
 
