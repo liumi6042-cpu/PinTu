@@ -6,6 +6,8 @@ import { successfulDrop,successfulRemoteConnection } from './connection-feedback
 import type {RealtimeRoomStream} from './room-realtime';
 import {DiagnosticDragPipeline} from './diagnostic-drag-pipeline';
 import type {MovePreview} from './room-preview';
+import type {PuzzleState} from './puzzle-engine';
+import {applySoloDrop,replaySoloOps,otherPlayersPresent,soloCanAfford,loadSoloOutbox,saveSoloOutbox,acknowledgeSoloOps,SOLO_BATCH_MAX,SOLO_MAX_PENDING,type SoloOp,type SoloEnergy,type SoloStorage,type SoloBatchReceipt} from './solo-play';
 /** The room protocol does not require a DOM table or browser networking. */
 export type RoomTable = Pick<PuzzleTable,'network'|'networkReady'|'syncRemote'|'cancelNetworkDrag'|'playConnectionSound'|'fit'>;
 export type RoomFetchReply = {ok:boolean;status:number;headers:{get(name:string):string|null};json():Promise<any>};
@@ -21,6 +23,7 @@ export type RoomClientDependencies = {
   realtime?:RealtimeRoomStream;
   profile?:(data:unknown)=>void;
   refreshProfile?:()=>Promise<unknown>;
+  solo?:{enabled():boolean;storage?:SoloStorage;energy():SoloEnergy|null};
 };
 const browserDependencies:RoomClientDependencies={
   fetch:(url,init)=>fetch(url,init),
@@ -33,7 +36,9 @@ const cloneRoomValue=<T>(value:T):T=>typeof structuredClone==='function'?structu
 const requestTimeout=()=>typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'?AbortSignal.timeout(6500):undefined;
 export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
 type MobileContribution = { requestId: string; groupId: number; creditedXp: number };
-type MobileRoomSnapshot = RoomSnapshot & { mobileContribution?: MobileContribution;diagnostic?:boolean;diagnosticTiming?:{serverMs:number} };
+type MobileRoomSnapshot = RoomSnapshot & { mobileContribution?: MobileContribution;offline?:boolean;diagnostic?:boolean;diagnosticTiming?:{serverMs:number} };
+type ClientAction = RoomAction | {type:'batch';ops:Omit<SoloOp,'snapped'>[]};
+type RoomReplyData = RoomUpdate & {error?:string;code?:string;profile?:unknown;mobileProfile?:unknown;mobileContribution?:MobileContribution;soloBatch?:SoloBatchReceipt;diagnosticTiming?:{serverMs:number}};
 export type RoomRequestTiming={action:string;ms:number;status:number;serverMs?:number};
 type Position = { dx: number; dy: number };
 type DragTask = {
@@ -71,12 +76,33 @@ export class RoomClient {
   private previousDrag: Promise<void> = Promise.resolve();
   private organizing = false;
   private diagnosticPipeline:DiagnosticDragPipeline|null=null;
+  private localMode=false;
+  private exiting=false;
+  private soloOps:SoloOp[]=[];
+  private soloInflight=0;
+  private localPuzzle:PuzzleState|null=null;
+  private localDrag:number|null=null;
+  private soloDropping=false;
+  private soloGroupsKey='';
+  private flushTimer:ReturnType<typeof setTimeout>|null=null;
+  private flushing:Promise<boolean>|null=null;
+  private soloFailures=0;
+  private firstUnsentAt:number|null=null;
+  private soloRetryAt=0;
+  private soloRefused=false;
+  private exitWake:(()=>void)|null=null;
+  get localPlay(){return this.localMode;}
+  get pendingSoloOps(){return this.soloOps.length;}
   get diagnosticActionsActive(){return this.diagnosticPipeline?.inUse===true;}
 
   constructor(ticket: RoomTicket,dependencies:Partial<RoomClientDependencies>={}) {
     this.deps={...browserDependencies,...dependencies};this.receivedAt=this.deps.now();
     this.ticket = ticket; this.snapshot = ticket.room;
     this.state = cloneRoomValue(ticket.room.puzzle);
+    if(this.deps.solo?.storage){
+      const box=loadSoloOutbox(this.deps.solo.storage,ticket.room.id);
+      if(box?.playerId===ticket.playerId){this.soloOps=box.ops;this.persistSolo();}
+    }
   }
   subscribe(fn: () => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
   elapsedNow(now = this.deps.now()) {
@@ -87,22 +113,26 @@ export class RoomClient {
   }
   private emit() {
     // Presence timestamps and piece positions do not change the toolbar.
-    const key = JSON.stringify([this.connected, this.message, this.snapshot.title, this.snapshot.acceptingNew, this.snapshot.completedAt, this.snapshot.achievementDays, this.snapshot.members.map(member => [member.id, member.name, member.color, (member as typeof member & {level?:number}).level,(member as typeof member & {decoration?:RoomDecoration|null}).decoration?.id])]);
+    const key = JSON.stringify([this.connected, this.message, this.localMode, this.exiting, this.soloOps.length, this.snapshot.title, this.snapshot.acceptingNew, this.snapshot.completedAt, this.snapshot.achievementDays, this.snapshot.members.map(member => [member.id, member.name, member.color, (member as typeof member & {level?:number}).level,(member as typeof member & {decoration?:RoomDecoration|null}).decoration?.id])]);
     if (key === this.toolbarKey) return;
     this.toolbarKey = key;
     for (const fn of this.listeners) fn();
   }
   private async request(action?: RoomAction): Promise<MobileRoomSnapshot> {
+    return (await this.requestWithData(action)).snapshot;
+  }
+  private async requestWithData(action?:ClientAction,init?:{keepalive?:boolean}):Promise<{snapshot:MobileRoomSnapshot;data:RoomReplyData}> {
     if (this.deps.now() < this.retryAt) { const error=Object.assign(new Error('服务器繁忙，正在等待重试'),{status:503}); throw error; }
-    const actionWithId = action as (RoomAction & {requestId?:string}) | undefined;
+    const actionWithId = action as (ClientAction & {requestId?:string}) | undefined;
     if (actionWithId && !actionWithId.requestId) actionWithId.requestId = this.deps.randomId();
     const started=this.deps.performanceNow();
     const response = await this.deps.fetch(`/api/rooms/${this.ticket.room.id}?since=${this.snapshot.revision}`, {
       method: action ? 'POST' : 'GET',
       headers: { Authorization: `Bearer ${this.ticket.token}`, ...(action ? { 'Content-Type': 'application/json' } : {}) },
       body: actionWithId ? JSON.stringify(actionWithId) : undefined, cache: 'no-store', signal: requestTimeout(),
+      ...init,
     }).catch(error=>{this.trace(action?.type??'poll',started,0);throw error;});
-    const data = await response.json().catch(()=>({error:'连接暂时中断'})) as RoomUpdate & { error?: string; code?: string; profile?: unknown; mobileProfile?: unknown; mobileContribution?: MobileContribution;diagnosticTiming?:{serverMs:number} };
+    const data = await response.json().catch(()=>({error:'连接暂时中断'})) as RoomReplyData;
     this.trace(action?.type??'poll',started,response.status,data.diagnosticTiming?.serverMs);
     if (data.profile ?? data.mobileProfile) this.deps.emit('mobile:profile',data.profile ?? data.mobileProfile);
     if (!response.ok) { if(response.status===429||response.status===503)this.retryAt=this.deps.now()+retryDelay(response.headers.get('Retry-After'));const error = new Error(data.error || '连接暂时中断') as Error & { status: number; code?: string }; error.status = response.status; error.code = data.code; throw error; }
@@ -114,12 +144,12 @@ export class RoomClient {
     const merged = applyRoomUpdate(this.snapshot, data);
     // Preserve the drop receipt even if a poll already received its puzzle state.
     // Clear old receipts on unrelated responses so movement cannot award XP again.
-    if (merged) return { ...merged, mobileContribution: contribution };
-    const recovery = await this.deps.fetch(`/api/rooms/${this.ticket.room.id}`, { headers: { Authorization: `Bearer ${this.ticket.token}` }, cache: 'no-store', signal: requestTimeout() });
+    if (merged) return {snapshot:{ ...merged, mobileContribution: contribution },data};
+    const recovery = await this.deps.fetch(`/api/rooms/${this.ticket.room.id}`, { headers: { Authorization: `Bearer ${this.ticket.token}` }, cache: 'no-store', signal: requestTimeout(),...init });
     const full = await recovery.json() as RoomSnapshot & { error?: string; profile?: unknown; mobileProfile?: unknown };
     if (full.profile ?? full.mobileProfile) this.deps.emit('mobile:profile',full.profile ?? full.mobileProfile);
-    if (!recovery.ok) throw new Error(full.error || '连接暂时中断');
-    return { ...full, mobileContribution: contribution };
+    if (!recovery.ok) throw Object.assign(new Error(full.error || '连接暂时中断'),{status:recovery.status});
+    return {snapshot:{ ...full, mobileContribution: contribution },data};
   }
   private trace(action:string,started:number,status=200,serverMs?:number){
     if((this.ticket.room as MobileRoomSnapshot).diagnostic!==true)return;
@@ -135,9 +165,15 @@ export class RoomClient {
     this.deps.realtime?.preview?.observe(s);
     this.diagnosticPipeline?.observe(s);
     this.connected = true; this.failures = 0; this.message = '房间已连接';
+    if(this.localMode){
+      if(otherPlayersPresent(s,this.ticket.playerId)||this.deps.solo?.enabled()!==true||(s as MobileRoomSnapshot).diagnostic===true||s.completedAt!=null)this.beginExit();
+      if(!this.soloInflight)this.rebaseSoloPuzzle();
+      this.emit();return;
+    }
     for (const task of this.drags.values()) {
       // An unconfirmed local drag is deliberately protected from older poll results.
-      if (task.granted && !task.ending && s.leases[task.id]?.playerId !== this.ticket.playerId) {
+      // Offline rooms have one local player and deliberately never issue leases.
+      if (task.granted && !task.ending && (s as MobileRoomSnapshot).offline !== true && s.leases[task.id]?.playerId !== this.ticket.playerId) {
         task.canceled = true; task.wake?.();
         if (this.active === task) this.active = null;
         this.table?.cancelNetworkDrag(task.id);
@@ -167,6 +203,7 @@ export class RoomClient {
     } else { this.state.groups = cloneRoomValue(s.puzzle.groups); this.state.elapsed = s.puzzle.elapsed; }
     this.ownersKey = ownersKey;
     this.emit();
+    this.maybeEnterLocal();
   }
   private previewPuzzle(){
     const previews=new Map(this.previewMoves.filter(move=>this.snapshot.leases[move.groupId]?.playerId===move.playerId&&this.snapshot.leases[move.groupId]?.previewId===move.leaseId).map(move=>[move.groupId,move]));
@@ -176,6 +213,10 @@ export class RoomClient {
   private fail(error: unknown) {
     if (this.stopped) return;
     const status = (error as { status?: number })?.status, code = (error as { code?: string })?.code;
+    if(this.localMode&&!this.exiting&&this.soloTransient(error)){
+      this.failures++;this.message='网络不稳，拼好的进度会自动保存';this.emit();return;
+    }
+    if(this.localMode)this.leaveLocalMode();
     this.message = error instanceof Error ? error.message : '连接中断，正在重连';
     const gameplayError = status === 400 || status === 402 || status === 409 || status === 422 || (status === 403 && code === 'ENERGY_EMPTY');
     if (gameplayError) {
@@ -216,13 +257,14 @@ export class RoomClient {
       // A group whose drop is still being confirmed can be picked up again: the piece is back
       // on the table. Permit that quick next gesture while the bounded confirmation
       // queue has capacity, without admitting another gesture during an active drag.
-      canAcquire: id => this.connected && !this.organizing && (this.useDiagnosticPipeline()?this.diagnosticPipeline!.canAcquire(id):this.active === null && this.pendingDrags.size < MAX_PENDING_DRAGS && !this.moving(id)),
+      canAcquire: id => this.localMode?this.canAcquireLocal(id):this.connected && !this.organizing && (this.useDiagnosticPipeline()?this.diagnosticPipeline!.canAcquire(id):this.active === null && this.pendingDrags.size < MAX_PENDING_DRAGS && !this.moving(id)),
       acquire: id => this.acquire(id), move: (id, dx, dy) => this.move(id, dx, dy),
       drop: (id, dx, dy) => this.drop(id, dx, dy), release: id => this.release(id),
     };
     for(const cleanup of this.realtimeCleanups)cleanup();this.realtimeCleanups=[];
     if(this.deps.realtime?.preview)this.realtimeCleanups.push(this.deps.realtime.preview.subscribeMoves(moves=>{
       if(this.stopped)return;this.previewMoves=moves;
+      if(this.localMode)return;
       const protectedIds=new Set([...this.drags.values()].filter(t=>!t.canceled).map(t=>t.id));for(const id of this.diagnosticPipeline?.protectedIds()??[])protectedIds.add(id);
       this.table?.syncRemote(this.previewPuzzle(),this.pieceOwners,protectedIds,false);
     }));
@@ -234,7 +276,11 @@ export class RoomClient {
         if(this.stopped)return;if(!connected)this.forcePoll=true;this.schedulePoll(connected?Math.max(0,5001-(this.deps.now()-this.heartbeatAt)):0);
       }));
     }
-    this.receive(this.snapshot, true); void this.poll();
+    this.receive(this.snapshot, true);
+    // A lost completion ACK can leave an outbox for an already completed room,
+    // which must drain even though completed rooms cannot enter local play.
+    if(this.soloOps.length&&this.deps.solo?.enabled()===true&&(this.snapshot as MobileRoomSnapshot).diagnostic!==true)this.scheduleSoloFlush(0);
+    void this.poll();
     return () => { this.stop(); this.table = null; };
   }
   private async poll() {
@@ -255,7 +301,7 @@ export class RoomClient {
     } catch (error) { this.fail(error); }
     finally {
       this.polling=false;
-      if(!this.stopped){const delay=this.forcePoll?0:this.deps.realtime?.connected?Math.max(100,5001-(this.deps.now()-this.heartbeatAt)):this.connected?roomPollDelay(this.drags.size>0||Object.keys(this.snapshot.leases).length>0,this.idlePolls,this.deps.hidden()):Math.min(4000,800*this.failures);this.schedulePoll(Math.max(this.retryAt-this.deps.now(),delay));}
+      if(!this.stopped){const delay=this.forcePoll?0:this.localMode&&this.failures?Math.min(4000,800*this.failures):this.deps.realtime?.connected?Math.max(100,5001-(this.deps.now()-this.heartbeatAt)):this.connected?roomPollDelay(this.drags.size>0||Object.keys(this.snapshot.leases).length>0,this.idlePolls,this.deps.hidden()):Math.min(4000,800*this.failures);this.schedulePoll(Math.max(this.retryAt-this.deps.now(),delay));}
     }
   }
   /** Ask for an immediate resynchronisation (the reconnect banner's 重试). */
@@ -272,6 +318,7 @@ export class RoomClient {
   private moving(id: number) { const task = this.drags.get(id); return !!task && !task.ending; }
   private useDiagnosticPipeline(){return !!this.diagnosticPipeline&&(this.diagnosticPipeline.inUse||this.pendingDrags.size===0&&this.diagnosticPipeline.available);}
   acquire(id: number): Promise<boolean> {
+    if(this.localMode){if(!this.canAcquireLocal(id))return Promise.resolve(false);this.localDrag=id;return Promise.resolve(true);}
     if(this.useDiagnosticPipeline())return !this.connected||this.organizing?Promise.resolve(false):this.diagnosticPipeline!.acquire(id);
     if (!this.connected || this.organizing || this.active || this.pendingDrags.size >= MAX_PENDING_DRAGS || this.moving(id)) return Promise.resolve(false);
     let grant!: (ok: boolean) => void; let finish!: () => void;
@@ -343,6 +390,7 @@ export class RoomClient {
         else this.receive(this.snapshot, true);
       }
       this.pendingDrags.delete(task); task.finish();
+      this.maybeEnterLocal();
     }
   }
   private waitForMove(task: DragTask, delay?: number) {
@@ -353,12 +401,14 @@ export class RoomClient {
     });
   }
   private move(id: number, dx: number, dy: number) {
+    if(this.localMode)return;
     if(this.diagnosticPipeline?.handles(id)){this.diagnosticPipeline.move(id,dx,dy);return;}
     const task = this.drags.get(id);
     if (!task || task.canceled || task.ending || !this.connected) return;
     task.latest = { dx, dy }; task.wake?.();
   }
   private drop(id: number, dx: number, dy: number) {
+    if(this.localMode)return this.localDrop(id,dx,dy);
     if(this.diagnosticPipeline?.handles(id))return this.diagnosticPipeline.drop(id,dx,dy);
     const task = this.drags.get(id); if (!task) return Promise.resolve();
     task.latest = null; task.ending = { type: 'drop', dx, dy };task.droppedAt=this.deps.performanceNow();this.trace('drop-start',task.droppedAt);
@@ -366,14 +416,163 @@ export class RoomClient {
     task.wake?.(); return task.finished;
   }
   private release(id: number) {
+    if(this.localMode){if(this.localDrag===id)this.localDrag=null;this.exitWake?.();return;}
     if(this.diagnosticPipeline?.handles(id)){this.diagnosticPipeline.release(id);return;}
     const task = this.drags.get(id); if (!task) return;
     task.latest = null; task.ending = { type: 'release' };
     if (this.active === task) this.active = null;
     task.wake?.();
   }
+  private persistSolo(){
+    const storage=this.deps.solo?.storage;
+    if(storage)saveSoloOutbox(storage,{v:1,roomId:this.ticket.room.id,playerId:this.ticket.playerId,token:this.ticket.token,ops:this.soloOps,savedAt:this.deps.now()});
+  }
+  private maybeEnterLocal(){
+    if(this.localMode||this.stopped||this.soloRefused||this.deps.solo?.enabled()!==true||!this.table||!this.connected
+      ||(this.snapshot as MobileRoomSnapshot).diagnostic===true||this.snapshot.completedAt!=null
+      ||this.drags.size||this.pendingDrags.size||this.diagnosticPipeline?.inUse||this.organizing)return;
+    const others=otherPlayersPresent(this.snapshot,this.ticket.playerId);
+    if(others&&!this.soloOps.length)return;
+    this.localMode=true;this.localPuzzle=replaySoloOps(this.snapshot.puzzle,this.soloOps);
+    this.syncSoloPuzzle(false);
+    if(this.soloOps.length)this.scheduleSoloFlush(0);
+    if(others)this.beginExit();
+    this.emit();
+  }
+  private canAcquireLocal(id:number){
+    return !this.stopped&&!this.exiting&&!this.organizing&&!this.soloDropping&&this.localDrag===null&&this.soloOps.length<SOLO_MAX_PENDING
+      &&!!this.localPuzzle?.groups.some(group=>group.id===id&&!group.locked);
+  }
+  private syncSoloPuzzle(feedback:boolean,protect=new Set<number>()){
+    if(!this.localPuzzle)return;
+    this.soloGroupsKey=JSON.stringify(this.localPuzzle.groups);
+    this.table?.syncRemote(this.localPuzzle,{},protect,feedback);
+  }
+  private rebaseSoloPuzzle(){
+    if(!this.localMode)return;
+    this.localPuzzle=replaySoloOps(this.snapshot.puzzle,this.soloOps);
+    if(JSON.stringify(this.localPuzzle.groups)!==this.soloGroupsKey)
+      this.syncSoloPuzzle(false,this.localDrag===null?new Set():new Set([this.localDrag]));
+  }
+  private energyEmpty(message='体力不足，请使用补给或稍后再来'){
+    this.deps.emit('mobile:gameplay-error',{code:'ENERGY_EMPTY',message});this.deps.emit('mobile:energy-empty');
+  }
+  private async localDrop(id:number,dx:number,dy:number){
+    if(!this.localPuzzle||this.localDrag!==id)return;
+    this.localDrag=null;this.soloDropping=true;
+    try{
+      let result=applySoloDrop(this.localPuzzle,{groupId:id,dx,dy});
+      if(!result.applied){this.syncSoloPuzzle(false);return;}
+      const canAfford=()=>soloCanAfford(this.deps.solo?.energy()??null,this.soloOps.filter(op=>op.snapped).length);
+      if(result.snapped&&!canAfford()){
+        // Pending receipts publish the fresh profile before this prediction is retried.
+        while(this.soloOps.length){if(!await this.flushSolo())break;}
+        if(!this.localMode||!this.localPuzzle||this.stopped)return;
+        result=applySoloDrop(this.localPuzzle,{groupId:id,dx,dy});
+        if(!result.applied){this.syncSoloPuzzle(false);return;}
+        if(result.snapped&&!canAfford()){this.syncSoloPuzzle(false);this.energyEmpty();return;}
+      }
+      const op:SoloOp={requestId:this.deps.randomId(),groupId:id,dx:result.dx,dy:result.dy,snapped:result.snapped};
+      const last=this.soloOps.at(-1);
+      if(!op.snapped&&this.soloOps.length-1>=this.soloInflight&&last&&!last.snapped&&last.groupId===id)this.soloOps[this.soloOps.length-1]=op;
+      else this.soloOps.push(op);
+      this.persistSolo();this.localPuzzle=result.puzzle;this.syncSoloPuzzle(true);
+      if(op.snapped){
+        this.table?.playConnectionSound('local');
+        const xp=this.deps.solo?.energy()?.xp;
+        this.deps.emit('puzzle:successful-drop',{roomId:this.ticket.room.id,requestId:op.requestId,groupId:id,...(typeof xp==='number'&&Number.isInteger(xp)&&xp>0?{creditedXp:xp}:{})});
+      }
+      const now=this.deps.now();this.firstUnsentAt??=now;
+      const unsent=this.soloOps.length-this.soloInflight;
+      this.scheduleSoloFlush(result.completed||unsent>=25?0:Math.max(0,Math.min(800,3000-(now-this.firstUnsentAt))));
+      this.emit();
+    }finally{this.soloDropping=false;this.exitWake?.();}
+  }
+  private clearSoloTimer(){if(this.flushTimer)clearTimeout(this.flushTimer);this.flushTimer=null;}
+  private scheduleSoloFlush(delay:number){
+    this.clearSoloTimer();
+    if(this.stopped||!this.soloOps.length)return;
+    const wait=Math.max(delay,this.soloRetryAt-this.deps.now(),this.retryAt-this.deps.now());
+    this.flushTimer=setTimeout(()=>{this.flushTimer=null;void this.flushSolo();},wait);
+  }
+  private soloTransient(error:unknown){
+    const status=(error as {status?:number})?.status;
+    return status===undefined||status===408||status===429||status>=500;
+  }
+  private async flushSolo(opts?:{keepalive?:boolean}):Promise<boolean>{
+    if(this.flushing){if(!await this.flushing)return false;return this.soloOps.length?this.flushSolo(opts):true;}
+    if(!this.soloOps.length)return true;
+    if(this.deps.now()<Math.max(this.soloRetryAt,this.retryAt)){this.scheduleSoloFlush(0);return false;}
+    this.clearSoloTimer();
+    const pending=this.sendSoloBatch(opts);this.flushing=pending;
+    try{return await pending;}finally{this.flushing=null;}
+  }
+  private async sendSoloBatch(opts?:{keepalive?:boolean}):Promise<boolean>{
+    const batch=this.soloOps.slice(0,SOLO_BATCH_MAX),sent=new Set(batch.map(op=>op.requestId));
+    this.soloInflight=batch.length;this.firstUnsentAt=null;
+    const discardBatch=()=>{this.soloOps=this.soloOps.filter(op=>!sent.has(op.requestId));this.persistSolo();};
+    try{
+      const {snapshot,data}=await this.requestWithData({type:'batch',ops:batch.map(({snapped,...op})=>op)},opts);
+      if(!data.soloBatch)throw new Error('Missing solo batch receipt');
+      const remaining=acknowledgeSoloOps(this.soloOps,data.soloBatch);
+      if(remaining.length===this.soloOps.length)throw new Error('Solo batch made no progress');
+      this.soloOps=remaining;this.persistSolo();this.soloFailures=0;this.soloRetryAt=0;
+      this.soloInflight=0;
+      if(data.soloBatch.stopped)this.energyEmpty(data.soloBatch.stopped.message);
+      this.receive(snapshot,true);
+      // Explicit leave-time flushes still update the saved authoritative state.
+      if(this.stopped){this.snapshot=snapshot;this.localPuzzle=replaySoloOps(snapshot.puzzle,this.soloOps);}
+      this.scheduleSoloFlush(0);return true;
+    }catch(error){
+      this.soloInflight=0;
+      const status=(error as {status?:number})?.status;
+      if(this.soloTransient(error)){
+        this.soloFailures++;this.soloRetryAt=Math.max(this.retryAt,this.deps.now()+Math.min(15000,1000*2**this.soloFailures));
+        this.message='网络不稳，拼好的进度会自动保存';this.emit();this.scheduleSoloFlush(0);
+      }else if(status===400||status===409){
+        // The server switched batching off: return to server drags instead of discarding every later drop.
+        const code=(error as {code?:string})?.code;
+        if(code==='SOLO_BATCH_DISABLED'||code==='SOLO_BATCH_UNAVAILABLE'){this.soloRefused=true;this.soloOps=[];this.persistSolo();this.leaveLocalMode();}
+        else discardBatch();
+        try{this.receive(await this.request(),true);this.scheduleSoloFlush(0);return true;}catch(failure){this.fail(failure);}
+      }else if(status===401||status===403||status===404||status===410){
+        this.soloOps=[];this.persistSolo();this.leaveLocalMode();this.fail(error);
+      }else{this.leaveLocalMode();this.fail(error);}
+      return false;
+    }finally{this.soloInflight=0;this.exitWake?.();}
+  }
+  /** Flush on application hide without waiting for the debounce. */
+  flushSoloNow(){void this.flushSolo({keepalive:true});}
+  private leaveLocalMode(){
+    this.localMode=false;this.exiting=false;this.localPuzzle=null;this.localDrag=null;
+    this.clearSoloTimer();this.exitWake?.();
+  }
+  private beginExit(){
+    if(this.exiting)return;
+    this.exiting=true;this.emit();
+    void (async()=>{
+      while(!this.stopped&&this.localMode&&this.exiting){
+        if(this.localDrag!==null||this.soloDropping){await this.waitSoloExit();continue;}
+        if(!this.soloOps.length)break;
+        const delay=Math.max(this.soloRetryAt,this.retryAt)-this.deps.now();
+        if(delay>0){await this.waitSoloExit(delay);continue;}
+        await this.flushSolo();
+      }
+      if(!this.localMode||!this.exiting||this.stopped)return;
+      this.leaveLocalMode();this.receive(this.snapshot,true);
+    })();
+  }
+  private waitSoloExit(delay?:number){
+    return new Promise<void>(resolve=>{
+      let timer:ReturnType<typeof setTimeout>|undefined;
+      this.exitWake=()=>{clearTimeout(timer);this.exitWake=null;resolve();};
+      if(delay!==undefined)timer=setTimeout(this.exitWake,delay);
+    });
+  }
   private stop() {
     this.stopped = true;
+    this.clearSoloTimer();this.localDrag=null;this.exitWake?.();
+    this.leaveLocalMode();
     this.diagnosticPipeline?.stop();
     if (this.pollTimer) clearTimeout(this.pollTimer);
     for(const cleanup of this.realtimeCleanups)cleanup();this.realtimeCleanups=[];
@@ -382,24 +581,33 @@ export class RoomClient {
   }
   async organize() {
     if(this.organizing)throw new Error('正在整理，请稍候。');
+    if(this.localDrag!==null||this.soloDropping)throw new Error('请先放下当前拼块');
     if(this.diagnosticPipeline?.hasActive())throw new Error('请先放下当前拼块');
     const pending=[...this.pendingDrags];
     if(pending.some(task=>!task.ending&&!task.canceled))throw new Error('请先放下当前拼块');
     this.organizing=true;
     try{
+      while(this.soloOps.length){if(!await this.flushSolo())throw new Error('正在保存，请稍候');}
       // Pointer-up may still be saving its drop. Finish it before rearranging.
       await Promise.all(pending.map(task=>task.finished));
       await this.diagnosticPipeline?.drain();
       if(!this.connected||this.stopped)throw new Error('正在重连，请连接恢复后再整理。');
       const snapshot=await this.request({type:'shuffle'});this.receive(snapshot,true);
       if(this.snapshot.visibility==='solo')this.table?.fit();
-    }finally{this.organizing=false;}
+    }finally{this.organizing=false;this.maybeEnterLocal();}
   }
   leave() {
     this.stop();
-    void this.deps.fetch(`/api/rooms/${this.ticket.room.id}`, { method: 'POST', keepalive: true,
+    const sendLeave=()=>this.deps.fetch(`/api/rooms/${this.ticket.room.id}`, { method: 'POST', keepalive: true,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.ticket.token}` }, body: JSON.stringify({ type: 'leave' }),
     }).catch(() => {});
+    if(!this.soloOps.length){void sendLeave();return;}
+    void (async()=>{
+      let timer:ReturnType<typeof setTimeout>|undefined;
+      let timedOut=false;
+      try{await Promise.race([(async()=>{while(!timedOut&&this.soloOps.length&&await this.flushSolo({keepalive:true})){} })(),new Promise<void>(resolve=>{timer=setTimeout(()=>{timedOut=true;resolve();},3000);})]);}
+      finally{clearTimeout(timer);void sendLeave();}
+    })();
   }
 }
 export function roomSessionKey(id: string) { return `together-puzzle:room:${id}`; }

@@ -4,7 +4,8 @@ import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {mkdtempSync,rmSync} from 'node:fs';
-import {planTapTapArtwork} from './bundle-taptap-artwork.mjs';
+import {planTapTapArtwork,fullImageAlbumIds} from './bundle-taptap-artwork.mjs';
+import {buildOfflineCatalog,offlineRoomArtwork} from './offline-catalog.mjs';
 import {buildMobileShared} from './build-mobile-shared.mjs';
 import {TAR} from './release-files.mjs';
 
@@ -22,17 +23,24 @@ const albumsInput=readJson(albumsPath),albums=Array.isArray(albumsInput)?albumsI
 if(!Array.isArray(albums))throw Error('Albums file must be an array or {albums:[...]}');
 const catalog=readJson(arg('--catalog')??'content/puzzle-catalog.json');
 const revisions=readJson(arg('--revisions')??'content/artwork-revisions.json');
-// Clients load the active artwork version, so bundle that one rather than the catalog's base build.
+const levels=readJson('config/levels.json'),levelAlbumIds=levels.chapters.map(chapter=>chapter.albumId);
+// Preserve active editions for online thumbnails; room full editions are selected below.
 const effective=catalog.map(photo=>{
  const active=revisions.active?.[photo.id];if(!active)return photo;
  const version=revisions.versions?.[photo.id]?.find(item=>item.revision===active);
  if(!version)throw Error('Missing active artwork version: '+photo.id);
  return {...photo,thumbSrc:version.thumbSrc,optimizedSrc:version.src,playSrc:version.src};
 });
-const plan=await planTapTapArtwork({root,catalog:effective,albums});
+const photos=effective.map(photo=>({...photo,src:photo.optimizedSrc??photo.playSrc}));
+const selectedAlbums=new Set(fullImageAlbumIds({albums,levelAlbumIds})),selectedImages=new Set(albums.filter(album=>selectedAlbums.has(album.id)).flatMap(album=>album.imageIds));
+// Match the public TapTap room contract, including legacy artwork. Keep active
+// thumbnails for online cards; only one full edition per image enters the zip.
+const roomArtwork=photos.filter(photo=>selectedImages.has(photo.id)).map(photo=>({id:photo.id,...offlineRoomArtwork(photo,48)}));
+const plan=await planTapTapArtwork({root,catalog:effective,albums,levelAlbumIds,roomArtwork});
+const offlineCatalog=buildOfflineCatalog({levels,albums,photos,plan});
 const work=resolve(root,'work/taptap-package-'+name);
 if(existsSync(work))throw Error('Work directory exists; choose a fresh name: '+work);
-const [record]=await buildMobileShared({outputRoot:relative(root,work),production:true,platforms:['taptap'],bundledArtwork:plan});
+const [record]=await buildMobileShared({outputRoot:relative(root,work),production:true,platforms:['taptap'],bundledArtwork:plan,offlineCatalog});
 const packageDir=join(work,'jigsaw-nook');renameSync(record.directory,packageDir);
 mkdirSync(resolve(root,'releases'),{recursive:true});
 const archive=resolve(root,'releases/jigsaw-nook-taptap-'+name+'.zip');
@@ -51,6 +59,8 @@ try{
  for(const file of record.files){const bytes=readFileSync(join(check,'jigsaw-nook',...file.path.split('/')));if(bytes.length!==file.bytes||sha(bytes)!==file.sha256)throw Error('Zip entry differs: '+file.path);}
 }finally{rmSync(check,{recursive:true,force:true});}
 const bytes=readFileSync(archive);
-const report={archive,bytes:bytes.length,sha256:sha(bytes),files:record.files.length,bundledArtwork:plan.files.length,thumbnails:plan.thumbnailCount,puzzleImages:plan.files.filter(f=>f.kind==='puzzle').length,albums:plan.albums.map(a=>a.id),config:{...record.config,bundledArtwork:Object.keys(record.config.bundledArtwork??{}).length}};
+if(bytes.length>55*1024*1024)throw Error('TapTap zip exceeds 55 MiB: '+bytes.length);
+const bundledFullImages=plan.files.filter(f=>f.kind==='puzzle').length;
+const report={archive,bytes:bytes.length,zipBytes:bytes.length,sha256:sha(bytes),files:record.files.length,bundledArtwork:plan.files.length,thumbnails:plan.thumbnailCount,puzzleImages:bundledFullImages,bundledFullImages,paidAlbumsExcluded:plan.paidAlbumsExcluded,bytesByKind:plan.bytesByKind,offlineLevels:offlineCatalog.chapters.reduce((n,chapter)=>n+chapter.levels.length,0),offlinePictures:offlineCatalog.free.length,albums:plan.albums.map(a=>a.id),config:{...record.config,bundledArtwork:Object.keys(record.config.bundledArtwork??{}).length}};
 writeFileSync(archive+'.json',JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report,null,2));

@@ -1,5 +1,6 @@
 import type {TapBattleManager} from './tap-preview';
 import type {LoginLog} from './login-log';
+import type {OfflineCatalog} from '../lib/offline-catalog-types';
 export type PlatformId='web'|'taptap'|'wechat';
 export type UiSize='auto'|'small'|'large'|'xlarge';
 export type Viewport={width:number;height:number;dpr:number;top:number;bottom:number};
@@ -32,7 +33,7 @@ export type TapTapIdentity={code:string;nickname?:string;/** The host has no nic
 /** Hidden preparation and an optional official native private-chat entry. */
 export type NativeSocial={prepare():Promise<NativeSocialStatus>;status():NativeSocialStatus;openPrivate?():Promise<NativeSocialOpenResult>;openFriends?():Promise<NativeSocialOpenResult>};
 export type WebLinks={account?:string;security?:string;membership?:string;uploads?:string;legacyLobby?:string;legacyRoom?:string;largePuzzles?:string;terms?:string;privacy?:string;feedback?:string};
-export type PlatformConfig={id:PlatformId;gameName:string;apiBase:string;assetBase:string;appId?:string;rewardedAdUnitId?:string;gameBase?:string;uiBase?:string;bundledArtwork?:Readonly<Record<string,string>>;identityMode?:'guest-device'|'web-cookie'|'taptap';webLinks?:WebLinks;development?:boolean;nativeSocialEnabled?:boolean;buildVersion?:string;tapAuthorizationTest?:boolean;previewTestRoom?:{id:string;inviteCode:string}};
+export type PlatformConfig={id:PlatformId;gameName:string;apiBase:string;assetBase:string;appId?:string;rewardedAdUnitId?:string;gameBase?:string;uiBase?:string;bundledArtwork?:Readonly<Record<string,string>>;offlineCatalog?:OfflineCatalog;identityMode?:'guest-device'|'web-cookie'|'taptap';webLinks?:WebLinks;development?:boolean;nativeSocialEnabled?:boolean;buildVersion?:string;tapAuthorizationTest?:boolean;previewTestRoom?:{id:string;inviteCode:string}};
 export type Platform={
  config:PlatformConfig;
  canvas:HTMLCanvasElement;

@@ -34,7 +34,7 @@ export function resolveSharedConfig(input,env=process.env){
  return config;
 }
 
-export async function buildMobileShared({outputRoot,production=false,prepareAssets=true,platforms=['wechat','taptap'],bundledArtwork=null,env=process.env}={}){
+export async function buildMobileShared({outputRoot,production=false,prepareAssets=true,platforms=['wechat','taptap'],bundledArtwork=null,offlineCatalog=null,env=process.env}={}){
 if(!Array.isArray(platforms)||!platforms.length||new Set(platforms).size!==platforms.length||platforms.some(id=>!['wechat','taptap','web'].includes(id)))throw Error('Choose one or more shared platforms: wechat, taptap, web');
 let isolatedRoot;
 if(outputRoot!==undefined){
@@ -71,7 +71,7 @@ for(const [platform,out]of Object.entries(outputs)){
  for(const file of extraArt)copy(join(root,'public/mobile-icons',file),join(out,'art',file));
  for(const file of [...fonts,'jigsaw-ui-sc.'+(platform==='wechat'?'ttf':'woff2')])copy(join(root,'public/fonts',file),join(out,'assets/fonts',file));
  const obsoleteFont=join(out,'assets/fonts/jigsaw-ui-sc.'+(platform==='wechat'?'woff2':'ttf'));if(existsSync(obsoleteFont))unlinkSync(obsoleteFont);
- const config={...resolvedConfigs[platform],...(platform==='taptap'&&bundledArtwork?{bundledArtwork:bundledArtwork.mapping}:{})};
+ const config={...resolvedConfigs[platform],...(platform==='taptap'&&bundledArtwork?{bundledArtwork:bundledArtwork.mapping}:{}),...(platform==='taptap'&&offlineCatalog?{offlineCatalog}:{})};
  if(platform==='taptap'&&bundledArtwork)writeBundledArtwork(out,bundledArtwork);
  // The WeChat upload parser is older than its simulator runtime.
  const target=platform==='wechat'?'es2017':'es2020';
