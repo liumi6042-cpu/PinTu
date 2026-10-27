@@ -37,12 +37,13 @@ export function managedDailyPuzzle(snapshot:ManagedContentSnapshot|null,now=Date
 }
 
 /** Match mobile collection membership: only actual premieres before today's Beijing midnight join albums. */
-export function effectiveManagedAlbums(snapshot:ManagedContentSnapshot,now=Date.now()):ManagedAlbum[]{
+// Levels read hidden albums too (a level-only album is shown on neither end); everything else keeps the PC filter.
+export function effectiveManagedAlbums(snapshot:ManagedContentSnapshot,now=Date.now(),{includeHidden=false}:{includeHidden?:boolean}={}):ManagedAlbum[]{
  const planned=snapshot.dailyRuntime.managedImageIds(now),released=snapshot.dailyRuntime.releasedImageIds(now);
  const assigned=new Set(snapshot.albums.albums.flatMap(album=>album.imageIds));
  const available=new Set(snapshot.photos.map(photo=>photo.id));
  const additions=snapshot.dailyRuntime.albumEntries(now,'pc');
- return snapshot.albums.albums.filter(album=>album.showOnPc).map(album=>{
+ return snapshot.albums.albums.filter(album=>includeHidden||album.showOnPc).map(album=>{
   const imageIds=[...new Set([...album.imageIds,...additions.filter(entry=>entry.album.id===album.id).flatMap(entry=>entry.imageIds).filter(imageId=>!assigned.has(imageId))])].filter(imageId=>available.has(imageId)&&(!planned.has(imageId)||released.has(imageId)));
   return {...album,imageIds,coverImageId:album.coverImageId&&imageIds.includes(album.coverImageId)?album.coverImageId:imageIds[0]??null};
  }).filter(album=>album.imageIds.length>0);

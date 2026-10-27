@@ -14,7 +14,7 @@ const api=await import('data:text/javascript;base64,'+Buffer.from(built.outputFi
 function fixture(t){
  const db=new SqliteD1(':memory:',fileURLToPath(new URL('../drizzle/',import.meta.url))),now=Date.now();globalThis.__sharedLevelRoomsEnv.PUZZLE_DB=db;
  for(const [id,secret] of [[owner,token],[peer,peerToken]]){db.sql.prepare('INSERT INTO puzzle_users VALUES(?,?,?,?,?,?)').run(id,id,id===owner?'关卡房主':'帮忙玩家','hash','salt',now);db.sql.prepare('INSERT INTO puzzle_sessions VALUES(?,?,?)').run(createHash('sha256').update(secret).digest('hex'),id,now+86400000);}
- const photos=api.RESTORABLE_PHOTOS.slice(0,6).map(p=>({...p,width:1200,height:900})),album={id:'album-4a197d4e',title:'付费图集',description:'',showOnPc:true,showOnMobile:true,purchasable:true,price:100,imageIds:photos.map(p=>p.id),coverImageId:null,milestones:[]};
+ const photos=api.RESTORABLE_PHOTOS.slice(0,6).map(p=>({...p,width:1200,height:900})),album={id:'shiguang-ch1',title:'付费图集',description:'',showOnPc:true,showOnMobile:true,purchasable:true,price:100,imageIds:photos.map(p=>p.id),coverImageId:null,milestones:[]};
  const content={releaseId:'shared-level-rooms-test',gameSettings:structuredClone(DEFAULT_GAME_SETTINGS),taskRewards:structuredClone(DEFAULT_TASK_REWARD_SETTINGS),photos,albums:{albums:[album]},dailyRuntime:{select:()=>photos[0],managedImageIds:()=>new Set(),releasedImageIds:()=>new Set(),albumEntries:()=>[]}};
  globalThis.__sharedLevelRoomsEnv.PUZZLE_CONTENT_SNAPSHOT=()=>content;
  t.after(()=>{db.close();delete globalThis.__sharedLevelRoomsEnv.PUZZLE_DB;delete globalThis.__sharedLevelRoomsEnv.PUZZLE_CONTENT_SNAPSHOT;});

@@ -30,7 +30,7 @@ export function destination(levelId:string,config=configuration){
  return {nextLevelId:index<0?null:ordered[index+1]??null,chapterComplete:config.chapters.some(chapter=>levelId===chapter.id+'-'+chapter.pieces.length)};
 }
 export async function levelsView(owner:string,content:ManagedContentSnapshot,origin:string,now=Date.now(),config=configuration){
- const cleared=new Set((await levelProgress(owner)).filter(row=>row.cleared_at!==null).map(row=>row.level_id)),albums=effectiveManagedAlbums(content,now),photos=new Map(content.photos.map(photo=>[photo.id,photo]));
+ const cleared=new Set((await levelProgress(owner)).filter(row=>row.cleared_at!==null).map(row=>row.level_id)),albums=effectiveManagedAlbums(content,now,{includeHidden:true}),photos=new Map(content.photos.map(photo=>[photo.id,photo]));
  let previous:{id:string;available:boolean}|null=null,current:Level|null=null;
  const chapters=config.chapters.map(chapter=>{
   const album=albums.find(album=>album.id===chapter.albumId),images=chapter.pieces.map((_,index)=>album?.imageIds[index]??null),available=!!album&&images.every(id=>id!==null&&photos.has(id));

@@ -10,16 +10,16 @@ import {newManagedProfile} from '../lib/managed-economy-model.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)),origin='http://localhost',owner='a'.repeat(32),peer='b'.repeat(32),token='c'.repeat(64),now=1800000000000,pieces=[12,16,20,24,30,35];
 globalThis.__sharedLevelsEnv={PUZZLE_LOCAL_ORIGIN:origin,PUZZLE_BETA_CAPACITY:'0'};
-const built=await build({absWorkingDir:root,stdin:{contents:'export * from "./lib/shared-levels";export {sharedClientApi} from "./lib/shared-client-api";export {sharedProfile} from "./lib/shared-client-model";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export const env=globalThis.__sharedLevelsEnv;',loader:'js'}));}}]});
+const built=await build({absWorkingDir:root,stdin:{contents:'export * from "./lib/shared-levels";export {sharedClientApi} from "./lib/shared-client-api";export {sharedProfile} from "./lib/shared-client-model";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";export {managedGalleryPhotos} from "./lib/managed-content";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export const env=globalThis.__sharedLevelsEnv;',loader:'js'}));}}]});
 const api=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
-const chapter=(id,albumId='album-4a197d4e')=>({id,title:'章节 '+id,albumId,pieces:[...pieces]});
+const chapter=(id,albumId='shiguang-ch1')=>({id,title:'章节 '+id,albumId,pieces:[...pieces]});
 const configuration=(chapters=[chapter('ch1'),chapter('ch2','second')])=>({schema:'jigsaw-levels/v1',firstClearEnergy:30,chapters});
 function fixture(t){
  const db=new SqliteD1(':memory:',fileURLToPath(new URL('../drizzle/',import.meta.url)));
  globalThis.__sharedLevelsEnv.PUZZLE_DB=db;
  const photos=api.RESTORABLE_PHOTOS.slice(0,12).map(p=>({...p,width:1200,height:900}));
  const album=(id,images)=>({id,title:id,description:'',showOnPc:true,showOnMobile:true,purchasable:false,price:0,imageIds:images.map(p=>p.id),coverImageId:null,milestones:[]});
- const content={releaseId:'shared-levels-test',gameSettings:structuredClone(DEFAULT_GAME_SETTINGS),taskRewards:structuredClone(DEFAULT_TASK_REWARD_SETTINGS),photos,albums:{albums:[album('album-4a197d4e',photos.slice(0,6)),album('second',photos.slice(6,12))]},dailyRuntime:{select:()=>photos[0],managedImageIds:()=>new Set(),releasedImageIds:()=>new Set(),albumEntries:()=>[]}};
+ const content={releaseId:'shared-levels-test',gameSettings:structuredClone(DEFAULT_GAME_SETTINGS),taskRewards:structuredClone(DEFAULT_TASK_REWARD_SETTINGS),photos,albums:{albums:[album('shiguang-ch1',photos.slice(0,6)),album('second',photos.slice(6,12))]},dailyRuntime:{select:()=>photos[0],managedImageIds:()=>new Set(),releasedImageIds:()=>new Set(),albumEntries:()=>[]}};
  globalThis.__sharedLevelsEnv.PUZZLE_CONTENT_SNAPSHOT=()=>content;
  db.sql.prepare('INSERT INTO puzzle_users VALUES(?,?,?,?,?,?)').run(owner,owner,'关卡玩家','hash','salt',Date.now());
  db.sql.prepare('INSERT INTO puzzle_sessions VALUES(?,?,?)').run(createHash('sha256').update(token).digest('hex'),owner,Date.now()+86400000);
@@ -34,7 +34,7 @@ function fixture(t){
 }
 
 test('level configuration defaults, required fields and malformed documents match the shared contract',()=>{
- assert.deepEqual(api.readLevelConfiguration(),{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'开张',albumId:'album-4a197d4e',pieces}]});
+ assert.deepEqual(api.readLevelConfiguration(),{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'开张',albumId:'shiguang-ch1',pieces,lines:['这就是奶奶的店……好旧啊。','你是……这家店的猫？','回忆碎了，就把它拼回来。','爷爷想不起来早餐店开张那天了……','是爷爷！他在笑！','拾光镇还有好多回忆在等人拼。']}]});
  const bad=[null,[],{}, {...configuration(),schema:'other'}, {...configuration(),firstClearEnergy:-1}, {...configuration(),firstClearEnergy:1.5}, {...configuration(),firstClearEnergy:'30'}, {...configuration(),firstClearEnergy:Number.MAX_SAFE_INTEGER+1}, {...configuration(),chapters:[]}, {...configuration(),chapters:{}}, {...configuration(),extra:true}];
  for(const field of ['schema','firstClearEnergy','chapters']){const input=configuration();delete input[field];bad.push(input);}
  for(const patch of [{id:''},{id:'bad/id'},{id:'A'},{id:'a'.repeat(101)},{title:' '},{title:'一'.repeat(181)},{albumId:null},{albumId:'bad/id'},{pieces:[12]},{pieces:[12,16,20,24,30,0]},{pieces:[12,16,20,24,30,-1]},{pieces:[12,16,20,24,30,1.5]},{pieces:[12,16,20,24,30,'35']},{pieces:[12,16,20,24,30,Number.MAX_SAFE_INTEGER+1]},{extra:true}])bad.push(configuration([{...chapter('ch1'),...patch}]));
@@ -91,16 +91,21 @@ test('view preserves configured order, cover, series title and lines with absolu
  album.coverImageId=null;assert.equal((await f.view(config)).chapters[0].coverImageId,album.imageIds[0]);
 });
 
-test('missing albums, short albums, missing photos and hidden albums make the whole chapter unavailable',async t=>{
+test('missing albums, short albums and missing photos make the whole chapter unavailable',async t=>{
  const f=fixture(t),original=structuredClone(f.content.albums.albums);
- for(const mode of ['missing','short','missing-photo','hidden']){
+ for(const mode of ['missing','short','missing-photo']){
   f.content.albums.albums=structuredClone(original);f.content.photos=[...f.photos];const album=f.content.albums.albums[0];
   if(mode==='missing')f.content.albums.albums.shift();
   if(mode==='short')album.imageIds.pop();
   if(mode==='missing-photo')f.content.photos=f.photos.filter(p=>p.id!==album.imageIds[2]);
-  if(mode==='hidden')album.showOnPc=false;
   await f.clear('ch1-6');const view=await f.view();assert.equal(view.chapters[0].status,'unavailable');assert.ok(view.chapters[0].levels.every(level=>level.status==='unavailable'));assert.equal(view.chapters[1].levels[0].status,'locked');assert.equal(view.current,null);
  }
+});
+
+test('a level-only album hidden on both ends still supplies the chapter but stays out of the gallery',async t=>{
+ const f=fixture(t),album=f.content.albums.albums[0];album.showOnPc=false;album.showOnMobile=false;
+ const view=await f.view();assert.equal(view.chapters[0].status,'available');assert.equal(view.current.id,'ch1-1');assert.deepEqual(view.chapters[0].levels.map(level=>level.imageId),album.imageIds.slice(0,6));
+ assert.ok(api.managedGalleryPhotos(f.content).every(photo=>!album.imageIds.includes(photo.id)));
 });
 
 test('level availability follows effective album release timing',async t=>{
@@ -123,7 +128,7 @@ test('GET levels uses player cookies, returns the shared shape and never creates
  assert.match(response.headers.get('set-cookie'),/^puzzle_guest=[a-f0-9]{64};/);assert.match(response.headers.get('cache-control'),/no-store/);
  const view=response.data;assert.deepEqual(Object.keys(view).sort(),['chapters','current','firstClearEnergy','seriesTitle']);assert.equal(view.seriesTitle,'拾光物语');assert.equal(view.firstClearEnergy,30);
  assert.deepEqual(Object.keys(view.chapters[0]).sort(),['albumId','coverImageId','coverSrc','id','levels','status','title']);
- assert.deepEqual(Object.keys(view.current).sort(),['id','imageId','line','pieces','status','title']);assert.equal(view.current.id,'ch1-1');assert.equal(view.current.line,null);assert.ok(view.chapters[0].coverSrc.startsWith(origin+'/'));
+ assert.deepEqual(Object.keys(view.current).sort(),['id','imageId','line','pieces','status','title']);assert.equal(view.current.id,'ch1-1');assert.equal(view.current.line,'这就是奶奶的店……好旧啊。');assert.ok(view.chapters[0].coverSrc.startsWith(origin+'/'));
  const cookie=response.headers.get('set-cookie').split(';')[0];assert.deepEqual((await f.request('/api/levels',cookie)).data,view);
  assert.equal((await f.request('/api/mobile/profile',cookie)).data.newcomer,true);
  for(const table of ['puzzle_level_progress','puzzle_rooms'])assert.equal(f.db.sql.prepare('SELECT COUNT(*) n FROM '+table).get().n,0);
