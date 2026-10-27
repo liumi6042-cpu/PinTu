@@ -24,7 +24,8 @@ import * as lobbyRoute from '../app/api/lobby/route';
 import {webDiagnosticsAllowed,createWebDiagnostic,webDiagnosticRoom} from './shared-diagnostics';
 import {sharedLobbyExtras} from './shared-lobby-extras';
 import {sharedContributionView} from './shared-contribution-ranking';
-import {levelsView,levelProgress} from './shared-levels';
+import {levelsView,levelProgress,destination} from './shared-levels';
+import {createSharedLevelRoom} from './shared-level-rooms';
 
 type Data=Record<string,any>;
 const phrases=['大家好！','我来找边缘','这块放这里','稍等一下','一起加油！','我来拼边缘','我来拼中间','请稍等一下','这一块在这里','谢谢你！','拼得真棒！','我要离开了','👏','👍','😊','🧩'];
@@ -153,7 +154,9 @@ async function sharedRoom(request:Request,path:string,input:Data){
  const effectiveInput=input.type==='realtime-action'?{...input.envelope?.action,requestId:input.envelope?.id}:input;
  if(target&&(target.completedAt||!part&&method==='POST'&&effectiveInput.type==='drop')){
   try{const ctx=await context(request);if(!part&&method==='POST'&&effectiveInput.type==='drop'){data.mobileProfile=ctx.profile;const contribution=data.realtimeActionReplayed?undefined:await dropContribution(ctx,id,data.realtimeActionRevision??data.revision,effectiveInput);if(contribution)data.mobileContribution=contribution;}
-   if(target.completedAt){const receipts=ctx.state.receipts??{},result=receipts['completion:'+id]??{};target.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:result.coins??0,fragments:result.fragments??0,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0),ranking:contributionView!.ranking};}
+   if(target.completedAt){const receipts=ctx.state.receipts??{},result=receipts['completion:'+id]??{};target.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:result.coins??0,fragments:result.fragments??0,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0),ranking:contributionView!.ranking};
+    if(current.levelId&&current.ownerId===ctx.player.id){const progress=(await levelProgress(ctx.player.id)).find(row=>row.level_id===current.levelId);target.mobileResult.levelClear={levelId:current.levelId,energy:0,firstClear:progress?.room_id===id,...destination(current.levelId)};}
+   }
   }catch{/* A committed room move must stay successful if optional profile reads fail. */}
  }
  delete data.realtimeActionRevision;
@@ -162,6 +165,14 @@ async function sharedRoom(request:Request,path:string,input:Data){
 }
 async function createSharedRoom(request:Request,input:Data){
  const ctx=await context(request),mode=input.mode??'selected',pieces=input.pieces;
+ if(mode==='level'){
+  let levelRequest=forwarded(request,'/api/rooms',{});
+  if(ctx.player.cookie){const headers=new Headers(levelRequest.headers);headers.set('Cookie',[(headers.get('Cookie')??''),ctx.player.cookie.split(';')[0]].filter(Boolean).join('; '));levelRequest=new Request(levelRequest,{headers});}
+  const response=await createSharedLevelRoom(levelRequest,input.levelId,ctx.content);if(!response.ok)return response;
+  const data=await responseData(response);await webRecordJoin(localDb(),[ctx.player.id],data.room.id);data.room.photo=roomPhoto(data.room,ctx.origin);
+  const contributionView=await sharedContributionView(await readRoom(data.room.id),ctx.player.id);data.room.members=(data.room.members??[]).map((member:Data)=>({...member,...contributionView.member(member.id)}));
+  return withPlayerCookie(replaceResponse(response,data),ctx.player);
+ }
  if(![108,300,500].includes(pieces))return json({error:'请选择108、300或500片；更大片数暂未开放',code:'LEGACY_CREATE_REQUIRED',compatUrl:'/play'},409);
  if(!['selected','random','daily'].includes(mode))throw new RoomError('创建方式无效');
  let imageId=input.imageId;

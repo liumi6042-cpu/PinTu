@@ -40,11 +40,12 @@ export async function saveCompletion(room:Room){
  if(!room.completedAt||!room.visibility)return;
  const database=localDb(),commands=[database.prepare('UPDATE puzzle_room_directory SET completed_at=? WHERE room_id=?').bind(room.completedAt,room.id)];
  const names=Object.values(room.participants||{});
- if(!room.customImage&&room.startedAt!=null&&names.length&&placedCount(room.puzzle)===room.puzzle.cols*room.puzzle.rows){
+ if(!room.levelId&&!room.customImage&&room.startedAt!=null&&names.length&&placedCount(room.puzzle)===room.puzzle.cols*room.puzzle.rows){
  commands.push(database.prepare('INSERT OR IGNORE INTO puzzle_results (room_id,mode,image_id,piece_count,player_count,elapsed_ms,completed_at,players_json) VALUES (?,?,?,?,?,?,?,?)').bind(room.id,room.visibility==='solo'?'solo':'team',room.puzzle.imageId,placedBand(room),names.length,roomElapsedMs(room,room.completedAt),room.completedAt,JSON.stringify(names)));
  commands.push(database.prepare('INSERT OR IGNORE INTO puzzle_result_players (room_id,owner_id) SELECT ?,value FROM json_each(?)').bind(room.id,JSON.stringify(Object.keys(room.participants||{}))));
  }
  await database.batch(commands);
+ if(room.levelId&&room.ownerId){const {recordLevelClear}=await import('./shared-levels');await recordLevelClear(room.ownerId,room.levelId,room.id,room.completedAt);}
 }
 type CardRow={artworkData:string|null;customImageData:string|null;customTitle:number;acceptingNew:number;lastPlayedAt:number;id:string;title:string;imageId:string;pieces:number;visibility:RoomVisibility;expiresAt:number;completedAt:number|null;startedAt:number|null;online:number;placed:number};
 const summaryColumns=`json_extract(r.data,'$.artwork') AS artworkData,json_extract(r.data,'$.customImage') AS customImageData,(json_extract(r.data,'$.title') IS NOT NULL) AS customTitle,COALESCE(json_extract(r.data,'$.acceptingNew'),1) AS acceptingNew,d.room_id AS id,d.title,d.image_id AS imageId,d.piece_count AS pieces,d.visibility,d.expires_at AS expiresAt,d.completed_at AS completedAt,COALESCE(json_extract(r.data,'$.lastPlayedAt'),d.created_at) AS lastPlayedAt,json_extract(r.data,'$.startedAt') AS startedAt,

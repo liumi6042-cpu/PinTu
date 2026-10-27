@@ -9,7 +9,7 @@ export async function membershipFor(userId:string):Promise<MembershipRecord|null
   return row?{...row,cancelAtPeriodEnd:!!row.cancelAtPeriodEnd}:null;
 }
 export async function ownedRoomCount(userId:string,now=Date.now()){
-  const row=await localDb().prepare("SELECT COUNT(*) AS count FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL AND NOT EXISTS(SELECT 1 FROM puzzle_shared_created_hidden h WHERE h.owner_id=puzzle_room_directory.owner_id AND h.room_id=puzzle_room_directory.room_id)").bind(userId,now).first<{count:number}>();return row?.count||0;
+  const row=await localDb().prepare("SELECT COUNT(*) AS count FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL AND NOT EXISTS(SELECT 1 FROM puzzle_rooms lr WHERE lr.id=puzzle_room_directory.room_id AND json_extract(lr.data,'$.levelId') IS NOT NULL) AND NOT EXISTS(SELECT 1 FROM puzzle_shared_created_hidden h WHERE h.owner_id=puzzle_room_directory.owner_id AND h.room_id=puzzle_room_directory.room_id)").bind(userId,now).first<{count:number}>();return row?.count||0;
 }
 export async function membershipSummary(userId?:string):Promise<MembershipSummary>{
   const [membership,usedRooms]=userId?await Promise.all([membershipFor(userId),ownedRoomCount(userId)]):[null,0];
@@ -24,7 +24,7 @@ export async function insertMemberRoom(room:Room,userId:string){
   const result=await db.batch([
     db.prepare(`INSERT INTO puzzle_rooms (id,revision,data,expires_at) SELECT ?,0,?,?
       WHERE (?='solo' OR EXISTS (SELECT 1 FROM puzzle_memberships WHERE user_id=? AND plan='puzzle' AND status='active' AND starts_at<=? AND expires_at>?))
-      AND (?='solo' OR (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL AND NOT EXISTS(SELECT 1 FROM puzzle_shared_created_hidden h WHERE h.owner_id=puzzle_room_directory.owner_id AND h.room_id=puzzle_room_directory.room_id))<?)
+      AND (?='solo' OR (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL AND NOT EXISTS(SELECT 1 FROM puzzle_rooms lr WHERE lr.id=puzzle_room_directory.room_id AND json_extract(lr.data,'$.levelId') IS NOT NULL) AND NOT EXISTS(SELECT 1 FROM puzzle_shared_created_hidden h WHERE h.owner_id=puzzle_room_directory.owner_id AND h.room_id=puzzle_room_directory.room_id))<?)
       AND (? IS NULL OR EXISTS(SELECT 1 FROM puzzle_user_images WHERE id=? AND owner_id=?))`).bind(room.id,JSON.stringify(room),room.expiresAt,room.visibility,userId,now,now,room.visibility,userId,now,MEMBER_ROOM_LIMIT,room.customImage?.id??null,room.customImage?.id??null,userId),
     db.prepare(`INSERT INTO puzzle_room_directory (room_id,visibility,owner_id,title,image_id,piece_count,created_at,expires_at,completed_at,slot)
       SELECT ?,?,?,?,?,?,?,?,NULL,NULL WHERE EXISTS (SELECT 1 FROM puzzle_rooms WHERE id=?)`).bind(room.id,room.visibility,userId,room.title||photo.title,photo.id,pieceBand(room.puzzle.cols*room.puzzle.rows)??room.puzzle.cols*room.puzzle.rows,room.createdAt,room.expiresAt,room.id),

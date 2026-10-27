@@ -28,7 +28,7 @@ export async function readRoom(id:string){
  const room=JSON.parse(row.data!) as Room;room.persistent=true;room.revision=row.revision;room.expiresAt=row.expires_at;
  // An intact upload reference stays playable in every room kind, including a
  // public one: uploaded pictures can now be opened to the lobby.
- if(!RESTORABLE_PHOTO_IDS.includes(room.puzzle.imageId)&&!(room.customImage?.id===room.puzzle.imageId&&/^custom-[a-f0-9]{32}$/.test(room.puzzle.imageId)&&['solo','private','public'].includes(room.visibility||'')))throw new RoomError('这张早期试玩图片已下架，请重新选择本站生成的拼图',410);
+ if(!RESTORABLE_PHOTO_IDS.includes(room.puzzle.imageId)&&!(room.levelId&&readManagedContent()?.photos.some(photo=>photo.id===room.puzzle.imageId))&&!(room.customImage?.id===room.puzzle.imageId&&/^custom-[a-f0-9]{32}$/.test(room.puzzle.imageId)&&['solo','private','public'].includes(room.visibility||'')))throw new RoomError('这张早期试玩图片已下架，请重新选择本站生成的拼图',410);
  normalizePuzzle(room.puzzle);if(room.completedAt){await saveCompletion(room);await saveAchievementCompletion(room);}
  return roomCache.put(room,row.data!.length*2);
 }
@@ -54,7 +54,7 @@ async function commitRoom<T>(id:string,fn:(room:Room)=>T,stream?:SharedActionStr
    room.expiresAt=Math.max(room.lastPlayedAt||room.createdAt,room.publicLastSeenAt||0)+30*86400000;
   }else if(base.visibility!=='public'&&room.visibility==='public'){restartPublicLifetime(room);touchPublicRoom(room,now);}
   const admission=becomingPrivate?` AND EXISTS(SELECT 1 FROM puzzle_memberships WHERE user_id=? AND plan='puzzle' AND status='active' AND starts_at<=? AND expires_at>?)
-    AND (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL AND NOT EXISTS(SELECT 1 FROM puzzle_shared_created_hidden h WHERE h.owner_id=puzzle_room_directory.owner_id AND h.room_id=puzzle_room_directory.room_id))<?`:'';
+    AND (SELECT COUNT(*) FROM puzzle_room_directory WHERE owner_id=? AND visibility='private' AND completed_at IS NULL AND expires_at>? AND slot IS NULL AND NOT EXISTS(SELECT 1 FROM puzzle_rooms lr WHERE lr.id=puzzle_room_directory.room_id AND json_extract(lr.data,'$.levelId') IS NOT NULL) AND NOT EXISTS(SELECT 1 FROM puzzle_shared_created_hidden h WHERE h.owner_id=puzzle_room_directory.owner_id AND h.room_id=puzzle_room_directory.room_id))<?`:'';
   const admissionValues=becomingPrivate?[room.ownerId!,now,now,room.ownerId!,now,MEMBER_ROOM_LIMIT]:[];
   const serialized=JSON.stringify(room,(key,value)=>key==='persistent'?undefined:value),database=db(),commands=[database.prepare('UPDATE puzzle_rooms SET data = ?, revision = ?, expires_at = ? WHERE id = ? AND revision = ?'+admission).bind(serialized,room.revision,room.expiresAt,id,before,...admissionValues)];
   // The immediately preceding CAS is the only operation allowed to enqueue this
