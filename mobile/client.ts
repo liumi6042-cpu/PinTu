@@ -125,6 +125,7 @@ export class GameClient{
  async json<T>(path:string,method='GET',body?:unknown,headers:Record<string,string>={}):Promise<T>{const reply=await this.request(path,method,body,headers);if(reply.status<200||reply.status>=300)throw Object.assign(Error(typeof reply.data?.error==='string'?reply.data.error:'暂时无法完成，请重试'),{status:reply.status,code:reply.data?.code,profile:reply.data?.profile,compatUrl:reply.data?.compatUrl});return reply.data as T;}
  post<T>(path:string,body:unknown){return this.json<T>(path,'POST',body,{'Content-Type':'application/json'});}
  playerCard(code:string,room?:string){return this.json<PlayerCard>('/api/mobile/players/'+encodeURIComponent(code)+'/card'+(room?'?room='+encodeURIComponent(room):''));}
+ acceptOfflineProfile(profile:MobileProfile){this.applyProfile(profile);}
  async refresh(){await this.json<MobileProfile>('/api/mobile/profile');return this.profile;}
  /** Accept only responses from the currently admitted room and account. */
  acceptRoomResponse(ticket:RoomTicket,value:unknown){
