@@ -6,14 +6,14 @@ const layouts=[[390,844,'drawTabBar'],[844,390,'drawNavRail'],[1280,800,'drawDes
 const overlaps=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 const redDots=f=>f.fills.filter(fill=>fill.color==='#b46177'&&fill.r.w===8&&fill.r.h===8);
 
-for(const [width,height,draw]of layouts)test(`${width}x${height}: five destinations draw, open and select story`,async()=>{
+for(const [width,height,draw]of layouts)test(`${width}x${height}: story leads the five destinations and opens, selects`,async()=>{
  const f=fixture({width,height}),items=f.app.navItems;
- assert.equal(items.length,5);assert.deepEqual(items.map(([route])=>route),['lobby','gallery','collection','chapter','friends']);assert.deepEqual(items[3],['chapter','故事','story']);
+ assert.equal(items.length,5);assert.deepEqual(items.map(([route])=>route),['chapter','lobby','gallery','collection','friends']);assert.deepEqual(items[0],['chapter','故事','story']);
  f.app[draw]();assert.equal(f.texts.filter(text=>text==='故事').length,1);assert.ok(f.icons.some(icon=>icon.key==='story'));assert.equal(redDots(f).length,1);
  const label=f.glyphs.find(glyph=>glyph.value==='故事');
  const hit=f.hits.find(({r})=>label.x>=r.x&&label.x<r.x+r.w&&label.y>=r.y&&label.y<r.y+r.h);assert.ok(hit);hit.fn();await tick();assert.equal(f.app.route,'chapter');assert.equal(f.app.navVisible,true);assert.equal(f.created.length,0);
  f.clear();f.app[draw]();const selected=f.glyphs.find(glyph=>glyph.value==='故事');assert.equal(selected.color,f.stage.palette.ink);
- if(draw==='drawTabBar')assert.ok(f.fills.some(fill=>fill.color==='#a85567'&&fill.r.x>width*.6&&fill.r.x<width*.8));
+ if(draw==='drawTabBar')assert.ok(f.fills.some(fill=>fill.color==='#a85567'&&fill.r.x>=0&&fill.r.x<width*.2));
  else{const frame=f.frames.find(frame=>frame.key==='button-cream-selected'&&overlaps(frame.r,{x:selected.x,y:selected.y,w:12,h:12}));assert.ok(frame);}
 });
 

@@ -28,7 +28,7 @@ export function cropCover(imageW:number,imageH:number,crop:ComicCrop,panel:Pick<
  return {x:clamp((crop[0]+crop[2]/2)*iw-w/2,0,iw-w),y:clamp((crop[1]+crop[3]/2)*ih-h/2,0,ih-h),w,h};
 }
 export function comicLayout(stageW:number,stageH:number,landscape:boolean){
- const margin=Math.min(16,stageW*.035,stageH*.035),gutter=Math.min(10,stageW*.022,stageH*.022),page:Rect={x:margin,y:margin+40,w:stageW-2*margin,h:stageH-2*margin-(landscape?100:174)};
+ const gutter=Math.min(10,stageW*.022,stageH*.022),page:Rect={x:44,y:56,w:stageW-88,h:stageH-144};
  const inner={x:page.x+gutter,y:page.y+gutter,w:page.w-2*gutter,h:page.h-2*gutter};let panels:Rect[];
  if(landscape){const left=(inner.w-gutter)*.48,right=inner.w-left-gutter,top=(inner.h-gutter)*.46,x=inner.x+left+gutter;
   panels=[{x:inner.x,y:inner.y,w:left,h:inner.h},{x,y:inner.y,w:(right-gutter)/2,h:top},{x:x+(right+gutter)/2,y:inner.y,w:(right-gutter)/2,h:top},{x,y:inner.y+top+gutter,w:right,h:inner.h-top-gutter}];
@@ -63,13 +63,13 @@ export function drawComicText(s:Stage,item:ComicText,panel:Rect,reserveBottom=0)
  });
 }
 
-export type ComicPageState={levelId:string;index:number;sequence:boolean;fromClear:boolean;started:number;shown:number;returnTo:'completion'|null};
+export type ComicPageState={levelId:string;index:number;sequence:boolean;fromClear:boolean;started:number;shown:number;returnTo:'completion'|null;ending?:boolean;turn?:{started:number;direction:number}};
 export function reducedComicMotion(){return typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;}
 export function comicTextCount(comic:Comic){return comic.panels.reduce((n,p)=>n+p.texts.length,0);}
 /** Drawing uses a synchronous image painter, so a page never waits for an API. */
 export function drawComicPage(s:Stage,state:ComicPageState,comic:Comic,ending:string,paint:(r:Rect,crop:ComicCrop,zoom:number)=>void,now=Date.now(),imageSize:{w:number;h:number}|null=null){
  const layout=comicLayout(s.w,s.h,s.w>s.h),{page,panels}=layout,c=s.ctx,reduced=reducedComicMotion(),elapsed=now-state.started,split=state.fromClear&&!reduced&&elapsed<800,t=split?clamp(elapsed/800,0,1):1,ease=t*t*(3-2*t);
- c.fillStyle='#3d2129';c.fillRect(0,0,s.w,s.h);c.fillStyle='#fffdf8';c.fillRect(page.x,page.y,page.w,page.h);
+ c.fillStyle='#fffdf8';c.fillRect(page.x,page.y,page.w,page.h);
  if(split){c.save();c.globalAlpha=1-ease;paint(page,[0,0,1,1],1);c.restore();}
  const iw=imageSize?.w??page.w,ih=imageSize?.h??page.h,full=cropCover(iw,ih,[0,0,1,1],page),scale=page.w/full.w;
  let textIndex=0;
@@ -78,7 +78,7 @@ export function drawComicPage(s:Stage,state:ComicPageState,comic:Comic,ending:st
   const fade=reduced||state.fromClear||state.shown>0?1:clamp((elapsed-index*100)/220,0,1);c.save();c.globalAlpha=split?1:fade;
   paint(r,panel.crop,ease);c.globalAlpha*=split?ease:1;c.lineWidth=2.5;c.strokeStyle='#2a1a1f';c.strokeRect(r.x+1.25,r.y+1.25,r.w-2.5,r.h-2.5);
   for(const text of panel.texts){if(!split&&textIndex<state.shown)drawComicText(s,text,target,index===3?24:0);textIndex++;}
-  if(index===3&&!split&&state.shown>=comicTextCount(comic)){c.fillStyle='#fffdf8';c.fillRect(target.x+2,target.y+target.h-25,target.w-4,23);s.text(ending,target.x+9,target.y+target.h-20,12,'#2a1a1f',800,target.w-18);}
+  if(ending&&index===3&&!split&&state.shown>=comicTextCount(comic)){c.fillStyle='#fffdf8';c.fillRect(target.x+2,target.y+target.h-25,target.w-4,23);s.text(ending,target.x+9,target.y+target.h-20,12,'#2a1a1f',800,target.w-18);}
   c.restore();
  }));
  return {page,animating:!reduced&&elapsed<(state.fromClear?800:520)};

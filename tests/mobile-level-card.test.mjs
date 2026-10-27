@@ -24,12 +24,12 @@ test('landscape daily artwork uses the height freed by removing the strip and ke
 
 test('chapter pages show 0/6 and 3/6 states on the timeline and both current actions launch the configured level',async()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]])for(const cleared of [0,3]){
-  const f=fixture({width,height,data:levels(cleared)});await artwork(f);f.app.drawChapter();assert.ok(f.texts.includes('小窝的故事'));assert.ok(f.texts.includes('第 1 章 · 开张'));assert.ok(f.texts.includes(cleared+' / 6 格'));assert.ok(f.texts.includes('第 '+(cleared+1)+' 格'));assert.ok(f.texts.includes(f.app.levels.current.pieces+' 片 · 拼完揭晓'));assert.equal(f.texts.filter(text=>text==='?').length,5-cleared);
-  assert.equal(f.images.length,cleared+1);assert.ok(f.images.slice(0,cleared).every(image=>image.alpha===1));const current=f.images.at(-1);assert.equal(current.alpha,.28);assert.equal(current.filter,'grayscale(1) blur(2px)');assert.equal(f.stage.ctx.globalAlpha,1);assert.equal(f.stage.ctx.filter,'none');assert.equal(f.dashes.length,2*(5-cleared));assert.equal(f.strokes.filter(stroke=>stroke.color==='#cf9f52').length,1);
+  const f=fixture({width,height,data:levels(cleared)});await artwork(f);f.app.drawChapter();assert.ok(f.texts.includes('小窝的故事'));assert.ok(f.texts.includes('第 1 章 · 开张'));assert.ok(f.texts.includes(cleared+' / 6 格'));assert.ok(f.texts.includes('第 '+(cleared+1)+' 格 · '+f.app.levels.current.pieces+' 片'));assert.ok(f.texts.includes('拼完解锁这一页'));assert.equal(f.icons.filter(icon=>icon.key==='lock').length,5-cleared);
+  assert.equal(f.images.length,cleared);assert.ok(f.images.every(image=>image.alpha===1&&image.filter==='none'));assert.equal(f.stage.ctx.globalAlpha,1);assert.equal(f.stage.ctx.filter,'none');assert.equal(f.dashes.length,2*(5-cleared));assert.equal(f.strokes.filter(stroke=>stroke.color==='#cf9f52').length,1);
   const cells=f.strokes;assert.equal(cells.length,6);
   const button=f.buttons.find(button=>button.label==='\u62fc\u7b2c '+(cleared+1)+' \u683c\uff08'+f.app.levels.current.pieces+' \u7247\uff09');assert.ok(button);
   if(width>height){assert.equal(f.app.extent,0);assert.ok(button.r.y+button.r.h<=f.app.bodyBottom);}else assert.ok(f.app.extent>0);
-  button.fn();await tick();assert.deepEqual(f.created,[{mode:'level',levelId:'ch1-'+(cleared+1),requestId:'request'}]);f.app.route='chapter';f.app.room=null;f.hits.at(-1).fn();await tick();assert.equal(f.created.length,2);assert.equal(f.created[1].levelId,'ch1-'+(cleared+1));
+  button.fn();await tick();assert.deepEqual(f.created,[{mode:'level',levelId:'ch1-'+(cleared+1),requestId:'request'}]);f.app.route='chapter';f.app.room=null;f.hits[cleared].fn();await tick();assert.equal(f.created.length,2);assert.equal(f.created[1].levelId,'ch1-'+(cleared+1));
  }
 });
 
@@ -49,15 +49,15 @@ test('chapter keeps phone navigation and the lobby profile header without the lo
  for(const [width,height]of [[390,844],[844,390]]){
   const f=fixture({width,height});f.platform.setOrientation=()=>{};f.app.drawHeader();const top=f.app.bodyTop;assert.ok(f.texts.includes('任务'));f.clear();f.app.route='chapter';f.app.drawHeader();assert.equal(f.app.bodyTop,top);assert.ok(f.icons.some(icon=>icon.key==='avatar'));assert.ok(!f.texts.includes('任务'));assert.equal(f.app.navVisible,true);
  }
- const f=fixture({data:levels(0)});await artwork(f);delete f.stage.ctx.filter;f.stage.ctx.setLineDash=undefined;Object.assign(f.stage.palette,{ink:'#fff2e3',cream:'#332a34',placeholder:'#463644',line:'#85616c'});f.app.drawChapter();assert.equal(f.images.length,1);assert.equal(f.dashes.length,0);const label=f.glyphs.find(glyph=>glyph.value==='第 1 格');assert.equal(label.color,f.stage.palette.cream);assert.notEqual(label.color,f.stage.palette.ink);assert.equal(f.stage.ctx.globalAlpha,1);
+ const f=fixture({data:levels(0)});await artwork(f);delete f.stage.ctx.filter;f.stage.ctx.setLineDash=undefined;Object.assign(f.stage.palette,{ink:'#fff2e3',cream:'#332a34',placeholder:'#463644',line:'#85616c'});f.app.drawChapter();assert.equal(f.images.length,0);assert.equal(f.dashes.length,0);const label=f.glyphs.find(glyph=>glyph.value==='第 1 格 · 12 片');assert.equal(label.color,f.stage.palette.ink);assert.notEqual(label.color,f.stage.palette.cream);assert.equal(f.stage.ctx.globalAlpha,1);
 });
 
 test('cleared cells open their comic without requests and close directly with Escape or the cross',async()=>{
  const f=fixture();await artwork(f);f.app.stopCheers=()=>{};f.app.drawChapter();const reads=f.reads.length;f.hits[1].fn();assert.equal(f.app.modal,'levelComic');assert.equal(f.app.comicPage.levelId,'ch1-2');assert.equal(f.app.comicPage.index,1);assert.equal(f.reads.length,reads);
  f.clear();f.app.drawModal();assert.equal(f.images.length,4);assert.ok(f.images.every(image=>image.src==='/chapter-1.webp'));assert.ok(!f.buttons.some(button=>button.label.includes('解锁')||button.label.includes('建房')));
  f.app.input({type:'key',key:'Escape',keyDown:true,points:[],changed:[]});assert.equal(f.app.modal,null);assert.equal(f.app.route,'lobby');
- f.app.openLevelComic('ch1-1');f.clear();f.app.drawModal();f.buttons.find(button=>button.label==='关闭').fn();assert.equal(f.app.modal,null);
- const noPhoto=fixture();noPhoto.app.drawChapter();assert.equal(noPhoto.hits.length,1);noPhoto.app.openLevelComic('ch1-1');assert.equal(noPhoto.app.modal,'levelComic');assert.equal(noPhoto.reads.length,0);
+ f.app.openLevelComic('ch1-1');f.clear();f.app.drawModal();f.buttons.find(button=>button.label==='✕').fn();assert.equal(f.app.modal,null);
+ const noPhoto=fixture();noPhoto.app.drawChapter();assert.equal(noPhoto.hits.length,6);noPhoto.app.openLevelComic('ch1-1');assert.equal(noPhoto.app.modal,'levelComic');assert.equal(noPhoto.reads.length,0);
 });
 
 test('returning players enter the chapter once, while complete, unavailable, invited, busy and modal starts stay in place',async()=>{
