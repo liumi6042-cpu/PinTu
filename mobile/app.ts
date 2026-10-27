@@ -1070,7 +1070,7 @@ export class GameApp{
   const center=(text:string,y:number,size:number,color='#fffdf8',weight=700)=>s.text(text,(s.w-s.measure(text,size,weight))/2,y,size,color,weight,s.w-110);
   const title=page.ending?'故事待续':'第 '+(page.index+1)+' 格 · '+(timeLabelFor(chapter,page.index,level)??chapter.title);
   center(title,view.top+18,s.w<360?13:16);s.button({x:4,y:view.top+4,w:44,h:44},'✕',()=>this.closeModal(),{fontSize:20});
-  const count=Math.min(page.index+1,chapter.levels.length)+' / '+chapter.levels.length;s.text(count,s.w-64,view.top+19,13,'#fffdf8',700,60);
+  const count=Math.min(page.index+1,chapter.levels.length)+' / '+chapter.levels.length;if(!page.ending)s.text(count,s.w-64,view.top+19,13,'#fffdf8',700,60);
   s.hit(area,()=>this.advanceComic());
   if(page.ending){
    const next=chapter.levels[limit],text=next?'下一页：拼完第 '+(limit+1)+' 格解锁':'第 1 章 完',size=Math.min(20,(area.w-24)/Math.max(1,[...text].length)),y=area.y+area.h/2-(next?44:12);
@@ -1082,8 +1082,9 @@ export class GameApp{
   const arrowY=area.y+(area.h-48)/2;
   // Disabled arrows must consume taps instead of falling through to the page.
   s.hit({x:2,y:arrowY,w:40,h:48},()=>{});s.hit({x:s.w-42,y:arrowY,w:40,h:48},()=>{});
-  s.button({x:2,y:arrowY,w:40,h:48},'‹',()=>this.turnComic(page.index-1),{disabled:page.index===0,fontSize:30});
-  s.button({x:s.w-42,y:arrowY,w:40,h:48},'›',()=>this.turnComic(page.index+1),{disabled:!!page.ending,fontSize:30});
+  const arrow=(x:number,label:string,fn:()=>void,disabled:boolean)=>{c.save();if(disabled)c.globalAlpha=.35;s.button({x,y:arrowY,w:40,h:48},label,fn,{disabled,fontSize:30});c.restore();};
+  arrow(2,'‹',()=>this.turnComic(page.index-1),page.index===0);
+  arrow(s.w-42,'›',()=>this.turnComic(page.index+1),!!page.ending);
   const dotsY=area.y+area.h+8,dotStep=Math.min(40,(s.w-16)/(limit+1)),dotsX=(s.w-dotStep*(limit+1))/2;
   for(let index=0;index<=limit;index++){
    const x=dotsX+index*dotStep;c.save();c.strokeStyle='#fff4cf';c.fillStyle=index===page.index?'#fff4cf':'#cf9f9f';c.lineWidth=2;c.beginPath();c.arc(x+dotStep/2,dotsY+20,4,0,Math.PI*2);if(index<limit)c.fill();else c.stroke();c.restore();

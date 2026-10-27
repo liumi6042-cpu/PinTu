@@ -141,10 +141,10 @@ test('page taps reveal one segment, all-display reveals the rest, gestures turn,
 });
 
 test('the next arrow and a left swipe turn the page even before every line is shown',async()=>{
- const f=await comicFixture({index:0,cleared:3});wireInput(f);redraw(f);assert.equal(f.app.comicPage.shown,0);
+ const f=await comicFixture({index:0,cleared:3});wireInput(f);const alphas={},button=f.stage.button;f.stage.button=(r,label,fn,opts)=>{alphas[label]=f.stage.ctx.globalAlpha;return button(r,label,fn,opts);};redraw(f);assert.equal(f.app.comicPage.shown,0);assert.equal(alphas['‹'],.35,'no previous page: the arrow fades');
  f.buttons.find(b=>b.label==='›').fn();assert.equal(f.app.comicPage.index,1);assert.equal(f.app.comicPage.shown,0);redraw(f);
  swipe(f,-80);assert.equal(f.app.comicPage.index,2);redraw(f);swipe(f,-80);assert.equal(f.app.comicPage.ending,true);assert.equal(f.app.comicPage.index,3);
- redraw(f);swipe(f,-80);assert.equal(f.app.comicPage.index,3,'nothing lies past the ending card');swipe(f,80);assert.equal(f.app.comicPage.index,2);
+ redraw(f);assert.ok(!f.texts.some(text=>/^\d+ \/ \d+$/.test(text)),'the ending card has no page counter');assert.equal(alphas['›'],.35);swipe(f,-80);assert.equal(f.app.comicPage.index,3,'nothing lies past the ending card');swipe(f,80);assert.equal(f.app.comicPage.index,2);
 });
 
 test('turn slides for 250ms; reduced-motion turns immediately without an animation frame',async t=>{
