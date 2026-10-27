@@ -19,6 +19,7 @@ files.add('lib/tap-platform-id.mjs');
 files.add('server/mobile-privacy.mjs');
 files.add('server/mobile-events.mjs');
 files.add('server/mobile-levels.mjs');
+files.add('server/mobile-solo-batch.mjs');
 files.add('config/levels.json');
 files.add('outputs/mobile/room-realtime.mjs');
 files.add('server/room-realtime.LICENSE.txt');
