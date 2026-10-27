@@ -10,9 +10,10 @@ import {gestureFrameSample,type GestureFrame} from '../lib/puzzle-gesture-cache'
 
 type Command={op:'M'|'L'|'C'|'Z';args:number[]};
 type Owner=RoomPieceOwner;
-type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial:number};
+/** sx/sy is the finger's screen point at grab; live turns on once the finger passes DRAG_SLOP or another finger moves the camera. */
+type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial:number;sx:number;sy:number;live:boolean};
 type Pan={pointer:number;x:number;y:number;cx:number;cy:number};
-type Pinch={distance:number;zoom:number;worldX:number;worldY:number};
+type Pinch={a:number;b:number;distance:number;zoom:number;worldX:number;worldY:number;held:boolean};
 const CANVAS_SNAP_FEEDBACK_MS=720;
 type SnapFlash={anchor:number;ids:number[];local:boolean;startedAt:number;until:number;reduced:boolean;xp?:number};
 type ImagePreparation=Readonly<{phase:'loading'|'preparing'|'ready';completed:number;total:number}>;
@@ -20,6 +21,10 @@ type DragSurface={canvas:HTMLCanvasElement;key:string};
 type GestureSurface=GestureFrame&{canvas:HTMLCanvasElement;key:string;sx:number;sy:number};
 type PaperSurface={canvas:HTMLCanvasElement;key:string;bytes:number;image?:CanvasImageSource;close?:()=>void};
 const DRAG_SURFACE_BYTES=24*1024*1024;
+/** Screen distance a held finger travels before the piece follows it, so a press or a shifted grip never nudges a piece. */
+export const DRAG_SLOP=8;
+/** A held group grows by at most this fraction, and at most DRAG_LIFT_PX at its far edge, around the finger. */
+const DRAG_LIFT_SCALE=.08,DRAG_LIFT_PX=6;
 const PAPER_SURFACE_BYTES=12*1024*1024;
 export const CURSOR_SMOOTHING_MS=50;
 const inside=(p:Point,r:Rect)=>p.x>=r.x&&p.y>=r.y&&p.x<=r.x+r.w&&p.y<=r.y+r.h;
@@ -34,7 +39,11 @@ export function parsePuzzlePath(source:string):Command[]{
  return result;
 }
 export function tracePuzzlePath(ctx:CanvasRenderingContext2D,commands:Command[]){
- ctx.beginPath();for(const {op,args:a}of commands){if(op==='M')ctx.moveTo(a[0],a[1]);else if(op==='L')ctx.lineTo(a[0],a[1]);else if(op==='C')ctx.bezierCurveTo(a[0],a[1],a[2],a[3],a[4],a[5]);else ctx.closePath();}
+ ctx.beginPath();appendPuzzlePath(ctx,commands,0,0);
+}
+/** Add one piece outline at (x,y) to the current path, so many pieces share one clip. */
+function appendPuzzlePath(ctx:CanvasRenderingContext2D,commands:Command[],x:number,y:number){
+ for(const {op,args:a}of commands){if(op==='M')ctx.moveTo(x+a[0],y+a[1]);else if(op==='L')ctx.lineTo(x+a[0],y+a[1]);else if(op==='C')ctx.bezierCurveTo(x+a[0],y+a[1],x+a[2],y+a[3],x+a[4],y+a[5]);else ctx.closePath();}
 }
 function flattenPath(commands:Command[]){
  const points:{x:number;y:number}[]=[];let x=0,y=0;
@@ -245,14 +254,20 @@ export class PuzzleBoard implements RoomTable {
    const added=input.changed.filter(p=>inside(p,this.rect)&&!this.pointers.has(p.id));
    for(const p of input.changed)if(inside(p,this.rect))this.pointers.set(p.id,p);
    if(!this.pointers.size)return false;
-   if(this.drag&&this.pointers.has(this.drag.pointer)){if(!this.pan||this.pan.pointer===this.drag.pointer){const p=added.find(p=>p.id!==this.drag!.pointer);if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}this.publishCursor(this.pointers.get(this.drag.pointer)!);this.changed();return true;}
+   if(this.drag&&this.pointers.has(this.drag.pointer)){
+    // While a piece is held, one more finger pans; a third finger turns that pan into a pinch. Further fingers are ignored.
+    const others=[...this.pointers.values()].filter(p=>p.id!==this.drag!.pointer);if(others.length)this.drag.live=true;
+    if(others.length>=2){if(!this.pinch){this.pan=null;this.pinch=this.pinchBetween(others[0],others[1],true);}}
+    else if(!this.pan||this.pan.pointer===this.drag.pointer){const p=added.find(p=>p.id!==this.drag!.pointer);if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}
+    this.publishCursor(this.pointers.get(this.drag.pointer)!);this.changed();return true;
+   }
    if(this.pointers.size>=2){this.beginPinch();return true;}
    const p=[...this.pointers.values()][0],world=this.world(p),group=input.pan?null:this.groupAt(p);
    this.publishCursor(p);
    if(group&&this.ready&&this.network&&this.networkReady){
     if(this.owners[group.id]){this.tell(`${this.owners[group.id].name} 正在移动这组拼块`);return true;}
     if(this.network.canAcquire?.(group.id)===false){this.tell('这组拼块还在确认位置，请稍候');return true;}
-    const serial=++this.serial;this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial};raiseGroup(this.state,group.id);
+    const serial=++this.serial;this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live:false};raiseGroup(this.state,group.id);
     void this.network.acquire(group.id).then(ok=>{if(!ok&&this.drag?.serial===serial){this.cancelNetworkDrag(group.id);this.tell('这组拼块没能确认，已恢复服务器位置');}}).catch(()=>{if(this.drag?.serial===serial)this.cancelNetworkDrag(group.id);});
    }else{const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}
    this.changed();return true;
@@ -260,17 +275,18 @@ export class PuzzleBoard implements RoomTable {
   if(!this.pointers.size){if(input.type==='move'){const p=input.changed[0]??input.points[0];this.publishCursor(p&&inside(p,this.rect)?p:null);this.changed();}return false;}
   if(input.type==='move'){
    for(const p of input.points)if(this.pointers.has(p.id))this.pointers.set(p.id,p);
-   if(this.pinch&&this.pointers.size>=2){const[a,b]=[...this.pointers.values()],center={x:(a.x+b.x)/2-this.rect.x,y:(a.y+b.y)/2-this.rect.y},z=Math.min(5,Math.max(.08,this.pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/this.pinch.distance));this.camera={x:center.x-this.pinch.worldX*z,y:center.y-this.pinch.worldY*z,z};}
-   else{
-    if(this.pan){const p=this.pointers.get(this.pan.pointer);if(p){const v=this.local(p);this.camera.x=this.pan.cx+v.x-this.pan.x;this.camera.y=this.pan.cy+v.y-this.pan.y;}}
-    if(this.drag){const p=this.pointers.get(this.drag.pointer);if(p){const v=this.world(p),dx=this.drag.dx+v.x-this.drag.x,dy=this.drag.dy+v.y-this.drag.y;moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);}}
-   }
+   const a=this.pinch&&this.pointers.get(this.pinch.a),b=this.pinch&&this.pointers.get(this.pinch.b);
+   if(this.pinch&&a&&b){const center={x:(a.x+b.x)/2-this.rect.x,y:(a.y+b.y)/2-this.rect.y},z=Math.min(5,Math.max(.08,this.pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/this.pinch.distance));this.camera={x:center.x-this.pinch.worldX*z,y:center.y-this.pinch.worldY*z,z};}
+   else if(this.pan){const p=this.pointers.get(this.pan.pointer);if(p){const v=this.local(p);this.camera.x=this.pan.cx+v.x-this.pan.x;this.camera.y=this.pan.cy+v.y-this.pan.y;}}
+   // The held piece follows its finger after the camera moves, so it stays under that finger.
+   if(this.drag){const p=this.pointers.get(this.drag.pointer);if(p&&!this.drag.live&&Math.hypot(p.x-this.drag.sx,p.y-this.drag.sy)>=DRAG_SLOP)this.drag.live=true;if(p&&this.drag.live){const v=this.world(p),dx=this.drag.dx+v.x-this.drag.x,dy=this.drag.dy+v.y-this.drag.y;moveGroup(this.state,this.drag.id,dx,dy);this.network?.move(this.drag.id,dx,dy);}}
    if(this.drag)this.publishCursor(this.pointers.get(this.drag.pointer)??null);else if(this.pointers.size===1)this.publishCursor([...this.pointers.values()][0]);else this.publishCursor(null);this.changed();return true;
   }
   if(input.type==='up'){
    if(this.drag&&input.changed.some(p=>p.id===this.drag!.pointer)){const drag=this.drag,group=this.state.groups.find(g=>g.id===drag.id);this.drag=null;this.releaseDragSurface();if(group&&this.network){this.pendingDrops.set(group.id,drag.serial);void this.network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial)this.pendingDrops.delete(group.id);});}}
-   for(const p of input.changed)this.pointers.delete(p.id);this.pan=null;this.pinch=null;
-   if(this.pointers.size){const p=[...this.pointers.values()].find(p=>p.id!==this.drag?.pointer);if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}else this.releaseGestureSurface();
+   const heldPinch=!!this.pinch?.held;for(const p of input.changed)this.pointers.delete(p.id);this.pan=null;this.pinch=null;
+   // A pinch begun while holding keeps zooming on two remaining fingers; otherwise one remaining finger pans.
+   if(this.pointers.size){const others=[...this.pointers.values()].filter(p=>p.id!==this.drag?.pointer),p=others[0];if(heldPinch&&others.length>=2)this.pinch=this.pinchBetween(others[0],others[1],!!this.drag);else if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}else this.releaseGestureSurface();
    // A release outside the board retains the last valid room position.
    const point=this.drag?this.pointers.get(this.drag.pointer):this.pointers.size===1?[...this.pointers.values()][0]:this.pointers.size===0?input.changed[0]:null;
    this.publishCursor(point&&inside(point,this.rect)?point:null);this.changed();return true;
@@ -280,9 +296,9 @@ export class PuzzleBoard implements RoomTable {
  private beginPinch(){
   this.releaseDragSurface();
   if(this.drag){this.network?.release(this.drag.id);this.drag=null;++this.serial;}this.pan=null;
-  const[a,b]=[...this.pointers.values()],center={id:-1,x:(a.x+b.x)/2,y:(a.y+b.y)/2},world=this.world(center);
-  this.pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:this.camera.z,worldX:world.x,worldY:world.y};this.publishCursor(null);this.changed();
+  const[a,b]=[...this.pointers.values()];this.pinch=this.pinchBetween(a,b,false);this.publishCursor(null);this.changed();
  }
+ private pinchBetween(a:Point,b:Point,held:boolean):Pinch{const world=this.world({id:-1,x:(a.x+b.x)/2,y:(a.y+b.y)/2});return{a:a.id,b:b.id,distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:this.camera.z,worldX:world.x,worldY:world.y,held};}
  private cancelInput(release:boolean){if(release&&this.drag)this.network?.release(this.drag.id);this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.trayTouch=null;this.pointers.clear();this.publishCursor(null);++this.serial;this.changed();}
  cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
  syncRemote(next:PuzzleState,owners:Record<string,Owner>,protectedIds:ReadonlySet<number>,showFeedback=true){
@@ -435,10 +451,17 @@ export class PuzzleBoard implements RoomTable {
   // Keep placed pieces below every loose group without reordering synced state.
   // Within each layer, preserve the existing raiseGroup / hit-testing order.
   for(const locked of [true,false])for(const group of this.state.groups){if(group.id===skipId||(onlyId!==undefined&&group.id!==onlyId)||group.locked!==locked||!visibleGroup(group,this.pieces,this.edges))continue;const owner=this.owners[group.id];
+   const lift=view===this&&this.drag?.id===group.id?this.dragLift(group):null;
+   if(lift&&paint!=='overlays'){
+    // One silhouette under the whole group, so seams inside it never darken.
+    ctx.save();ctx.translate(lift.x+2.5/cam.z,lift.y+7/cam.z);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);ctx.beginPath();
+    for(const id of group.pieces){const p=this.pieces[id];appendPuzzlePath(ctx,this.paths[id],this.board.x+p.col*w+group.dx,this.board.y+p.row*h+group.dy);}
+    ctx.fillStyle=colors.dragShadow;ctx.fill();ctx.restore();
+   }
    for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;if(x+w+this.tile.pad<(0-cam.x)/cam.z||x-this.tile.pad>(r.w-cam.x)/cam.z||y+h+this.tile.pad<(0-cam.y)/cam.z||y-this.tile.pad>(r.h-cam.y)/cam.z)continue;
     const hintIndex=this.hintUntil>now?this.hintIds.indexOf(id):-1;
     if(paint==='overlays'&&!owner&&this.focusedPiece!==id&&hintIndex<0)continue;
-    ctx.save();ctx.translate(x,y);if(paint!=='overlays'){if(this.atlas){const t=this.tile;ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
+    ctx.save();if(lift){ctx.translate(lift.x,lift.y);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);}ctx.translate(x,y);if(paint!=='overlays'){if(this.atlas){const t=this.tile;ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
     if(paint!=='pieces'){
     if(owner||this.drag?.id===group.id||this.focusedPiece===id){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=owner?.color||colors.focus;ctx.lineWidth=(owner&&this.phoneLandscapeRoom?2.5:2)/cam.z;ctx.stroke();}
     if(hintIndex>=0){ctx.fillStyle=colors.hint;ctx.font=`bold ${Math.max(13/cam.z,Math.min(w,h)*.3)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(hintIndex+1),w/2,h/2);}}
@@ -448,6 +471,14 @@ export class PuzzleBoard implements RoomTable {
     if(this.phoneLandscapeRoom){this.drawPlayerArrow(ctx,owner.color);roomRoundPath(ctx,{x:19,y:-15,w:width,h:20},8);ctx.fillStyle=owner.color;ctx.fill();ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.fillText(name,25,-11,width-12);}
     else{ctx.fillStyle=colors.label;ctx.fillRect(0,-15,width,19);ctx.fillStyle=colors.labelInk;ctx.textBaseline='top';ctx.fillText(name,5,-12,width-10);}ctx.restore();}
   }
+ }
+ /** The held group is drawn slightly larger around the holding finger, so the
+  * finger keeps its spot on the piece while the edges lift. Drawing only. */
+ private dragLift(group:Group){
+  const drag=this.drag,p=drag&&this.pointers.get(drag.pointer);if(!p)return null;
+  const anchor=this.world(p),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows;let far=0;
+  for(const id of group.pieces){const piece=this.pieces[id],x=this.board.x+piece.col*w+group.dx,y=this.board.y+piece.row*h+group.dy;far=Math.max(far,Math.hypot(Math.max(Math.abs(x-anchor.x),Math.abs(x+w-anchor.x)),Math.max(Math.abs(y-anchor.y),Math.abs(y+h-anchor.y))));}
+  return{x:anchor.x,y:anchor.y,s:1+Math.min(DRAG_LIFT_SCALE,DRAG_LIFT_PX/Math.max(1,far*this.camera.z))};
  }
  private releaseDragSurface(){this.dragSurface=null;}
  private drawPlayerArrow(ctx:CanvasRenderingContext2D,color:string){
@@ -500,7 +531,7 @@ export class PuzzleBoard implements RoomTable {
   * Other drag orders and Canvas implementations keep the original draw path. */
  private cachedDragSurface(ctx:CanvasRenderingContext2D,now:number):DragSurface|null{
   const drag=this.drag,groups=this.state.groups;let last:Group|undefined;for(let i=groups.length-1;i>=0;i--)if(!groups[i].locked&&visibleGroup(groups[i],this.pieces,this.edges)){last=groups[i];break;}
-  if(!drag||this.pan||last?.id!==drag.id||!this.atlas||typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'||ctx.globalAlpha!==1||ctx.globalCompositeOperation!=='source-over'||ctx.shadowBlur!==0||ctx.shadowColor!=='rgba(0, 0, 0, 0)'||(ctx.filter!==undefined&&ctx.filter!=='none')){this.releaseDragSurface();return null;}
+  if(!drag||this.pan||this.pinch||last?.id!==drag.id||!this.atlas||typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'||ctx.globalAlpha!==1||ctx.globalCompositeOperation!=='source-over'||ctx.shadowBlur!==0||ctx.shadowColor!=='rgba(0, 0, 0, 0)'||(ctx.filter!==undefined&&ctx.filter!=='none')){this.releaseDragSurface();return null;}
   // Stage rounds each backing dimension independently. Fractional phone DPRs
   // therefore produce slightly different X/Y scales; both remain axis-aligned
   // and can be copied exactly into the cache without resampling.
