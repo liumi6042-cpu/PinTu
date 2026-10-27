@@ -12,11 +12,11 @@ export function sharedRequestAllowed(request:Request){
 }
 export function sharedConfig(origin:string){return {mobileMode:'web-managed-shared',identityMode:'web-cookie',wechatLoginConfigured:false,adRewardEnabled:false,rewardedAdUnitId:'',capabilities:SHARED_CAPABILITIES,compatUrls:SHARED_COMPAT_URLS,webLinks:SHARED_COMPAT_URLS,assetBase:origin,gameBase:origin+'/play',uiBase:sharedClientBuild.uiBase,...(settings().PUZZLE_REALTIME_ENABLED==='1'?{realtime:{version:1}}:{})};}
 export function sharedImage(photo:Data,origin:string){return {...photo,src:new URL(photo.src,origin).href,thumbSrc:new URL(photo.thumbSrc??photo.thumbnailSrc??photo.src,origin).href};}
-export function sharedProfile(view:Data,player:Data,account:Data|null,rooms:Data[],state:Data={}){
+export function sharedProfile(view:Data,player:Data,account:Data|null,rooms:Data[],state:Data={},progress:Data[]=[]){
  const value=view.profile??{},decorations=view.decorations??[],equipped=decorations.find((d:Data)=>d.equipped)??null;
  const purchasedImages=[...(view.albums??[]).filter((a:Data)=>state.ownedAlbums?.[a.id]).flatMap((a:Data)=>a.images??[]),...(view.retainedImages??[])];
  return {account,identityMode:'web-cookie',capabilities:SHARED_CAPABILITIES,compatUrls:SHARED_COMPAT_URLS,name:player.name,code:view.friends?.code??'',level:value.level??0,xp:value.xpIntoLevel??0,totalXp:value.xp??0,xpToNext:value.xpForNextLevel??1,
-  energy:0,energyCap:0,supply:{energy:0,create:0},autoSupply:false,adEligible:false,newcomer:false,firstSelectionAvailable:false,
+  energy:0,energyCap:0,supply:{energy:0,create:0},autoSupply:false,adEligible:false,newcomer:rooms.length===0&&Object.keys(state.rooms??{}).length===0&&progress.length===0,firstSelectionAvailable:false,
   collection:{coins:value.coins??0,fragments:value.fragments??0,ownedPackIds:Object.keys(state.ownedAlbums??{}),ownedImageIds:[...new Set([...Object.keys(state.ownedImages??{}).filter(id=>state.ownedImages[id]),...purchasedImages.map((p:Data)=>p.id)])],equipped},
   giftProgress:value.giftProgress??0,giftCount:(view.tasks?.gifts??[]).filter((g:Data)=>!g.claimed&&(g.coins>0||g.xp>0)).length,ownedRooms:rooms,settlement:view.settlement,serverTime:view.serverTime};
 }
