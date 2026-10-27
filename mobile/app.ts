@@ -63,8 +63,10 @@ function orientation(id:string):Direction{const photo=photoMap.get(id),size=phot
 function errorText(error:unknown){return error instanceof Error?error.message:'连接暂时中断，请重试';}
 function taskCoinsText(min=0,max=min){return max>0?' · 金币 +'+min+(min===max?'':'～'+max):'';}
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
+// Seats come from the server (4/6/8 by piece count); backends without maxPlayers seat 8.
+const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
-function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,room.acceptingNew!==false,!!room.completed]));}
+function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
 
 /** One scene graph and one set of game rules for both mobile platforms. */
@@ -99,7 +101,7 @@ export class GameApp{
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
  private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
  private previewPack:CollectionPack|null=null;private previewIndex=-1;private previewGridScroll=0;private previewReadOnly=false;
- private room:(RoomClient&{snapshot:RoomClient['snapshot']&{levelId?:string;mobileResult?:{levelClear?:MobileLevelClear}}})|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
+ private room:(RoomClient&{snapshot:RoomClient['snapshot']&{levelId?:string;maxPlayers?:number;mobileResult?:{levelClear?:MobileLevelClear}}})|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
  private cheer:CheerClient|null=null;private readonly cheerEffects=new CheerEffects();private cheerFrame:number|null=null;
  private completionFx:CompletionTransition|null=null;private completionFxFrame:number|null=null;private completionCheerQueue:{cheer:Cheer;own:boolean;at:number}[]=[];private completionLive=false;private completionFxRect:Rect|null=null;private settleButtonRect:Rect|null=null;
@@ -785,7 +787,7 @@ export class GameApp{
    else if(this.friendsTab==='friends'){
     if(!friends.length){s.icon('friendArt',{x:pad+(listW-70)/2,y,w:70,h:66});const t='认识一位拼友吧';s.text(t,pad+(listW-s.measure(t,16,800))/2,y+76,16,ink,800);const h='按玩家 ID 添加，或在最近同桌里加好友';s.text(h,pad+(listW-s.measure(h,12,600))/2,y+102,12,muted,600,listW);y+=136;}
     for(const friend of friends){const r={x:pad,y,w:listW,h:72};row(r);s.icon('avatar',{x:pad+10,y:y+12,w:44,h:48});s.text(friend.name,pad+64,y+12,15,ink,800,listW-260);s.text('Lv.'+friend.level,pad+64+Math.min(listW-260,s.measure(friend.name,15,800))+8,y+15,12,muted,700);
-     const room=friend.room,status=friend.online?room?'正在拼「'+room.title+'」'+(typeof room.players==='number'?' · '+room.players+'/8':''):'在大厅':friend.lastSeenAt?this.ago(friend.lastSeenAt)+'在线':'很久没上线';if(friend.online){s.ctx.fillStyle=s.color('#879864');s.ctx.fillRect(pad+50,y+52,8,8);}
+     const room=friend.room,status=friend.online?room?'正在拼「'+room.title+'」'+(typeof room.players==='number'?' · '+room.players+'/'+seatLimit(room):''):'在大厅':friend.lastSeenAt?this.ago(friend.lastSeenAt)+'在线':'很久没上线';if(friend.online){s.ctx.fillStyle=s.color('#879864');s.ctx.fillRect(pad+50,y+52,8,8);}
      s.text(status,pad+64,y+38,12,friend.online?ink:muted,600,listW-260);let bx=pad+listW-82;s.button({x:bx,y:y+19,w:72,h:34},'私信',()=>this.openConversation(friend.code),{fontSize:13});
      if(friend.online&&room&&room.visibility!=='private'){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'加入这桌',()=>void this.enterRoom(room.id),{tone:'berry',fontSize:13,disabled:this.busy});}else if(friend.online){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'邀请来拼',()=>this.openConversation(friend.code),{tone:'berry',fontSize:13});}
      y+=80;}
@@ -1099,7 +1101,7 @@ export class GameApp{
   s.button({x:r.x+r.w-bw-8,y:r.y+(r.h-(slim?32:36))/2,w:bw,h:slim?32:36},'回到这桌',()=>{if(!this.busy)void this.enterRoom(room.id);},{tone:'berry',fontSize:slim?11:13});
  }
  private quickJoin(){
-  const open=this.rooms.filter(room=>room.players<8&&room.acceptingNew!==false&&!room.completed),progress=(room:RoomListing)=>room.placed/Math.max(1,room.actualPieces??room.pieces);
+  const open=this.rooms.filter(room=>room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed),progress=(room:RoomListing)=>room.placed/Math.max(1,room.actualPieces??room.pieces);
   const best=open.filter(room=>progress(room)<.9).sort((a,b)=>progress(b)-progress(a))[0];
   if(best)void this.enterRoom(best.id);else void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction});
  }
@@ -1109,7 +1111,7 @@ export class GameApp{
   this.drawPictureButton({x:r.x+half+10,y:r.y,w:half,h:r.h},'开一桌',()=>this.navigate('gallery'),'cream','create',font,icon);
  }
  private get lobbyRooms(){
-  const pieces=(room:RoomListing)=>room.actualPieces??room.pieces,open=(room:RoomListing)=>room.players<8&&room.acceptingNew!==false&&!room.completed;
+  const pieces=(room:RoomListing)=>room.actualPieces??room.pieces,open=(room:RoomListing)=>room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed;
   const rooms=this.rooms.filter(room=>this.lobbyPieces==='small'?pieces(room)<=108:this.lobbyPieces==='large'?pieces(room)>=300:true);
   return [...rooms.filter(open),...rooms.filter(room=>!open(room))];
  }
@@ -1155,11 +1157,11 @@ export class GameApp{
   const s=this.stage,{x,y:cy,w:cw,h:ch}=r,narrow=cw<170,photo=room.photo??photoMap.get(room.imageId),thumb=room.thumbSrc??photo?.thumbSrc,total=room.actualPieces??room.pieces,percent=clamp(Math.round(room.placed/Math.max(1,total)*100),0,100),art={x:x+6,y:cy+6,w:cw-12,h:ch-82};
   s.frame(r,'button-linen-normal');s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(x+6,cy+6,cw-12,ch-12);if(thumb)s.image(this.client.asset(thumb),art);
   const copyY=art.y+art.h+7;s.text(room.title,x+11,copyY,narrow?14:16,this.colors.ink,800,cw-22);const metaY=copyY+23;s.icon('piece',{x:x+11,y:metaY,w:14,h:16});s.text(total+'片',x+28,metaY+2,12,this.colors.ink,600);
-  const seats=room.players+'/8',seatsW=s.measure(seats,12,700),stack=Math.min(3,room.players),stackX=x+cw-11-seatsW-4-(stack?14+stack*10:0);
+  const seats=room.players+'/'+seatLimit(room),seatsW=s.measure(seats,12,700),stack=Math.min(3,room.players),stackX=x+cw-11-seatsW-4-(stack?14+stack*10:0);
   for(let i=0;i<stack;i++){const member=room.members?.[i];s.icon('avatar',{x:stackX+i*10,y:metaY-2,w:18,h:20});if(member?.decoration)s.decoration(member.decoration,{x:stackX+i*10+10,y:metaY-6,w:10,h:11});}s.text(seats,x+cw-11-seatsW,metaY+2,12,this.colors.ink,700);
   s.meter({x:x+11,y:cy+ch-16,w:cw-52,h:8},percent/100);s.text(percent+'%',x+cw-11-s.measure(percent+'%',10,800),cy+ch-19,10,this.colors.ink,800);
-  if(room.players>=8||room.acceptingNew===false){s.ctx.fillStyle='#6f374edb';s.ctx.fillRect(art.x,art.y+art.h-23,art.w,23);s.text(room.players>=8?'已满员':'暂停加入',art.x+8,art.y+art.h-18,11,'#fff9f0',700);}
-  s.hit(r,()=>{if(room.players>=8)this.note('房间已满，请选择其他房间');else if(room.acceptingNew===false||room.completed)this.note('房间暂不接受加入');else void this.enterRoom(room.id);});
+  if(room.players>=seatLimit(room)||room.acceptingNew===false){s.ctx.fillStyle='#6f374edb';s.ctx.fillRect(art.x,art.y+art.h-23,art.w,23);s.text(room.players>=seatLimit(room)?'已满员':'暂停加入',art.x+8,art.y+art.h-18,11,'#fff9f0',700);}
+  s.hit(r,()=>{if(room.players>=seatLimit(room))this.note('房间已满，请选择其他房间');else if(room.acceptingNew===false||room.completed)this.note('房间暂不接受加入');else void this.enterRoom(room.id);});
  }
  private drawGallery(){
   const s=this.stage,layout=this.layout,portrait=layout==='phonePortrait',landscape=layout==='phoneLandscape',width=Math.min(1400,s.w-24),left=(s.w-width)/2,owned=new Set(this.client.profile?.collection?.ownedImageIds??[]);
@@ -1218,7 +1220,7 @@ export class GameApp{
   const row=(label:string,draw:(rr:Rect)=>void)=>{if(sheet){const lw=56;s.text(label,x,y+8,13,this.colors.muted,700);draw({x:x+lw,y,w:w-lw,h:32});y+=40;}else{s.text(label,x,y,13,this.colors.muted,700);draw({x,y:y+20,w,h:34});y+=66;}};
   row('片数',rr=>s.segments(rr,this.pieceCounts.map(n=>[n,String(n)] as const),this.pieces,n=>{this.pieces=n;this.invalidate();}));
   row('谁能加入',rr=>s.segments(rr,[['public','公开'],['private','私人']] as const,this.visibility,v=>{this.visibility=v;this.invalidate();}));
-  const tables=this.selected?this.rooms.filter(room=>room.imageId===this.selected&&room.players<8&&room.acceptingNew!==false&&!room.completed):[];
+  const tables=this.selected?this.rooms.filter(room=>room.imageId===this.selected&&room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed):[];
   if(tables.length){const label='这张图有 '+tables.length+' 桌公开房正在拼 · 去加入 ›';s.text(label,x,y,12,this.colors.berry,700,w);s.hit({x:x-4,y:y-6,w,h:26},()=>{const best=[...tables].sort((a,b)=>b.placed/Math.max(1,b.actualPieces??b.pieces)-a.placed/Math.max(1,a.actualPieces??a.pieces))[0];if(best)void this.enterRoom(best.id);});y+=26;}
   if(this.usesCreationTickets){const cost=freeOwned?'这张图的公开房免费':freeFirst?'首次开桌免费':'需要 1 张建房券';s.text(cost+' · 私人房或其他图用 1 张建房券',x,y,12,this.colors.ink,600,w);y+=19;const stock='建房券 '+(p?.supply.create??0)+'/3';s.text(stock,x,y,12,this.colors.muted,700);if(this.shareAvailable){const lx=x+s.measure(stock,12,700)+8,label='· 分享领取';s.text(label,lx,y,12,this.colors.berry,700);s.hit({x:lx-4,y:y-6,w:s.measure(label,12,700)+8,h:26},()=>void this.claimSupply('create','share'));}y+=23;}
   this.drawPictureButton({x,y,w,h:44},createLabel,createAction,'berrydark','players',16,19,disabled);y+=54;
@@ -1654,7 +1656,7 @@ export class GameApp{
  private drawRoomTopBar(r:Rect,mode:'desktop'|'portrait'|'landscape'){
   const s=this.stage,room=this.room!,photo=activeRoomPhoto(room.snapshot,photoMap.get(room.state.imageId)),title=room.snapshot.title||photo?.title||'一起拼图',total=room.state.cols*room.state.rows,placed=placedCount(room.state),percent=Math.floor(placed/Math.max(1,total)*100),members=room.snapshot.members,kind=total+' 片 · '+(room.snapshot.visibility==='private'?'私人房':'公开房'),ink=this.colors.ink;
   const back=(x:number,y:number)=>{s.button({x,y,w:36,h:36},'',()=>this.exitRoom());s.icon('back',{x:x+7,y:y+7,w:22,h:22});};
-  const avatars=(right:number,y:number,size:number)=>{const shown=members.slice(0,3),label=members.length+'/8',lw=s.measure(label,13,700);let x=right-lw;s.text(label,x,y+(size-13)/2,13,ink,700);x-=6+(shown.length?size+(shown.length-1)*(size*.62):0);const start=x;shown.forEach((_member,index)=>s.icon('avatar',{x:x+index*size*.62,y,w:size,h:size*1.08}));return start;};
+  const avatars=(right:number,y:number,size:number)=>{const shown=members.slice(0,3),label=members.length+'/'+seatLimit(room.snapshot),lw=s.measure(label,13,700);let x=right-lw;s.text(label,x,y+(size-13)/2,13,ink,700);x-=6+(shown.length?size+(shown.length-1)*(size*.62):0);const start=x;shown.forEach((_member,index)=>s.icon('avatar',{x:x+index*size*.62,y,w:size,h:size*1.08}));return start;};
   if(mode==='desktop'){
    back(r.x+12,r.y+12);s.text(title,r.x+58,r.y+11,18,ink,800,300);s.text(kind,r.x+58,r.y+35,12,this.colors.muted,600,300);
    const count=placed+' / '+total+'  '+percent+'%',cw=s.measure(count,18,800),mid=84+(s.w-84-300)/2;s.icon('piece',{x:mid-cw/2-28,y:r.y+9,w:22,h:24});s.text(count,mid-cw/2,r.y+10,18,ink,800);s.meter({x:mid-170,y:r.y+38,w:340,h:9},placed/Math.max(1,total));
@@ -1755,7 +1757,7 @@ export class GameApp{
   const members=room.snapshot.members as Array<(typeof room.snapshot.members)[number]&{code?:string;level?:number;contribution?:number}>,me=this.client.profile?.code;
   const columns=r.h<680?2:1,rowW=w/columns;
   if(Date.now()<this.roomMembersHighlight)s.frame({x:x-4,y:y-4,w:w+8,h:28+Math.ceil(members.length/columns)*34},'panel-gold');
-  s.text('同桌 '+members.length+' / 8',x,y,15,ink,800);y+=26;
+  s.text('同桌 '+members.length+' / '+seatLimit(room.snapshot),x,y,15,ink,800);y+=26;
   members.forEach((member,index)=>{const rx=x+index%columns*rowW,ry=y+Math.floor(index/columns)*34;s.icon('avatar',{x:rx,y:ry,w:26,h:28});s.text(member.name+(member.code&&member.code===me?'（我）':''),rx+34,ry+1,13,ink,700,rowW-(columns===1?90:40));s.text('Lv.'+(member.level??0)+(columns===2?' · 拼合 '+(member.contribution??0):''),rx+34,ry+17,10,this.colors.muted,600,rowW-38);if(columns===1){const placed='拼合 '+(member.contribution??0);s.text(placed,rx+rowW-18-s.measure(placed,12,700),ry+7,12,ink,700);}s.hit({x:rx,y:ry,w:rowW,h:32},()=>void this.openPlayerCard(member));});y+=Math.ceil(members.length/columns)*34;
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,y+2,w,1);y+=12;s.text('聊天',x,y,15,ink,800);y+=24;
   const free=this.formalWeb,replies=[8,5,9,6],footer=8+Math.ceil(replies.length/2)*36+(free?42:0),bottom=r.y+r.h-footer,messages=this.messages.filter(message=>!this.social.blockedCodes.includes(message.code));
@@ -1810,7 +1812,7 @@ export class GameApp{
   if(!this.imageReady||!room.connected){s.panel({x:this.roomArea.x+8,y:this.roomArea.y+8,w:this.roomArea.w-16,h:45});s.text(this.imageError||(!room.connected?room.message:'正在准备九格图片…'),this.roomArea.x+17,this.roomArea.y+24,12,this.colors.ink,500,this.roomArea.w-34);}
  }
  private drawRoomChatEntry(members:number,unread:number,floating:boolean){
-  const s=this.stage,r=this.chatEntryArea,label=members+'/8',start=floating?r.x+(r.w-25-s.measure(label,14,700))/2:r.x+3;
+  const s=this.stage,r=this.chatEntryArea,label=members+'/'+seatLimit(this.room?.snapshot),start=floating?r.x+(r.w-25-s.measure(label,14,700))/2:r.x+3;
   if(floating)s.button(r,'',()=>this.showModal('chat'));else s.hit(r,()=>this.showModal('chat'));
   s.icon('person',{x:start,y:r.y+(r.h-25)/2,w:20,h:25});s.text(label,start+25,r.y+(r.h-14)/2,14,this.colors.ink,700);
   if(unread){const x=r.x+r.w-16,y=r.y-4;s.frame({x,y,w:17,h:17},'segment-berry-selected');s.text(Math.min(99,unread),x+4,y+2,9,this.colors.onAccent,700);}
@@ -1895,7 +1897,7 @@ export class GameApp{
   this.invalidate();this.cheerFrame=this.platform.frame(()=>{this.cheerFrame=null;if(this.modal!=='completion'||this.hidden||this.destroyed)return;const alive=this.cheerEffects.alive();this.invalidate();if(alive)this.animateCheers();});
  }
  private sendCompletionCheer(emote:CheerEmote){if(this.cheersEnabled&&this.modal==='completion'&&this.room?.snapshot.members.some(member=>member.id===this.room!.ticket.playerId&&member.lastSeen>0))this.cheer?.send(emote);}
- private completionSeats(){const snap=this.room?.snapshot;return completionSeats(snap?.members??[],(snap as typeof snap&{mobileResult?:{ranking?:Parameters<typeof completionSeats>[1]}})?.mobileResult?.ranking,this.room?.ticket.playerId??'',this.client.profile?.code);}
+ private completionSeats(){const snap=this.room?.snapshot;return completionSeats(snap?.members??[],(snap as typeof snap&{mobileResult?:{ranking?:Parameters<typeof completionSeats>[1]}})?.mobileResult?.ranking,this.room?.ticket.playerId??'',this.client.profile?.code,seatLimit(snap));}
  private landscapeSeatWidth(available:number){return Math.max(120,Math.min(140,(available-500)/2));}
  private completionOutsideSeats(x:number,w:number){return this.desktop&&x>=194&&this.stage.w-x-w>=194;}
  private drawCompletionSeat(seat:CompletionSeat,r:Rect,vertical=false){

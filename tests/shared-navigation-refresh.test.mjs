@@ -89,6 +89,9 @@ test('quiet lobby refresh beyond sixteen tables preserves order and updates matc
 test('lobby joinability is a stable partition of server order',()=>{
  const {app}=fixture(),full={...card('full'),players:8},a=card('a'),closed={...card('closed'),acceptingNew:false},b=card('b');
  app.lobbyPieces='all';app.rooms=[full,a,closed,b];assert.deepEqual(app.lobbyRooms.map(r=>r.id),['a','b','full','closed']);assert.deepEqual(app.rooms.map(r=>r.id),['full','a','closed','b']);
+ // The server's seat count decides when a table is full; without it a table seats eight.
+ const small={...card('small'),players:4,maxPlayers:4},roomy={...card('roomy'),players:5,maxPlayers:6},legacy={...card('legacy'),players:7};
+ app.rooms=[small,roomy,legacy];assert.deepEqual(app.lobbyRooms.map(r=>r.id),['roomy','legacy','small']);
 });
 
 test('lobby loading and errors clear visibly, and obsolete account responses cannot overwrite lists',async()=>{

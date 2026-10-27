@@ -24,6 +24,11 @@ test('seats: cap chooses present before departed, then contribution, preserving 
  assert.deepEqual(seats.map(s=>s.playerId),['4','1','2','3','5','6','7','8']);
  assert.equal(seats.at(-1).row,3);
 });
+test('seats: a smaller table shows only its own seat count',()=>{
+ const members=Array.from({length:6},(_,i)=>member(String(i),i,i!==5)),seats=completionSeats(members,[{code:'9',name:'9',contribution:20}],'1',null,4);
+ assert.deepEqual(seats.map(s=>s.playerId),['1','2','3','4']);assert.equal(seats.at(-1).row,1);
+ assert.equal(completionSeats(members.slice(0,6),[], '0',null,6).length,6);
+});
 test('seats: unique positive leader only; no crown for ties, zeroes, or solo seats',()=>{
  for(const values of [[0,0],[4,4]])assert.equal(completionSeats(values.map((v,i)=>member(String(i),v)),null,'0').filter(s=>s.crown).length,0);
  assert.equal(completionSeats([member('a',1),member('b',2)],null,'a')[1].crown,true);
