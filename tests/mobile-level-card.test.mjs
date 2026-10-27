@@ -1,30 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fileURLToPath} from 'node:url';
-import {build} from 'esbuild';
-
-const root=fileURLToPath(new URL('../',import.meta.url));
-const bundle=await build({absWorkingDir:root,stdin:{contents:'export {GameApp} from "./mobile/app";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2020'});
-const {GameApp}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
-function levels(cleared=3,status='available'){
- const chapter={id:'ch1',title:'开张',albumId:'beginner',coverImageId:null,coverSrc:null,status,levels:[12,16,20,24,30,35].map((pieces,index)=>({id:'ch1-'+(index+1),imageId:null,title:null,line:null,pieces,status:status==='unavailable'?'unavailable':index<cleared?'cleared':index===cleared?'unlocked':'locked'}))};
- return {seriesTitle:'拾光物语',chapters:[chapter],current:chapter.levels.find(level=>level.status==='unlocked')??null,firstClearEnergy:30};
-}
-function fixture({width=390,height=844,owner='owner-a',storage=new Map(),data=levels(),newcomer=false}={}){
- const texts=[],glyphs=[],buttons=[],frames=[],images=[],fills=[],strokes=[],hits=[],icons=[],dashes=[],paint=[],saved=[],reads=[],created=[],events=[],ctx=new Proxy({globalAlpha:1,filter:'none',setLineDash(value){dashes.push(value);},measureText:value=>({width:String(value).length*6}),save(){saved.push({globalAlpha:this.globalAlpha,fillStyle:this.fillStyle,strokeStyle:this.strokeStyle,lineWidth:this.lineWidth,filter:this.filter});},restore(){Object.assign(this,saved.pop());},fillRect(x,y,w,h){const fill={r:{x,y,w,h},color:this.fillStyle,alpha:this.globalAlpha};fills.push(fill);paint.push(fill);},strokeRect(x,y,w,h){strokes.push({r:{x,y,w,h},color:this.strokeStyle});}},{get:(target,key)=>key in target?target[key]:()=>{}});
- const stage={w:width,h:height,ctx,palette:{gold:'#d7ad68',onAccent:'#fffaf0',ink:'#642238',muted:'#a17878',line:'#d4a399',rose:'#c8798c',cream:'#fff9f0',placeholder:'#efdfcc'},text:(value,x,y,size,color,weight)=>{texts.push(String(value));const glyph={value:String(value),x,y,size,color,weight};glyphs.push(glyph);paint.push(glyph);},button:(r,label,fn,opts)=>buttons.push({r,label,fn,opts}),frame:(r,key)=>frames.push({r,key}),image:(src,r)=>{const image={src,r,alpha:ctx.globalAlpha,filter:ctx.filter};images.push(image);paint.push(image);},panel(){},icon:(key,r)=>icons.push({key,r}),meter(){},hit:(r,fn)=>hits.push({r,fn}),retryImages(){},ornaments(){},clip:(_r,fn)=>fn(),measure:value=>String(value).length*6,input(){},invalidate(){}};
- const app=Object.create(GameApp.prototype),client={account:{id:owner},profile:{code:owner,newcomer,ownedRooms:[],level:1,xp:0,xpToNext:20,energy:60,energyCap:60,supply:{energy:0,create:0}},config:{capabilities:{energy:true,ads:false}},asset:value=>value,start:async()=>{events.push('ready');},json:async path=>{reads.push(path);if(path==='/api/levels'){assert.equal(app.ready,true);return data;}if(path==='/api/room-history')return {rooms:[]};throw Error('unexpected '+path);},createRoom:async input=>{created.push(input);return {room:{id:'level-room'}};}};
- const platform={config:{id:width>=1000?'web':'taptap',apiBase:'https://game.test/api'},initialQuery:{},viewport:()=>({width,height,top:0,bottom:0}),storage:{get:key=>storage.get(key)??null,set:(key,value)=>storage.set(key,value)},randomId:()=> 'request',onHide:()=>()=>{},onShow:()=>()=>{}};
- Object.assign(app,{stage,client,platform,navItems:[['lobby'],['gallery'],['collection'],['tasks'],['friends']],privacyAccepted:true,privacyEpoch:0,ready:true,destroyed:false,busy:false,modal:null,route:'lobby',room:null,levels:data,levelsOwner:owner,levelsSerial:0,autoLevelChecked:false,chapterEntryChecked:false,previewReadOnly:false,bodyTop:80,bodyBottom:height-20,scroll:0,extent:0,rooms:[],lobbyPieces:'all',lobbySerial:0,lobbyCursor:null,historyRooms:[],historySerial:0,historyLoading:false,direction:'all',filterCount:0,serverOffset:0,contentOrigin:{x:0,y:0},cleanups:[],timers:[],attempts:new Map(),routeStack:[],routeFrames:[],savedRoutes:new Map(),handledQueries:new Set(),message:'',social:{close(){},refresh:async()=>{},blockedCodes:[]},invalidate:()=>stage.invalidate(),loadLobby:async()=>{events.push('lobby');},loadGallery:async()=>{},loadTasks:async()=>{},attachTicket:async ticket=>{app.route='room';app.room=ticket;}});
- return {app,client,platform,stage,texts,glyphs,buttons,frames,images,fills,strokes,paint,reads,created,storage,events,hits,icons,dashes,clear:()=>{texts.length=glyphs.length=buttons.length=frames.length=images.length=fills.length=strokes.length=paint.length=hits.length=icons.length=dashes.length=0;}};
-}
-
-const tick=()=>new Promise(resolve=>setImmediate(resolve));
-function lobby(f){const heroes=[];f.app.drawDailyHero=r=>{heroes.push(r);return r.y+r.h;};f.app.drawRoomHeader=(_x,y)=>y+40;f.app.drawRoomGrid=(_x,y)=>y;f.app.drawRoomSection=(_x,y)=>y;f.app.drawLobby();return heroes;}
-async function artwork(f){
- const photos=Array.from({length:6},(_,index)=>({id:'chapter-photo-'+index,title:'图片 '+index,src:'/chapter-'+index+'.webp',thumbSrc:'/chapter-'+index+'-thumb.webp',category:'其他'}));
- f.client.json=async()=>({imageIds:photos.map(photo=>photo.id),packedImageIds:[],photos});delete f.app.loadGallery;await f.app.loadGallery();f.app.levels.chapters[0].levels.forEach((level,index)=>level.imageId=photos[index].id);return photos;
-}
+import {fixture,levels,tick,lobby,artwork} from './mobile-level-card-fixture.mjs';
 
 test('unfinished chapter draws a 34px gold book strip above the daily puzzle and opens the chapter in every layout',async()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]]){
@@ -47,23 +23,24 @@ test('landscape daily artwork uses the height left by the strip and keeps normal
  }
 });
 
-test('chapter pages show 0/6 and 3/6 states in 2x3 or 3x2 grids and both current actions launch the configured level',async()=>{
+test('chapter pages show 0/6 and 3/6 states on the timeline and both current actions launch the configured level',async()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]])for(const cleared of [0,3]){
-  const f=fixture({width,height,data:levels(cleared)});await artwork(f);f.app.drawChapter();assert.ok(f.texts.includes('拾光物语 · 第 1 章'));assert.ok(f.texts.includes('开张'));assert.ok(f.texts.includes(cleared+' / 6 格'));assert.ok(f.texts.includes('第 '+(cleared+1)+' 格'));assert.ok(f.texts.includes(f.app.levels.current.pieces+' 片 · 拼完揭晓'));assert.equal(f.texts.filter(text=>text==='?').length,5-cleared);
-  assert.equal(f.images.length,cleared+1);assert.ok(f.images.slice(0,cleared).every(image=>image.alpha===1));const current=f.images.at(-1);assert.equal(current.alpha,.28);assert.equal(current.filter,'grayscale(1) blur(2px)');assert.equal(f.stage.ctx.globalAlpha,1);assert.equal(f.stage.ctx.filter,'none');assert.equal(f.dashes.length,5-cleared);assert.equal(f.strokes.filter(stroke=>stroke.color===f.stage.palette.gold).length,1);
-  const cells=f.strokes.slice(1);assert.equal(cells.length,6);assert.ok(cells.every(cell=>Math.abs(cell.r.w+2-(cell.r.h+2)*1.5)<.01));const columns=width<height?2:3;assert.equal(cells[0].r.y,cells[columns-1].r.y);assert.ok(cells[columns].r.y>cells[0].r.y);
-  const button=f.buttons.find(button=>button.label==='拼第 '+(cleared+1)+' 格（'+f.app.levels.current.pieces+' 片）');assert.ok(button);if(width>height){assert.ok(button.r.x>cells[2].r.x+cells[2].r.w);assert.ok(button.r.y+button.r.h<=f.app.bodyBottom);}else assert.ok(f.app.extent>0);
+  const f=fixture({width,height,data:levels(cleared)});await artwork(f);f.app.drawChapter();assert.ok(f.texts.includes('小窝的故事'));assert.ok(f.texts.includes('第 1 章 · 开张'));assert.ok(f.texts.includes(cleared+' / 6 格'));assert.ok(f.texts.includes('第 '+(cleared+1)+' 格'));assert.ok(f.texts.includes(f.app.levels.current.pieces+' 片 · 拼完揭晓'));assert.equal(f.texts.filter(text=>text==='?').length,5-cleared);
+  assert.equal(f.images.length,cleared+1);assert.ok(f.images.slice(0,cleared).every(image=>image.alpha===1));const current=f.images.at(-1);assert.equal(current.alpha,.28);assert.equal(current.filter,'grayscale(1) blur(2px)');assert.equal(f.stage.ctx.globalAlpha,1);assert.equal(f.stage.ctx.filter,'none');assert.equal(f.dashes.length,2*(5-cleared));assert.equal(f.strokes.filter(stroke=>stroke.color==='#cf9f52').length,1);
+  const cells=f.strokes;assert.equal(cells.length,6);
+  const button=f.buttons.find(button=>button.label==='\u62fc\u7b2c '+(cleared+1)+' \u683c\uff08'+f.app.levels.current.pieces+' \u7247\uff09');assert.ok(button);
+  if(width>height){assert.equal(f.app.extent,0);assert.ok(button.r.y+button.r.h<=f.app.bodyBottom);}else assert.ok(f.app.extent>0);
   button.fn();await tick();assert.deepEqual(f.created,[{mode:'level',levelId:'ch1-'+(cleared+1),requestId:'request'}]);f.app.route='chapter';f.app.room=null;f.hits.at(-1).fn();await tick();assert.equal(f.created.length,2);assert.equal(f.created[1].levelId,'ch1-'+(cleared+1));
  }
 });
 
 test('chapter fallback title, reward text, speech bubbles and scrolling use the configured values',()=>{
- const f=fixture({height:600});f.app.levels.seriesTitle=null;f.client.config.capabilities.energy=false;f.app.levels.chapters[0].levels[0].line='欢迎来小店';f.app.levels.chapters[0].levels[4].line='不能提前看到';f.app.drawChapter();assert.ok(f.texts.includes('新手章节 · 第 1 章'));assert.ok(f.texts.includes('欢迎来小店'));assert.ok(!f.texts.includes('不能提前看到'));assert.ok(!f.texts.some(text=>text.includes('体力')));assert.ok(f.app.extent>f.app.bodyBottom-f.app.bodyTop);const top=f.strokes[1].r.y;f.clear();f.app.scroll=50;f.app.drawChapter();assert.equal(f.strokes[1].r.y,top-50);
+ const f=fixture({height:600});f.app.levels.seriesTitle=null;f.client.config.capabilities.energy=false;f.app.levels.chapters[0].levels[0].line='欢迎来小店';f.app.levels.chapters[0].levels[4].line='不能提前看到';f.app.drawChapter();assert.ok(f.texts.includes('小窝的故事'));assert.ok(f.texts.includes('欢迎来小店'));assert.ok(!f.texts.includes('不能提前看到'));assert.ok(!f.texts.some(text=>text.includes('体力')));assert.ok(f.app.extent>f.app.bodyBottom-f.app.bodyTop);const top=f.strokes[0].r.y;f.clear();f.app.scroll=50;f.app.drawChapter();assert.equal(f.strokes[0].r.y,top-50);
  f.client.config.capabilities.energy=true;f.app.levels.firstClearEnergy=17;f.clear();f.app.drawChapter();assert.ok(f.texts.join('').includes('17 体力'));f.clear();f.app.drawChapterStrip({x:12,y:80,w:366,h:34});assert.ok(f.texts.includes('新手章节 3/6'));
 });
 
 test('speech bubbles wrap to at most two lines and only then ellipsize',()=>{
- const f=fixture(),bubble=line=>{f.clear();f.app.levels.chapters[0].levels[0].line=line;f.app.drawChapter();return f.glyphs.filter(glyph=>glyph.size===11&&glyph.weight===600&&line.startsWith(glyph.value.slice(0,1))&&glyph.value!=='1');};
+ const f=fixture({width:844,height:390}),bubble=line=>{f.clear();f.app.levels.chapters[0].levels[0].line=line;f.app.drawChapter();return f.glyphs.filter(glyph=>glyph.size===11&&glyph.weight===600&&line.startsWith(glyph.value.slice(0,1))&&glyph.value!=='1');};
  const short=bubble('这就是奶奶的店');assert.deepEqual(short.map(glyph=>glyph.value),['这就是奶奶的店']);
  const long='爷'.repeat(30),wrapped=bubble(long);assert.equal(wrapped.length,2);assert.equal(wrapped.map(glyph=>glyph.value).join(''),long);assert.ok(wrapped[1].y>wrapped[0].y);
  const longer='爷'.repeat(60),capped=bubble(longer);assert.equal(capped.length,2);assert.ok(capped[0].value.length<60);
@@ -90,9 +67,10 @@ test('returning players enter the chapter once, while complete, unavailable, inv
  for(const state of [{modal:'settings'},{busy:true},{route:'gallery'},{room:{}}]){const f=fixture();Object.assign(f.app,state);await f.app.loadInitialContent({});assert.equal(f.app.route,state.route??'lobby');assert.equal(f.created.length,0);}
 });
 
-test('switching accounts resets the one-time entry decision and loading a completed or unavailable chapter redirects to the lobby',async()=>{
+test('switching accounts resets entry, completed chapters stay readable and unavailable chapters redirect',async()=>{
  const f=fixture();f.app.ensureListOwner();await f.app.loadInitialContent({});assert.equal(f.app.route,'chapter');f.app.navigate('lobby');await tick();f.client.account={id:'owner-b'};f.app.ensureListOwner();await tick();assert.equal(f.app.route,'chapter');assert.equal(f.app.levelsOwner,'owner-b');assert.equal(f.created.length,0);
- for(const data of [levels(6),levels(0,'unavailable')]){f.app.route='chapter';f.client.json=async()=>data;await f.app.loadLevels();assert.equal(f.app.route,'lobby');await tick();}
+ f.app.route='chapter';f.client.json=async()=>levels(6);await f.app.loadLevels();assert.equal(f.app.route,'chapter');assert.equal(f.app.beginnerChapter,null);
+ for(const data of [levels(0,'unavailable')]){f.app.route='chapter';f.client.json=async()=>data;await f.app.loadLevels();assert.equal(f.app.route,'lobby');await tick();}
  f.app.route='chapter';f.client.json=async()=>{throw Error('offline');};await f.app.loadLevels();assert.equal(f.app.route,'lobby');await tick();
 });
 

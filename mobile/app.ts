@@ -1,6 +1,7 @@
 import type {Platform,Input,Rect,Route,WebLinks} from './ports';
 import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
+import {timeLabelFor,nodeState} from './story-timeline';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {PuzzleBoard} from './puzzle-board';
 import {SocialPanel} from './social-panel';
@@ -392,13 +393,14 @@ export class GameApp{
  private get lobbyBusy(){return this.lobbyLoading&&!this.lobbyQuiet;}
  private async loadLevels(){
   const owner=this.ownerKey(),serial=this.levelsSerial=(this.levelsSerial??0)+1;
-  try{const data=await this.client.json<MobileLevelsView>('/api/levels');if(this.destroyed||owner!==this.ownerKey()||serial!==this.levelsSerial)return;this.levels=data;this.levelsOwner=owner;this.invalidate();if(this.route==='chapter'&&!this.beginnerChapter)this.navigate('lobby');}
+  try{const data=await this.client.json<MobileLevelsView>('/api/levels');if(this.destroyed||owner!==this.ownerKey()||serial!==this.levelsSerial)return;this.levels=data;this.levelsOwner=owner;this.invalidate();if(this.route==='chapter'&&!this.storyChapter)this.navigate('lobby');}
   catch{if(!this.destroyed&&owner===this.ownerKey()&&serial===this.levelsSerial){this.levels=null;this.invalidate();if(this.route==='chapter')this.navigate('lobby');}}
  }
- private get beginnerChapter(){
+ private get storyChapter(){
   if(this.levelsOwner!==this.ownerKey())return null;
-  const chapter=this.levels?.chapters.find(item=>item.id==='ch1');return chapter?.status==='available'&&chapter.levels.some(level=>level.status!=='cleared')?chapter:null;
+  const chapter=this.levels?.chapters.find(item=>item.id==='ch1');return chapter?.status==='available'?chapter:null;
  }
+ private get beginnerChapter(){const chapter=this.storyChapter;return chapter?.levels.some(level=>level.status!=='cleared')?chapter:null;}
  private chapterStorageKey(kind:'auto'){return 'jigsaw:level:'+kind+':v1:'+this.platform.config.apiBase+':'+this.ownerKey();}
  private async checkLevelEntry(){
   if(this.chapterEntryChecked)return;this.chapterEntryChecked=true;
@@ -849,33 +851,96 @@ export class GameApp{
   s.frame(r,'button-gold-normal');s.icon('book',{x:r.x+8,y:r.y+7,w:20,h:20});s.text((this.levels?.seriesTitle||'新手章节')+' '+cleared+'/'+chapter.levels.length,r.x+34,r.y+10,11,this.colors.ink,700,Math.max(1,r.w-rightW-52));s.text(right,r.x+r.w-rightW-10,r.y+10,11,this.colors.ink,700,rightW);s.hit(r,()=>this.navigate('chapter'));return r.y+r.h;
  }
  private drawChapter(){
-  const chapter=this.beginnerChapter;if(!chapter){this.extent=0;return;}
-  const s=this.stage,portrait=this.layout==='phonePortrait',width=Math.min(1400,s.w-24),left=(s.w-width)/2,top=this.bodyTop,bottom=this.bodyBottom,gap=8,pad=10,cols=portrait?2:3,rows=Math.ceil(chapter.levels.length/cols),available=Math.max(1,bottom-top),comicW=portrait?width:Math.min(width*.62,Math.max(120,(available-pad*2-gap*(rows-1))/rows*1.5*cols+pad*2+gap*(cols-1))),cellW=(comicW-pad*2-gap*(cols-1))/cols,cellH=cellW/1.5,comicH=pad*2+rows*cellH+(rows-1)*gap,current=chapter.levels.find(level=>level.status==='unlocked'),cleared=chapter.levels.filter(level=>level.status==='cleared').length,number=(this.levels?.chapters.indexOf(chapter)??0)+1;
+  const chapter=this.storyChapter;if(!chapter){this.extent=0;return;}
+  const s=this.stage,ctx=s.ctx,portrait=this.layout==='phonePortrait',width=Math.min(1400,s.w-24),left=(s.w-width)/2,top=this.bodyTop,bottom=this.bodyBottom;
+  const current=chapter.levels.find(level=>level.status==='unlocked'),cleared=chapter.levels.filter(level=>level.status==='cleared').length,total=chapter.levels.length,complete=total>0&&cleared===total,number=(this.levels?.chapters.indexOf(chapter)??0)+1;
   const description='拼完一格，故事就往下走一格。'+(this.energyEnabled?'每格第一次拼完送 '+(this.levels?.firstClearEnergy??0)+' 体力。':'');
-  const heading=(x:number,y:number,w:number)=>{s.text((this.levels?.seriesTitle||'新手章节')+' · 第 '+number+' 章',x,y,12,this.colors.muted,700,w);s.text(chapter.title,x,y+24,28,this.colors.ink,800,w);return y+66;};
-  const info=(x:number,y:number,w:number)=>{s.text(cleared+' / '+chapter.levels.length+' 格',x,y,14,this.colors.ink,700,w);s.meter({x,y:y+26,w,h:10},cleared/chapter.levels.length);y=this.paragraph(description,x,y+50,w,13)+18;s.button({x,y,w,h:42},current?'拼第 '+(chapter.levels.indexOf(current)+1)+' 格（'+current.pieces+' 片）':'暂未解锁',()=>{if(current)void this.launch({mode:'level',levelId:current.id});},{tone:'berrydark',fontSize:14,disabled:this.busy||!this.client.profile||!current});y+=54;s.button({x,y,w,h:34},'去大厅逛逛',()=>this.navigate('lobby'),{fontSize:13});return y+34;};
-  const comic=(y:number)=>{
-   const ctx=s.ctx;ctx.save();ctx.fillStyle=this.colors.cream;ctx.fillRect(left,y,comicW,comicH);ctx.strokeStyle=this.colors.ink;ctx.lineWidth=4;ctx.strokeRect(left+2,y+2,comicW-4,comicH-4);ctx.restore();
-   chapter.levels.forEach((level,index)=>{
-    const r={x:left+pad+index%cols*(cellW+gap),y:y+pad+Math.floor(index/cols)*(cellH+gap),w:cellW,h:cellH},photo=level.imageId?photoMap.get(level.imageId):undefined,src=photo?.src||photo?.thumbSrc,active=level.id===current?.id,done=level.status==='cleared';
-    ctx.save();ctx.fillStyle=active?this.colors.ink:this.colors.placeholder;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();
-    if(src&&(done||active)){ctx.save();if(active){ctx.globalAlpha=.28;if('filter'in ctx)ctx.filter='grayscale(1) blur(2px)';}s.clip(r,()=>s.image(this.client.asset(src),r,'cover'));ctx.restore();}
-    ctx.save();ctx.strokeStyle=active?this.colors.gold:done?this.colors.ink:this.colors.line;ctx.lineWidth=active?3:2;if(!done&&!active&&typeof ctx.setLineDash==='function')ctx.setLineDash([6,4]);ctx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);ctx.restore();
-    const badge=22;ctx.save();ctx.fillStyle=done?this.colors.ink:this.colors.cream;ctx.fillRect(r.x+3,r.y+3,badge,badge);ctx.restore();s.text(index+1,r.x+9,r.y+7,12,done?this.colors.cream:this.colors.ink,800,18);
-    if(done){if(level.line){
-     // At most two lines: wrap once, then the second line is ellipsized by s.text.
-     const room=r.w-32,chars=[...level.line];let count=0;while(count<chars.length&&s.measure(chars.slice(0,count+1).join(''),11,600)<=room)count++;
-     // A wrapped line never starts with closing punctuation: carry one more character down with it.
-     while(count>1&&count<chars.length&&/[。，、！？；：…）」』”’]/.test(chars[count]))count--;count=Math.max(1,count);
-     const rows=count<chars.length?[chars.slice(0,count).join(''),chars.slice(count).join('')]:[level.line],bw=Math.min(r.w-16,Math.max(...rows.map(row=>s.measure(row,11,600)))+18),bh=rows.length*15+10,bx=r.x+r.w-bw-8,by=r.y+r.h-bh-7;
-     ctx.save();ctx.fillStyle=this.colors.cream;ctx.strokeStyle=this.colors.ink;ctx.lineWidth=2;roomRoundPath(ctx,{x:bx,y:by,w:bw,h:bh},7);ctx.fill();ctx.stroke();ctx.restore();rows.forEach((row,index)=>s.text(row,bx+8,by+5+index*15,11,this.colors.ink,600,bw-16));
-    }if(src)s.hit(r,()=>this.openChapterPreview(chapter,level.id));}
-    else if(active){const label='第 '+(index+1)+' 格',hint=level.pieces+' 片 · 拼完揭晓';s.text(label,r.x+(r.w-s.measure(label,16,800))/2,r.y+r.h/2-22,16,this.colors.cream,800,r.w-12);s.text(hint,r.x+(r.w-s.measure(hint,11,600))/2,r.y+r.h/2+5,11,this.colors.cream,600,r.w-12);s.hit(r,()=>{if(!this.busy&&this.client.profile)void this.launch({mode:'level',levelId:level.id});});}
-    else s.text('?',r.x+(r.w-s.measure('?',36,800))/2,r.y+(r.h-36)/2,36,this.colors.muted,800,r.w-12);
-   });
+  const mainLabel=complete?'从头看':current?'拼第 '+(chapter.levels.indexOf(current)+1)+' 格（'+current.pieces+' 片）':'暂未解锁';
+  const mainAction=()=>{if(complete)this.openLevelComic(chapter.levels[0].id,{sequence:true});else if(current)void this.launch({mode:'level',levelId:current.id});};
+  const heading=(y:number)=>{
+   s.text('小窝的故事',left,y,24,this.colors.ink,800,width);
+   s.text('第 '+number+' 章 · '+chapter.title,left,y+28,12,this.colors.muted,700,portrait?width:width-190);
+   const x=portrait?left:left+width-172,py=portrait?y+54:y;
+   s.text(cleared+' / '+total+' 格',x,py,14,this.colors.ink,700,172);
+   s.meter({x,y:py+23,w:portrait?width:172,h:6},total?cleared/total:0);
   };
-  if(portrait){let y=top-this.scroll;this.scrolled(()=>{y=heading(left,y,width);comic(y);y=info(left,y+comicH+22,width);});this.extent=y+this.scroll-top+16;}
-  else{comic(top+(available-comicH)/2);const x=left+comicW+28,w=width-comicW-28;let line='',lines=1;s.ctx.font='13px '+s.font;for(const char of description){if(s.ctx.measureText(line+char).width>w){lines++;line=char;}else line+=char;}const height=222+lines*13*1.65;info(x,heading(x,top+Math.max(0,(available-height)/2),w),w);this.extent=0;}
+  const bubble=(line:string,r:Rect)=>{
+   // Wrap at most once. Move closing punctuation with the previous character.
+   const room=r.w-32,chars=[...line];let count=0;while(count<chars.length&&s.measure(chars.slice(0,count+1).join(''),11,600)<=room)count++;
+   while(count>1&&count<chars.length&&/[。，、！？；：…）」』”’]/.test(chars[count]))count--;count=Math.max(1,count);
+   const rows=count<chars.length?[chars.slice(0,count).join(''),chars.slice(count).join('')]:[line],bw=Math.min(r.w-16,Math.max(...rows.map(row=>s.measure(row,11,600)))+18),bh=rows.length*15+10,bx=r.x+r.w-bw-8,by=r.y+r.h-bh-7;
+   ctx.save();ctx.fillStyle=this.colors.cream;ctx.strokeStyle=this.colors.ink;ctx.lineWidth=2;roomRoundPath(ctx,{x:bx,y:by,w:bw,h:bh},7);ctx.fill();ctx.stroke();ctx.restore();
+   rows.forEach((row,index)=>s.text(row,bx+8,by+5+index*15,11,this.colors.ink,600,bw-16));
+  };
+  const card=(index:number,r:Rect)=>{
+   const level=chapter.levels[index],state=nodeState(level,current),done=state==='cleared',active=state==='current',photo=level.imageId?photoMap.get(level.imageId):undefined,src=photo?.src||photo?.thumbSrc;
+   ctx.save();ctx.fillStyle=active?this.colors.ink:this.colors.placeholder;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();
+   if(src&&(done||active)){ctx.save();if(active){ctx.globalAlpha=.28;if('filter'in ctx)ctx.filter='grayscale(1) blur(2px)';}s.clip(r,()=>s.image(this.client.asset(src),r,'cover'));ctx.restore();}
+   ctx.save();ctx.strokeStyle=active?'#cf9f52':done?this.colors.ink:'#b88f84';ctx.lineWidth=active?3:2;if(state==='locked')ctx.setLineDash?.([6,4]);ctx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);ctx.restore();
+   if(done){
+    ctx.save();ctx.fillStyle=this.colors.ink;ctx.fillRect(r.x+3,r.y+3,22,22);ctx.restore();s.text(index+1,r.x+9,r.y+7,12,this.colors.cream,800,18);
+    if(level.line&&!portrait)bubble(level.line,r);
+    if(src)s.hit(r,()=>this.openLevelComic(level.id));
+   }else if(active){
+    const label='第 '+(index+1)+' 格',hint=level.pieces+' 片 · 拼完揭晓';
+    s.text(label,r.x+(r.w-s.measure(label,16,800))/2,r.y+r.h/2-22,16,this.colors.cream,800,r.w-12);
+    s.text(hint,r.x+(r.w-s.measure(hint,11,600))/2,r.y+r.h/2+5,11,this.colors.cream,600,r.w-12);
+    s.hit(r,()=>{if(!this.busy&&this.client.profile)void this.launch({mode:'level',levelId:level.id});});
+   }else s.text('?',r.x+(r.w-s.measure('?',28,800))/2,r.y+(r.h-28)/2,28,this.colors.muted,800,r.w-12);
+  };
+  const node=(index:number,x:number,y:number)=>{
+   const state=nodeState(chapter.levels[index],current),radius=state==='current'?13:11;
+   ctx.save();ctx.lineWidth=2;ctx.strokeStyle=state==='current'?'#cf9f52':state==='cleared'?'#a85567':'#b88f84';
+   if(state==='locked')ctx.setLineDash?.([3,3]);
+   if(state==='current'){ctx.shadowColor='#cf9f52';ctx.shadowBlur=12;}
+   ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);
+   if(state!=='locked'){ctx.fillStyle=state==='cleared'?'#a85567':this.colors.onAccent;ctx.fill();}if(state!=='cleared')ctx.stroke();
+   if(state==='cleared'){ctx.strokeStyle=this.colors.onAccent;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x-5,y);ctx.lineTo(x-1,y+4);ctx.lineTo(x+6,y-4);ctx.stroke();}ctx.restore();
+  };
+  const track=(points:{x:number;y:number}[])=>{
+   if(!points.length)return;const first=points[0],last=points[points.length-1],r=portrait?{x:first.x-3,y:first.y,w:6,h:Math.max(6,last.y-first.y)}:{x:first.x,y:first.y-3,w:Math.max(6,last.x-first.x),h:6};
+   ctx.save();const gradient=ctx.createLinearGradient(first.x,first.y,last.x,last.y);
+   ['#f3c7a0','#9cc9e6','#f0cf6e','#eba965','#d4776c','#3d4170'].forEach((color,index)=>gradient.addColorStop(index/5,color));
+   roomRoundPath(ctx,r,3);ctx.fillStyle=gradient;ctx.fill();
+   const active=current?chapter.levels.indexOf(current):complete?total-1:Math.max(0,chapter.levels.findIndex(level=>level.status!=='cleared')),point=points[active];
+   if(point&&active<total-1){s.clip(r,()=>{ctx.fillStyle='rgba(251,243,232,.62)';if(portrait)ctx.fillRect(r.x,point.y,r.w,last.y-point.y);else ctx.fillRect(point.x,r.y,last.x-point.x,r.h);});}ctx.restore();
+  };
+  if(portrait){
+   let y=top-this.scroll;const start=y;this.scrolled(()=>{
+    heading(y);y+=98;
+    const rows=chapter.levels.map((level,index)=>{const state=nodeState(level,current),h=state==='cleared'?92:state==='current'?128:46,r={x:left+38,y,w:width-38,h},point={x:left+14,y:y+h/2};y+=h+12;return {index,state,r,point};});
+    track(rows.map(row=>row.point));
+    for(const {index,state,r,point}of rows){
+     const level=chapter.levels[index],label=timeLabelFor(chapter,index,level),meta=(label?label+' · ':'')+level.pieces+' 片';node(index,point.x,point.y);
+     if(state==='cleared'){
+      card(index,{x:r.x,y:r.y,w:116,h:76});const text={x:r.x+128,y:r.y+28,w:r.w-128,h:56};
+      s.text(meta,text.x,r.y+2,12,this.colors.muted,700,text.w);if(level.line)bubble(level.line,text);
+     }else{card(index,r);if(state==='current')s.text(meta,r.x+8,r.y+8,11,this.colors.cream,600,r.w-16);}
+    }
+    y=this.paragraph(description,left,y+6,width,13)+14;
+    s.button({x:left,y,w:width,h:52},mainLabel,mainAction,{tone:'berrydark',fontSize:14,disabled:this.busy||!this.client.profile||(!current&&!complete)});y+=62;
+    s.button({x:left,y,w:width,h:44},'去大厅逛逛',()=>this.navigate('lobby'),{fontSize:13});y+=56;
+   });this.extent=y-start;
+  }else{
+   // Alternating cards share horizontal space. Keep both rows visible without scrolling.
+   this.scroll=0;this.extent=0;heading(top);
+   const scale=s.w<760?Math.max(132/168,Math.min(1,s.w/760)):1,cw=168*scale,ch=92*scale,railTop=top+40,railBottom=bottom-40,cy=(railTop+railBottom)/2;
+   const points=chapter.levels.map((_,index)=>({x:left+cw/2+(width-cw)*index/Math.max(1,total-1),y:cy}));track(points);
+   chapter.levels.forEach((level,index)=>{
+    const point=points[index],above=index%2===0,r={x:point.x-cw/2,y:above?cy-13-ch:cy+13,w:cw,h:ch};card(index,r);node(index,point.x,point.y);
+    const label=timeLabelFor(chapter,index,level),my=above?cy+20:cy-46,mw=80;
+    if(label)s.text(label,point.x-s.measure(label,11,700)/2,my,11,this.colors.muted,700,mw);
+    const pieces=level.pieces+' 片';s.text(pieces,point.x-s.measure(pieces,11,600)/2,my+(label?16:0),11,this.colors.muted,600,mw);
+   });
+   s.text(description,left,bottom-39,10,this.colors.muted,500,width);
+   const bw=Math.min(240,(width-12)/2),by=bottom-26;
+   s.button({x:left+width-bw*2-12,y:by,w:bw,h:26},'去大厅逛逛',()=>this.navigate('lobby'),{fontSize:12});
+   s.button({x:left+width-bw,y:by,w:bw,h:26},mainLabel,mainAction,{tone:'berrydark',fontSize:13,disabled:this.busy||!this.client.profile||(!current&&!complete)});
+  }
+ }
+ /** Compatibility stub: the next story task will replace previews with comics. */
+ private openLevelComic(levelId:string,_options?:{sequence?:boolean}){
+  const chapter=this.storyChapter;if(chapter)this.openChapterPreview(chapter,levelId);
  }
  private openChapterPreview(chapter:NonNullable<GameApp['beginnerChapter']>,levelId:string){
   const images=chapter.levels.filter(level=>level.status==='cleared').flatMap(level=>{const photo=level.imageId?photoMap.get(level.imageId):undefined;return photo&&(photo.src||photo.thumbSrc)?[{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,collected:true,difficulties:[]}]:[];}),index=images.findIndex(image=>image.id===chapter.levels.find(level=>level.id===levelId)?.imageId);if(index<0)return;
