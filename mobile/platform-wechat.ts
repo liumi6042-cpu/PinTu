@@ -16,10 +16,10 @@ export function createWechatPlatform(input:PlatformConfig):Platform{
  const config={...input,apiBase:input.apiBase.replace(/\/$/,''),assetBase:input.assetBase.replace(/\/$/,'')};
  for(const endpoint of [config.apiBase,config.assetBase])if(!/^https:\/\//.test(endpoint)&&!(config.development&&/^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/.test(endpoint)))throw Error('微信网络地址必须使用 HTTPS');
  const canvas=wx.createCanvas() as HTMLCanvasElement,memory=new Map<string,string>();
- const audioPlayback=new AudioPlayback((url,loop)=>{
+ const audioPlayback=new AudioPlayback((url,loop,onEnded)=>{
   if(typeof wx.createInnerAudioContext!=='function')throw Error('当前宿主不支持音频');
-  const sound=wx.createInnerAudioContext(),error=()=>{};sound.src=url;sound.loop=loop;sound.autoplay=false;sound.onError?.(error);
-  return {get volume(){return Number(sound.volume);},set volume(value){sound.volume=value;},play:()=>sound.play(),pause:()=>{if(typeof sound.pause==='function')sound.pause();else sound.stop?.();},rewind:()=>sound.stop?.(),dispose:()=>{sound.offError?.(error);sound.destroy?.();}};
+  const sound=wx.createInnerAudioContext(),error=()=>{},ended=()=>onEnded?.();sound.src=url;sound.loop=loop;sound.autoplay=false;sound.onError?.(error);if(onEnded)sound.onEnded?.(ended);
+  return {get volume(){return Number(sound.volume);},set volume(value){sound.volume=value;},play:()=>sound.play(),pause:()=>{if(typeof sound.pause==='function')sound.pause();else sound.stop?.();},rewind:()=>sound.stop?.(),dispose:()=>{sound.offError?.(error);if(onEnded)sound.offEnded?.(ended);sound.destroy?.();}};
  });
  const imageCache=new WechatImageCache(wx,config.assetBase);
  let rewardAd:Host|undefined,rewardUnit='',watching=false,prompting=false,counter=0,randomPool:number[]=[];

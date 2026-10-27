@@ -38,6 +38,20 @@ test('audio levels clamp independently and a track change releases the old nativ
  p.audio.setMusic('two.mp3');assert.equal(f.voices[0].disposed,1);assert.equal(f.voices[1].plays,1);p.audio.setLevels({music:NaN,effects:.8});assert.equal(f.voices[1].volume,1);p.playSound('snap.wav');assert.equal(f.voices[2].volume,.275*.8);p.audio.dispose();p.audio.dispose();assert.ok(f.voices.every(voice=>voice.disposed===1));
 });
 
+test('a playlist plays each piece once, rests in silence, then picks a different piece',()=>{
+ const f=voiceFactory(),timers=[],rolls=[0,.5,.99,0];let cleared=0;
+ const p=new AudioPlayback((url,loop,onEnded)=>{const voice=f.create(url,loop);voice.end=onEnded;return voice;},{set:(fn,ms)=>{timers.push({fn,ms});return timers.length;},clear:()=>{cleared++;},random:()=>rolls.shift()??0});
+ p.audio.setMusic(['a.mp3','b.mp3','c.mp3']);p.audio.setLevels({music:.5,effects:1});p.audio.unlock();
+ const first=f.voices[0];assert.equal(first.url,'a.mp3');assert.equal(first.loop,false);assert.equal(first.plays,1);
+ first.end();assert.equal(first.disposed,1);assert.equal(timers.length,1);assert.equal(timers[0].ms,20000+.5*25000);
+ p.setHidden(true);timers[0].fn();assert.equal(f.voices.length,1,'the next piece waits for the foreground');
+ p.setHidden(false);const second=f.voices[1];assert.equal(second.url,'c.mp3');assert.equal(second.plays,1);
+ first.end();assert.equal(timers.length,1,'a stale voice cannot end the current piece');
+ p.audio.setLevels({music:0,effects:1});assert.equal(second.pauses,1);p.audio.setLevels({music:.5,effects:1});assert.equal(second.plays,2);
+ second.end();assert.equal(timers.length,2);p.audio.setMusic('single.mp3');assert.equal(cleared,1,'changing music cancels the rest');assert.equal(f.voices.at(-1).loop,true);
+ p.audio.dispose();timers[1].fn();assert.equal(f.voices.length,3);
+});
+
 test('browser adapter resolves bundled music beside game.js and restores it after cancelled/failed ads',async t=>{
  const media=[],events=new EventTarget();let closeAd,failLoad=false;
  class Audio{volume=1;loop=false;currentTime=0;plays=0;pauses=0;loads=0;constructor(src){this.src=src;media.push(this);}play(){this.plays++;return Promise.resolve();}pause(){this.pauses++;}removeAttribute(name){if(name==='src')this.src='';}load(){this.loads++;}}

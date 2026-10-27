@@ -90,11 +90,13 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   const message=raw.replace(/https?:\/\/\S+/gi,'[URL]').replace(/(?:bearer\s+|(?:token|secret|session|openid|code)[=:]\s*)[^\s,;]+/gi,'[已隐藏]').slice(0,220);
   adDiagnostic='推广位:'+unit+' · '+stage+(error?' · 错误码:'+String(value?.errCode??value?.errno??value?.errNo??value?.code??'无').slice(0,30)+(safeSubcode?' · adnCode:'+safeSubcode:'')+' · '+message:'');};
  const interstitial=createTapInterstitial(tap,(stage,unit,error)=>reportAd('插屏 · '+stage,unit,error));
- const audioPlayback=new AudioPlayback((url,loop)=>{
-  const sound=new Audio(uiUrl(url));sound.loop=loop;
-  return {get volume(){return sound.volume;},set volume(value){sound.volume=value;},play:()=>sound.play(),pause:()=>sound.pause(),rewind:()=>{sound.currentTime=0;},dispose:()=>{sound.pause();sound.removeAttribute('src');sound.load();}};
+ const audioPlayback=new AudioPlayback((url,loop,onEnded)=>{
+  const sound=new Audio(uiUrl(url));sound.loop=loop;const ended=()=>onEnded?.();if(onEnded)sound.addEventListener?.('ended',ended);
+  return {get volume(){return sound.volume;},set volume(value){sound.volume=value;},play:()=>sound.play(),pause:()=>sound.pause(),rewind:()=>{sound.currentTime=0;},dispose:()=>{sound.removeEventListener?.('ended',ended);sound.pause();sound.removeAttribute('src');sound.load();}};
  });
  audioPlayback.setHidden(document.hidden===true);
+ // Browsers only start music from a user gesture; every tap retries a play the host refused.
+ for(const type of ['pointerdown','touchend','keydown'])window.addEventListener?.(type,()=>audioPlayback.unlock(),{capture:true,passive:true});
  let textPromptOpen=false;
  let rawPointerMoves=0,rawTouchMoves=0,touchInputMode=false,resetInput:(()=>void)|null=null;
  const textPrompt=(title:string,value:string,maxLength:number)=>new Promise<string|null>(resolve=>{

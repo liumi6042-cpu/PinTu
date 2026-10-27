@@ -83,7 +83,7 @@ export type Platform={
  copyText?(text:string):Promise<boolean>;
  loadFont?(url:string):Promise<string|null>;
  playSound?(url:string):void;
- audio?:{setLevels(levels:AudioLevels):void;setMusic(url:string|null):void;unlock():void;dispose():void};
+ audio?:{setLevels(levels:AudioLevels):void;setMusic(selection:string|readonly string[]|null):void;unlock():void;dispose():void};
  initialQuery:Record<string,string>;
  nativeSocial?:NativeSocial;
  /** Resolve the TapTap identity before binding; cold-start recovery is bounded. */
