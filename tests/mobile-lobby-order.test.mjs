@@ -41,6 +41,8 @@ test('lobby filters before ordering and pagination while preserving public room 
  const one=f.add(10),three=f.add(11,{players:3}),query='limit=1&direction='+direction+'&pieces=48&open=1&active=1';
  const first=f.lobby(query);assert.equal(first.total,2);assert.deepEqual(first.rooms.map(r=>r.id),[three]);assert.ok(first.nextCursor);
  const second=f.lobby(query+'&cursor='+first.nextCursor);assert.equal(second.total,2);assert.deepEqual(second.rooms.map(r=>r.id),[one]);assert.equal(second.nextCursor,null);
+ const legacy=f.lobby(query+'&cursor='+encode([now,'f'.repeat(32)]));assert.equal(legacy.total,2);assert.deepEqual(legacy.rooms.map(r=>r.id),[three]);assert.deepEqual(JSON.parse(Buffer.from(legacy.nextCursor,'base64url').toString()),[now-10000,three]);
+ const legacySecond=f.lobby(query+'&cursor='+legacy.nextCursor);assert.equal(legacySecond.total,2);assert.deepEqual(legacySecond.rooms.map(r=>r.id),[one]);assert.equal(legacySecond.nextCursor,null);
  assert.ok(f.lobby('active=1').rooms.every(r=>r.players>0));assert.ok(f.lobby('open=1').rooms.every(r=>r.players<8&&r.acceptingNew));
 });
 
@@ -57,9 +59,28 @@ test('sorting-key cursors page through player, activity and id ties without losi
  }
 });
 
-test('legacy and malformed lobby cursors return 400 INVALID_CURSOR',t=>{
+test('legacy cursors finish creation-order pagination without repeating or losing rooms',t=>{
+ const f=fixture(t),a=f.add(1,{players:8,createdAt:now-3000,lastPlayedAt:now}),b=f.add(2,{players:3,createdAt:now-1000,lastPlayedAt:now-9000});
+ const c=f.add(3,{players:0,createdAt:now-1000,lastPlayedAt:now-8000}),d=f.add(4,{players:1,createdAt:now-2000,lastPlayedAt:now-7000}),e=f.add(15,{players:0,createdAt:now-1000,lastPlayedAt:now-9000});
+ const g=f.add(6,{players:4,createdAt:now-3000,lastPlayedAt:now-6000}),h=f.add(7,{players:2,createdAt:now-2000,lastPlayedAt:now-5000}),expected=[e,c,b,h,d,g,a];
+ for(const limit of [1,2,3,4]){
+  const seen=expected.slice(0,2);let cursor=encode([now-1000,c]),pages=0;
+  do{const page=f.lobby('limit='+limit+'&cursor='+cursor);assert.equal(page.total,expected.length);seen.push(...page.rooms.map(r=>r.id));cursor=page.nextCursor;
+   if(cursor){const last=page.rooms.at(-1);assert.deepEqual(JSON.parse(Buffer.from(cursor,'base64url').toString()),[last.createdAt,last.id]);}assert.ok(++pages<=expected.length);
+  }while(cursor);
+  assert.deepEqual(seen,expected);assert.equal(new Set(seen).size,expected.length);
+ }
+});
+
+test('legacy cursor boundaries accept safe timestamps and do not require an existing anchor room',t=>{
  const f=fixture(t),id=f.add(1);
- for(const cursor of [encode([now,id]),encode(null),encode({}),encode([]),encode([1,now]),encode([1,now,id,'extra']),encode([-1,now,id]),encode([1.5,now,id]),encode(['1',now,id]),encode([1,'now',id]),encode([1,Number.MAX_SAFE_INTEGER+1,id]),encode([1,now,[id]]),encode([1,now,'bad-id']),'not-json']){
+ assert.deepEqual(f.lobby('cursor='+encode([Number.MAX_SAFE_INTEGER,'f'.repeat(32)])).rooms.map(r=>r.id),[id]);
+ const end=f.lobby('cursor='+encode([0,id]));assert.deepEqual(end.rooms,[]);assert.equal(end.nextCursor,null);assert.equal(end.total,1);
+});
+
+test('malformed lobby cursors still return 400 INVALID_CURSOR',t=>{
+ const f=fixture(t),id=f.add(1);
+ for(const cursor of [encode(null),encode({}),encode([]),encode([now]),encode([1,now]),encode([-1,id]),encode([1.5,id]),encode([String(now),id]),encode([Number.MAX_SAFE_INTEGER+1,id]),encode([null,id]),encode([now,[id]]),encode([now,'bad-id']),encode([now,'g'.repeat(32)]),encode([now,'a'.repeat(31)]),encode([1,now,id,'extra']),encode([-1,now,id]),encode([1.5,now,id]),encode(['1',now,id]),encode([1,'now',id]),encode([1,Number.MAX_SAFE_INTEGER+1,id]),encode([1,now,[id]]),encode([1,now,'bad-id']),'not-json']){
   const response=f.call('/api/lobby?cursor='+encodeURIComponent(cursor));assert.equal(response.status,400,cursor);assert.equal(response.data.code,'INVALID_CURSOR',cursor);
  }
  assert.equal(f.call('/api/lobby?cursor='+encode([1,now,id])).status,200);

@@ -419,14 +419,14 @@ export function createMobileService(options={}){
   }
   if(path==='/api/lobby'&&method==='GET'){
    const limit=Math.max(1,Math.min(24,Number(url.searchParams.get('limit'))||12)),cursor=url.searchParams.get('cursor');
-   let before=null;if(cursor){try{before=JSON.parse(Buffer.from(cursor,'base64url').toString());if(!Array.isArray(before)||before.length!==3||!Number.isSafeInteger(before[0])||before[0]<0||!Number.isSafeInteger(before[1])||!requestKey(before[2]))throw Error();}catch{fail(400,'INVALID_CURSOR','列表游标无效');}}
+   let before=null;if(cursor){try{before=JSON.parse(Buffer.from(cursor,'base64url').toString());if(!Array.isArray(before)||![2,3].includes(before.length)||!Number.isSafeInteger(before[0])||before[0]<0||!requestKey(before.at(-1))||before.length===3&&!Number.isSafeInteger(before[1]))throw Error();}catch{fail(400,'INVALID_CURSOR','列表游标无效');}}
    const listed=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))),byId=new Map(listed.map(r=>[r.id,r]));
    let cards=listed.map(r=>card(r,now));
    const dir=url.searchParams.get('direction'),pieces=Number(url.searchParams.get('pieces')),open=url.searchParams.get('open')==='1',active=url.searchParams.get('active')==='1';
    cards=cards.filter(r=>(!dir||dir==='all'||r.direction===dir)&&(!pieces||r.pieces===pieces)&&(!open||r.players<8&&r.acceptingNew)&&(!active||r.players>0));
-   // Keyset pagination uses [players, activityAt, id], all descending; live player changes may repeat a room.
-   const activityAt=r=>r.lastPlayedAt??r.createdAt;cards.sort((a,b)=>b.players-a.players||activityAt(b)-activityAt(a)||b.id.localeCompare(a.id));
-   const total=cards.length;if(before)cards=cards.filter(r=>r.players<before[0]||r.players===before[0]&&(activityAt(r)<before[1]||activityAt(r)===before[1]&&r.id<before[2]));const page=cards.slice(0,limit),last=page.at(-1),nextCursor=cards.length>limit&&last?Buffer.from(JSON.stringify([last.players,activityAt(last),last.id])).toString('base64url'):null;
+   // Legacy cursors finish in [createdAt, id] order; new cursors use [players, activityAt, id], all descending.
+   const legacy=before?.length===2,activityAt=r=>r.lastPlayedAt??r.createdAt;cards.sort((a,b)=>(legacy?b.createdAt-a.createdAt:b.players-a.players||activityAt(b)-activityAt(a))||b.id.localeCompare(a.id));
+   const total=cards.length;if(before)cards=cards.filter(r=>legacy?r.createdAt<before[0]||r.createdAt===before[0]&&r.id<before[1]:r.players<before[0]||r.players===before[0]&&(activityAt(r)<before[1]||activityAt(r)===before[1]&&r.id<before[2]));const page=cards.slice(0,limit),last=page.at(-1),nextCursor=cards.length>limit&&last?Buffer.from(JSON.stringify(legacy?[last.createdAt,last.id]:[last.players,activityAt(last),last.id])).toString('base64url'):null;
    // Seated players (up to four) let the lobby show real avatars; plus two small lobby counters.
    const seated=room=>room.members.filter(m=>m.guestId&&now-m.lastSeen<engine.ONLINE_MS).slice(0,4).map(m=>({name:m.name,level:readProfile(m.guestId,now).level,decoration:collection.equipped(m.guestId)}));
    return {rooms:page.map(c=>({...c,members:seated(byId.get(c.id))})),nextCursor,total,online:social.onlineCount(now),dailyFinished:dailyFinishedCount(now),serverTime:now,mode:'mobile-v3-isolated'};
