@@ -40,6 +40,7 @@ type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;creat
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
 const directions:[Direction,string][]=[['all','全部'],['portrait','竖图'],['landscape','横图'],['square','方图']];
+const themeOptions:[ThemeId,string][]=[['light','浅色'],['dark','深色'],['wood','仿木']];
 const counts=[48,108,300,500] as const;
 const contentMaxWidth=1120;
 const phrases=publicPhrases;
@@ -1843,7 +1844,7 @@ export class GameApp{
     s.button({x:left+70,y:cy+50,w:96,h:30},'换装饰',()=>{this.showModal(null);this.openCollection('decorations');},{icon:'leaf',fontSize:12});cy+=96;
     if(!canRename)cy=this.paragraph('首测暂停自定义昵称，当前昵称与已有进度保留。',left,cy,width,12)+14;
     if(this.formalWeb){s.text(this.client.account?'已登录 · '+this.client.account.username:'网站游客进度',left,cy,12,this.colors.muted,600,width);cy+=28;for(const[label,key]of [[this.client.account?'账号管理':'登录 / 注册','account'],['账号安全与数据管理','security']] as const){this.button(left,cy,width,label,()=>this.openWeb(key));cy+=48;}}
-    heading('外观');this.rowOptions([['light','浅色'],['dark','深色'],['wood','仿木']],this.stage.theme,left,cy,width,value=>this.setTheme(value),39);cy+=56;
+    heading('外观');this.rowOptions(themeOptions,this.stage.theme,left,cy,width,value=>this.setTheme(value),39);cy+=56;
     if(this.platform.setUiSize){heading('界面大小');this.rowOptions([['small','小'],['auto','自动'],['large','大'],['xlarge','特大']] as const,this.platform.uiSize?.()??'auto',left,cy,width,value=>{this.platform.setUiSize?.(value);this.invalidate();},39);cy+=48;cy=this.paragraph('自动：按窗口大小放大',left,cy,width,12)+16;}
     s.text('声音',left,cy,15,this.colors.ink,750);cy+=31;
     this.button(left,cy,width,this.audioSettings.levels.effects===0?'开启音效':'音效静音',()=>this.toggleEffectsMute(),this.audioSettings.levels.effects===0?'cream':'berry',39);cy+=51;
@@ -1903,6 +1904,8 @@ export class GameApp{
     if(this.tasks?.invitation.bound){s.text('已关联：'+(this.tasks.invitation.boundToName??'好友'),left,cy,13,this.colors.muted);cy+=35;}break;
    }
    case'tools':{
+    // The table look is changed here too, so players need not leave the board to reach settings.
+    s.text('桌面外观',left,cy,15,this.colors.ink,800);cy+=28;this.rowOptions(themeOptions,this.stage.theme,left,cy,width,value=>this.setTheme(value),39);cy+=56;
     if(this.platform.config.id==='taptap'){this.button(left,cy,width,this.stage.w>this.stage.h?'切换竖屏':'切换横屏',()=>void this.toggleOrientation(),'cream',40);cy+=51;}
     if(this.platform.config.id==='web'&&this.platform.fullscreen?.available()){this.button(left,cy,width,this.platform.fullscreen.active()?'退出全屏':'进入全屏',()=>void this.toggleFullscreen(),'cream',40);cy+=51;}
     const board=this.board,room=this.room;for(const [label,action]of [
@@ -1912,7 +1915,8 @@ export class GameApp{
      [board?.trayOpen?'关闭碎片托盘':'打开碎片托盘 · 点选定位',()=>{if(board)board.trayOpen=!board.trayOpen;this.modal=null;this.toolsOpen=false;this.invalidate();}],
      ['整理散落拼块',()=>void this.run(async()=>{await room?.organize();this.modal=null;this.toolsOpen=false;this.note('散片已整理');})],
      [board?.showPreview?'关闭原图':'查看原图',()=>{if(board)board.showPreview=!board.showPreview;this.modal=null;this.invalidate();}],
-    ] as const){if(label==='整理散落拼块'&&!this.soloRoom)continue;this.button(left,cy,width,label,action,'cream',40);cy+=51;}break;
+    ] as const){if(label==='整理散落拼块'&&!this.soloRoom)continue;this.button(left,cy,width,label,action,'cream',40);cy+=51;}
+    this.button(left,cy,width,'打开设置 · 声音、画面等',()=>this.showModal('settings'),'cream',40);cy+=51;break;
    }
    case'chat':{
     const room=this.room;s.text('同桌 '+(room?.snapshot.members.length??0)+'人',left,cy,15,this.colors.ink,700);cy+=29;for(const member of room?.snapshot.members??[]){s.text(member.name+' · Lv.'+((member as typeof member&{level?:number}).level??1),left,cy,13,member.color);cy+=25;}cy+=10;
