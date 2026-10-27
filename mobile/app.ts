@@ -184,13 +184,13 @@ export class GameApp{
  private get desktop(){return this.layout==='desktop';}
  private get floatingTasks(){const v=this.platform.viewport();return v.width>v.height&&v.width>=540;}
  // Primary navigation: five destinations plus settings. The puzzle room never shows it.
- private readonly navItems:readonly(readonly[Route,string,string])[]=[['lobby','大厅','players'],['gallery','图库','underlay'],['collection','收藏','book'],['tasks','任务','tasks'],['friends','好友','friendArt']];
+ private readonly navItems:readonly(readonly[Route,string,string])[]=[['lobby','大厅','players'],['gallery','图库','underlay'],['collection','收藏','book'],['chapter','故事','story'],['friends','好友','friendArt']];
  private get tabRoute(){return !this.room&&this.navItems.some(([route])=>route===this.route);}
  private get navVisible(){return this.ready&&!this.room&&(this.tabRoute||this.route==='supplies');}
  private contentOrigin={x:0,y:0};
  private openTab(route:Route){if(route===this.route){this.scroll=0;this.albumListScroll=0;this.invalidate();return;}this.navigate(route);this.routeStack=[];this.routeFrames=[];}
  private navBadge(route:Route,x:number,y:number){
-  const s=this.stage;if(route==='tasks'&&(this.client.profile?.giftCount??0)>0){s.ctx.fillStyle=s.color('#b46177');s.ctx.fillRect(Math.round(x-4),Math.round(y-4),8,8);return;}
+  const s=this.stage;if((route==='tasks'&&(this.client.profile?.giftCount??0)>0)||(route==='chapter'&&this.storyChapter?.levels.some(level=>level.status==='unlocked'))){s.ctx.fillStyle=s.color('#b46177');s.ctx.fillRect(Math.round(x-4),Math.round(y-4),8,8);return;}
   const count=route==='friends'?this.social.unread+this.social.requestCount:0;if(!count)return;const label=count>99?'99+':String(count),w=Math.max(17,s.measure(label,9,700)+8);s.frame({x:x-w/2,y:y-8,w,h:17},'segment-berry-selected');s.text(label,x-s.measure(label,9,700)/2,y-6,9,this.colors.onAccent,700);
  }
  private drawTabBar(){
@@ -415,8 +415,8 @@ export class GameApp{
  private get lobbyBusy(){return this.lobbyLoading&&!this.lobbyQuiet;}
  private async loadLevels(){
   const owner=this.ownerKey(),serial=this.levelsSerial=(this.levelsSerial??0)+1;
-  try{const data=await this.client.json<MobileLevelsView>('/api/levels');if(this.destroyed||owner!==this.ownerKey()||serial!==this.levelsSerial)return;this.levels=data;this.levelsOwner=owner;this.invalidate();if(this.route==='chapter'&&!this.storyChapter)this.navigate('lobby');}
-  catch{if(!this.destroyed&&owner===this.ownerKey()&&serial===this.levelsSerial){this.levels=null;this.invalidate();if(this.route==='chapter')this.navigate('lobby');}}
+  try{const data=await this.client.json<MobileLevelsView>('/api/levels');if(this.destroyed||owner!==this.ownerKey()||serial!==this.levelsSerial)return;this.levels=data;this.levelsOwner=owner;this.invalidate();}
+  catch{if(!this.destroyed&&owner===this.ownerKey()&&serial===this.levelsSerial){this.levels=null;this.invalidate();}}
  }
  private get storyChapter(){
   if(this.levelsOwner!==this.ownerKey())return null;
@@ -734,8 +734,10 @@ export class GameApp{
   this.navItems.forEach(([route,label,icon],index)=>item(134+index*52,label,icon,this.route===route,()=>this.openTab(route),route));
   item(s.h-(this.formalWeb?104:72),'设置','tools',false,()=>this.showModal('settings'));
   if(this.formalWeb)this.drawWebLinks(23,s.h-38,nav-44);
-  const x=nav+16,w=s.w-x-20,title=this.route==='lobby'?'大厅':this.route==='gallery'?'挑一幅喜欢的画':this.route==='tasks'?'每一次拼合，都有小收获':this.route==='collection'?'收藏属于你的美好':this.route==='friends'?'和朋友一起拼':this.route==='supplies'?'补给站':'慢慢拼，慢慢了解';
-  s.text(title,x+4,25,24,ink,800,w-8);s.text(this.pageSubtitle,x+5,58,12,this.colors.muted,500,w-8);
+  const x=nav+16,w=s.w-x-20,title=this.route==='lobby'?'大厅':this.route==='chapter'?'小窝的故事':this.route==='gallery'?'挑一幅喜欢的画':this.route==='tasks'?'每一次拼合，都有小收获':this.route==='collection'?'收藏属于你的美好':this.route==='friends'?'和朋友一起拼':this.route==='supplies'?'补给站':'慢慢拼，慢慢了解';
+  if(this.route==='tasks')s.button({x,y:20,w:32,h:34},'',()=>this.back(),{icon:'back'});
+  s.text(title,x+(this.route==='tasks'?44:4),25,24,ink,800,w-(this.route==='tasks'?48:this.route==='lobby'?84:8));s.text(this.pageSubtitle,x+5,58,12,this.colors.muted,500,w-8);
+  if(this.route==='lobby')this.drawLobbyTasks({x:x+w-64,y:20,w:64,h:40});
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,header-4,w,1);this.sceneArea={x,y:header,w,h:s.h-header-12};this.listArea={x,y:header,w,h:s.h-header-12};
  }
  private get pageSubtitle(){switch(this.route){case'lobby':{const count=this.lobbyRooms.length,online=this.lobbyOnline?' · '+this.lobbyOnline+' 位拼友在线':'';return (count?(this.lobbyCursor?count+'+':count)+' 桌正在拼':'今天，拼一会儿')+online;}case'gallery':return '选好图片和片数，就能开一桌';case'collection':return '拼完一张图就收进图集，集满有奖励';case'tasks':return '拼合攒礼包，邀请得奖励';case'friends':return '加好友、私聊、一起拼';case'supplies':return '体力与建房券';default:return '慢慢拼，慢慢了解';}}
@@ -824,7 +826,7 @@ export class GameApp{
   if(this.formalWeb){s.text('测试版',13,safe+7,10,this.colors.muted);this.drawWebLinks(Math.max(75,s.w-224),safe+7,Math.min(212,s.w-87));}
   if(this.platform.config.id==='wechat'&&safe>=30)s.text(this.platform.config.gameName,14,safe-26,13,this.colors.ink,700,Math.max(100,s.w-160));
   const line=(y:number)=>{s.ctx.fillStyle=s.color('#c99586');s.ctx.fillRect(12,Math.round(y),s.w-24,1);};
-  const energy=(x:number,y:number,width:number,size=16)=>{if(!this.energyEnabled){s.icon('coin',{x,y:y+7,w:24,h:26});s.text(p?(p.collection?.coins??0):'—',x+29,y+13,size,this.colors.ink,800,Math.max(24,width-30));s.hit({x:x-3,y,w:Math.max(24,width+3),h:42},()=>this.showModal('coins'));return;}s.icon('lightning',{x,y:y+3,w:22,h:31});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=Math.min(s.measure(label,size,800),Math.max(24,width-49));s.text(label,x+25,y+12,size,this.colors.ink,800,tw+1);s.frame({x:x+29+tw,y:y+10,w:19,h:21},'plus-gold-normal');s.text('+',x+33+tw,y+11,17,'#fffaf0',700);s.hit({x,y,w:width,h:42},()=>this.navigate('supplies'));};
+  const energy=(x:number,y:number,width:number,size=16)=>{if(!this.energyEnabled){s.icon('coin',{x,y:y+7,w:24,h:26});s.text(p?(p.collection?.coins??0):'—',x+29,y+13,size,this.colors.ink,800,Math.max(24,width-30));s.hit({x:x-3,y,w:Math.max(24,width+3),h:42},()=>this.showModal('coins'));return;}const compact=width<90;if(compact)size=Math.min(size,12);s.icon('lightning',{x,y:y+(compact?7:3),w:compact?17:22,h:compact?24:31});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=Math.min(s.measure(label,size,800),Math.max(24,width-(compact?40:49)));s.text(label,x+(compact?20:25),y+12,size,this.colors.ink,800,tw+1);s.frame({x:x+(compact?24:29)+tw,y:y+10,w:compact?16:19,h:21},'plus-gold-normal');s.text('+',x+(compact?27:33)+tw,y+11,17,'#fffaf0',700);s.hit({x,y,w:width,h:42},()=>this.navigate('supplies'));};
   if(this.route==='lobby'||this.route==='gallery'||this.route==='chapter'){
    let y=top;const gallery=this.route==='gallery';
    if(gallery){s.text('图库',14,y+3,small?22:24,this.colors.ink,800,s.w-150);if(this.layout==='phonePortrait')s.button({x:s.w-136,y,w:124,h:32},'随机开一桌',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),{icon:'dice',fontSize:13,disabled:this.busy||!p});line(y+37);y+=43;if(this.layout==='phoneLandscape'){this.bodyTop=y;return;}}
@@ -833,7 +835,7 @@ export class GameApp{
    const lx=12+avatar+4,lw=gallery?small?66:85:wide?92:small?42:55;
    s.text('Lv.'+(p?.level??'—'),lx,y+5,wide?23:small?14:16,this.levelColor(p?.level??0),800,lw);s.meter({x:lx,y:y+(wide?36:28),w:lw,h:8},p?p.xp/Math.max(1,p.xpToNext):0);s.text(p?p.xp+' / '+p.xpToNext:'—',lx,y+(wide?48:40),wide?12:10,this.colors.ink,500,lw+8);
    if(gallery){energy(12+playerWidth,y+5,Math.min(135,s.w-playerWidth-60),wide?20:16);s.icon('sprig',{x:s.w-45,y:y+h-39,w:30,h:28});}
-   else{const ex=12+playerWidth+4;energy(ex,y+(h-43)/2,Math.min(220,s.w-ex-(this.platform.config.id==='taptap'&&this.platform.setOrientation?60:50)),wide?22:small?14:16);s.icon('sprig',{x:s.w-30,y:y-14,w:18,h:18});if(this.platform.config.id==='taptap'&&this.platform.setOrientation)s.button({x:s.w-52,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
+   else{const ex=12+playerWidth+4,orientation=this.platform.config.id==='taptap'&&!!this.platform.setOrientation,taskX=s.w-76-(orientation?48:0),right=this.route==='lobby'?taskX-8:s.w-(orientation?60:50);energy(ex,y+(h-43)/2,Math.min(220,right-ex),wide?22:small?14:16);s.icon('sprig',{x:s.w-30,y:y-14,w:18,h:18});if(this.route==='lobby')this.drawLobbyTasks({x:taskX,y:y+(h-40)/2,w:64,h:40});if(orientation)s.button({x:s.w-52,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
    line(y+h);this.bodyTop=y+h+9;return;
   }
   const title=this.route==='tasks'?'任务与礼包':this.route==='friends'?'好友':this.route==='supplies'?'补给站':this.route==='collection'?'我的收藏':this.route==='privacy'||this.route==='terms'?'服务与隐私说明':'玩法与设置';
@@ -862,13 +864,15 @@ export class GameApp{
  private clampListScroll(){if(this.route==='collection'&&!this.collection||this.route==='tasks'&&!this.tasks||this.route==='lobby'&&this.lobbyLoading&&!this.rooms.length)return;const next=clamp(this.scroll,0,Math.max(0,this.extent-Math.max(0,this.bodyBottom-this.bodyTop)));if(next!==this.scroll){this.scroll=next;this.invalidate();}}
  private cardImage(src:string,r:Rect){this.stage.frame(r,'panel-cream');this.stage.image(this.client.asset(src),{x:r.x+6,y:r.y+6,w:r.w-12,h:r.h-12},'cover');}
 
+ private drawLobbyTasks(r:Rect){
+  const s=this.stage;s.icon('gift',{x:r.x+4,y:r.y+4,w:26,h:32});s.text('任务',r.x+34,r.y+13,13,this.colors.ink,750);this.navBadge('tasks',r.x+28,r.y+5);s.hit(r,()=>this.navigate('tasks'));
+ }
  private drawLobby(){
   const s=this.stage,layout=this.layout,gap=layout==='phoneLandscape'?10:14,top=this.bodyTop,bottom=this.bodyBottom,width=Math.min(1400,s.w-24),left=(s.w-width)/2;
   if(layout==='phonePortrait'){
-   // One scrolling column: chapter, hero, last room, actions, then the public rooms.
+   // One scrolling column: hero, last room, actions, then the public rooms.
    let y=top-this.scroll;const columns=width>=520?3:2;
    this.scrolled(()=>{
-    if(this.beginnerChapter)y=this.drawChapterStrip({x:left,y,w:width,h:34})+gap;
     const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
     const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
     this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
@@ -878,8 +882,7 @@ export class GameApp{
   }
   // Desktop and phone landscape: a fixed left column and a room list that scrolls by itself.
   const landscape=layout==='phoneLandscape',leftW=landscape?Math.min(300,width*.42):Math.min(380,width*.36),rightX=left+leftW+gap+6,rightW=left+width-rightX;
-  let y=top;const chapter=this.beginnerChapter,chapterH=chapter?34+gap:0,last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,rest=(last?continueH+gap:0)+actionH+gap,heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest)-chapterH);
-  if(chapter)y=this.drawChapterStrip({x:left,y,w:leftW,h:34})+gap;
+  let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,rest=(last?continueH+gap:0)+actionH+gap,heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
   y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
   if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
   this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
@@ -889,13 +892,8 @@ export class GameApp{
   this.extent=end+this.scroll-header+12;
  }
  private lobbyColumn(){return this.listColumn;}
- private drawChapterStrip(r:Rect){
-  const chapter=this.beginnerChapter;if(!chapter)return r.y;
-  const s=this.stage,current=chapter.levels.find(level=>level.status==='unlocked'),cleared=chapter.levels.filter(level=>level.status==='cleared').length,right='继续第 '+(current?chapter.levels.indexOf(current)+1:'—')+' 关 ›',rightW=s.measure(right,11,700);
-  s.frame(r,'button-gold-normal');s.icon('book',{x:r.x+8,y:r.y+7,w:20,h:20});s.text((this.levels?.seriesTitle||'新手章节')+' '+cleared+'/'+chapter.levels.length,r.x+34,r.y+10,11,this.colors.ink,700,Math.max(1,r.w-rightW-52));s.text(right,r.x+r.w-rightW-10,r.y+10,11,this.colors.ink,700,rightW);s.hit(r,()=>this.navigate('chapter'));return r.y+r.h;
- }
  private drawChapter(){
-  const chapter=this.storyChapter;if(!chapter){this.extent=0;return;}
+  const chapter=this.storyChapter;if(!chapter){this.stage.text('小窝的故事',20,this.bodyTop+12,24,this.colors.ink,800,this.stage.w-40);this.stage.text('故事暂未开放，请稍后再来看看',20,this.bodyTop+54,14,this.colors.muted,600,this.stage.w-40);this.extent=0;return;}
   const s=this.stage,ctx=s.ctx,portrait=this.layout==='phonePortrait',width=Math.min(1400,s.w-24),left=(s.w-width)/2,top=this.bodyTop,bottom=this.bodyBottom;
   const current=chapter.levels.find(level=>level.status==='unlocked'),cleared=chapter.levels.filter(level=>level.status==='cleared').length,total=chapter.levels.length,complete=total>0&&cleared===total,number=(this.levels?.chapters.indexOf(chapter)??0)+1;
   const description='拼完一格，故事就往下走一格。'+(this.energyEnabled?'每格第一次拼完送 '+(this.levels?.firstClearEnergy??0)+' 体力。':'');

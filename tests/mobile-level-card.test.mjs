@@ -2,10 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixture,levels,tick,lobby,artwork} from './mobile-level-card-fixture.mjs';
 
-test('unfinished chapter draws a 34px gold book strip above the daily puzzle and opens the chapter in every layout',async()=>{
+test('unfinished chapters leave the daily puzzle at the top without a story strip in every layout',()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]]){
-  const f=fixture({width,height}),heroes=lobby(f),strip=f.frames.find(frame=>frame.key==='button-gold-normal');assert.ok(strip);assert.equal(strip.r.h,34);assert.ok(strip.r.y+34<heroes[0].y);assert.ok(f.icons.some(icon=>icon.key==='book'));assert.ok(f.texts.includes('拾光物语 3/6'));assert.ok(f.texts.includes('继续第 4 关 ›'));assert.equal(f.frames.filter(frame=>frame.key.startsWith('button-')).length,1);
-  f.hits.find(hit=>hit.r===strip.r).fn();await tick();assert.equal(f.app.route,'chapter');assert.equal(f.app.navVisible,false);assert.equal(f.created.length,0);
+  const f=fixture({width,height}),top=f.app.bodyTop,heroes=lobby(f);assert.equal(heroes[0].y,top);assert.ok(!f.icons.some(icon=>icon.key==='book'));assert.ok(!f.texts.some(text=>text.includes('拾光物语')||text.includes('继续第')));assert.equal(f.frames.filter(frame=>frame.key.startsWith('button-')).length,0);
  }
 });
 
@@ -16,10 +15,10 @@ test('all-cleared and unavailable chapters preserve the lobby layout without a s
  }
 });
 
-test('landscape daily artwork uses the height left by the strip and keeps normal daily actions',()=>{
+test('landscape daily artwork uses the height freed by removing the strip and keeps normal daily actions',()=>{
  for(const previous of [false,true]){
   const f=fixture({width:844,height:390});f.app.dailyPhoto={id:'daily',title:'窗边',src:'/daily.webp',thumbSrc:'/daily-thumb.webp'};if(previous)f.app.historyRooms=[{id:'previous',pieces:48,placed:5,title:'上次的拼图'}];f.app.drawRoomHeader=(_x,y)=>y+40;f.app.drawRoomGrid=(_x,y)=>y;f.app.drawLobby();
-  const card=f.frames.find(frame=>frame.key==='panel-cream').r,image=f.images.find(image=>image.src==='/daily.webp'),button=f.buttons.find(button=>button.label==='开始拼 · 108 片');assert.ok(image);assert.equal(button.r.h,34);assert.equal(card.h,390-20-80-44-(previous?62:0)-48);assert.equal(image.r.h,card.h-f.app.heroTextHeight(true)-8);assert.ok(button.r.y>=image.r.y+image.r.h);assert.ok(button.r.y+button.r.h<=card.y+card.h);
+  const card=f.frames.find(frame=>frame.key==='panel-cream').r,image=f.images.find(image=>image.src==='/daily.webp'),button=f.buttons.find(button=>button.label==='开始拼 · 108 片');assert.ok(image);assert.equal(button.r.h,34);assert.equal(card.h,390-20-80-48-(previous?62:0));assert.equal(image.r.h,card.h-f.app.heroTextHeight(true)-8);assert.ok(button.r.y>=image.r.y+image.r.h);assert.ok(button.r.y+button.r.h<=card.y+card.h);
  }
 });
 
@@ -36,7 +35,7 @@ test('chapter pages show 0/6 and 3/6 states on the timeline and both current act
 
 test('chapter fallback title, reward text, speech bubbles and scrolling use the configured values',()=>{
  const f=fixture({height:600});f.app.levels.seriesTitle=null;f.client.config.capabilities.energy=false;f.app.levels.chapters[0].levels[0].line='欢迎来小店';f.app.levels.chapters[0].levels[4].line='不能提前看到';f.app.drawChapter();assert.ok(f.texts.includes('小窝的故事'));assert.ok(f.texts.includes('欢迎来小店'));assert.ok(!f.texts.includes('不能提前看到'));assert.ok(!f.texts.some(text=>text.includes('体力')));assert.ok(f.app.extent>f.app.bodyBottom-f.app.bodyTop);const top=f.strokes[0].r.y;f.clear();f.app.scroll=50;f.app.drawChapter();assert.equal(f.strokes[0].r.y,top-50);
- f.client.config.capabilities.energy=true;f.app.levels.firstClearEnergy=17;f.clear();f.app.drawChapter();assert.ok(f.texts.join('').includes('17 体力'));f.clear();f.app.drawChapterStrip({x:12,y:80,w:366,h:34});assert.ok(f.texts.includes('新手章节 3/6'));
+ f.client.config.capabilities.energy=true;f.app.levels.firstClearEnergy=17;f.clear();f.app.drawChapter();assert.ok(f.texts.join('').includes('17 体力'));
 });
 
 test('speech bubbles wrap to at most two lines and only then ellipsize',()=>{
@@ -46,9 +45,9 @@ test('speech bubbles wrap to at most two lines and only then ellipsize',()=>{
  const longer='爷'.repeat(60),capped=bubble(longer);assert.equal(capped.length,2);assert.ok(capped[0].value.length<60);
  const fits=wrapped[0].value.length,punct=bubble('爷'.repeat(fits)+'。');assert.equal(punct.length,2);assert.ok(!punct[1].value.startsWith('。'));assert.equal(punct[1].value,'爷。');assert.equal(punct.map(glyph=>glyph.value).join(''),'爷'.repeat(fits)+'。');
 });
-test('chapter uses the lobby header without phone navigation and handles canvas filter and dash support being absent in a dark palette',async()=>{
+test('chapter keeps phone navigation and the lobby profile header without the lobby task shortcut',async()=>{
  for(const [width,height]of [[390,844],[844,390]]){
-  const f=fixture({width,height});f.stage.color=value=>value;f.platform.setOrientation=()=>{};f.app.drawHeader();const header={texts:[...f.texts],icons:[...f.icons],top:f.app.bodyTop,buttons:f.buttons.map(({r,label,opts})=>({r,label,opts}))};f.clear();f.app.route='chapter';f.app.drawHeader();assert.deepEqual({texts:f.texts,icons:f.icons,top:f.app.bodyTop,buttons:f.buttons.map(({r,label,opts})=>({r,label,opts}))},header);assert.equal(f.app.navVisible,false);
+  const f=fixture({width,height});f.platform.setOrientation=()=>{};f.app.drawHeader();const top=f.app.bodyTop;assert.ok(f.texts.includes('任务'));f.clear();f.app.route='chapter';f.app.drawHeader();assert.equal(f.app.bodyTop,top);assert.ok(f.icons.some(icon=>icon.key==='avatar'));assert.ok(!f.texts.includes('任务'));assert.equal(f.app.navVisible,true);
  }
  const f=fixture({data:levels(0)});await artwork(f);delete f.stage.ctx.filter;f.stage.ctx.setLineDash=undefined;Object.assign(f.stage.palette,{ink:'#fff2e3',cream:'#332a34',placeholder:'#463644',line:'#85616c'});f.app.drawChapter();assert.equal(f.images.length,1);assert.equal(f.dashes.length,0);const label=f.glyphs.find(glyph=>glyph.value==='第 1 格');assert.equal(label.color,f.stage.palette.cream);assert.notEqual(label.color,f.stage.palette.ink);assert.equal(f.stage.ctx.globalAlpha,1);
 });
@@ -68,11 +67,11 @@ test('returning players enter the chapter once, while complete, unavailable, inv
  for(const state of [{modal:'settings'},{busy:true},{route:'gallery'},{room:{}}]){const f=fixture();Object.assign(f.app,state);await f.app.loadInitialContent({});assert.equal(f.app.route,state.route??'lobby');assert.equal(f.created.length,0);}
 });
 
-test('switching accounts resets entry, completed chapters stay readable and unavailable chapters redirect',async()=>{
+test('switching accounts resets entry, completed and unavailable chapters stay on the story route',async()=>{
  const f=fixture();f.app.ensureListOwner();await f.app.loadInitialContent({});assert.equal(f.app.route,'chapter');f.app.navigate('lobby');await tick();f.client.account={id:'owner-b'};f.app.ensureListOwner();await tick();assert.equal(f.app.route,'chapter');assert.equal(f.app.levelsOwner,'owner-b');assert.equal(f.created.length,0);
  f.app.route='chapter';f.client.json=async()=>levels(6);await f.app.loadLevels();assert.equal(f.app.route,'chapter');assert.equal(f.app.beginnerChapter,null);
- for(const data of [levels(0,'unavailable')]){f.app.route='chapter';f.client.json=async()=>data;await f.app.loadLevels();assert.equal(f.app.route,'lobby');await tick();}
- f.app.route='chapter';f.client.json=async()=>{throw Error('offline');};await f.app.loadLevels();assert.equal(f.app.route,'lobby');await tick();
+ for(const data of [levels(0,'unavailable')]){f.app.route='chapter';f.client.json=async()=>data;await f.app.loadLevels();assert.equal(f.app.route,'chapter');await tick();}
+ f.app.route='chapter';f.client.json=async()=>{throw Error('offline');};await f.app.loadLevels();assert.equal(f.app.route,'chapter');await tick();
 });
 
 test('level room back returns to the chapter except after the last level or when unavailable; ordinary rooms restore their origin',async()=>{
