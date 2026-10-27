@@ -15,6 +15,8 @@ type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial
 type Pan={pointer:number;x:number;y:number;cx:number;cy:number};
 type Pinch={a:number;b:number;distance:number;zoom:number;worldX:number;worldY:number;held:boolean};
 const CANVAS_SNAP_FEEDBACK_MS=720;
+/** The locate glow pulses four times, then fades out. */
+const LOCATE_MS=3600,LOCATE_PULSE_MS=900;
 type SnapFlash={anchor:number;ids:number[];local:boolean;startedAt:number;until:number;reduced:boolean;xp?:number};
 type ImagePreparation=Readonly<{phase:'loading'|'preparing'|'ready';completed:number;total:number}>;
 type DragSurface={canvas:HTMLCanvasElement;key:string};
@@ -75,7 +77,7 @@ export class PuzzleBoard implements RoomTable {
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null}|null=null;
  private drag:Drag|null=null;private pan:Pan|null=null;private pinch:Pinch|null=null;private serial=0;
  private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private underlayUntil=0;
- private flashes:SnapFlash[]=[];private frame=0;private destroyed=false;private feedbackHidden=false;
+ private flashes:SnapFlash[]=[];private locateStartedAt=0;private locateUntil=0;private frame=0;private destroyed=false;private feedbackHidden=false;
  private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();
  private removeHide:()=>void;private removeShow:()=>void;private timer:ReturnType<typeof setTimeout>|null=null;
  private invalidate:()=>void;
@@ -97,7 +99,7 @@ export class PuzzleBoard implements RoomTable {
   this.preparation={phase:'loading',completed:0,total:this.pieces.length};
   this.picture=platform.createCanvas();const hit=platform.createCanvas();hit.width=1;hit.height=1;const context=hit.getContext('2d');if(!context)throw Error('当前设备的拼图画布暂不可用');this.hit=context;
   if(typeof this.hit.isPointInPath!=='function')this.polygons=this.paths.map(flattenPath);
-  this.removeHide=platform.onHide(()=>{this.feedbackHidden=true;this.flashes=[];if(this.frame)this.platform.cancelFrame(this.frame);this.frame=0;this.frameAt=null;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.changed();});
+  this.removeHide=platform.onHide(()=>{this.feedbackHidden=true;this.flashes=[];this.locateUntil=0;if(this.frame)this.platform.cancelFrame(this.frame);this.frame=0;this.frameAt=null;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.changed();});
   this.removeShow=platform.onShow?.(()=>{this.feedbackHidden=false;this.frameAt=null;this.changed();this.animateFeedback();})??(()=>{});
  }
  get theme(){return this.currentTheme;}
@@ -329,6 +331,22 @@ export class PuzzleBoard implements RoomTable {
  setUnderlay(until:number){this.underlayUntil=until;this.scheduleExpiry();this.changed();}
  /** Highlighting only: reward/advertising eligibility is handled by the caller. */
  hint(ids?:number[],duration=30000){this.setHints(ids??this.state.groups.filter(g=>!g.locked&&!this.owners[g.id]).slice(0,3).map(g=>g.pieces[0]),Date.now()+duration);}
+ /** Rings every loose piece for a few seconds, including pieces lying on the placed
+  * picture. The camera moves only when some of them are outside the given view: it
+  * centres on them and zooms out just enough. Returns the number of pieces marked. */
+ locateLoose(insets:{top?:number;right?:number;bottom?:number;left?:number}={}){
+  const groups=this.state.groups.filter(g=>!g.locked&&g.pieces.length&&visibleGroup(g,this.pieces,this.edges));
+  if(!groups.length){this.locateUntil=0;this.changed();return 0;}
+  const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.27,cam=this.camera;let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity,count=0;
+  for(const group of groups)for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;left=Math.min(left,x-pad);top=Math.min(top,y-pad);right=Math.max(right,x+w+pad);bottom=Math.max(bottom,y+h+pad);count++;}
+  const l=Math.max(0,insets.left??0),t=Math.max(0,insets.top??0),vw=Math.max(1,this.rect.w-l-Math.max(0,insets.right??0)),vh=Math.max(1,this.rect.h-t-Math.max(0,insets.bottom??0));
+  if(cam.x+left*cam.z<l||cam.y+top*cam.z<t||cam.x+right*cam.z>l+vw||cam.y+bottom*cam.z>t+vh){
+   this.cancelInput(true);const bw=right-left,bh=bottom-top,z=Math.max(.08,Math.min(cam.z,vw*.94/bw,vh*.94/bh));
+   this.camera={x:l+vw/2-(left+bw/2)*z,y:t+vh/2-(top+bh/2)*z,z};
+  }
+  const now=Date.now();this.locateStartedAt=now;this.locateUntil=now+LOCATE_MS;this.changed();this.animateFeedback();return count;
+ }
+ get locating(){return this.locateUntil>Date.now();}
  find(){const group=this.state.groups.find(g=>!g.locked&&!this.owners[g.id]&&visibleGroup(g,this.pieces,this.edges));return group?this.focusMobilePiece(group.pieces[0]):false;}
  private trayLayout(){const height=Math.min(Math.max(1,this.rect.h-76),210,Math.max(100,this.rect.h*.45)),r={x:this.rect.x+5,y:this.rect.y+this.rect.h-height-75,w:Math.max(1,this.rect.w-10),h:height},columns=Math.max(1,Math.min(12,Math.floor((r.w-16)/51))),rows=Math.max(1,Math.min(Math.floor((height-55)/48),Math.floor(24/columns))),pageSize=Math.max(1,columns*rows),groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),pages=Math.max(1,Math.ceil(groups.length/pageSize));this.trayPage=Math.min(this.trayPage,pages-1);return{r,columns,rows,pageSize,groups,pages,cellW:(r.w-16)/columns,cellH:(height-55)/rows};}
  private trayInput(input:Input){
@@ -350,7 +368,7 @@ export class PuzzleBoard implements RoomTable {
  private animateFeedback(){
   const moving=[...this.cursors.values()].some(c=>Math.hypot(c.x-c.value.x,c.y-c.value.y)>.08);
   if(this.frame||this.destroyed||this.feedbackHidden)return;
-  if(!this.flashes.length&&!moving){this.frameAt=null;return;}
+  if(!this.flashes.length&&!moving&&this.locateUntil<=Date.now()){this.frameAt=null;return;}
   const queuedAt=Date.now();
   this.frame=this.platform.frame(timestamp=>{
    this.frame=0;if(this.destroyed||this.feedbackHidden)return;
@@ -410,6 +428,23 @@ export class PuzzleBoard implements RoomTable {
    if(flash.xp){ctx.globalAlpha=flash.reduced?1:t<.15?t/.15:t<.7?1:(1-t)/.3;ctx.font='700 15px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle=this.currentTheme==='dark'?'#ffe4a8':'#896027';ctx.strokeStyle=this.currentTheme==='dark'?'#2b271d':'#fff7df';ctx.lineWidth=3;const y=-36+(flash.reduced?0:3-10*(1-(1-t)**2)),label=`+${flash.xp} XP`;ctx.strokeText(label,0,y);ctx.fillText(label,0,y);}
    ctx.restore();
   }
+ }
+ /** Dark halo plus a bright line around every loose piece, drawn above everything so a
+  * piece resting on the finished area stands out. Too small on screen, each group also
+  * gets a screen-sized ring. One path for all pieces keeps a 500-piece table cheap. */
+ private drawLocateGlow(ctx:CanvasRenderingContext2D,now:number){
+  if(this.locateUntil<=now||this.completionReveal>0)return;
+  const {board:b,camera:cam,rect:r}=this,w=b.width/this.state.cols,h=b.height/this.state.rows,elapsed=now-this.locateStartedAt;
+  const pulse=.5+.5*Math.cos(elapsed/LOCATE_PULSE_MS*Math.PI*2),alpha=Math.max(0,Math.min(1,elapsed/120,(this.locateUntil-now)/450))*(.5+.5*pulse);
+  const x0=-cam.x/cam.z,y0=-cam.y/cam.z,x1=(r.w-cam.x)/cam.z,y1=(r.h-cam.y)/cam.z,small=Math.min(w,h)*cam.z<26,rings:{x:number;y:number}[]=[];
+  ctx.save();ctx.beginPath();
+  for(const group of this.state.groups){if(group.locked||!visibleGroup(group,this.pieces,this.edges))continue;let gx=0,gy=0;
+   for(const id of group.pieces){const p=this.pieces[id],x=b.x+p.col*w+group.dx,y=b.y+p.row*h+group.dy;gx+=x+w/2;gy+=y+h/2;if(x+w<x0||x>x1||y+h<y0||y>y1)continue;appendPuzzlePath(ctx,this.paths[id],x,y);}
+   if(small&&group.pieces.length)rings.push({x:gx/group.pieces.length,y:gy/group.pieces.length});}
+  ctx.lineJoin='round';ctx.globalAlpha=alpha;ctx.strokeStyle='#3d1d0cb3';ctx.lineWidth=(4.5+2.5*pulse)/cam.z;ctx.stroke();ctx.strokeStyle='#ffd447';ctx.lineWidth=2.2/cam.z;ctx.stroke();
+  if(rings.length){const radius=(13+7*(1-pulse))/cam.z;ctx.beginPath();for(const ring of rings){if(ring.x+radius<x0||ring.x-radius>x1||ring.y+radius<y0||ring.y-radius>y1)continue;ctx.moveTo(ring.x+radius,ring.y);ctx.arc(ring.x,ring.y,radius,0,Math.PI*2);}
+   ctx.strokeStyle='#3d1d0c99';ctx.lineWidth=4/cam.z;ctx.stroke();ctx.strokeStyle='#ffd447';ctx.lineWidth=2/cam.z;ctx.stroke();}
+  ctx.restore();
  }
  private paintPaper(ctx:CanvasRenderingContext2D){
   const {rect:r}=this,colors=boardThemeColors(this.currentTheme),centre=this.phoneLandscapeRoom?landscapeRoomColors.table:colors.paper,edge=this.phoneLandscapeRoom?landscapeRoomColors.tableEdge:colors.paperEdge,radius=this.phoneLandscapeRoom?Math.hypot(r.w*.5,r.h*.55):Math.max(r.w,r.h)*.75,paper=ctx.createRadialGradient(r.x+r.w*.5,r.y+r.h*.45,0,r.x+r.w*.5,r.y+r.h*.45,radius);if(typeof paper?.addColorStop==='function'){paper.addColorStop(0,centre);paper.addColorStop(1,edge);ctx.fillStyle=paper;}else ctx.fillStyle=centre;ctx.fillRect(r.x,r.y,r.w,r.h);if(!this.phoneLandscapeRoom)this.drawTableDots(ctx);
@@ -612,7 +647,7 @@ export class PuzzleBoard implements RoomTable {
    if(this.completionSweep!==null){const slant=Math.tan(Math.PI/9),band=b.width*.35,travel=b.width+band+b.height*slant,x=b.x-band-b.height*slant+travel*this.completionSweep;ctx.save();ctx.beginPath();ctx.rect(b.x,b.y,b.width,b.height);ctx.clip();ctx.globalCompositeOperation='source-over';ctx.transform(1,0,slant,1,x,b.y);const light=ctx.createLinearGradient(0,0,band,0);light.addColorStop(0,'#fff8e000');light.addColorStop(.5,'rgba(255,248,224,.55)');light.addColorStop(1,'#fff8e000');ctx.fillStyle=light;ctx.fillRect(0,0,band,b.height);const core=b.width*.08,coreX=(band-core)/2,bright=ctx.createLinearGradient(coreX,0,coreX+core,0);bright.addColorStop(0,'#fffdf400');bright.addColorStop(.5,'rgba(255,253,244,.8)');bright.addColorStop(1,'#fffdf400');ctx.fillStyle=bright;ctx.fillRect(coreX,0,core,b.height);ctx.restore();}
   }
   for(const locked of [true,false])for(const group of this.state.groups){const owner=this.owners[group.id];if(group.locked!==locked||!owner?.decoration||!group.pieces.length||!visibleGroup(group,this.pieces,this.edges))continue;const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;decorations.push({value:owner.decoration,rect:{x:r.x+cam.x+x*cam.z-27,y:r.y+cam.y+y*cam.z-25,w:24,h:24}});}
-  this.drawSnapFeedback(ctx,now);
+  this.drawSnapFeedback(ctx,now);this.drawLocateGlow(ctx,now);
   if(this.completionReveal<=0&&this.hintUntil>now){for(const[idIndex,id]of this.hintIds.entries()){const p=this.pieces[id];ctx.save();ctx.translate(this.board.x+p.col*w,this.board.y+p.row*h);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=2/cam.z;ctx.stroke();ctx.fillStyle=colors.hint;ctx.font=`bold ${14/cam.z}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(idIndex+1),w/2,h/2);ctx.restore();}}
   ctx.restore();
   if(this.preview&&this.ready){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.restore();}

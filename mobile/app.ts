@@ -1521,7 +1521,7 @@ export class GameApp{
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
  private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
-  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；“适配”可找回完整桌面。边缘筛选和整理可帮助寻找拼块。'],
+  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留3个未结束的自建房间。'],
   ['邀请与礼包',this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
@@ -1590,16 +1590,22 @@ export class GameApp{
   if(z<=board.camera.z)return;board.camera={x:(r.w-b.width*z)/2-b.x*z,y:top+(r.h-top-bottom-b.height*z)/2-b.y*z,z};board.zoom(1);
  }
  private roomTool(kind:string){
-  if(this.completionFx&&['edge','fit','hint','underlay','organize'].includes(kind))return;
+  if(this.completionFx&&['edge','fit','locate','hint','underlay','organize'].includes(kind))return;
   const board=this.board;if(!board)return;
   if(this.offlineRoom&&['hint','underlay','chat'].includes(kind)){this.note(OFFLINE_REQUIRED);return;}
-  if(kind==='edge')board.edgeOnly=!board.edgeOnly;else if(kind==='hint'||kind==='underlay'){if(!this.assistanceUnavailable(kind))void this.activateAssistance(kind);}else if(kind==='fit')this.fitRoom();
+  if(kind==='edge')board.edgeOnly=!board.edgeOnly;else if(kind==='hint'||kind==='underlay'){if(!this.assistanceUnavailable(kind))void this.activateAssistance(kind);}else if(kind==='fit')this.fitRoom();else if(kind==='locate')this.locateLoose();
   else if(kind==='orientation')void this.toggleOrientation();else if(kind==='organize'&&this.soloRoom)void this.run(async()=>{await this.room?.organize();this.note('散片已整理');});else if(kind==='chat')this.showModal('chat');else if(kind==='more')this.showModal('tools');
   this.toolsOpen=false;this.invalidate();
  }
  private get soloRoom(){return this.room?.snapshot.visibility==='solo';}
- private get roomTools(){return ([['edge','边缘','E'],['hint','提示','H'],['underlay','底图','B'],['fit','适配','F'],['organize','整理','R']] as const).filter(([kind])=>kind!=='organize'||this.soloRoom);}
- private toolActive(kind:string){return kind==='edge'?!!this.board?.edgeOnly:kind==='hint'||kind==='underlay'?!!this.activeAid(kind):false;}
+ /** Outside Web the fit slot locates loose pieces; fitting the whole table stays under 更多. */
+ private get roomTools(){return ([['edge','边缘','E'],['hint','提示','H'],['underlay','底图','B'],this.platform.config.id==='web'?['fit','适配','F']:['locate','定位','L'],['organize','整理','R']] as const).filter(([kind])=>kind!=='organize'||this.soloRoom);}
+ private locateLoose(){
+  const board=this.board;if(!board)return;const layout=this.layout;
+  const count=board.locateLoose(layout==='desktop'?{bottom:56,left:this.desktopToolsOpen?104:72}:layout==='phoneLandscape'?{top:this.roomHeaderTop()+56-this.roomArea.y,bottom:8}:{bottom:72});
+  this.note(count?'已标出 '+count+' 块未拼的拼块'+(board.edgeOnly?'（边缘筛选中）':''):board.edgeOnly?'边缘拼块都已归位，关闭边缘筛选可找其余拼块':'所有拼块都已归位');
+ }
+ private toolActive(kind:string){return kind==='edge'?!!this.board?.edgeOnly:kind==='locate'?!!this.board?.locating:kind==='hint'||kind==='underlay'?!!this.activeAid(kind):false;}
  private drawAidBadge(kind:string,right:number,y:number){
   if(kind!=='hint'&&kind!=='underlay')return;const s=this.stage,c=s.ctx,active=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,pending=!this.aid||this.busy;
   const badge=active?Math.ceil((active.expiresAt-Date.now())/1000)+'秒':pending?'读取中':this.aid?.newcomerProtected?'新手免费':free>0?'免费'+free+'次':this.shareAvailable?'分享':'暂未开放',ad=!active&&!pending&&!this.aid?.newcomerProtected&&free===0,bw=s.measure(badge,10,600)+8,bx=right-bw;
@@ -1625,7 +1631,7 @@ export class GameApp{
   const s=this.stage,c=s.ctx,toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
   if(this.landscapeToolsOpen){
    c.fillStyle=roomColors.cream;c.fillRect(r.x,0,r.w,s.h);c.fillStyle=roomColors.line;c.fillRect(r.x,0,2,s.h);s.hit(r,()=>{});
-   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),height=58,gap=Math.min(4,Math.max(0,(r.h-items.length*height)/(items.length-1))),top=(r.h-(items.length*height+(items.length-1)*gap))/2;
+   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['locate','定位'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),height=Math.min(58,Math.floor(r.h/items.length)),gap=Math.min(4,Math.max(0,(r.h-items.length*height)/(items.length-1))),top=(r.h-(items.length*height+(items.length-1)*gap))/2;
    items.forEach(([kind,label],index)=>{const b={x:r.x+6,y:top+index*(height+gap),w:r.w-12,h:height},badge=kind==='hint'||kind==='underlay',active=this.toolActive(kind),disabled=badge&&this.assistanceUnavailable(kind);
     if(active||s.isPressed(b))this.drawLandscapeSurface(b,8,roomColors.roseL);
     s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+10,w:22,h:22},roomColors.ink);s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+38,11,roomColors.ink,700);
@@ -1781,7 +1787,7 @@ export class GameApp{
   const hole=step===1?this.roomArea:step===2?(layout==='phonePortrait'?menu:this.roomToolsArea):this.roomMembersArea,r={x:Math.round(hole.x),y:Math.round(hole.y),w:Math.round(hole.w),h:Math.round(hole.h)};
   c.fillStyle=this.colors.overlay;c.fillRect(0,0,s.w,r.y);c.fillRect(0,r.y+r.h,s.w,s.h-r.y-r.h);c.fillRect(0,r.y,r.x,r.h);c.fillRect(r.x+r.w,r.y,s.w-r.x-r.w,r.h);
   c.strokeStyle=s.color('#fff1d9');c.lineWidth=2;c.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);s.hit({x:0,y:0,w:s.w,h:s.h},()=>this.finishRoomGuide());
-  const copy=['① 把拼块拖到拼盘里 — 拼对了会自动吸住。双指可以缩放，拖空白处可以移动桌面。','② 工具都在这里 — 边缘、提示、底图…','③ 叫朋友一起拼 — 同桌越多越快'][step-1],w=Math.min(340,s.w-32);
+  const copy=['① 把拼块拖到拼盘里 — 拼对了会自动吸住。双指可以缩放，拖空白处可以移动桌面。','② 工具都在这里 — 边缘、提示、底图…'+(this.platform.config.id==='web'?'':' 找不到拼块就点「定位」，没拼上的块都会闪亮标出'),'③ 叫朋友一起拼 — 同桌越多越快'][step-1],w=Math.min(340,s.w-32);
   let x=Math.min(Math.max(16,r.x+r.w/2-w/2),s.w-w-16),y=step===1?r.y+Math.min(r.h*.55,r.h-150):r.y+r.h+12;if(y+140>s.h)y=Math.max(12,r.y-150);if(step===2&&layout!=='phonePortrait'&&r.x<s.w/2){x=Math.min(s.w-w-16,r.x+r.w+12);y=Math.min(r.y+40,s.h-160);}if(step===2&&layout==='phoneLandscape'){x=r.x-w-12;y=Math.min(r.y+40,s.h-160);}
   const textH=this.stage.wrap(copy,-9999,0,w-32,14,this.colors.ink,21),card={x,y,w,h:textH+70};s.panel(card);s.hit(card,()=>{});
   this.paragraph(copy,x+16,y+14,w-32,14,this.colors.ink);s.text(step+' / 3',x+16,y+card.h-38,13,this.colors.muted,700);s.button({x:x+w-110,y:y+card.h-46,w:94,h:36},step<3?'下一步':'知道了',()=>{if(step<3){this.roomGuideStep++;this.invalidate();}else this.finishRoomGuide();},{tone:'berrydark',fontSize:14});
@@ -2139,7 +2145,7 @@ export class GameApp{
     const board=this.board,room=this.room;for(const [label,action]of [
      ['适配完整桌面',()=>{board?.fit();this.modal=null;this.toolsOpen=false;this.invalidate();}],
      ['放大',()=>{if(!this.completionFx)board?.zoom(1.25);this.invalidate();}],['缩小',()=>{if(!this.completionFx)board?.zoom(.8);this.invalidate();}],
-     ['定位未归位拼块',()=>{board?.find();this.modal=null;this.toolsOpen=false;this.invalidate();}],
+     [this.platform.config.id==='web'?'定位未归位拼块':'定位未拼块 · 全部闪亮标出',()=>{if(this.platform.config.id==='web')board?.find();else this.locateLoose();this.modal=null;this.toolsOpen=false;this.invalidate();}],
      [board?.trayOpen?'关闭碎片托盘':'打开碎片托盘 · 点选定位',()=>{if(board)board.trayOpen=!board.trayOpen;this.modal=null;this.toolsOpen=false;this.invalidate();}],
      ['整理散落拼块',()=>void this.run(async()=>{await room?.organize();this.modal=null;this.toolsOpen=false;this.note('散片已整理');})],
      [board?.showPreview?'关闭原图':'查看原图',()=>{if(board)board.showPreview=!board.showPreview;this.modal=null;this.invalidate();}],
@@ -2173,7 +2179,7 @@ export class GameApp{
   if(input.type==='key'){
    if(this.cheersEnabled&&this.modal==='completion'&&input.keyDown&&!input.repeat&&/^[1-6]$/.test(input.key??'')){this.sendCompletionCheer(CHEER_EMOTES[Number(input.key)-1]);return true;}
    if(input.key==='Escape'&&input.keyDown){if(this.modal==='packPreview'&&this.previewIndex>=0){this.returnToPackGrid();return true;}this.cancelChatPress();const handled=!this.boardInputBlocked?(this.board?.input(input)??false):false;this.pointer=null;this.stage.input({type:'cancel',points:[],changed:[]});if(this.modal){this.closeModal();return true;}if(this.toolsOpen){this.toolsOpen=false;this.invalidate();return true;}if(this.route!=='room'&&this.route!=='lobby'){this.back();return true;}return handled;}
-   if(this.route==='room'&&!this.boardInputBlocked&&input.keyDown&&!input.repeat&&input.key){const key=input.key.toLowerCase();if(key==='t'&&this.layout==='desktop'){this.setDesktopToolsOpen(!this.desktopToolsOpen);return true;}const tool=({e:'edge',h:'hint',b:'underlay',f:'fit',r:'organize'} as Record<string,string>)[key];if(tool&&(tool!=='organize'||this.soloRoom)){this.roomTool(tool);return true;}}
+   if(this.route==='room'&&!this.boardInputBlocked&&input.keyDown&&!input.repeat&&input.key){const key=input.key.toLowerCase();if(key==='t'&&this.layout==='desktop'){this.setDesktopToolsOpen(!this.desktopToolsOpen);return true;}const tool=({e:'edge',h:'hint',b:'underlay',f:'fit',l:'locate',r:'organize'} as Record<string,string>)[key];if(tool&&(tool!=='organize'||this.soloRoom)&&(tool!=='locate'||this.platform.config.id!=='web')){this.roomTool(tool);return true;}}
    return this.route==='room'&&!this.boardInputBlocked?this.board?.input(input)??false:false;
   }
   if(input.type==='move'&&this.platform.canvas.style&&point){this.platform.canvas.style.cursor=this.pointer?.board?'grabbing':this.stage.hasHit(point.x,point.y)?'pointer':this.route==='room'&&inside(this.roomArea,point.x,point.y)&&!this.modalBlocksInput?'grab':'default';}

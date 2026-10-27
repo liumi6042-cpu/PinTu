@@ -3,6 +3,8 @@ import {coreBounds,taskBounds} from './art-bounds';
 import cardAtlas from '../public/mobile-icons/b2-card-icons1023.json';
 import pixelFrames from './pixel-frame-data.json';
 import {mobileSymbolPaths} from '../h5/mobile-symbol-paths';
+/** Crosshair for the room's locate-loose-pieces tool, in the same 24×24 pixel grid. */
+const locateSymbol=[{d:'M8 4h8v1h2v1h1v2h1v8h-1v2h-1v1h-2v1H8v-1H6v-1H5v-2H4V8h1V6h1V5h2zM9 7v1H8v1H7v6h1v1h1v1h6v-1h1v-1h1V9h-1V8h-1V7z',fillRule:'evenodd'},{d:'M11 0h2v4h-2zM11 20h2v4h-2zM0 11h4v2H0zM20 11h4v2h-4zM10 10h4v4h-4z'}] as const;
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import {lightThemeColors,themeColors,themeUiColor,themeFrameColor,themeTextColor,type ThemeId} from './theme';
 import {StageImageCache} from './image-cache';
@@ -120,7 +122,7 @@ export class Stage{
   // Utility symbols share the original 24×24 SVG viewBox, including its padding.
   const box=fitInside(r,24,24),scale=box.w/24;
   c.save();c.translate(box.x,box.y);c.scale(scale,scale);c.fillStyle=color?themeTextColor(this.currentTheme,color):(['person','players','quick'].includes(kind)?this.color('#876158'):kind==='create'?this.palette.gold:['piece','fragment'].includes(kind)?this.palette.rose:this.palette.ink);c.strokeStyle=c.fillStyle;c.lineWidth=2;
-  const paths=mobileSymbolPaths[kind as keyof typeof mobileSymbolPaths];
+  const paths=kind==='locate'?locateSymbol:mobileSymbolPaths[kind as keyof typeof mobileSymbolPaths];
   if(paths){for(const path of paths){this.drawSvgPath(path.d);c.fill('fillRule'in path?path.fillRule:'nonzero');}}
   else if(['players','person','quick'].includes(kind)){for(const x of kind==='person'?[12]:[6,17]){c.beginPath();c.arc(x,7,3.2,0,Math.PI*2);c.fill();c.fillRect(x-4,12,8,9);}}
   else if(kind==='story'){for(const [x,y,w,h]of [[3,3,2,18],[5,3,14,2],[19,5,2,16],[5,19,14,2],[7,7,2,2],[7,11,2,2],[7,15,2,2],[11,7,6,2],[11,11,6,2],[11,15,4,2]])c.fillRect(x,y,w,h);}
