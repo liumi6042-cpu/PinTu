@@ -22,7 +22,7 @@ function fixture(t,{config=configuration(),...options}={}){
 }
 
 test('levels configuration defaults and malformed documents fail during service creation',()=>{
- const defaults=readLevelConfiguration();assert.deepEqual(defaults,{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'开张',albumId:'shiguang-ch1',pieces,lines:['这就是奶奶的店……好旧啊。','你是……这家店的猫？','回忆碎了，就把它拼回来。','爷爷想不起来早餐店开张那天了……','是爷爷！他在笑！','拾光镇还有好多回忆在等人拼。']}]});
+ const defaults=readLevelConfiguration();assert.deepEqual(defaults,{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'奶奶的小店',albumId:'shiguang-ch1',pieces,lines:['这就是奶奶的店……好旧啊。','你是……这家店的猫？','回忆碎了，就把它拼回来。','爷爷想不起来早餐店开张那天了……','是爷爷！他在笑！','拾光镇还有好多回忆在等人拼。']}]});
  const bad=[null,[],{}, {...configuration(),schema:'other'}, {...configuration(),firstClearEnergy:-1}, {...configuration(),firstClearEnergy:1.5}, {...configuration(),firstClearEnergy:'30'}, {...configuration(),chapters:[]}, {...configuration(),chapters:{}}, {...configuration(),extra:true}];
  for(const patch of [{id:''},{id:'bad/id'},{title:' '},{albumId:null},{pieces:[12]},{pieces:[12,16,20,24,30,0]},{pieces:[12,16,20,24,30,1.5]},{pieces:[12,16,20,24,30,'35']},{pieces:[12,16,20,24,30,Number.MAX_SAFE_INTEGER+1]},{extra:true}])bad.push(configuration([{...chapter('ch1'),...patch}]));
  bad.push(configuration([chapter('ch1'),chapter('ch1')]));
