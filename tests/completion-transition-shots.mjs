@@ -20,19 +20,19 @@ const report={script:'tests/completion-transition-shots.mjs',command:'node tests
 const rid=()=>randomBytes(16).toString('hex');
 let gateway,browser,service,failure;
 
-async function saveVideo(recording,file,seconds){
+async function saveVideo(recording,file,start,seconds){
   const raw=resolve(runtime,'completion-4p-full.webm');await recording.saveAs(raw);
   const cache=resolve(process.env.LOCALAPPDATA||'C:/Users/Administrator/AppData/Local','ms-playwright');
   const ffmpeg=process.env.FFMPEG_PATH||(existsSync(cache)?readdirSync(cache).filter(name=>name.startsWith('ffmpeg-'))
     .map(name=>resolve(cache,name,'ffmpeg-win64.exe')).find(existsSync):undefined);
   if(!ffmpeg){copyFileSync(raw,file);report.problems.push('FFmpeg unavailable: video is untrimmed and includes startup before completion.');return;}
   await new Promise((done,reject)=>{
-    const child=spawn(ffmpeg,['-hide_banner','-loglevel','error','-sseof','-'+seconds.toFixed(3),'-i',raw,'-t',seconds.toFixed(3),
+    const child=spawn(ffmpeg,['-hide_banner','-loglevel','error','-ss',start.toFixed(3),'-i',raw,'-t',seconds.toFixed(3),
       '-c:v','libvpx','-deadline','realtime','-cpu-used','8','-an','-y',file],{windowsHide:true,stdio:['ignore','ignore','pipe']});
     let error='';child.stderr.on('data',chunk=>{error+=chunk.toString();});child.once('error',reject);
     child.once('exit',code=>code===0?done():reject(Error('Video trimming failed: '+error)));
   });
-  report.video={path:file,durationSeconds:seconds,raw,method:'Playwright recordVideo, last completion segment encoded with local Playwright FFmpeg'};
+  report.video={path:file,startSeconds:start,durationSeconds:seconds,raw,method:'Playwright recordVideo, segment from 0.4 s before the drag to 1.2 s after the popup (offsets from page creation), encoded with local Playwright FFmpeg'};
 }
 async function freePort(){
   const probe=createServer();
@@ -100,21 +100,29 @@ try{
   const privacyVersion=readFileSync('mobile/privacy-policy.ts','utf8').match(/MOBILE_PRIVACY_VERSION='([^']+)'/)[1];
   for(const [width,height,video] of [[844,390,true],[844,390,false],[390,844,false],[1920,1080,false]]){
     const room=await makeRoom(),owner=room.players[0],tag=`${width}x${height}${video?'-video':''}`,context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,isMobile:width<1000,hasTouch:width<1000,...(video?{recordVideo:{dir:resolve(runtime,'video'),size:{width,height}}}:{})});
-    let page,recording,dragStarted,videoEnd;
+    let page,recording,recordStart,dragStarted,videoEnd;
     try{
       await context.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin===base||['data:','blob:'].includes(url.protocol))return route.continue();report.blockedExternalRequests.push(url.origin+url.pathname);return route.abort('blockedbyclient');});
       await context.addInitScript(({api,session,ticket,privacyVersion})=>{
         localStorage.setItem('jigsaw:room-guide:v1','done');localStorage.setItem('jigsaw:landscape-tools-open:v1','0');localStorage.setItem('jigsaw:h5-session:'+api,session);localStorage.setItem('jigsaw:shared-room:'+api+':'+ticket.room.id,JSON.stringify({token:ticket.token,playerId:ticket.playerId}));localStorage.setItem('jigsaw:mobile-privacy:'+privacyVersion,JSON.stringify({version:privacyVersion,necessary:true,hongKongStorage:true}));
       },{api,session:owner.session,ticket:owner.ticket,privacyVersion});
-      page=await context.newPage();recording=page.video();
+      page=await context.newPage();recordStart=Date.now();recording=page.video();
       page.on('pageerror',error=>report.pageErrors.push({capture:tag,message:error.message}));page.on('console',message=>{if(message.type()==='error')report.consoleErrors.push({capture:tag,message:message.text()});});page.on('response',response=>{if(response.status()>=400)report.networkErrors.push({capture:tag,status:response.status(),path:new URL(response.url()).pathname});});page.on('requestfailed',request=>{report.networkErrors.push({capture:tag,path:new URL(request.url()).pathname,error:request.failure()?.errorText});});
       await page.goto(base+'/?room='+room.snap.id,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>{const g=window.__JIGSAW_SHARED__;return g?.app.route==='room'&&g.app.imageReady&&g.app.board.rect.w>0&&!g.app.roomViewPending;},null,{timeout:25000});
       await page.waitForFunction(()=>window.__JIGSAW_SHARED__.app.realtime?.connected,null,{timeout:10000});await page.evaluate(()=>document.fonts.ready);
       await page.waitForFunction(()=>window.__JIGSAW_SHARED__.stage.font.includes('Jigsaw'),null,{timeout:15000});
       assert.equal(await page.evaluate(()=>window.__JIGSAW_SHARED__.app.modal),null,'No modal may block the drag');
-      if(width===844)await page.evaluate(()=>{const a=window.__JIGSAW_SHARED__.app;a.board.zoom(1.8);a.invalidate();});
+      const placement=await page.evaluate(()=>{const b=window.__JIGSAW_SHARED__.app.board,g=b.state.groups.find(g=>!g.locked),p=b.pieces[g.pieces[0]],pieceW=b.board.width/b.state.cols,pieceH=b.board.height/b.state.rows;return {group:g.id,pieceW,pieceH,home:{x:b.board.x+(p.col+.5)*pieceW,y:b.board.y+(p.row+.5)*pieceH},dx:1.3*pieceW,dy:.3*pieceH};});
+      const placer=room.players[3];await call(placer,room.path,{type:'claim',groupId:placement.group,requestId:rid()},placer.ticket.token);
+      const placed=await call(placer,room.path,{type:'drop',groupId:placement.group,dx:placement.dx,dy:placement.dy,seq:2,requestId:rid()},placer.ticket.token),last=placed.puzzle.groups.find(g=>g.id===placement.group);
+      assert.ok(last&&!last.locked&&!placed.completedAt,'Staged last group must remain unlocked');assert.ok(Math.abs(last.dx-placement.dx)<.01&&Math.abs(last.dy-placement.dy)<.01,'Staged offset must match');room.summary.placement=placement;
+      await page.waitForFunction(({group,dx,dy})=>{const g=window.__JIGSAW_SHARED__.app.board.state.groups.find(g=>g.id===group);return g&&!g.locked&&Math.abs(g.dx-dx)<.01&&Math.abs(g.dy-dy)<.01;},placement,{timeout:10000});
+      await page.evaluate(({placement,zoomed})=>{const a=window.__JIGSAW_SHARED__.app,b=a.board,z=zoomed?a.roomZoomBase*1.8:b.camera.z;b.camera={x:b.rect.w/2-(placement.home.x+placement.dx/2)*z,y:b.rect.h/2-(placement.home.y+placement.dy/2)*z,z};a.invalidate();},{placement,zoomed:width===844&&height===390});
       await Promise.all(room.players.slice(1).map(actor=>call(actor,room.path,{type:'heartbeat',requestId:rid()},actor.ticket.token)));
+      // The local guest-login notice would stay forever under the frozen clock; let it expire first.
+      await page.waitForFunction(()=>{const a=window.__JIGSAW_SHARED__.app;return !a.message;},null,{timeout:15000});
+      await page.evaluate(()=>new Promise(done=>{window.__JIGSAW_SHARED__.app.invalidate();requestAnimationFrame(()=>requestAnimationFrame(done));}));await delay(500);
       // Watch the actual app transition; no synthetic completion or modal calls.
       await page.evaluate(({freeze,initial})=>{
         const a=window.__JIGSAW_SHARED__.app,realNow=Date.now;window.__completionCapture={realNow,offset:initial,start:null,popup:null,freeze};
@@ -125,6 +133,7 @@ try{
         const {app:a,stage:s}=window.__JIGSAW_SHARED__,b=a.board,g=b.state.groups.find(g=>!g.locked),piece=b.pieces[g.pieces[0]],bw=b.board.width/b.state.cols,bh=b.board.height/b.state.rows,cam=b.camera,r=b.rect;
         const point=(dx,dy)=>({x:(r.x+cam.x+(b.board.x+(piece.col+.5)*bw+dx)*cam.z)*innerWidth/s.w,y:(r.y+cam.y+(b.board.y+(piece.row+.5)*bh+dy)*cam.z)*innerHeight/s.h});return {group:g.id,from:point(g.dx,g.dy),to:point(0,0)};
       });
+      assert.equal(drag.group,placement.group);for(const point of [drag.from,drag.to])assert.ok(point.x>0&&point.x<width&&point.y>0&&point.y<height,'Drag endpoints must be inside the viewport: '+JSON.stringify(point));
       room.summary.drag={viewport:tag,...drag};dragStarted=Date.now();await page.mouse.move(drag.from.x,drag.from.y);await page.mouse.down();await page.mouse.move(drag.to.x,drag.to.y,{steps:16});await page.mouse.up();
       let fallback=false;
       try{await page.waitForFunction(()=>!!window.__JIGSAW_SHARED__.app.room.snapshot.completedAt,null,{timeout:3000});}
@@ -136,7 +145,7 @@ try{
         await page.waitForFunction(()=>window.__JIGSAW_SHARED__.app.modal==='completion',null,{timeout:10000});await page.waitForTimeout(1200);videoEnd=Date.now();
         const timing=await page.evaluate(()=>{const s=window.__completionCapture;return {start:s.start,popup:s.popup,delay:s.popup-s.start,wallDelay:s.wallPopup-s.wallStart};});assert.ok(timing.delay>=COMPLETION_POPUP_MS&&timing.delay<COMPLETION_POPUP_MS+500);report.timings=[...(report.timings??[]),{viewport:tag,...timing}];
       }else{
-        for(const offset of width===844?[300,COMPLETION_CELEBRATE_MS+300,COMPLETION_SWEEP_END_MS,COMPLETION_POPUP_MS+300]:[COMPLETION_SWEEP_END_MS])await shot(`t${String(offset).padStart(4,'0')}-${width}x${height}.png`,offset);
+        for(const offset of width===844?[300,COMPLETION_CELEBRATE_MS+300,1450,COMPLETION_SWEEP_END_MS,COMPLETION_POPUP_MS+300]:[COMPLETION_SWEEP_END_MS])await shot(`t${String(offset).padStart(4,'0')}-${width}x${height}.png`,offset);
         if(width===844){
           assert.equal(await page.evaluate(()=>window.__JIGSAW_SHARED__.app.modal),'completion');
           const close=await page.evaluate(()=>{const {app:a,stage:s}=window.__JIGSAW_SHARED__,p=a.modalArea;const hit=s.hits.filter(h=>h.r.w===28&&h.r.h===28&&h.r.x>=p.x&&h.r.y>=p.y&&h.r.y<p.y+40).at(-1);if(!hit)throw Error('Completion close button rect unavailable');return {x:(hit.r.x+hit.r.w/2)*innerWidth/s.w,y:(hit.r.y+hit.r.h/2)*innerHeight/s.h};});await page.mouse.click(close.x,close.y);await page.waitForFunction(()=>window.__JIGSAW_SHARED__.app.modal===null&&window.__JIGSAW_SHARED__.app.settleButtonRect!==null);
@@ -145,10 +154,10 @@ try{
       }
     }finally{
       if(page)await page.evaluate(()=>{const s=window.__completionCapture;if(s){Date.now=s.realNow;cancelAnimationFrame(s.raf);}}).catch(error=>report.problems.push('Clock restore: '+error.message));
-      await context.close();if(video&&recording&&videoEnd){const file=resolve(output,'completion-844x390-4p.webm');await saveVideo(recording,file,(videoEnd-dragStarted+150)/1000);report.files.push(inventory(file));}
+      await context.close();if(video&&recording&&videoEnd){const file=resolve(output,'completion-844x390-4p.webm');await saveVideo(recording,file,Math.max(0,(dragStarted-recordStart)/1000-.4),(videoEnd-dragStarted)/1000+.4);report.files.push(inventory(file));}
     }
   }
-  assert.equal(report.files.length,9);assert.equal(report.pageErrors.length,0,'Page errors');assert.equal(report.consoleErrors.length,0,'Console errors');assert.equal(report.networkErrors.length,0,'Network errors');
+  assert.equal(report.files.length,10);assert.equal(report.pageErrors.length,0,'Page errors');assert.equal(report.consoleErrors.length,0,'Console errors');assert.equal(report.networkErrors.length,0,'Network errors');
 }catch(error){failure=error;report.failure=error.stack;process.exitCode=1;}
 finally{
   await browser?.close().catch(error=>report.problems.push('Browser cleanup: '+error.message));if(gateway){gateway.realtime?.close();gateway.closeAllConnections();await new Promise(done=>gateway.close(done));}else service?.close();report.finishedAt=new Date().toISOString();const json=resolve(output,'report.json');writeFileSync(json,JSON.stringify(report,null,2)+'\n');copyFileSync(json,resolve(runtime,'report.json'));console.log(JSON.stringify({files:report.files.map(f=>f.path),report:json,problems:report.problems,failure:report.failure??null},null,2));

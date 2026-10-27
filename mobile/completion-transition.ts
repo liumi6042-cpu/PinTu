@@ -10,7 +10,7 @@ export class CompletionTransition{
  private readonly centre:{x:number;y:number};private dropped=false;private celebrated=false;private readonly particles:CheerParticle[]=[];
  constructor(start:number,from:Camera|null=null,to:Camera|null=null,rect:Rect={x:0,y:0,w:0,h:0}){
   this.start=start;this.from=from?{...from}:null;this.to=to?{...to}:null;this.centre={x:rect.w/2,y:rect.h/2};
-  for(let i=0;i<120;i++){const seed=i+1,delay=Math.floor(hash(seed^0x967a889b)*601);this.particles.push({kind:'confetti',playerId:'',start:start+(i<70?COMPLETION_CELEBRATE_MS:COMPLETION_SECOND_BURST_MS),duration:delay+1400,x:hash(seed^0x68bc21eb),y:-.15+hash(seed^0x02e5be93)*.55,delay,speed:.7+hash(seed^0x368cc8b7)*.6,spin:Math.floor(hash(seed^0xb5297a4d)*7),color:Math.floor(hash(seed^0x1b56c4e9)*6)});}
+  for(let i=0;i<150;i++){const seed=i+1,delay=Math.floor(hash(seed^0x967a889b)*601);this.particles.push({kind:'confetti',playerId:'',start:start+(i<90?COMPLETION_CELEBRATE_MS:COMPLETION_SECOND_BURST_MS),duration:delay+1400,x:hash(seed^0x68bc21eb),y:-.15+hash(seed^0x02e5be93)*.55,delay,speed:.7+hash(seed^0x368cc8b7)*.6,spin:Math.floor(hash(seed^0xb5297a4d)*7),color:Math.floor(hash(seed^0x1b56c4e9)*6)});}
  }
  seam(now:number){const t=clamp((now-this.start)/COMPLETION_SEAM_MS);return t*t*(3-2*t);}
  camera(now:number):Camera|null{
