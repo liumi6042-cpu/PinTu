@@ -27,8 +27,8 @@ export class CheerEffects{
   for(let i=0;i<n;i++){const seed=++this.seed,heart=kind==='heart',delay=heart?0:Math.floor(hashDelay(seed)*601);this.particles.push({kind,playerId,start:at,duration:heart?1600:delay+1400,x:heart?(seed*.61803398875)%1:hashX(seed),y:heart?(seed*seed*.41421356237)%1:-.15+hashY(seed)*.55,delay,speed:heart?1:.7+hashSpeed(seed)*.6,spin:heart?seed%7:Math.floor(hashSpin(seed)*7),color:heart?seed%6:Math.floor(hashColor(seed)*6)});}
   this.particles=this.particles.slice(-180);
  }
- receive(cheer:Cheer,own=false){
-  const at=this.now();this.update(at);
+ receive(cheer:Cheer,own=false,at=this.now()){
+  this.update(at);
   const bubble=this.bubbles.find(item=>item.playerId===cheer.playerId&&item.emote===cheer.emote&&at-item.updated<=2500);
   // One bubble per player: a different emote replaces the previous one instead of stacking on it.
   if(bubble){bubble.count++;bubble.updated=at;bubble.own ||= own;}else{this.bubbles=this.bubbles.filter(item=>item.playerId!==cheer.playerId);this.bubbles.push({playerId:cheer.playerId,emote:cheer.emote,own,count:1,born:at,updated:at});}

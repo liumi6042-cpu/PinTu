@@ -1,0 +1,156 @@
+// Manual, strictly local capture: node tests/completion-transition-shots.mjs
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {randomBytes,createHash} from 'node:crypto';
+import {mkdirSync,mkdtempSync,readFileSync,writeFileSync,copyFileSync,existsSync,readdirSync} from 'node:fs';
+import {createServer} from 'node:net';
+import {resolve} from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {setTimeout as delay} from 'node:timers/promises';
+
+const root=fileURLToPath(new URL('..',import.meta.url));
+process.chdir(root);
+const output=resolve(process.env.COMPLETION_SHOTS_DIR||'D:/chat/拼图/ui-revamp-shots/completion-transition');
+mkdirSync(output,{recursive:true});
+mkdirSync(resolve('work/completion-shots-tmp'),{recursive:true});
+const runtime=mkdtempSync(resolve('work/completion-shots-tmp/run-'));
+const report={script:'tests/completion-transition-shots.mjs',command:'node tests/completion-transition-shots.mjs',
+  startedAt:new Date().toISOString(),runtime,output,completionMethod:'real HTTP claim/drop; no database patches',
+  builds:[],rooms:[],captures:[],files:[],consoleErrors:[],pageErrors:[],networkErrors:[],blockedExternalRequests:[],problems:[]};
+const rid=()=>randomBytes(16).toString('hex');
+let gateway,browser,service,failure;
+
+async function saveVideo(recording,file,seconds){
+  const raw=resolve(runtime,'completion-4p-full.webm');await recording.saveAs(raw);
+  const cache=resolve(process.env.LOCALAPPDATA||'C:/Users/Administrator/AppData/Local','ms-playwright');
+  const ffmpeg=process.env.FFMPEG_PATH||(existsSync(cache)?readdirSync(cache).filter(name=>name.startsWith('ffmpeg-'))
+    .map(name=>resolve(cache,name,'ffmpeg-win64.exe')).find(existsSync):undefined);
+  if(!ffmpeg){copyFileSync(raw,file);report.problems.push('FFmpeg unavailable: video is untrimmed and includes startup before completion.');return;}
+  await new Promise((done,reject)=>{
+    const child=spawn(ffmpeg,['-hide_banner','-loglevel','error','-sseof','-'+seconds.toFixed(3),'-i',raw,'-t',seconds.toFixed(3),
+      '-c:v','libvpx','-deadline','realtime','-cpu-used','8','-an','-y',file],{windowsHide:true,stdio:['ignore','ignore','pipe']});
+    let error='';child.stderr.on('data',chunk=>{error+=chunk.toString();});child.once('error',reject);
+    child.once('exit',code=>code===0?done():reject(Error('Video trimming failed: '+error)));
+  });
+  report.video={path:file,durationSeconds:seconds,raw,method:'Playwright recordVideo, last completion segment encoded with local Playwright FFmpeg'};
+}
+async function freePort(){
+  const probe=createServer();
+  try{await new Promise((done,reject)=>{probe.once('error',reject);probe.listen(3291,'127.0.0.1',done);});}
+  catch(error){if(error.code!=='EADDRINUSE')throw error;await new Promise((done,reject)=>{probe.once('error',reject);probe.listen(0,'127.0.0.1',done);});}
+  const port=probe.address().port;await new Promise(done=>probe.close(done));
+  assert.notEqual(port,3211);return port;
+}
+function inventory(file){
+  const bytes=readFileSync(file);return {path:file,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};
+}
+
+try{
+  assert.ok(Number(process.versions.node.split('.')[0])>=24,'Node 24+ required');
+  console.log('Building isolated local server and shared TapTap Canvas client (reusing rebuilt fonts).');
+  // Bundle server dependencies into this run directory without writing source/shared build outputs.
+  const {build}=await import('esbuild');
+  await build({entryPoints:['server/mobile-service.mjs','server/h5-gateway.mjs'],outdir:resolve(runtime,'server'),bundle:true,platform:'node',target:'node24',format:'esm',packages:'external',plugins:[{name:'isolated-engine',setup(builder){builder.onResolve({filter:/outputs\/mobile\/engine\.mjs$/},()=>({path:resolve('server/mobile-engine.entry.ts')}));builder.onResolve({filter:/outputs\/mobile\/room-realtime\.mjs$/},()=>({path:resolve('server/room-realtime.mjs')}));}}]});
+  report.builds.push('esbuild: isolated mobile service/gateway with source engine + realtime');
+  const port=await freePort(),base='http://127.0.0.1:'+port,api=base+'/h5';
+  const {buildMobileShared}=await import('../scripts/build-mobile-shared.mjs');
+  const [built]=await buildMobileShared({outputRoot:resolve(runtime,'client'),prepareAssets:false,platforms:['taptap'],
+    env:{JIGSAW_SHARED_API_BASE:api,JIGSAW_SHARED_ASSET_BASE:api+'/assets',JIGSAW_SHARED_GAME_BASE:base}});
+  report.builds.push('buildMobileShared: isolated taptap, prepareAssets=false, all URLs loopback');
+  const {createMobileService}=await import(pathToFileURL(resolve(runtime,'server/mobile-service.js')).href);
+  const {createH5Gateway}=await import(pathToFileURL(resolve(runtime,'server/h5-gateway.js')).href);
+  const {runtimeAssets}=await import('../scripts/release-files.mjs');
+  const assets=runtimeAssets(JSON.parse(readFileSync('content/puzzle-catalog.json','utf8')),JSON.parse(readFileSync('config/runtime-assets.json','utf8')));
+  service=createMobileService({databasePath:resolve(runtime,'mobile.sqlite'),assetDir:resolve('public'),
+    dailyAppearanceDir:resolve(runtime,'daily-appearances'),deferDailyStart:true});
+  gateway=createH5Gateway({mobileService:service,databasePath:resolve(runtime,'sessions.sqlite'),
+    upstream:base,allowedOrigins:[base],assetDir:resolve('public'),assetPaths:assets,staticDir:built.directory,
+    publicApiBase:'/h5',publicGameBase:'/'});
+  await new Promise((done,reject)=>{gateway.once('error',reject);gateway.listen(port,'127.0.0.1',done);});
+  report.base=base;
+  for(let n=0;n<40;n++){
+    try{const health=await fetch(base+'/healthz',{signal:AbortSignal.timeout(1000)});if(health.ok&&(await health.json()).ok)break;}
+    catch{}if(n===39)throw Error('Local /healthz did not become ready');await delay(150);
+  }
+  async function call(actor,path,body,token){
+    const response=await fetch(api+path,{method:body===undefined?'GET':'POST',
+      headers:{Origin:base,'Content-Type':'application/json',...(actor?{'X-Jigsaw-H5-Session':actor.session}:{}),...(token?{Authorization:'Bearer '+token}:{})},
+      body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(10000)});
+    const data=await response.json();assert.ok(response.ok,`${path}: ${response.status} ${JSON.stringify(data)}`);return data;
+  }
+  const timeline=await build({stdin:{contents:"export * from './mobile/completion-transition.ts'",resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node'});
+  const {COMPLETION_POPUP_MS,COMPLETION_CELEBRATE_MS,COMPLETION_SWEEP_END_MS}=await import('data:text/javascript;base64,'+Buffer.from(timeline.outputFiles[0].text).toString('base64'));
+  report.timeline={celebrate:COMPLETION_CELEBRATE_MS,sweepEnd:COMPLETION_SWEEP_END_MS,popup:COMPLETION_POPUP_MS};
+  async function makeRoom(){
+    const players=[];for(let i=0;i<4;i++)players.push({session:(await call(null,'/session',{})).token});
+    const owner=players[0];owner.ticket=await call(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});
+    const path='/api/rooms/'+owner.ticket.room.id;for(const actor of players.slice(1))actor.ticket=await call(actor,path+'/join',{});
+    let snap=await call(owner,path,undefined,owner.ticket.token),drops=0;
+    while(snap.puzzle.groups.filter(g=>!g.locked).length>1){
+      assert.ok(drops<100,'Preparation did not converge');const actor=players[drops%4],group=snap.puzzle.groups.find(g=>!g.locked);
+      await call(actor,path,{type:'claim',groupId:group.id,requestId:rid()},actor.ticket.token);
+      snap=await call(actor,path,{type:'drop',groupId:group.id,dx:0,dy:0,seq:1,requestId:rid()},actor.ticket.token);drops++;
+    }
+    assert.equal(snap.puzzle.groups.filter(g=>!g.locked).length,1);assert.ok(!snap.completedAt);
+    const summary={roomId:snap.id,players:4,pieces:snap.puzzle.cols*snap.puzzle.rows,drops,lastGroup:snap.puzzle.groups.find(g=>!g.locked).id};report.rooms.push(summary);
+    return {players,path,snap,summary};
+  }
+  const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'file:///C:/Users/Administrator/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs');
+  browser=await chromium.launch({channel:'msedge',headless:true});
+  const privacyVersion=readFileSync('mobile/privacy-policy.ts','utf8').match(/MOBILE_PRIVACY_VERSION='([^']+)'/)[1];
+  for(const [width,height,video] of [[844,390,true],[844,390,false],[390,844,false],[1920,1080,false]]){
+    const room=await makeRoom(),owner=room.players[0],tag=`${width}x${height}${video?'-video':''}`,context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,isMobile:width<1000,hasTouch:width<1000,...(video?{recordVideo:{dir:resolve(runtime,'video'),size:{width,height}}}:{})});
+    let page,recording,dragStarted,videoEnd;
+    try{
+      await context.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin===base||['data:','blob:'].includes(url.protocol))return route.continue();report.blockedExternalRequests.push(url.origin+url.pathname);return route.abort('blockedbyclient');});
+      await context.addInitScript(({api,session,ticket,privacyVersion})=>{
+        localStorage.setItem('jigsaw:room-guide:v1','done');localStorage.setItem('jigsaw:landscape-tools-open:v1','0');localStorage.setItem('jigsaw:h5-session:'+api,session);localStorage.setItem('jigsaw:shared-room:'+api+':'+ticket.room.id,JSON.stringify({token:ticket.token,playerId:ticket.playerId}));localStorage.setItem('jigsaw:mobile-privacy:'+privacyVersion,JSON.stringify({version:privacyVersion,necessary:true,hongKongStorage:true}));
+      },{api,session:owner.session,ticket:owner.ticket,privacyVersion});
+      page=await context.newPage();recording=page.video();
+      page.on('pageerror',error=>report.pageErrors.push({capture:tag,message:error.message}));page.on('console',message=>{if(message.type()==='error')report.consoleErrors.push({capture:tag,message:message.text()});});page.on('response',response=>{if(response.status()>=400)report.networkErrors.push({capture:tag,status:response.status(),path:new URL(response.url()).pathname});});page.on('requestfailed',request=>{report.networkErrors.push({capture:tag,path:new URL(request.url()).pathname,error:request.failure()?.errorText});});
+      await page.goto(base+'/?room='+room.snap.id,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>{const g=window.__JIGSAW_SHARED__;return g?.app.route==='room'&&g.app.imageReady&&g.app.board.rect.w>0&&!g.app.roomViewPending;},null,{timeout:25000});
+      await page.waitForFunction(()=>window.__JIGSAW_SHARED__.app.realtime?.connected,null,{timeout:10000});await page.evaluate(()=>document.fonts.ready);
+      await page.waitForFunction(()=>window.__JIGSAW_SHARED__.stage.font.includes('Jigsaw'),null,{timeout:15000});
+      assert.equal(await page.evaluate(()=>window.__JIGSAW_SHARED__.app.modal),null,'No modal may block the drag');
+      if(width===844)await page.evaluate(()=>{const a=window.__JIGSAW_SHARED__.app;a.board.zoom(1.8);a.invalidate();});
+      await Promise.all(room.players.slice(1).map(actor=>call(actor,room.path,{type:'heartbeat',requestId:rid()},actor.ticket.token)));
+      // Watch the actual app transition; no synthetic completion or modal calls.
+      await page.evaluate(({freeze,initial})=>{
+        const a=window.__JIGSAW_SHARED__.app,realNow=Date.now;window.__completionCapture={realNow,offset:initial,start:null,popup:null,freeze};
+        const watch=()=>{const state=window.__completionCapture;if(a.completionFx&&state.start===null){state.start=a.completionFx.start;state.wallStart=performance.now();if(freeze)Date.now=()=>state.start+state.offset;}
+          if(a.modal==='completion'&&state.start!==null&&state.popup===null){state.popup=Date.now();state.wallPopup=performance.now();}state.raf=requestAnimationFrame(watch);};requestAnimationFrame(watch);
+      },{freeze:!video,initial:300});
+      const drag=await page.evaluate(()=>{
+        const {app:a,stage:s}=window.__JIGSAW_SHARED__,b=a.board,g=b.state.groups.find(g=>!g.locked),piece=b.pieces[g.pieces[0]],bw=b.board.width/b.state.cols,bh=b.board.height/b.state.rows,cam=b.camera,r=b.rect;
+        const point=(dx,dy)=>({x:(r.x+cam.x+(b.board.x+(piece.col+.5)*bw+dx)*cam.z)*innerWidth/s.w,y:(r.y+cam.y+(b.board.y+(piece.row+.5)*bh+dy)*cam.z)*innerHeight/s.h});return {group:g.id,from:point(g.dx,g.dy),to:point(0,0)};
+      });
+      room.summary.drag={viewport:tag,...drag};dragStarted=Date.now();await page.mouse.move(drag.from.x,drag.from.y);await page.mouse.down();await page.mouse.move(drag.to.x,drag.to.y,{steps:16});await page.mouse.up();
+      let fallback=false;
+      try{await page.waitForFunction(()=>!!window.__JIGSAW_SHARED__.app.room.snapshot.completedAt,null,{timeout:3000});}
+      catch{await page.keyboard.press('Escape');fallback=true;report.problems.push({capture:tag,code:'HTTP_LAST_PIECE_FALLBACK',message:'Mouse drag did not complete within 3 seconds; player 2 dropped through HTTP.'});const actor=room.players[1],snap=await call(actor,room.path,undefined,actor.ticket.token),g=snap.puzzle.groups.find(g=>!g.locked);if(g){await call(actor,room.path,{type:'claim',groupId:g.id,requestId:rid()},actor.ticket.token);await call(actor,room.path,{type:'drop',groupId:g.id,dx:0,dy:0,seq:2,requestId:rid()},actor.ticket.token);}}
+      room.summary.fallback=fallback;await page.waitForFunction(()=>window.__completionCapture.start!==null,null,{timeout:10000});
+      const shot=async(name,offset)=>{await page.evaluate(async offset=>{const state=window.__completionCapture;state.offset=offset;window.__JIGSAW_SHARED__.app.invalidate();await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));},offset);const file=resolve(output,name);await page.screenshot({path:file});report.files.push(inventory(file));report.captures.push({file,roomId:room.snap.id,viewport:{width,height},offset,state:await page.evaluate(()=>{const a=window.__JIGSAW_SHARED__.app;return {modal:a.modal,reveal:a.board.completionReveal,sweep:a.board.completionSweep,camera:a.board.camera,settle:a.settleButtonRect};})});};
+      if(video){
+        const start=await page.evaluate(()=>window.__completionCapture.start);await delay(Math.max(0,start+1000-Date.now()));const actor=room.players[1];await call(actor,room.path+'/cheers',{id:rid(),emote:'popper'},actor.ticket.token);room.summary.cheerSentAt=Date.now()-start;
+        await page.waitForFunction(()=>window.__JIGSAW_SHARED__.app.modal==='completion',null,{timeout:10000});await page.waitForTimeout(1200);videoEnd=Date.now();
+        const timing=await page.evaluate(()=>{const s=window.__completionCapture;return {start:s.start,popup:s.popup,delay:s.popup-s.start,wallDelay:s.wallPopup-s.wallStart};});assert.ok(timing.delay>=COMPLETION_POPUP_MS&&timing.delay<COMPLETION_POPUP_MS+500);report.timings=[...(report.timings??[]),{viewport:tag,...timing}];
+      }else{
+        for(const offset of width===844?[300,COMPLETION_CELEBRATE_MS+300,COMPLETION_SWEEP_END_MS,COMPLETION_POPUP_MS+300]:[COMPLETION_SWEEP_END_MS])await shot(`t${String(offset).padStart(4,'0')}-${width}x${height}.png`,offset);
+        if(width===844){
+          assert.equal(await page.evaluate(()=>window.__JIGSAW_SHARED__.app.modal),'completion');
+          const close=await page.evaluate(()=>{const {app:a,stage:s}=window.__JIGSAW_SHARED__,p=a.modalArea;const hit=s.hits.filter(h=>h.r.w===28&&h.r.h===28&&h.r.x>=p.x&&h.r.y>=p.y&&h.r.y<p.y+40).at(-1);if(!hit)throw Error('Completion close button rect unavailable');return {x:(hit.r.x+hit.r.w/2)*innerWidth/s.w,y:(hit.r.y+hit.r.h/2)*innerHeight/s.h};});await page.mouse.click(close.x,close.y);await page.waitForFunction(()=>window.__JIGSAW_SHARED__.app.modal===null&&window.__JIGSAW_SHARED__.app.settleButtonRect!==null);
+          await shot('settle-844x390.png',COMPLETION_POPUP_MS+300);const settle=await page.evaluate(()=>{const {app:a,stage:s}=window.__JIGSAW_SHARED__,r=a.settleButtonRect;return {x:(r.x+r.w/2)*innerWidth/s.w,y:(r.y+r.h/2)*innerHeight/s.h,rect:r};});room.summary.settle=settle.rect;await page.mouse.click(settle.x,settle.y);await page.waitForFunction(()=>window.__JIGSAW_SHARED__.app.modal==='completion');await shot('settle-reopen-844x390.png',COMPLETION_POPUP_MS+300);
+        }
+      }
+    }finally{
+      if(page)await page.evaluate(()=>{const s=window.__completionCapture;if(s){Date.now=s.realNow;cancelAnimationFrame(s.raf);}}).catch(error=>report.problems.push('Clock restore: '+error.message));
+      await context.close();if(video&&recording&&videoEnd){const file=resolve(output,'completion-844x390-4p.webm');await saveVideo(recording,file,(videoEnd-dragStarted+150)/1000);report.files.push(inventory(file));}
+    }
+  }
+  assert.equal(report.files.length,9);assert.equal(report.pageErrors.length,0,'Page errors');assert.equal(report.consoleErrors.length,0,'Console errors');assert.equal(report.networkErrors.length,0,'Network errors');
+}catch(error){failure=error;report.failure=error.stack;process.exitCode=1;}
+finally{
+  await browser?.close().catch(error=>report.problems.push('Browser cleanup: '+error.message));if(gateway){gateway.realtime?.close();gateway.closeAllConnections();await new Promise(done=>gateway.close(done));}else service?.close();report.finishedAt=new Date().toISOString();const json=resolve(output,'report.json');writeFileSync(json,JSON.stringify(report,null,2)+'\n');copyFileSync(json,resolve(runtime,'report.json'));console.log(JSON.stringify({files:report.files.map(f=>f.path),report:json,problems:report.problems,failure:report.failure??null},null,2));
+}
+if(failure)console.error(failure.stack);
