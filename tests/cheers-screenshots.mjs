@@ -10,7 +10,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
 process.chdir(root);
-const output=resolve('D:/chat/拼图/ui-revamp-shots/cheers');
+const output=resolve(process.env.CHEERS_SHOTS_DIR||'D:/chat/拼图/ui-revamp-shots/cheers');
 mkdirSync(output,{recursive:true});
 mkdirSync(resolve('work/cheers-shots-tmp'),{recursive:true});
 const runtime=mkdtempSync(resolve('work/cheers-shots-tmp/run-'));
@@ -190,12 +190,17 @@ try{
           const {app,stage,diagnostics}=window.__JIGSAW_SHARED__,fx=app.cheerEffects;
           return {layout:app.layout,stage:{w:stage.w,h:stage.h},modal:app.modalArea,picture:app.completionPicture,bar:app.completionBar,
             seats:[...app.completionSeatRects].map(([id,rect])=>({id,...rect})),members:app.completionSeats(),
-            bubbles:fx.bubbles.map(b=>({playerId:b.playerId,emote:b.emote,count:b.count})),particles:fx.particles.length,
+            avatars:[...app.completionAvatarRects].map(([id,rect])=>({id,...rect})),
+            bubbles:[...app.completionBubbleRects].map(([id,rect])=>({id,...rect,emote:fx.bubbles.find(b=>b.playerId===id)?.emote,count:fx.bubbles.find(b=>b.playerId===id)?.count})),particles:fx.particles.length,
             combo:fx.combo?.count??0,tea:!!fx.tea,diagnostics:diagnostics()};
         });
         assert.equal(capture.seats.length,count===1?0:count);
         if(count>1){assert.equal(capture.members.filter(seat=>!seat.present).length,1,'Exactly one departed seat required');assert.ok(capture.combo>=3,'Missing combo banner');}
         assert.ok(capture.seats.every(seat=>seat.x>=0&&seat.y>=0&&seat.x+seat.w<=capture.stage.w+1&&seat.y+seat.h<=capture.stage.h+1),'Seat outside viewport');
+        for(const bubble of capture.bubbles){
+          if(bubble.x<0||bubble.y<0||bubble.x+bubble.w>capture.stage.w||bubble.y+bubble.h>capture.stage.h)report.problems.push({capture:tag,code:'BUBBLE_OUTSIDE_STAGE',bubble});
+          const panel=capture.modal;if(capture.layout!=='phonePortrait'&&bubble.x<panel.x+panel.w&&bubble.x+bubble.w>panel.x&&bubble.y<panel.y+panel.h&&bubble.y+bubble.h>panel.y)report.problems.push({capture:tag,code:'BUBBLE_INTERSECTS_PANEL',bubble,panel});
+        }
         const png=resolve(output,`cheers-${tag}.png`);
         const screenshotStarted=Date.now();
         await page.screenshot({path:png,timeout:10000});

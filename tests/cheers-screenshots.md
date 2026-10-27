@@ -36,12 +36,21 @@ cat and clap through HTTP; player 1 clicks clap in the actual Canvas UI.
 The solo client clicks clap and popper. Screenshots begin about 550 ms after
 the burst; runtime state is recorded without patching rendering or effects.
 
-Output: `D:\chat\拼图\ui-revamp-shots\cheers\`
+Output defaults to `D:\chat\拼图\ui-revamp-shots\cheers\`.
+Set `CHEERS_SHOTS_DIR` to override the output directory, for example:
+
+```powershell
+$env:CHEERS_SHOTS_DIR = 'D:/chat/拼图/ui-revamp-shots/cheers-review'
+node tests/cheers-screenshots.mjs
+```
 
 - Nine `cheers-<1|4|8>p-<844x390|390x844|1920x1080>.png` images.
 - `cheers-8p-844x390.webm`, 6.4 seconds, 844×390.
 - `cheers-report.json`: file hashes, room completion evidence, actual layout,
-  seats/presence, burst timing, bubbles, particles, combo and browser errors.
+  seats/presence, avatar and final bubble rectangles, burst timing, bubble counts,
+  particles, combo and browser errors. Bubble rectangles outside the stage, or
+  intersecting `modalArea` in landscape/desktop, are recorded in `problems`
+  without throwing.
 - `README.md`: visual review and verification notes from the completed run.
 
 Known product behavior: reentering an already-completed room does not open
@@ -59,3 +68,22 @@ requests. The 29 existing cheer client/UI tests and image validation passed
 because `vite.config.ts:5` imports absent `.openai/hosting.json`; excluding
 only that root hosting configuration, all 368 project source files typecheck.
 No product source files were changed.
+
+2026-10-27 implementation: bubbles use fixed 42×38 avatar overlays with internal
+count badges (only ×2 and above); solo bubbles sit inside the picture's bottom
+edge. Confetti uses deterministic independent height/delay/speed values and a
+pure position helper. Departed seat frames stay opaque, and narrow portrait
+rewards use four columns, with 5px top spacing so the first avatar bubble's
+clip margin clears the name. The 66×74 portrait seats remain unchanged.
+Geometry, badge, opacity, heart-origin and rain-spread assertions
+are in `mobile-cheers-ui.test.mjs`. The screenshot harness was not run for this
+change; the dated capture results above describe the previous run.
+
+Verification for this change (Windows `.cmd` launchers avoid the PowerShell
+script execution policy; no policy changes):
+
+- `npm.cmd run test:mobile`: 14 + 45 + 16 = 75 passed, 0 failed (12 added).
+- `npm.cmd run check:images`: 82 published images, 813 old-hash derivatives passed.
+- `npx.cmd tsc --noEmit --incremental false -p tsconfig.json`: only the allowed
+  pre-existing `vite.config.ts(5,27)` TS2307 for `.openai/hosting.json`.
+- `node --check tests/cheers-screenshots.mjs`: passed; no capture run.

@@ -83,7 +83,7 @@ export class GameApp{
  private room:(RoomClient&{snapshot:RoomClient['snapshot']&{levelId?:string;mobileResult?:{levelClear?:MobileLevelClear}}})|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
  private cheer:CheerClient|null=null;private readonly cheerEffects=new CheerEffects();private cheerFrame:number|null=null;
- private completionSeatRects=new Map<string,Rect>();private completionPicture:Rect={x:0,y:0,w:0,h:0};private completionBar:Rect={x:0,y:0,w:0,h:0};
+ private completionSeatRects=new Map<string,Rect>();private completionAvatarRects=new Map<string,Rect>();private completionBubbleRects=new Map<string,Rect>();private completionPicture:Rect={x:0,y:0,w:0,h:0};private completionBar:Rect={x:0,y:0,w:0,h:0};
  private realtime:ManagedRoomRealtime|null=null;
  private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;private desktopToolsOpen=true;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
@@ -1693,10 +1693,10 @@ export class GameApp{
  private completionOutsideSeats(x:number,w:number){return this.desktop&&x>=194&&this.stage.w-x-w>=194;}
  private drawCompletionSeat(seat:CompletionSeat,r:Rect,vertical=false){
   const s=this.stage,c=s.ctx,avatar=vertical?34:this.layout==='phoneLandscape'?38:50;r={...r,y:r.y+this.cheerEffects.hop(seat.playerId)};this.completionSeatRects.set(seat.playerId,r);
-  c.save();if(!seat.present)c.globalAlpha=.45;s.frame(r,seat.me?'button-cream-selected':'button-linen-normal');
+  c.save();c.globalAlpha=1;s.frame(r,seat.me?'button-cream-selected':'button-linen-normal');
   if(seat.me){c.save();c.globalAlpha*=.12;c.fillStyle=this.colors.berry;c.fillRect(r.x+4,r.y+4,r.w-8,r.h-8);c.restore();}
   const mirror=!vertical&&seat.column==='right',ax=vertical?r.x+(r.w-avatar)/2:mirror?r.x+r.w-avatar-6:r.x+6,ay=vertical?r.y+3:r.y+(r.h-avatar)/2;
-  s.icon('avatar',{x:ax,y:ay,w:avatar,h:avatar});if(seat.crown)drawCheerIcon(c,'crown',{x:ax+(avatar-24)/2,y:ay-10,w:24,h:24});
+  const ar={x:ax,y:ay,w:avatar,h:avatar};this.completionAvatarRects.set(seat.playerId,ar);if(!seat.present)c.globalAlpha=.45;s.icon('avatar',ar);if(seat.crown)drawCheerIcon(c,'crown',{x:ax+(avatar-24)/2,y:ay-10,w:24,h:24});
   const tx=vertical?r.x+3:mirror?r.x+5:ax+avatar+5,tw=vertical?r.w-6:r.w-avatar-16;
   s.text(seat.name,tx,vertical?r.y+39:r.y+12,vertical?11:12,this.colors.ink,seat.me?800:600,tw);
   s.text('拼合 '+seat.contribution,tx,vertical?r.y+56:r.y+34,vertical?10:11,this.colors.muted,600,tw);
@@ -1704,6 +1704,7 @@ export class GameApp{
   c.restore();
  }
  private drawCompletionSeats(panel:Rect){
+  this.completionAvatarRects.clear();
   const seats=this.completionSeats(),landscape=this.layout==='phoneLandscape',v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},w=landscape?108:176,h=landscape?60:70,gap=landscape?12:16;
   for(const seat of seats){const rows=Math.ceil(seats.length/2),x=landscape?seat.column==='left'?10+(v.left??0):this.stage.w-10-(v.right??0)-w:seat.column==='left'?panel.x-18-w:panel.x+panel.w+18,y=panel.y+(panel.h-(rows*h+(rows-1)*gap))/2+seat.row*(h+gap);this.drawCompletionSeat(seat,{x,y,w,h});}
  }
@@ -1719,14 +1720,16 @@ export class GameApp{
    drawCheerIcon(s.ctx,emote,{x:vertical||!horizontal?b.x+(bw-size)/2:b.x+(bw-iw-lw-4)/2,y:vertical?b.y+5:horizontal?b.y+(b.h-size)/2:b.y+3,w:size,h:size});
    s.text(label,vertical||!horizontal?b.x+(bw-lw)/2:b.x+(bw-iw-lw-4)/2+iw+6,vertical?b.y+35:horizontal?b.y+(b.h-font)/2:b.y+26,font,this.colors.ink,700,bw-4);
    if(this.desktop)s.text(i+1,b.x+4,b.y+3,9,this.colors.muted);
-   const count=this.cheerEffects.count(emote);if(count){const badge='×'+count;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(b.x+b.w-25,b.y-4,27,16);s.text(badge,b.x+b.w-23,b.y-3,10,this.colors.onAccent,700,25);}
+   const count=this.cheerEffects.count(emote);if(count>=2){const badge='×'+count;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(b.x+b.w-25,b.y-4,27,16);s.text(badge,b.x+b.w-23,b.y-3,10,this.colors.onAccent,700,25);}
    if(enabled)s.hit(b,()=>this.sendCompletionCheer(emote));s.ctx.restore();});
  }
  private drawCompletionContent(left:number,cy:number,width:number,landscape=false,panel?:Rect){
   const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
   const seats=this.completionSeats(),levelClear=result?.levelClear as import('../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
+  if(!landscape&&!this.completionOutsideSeats(left-20,width+40))this.completionAvatarRects.clear();
   if(landscape&&panel){const side=Math.min(240,panel.h-134,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+40,w:side,h:side});left=panel.x+16+side+16;width=panel.x+panel.w-16-left;cy=panel.y+42;}
   else if(seats.length&&!this.completionOutsideSeats(left-20,width+40)){
+   cy+=5; // Keep the first avatar bubble's 2px clip margin clear of its name.
    const side=width-146,rows=Math.ceil(seats.length/2),height=Math.max(side,rows*74+(rows-1)*8);this.drawCompletionPicture({x:left+73,y:cy,w:side,h:side});
    for(const seat of seats)this.drawCompletionSeat(seat,{x:seat.column==='left'?left:left+width-66,y:cy+seat.row*82,w:66,h:74},true);cy+=height+20;
   }else{const picture={x:left,y:cy,w:width,h:Math.min(width*.62,this.desktop?230:240)};this.drawCompletionPicture(picture);cy+=picture.h+20;}
@@ -1738,9 +1741,9 @@ export class GameApp{
     if(result){
      const imageId=snap?.puzzle?.imageId,album=imageId?this.collection?.albums.find(item=>item.images.some(image=>image.id===imageId)):undefined;
      const tiles:{icon:string;label:string;gold?:boolean}[]=[{icon:'coin',label:'金币 +'+(result.coins??0)},{icon:'fragment',label:'碎片 +'+(result.fragments??0)},...(this.energyEnabled&&result.energy?[{icon:'lightning',label:'体力 +'+result.energy}]:[]),...(levelClear?.firstClear&&this.energyEnabled&&levelClear.energy>0?[{icon:'lightning',label:'通关体力 +'+levelClear.energy}]:[]),...(album?[{icon:'book',label:'图集 '+album.collected+'/'+album.total}]:[]),...(landscape?[]:((result.catalog?.albumRewards??[]) as {title:string;coins?:number}[]).map(reward=>({icon:reward.coins?'coin':'leaf',label:reward.coins?'集满 +'+reward.coins:'得到装饰',gold:true})))];
-     const gap=levelLandscape?6:8,columns=Math.min(tiles.length,landscape?levelClear?5:4:this.desktop||width>=420?5:3),tileH=levelLandscape?52:landscape?58:64,tw=(width-gap*(columns-1))/columns;
+     const gap=levelLandscape?6:8,columns=Math.min(tiles.length,landscape?levelClear?5:4:this.desktop||width>=420?5:4),tileH=levelLandscape?52:landscape?58:64,tw=(width-gap*(columns-1))/columns;
      const weights=levelLandscape?tiles.map(tile=>Math.max(40,s.measure(tile.label,12,700)+8)):[],total=weights.reduce((sum,value)=>sum+value,0);let tileX=left;
-     tiles.forEach((tile,index)=>{const tileW=levelLandscape?(width-gap*(columns-1))*weights[index]/total:tw,r={x:levelLandscape?tileX:left+(index%columns)*(tw+gap),y:cy+Math.floor(index/columns)*(tileH+gap),w:tileW,h:tileH};tileX+=tileW+gap;s.frame(r,tile.gold?'panel-gold':'button-linen-normal');s.icon(tile.icon,{x:r.x+(tileW-26)/2,y:r.y+6,w:24,h:24});const size=levelLandscape?Math.min(12,12*(tileW-8)/s.measure(tile.label,12,700)):tw<84?12:13;s.text(tile.label,r.x+Math.max(4,(tileW-s.measure(tile.label,size,700))/2),r.y+(levelLandscape?33:35),size,ink,700,tileW-8);});
+     tiles.forEach((tile,index)=>{const tileW=levelLandscape?(width-gap*(columns-1))*weights[index]/total:tw,r={x:levelLandscape?tileX:left+(index%columns)*(tw+gap),y:cy+Math.floor(index/columns)*(tileH+gap),w:tileW,h:tileH};tileX+=tileW+gap;s.frame(r,tile.gold?'panel-gold':'button-linen-normal');s.icon(tile.icon,{x:r.x+(tileW-26)/2,y:r.y+6,w:24,h:24});const base=levelLandscape?12:tw<84?12:13,size=Math.min(base,base*(tileW-8)/s.measure(tile.label,base,700));s.text(tile.label,r.x+Math.max(4,(tileW-s.measure(tile.label,size,700))/2),r.y+(levelLandscape?33:35),size,ink,700,tileW-8);});
      cy+=Math.ceil(tiles.length/columns)*(tileH+gap)+4;
      if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,landscape?12:13,muted,600);cy+=levelLandscape?16:landscape?18:26;}
      for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,landscape?12:13,ink,700);cy+=landscape?18:24;}
@@ -1760,19 +1763,18 @@ export class GameApp{
   this.drawCompletionContent(panel.x+16,panel.y+40,panel.w-32,true,panel);this.drawCompletionEffects();
  }
  private drawCompletionEffects(){
-  const fx=this.cheerEffects,now=Date.now();fx.update(now);const s=this.stage,c=s.ctx,p=this.completionPicture,bar=this.completionBar;
+  this.completionBubbleRects.clear();const fx=this.cheerEffects,now=Date.now();fx.update(now);const s=this.stage,c=s.ctx,p=this.completionPicture;
   // Cups meet above the image; only show them while its top is in the scroll viewport.
   if(fx.tea&&p.y>=this.modalArea.y){const t=(now-fx.tea.start)/1000,spread=40*(1-Math.min(1,t*2));for(const direction of [-1,1])drawCheerIcon(c,'tea',{x:p.x+p.w/2-16+direction*(16+spread),y:p.y-28-Math.sin(t*Math.PI)*8,w:32,h:32});}
   const outside=this.layout==='phoneLandscape'||this.completionOutsideSeats(this.modalArea.x-12,this.modalArea.w+24);
-  s.clip(outside?{x:0,y:0,w:s.w,h:s.h}:this.modalArea,()=>{
-  const origin=(id:string)=>{const seat=this.completionSeatRects.get(id);return seat?{x:seat.x+seat.w/2,y:seat.y+seat.h/2}:{x:bar.x+bar.w/2,y:bar.y};};
-  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();c.globalAlpha=1-t;if(particle.kind==='confetti'){c.fillStyle=['#f4c24f','#e05a6e','#7fb069','#6fa3d8','#b98ad6','#f28aa6'][particle.color];const x=this.modalArea.x+particle.x*this.modalArea.w+Math.sin(t*8+particle.spin)*12,y=this.modalArea.y+(t*(.7+particle.y*.6)-particle.y*.2)*(this.modalArea.h+20);if(y>=this.modalArea.y)c.fillRect(Math.round(x),Math.round(y),3+particle.spin%3,5);}else{const o=origin(particle.playerId);drawCheerIcon(c,'heart',{x:o.x+(particle.x-.5)*60,y:o.y-t*100-particle.y*20,w:24,h:24});}c.restore();}
+  const area=outside?{x:0,y:0,w:s.w,h:s.h}:this.modalArea,bubbleRect=(id:string)=>{const a=this.completionAvatarRects.get(id),cx=a?a.x+a.w/2:p.x+p.w/2,cy=a?a.y+a.h/2:p.y+p.h-25;if(a&&(cx<area.x||cx>area.x+area.w||cy<area.y||cy>area.y+area.h))return null;return {x:clamp(cx-21,area.x+2,area.x+area.w-44),y:clamp(cy-23,area.y+2,area.y+area.h-40),w:42,h:38};};
+  s.clip(area,()=>{
+  const origin=(id:string)=>{const r=bubbleRect(id);return r?{x:r.x+r.w/2,y:r.y+r.h/2}:null;};
+  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();if(particle.kind==='confetti'){const pos=fx.confettiAt(particle,now,this.modalArea.w);if(pos&&pos.y>=0&&pos.y<=1){c.globalAlpha=pos.alpha;c.fillStyle=['#f4c24f','#e05a6e','#7fb069','#6fa3d8','#b98ad6','#f28aa6'][particle.color];c.fillRect(Math.round(this.modalArea.x+pos.x*this.modalArea.w),Math.round(this.modalArea.y+pos.y*this.modalArea.h),3+particle.spin%3,5);}}else{const o=origin(particle.playerId);c.globalAlpha=1-t;if(o)drawCheerIcon(c,'heart',{x:o.x-12+(particle.x-.5)*60,y:o.y-12-t*100-particle.y*20,w:24,h:24});}c.restore();}
   if(now<fx.starsUntil){const size=16+Math.round(8*Math.abs(Math.sin(now/95)));for(const [x,y] of [[p.x,p.y],[p.x+p.w,p.y],[p.x,p.y+p.h],[p.x+p.w,p.y+p.h]])drawCheerIcon(c,'star',{x:x-size/2,y:y-size/2,w:size,h:size});}
-  for(const bubble of fx.bubbles){const seat=this.completionSeatRects.get(bubble.playerId),o=origin(bubble.playerId),index=CHEER_EMOTES.indexOf(bubble.emote),w=bubble.count>1?64:42,h=38;
-   // Seats outside the panel: the bubble straddles the seat's inner edge and stops short of the panel content.
-   const x=seat?seat.x+seat.w/2<s.w/2?(outside?seat.x+seat.w+18-w:seat.x+seat.w+3):(outside?seat.x-18:seat.x-w-3):clamp(bar.x+index*(bar.w/6)+(bar.w/6-w)/2,4,s.w-w-4),y=seat?o.y-h/2:bar.y-46,scale=fx.bubbleScale(bubble),r={x:x+w*(1-scale)/2,y:y+h*(1-scale)/2,w:w*scale,h:h*scale};if(scale<=0)continue;
+  for(const bubble of fx.bubbles){const target=bubbleRect(bubble.playerId),scale=fx.bubbleScale(bubble);if(!target||scale<=0)continue;const r={x:target.x+21*(1-scale),y:target.y+19*(1-scale),w:42*scale,h:38*scale};this.completionBubbleRects.set(bubble.playerId,r);
    // Stage.frame paints in physical pixels, so animate its rectangle explicitly.
-   c.save();c.globalAlpha=fx.bubbleAlpha(bubble);s.frame(r,'button-cream-normal');if(scale>.5){c.fillStyle=this.colors.cream;if(seat)c.fillRect(r.x+(x>o.x?-4:r.w-2),r.y+r.h/2,6,6);else c.fillRect(r.x+r.w/2-3,r.y+r.h-2,6,6);drawCheerIcon(c,bubble.emote,{x:r.x+6*scale,y:r.y+7*scale,w:24*scale,h:24*scale});if(bubble.count>1)s.text('×'+bubble.count,r.x+32*scale,r.y+12*scale,13*scale,this.colors.berry,800,30);}c.restore();}
+   c.save();c.globalAlpha=fx.bubbleAlpha(bubble);s.clip(r,()=>{s.frame(r,'button-cream-normal');if(scale>.5){drawCheerIcon(c,bubble.emote,{x:r.x+9*scale,y:r.y+7*scale,w:24*scale,h:24*scale});if(bubble.count>=2){const badge={x:r.x+r.w-22*scale,y:r.y+r.h-14*scale,w:20*scale,h:12*scale};c.fillStyle=this.colors.berry;c.fillRect(badge.x,badge.y,badge.w,badge.h);s.text('×'+bubble.count,badge.x+2*scale,badge.y+scale,9*scale,this.colors.onAccent,800,16*scale);}}});c.restore();}
   if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',w=Math.min(p.w+60,s.measure(label,14,800)+58),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
   });
  }
