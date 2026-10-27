@@ -59,6 +59,19 @@ test('pending room and cursor notifications preserve a cheer notification in the
  assert.ok(f.gateway.realtime.stats().roomReads>before.roomReads);assert.ok(f.gateway.realtime.stats().cursorReads>before.cursorReads);
 });
 
+test('a burst of room writes coalesces per peer so a cheer is not queued behind stale snapshots',async t=>{
+ // Room reads take real time in production; without that a burst never builds a queue to measure.
+ const f=await fixture(t,{realtimeOptions:{async readRoom(context,since){await new Promise(resolve=>setTimeout(resolve,15));return f.service.realtime.readRoom(context,since);}}});
+ const pa=await f.connect(f.a,f.ticket),pb=await f.connect(f.b,f.bt),roomId=f.ticket.room.id,reads=f.gateway.realtime.stats().roomReads;
+ // A fast finish: every drop is its own successful POST and its own notification.
+ for(let n=0;n<60;n++){f.gateway.realtime.notify(roomId);await new Promise(resolve=>setImmediate(resolve));}
+ const id=rid(),sentAt=pb.messages.length;pa.send({type:'cheer',data:{id,emote:'clap'}});
+ const received=await pb.waitFor(value=>value.type==='cheers'&&value.data.cheers.some(item=>item.id===id));
+ const framesAhead=pb.messages.slice(sentAt,pb.messages.indexOf(received)).filter(value=>value.type==='room').length;
+ assert.ok(framesAhead<=2,'only the refresh already running may precede the cheer, got '+framesAhead);
+ assert.ok(f.gateway.realtime.stats().roomReads-reads<=8,'sixty notifications do not cost sixty reads per peer');
+});
+
 test('invalid cheers and service rate errors keep sockets open, fatal identity errors reject them',async t=>{
  for(const [status,code]of [[400,'INVALID_CHEER'],[429,'CHEER_RATE_LIMIT'],[403,'ROOM_IDENTITY_MISMATCH'],[500,'INTERNAL_ERROR']])await t.test(String(status),async t=>{
   const f=await fixture(t,{realtimeOptions:{writeCheer(){throw Object.assign(Error('test rejection'),{status,code});}}}),peer=await f.connect(f.a,f.ticket),id=rid();peer.send({type:'cheer',data:{id,emote:'bad'}});
