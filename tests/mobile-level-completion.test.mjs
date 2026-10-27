@@ -14,6 +14,8 @@ function fixture({width=844,height=390,levelClear=clear,energy=true,formalWeb=fa
  const app=Object.create(GameApp.prototype),snapshot={title:'窗边',puzzle:{imageId:'picture'},startedAt:1,completedAt:60001,members:Array.from({length:8},(_,index)=>({id:String(index),code:String(index),name:'同桌'+index,lastSeen:100,contribution:8-index})),mobileResult:{coins:20,fragments:2,energy:5,catalog:{newlyCollected:true,albumRewards:[{title:'相册阶段奖励',coins:100},{title:'集齐相册',coins:0}]},...(levelClear?{levelClear}:{})}};
  const client={profile:{code:'0',lastReward:{levelClear:clear}},cookieIdentity:formalWeb,config:{capabilities:{energy,cheers}},createRoom:async input=>{events.push('create');created.push(input);return {room:{id:'next-room'}};}};
  Object.assign(app,{stage,client,privacyAccepted:true,platform:{config:{id:width>=1000?'web':'taptap'},viewport:()=>({width,height,top:0,bottom:0}),randomId:()=> 'request'},room:{ticket:{playerId:'0'},state:{cols:4,rows:3},snapshot},board:{drawCompletedPicture:()=>true},levels:{chapters:[{id:'ch1',title:'\u5f00\u5f20',status:'available',levels:[{id:'ch1-1',status:'cleared'},{id:'ch1-2',status:'unlocked'}]}]},levelsOwner:'',route:'room',ready:true,busy:false,modal:'completion',modalScroll:0,modalExtent:0,completionSeatRects:new Map(),completionAvatarRects:new Map(),completionSlotRects:new Map(),completionBubbleRects:new Map(),cheerEffects:new CheerEffects(),cheerFrame:null,collection:{albums:[{id:'album',collected:6,total:6,images:[{id:'picture'}]}]},attempts:new Map(),cancelChatPress(){},clearRoomPointer(){},invalidate(){},social:{title:''},leaveRoom(){events.push('leave');this.room=null;},navigate(route){events.push(route);},attachTicket:async ticket=>{events.push('attach');app.room=ticket;}});
+ // The story page reads levels only for the signed-in owner they were loaded for.
+ app.levelsOwner=app.ownerKey();
  return {app,calls,events,created,draw:()=>app.drawModal(),button:label=>calls.find(call=>call.kind==='button'&&call.label===label),texts:()=>calls.filter(call=>call.kind==='text').map(call=>call.label)};
 }
 
@@ -41,7 +43,8 @@ test('first clear shows the lightning reward only with positive energy and an en
 
 test('level rewards fit all layouts with eight seats, album milestones, six cheers and the existing secondary actions',()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]])for(const levelClear of [clear,{...clear,levelId:'ch1-6',chapterComplete:true,nextLevelId:null}]){
-  const f=fixture({width,height,levelClear});f.draw();assert.equal(f.app.completionSeatRects.size,8);
+  // The story action exists only for levels of the loaded chapter.
+  const f=fixture({width,height,levelClear});if(!f.app.levels.chapters[0].levels.some(level=>level.id===levelClear.levelId))f.app.levels.chapters[0].levels.push({id:levelClear.levelId,status:'cleared'});f.draw();assert.equal(f.app.completionSeatRects.size,8);
   const cheers=f.calls.filter(call=>call.kind==='hit'&&call.r.y===f.app.completionBar.y&&call.r.h===f.app.completionBar.h);assert.equal(cheers.length,6);
   for(const label of ['翻开这一页','分享成品','查看图集','回大厅'])assert.ok(f.button(label));
   for(const call of f.calls.filter(call=>call.kind==='button'||call.kind==='frame')){assert.ok(call.r.w>0&&call.r.h>0);assert.ok(call.r.x>=0&&call.r.x+call.r.w<=width+.01);}
@@ -53,7 +56,8 @@ test('level rewards fit all layouts with eight seats, album milestones, six chee
 test('completion story action opens the cleared level with fromClear without leaving or changing original actions',()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]]){
   const f=fixture({width,height}),opened=[];f.app.openLevelComic=(...args)=>opened.push(args);f.draw();f.button('翻开这一页').fn();assert.deepEqual(opened,[['ch1-1',{fromClear:true}]]);assert.deepEqual(f.events,[]);
-  const primary=f.button('下一关').r,comic=f.button('翻开这一页').r;assert.equal(primary.y,comic.y);assert.equal(primary.h,comic.h);assert.ok(primary.x+primary.w<comic.x);
+  const primary=f.button('下一关').r,comic=f.button('翻开这一页').r;assert.equal(primary.y,comic.y);assert.equal(primary.h,comic.h);// The completion hook places story actions left of the primary action.
+  assert.ok(comic.x+comic.w<primary.x);
   for(const label of ['下一关','分享成品','查看图集','回大厅'])assert.ok(f.button(label));
  }
 });

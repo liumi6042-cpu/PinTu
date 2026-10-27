@@ -93,7 +93,13 @@ export class GameApp{
  private cursor:CursorClient|null=null;private cursorVisible=false;
  private cheer:CheerClient|null=null;private readonly cheerEffects=new CheerEffects();private cheerFrame:number|null=null;
  private completionFx:CompletionTransition|null=null;private completionFxFrame:number|null=null;private completionCheerQueue:{cheer:Cheer;own:boolean;at:number}[]=[];private completionLive=false;private completionFxRect:Rect|null=null;private settleButtonRect:Rect|null=null;
- private completionHooks?:CompletionFlow;private get completionFlow(){return this.completionHooks??=new CompletionFlow();}
+ private completionHooks?:CompletionFlow;private get completionFlow(){if(!this.completionHooks){this.completionHooks=new CompletionFlow();this.completionHooks.register(context=>this.storyComicAction(context));}return this.completionHooks;}
+ /** Story levels with comic data offer their page; the page opens with the split transition. */
+ private storyComicAction(context:CompletionContext):CompletionAction|null{
+  const levelId=(context.level?context.levelId:null)??context.levelClear?.levelId??null,chapter=this.storyChapter;if(!levelId||!chapter)return null;
+  const index=chapter.levels.findIndex(level=>level.id===levelId);if(index<0||!comicFor(chapter,index,chapter.levels[index]))return null;
+  return {label:'翻开这一页',action:()=>this.openLevelComic(levelId,{fromClear:true})};
+ }
  get completionPhase():CompletionPhase{return this.completionFlow.phase;}
  onCompletionPhase(listener:(event:CompletionPhaseEvent)=>void):()=>void{return this.completionFlow.subscribe(listener);}
  openCompletionPopup():boolean{if(!this.room?.snapshot.completedAt||this.nineGridRoom)return false;if(this.completionFx)this.finishCompletionTransition();else this.showModal('completion');return true;}
