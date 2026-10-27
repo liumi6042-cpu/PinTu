@@ -1,30 +1,52 @@
 import type {AudioLevels} from './ports';
 
 export type AudioVoice={volume:number;play():void|Promise<unknown>;pause():void;rewind():void;dispose():void};
+export type MusicSelection=string|readonly string[]|null;
 type MusicVoice={voice:AudioVoice;playing:boolean;pending:boolean;resumeRequested:boolean};
+type Timers={set(fn:()=>void,ms:number):unknown;clear(id:unknown):void;random():number};
 // Effects were quiet next to the host UI (user feedback 2026-10-26): doubled from .1375. Slider level still scales it; music is separate.
 const effectVolume=.275;
+// A playlist plays one piece, rests in silence, then picks another piece (sandbox-game style ambience).
+export const MUSIC_GAP_MS={min:20000,max:45000};
 const safely=(action:()=>void)=>{try{action();}catch{}};
 const level=(value:number,fallback:number)=>Number.isFinite(value)?Math.max(0,Math.min(1,value)):fallback;
+const tracksOf=(selection:MusicSelection)=>(typeof selection==='string'?[selection]:Array.isArray(selection)?selection:[]).filter((url):url is string=>typeof url==='string'&&!!url.trim());
+const defaultTimers:Timers={set:(fn,ms)=>setTimeout(fn,ms),clear:id=>clearTimeout(id as ReturnType<typeof setTimeout>),random:()=>Math.random()};
 
 /** Shared playback policy only; hosts supply native audio, never a DOM shim. */
 export class AudioPlayback{
  private levels:AudioLevels={music:0,effects:1};
- private selected:string|null=null;private music:MusicVoice|null=null;
+ private tracks:string[]=[];private track=0;private music:MusicVoice|null=null;
+ private resting=false;private restTimer:unknown=null;
  private effects=new Map<string,AudioVoice>();
  private unlocked=false;private hidden=false;private adPlaying=false;private disposed=false;
- private createVoice:(url:string,loop:boolean)=>AudioVoice;
- constructor(createVoice:(url:string,loop:boolean)=>AudioVoice){this.createVoice=createVoice;}
+ private createVoice:(url:string,loop:boolean,onEnded?:()=>void)=>AudioVoice;private timers:Timers;
+ constructor(createVoice:(url:string,loop:boolean,onEnded?:()=>void)=>AudioVoice,timers:Partial<Timers>={}){this.createVoice=createVoice;this.timers={...defaultTimers,...timers};}
  readonly audio={
-  setLevels:(levels:AudioLevels)=>this.setLevels(levels),setMusic:(url:string|null)=>this.setMusic(url),
+  setLevels:(levels:AudioLevels)=>this.setLevels(levels),setMusic:(selection:MusicSelection)=>this.setMusic(selection),
   unlock:()=>this.unlock(),dispose:()=>this.dispose(),
  };
- private mayPlayMusic(){return !this.disposed&&this.unlocked&&!this.hidden&&!this.adPlaying&&!!this.selected&&this.levels.music>0;}
+ private get playlist(){return this.tracks.length>1;}
+ private mayPlayMusic(){return !this.disposed&&this.unlocked&&!this.hidden&&!this.adPlaying&&!this.resting&&this.tracks.length>0&&this.levels.music>0;}
  private pauseMusic(){const music=this.music;if(!music)return;music.resumeRequested=false;if(music.playing){music.playing=false;safely(()=>music.voice.pause());}}
  private pauseEffects(){for(const voice of this.effects.values())safely(()=>voice.pause());}
+ private releaseMusic(){const old=this.music;this.music=null;if(old){old.resumeRequested=false;old.playing=false;safely(()=>old.voice.pause());safely(()=>old.voice.dispose());}}
+ private stopRest(){if(this.restTimer!==null)safely(()=>this.timers.clear(this.restTimer));this.restTimer=null;this.resting=false;}
+ private finished(voice:AudioVoice){
+  if(this.disposed||this.music?.voice!==voice||!this.playlist)return;
+  this.releaseMusic();this.resting=true;
+  const gap=MUSIC_GAP_MS.min+level(this.timers.random(),0)*(MUSIC_GAP_MS.max-MUSIC_GAP_MS.min);
+  this.restTimer=this.timers.set(()=>{this.restTimer=null;this.resting=false;
+   const next=Math.floor(level(this.timers.random(),0)*(this.tracks.length-1)*.9999);this.track=next>=this.track?next+1:next;
+   this.syncMusic();},gap);
+ }
  private syncMusic(){
   if(!this.mayPlayMusic()){this.pauseMusic();return;}
-  if(!this.music){try{this.music={voice:this.createVoice(this.selected!,true),playing:false,pending:false,resumeRequested:false};}catch{return;}}
+  if(!this.music){
+   const url=this.tracks[this.track],loop=!this.playlist;let created:MusicVoice|null=null;
+   try{created={voice:this.createVoice(url,loop,loop?undefined:()=>{if(created)this.finished(created.voice);}),playing:false,pending:false,resumeRequested:false};}catch{return;}
+   this.music=created;
+  }
   const music=this.music;safely(()=>{music.voice.volume=this.levels.music;});
   if(music.pending){if(!music.playing)music.resumeRequested=true;return;}
   if(music.playing)return;
@@ -47,11 +69,11 @@ export class AudioPlayback{
   if(this.levels.effects===0)this.pauseEffects();
   this.syncMusic();
  }
- setMusic(url:string|null){
-  if(this.disposed)return;const next=typeof url==='string'&&url.trim()?url:null;
-  if(this.selected===next)return;
-  this.selected=next;const old=this.music;this.music=null;
-  if(old){old.resumeRequested=false;old.playing=false;safely(()=>old.voice.pause());safely(()=>old.voice.dispose());}
+ setMusic(selection:MusicSelection){
+  if(this.disposed)return;const next=tracksOf(selection);
+  if(next.join('\n')===this.tracks.join('\n'))return;
+  this.stopRest();this.releaseMusic();this.tracks=next;
+  this.track=next.length>1?Math.min(next.length-1,Math.floor(level(this.timers.random(),0)*next.length)):0;
   this.syncMusic();
  }
  unlock(){if(this.disposed)return;this.unlocked=true;this.syncMusic();}
@@ -66,8 +88,7 @@ export class AudioPlayback{
   }catch{}
  }
  dispose(){
-  if(this.disposed)return;this.disposed=true;this.selected=null;const music=this.music;this.music=null;
-  if(music){music.resumeRequested=false;music.playing=false;safely(()=>music.voice.pause());safely(()=>music.voice.dispose());}
+  if(this.disposed)return;this.disposed=true;this.stopRest();this.tracks=[];this.releaseMusic();
   for(const voice of this.effects.values()){safely(()=>voice.pause());safely(()=>voice.dispose());}this.effects.clear();
  }
 }

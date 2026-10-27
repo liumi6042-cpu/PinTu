@@ -1871,6 +1871,7 @@ export class GameApp{
     heading('外观');this.rowOptions(themeOptions,this.stage.theme,left,cy,width,value=>this.setTheme(value),39);cy+=56;
     if(this.platform.setUiSize){heading('界面大小');this.rowOptions([['small','小'],['auto','自动'],['large','大'],['xlarge','特大']] as const,this.platform.uiSize?.()??'auto',left,cy,width,value=>{this.platform.setUiSize?.(value);this.invalidate();},39);cy+=48;cy=this.paragraph('自动：按窗口大小放大',left,cy,width,12)+16;}
     s.text('声音',left,cy,15,this.colors.ink,750);cy+=31;
+    if(this.audioSettings.hasMusic){cy=this.drawAudioLevel('music','背景音乐',left,cy,width);cy=this.paragraph('安静的钢琴曲，一首放完会先停一会儿再换下一首。调到 0% 即关闭。',left,cy,width,12)+16;}
     this.button(left,cy,width,this.audioSettings.levels.effects===0?'开启音效':'音效静音',()=>this.toggleEffectsMute(),this.audioSettings.levels.effects===0?'cream':'berry',39);cy+=51;
     cy=this.drawAudioLevel('effects','游戏音效',left,cy,width);
     cy=this.paragraph('控制拼合、金币等游戏音效，设置会自动记住。',left,cy,width,12)+18;
