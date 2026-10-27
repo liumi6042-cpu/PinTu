@@ -36,6 +36,7 @@ CODE_PATHS = {
     'outputs/mobile/artwork.mjs', 'outputs/mobile/room-realtime.mjs', 'server/room-realtime.LICENSE.txt',
     'server/mobile-room-history.mjs', 'server/tap-preview.mjs', 'server/diagnostic-actions.mjs', 'server/guest-names.mjs',
     'lib/tap-platform-id.mjs',
+    'server/mobile-events.mjs', 'server/mobile-levels.mjs', 'config/levels.json',
 }
 RELEASE_PATTERN = r'\d{8}-[a-z0-9-]{2,32}'
 SHA_PATTERN = r'[a-f0-9]{64}'
