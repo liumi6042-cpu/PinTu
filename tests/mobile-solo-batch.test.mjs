@@ -120,6 +120,7 @@ test('energy exhaustion commits only earlier snaps and restores the failed and u
  assert.deepEqual(balances(f.profile(owner)),balances(result.profile));assert.deepEqual(f.read(owner,ticket).puzzle,result.puzzle);
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_task_events WHERE owner=?').get(owner).n,1);
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_requests WHERE owner=? AND scope=?').get(owner,'room-action:'+ticket.room.id).n,1);
+ assert.equal(f.db.prepare("SELECT COUNT(*) n FROM mobile_events WHERE owner=? AND kind='energy-empty' AND room_id=?").get(owner,ticket.room.id).n,1,'a stopped batch logs one energy-empty event');
  f.patch(owner,{energy:10});const resumed=f.batch(owner,ticket,ops);
  assert.deepEqual(resumed.soloBatch.applied,ops.map(o=>o.requestId));assert.equal(placedCount(resumed.puzzle),3);
  assert.equal(resumed.profile.totalXp,profile.totalXp+3*profile.economy.contributionXp);
