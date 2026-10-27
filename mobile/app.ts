@@ -854,7 +854,12 @@ export class GameApp{
     if(src&&(done||active)){ctx.save();if(active){ctx.globalAlpha=.28;if('filter'in ctx)ctx.filter='grayscale(1) blur(2px)';}s.clip(r,()=>s.image(this.client.asset(src),r,'cover'));ctx.restore();}
     ctx.save();ctx.strokeStyle=active?this.colors.gold:done?this.colors.ink:this.colors.line;ctx.lineWidth=active?3:2;if(!done&&!active&&typeof ctx.setLineDash==='function')ctx.setLineDash([6,4]);ctx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);ctx.restore();
     const badge=22;ctx.save();ctx.fillStyle=done?this.colors.ink:this.colors.cream;ctx.fillRect(r.x+3,r.y+3,badge,badge);ctx.restore();s.text(index+1,r.x+9,r.y+7,12,done?this.colors.cream:this.colors.ink,800,18);
-    if(done){if(level.line){const bw=Math.min(r.w-16,s.measure(level.line,11,600)+18),bx=r.x+r.w-bw-8,by=r.y+r.h-32;ctx.save();ctx.fillStyle=this.colors.cream;ctx.strokeStyle=this.colors.ink;ctx.lineWidth=2;roomRoundPath(ctx,{x:bx,y:by,w:bw,h:25},7);ctx.fill();ctx.stroke();ctx.restore();s.text(level.line,bx+8,by+7,11,this.colors.ink,600,bw-16);}if(src)s.hit(r,()=>this.openChapterPreview(chapter,level.id));}
+    if(done){if(level.line){
+     // At most two lines: wrap once, then the second line is ellipsized by s.text.
+     const room=r.w-32,chars=[...level.line];let count=0;while(count<chars.length&&s.measure(chars.slice(0,count+1).join(''),11,600)<=room)count++;count=Math.max(1,count);
+     const rows=count<chars.length?[chars.slice(0,count).join(''),chars.slice(count).join('')]:[level.line],bw=Math.min(r.w-16,Math.max(...rows.map(row=>s.measure(row,11,600)))+18),bh=rows.length*15+10,bx=r.x+r.w-bw-8,by=r.y+r.h-bh-7;
+     ctx.save();ctx.fillStyle=this.colors.cream;ctx.strokeStyle=this.colors.ink;ctx.lineWidth=2;roomRoundPath(ctx,{x:bx,y:by,w:bw,h:bh},7);ctx.fill();ctx.stroke();ctx.restore();rows.forEach((row,index)=>s.text(row,bx+8,by+5+index*15,11,this.colors.ink,600,bw-16));
+    }if(src)s.hit(r,()=>this.openChapterPreview(chapter,level.id));}
     else if(active){const label='第 '+(index+1)+' 格',hint=level.pieces+' 片 · 拼完揭晓';s.text(label,r.x+(r.w-s.measure(label,16,800))/2,r.y+r.h/2-22,16,this.colors.cream,800,r.w-12);s.text(hint,r.x+(r.w-s.measure(hint,11,600))/2,r.y+r.h/2+5,11,this.colors.cream,600,r.w-12);s.hit(r,()=>{if(!this.busy&&this.client.profile)void this.launch({mode:'level',levelId:level.id});});}
     else s.text('?',r.x+(r.w-s.measure('?',36,800))/2,r.y+(r.h-36)/2,36,this.colors.muted,800,r.w-12);
    });

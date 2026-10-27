@@ -62,6 +62,12 @@ test('chapter fallback title, reward text, speech bubbles and scrolling use the 
  f.client.config.capabilities.energy=true;f.app.levels.firstClearEnergy=17;f.clear();f.app.drawChapter();assert.ok(f.texts.join('').includes('17 体力'));f.clear();f.app.drawChapterStrip({x:12,y:80,w:366,h:34});assert.ok(f.texts.includes('新手章节 3/6'));
 });
 
+test('speech bubbles wrap to at most two lines and only then ellipsize',()=>{
+ const f=fixture(),bubble=line=>{f.clear();f.app.levels.chapters[0].levels[0].line=line;f.app.drawChapter();return f.glyphs.filter(glyph=>glyph.size===11&&glyph.weight===600&&line.startsWith(glyph.value.slice(0,1))&&glyph.value!=='1');};
+ const short=bubble('这就是奶奶的店');assert.deepEqual(short.map(glyph=>glyph.value),['这就是奶奶的店']);
+ const long='爷'.repeat(30),wrapped=bubble(long);assert.equal(wrapped.length,2);assert.equal(wrapped.map(glyph=>glyph.value).join(''),long);assert.ok(wrapped[1].y>wrapped[0].y);
+ const longer='爷'.repeat(60),capped=bubble(longer);assert.equal(capped.length,2);assert.ok(capped[0].value.length<60);
+});
 test('chapter uses the lobby header without phone navigation and handles canvas filter and dash support being absent in a dark palette',async()=>{
  for(const [width,height]of [[390,844],[844,390]]){
   const f=fixture({width,height});f.stage.color=value=>value;f.platform.setOrientation=()=>{};f.app.drawHeader();const header={texts:[...f.texts],icons:[...f.icons],top:f.app.bodyTop,buttons:f.buttons.map(({r,label,opts})=>({r,label,opts}))};f.clear();f.app.route='chapter';f.app.drawHeader();assert.deepEqual({texts:f.texts,icons:f.icons,top:f.app.bodyTop,buttons:f.buttons.map(({r,label,opts})=>({r,label,opts}))},header);assert.equal(f.app.navVisible,false);
