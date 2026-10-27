@@ -186,6 +186,7 @@ export class GameApp{
  private modalContains(x:number,y:number){return this.modalBlocksInput||(this.modal==='tasks'&&inside(this.taskWindowArea,x,y))||(this.modal==='chat'&&inside(this.chatWindowArea,x,y));}
  private get energyEnabled(){return !this.formalWeb&&this.client.config.capabilities?.energy!==false;}
  private get shareAvailable(){return this.client.config.capabilities.shareRewards===true;}
+ private get cheersEnabled(){return this.client.config.capabilities.cheers!==false;}
  private rewardText(energy:number,xp:number,coins=0){return [this.energyEnabled&&energy>0?'体力 +'+energy:'',xp>0?'经验 +'+xp:'',coins>0?'金币 +'+coins:''].filter(Boolean).join(' · ')||'暂无可领取奖励';}
  private giftVisible(gift:{energyMax?:number;xp?:number;xpMax?:number;coins?:number;coinsMax?:number}){return this.energyEnabled||(gift.xpMax??gift.xp??0)>0||(gift.coinsMax??gift.coins??0)>0;}
  private setTheme(theme:ThemeId){this.stage.setTheme(theme);this.board?.setTheme(theme);if(this.platform.canvas.style)this.platform.canvas.style.colorScheme=theme==='dark'?'dark':'light';this.platform.storage.set('jigsaw:shared:theme:'+this.platform.config.apiBase,theme);this.invalidate();}
@@ -442,8 +443,8 @@ export class GameApp{
   }});this.room=room;
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;this.detachRoom=room.attach(board);
   const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();
-  this.cheer=new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>{if(this.modal!=='completion'||this.room!==room)return;this.cheerEffects.receive(cheer,own);this.animateCheers();}});
-  this.cheer.setActive(this.modal==='completion');
+  this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>{if(this.modal!=='completion'||this.room!==room)return;this.cheerEffects.receive(cheer,own);this.animateCheers();}}):null;
+  this.cheer?.setActive(this.modal==='completion');
   this.unsubscribeRoom=room.subscribe(()=>{if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.showModal('completion');void this.client.refresh().catch(()=>{});void this.loadCollection();}}this.invalidate();});
   const photo=activeRoomPhoto(ticket.room,photoMap.get(ticket.room.puzzle.imageId));this.roomImage=this.client.asset(ticket.room.customImage?customPhoto(ticket.room.customImage,ticket.room.id).src:photo?.src??'');
   this.invalidate();if(this.nineGridRoom)board.setUnderlay(Date.now()+86400000);else void this.loadAssistance();
@@ -1680,7 +1681,7 @@ export class GameApp{
   if(this.cheerFrame!==null||this.hidden||this.destroyed||this.modal!=='completion')return;
   this.invalidate();this.cheerFrame=this.platform.frame(()=>{this.cheerFrame=null;if(this.modal!=='completion'||this.hidden||this.destroyed)return;const alive=this.cheerEffects.alive();this.invalidate();if(alive)this.animateCheers();});
  }
- private sendCompletionCheer(emote:CheerEmote){if(this.modal==='completion'&&this.room?.snapshot.members.some(member=>member.id===this.room!.ticket.playerId&&member.lastSeen>0))this.cheer?.send(emote);}
+ private sendCompletionCheer(emote:CheerEmote){if(this.cheersEnabled&&this.modal==='completion'&&this.room?.snapshot.members.some(member=>member.id===this.room!.ticket.playerId&&member.lastSeen>0))this.cheer?.send(emote);}
  private completionSeats(){const snap=this.room?.snapshot;return completionSeats(snap?.members??[],(snap as typeof snap&{mobileResult?:{ranking?:Parameters<typeof completionSeats>[1]}})?.mobileResult?.ranking,this.room?.ticket.playerId??'',this.client.profile?.code);}
  private completionOutsideSeats(x:number,w:number){return this.desktop&&x>=194&&this.stage.w-x-w>=194;}
  private drawCompletionSeat(seat:CompletionSeat,r:Rect,vertical=false){
@@ -1726,7 +1727,7 @@ export class GameApp{
   if(chapterComplete){center((this.levels?.chapters.find(chapter=>chapter.levels.some(level=>level.id===levelClear.levelId))?.title||'新手章节')+'完成！',cy,landscape?13:16,ink,800);cy+=landscape?18:26;}
   const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
   const meta=[pieces?pieces+' 片':'',started&&finished&&finished>started?'用时 '+Math.max(1,Math.round((finished-started)/60000))+' 分钟':'',together?together+' 人同桌':''].filter(Boolean).join(' · ');if(meta){center(meta,cy,landscape?12:13,muted,600);cy+=levelLandscape?20:landscape?25:30;}
-  if(!landscape){this.drawCompletionBar({x:left,y:cy,w:width,h:this.layout==='phonePortrait'?58:46});cy+=this.layout==='phonePortrait'?72:60;}
+  if(this.cheersEnabled&&!landscape){this.drawCompletionBar({x:left,y:cy,w:width,h:this.layout==='phonePortrait'?58:46});cy+=this.layout==='phonePortrait'?72:60;}
     if(result){
      const imageId=snap?.puzzle?.imageId,album=imageId?this.collection?.albums.find(item=>item.images.some(image=>image.id===imageId)):undefined;
      const tiles:{icon:string;label:string;gold?:boolean}[]=[{icon:'coin',label:'金币 +'+(result.coins??0)},{icon:'fragment',label:'碎片 +'+(result.fragments??0)},...(this.energyEnabled&&result.energy?[{icon:'lightning',label:'体力 +'+result.energy}]:[]),...(levelClear?.firstClear&&this.energyEnabled&&levelClear.energy>0?[{icon:'lightning',label:'通关体力 +'+levelClear.energy}]:[]),...(album?[{icon:'book',label:'图集 '+album.collected+'/'+album.total}]:[]),...(landscape?[]:((result.catalog?.albumRewards??[]) as {title:string;coins?:number}[]).map(reward=>({icon:reward.coins?'coin':'leaf',label:reward.coins?'集满 +'+reward.coins:'得到装饰',gold:true})))];
@@ -1742,7 +1743,7 @@ export class GameApp{
     s.button({x:left,y:cy,w:third,h:landscape?34:40},'分享成品',()=>void this.run(async()=>{const outcome=await this.shareFromGame({title:'我们拼好了「'+(snap?.title||snap?.photo?.title||'一幅画')+'」，来'+this.platform.config.gameName+'一起拼',inviteCode:this.tasks?.invitation.code});this.note(outcome==='copied'?'链接已复制，可以发给朋友':outcome==='shared'||outcome==='opened'?'已分享':outcome==='cancelled'?'本次分享已取消':'暂时无法分享');}),{fontSize:13});
     s.button({x:left+third+8,y:cy,w:third,h:landscape?34:40},'查看图集',()=>{this.leaveRoom();this.openCollection('albums');if(albumId)this.openAlbum(albumId);},{fontSize:13});
     s.button({x:left+(third+8)*2,y:cy,w:third,h:landscape?34:40},'回大厅',()=>{this.leaveRoom();this.navigate('lobby');},{fontSize:13});cy+=landscape?40:54;
-  if(landscape&&panel){const bar={x:panel.x+16,y:Math.max(this.completionPicture.y+this.completionPicture.h+8,cy+2),w:panel.w-32,h:44};this.drawCompletionBar(bar);const hint='点一下就能喝彩，同桌都看得到';s.text(hint,bar.x+(bar.w-s.measure(hint,11))/2,bar.y+49,11,muted,500);}
+  if(this.cheersEnabled&&landscape&&panel){const bar={x:panel.x+16,y:Math.max(this.completionPicture.y+this.completionPicture.h+8,cy+2),w:panel.w-32,h:44};this.drawCompletionBar(bar);const hint='点一下就能喝彩，同桌都看得到';s.text(hint,bar.x+(bar.w-s.measure(hint,11))/2,bar.y+49,11,muted,500);}
   return cy;
  }
  private drawLandscapeCompletion(){
@@ -1920,7 +1921,7 @@ export class GameApp{
   if(!this.ready)return this.stage.input(input);
   const point=input.changed[0]??input.points[0];
   if(input.type==='key'){
-   if(this.modal==='completion'&&input.keyDown&&!input.repeat&&/^[1-6]$/.test(input.key??'')){this.sendCompletionCheer(CHEER_EMOTES[Number(input.key)-1]);return true;}
+   if(this.cheersEnabled&&this.modal==='completion'&&input.keyDown&&!input.repeat&&/^[1-6]$/.test(input.key??'')){this.sendCompletionCheer(CHEER_EMOTES[Number(input.key)-1]);return true;}
    if(input.key==='Escape'&&input.keyDown){if(this.modal==='packPreview'&&this.previewIndex>=0){this.returnToPackGrid();return true;}this.cancelChatPress();const handled=this.board?.input(input)??false;this.pointer=null;this.stage.input({type:'cancel',points:[],changed:[]});if(this.modal){this.closeModal();return true;}if(this.toolsOpen){this.toolsOpen=false;this.invalidate();return true;}if(this.route!=='room'&&this.route!=='lobby'){this.back();return true;}return handled;}
    if(this.route==='room'&&!this.modalBlocksInput&&input.keyDown&&!input.repeat&&input.key){const key=input.key.toLowerCase();if(key==='t'&&this.layout==='desktop'){this.setDesktopToolsOpen(!this.desktopToolsOpen);return true;}const tool=({e:'edge',h:'hint',b:'underlay',f:'fit',r:'organize'} as Record<string,string>)[key];if(tool&&(tool!=='organize'||this.soloRoom)){this.roomTool(tool);return true;}}
    return this.route==='room'&&!this.modalBlocksInput?this.board?.input(input)??false:false;

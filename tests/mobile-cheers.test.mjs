@@ -20,6 +20,7 @@ function fixture(t,{completed=true}={}){
 
 test('cheers HTTP snapshots use global cursors, trusted identity, dedupe and no durable room changes',t=>{
  const f=fixture(t),events=[];f.service.realtime.onChange((roomId,kind)=>events.push({roomId,kind}));
+ assert.equal(f.service.capabilities.cheers,true);assert.equal(f.call('/api/mobile/profile').data.capabilities.cheers,true);
  const before=f.db.prepare('SELECT data FROM mobile_rooms WHERE id=?').get(f.ticket.room.id).data,start=f.get().data.cursor;assert.equal(start,f.now());
  const id=rid(),first=f.post({id,emote:'clap',playerId:'forged',name:'forged',at:1,seq:1});assert.equal(first.status,200);
  const member=JSON.parse(before).members.find(m=>m.id===f.ticket.playerId);

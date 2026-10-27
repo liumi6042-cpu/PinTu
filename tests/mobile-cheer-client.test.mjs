@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import {CheerClient,CHEER_LABELS} from '../mobile/cheer-client.ts';
 import {CHEER_EMOTES,RoomRealtime} from '../lib/room-realtime.ts';
 import {TapPreviewRealtime} from '../mobile/tap-preview.ts';
+import {GameClient} from '../mobile/client.ts';
+
+test('cookie cheers require explicit support while mobile defaults on unless disabled',async()=>{
+ for(const cookie of [true,false])for(const capabilities of [undefined,{}, {cheers:false},{cheers:true}]){
+  const platform={config:{id:cookie?'web':'wechat',identityMode:cookie?'web-cookie':'guest-device',apiBase:'/test'},storage:{get:()=> 'c'.repeat(64)},request:async input=>({status:200,headers:{},data:input.url.endsWith('/config')?{mobileMode:cookie?'web-managed-shared':'mobile-v3-isolated',capabilities}:{level:1,energy:0,energyCap:0,supply:{}}})};
+  const client=new GameClient(platform);await client.start();assert.equal(client.config.capabilities.cheers,cookie?capabilities?.cheers===true:capabilities?.cheers!==false);
+ }
+});
 
 const roomId='a'.repeat(32),token='b'.repeat(32),playerId='c'.repeat(32);
 const hex=n=>n.toString(16).padStart(32,'0');

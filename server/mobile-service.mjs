@@ -76,7 +76,7 @@ export function createMobileService(options={}){
  // use the same safe mobile default as a public-test package.
  const customNames=options.publicTestPolicy?.customNames??web,privateMessages=options.publicTestPolicy?.privateMessages??web;
  if(typeof customNames!=='boolean'||typeof privateMessages!=='boolean')throw new TypeError('publicTestPolicy values must be booleans');
- const capabilities=Object.freeze({energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
+ const capabilities=Object.freeze({energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
  const managedContent=options.managedContent??(options.contentDirectory?createMobileManagedContent({directory:options.contentDirectory,photos:engine.RESTORABLE_PHOTOS,assetDir:options.assetDir}):null);
  let operationRelease=managedContent?.read()??null,requestRelease;
  const taskRewardConfiguration=options.taskRewardSettings??createTaskRewardSettings({configurationPath:options.taskRewardConfigurationPath});
