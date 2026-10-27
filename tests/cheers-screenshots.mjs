@@ -190,16 +190,19 @@ try{
           const {app,stage,diagnostics}=window.__JIGSAW_SHARED__,fx=app.cheerEffects;
           return {layout:app.layout,stage:{w:stage.w,h:stage.h},modal:app.modalArea,picture:app.completionPicture,bar:app.completionBar,
             seats:[...app.completionSeatRects].map(([id,rect])=>({id,...rect})),members:app.completionSeats(),
-            avatars:[...app.completionAvatarRects].map(([id,rect])=>({id,...rect})),
+            avatars:[...app.completionAvatarRects].map(([id,rect])=>({id,...rect})),slots:[...app.completionSlotRects].map(([id,rect])=>({id,...rect})),
             bubbles:[...app.completionBubbleRects].map(([id,rect])=>({id,...rect,emote:fx.bubbles.find(b=>b.playerId===id)?.emote,count:fx.bubbles.find(b=>b.playerId===id)?.count})),particles:fx.particles.length,
-            combo:fx.combo?.count??0,tea:!!fx.tea,diagnostics:diagnostics()};
+            combo:fx.combo?.count??0,tea:!!fx.tea,modalScroll:app.modalScroll,pageScrolls:!!document.scrollingElement&&(document.scrollingElement.scrollHeight>innerHeight||document.scrollingElement.scrollWidth>innerWidth),diagnostics:diagnostics()};
         });
         assert.equal(capture.seats.length,count===1?0:count);
         if(count>1){assert.equal(capture.members.filter(seat=>!seat.present).length,1,'Exactly one departed seat required');assert.ok(capture.combo>=3,'Missing combo banner');}
         assert.ok(capture.seats.every(seat=>seat.x>=0&&seat.y>=0&&seat.x+seat.w<=capture.stage.w+1&&seat.y+seat.h<=capture.stage.h+1),'Seat outside viewport');
+        const intersects=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y,contains=(a,b)=>b.x>=a.x&&b.y>=a.y&&b.x+b.w<=a.x+a.w&&b.y+b.h<=a.y+a.h;
+        if(width===844&&height===390&&(capture.pageScrolls||capture.modalScroll!==0))report.problems.push({capture:tag,code:'LANDSCAPE_SCROLLS',pageScrolls:capture.pageScrolls,modalScroll:capture.modalScroll});
         for(const bubble of capture.bubbles){
           if(bubble.x<0||bubble.y<0||bubble.x+bubble.w>capture.stage.w||bubble.y+bubble.h>capture.stage.h)report.problems.push({capture:tag,code:'BUBBLE_OUTSIDE_STAGE',bubble});
-          const panel=capture.modal;if(capture.layout!=='phonePortrait'&&bubble.x<panel.x+panel.w&&bubble.x+bubble.w>panel.x&&bubble.y<panel.y+panel.h&&bubble.y+bubble.h>panel.y)report.problems.push({capture:tag,code:'BUBBLE_INTERSECTS_PANEL',bubble,panel});
+          for(const avatar of capture.avatars)if(intersects(bubble,avatar))report.problems.push({capture:tag,code:'BUBBLE_INTERSECTS_AVATAR',bubble,avatar});
+          const seat=capture.seats.find(seat=>seat.id===bubble.id),panel=capture.modal;if(capture.layout!=='phonePortrait'&&seat){if(!contains(seat,bubble))report.problems.push({capture:tag,code:'BUBBLE_OUTSIDE_SEAT',bubble,seat});if(intersects(bubble,panel))report.problems.push({capture:tag,code:'BUBBLE_INTERSECTS_PANEL',bubble,panel});}
         }
         const png=resolve(output,`cheers-${tag}.png`);
         const screenshotStarted=Date.now();

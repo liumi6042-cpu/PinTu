@@ -83,7 +83,7 @@ export class GameApp{
  private room:(RoomClient&{snapshot:RoomClient['snapshot']&{levelId?:string;mobileResult?:{levelClear?:MobileLevelClear}}})|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
  private cheer:CheerClient|null=null;private readonly cheerEffects=new CheerEffects();private cheerFrame:number|null=null;
- private completionSeatRects=new Map<string,Rect>();private completionAvatarRects=new Map<string,Rect>();private completionBubbleRects=new Map<string,Rect>();private completionPicture:Rect={x:0,y:0,w:0,h:0};private completionBar:Rect={x:0,y:0,w:0,h:0};
+ private completionSeatRects=new Map<string,Rect>();private completionAvatarRects=new Map<string,Rect>();private completionSlotRects=new Map<string,Rect>();private completionBubbleRects=new Map<string,Rect>();private completionPicture:Rect={x:0,y:0,w:0,h:0};private completionBar:Rect={x:0,y:0,w:0,h:0};
  private realtime:ManagedRoomRealtime|null=null;
  private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;private desktopToolsOpen=true;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
@@ -1690,22 +1690,25 @@ export class GameApp{
  }
  private sendCompletionCheer(emote:CheerEmote){if(this.cheersEnabled&&this.modal==='completion'&&this.room?.snapshot.members.some(member=>member.id===this.room!.ticket.playerId&&member.lastSeen>0))this.cheer?.send(emote);}
  private completionSeats(){const snap=this.room?.snapshot;return completionSeats(snap?.members??[],(snap as typeof snap&{mobileResult?:{ranking?:Parameters<typeof completionSeats>[1]}})?.mobileResult?.ranking,this.room?.ticket.playerId??'',this.client.profile?.code);}
+ private landscapeSeatWidth(available:number){return Math.max(120,Math.min(140,(available-500)/2));}
  private completionOutsideSeats(x:number,w:number){return this.desktop&&x>=194&&this.stage.w-x-w>=194;}
  private drawCompletionSeat(seat:CompletionSeat,r:Rect,vertical=false){
-  const s=this.stage,c=s.ctx,avatar=vertical?34:this.layout==='phoneLandscape'?38:50;r={...r,y:r.y+this.cheerEffects.hop(seat.playerId)};this.completionSeatRects.set(seat.playerId,r);
+  const s=this.stage,c=s.ctx,avatar=vertical?34:this.layout==='phoneLandscape'?r.w<140?30:34:50,size=vertical?34:this.layout==='phoneLandscape'?avatar:40;r={...r,y:r.y+this.cheerEffects.hop(seat.playerId)};this.completionSeatRects.set(seat.playerId,r);
   c.save();c.globalAlpha=1;s.frame(r,seat.me?'button-cream-selected':'button-linen-normal');
   if(seat.me){c.save();c.globalAlpha*=.12;c.fillStyle=this.colors.berry;c.fillRect(r.x+4,r.y+4,r.w-8,r.h-8);c.restore();}
-  const mirror=!vertical&&seat.column==='right',ax=vertical?r.x+(r.w-avatar)/2:mirror?r.x+r.w-avatar-6:r.x+6,ay=vertical?r.y+3:r.y+(r.h-avatar)/2;
+  // The portrait me tag needs 1px more clearance at the outer avatar edge.
+  const mirror=seat.column==='right',ax=vertical?r.x+(r.w-avatar)/2+(seat.me?(mirror?-1:1):0):mirror?r.x+r.w-avatar-6:r.x+6,ay=vertical?r.y+3:r.y+(r.h-avatar)/2;
   const ar={x:ax,y:ay,w:avatar,h:avatar};this.completionAvatarRects.set(seat.playerId,ar);if(!seat.present)c.globalAlpha=.45;s.icon('avatar',ar);if(seat.crown)drawCheerIcon(c,'crown',{x:ax+(avatar-24)/2,y:ay-10,w:24,h:24});
-  const tx=vertical?r.x+3:mirror?r.x+5:ax+avatar+5,tw=vertical?r.w-6:r.w-avatar-16;
+  const p=this.completionPicture,slot={x:vertical?(mirror?(p.x+p.w+r.x)/2:(r.x+r.w+p.x)/2)-size/2:mirror?r.x+6:r.x+r.w-6-size,y:ay+(avatar-size)/2,w:size,h:size};this.completionSlotRects.set(seat.playerId,slot);
+  const tx=vertical?r.x+3:mirror?slot.x+size+4:ax+avatar+5,tw=vertical?r.w-6:mirror?ax-5-tx:slot.x-4-tx;
   s.text(seat.name,tx,vertical?r.y+39:r.y+12,vertical?11:12,this.colors.ink,seat.me?800:600,tw);
   s.text('拼合 '+seat.contribution,tx,vertical?r.y+56:r.y+34,vertical?10:11,this.colors.muted,600,tw);
-  if(seat.me){const tag={x:r.x+r.w-17,y:r.y+2,w:14,h:13};c.fillStyle=this.colors.berry;c.fillRect(tag.x,tag.y,tag.w,tag.h);s.text('我',tag.x+2,tag.y+1,9,this.colors.onAccent,700);}
+  if(seat.me){const tag={x:mirror?r.x+r.w-17:r.x+3,y:r.y+(vertical?3:-6),w:14,h:13};c.fillStyle=this.colors.berry;c.fillRect(tag.x,tag.y,tag.w,tag.h);s.text('我',tag.x+2,tag.y+1,9,this.colors.onAccent,700);}
   c.restore();
  }
  private drawCompletionSeats(panel:Rect){
-  this.completionAvatarRects.clear();
-  const seats=this.completionSeats(),landscape=this.layout==='phoneLandscape',v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},w=landscape?108:176,h=landscape?60:70,gap=landscape?12:16;
+  this.completionAvatarRects.clear();this.completionSlotRects.clear();
+  const seats=this.completionSeats(),landscape=this.layout==='phoneLandscape',v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},w=landscape?this.landscapeSeatWidth(this.stage.w-(v.left??0)-(v.right??0)):176,h=landscape?60:70,gap=landscape?12:16;
   for(const seat of seats){const rows=Math.ceil(seats.length/2),x=landscape?seat.column==='left'?10+(v.left??0):this.stage.w-10-(v.right??0)-w:seat.column==='left'?panel.x-18-w:panel.x+panel.w+18,y=panel.y+(panel.h-(rows*h+(rows-1)*gap))/2+seat.row*(h+gap);this.drawCompletionSeat(seat,{x,y,w,h});}
  }
  private drawCompletionPicture(r:Rect){
@@ -1726,14 +1729,18 @@ export class GameApp{
  private drawCompletionContent(left:number,cy:number,width:number,landscape=false,panel?:Rect){
   const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
   const seats=this.completionSeats(),levelClear=result?.levelClear as import('../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
-  if(!landscape&&!this.completionOutsideSeats(left-20,width+40))this.completionAvatarRects.clear();
-  if(landscape&&panel){const side=Math.min(240,panel.h-134,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+40,w:side,h:side});left=panel.x+16+side+16;width=panel.x+panel.w-16-left;cy=panel.y+42;}
+  if(!landscape&&!this.completionOutsideSeats(left-20,width+40)){this.completionAvatarRects.clear();this.completionSlotRects.clear();}
+  if(landscape&&panel){const side=Math.min(240,panel.h-134,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+40,w:side,h:side});left=panel.x+16+side+16;width=panel.x+panel.w-16-left;
+   // Short screens only lift the column when album reward lines need the room.
+   cy=panel.y+Math.max(12,Math.min(42,panel.h-332+18*Math.max(0,2-(result?.catalog?.albumRewards?.length??0))));}
   else if(seats.length&&!this.completionOutsideSeats(left-20,width+40)){
-   cy+=5; // Keep the first avatar bubble's 2px clip margin clear of its name.
+   cy+=5; // Leave the first row clear of the modal heading.
    const side=width-146,rows=Math.ceil(seats.length/2),height=Math.max(side,rows*74+(rows-1)*8);this.drawCompletionPicture({x:left+73,y:cy,w:side,h:side});
    for(const seat of seats)this.drawCompletionSeat(seat,{x:seat.column==='left'?left:left+width-66,y:cy+seat.row*82,w:66,h:74},true);cy+=height+20;
   }else{const picture={x:left,y:cy,w:width,h:Math.min(width*.62,this.desktop?230:240)};this.drawCompletionPicture(picture);cy+=picture.h+20;}
-  center((snap?.title||snap?.photo?.title||'这幅画')+'，拼好啦！',cy,landscape?17:20,ink,800);cy+=levelLandscape?24:landscape?27:32;
+  const title=(snap?.title||snap?.photo?.title||'这幅画')+'，拼好啦！';
+  // A lifted landscape title shares the close button's row, so centre it in the space before the button.
+  if(landscape&&panel&&cy<panel.y+36){const tw=width-28;s.text(title,left+Math.max(0,(tw-s.measure(title,17,800))/2),cy,17,ink,800,tw);}else center(title,cy,landscape?17:20,ink,800);cy+=levelLandscape?24:landscape?27:32;
   if(chapterComplete){center((this.levels?.chapters.find(chapter=>chapter.levels.some(level=>level.id===levelClear.levelId))?.title||'新手章节')+'完成！',cy,landscape?13:16,ink,800);cy+=landscape?18:26;}
   const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
   const meta=[pieces?pieces+' 片':'',started&&finished&&finished>started?'用时 '+Math.max(1,Math.round((finished-started)/60000))+' 分钟':'',together?together+' 人同桌':''].filter(Boolean).join(' · ');if(meta){center(meta,cy,landscape?12:13,muted,600);cy+=levelLandscape?20:landscape?25:30;}
@@ -1757,7 +1764,7 @@ export class GameApp{
   return cy;
  }
  private drawLandscapeCompletion(){
-  const s=this.stage,v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},available=s.w-(v.left??0)-(v.right??0),w=Math.min(640,available-252),panel={x:(v.left??0)+(available-w)/2,y:Math.max(8,v.top),w,h:s.h-Math.max(8,v.top)-Math.max(8,v.bottom)};
+  const s=this.stage,v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},available=s.w-(v.left??0)-(v.right??0),seatW=this.landscapeSeatWidth(available),w=Math.min(640,available-(this.completionSeats().length?2*(seatW+18):252)),panel={x:(v.left??0)+(available-w)/2,y:Math.max(8,v.top),w,h:s.h-Math.max(8,v.top)-Math.max(8,v.bottom)};
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.frame(panel,'panel-cream');this.modalArea=panel;this.modalExtent=0;this.modalScroll=0;this.completionSeatRects.clear();this.drawCompletionSeats(panel);
   s.text('拼图完成',panel.x+16,panel.y+12,17,this.colors.ink,700);s.button({x:panel.x+panel.w-38,y:panel.y+7,w:28,h:28},'',()=>this.closeModal(),{icon:'close'});
   this.drawCompletionContent(panel.x+16,panel.y+40,panel.w-32,true,panel);this.drawCompletionEffects();
@@ -1767,15 +1774,16 @@ export class GameApp{
   // Cups meet above the image; only show them while its top is in the scroll viewport.
   if(fx.tea&&p.y>=this.modalArea.y){const t=(now-fx.tea.start)/1000,spread=40*(1-Math.min(1,t*2));for(const direction of [-1,1])drawCheerIcon(c,'tea',{x:p.x+p.w/2-16+direction*(16+spread),y:p.y-28-Math.sin(t*Math.PI)*8,w:32,h:32});}
   const outside=this.layout==='phoneLandscape'||this.completionOutsideSeats(this.modalArea.x-12,this.modalArea.w+24);
-  const area=outside?{x:0,y:0,w:s.w,h:s.h}:this.modalArea,bubbleRect=(id:string)=>{const a=this.completionAvatarRects.get(id),cx=a?a.x+a.w/2:p.x+p.w/2,cy=a?a.y+a.h/2:p.y+p.h-25;if(a&&(cx<area.x||cx>area.x+area.w||cy<area.y||cy>area.y+area.h))return null;return {x:clamp(cx-21,area.x+2,area.x+area.w-44),y:clamp(cy-23,area.y+2,area.y+area.h-40),w:42,h:38};};
+  const area=outside?{x:0,y:0,w:s.w,h:s.h}:this.modalArea,bubbleRect=(id:string)=>{const slot=this.completionSlotRects.get(id);if(slot)return !outside&&(slot.x+slot.w<=area.x||slot.x>=area.x+area.w||slot.y+slot.h<=area.y||slot.y>=area.y+area.h)?null:slot;return {x:clamp(p.x+p.w/2-21,area.x+2,area.x+area.w-44),y:clamp(p.y+p.h-48,area.y+2,area.y+area.h-40),w:42,h:38};};
   s.clip(area,()=>{
   const origin=(id:string)=>{const r=bubbleRect(id);return r?{x:r.x+r.w/2,y:r.y+r.h/2}:null;};
-  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();if(particle.kind==='confetti'){const pos=fx.confettiAt(particle,now,this.modalArea.w);if(pos&&pos.y>=0&&pos.y<=1){c.globalAlpha=pos.alpha;c.fillStyle=['#f4c24f','#e05a6e','#7fb069','#6fa3d8','#b98ad6','#f28aa6'][particle.color];c.fillRect(Math.round(this.modalArea.x+pos.x*this.modalArea.w),Math.round(this.modalArea.y+pos.y*this.modalArea.h),3+particle.spin%3,5);}}else{const o=origin(particle.playerId);c.globalAlpha=1-t;if(o)drawCheerIcon(c,'heart',{x:o.x-12+(particle.x-.5)*60,y:o.y-12-t*100-particle.y*20,w:24,h:24});}c.restore();}
+  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();if(particle.kind==='confetti'){const pos=fx.confettiAt(particle,now,this.modalArea.w);if(pos&&pos.y>=0&&pos.y<=1){c.globalAlpha=pos.alpha;c.fillStyle=['#f4c24f','#e05a6e','#7fb069','#6fa3d8','#b98ad6','#f28aa6'][particle.color];c.fillRect(Math.round(this.modalArea.x+pos.x*this.modalArea.w),Math.round(this.modalArea.y+pos.y*this.modalArea.h),3+particle.spin%3,5);}}else{const o=origin(particle.playerId),slot=this.completionSlotRects.get(particle.playerId),rise=slot?t*((outside?64:60)+particle.y*12):t*100+particle.y*20,dx=slot?outside?Math.sin(t*8)*(particle.x*2-1)*Math.max(0,slot.w/2-12):(.35*rise*(slot.x<p.x+p.w/2?1:-1)+Math.sin(t*8)*(particle.x*2-1)*4):(particle.x-.5)*60;c.globalAlpha=1-t;if(o)drawCheerIcon(c,'heart',{x:o.x-12+dx,y:o.y-12-rise,w:24,h:24});}c.restore();}
   if(now<fx.starsUntil){const size=16+Math.round(8*Math.abs(Math.sin(now/95)));for(const [x,y] of [[p.x,p.y],[p.x+p.w,p.y],[p.x,p.y+p.h],[p.x+p.w,p.y+p.h]])drawCheerIcon(c,'star',{x:x-size/2,y:y-size/2,w:size,h:size});}
-  for(const bubble of fx.bubbles){const target=bubbleRect(bubble.playerId),scale=fx.bubbleScale(bubble);if(!target||scale<=0)continue;const r={x:target.x+21*(1-scale),y:target.y+19*(1-scale),w:42*scale,h:38*scale};this.completionBubbleRects.set(bubble.playerId,r);
+  for(const bubble of fx.bubbles){const target=bubbleRect(bubble.playerId),scale=fx.bubbleScale(bubble);if(!target||scale<=0)continue;const r={x:target.x+target.w/2*(1-scale),y:target.y+target.h/2*(1-scale),w:target.w*scale,h:target.h*scale};this.completionBubbleRects.set(bubble.playerId,r);
    // Stage.frame paints in physical pixels, so animate its rectangle explicitly.
-   c.save();c.globalAlpha=fx.bubbleAlpha(bubble);s.clip(r,()=>{s.frame(r,'button-cream-normal');if(scale>.5){drawCheerIcon(c,bubble.emote,{x:r.x+9*scale,y:r.y+7*scale,w:24*scale,h:24*scale});if(bubble.count>=2){const badge={x:r.x+r.w-22*scale,y:r.y+r.h-14*scale,w:20*scale,h:12*scale};c.fillStyle=this.colors.berry;c.fillRect(badge.x,badge.y,badge.w,badge.h);s.text('×'+bubble.count,badge.x+2*scale,badge.y+scale,9*scale,this.colors.onAccent,800,16*scale);}}});c.restore();}
-  if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',w=Math.min(p.w+60,s.measure(label,14,800)+58),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
+   c.save();c.globalAlpha=fx.bubbleAlpha(bubble);s.clip(r,()=>{s.frame(r,'button-cream-normal');if(scale>.5){drawCheerIcon(c,bubble.emote,{x:r.x+(r.w-24*scale)/2,y:r.y+r.h/2-14*scale,w:24*scale,h:24*scale});if(bubble.count>=2){const badge={x:r.x+r.w-22*scale,y:r.y+r.h-14*scale,w:20*scale,h:12*scale};c.fillStyle=this.colors.berry;c.fillRect(badge.x,badge.y,badge.w,badge.h);s.text('×'+bubble.count,badge.x+2*scale,badge.y+scale,9*scale,this.colors.onAccent,800,16*scale);}}});c.restore();}
+  // Portrait slots flank the picture's top edge, so the combo banner narrows to fit between them.
+  if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',cx=p.x+p.w/2,room=outside?Infinity:Math.min(Infinity,...[...this.completionSlotRects.values()].filter(r=>r.y<p.y+29&&r.y+r.h>p.y-3).map(r=>(r.x+r.w<=cx?cx-r.x-r.w:r.x-cx)-2)),w=Math.min(p.w+60,s.measure(label,14,800)+58,room*2),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
   });
  }
  private drawModal(){

@@ -78,14 +78,15 @@ test('icons are 16x16 and palette-valid; renderer uses integer pixel rectangles'
 });
 
 // Bundle the real app for Node without changing the project's JSON import contracts.
-const bundled=await build({stdin:{contents:"export {GameApp} from './mobile/app.ts'",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
-const {GameApp}=await import('data:text/javascript;base64,'+Buffer.from(bundled.outputFiles[0].text).toString('base64'));
+const bundled=await build({stdin:{contents:"export {GameApp} from './mobile/app.ts';export {Stage} from './mobile/ui.ts'",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
+const {GameApp,Stage}=await import('data:text/javascript;base64,'+Buffer.from(bundled.outputFiles[0].text).toString('base64'));
 function fixture(width=844,height=390,count=8,options={}){
- const calls=[],frames=new Map();let frameId=0;
- const saved=[],ctx=new Proxy({globalAlpha:1,save(){saved.push({globalAlpha:this.globalAlpha,fillStyle:this.fillStyle});},restore(){Object.assign(this,saved.pop());},fillRect(x,y,w,h){calls.push(['fill',{x,y,w,h},this.fillStyle,this.globalAlpha]);}},{get:(target,key)=>key in target?target[key]:()=>{}});
- const stage={ctx,w:width,h:height,palette:{ink:'#222',muted:'#666',berry:'#a35',gold:'#fc5',cream:'#fff',overlay:'#0008',onAccent:'#fff'},invalidate(){},input(){},frame(r,id){calls.push(['frame',{...r},id,ctx.globalAlpha]);},panel(r){this.frame(r,'panel-cream');},text(text,x,y,size,color,weight,maxWidth){calls.push(['text',{x,y,w:Math.min(String(text).length*size,maxWidth??Infinity),h:size},String(text),ctx.globalAlpha]);},measure(text,size){return String(text).length*size;},icon(id,r){calls.push(['icon',{...r},id,ctx.globalAlpha]);},ornaments(){},button(r,label,fn){calls.push(['button',{...r},label,fn]);},hit(r,fn){calls.push(['hit',{...r},'',fn]);},clip(r,fn){ctx.save();try{fn();}finally{ctx.restore();}}};
+ const calls=[],frames=new Map();let frameId=0,textSource='';
+ const saved=[],ctx=new Proxy({globalAlpha:1,save(){saved.push({globalAlpha:this.globalAlpha,fillStyle:this.fillStyle});},restore(){Object.assign(this,saved.pop());},fillRect(x,y,w,h){calls.push(['fill',{x,y,w,h},this.fillStyle,this.globalAlpha]);},measureText(value){const size=Number(this.font?.match(/([\d.]+)px/)?.[1]??14);return {width:[...String(value)].reduce((sum,ch)=>sum+size*(ch.charCodeAt(0)<128?.55:1),0)};},fillText(value,x,y){calls.push(['text',{x,y,w:this.measureText(value).width,h:Number(this.font.match(/([\d.]+)px/)[1])},value,this.globalAlpha,textSource]);}},{get:(target,key)=>key in target?target[key]:()=>{}});
+ const stage={ctx,w:width,h:height,palette:{ink:'#222',muted:'#666',berry:'#a35',gold:'#fc5',cream:'#fff',overlay:'#0008',onAccent:'#fff'},invalidate(){},input(){},frame(r,id){calls.push(['frame',{...r},id,ctx.globalAlpha]);},panel(r){this.frame(r,'panel-cream');},text(...args){textSource=String(args[0]);Stage.prototype.text.apply(this,args);},measure(text,size){ctx.font=size+'px sans-serif';return ctx.measureText(text).width;},icon(id,r){calls.push(['icon',{...r},id,ctx.globalAlpha]);},ornaments(){},button(r,label,fn){calls.push(['button',{...r},label,fn]);},hit(r,fn){calls.push(['hit',{...r},'',fn]);},clip(r,fn){ctx.save();try{fn();}finally{ctx.restore();}}};
  const app=Object.create(GameApp.prototype);app.ready=true;
- Object.assign(app,{stage,platform:{config:{id:'web'},viewport:()=>({width:stage.w,height:stage.h,top:0,bottom:0}),frame(fn){const id=++frameId;frames.set(id,fn);return id;},cancelFrame(id){frames.delete(id);}},client:{profile:{code:'0'},config:{capabilities:{energy:options.energyEnabled??true}}},room:{ticket:{playerId:'0'},state:{cols:12,rows:9},snapshot:{title:'画',puzzle:{imageId:'image'},members:Array.from({length:count},(_,i)=>member(String(i),8-i)),mobileResult:{coins:20,fragments:2,energy:options.energyEnabled?3:0,catalog:{newlyCollected:true,albumRewards:[]}}}},board:{drawCompletedPicture:()=>true},modal:'completion',modalScroll:0,modalExtent:0,completionSeatRects:new Map(),completionAvatarRects:new Map(),completionBubbleRects:new Map(),cheerEffects:new CheerEffects(options.now??Date.now),cheerFrame:null,collection:{albums:options.album?[{id:'album',collected:1,total:8,images:[{id:'image'}]}]:[]},cancelChatPress(){},clearRoomPointer(){},invalidate(){},social:{title:'',close(){}}});
+ Object.assign(app,{stage,platform:{config:{id:'web'},viewport:()=>({width:stage.w,height:stage.h,top:0,bottom:0}),frame(fn){const id=++frameId;frames.set(id,fn);return id;},cancelFrame(id){frames.delete(id);}},client:{profile:{code:'0'},config:{capabilities:{energy:options.energyEnabled??true}}},room:{ticket:{playerId:'0'},state:{cols:12,rows:9},snapshot:{title:'画',puzzle:{imageId:'image'},members:Array.from({length:count},(_,i)=>member(String(i),8-i)),mobileResult:{coins:20,fragments:2,energy:options.energyEnabled?3:0,catalog:{newlyCollected:true,albumRewards:[]}}}},board:{drawCompletedPicture:()=>true},modal:'completion',modalScroll:0,modalExtent:0,completionSeatRects:new Map(),completionAvatarRects:new Map(),completionSlotRects:new Map(),completionBubbleRects:new Map(),cheerEffects:new CheerEffects(options.now??Date.now),cheerFrame:null,collection:{albums:options.album?[{id:'album',collected:1,total:8,images:[{id:'image'}]}]:[]},cancelChatPress(){},clearRoomPointer(){},invalidate(){},social:{title:'',close(){}}});
+ app.room.snapshot.members.forEach((m,i)=>{m.name=['奶油泡芙小蛋糕','暖灯','云朵朵','桂花糕桂花糕','青柠','木棉','咕咕','麻薯'][i];});
  return {app,calls,frames};
 }
 test('844x390 landscape has eight seats, all six cheers and existing actions inside the panel',()=>{
@@ -127,17 +128,28 @@ test('landscape retains album reward lines without extra tile rows or offscreen 
 
 const intersects=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 const contains=(a,b)=>b.x>=a.x&&b.y>=a.y&&b.x+b.w<=a.x+a.w&&b.y+b.h<=a.y+a.h;
-for(const [width,height] of [[844,390],[390,844],[1200,900]])test(`${width}x${height}: fixed avatar bubbles avoid all names and panel content`,t=>{
- let now=0;t.mock.method(Date,'now',()=>now);const {app,calls}=fixture(width,height,8,{now:()=>now,energyEnabled:true,album:true});
- for(const [i,m] of app.room.snapshot.members.entries()){m.name=['甜筒','暖灯','云朵朵','桂花糕','青柠','木棉','咕咕','麻薯'][i];for(let j=0;j<(i%2?3:1);j++)app.cheerEffects.receive(cheer(m.id,'clap'),i===0);}
- now=560;app.drawModal();assert.equal(app.completionBubbleRects.size,8);assert.equal(app.completionAvatarRects.size,8);
- const names=new Set(app.room.snapshot.members.map(m=>m.name)),labels=calls.filter(c=>c[0]==='text'&&(names.has(c[2])||c[2].startsWith('拼合 '))),content=[app.completionPicture,app.completionBar,...calls.filter(c=>c[0]==='button'||c[0]==='frame'&&c[1].h===64||c[0]==='text'&&(c[2]==='拼图完成'||c[2].includes('拼好啦')||c[2].includes(' 片')||c[2]==='这张画作已收进图集')).map(c=>c[1])];
- for(const [id,r] of app.completionBubbleRects){const a=app.completionAvatarRects.get(id);assert.equal(r.w,42);assert.equal(r.h,38);assert.ok(contains({x:0,y:0,w:width,h:height},r));assert.ok(Math.hypot(r.x+21-a.x-a.w/2,r.y+19-a.y-a.h/2)<=6,id);for(const c of labels)assert.ok(!intersects(r,c[1]),`${id} overlaps ${c[2]}`);for(const rect of content)assert.ok(!intersects(r,rect),`${id} overlaps panel content`);if(app.layout==='phonePortrait')assert.ok(contains(app.modalArea,r));else assert.ok(!intersects(r,app.modalArea));}
- const badges=calls.filter(c=>c[0]==='text'&&c[2]==='×3');assert.equal(badges.length,4);for(const badge of badges)assert.ok([...app.completionBubbleRects.values()].some(r=>contains(r,badge[1])));assert.ok(!calls.some(c=>c[2]==='×1'));
+const seatLabels=(app,calls)=>{const names=new Set(app.room.snapshot.members.map(m=>m.name));return calls.filter(c=>c[0]==='text'&&(names.has(c[4])||c[4]?.startsWith('拼合 ')));};
+const meTags=(app,calls)=>calls.filter(c=>c[0]==='fill'&&c[2]===app.colors.berry&&c[1].w===14&&c[1].h===13);
+for(const [width,height] of [[844,390],[390,844],[1200,900],[1920,1080],[740,360],[667,375]])for(const count of [1,4,8])test(`${width}x${height}, ${count} players: slot bubbles avoid avatars, names, tags and panel content`,t=>{
+ let now=0;t.mock.method(Date,'now',()=>now);const {app,calls}=fixture(width,height,count,{now:()=>now,energyEnabled:true,album:true});
+ for(const [i,m] of app.room.snapshot.members.entries())for(let j=0;j<(i%2?3:1);j++)app.cheerEffects.receive(cheer(m.id,'clap'),i===0);
+ now=560;app.drawModal();assert.equal(app.completionBubbleRects.size,count);assert.equal(app.completionSlotRects.size,count>1?count:0);
+ const portrait=app.layout==='phonePortrait',labels=seatLabels(app,calls),tags=meTags(app,calls),obstacles=[...app.completionAvatarRects.values(),...labels.map(c=>c[1]),...tags.map(c=>c[1])],content=[app.completionBar,...calls.filter(c=>c[0]==='button'||c[0]==='frame'&&[52,58,64].includes(c[1].h)||c[0]==='text'&&(c[4]==='拼图完成'||c[4]?.includes('拼好啦')||c[4]?.includes(' 片')||c[4]==='这张画作已收进图集')).map(c=>c[1])];
+ for(const [id,r] of app.completionBubbleRects){
+  assert.ok(contains({x:0,y:0,w:width,h:height},r));
+  if(count>1){const slot=app.completionSlotRects.get(id),seat=app.completionSeatRects.get(id),size=app.desktop?40:app.layout==='phoneLandscape'&&width<780?30:34;assert.deepEqual(r,slot);assert.equal(slot.w,size);assert.equal(slot.h,size);if(!portrait){assert.ok(contains(seat,slot));assert.ok(!intersects(slot,app.modalArea));}for(const rect of obstacles)assert.ok(!intersects(r,rect),`${id} overlaps seat content ${JSON.stringify(rect)}`);}
+  for(const rect of content)assert.ok(!intersects(r,rect),`${id} overlaps panel content`);
+  if(count>1&&portrait){const p=app.completionPicture,overlap=intersects(r,p)?Math.min(r.x+r.w,p.x+p.w)-Math.max(r.x,p.x):0;assert.ok(overlap<=14);}
+  else if(count>1)assert.ok(!intersects(r,app.completionPicture));
+ }
+ if(count>1){assert.equal(tags.length,1);for(const c of obstacles.filter(r=>r!==tags[0][1]))assert.ok(!intersects(tags[0][1],c),'me tag overlaps seat content');assert.ok(calls.some(c=>c[2]==='我'));}
+ if(!portrait&&count>1)for(const seat of app.completionSeats()){const r=app.completionSeatRects.get(seat.playerId),slot=app.completionSlotRects.get(seat.playerId),texts=labels.filter(c=>contains(r,c[1]));assert.equal(texts.length,2);for(const c of texts)assert.ok(seat.column==='left'?c[1].x+c[1].w<=slot.x-2:c[1].x>=slot.x+slot.w+2);if(seat.name.length>5)assert.ok(texts.find(c=>c[4]===seat.name)[2].endsWith('…'));}
+ const combo=calls.find(c=>c[0]==='frame'&&c[2]==='button-gold-normal');if(count>=3)assert.ok(combo);if(combo)for(const r of app.completionBubbleRects.values())assert.ok(!intersects(combo[1],r),'combo banner overlaps a bubble');
+ const badges=calls.filter(c=>c[0]==='text'&&c[2]==='×3');assert.equal(badges.length,Math.floor(count/2));for(const badge of badges)assert.ok([...app.completionBubbleRects.values()].some(r=>contains(r,badge[1])));assert.ok(!calls.some(c=>c[2]==='×1'));
 });
 for(const [width,height] of [[844,390],[390,844]])test(`${width}x${height}: solo bubble stays inside the picture bottom, away from metadata`,t=>{
  let now=0;t.mock.method(Date,'now',()=>now);const {app,calls}=fixture(width,height,1,{now:()=>now});app.cheerEffects.receive(cheer('0'));app.cheerEffects.receive(cheer('unseated'));now=560;app.drawModal();
- const r=app.completionBubbleRects.get('0'),p=app.completionPicture;assert.equal(r.w,42);assert.equal(r.h,38);assert.ok(contains(p,r));assert.equal(r.x+r.w/2,p.x+p.w/2);assert.equal(p.y+p.h-r.y-r.h,10);assert.deepEqual(app.completionBubbleRects.get('unseated'),r);
+ assert.equal(calls.find(c=>c[0]==='frame'&&c[2]==='panel-cream')[1].w,width===844?Math.min(640,width-252):Math.min(width-24,560));const r=app.completionBubbleRects.get('0'),p=app.completionPicture;assert.equal(r.w,42);assert.equal(r.h,38);assert.ok(contains(p,r));assert.equal(r.x+r.w/2,p.x+p.w/2);assert.equal(p.y+p.h-r.y-r.h,10);assert.deepEqual(app.completionBubbleRects.get('unseated'),r);
  const meta=calls.find(c=>c[0]==='text'&&c[2].includes(' 片'));assert.ok(meta);assert.ok(!intersects(r,meta[1]));
 });
 test('own button and bubble badges start at two cheers and stay inside the bubble',t=>{
@@ -160,16 +172,45 @@ test('390x844 with eight players and four reward tiles keeps the next-table butt
  const {app,calls}=fixture(390,844,8,{energyEnabled:true,album:true});app.drawModal();const labels=['金币 +20','碎片 +2','体力 +3','图集 1/8'],tiles=labels.map(label=>calls.find(c=>c[0]==='text'&&c[2]===label));assert.ok(tiles.every(Boolean));assert.equal(new Set(tiles.map(c=>c[1].y)).size,1);assert.equal(app.modalScroll,0);
  const button=calls.find(c=>c[0]==='button'&&c[2]==='再来一桌');assert.ok(contains(app.modalArea,button[1]));assert.ok([...app.completionSeatRects.values()].every(r=>r.h===74));
 });
-test('portrait skips scrolled-away avatar bubbles, clamps visible ones and clears expired bubble rectangles',t=>{
- let now=0;t.mock.method(Date,'now',()=>now);const {app}=fixture(390,844,8,{now:()=>now});for(const m of app.room.snapshot.members)app.cheerEffects.receive(cheer(m.id));now=560;app.modalScroll=80;app.drawModal();assert.equal(app.completionAvatarRects.size,8);assert.ok(app.completionBubbleRects.size>0&&app.completionBubbleRects.size<8);
- for(const [id,a] of app.completionAvatarRects){const cy=a.y+a.h/2;if(cy<app.modalArea.y)assert.ok(!app.completionBubbleRects.has(id));else assert.ok(contains(app.modalArea,app.completionBubbleRects.get(id)));}
+test('portrait clips partially scrolled slot bubbles without clamping and skips fully hidden slots',t=>{
+ let now=0;t.mock.method(Date,'now',()=>now);const {app}=fixture(390,844,8,{now:()=>now});for(const m of app.room.snapshot.members)app.cheerEffects.receive(cheer(m.id));now=560;
+ for(const scroll of [18,80]){app.modalScroll=scroll;app.drawModal();assert.equal(app.completionSlotRects.size,8);assert.ok(app.completionBubbleRects.size>0);
+  for(const [id,slot] of app.completionSlotRects)if(intersects(slot,app.modalArea))assert.deepEqual(app.completionBubbleRects.get(id),slot);else assert.ok(!app.completionBubbleRects.has(id));
+  if(scroll===18){const slot=app.completionSlotRects.get('0');assert.ok(slot.y<app.modalArea.y&&slot.y+slot.h>app.modalArea.y);assert.deepEqual(app.completionBubbleRects.get('0'),slot);}else assert.ok(app.completionBubbleRects.size<8);
+ }
  app.cheerEffects.clear();app.drawCompletionEffects();assert.equal(app.completionBubbleRects.size,0);
 });
-test('avatar rectangles include hop offsets and clear when rendering a solo roster or a different layout',t=>{
- let now=0;t.mock.method(Date,'now',()=>now);const {app}=fixture(1200,900,8,{now:()=>now});app.cheerEffects.receive(cheer('0'));now=150;app.drawModal();const r=app.completionSeatRects.get('0'),a=app.completionAvatarRects.get('0');assert.equal(a.y,r.y+(r.h-a.h)/2);assert.equal(app.completionAvatarRects.size,8);
- app.stage.w=390;app.stage.h=844;app.drawModal();assert.ok([...app.completionAvatarRects.values()].every(r=>r.w===34));app.room.snapshot.members=app.room.snapshot.members.slice(0,1);app.drawModal();assert.equal(app.completionSeatRects.size,0);assert.equal(app.completionAvatarRects.size,0);
+
+test('seat, avatar, slot and bubble share hop offsets and clear with a solo roster or different layout',t=>{
+ let now=0;t.mock.method(Date,'now',()=>now);const {app}=fixture(1200,900,8,{now:()=>now});app.cheerEffects.receive(cheer('0'));now=560;app.drawModal();const before=[app.completionSeatRects,app.completionAvatarRects,app.completionSlotRects,app.completionBubbleRects].map(map=>({...map.get('0')}));app.cheerEffects.receive(cheer('0'));now=710;app.drawModal();for(const [i,map] of [app.completionSeatRects,app.completionAvatarRects,app.completionSlotRects,app.completionBubbleRects].entries())assert.equal(map.get('0').y-before[i].y,-4);const r=app.completionSeatRects.get('0'),a=app.completionAvatarRects.get('0');assert.equal(a.y,r.y+(r.h-a.h)/2);assert.equal(app.completionAvatarRects.size,8);
+ app.stage.w=390;app.stage.h=844;app.drawModal();assert.ok([...app.completionAvatarRects.values()].every(r=>r.w===34));app.room.snapshot.members=app.room.snapshot.members.slice(0,1);app.drawModal();assert.equal(app.completionSeatRects.size,0);assert.equal(app.completionAvatarRects.size,0);assert.equal(app.completionSlotRects.size,0);
 });
-test('hearts rise from the avatar bubble centre, with the picture-bottom fallback for unseated senders',t=>{
- t.mock.method(Date,'now',()=>400);
- for(const count of [8,1]){const {app,calls}=fixture(844,390,count);app.drawModal();calls.length=0;app.cheerEffects.particles=[{kind:'heart',playerId:'0',start:0,duration:1600,x:.5,y:0,delay:0,speed:1,spin:0,color:0}];app.drawCompletionEffects();const a=app.completionAvatarRects.get('0'),p=app.completionPicture,cx=a?a.x+a.w/2:p.x+p.w/2,cy=a?a.y+a.h/2-4:p.y+p.h-29,expected=[];drawCheerIcon({save(){},restore(){},fillRect(...args){expected.push(args);}},'heart',{x:cx-12,y:cy-12-25,w:24,h:24});assert.deepEqual(calls.filter(c=>c[0]==='fill').map(c=>[c[1].x,c[1].y,c[1].w,c[1].h]),expected);}
+for(const [width,height] of [[844,390],[390,844],[1920,1080]])test(`${width}x${height}: hearts stay in the slot column or drift over the portrait picture`,t=>{
+ let now=0;t.mock.method(Date,'now',()=>now);const {app,calls}=fixture(width,height,8,{now:()=>now});app.drawModal();
+ const obstacles=[...app.completionAvatarRects.values(),...seatLabels(app,calls).map(c=>c[1]),...meTags(app,calls).map(c=>c[1])];
+ for(const seat of app.completionSeats().filter(s=>s.column==='left'&&s.row===1||s.column==='right'&&s.row===2))for(const x of [0,.5,1])for(const y of [0,1])for(const elapsed of [0,200,400,800,1200,1500]){
+  now=elapsed;calls.length=0;app.cheerEffects.particles=[{kind:'heart',playerId:seat.playerId,start:0,duration:1600,x,y,delay:0,speed:1,spin:0,color:0}];app.drawCompletionEffects();
+  const pixels=calls.filter(c=>c[0]==='fill'),minX=Math.min(...pixels.map(c=>c[1].x)),minY=Math.min(...pixels.map(c=>c[1].y)),box={x:minX-4,y:minY-6,w:24,h:24},slot=app.completionSlotRects.get(seat.playerId);
+  assert.ok(pixels.length>0);for(const rect of obstacles)assert.ok(!intersects(box,rect),`${seat.playerId}, t=${elapsed}: heart overlaps seat content`);
+  if(app.layout!=='phonePortrait')assert.ok(box.x>=slot.x&&box.x+24<=slot.x+slot.w);
+  if(!elapsed){assert.ok(Math.abs(box.x+12-slot.x-slot.w/2)<=.5);assert.ok(Math.abs(box.y+12-slot.y-slot.h/2)<=.5);}
+  assert.ok(pixels.every(c=>c[3]===1-elapsed/1600));
+ }
+});
+
+test('unseated hearts retain the picture-bottom origin and spread',t=>{
+ t.mock.method(Date,'now',()=>400);for(const count of [1,8]){const {app,calls}=fixture(844,390,count);app.drawModal();calls.length=0;app.cheerEffects.particles=[{kind:'heart',playerId:'unseated',start:0,duration:1600,x:.75,y:.5,delay:0,speed:1,spin:0,color:0}];app.drawCompletionEffects();const p=app.completionPicture,expected=[];drawCheerIcon({save(){},restore(){},fillRect(...args){expected.push(args);}},'heart',{x:p.x+p.w/2-12+15,y:p.y+p.h-29-12-25-10,w:24,h:24});assert.deepEqual(calls.filter(c=>c[0]==='fill').map(c=>[c[1].x,c[1].y,c[1].w,c[1].h]),expected);}
+});
+
+for(const [width,height,seatW,slotS,panelW] of [[844,390,140,34,528],[740,360,120,30,464],[667,375,120,30,391]])for(const rewards of [false,true])test(`${width}x${height}: landscape ${rewards?'with':'without'} album reward lines fits without scrolling`,()=>{
+ const {app,calls}=fixture(width,height,8,{energyEnabled:true,album:true});app.room.snapshot.title='海边旧灯塔的晚霞';if(rewards)app.room.snapshot.mobileResult.catalog.albumRewards=[{title:'相册阶段奖励',coins:100},{title:'集齐相册',coins:0}];app.drawModal();
+ const panel=app.modalArea;assert.equal(panel.w,panelW);assert.equal(app.modalScroll,0);assert.equal(app.modalExtent,0);if(width===844)assert.ok(app.completionPicture.w>=200);
+ const close=calls.find(c=>c[0]==='button'&&c[2]==='')[1],title=calls.find(c=>c[0]==='text'&&c[4]?.includes('拼好啦'))[1];assert.ok(!intersects(title,close),'title overlaps the close button');if(!rewards)assert.equal(title.y,panel.y+42);
+ for(const [id,r] of app.completionSeatRects){const slot=app.completionSlotRects.get(id),avatar=app.completionAvatarRects.get(id);assert.equal(r.w,seatW);assert.equal(r.h,60);assert.equal(slot.w,slotS);assert.equal(slot.h,slotS);assert.equal(avatar.w,slotS);assert.ok(contains(r,slot));assert.ok(r.x<panel.x?r.x+r.w<=panel.x-6:r.x>=panel.x+panel.w+6);}
+ for(const c of calls.filter(c=>c[0]==='button'||c[0]==='hit'&&c[1].h===44||c[0]==='text'&&!seatLabels(app,calls).includes(c)&&c[2]!=='我'))assert.ok(contains(panel,c[1]),`${c[0]} ${c[2]} outside panel ${JSON.stringify(c[1])}`);
+ assert.ok(contains(panel,app.completionBar));const hint=calls.find(c=>c[2]==='点一下就能喝彩，同桌都看得到');assert.ok(hint&&contains(panel,hint[1]));
+});
+
+test('me tags occupy the outer corner and avoid avatar, crown pixels and slot in both columns',()=>{
+ for(const [width,height] of [[844,390],[390,844],[1920,1080]])for(const column of ['left','right']){const {app,calls}=fixture(width,height);app.completionPicture={x:100,y:100,w:190,h:190};const vertical=height>width,r={x:column==='left'?27:297,y:100,w:vertical?66:width===844?140:176,h:vertical?74:width===844?60:70};app.drawCompletionSeat({playerId:'0',name:'奶油泡芙小蛋糕',contribution:42,present:true,me:true,crown:true,column,row:0},r,vertical);const tag=meTags(app,calls)[0][1];assert.deepEqual(tag,{x:column==='left'?r.x+3:r.x+r.w-17,y:r.y+(vertical?3:-6),w:14,h:13});for(const rect of [app.completionAvatarRects.get('0'),app.completionSlotRects.get('0'),...seatLabels(app,calls).map(c=>c[1]),...calls.filter(c=>c[0]==='fill'&&c[1].w<=2).map(c=>c[1])])assert.ok(!intersects(tag,rect));}
 });
