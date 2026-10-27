@@ -12,7 +12,7 @@ function fixture({width=844,height=390,levelClear=clear,energy=true,formalWeb=fa
  const stage={ctx,w:width,h:height,palette:{ink:'#222',muted:'#666',berry:'#a35',gold:'#fc5',cream:'#fff',overlay:'#0008',onAccent:'#fff'},invalidate(){},input(){},frame(r,key){calls.push({kind:'frame',r:{...r},key});},panel(r){this.frame(r,'panel-cream');},text(value,x,y,size,color,weight,maxWidth){calls.push({kind:'text',label:String(value),r:{x,y,w:measure(value,size),h:size},maxWidth});},measure,icon(key,r){calls.push({kind:'icon',key,r});},ornaments(){},button(r,label,fn){calls.push({kind:'button',r:{...r},label,fn});},hit(r,fn){calls.push({kind:'hit',r:{...r},fn});},clip(_r,fn){fn();}};
  const app=Object.create(GameApp.prototype),snapshot={title:'窗边',puzzle:{imageId:'picture'},startedAt:1,completedAt:60001,members:Array.from({length:8},(_,index)=>({id:String(index),code:String(index),name:'同桌'+index,lastSeen:100,contribution:8-index})),mobileResult:{coins:20,fragments:2,energy:5,catalog:{newlyCollected:true,albumRewards:[{title:'相册阶段奖励',coins:100},{title:'集齐相册',coins:0}]},...(levelClear?{levelClear}:{})}};
  const client={profile:{code:'0',lastReward:{levelClear:clear}},cookieIdentity:formalWeb,config:{capabilities:{energy}},createRoom:async input=>{events.push('create');created.push(input);return {room:{id:'next-room'}};}};
- Object.assign(app,{stage,client,platform:{config:{id:width>=1000?'web':'taptap'},viewport:()=>({width,height,top:0,bottom:0}),randomId:()=> 'request'},room:{ticket:{playerId:'0'},state:{cols:4,rows:3},snapshot},board:{drawCompletedPicture:()=>true},ready:true,busy:false,modal:'completion',modalScroll:0,modalExtent:0,completionSeatRects:new Map(),cheerEffects:new CheerEffects(),cheerFrame:null,collection:{albums:[{id:'album',collected:6,total:6,images:[{id:'picture'}]}]},attempts:new Map(),cancelChatPress(){},clearRoomPointer(){},invalidate(){},social:{title:''},leaveRoom(){events.push('leave');this.room=null;},navigate(route){events.push(route);},attachTicket:async ticket=>{events.push('attach');app.room=ticket;}});
+ Object.assign(app,{stage,client,privacyAccepted:true,platform:{config:{id:width>=1000?'web':'taptap'},viewport:()=>({width,height,top:0,bottom:0}),randomId:()=> 'request'},room:{ticket:{playerId:'0'},state:{cols:4,rows:3},snapshot},board:{drawCompletedPicture:()=>true},levels:{chapters:[{id:'ch1',title:'\u5f00\u5f20',status:'available',levels:[{id:'ch1-1',status:'cleared'},{id:'ch1-2',status:'unlocked'}]}]},levelsOwner:'',route:'room',ready:true,busy:false,modal:'completion',modalScroll:0,modalExtent:0,completionSeatRects:new Map(),cheerEffects:new CheerEffects(),cheerFrame:null,collection:{albums:[{id:'album',collected:6,total:6,images:[{id:'picture'}]}]},attempts:new Map(),cancelChatPress(){},clearRoomPointer(){},invalidate(){},social:{title:''},leaveRoom(){events.push('leave');this.room=null;},navigate(route){events.push(route);},attachTicket:async ticket=>{events.push('attach');app.room=ticket;}});
  return {app,calls,events,created,draw:()=>app.drawModal(),button:label=>calls.find(call=>call.kind==='button'&&call.label===label),texts:()=>calls.filter(call=>call.kind==='text').map(call=>call.label)};
 }
 
@@ -26,7 +26,7 @@ test('level primary action leaves then creates the configured next level in all 
 
 test('chapter complete or missing next level shows the chapter message and returns to the lobby',()=>{
  for(const levelClear of [{...clear,levelId:'ch1-6',chapterComplete:true,nextLevelId:null},{...clear,levelId:'ch1-6',chapterComplete:true,nextLevelId:'ch2-1'},{...clear,nextLevelId:null}]){
-  const f=fixture({levelClear});f.draw();assert.ok(f.texts().includes('新手章节完成！'));assert.equal(f.button('下一关'),undefined);
+  const f=fixture({levelClear});f.app.levels.chapters[0].levels.push({id:'ch1-6'});f.draw();assert.ok(f.texts().includes('开张完成！'));assert.equal(f.button('下一关'),undefined);
   f.button('去大厅').fn();assert.deepEqual(f.events,['leave','lobby']);assert.deepEqual(f.created,[]);
  }
 });
@@ -51,8 +51,16 @@ test('level rewards fit all layouts with eight seats, album milestones, six chee
 
 test('ordinary rooms and helpers retain the cheers completion even with a stale profile level reward',()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]]){
-  const f=fixture({width,height,levelClear:null});f.draw();assert.ok(f.button('再来一桌'));assert.equal(f.button('下一关'),undefined);assert.equal(f.button('去大厅'),undefined);assert.ok(!f.texts().some(text=>text.includes('通关体力')||text==='新手章节完成！'));
+  const f=fixture({width,height,levelClear:null});f.draw();assert.ok(f.button('再来一桌'));assert.equal(f.button('下一关'),undefined);assert.equal(f.button('去大厅'),undefined);assert.ok(!f.texts().some(text=>text.includes('通关体力')||text==='开张完成！'));
   assert.equal(f.app.completionSeatRects.size,8);assert.equal(f.calls.filter(call=>call.kind==='hit'&&call.r.y===f.app.completionBar.y&&call.r.h===f.app.completionBar.h).length,6);
   f.button('再来一桌').fn();assert.deepEqual(f.events,['leave','gallery']);
+ }
+});
+
+test('completion close buttons and Escape leave level rooms for the chapter, with last-level and ordinary-room exceptions',()=>{
+ for(const [width,height]of [[390,844],[844,390],[1280,800]])for(const action of ['cross','escape'])for(const kind of ['level','last','unavailable','ordinary','helper']){
+  const f=fixture({width,height,levelClear:kind==='helper'?null:kind==='last'?{...clear,chapterComplete:true,nextLevelId:null}:clear});f.app.platform.canvas={};f.app.platform.storage={get:()=>null};f.app.client.account={id:'owner'};f.app.levelsOwner='owner';f.app.social.close=()=>{};f.app.board.input=()=>false;f.app.route='room';if(kind!=='ordinary')f.app.room.snapshot.levelId='ch1-1';if(kind==='unavailable')f.app.levels=null;f.app.ensureListOwner=()=>{};
+  f.draw();if(action==='cross')f.button('').fn();else f.app.input({type:'key',key:'Escape',keyDown:true,points:[],changed:[]});
+  if(kind==='ordinary'){assert.deepEqual(f.events,[]);assert.equal(f.app.modal,null);assert.ok(f.app.room);}else{assert.deepEqual(f.events,['leave',kind==='last'||kind==='unavailable'?'lobby':'chapter']);assert.equal(f.app.room,null);}
  }
 });

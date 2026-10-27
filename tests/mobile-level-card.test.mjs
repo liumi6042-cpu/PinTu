@@ -7,87 +7,91 @@ const root=fileURLToPath(new URL('../',import.meta.url));
 const bundle=await build({absWorkingDir:root,stdin:{contents:'export {GameApp} from "./mobile/app";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2020'});
 const {GameApp}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 function levels(cleared=3,status='available'){
- const chapter={id:'ch1',title:'小窝的一天',albumId:'beginner',coverImageId:null,coverSrc:null,status,levels:[12,16,20,24,30,35].map((pieces,index)=>({id:'ch1-'+(index+1),imageId:null,title:null,pieces,status:status==='unavailable'?'unavailable':index<cleared?'cleared':index===cleared?'unlocked':'locked'}))};
- return {chapters:[chapter],current:chapter.levels.find(level=>level.status==='unlocked')??null,firstClearEnergy:30};
+ const chapter={id:'ch1',title:'开张',albumId:'beginner',coverImageId:null,coverSrc:null,status,levels:[12,16,20,24,30,35].map((pieces,index)=>({id:'ch1-'+(index+1),imageId:null,title:null,line:null,pieces,status:status==='unavailable'?'unavailable':index<cleared?'cleared':index===cleared?'unlocked':'locked'}))};
+ return {seriesTitle:'拾光物语',chapters:[chapter],current:chapter.levels.find(level=>level.status==='unlocked')??null,firstClearEnergy:30};
 }
 function fixture({width=390,height=844,owner='owner-a',storage=new Map(),data=levels(),newcomer=false}={}){
- const texts=[],glyphs=[],buttons=[],frames=[],images=[],fills=[],strokes=[],paint=[],saved=[],reads=[],created=[],events=[],ctx=new Proxy({globalAlpha:1,measureText:value=>({width:String(value).length*6}),save(){saved.push({globalAlpha:this.globalAlpha,fillStyle:this.fillStyle,strokeStyle:this.strokeStyle,lineWidth:this.lineWidth});},restore(){Object.assign(this,saved.pop());},fillRect(x,y,w,h){const fill={r:{x,y,w,h},color:this.fillStyle,alpha:this.globalAlpha};fills.push(fill);paint.push(fill);},strokeRect(x,y,w,h){strokes.push({r:{x,y,w,h},color:this.strokeStyle});}},{get:(target,key)=>key in target?target[key]:()=>{}});
- const stage={w:width,h:height,ctx,palette:{ink:'#642238',muted:'#a17878',line:'#d4a399',rose:'#c8798c',cream:'#fff9f0',placeholder:'#efdfcc'},text:(value,x,y,size,color,weight)=>{texts.push(String(value));const glyph={value:String(value),x,y,size,color,weight};glyphs.push(glyph);paint.push(glyph);},button:(r,label,fn,opts)=>buttons.push({r,label,fn,opts}),frame:(r,key)=>frames.push({r,key}),image:(src,r)=>{const image={src,r};images.push(image);paint.push(image);},panel(){},icon(){},meter(){},hit(){},ornaments(){},clip:(_r,fn)=>fn(),measure:value=>String(value).length*6,input(){},invalidate(){}};
+ const texts=[],glyphs=[],buttons=[],frames=[],images=[],fills=[],strokes=[],hits=[],icons=[],dashes=[],paint=[],saved=[],reads=[],created=[],events=[],ctx=new Proxy({globalAlpha:1,filter:'none',setLineDash(value){dashes.push(value);},measureText:value=>({width:String(value).length*6}),save(){saved.push({globalAlpha:this.globalAlpha,fillStyle:this.fillStyle,strokeStyle:this.strokeStyle,lineWidth:this.lineWidth,filter:this.filter});},restore(){Object.assign(this,saved.pop());},fillRect(x,y,w,h){const fill={r:{x,y,w,h},color:this.fillStyle,alpha:this.globalAlpha};fills.push(fill);paint.push(fill);},strokeRect(x,y,w,h){strokes.push({r:{x,y,w,h},color:this.strokeStyle});}},{get:(target,key)=>key in target?target[key]:()=>{}});
+ const stage={w:width,h:height,ctx,palette:{gold:'#d7ad68',onAccent:'#fffaf0',ink:'#642238',muted:'#a17878',line:'#d4a399',rose:'#c8798c',cream:'#fff9f0',placeholder:'#efdfcc'},text:(value,x,y,size,color,weight)=>{texts.push(String(value));const glyph={value:String(value),x,y,size,color,weight};glyphs.push(glyph);paint.push(glyph);},button:(r,label,fn,opts)=>buttons.push({r,label,fn,opts}),frame:(r,key)=>frames.push({r,key}),image:(src,r)=>{const image={src,r,alpha:ctx.globalAlpha,filter:ctx.filter};images.push(image);paint.push(image);},panel(){},icon:(key,r)=>icons.push({key,r}),meter(){},hit:(r,fn)=>hits.push({r,fn}),retryImages(){},ornaments(){},clip:(_r,fn)=>fn(),measure:value=>String(value).length*6,input(){},invalidate(){}};
  const app=Object.create(GameApp.prototype),client={account:{id:owner},profile:{code:owner,newcomer,ownedRooms:[],level:1,xp:0,xpToNext:20,energy:60,energyCap:60,supply:{energy:0,create:0}},config:{capabilities:{energy:true,ads:false}},asset:value=>value,start:async()=>{events.push('ready');},json:async path=>{reads.push(path);if(path==='/api/levels'){assert.equal(app.ready,true);return data;}if(path==='/api/room-history')return {rooms:[]};throw Error('unexpected '+path);},createRoom:async input=>{created.push(input);return {room:{id:'level-room'}};}};
- const platform={config:{id:'taptap',apiBase:'https://game.test/api'},initialQuery:{},viewport:()=>({width,height,top:0,bottom:0}),storage:{get:key=>storage.get(key)??null,set:(key,value)=>storage.set(key,value)},randomId:()=> 'request',onHide:()=>()=>{},onShow:()=>()=>{}};
- Object.assign(app,{stage,client,platform,privacyAccepted:true,privacyEpoch:0,ready:true,destroyed:false,busy:false,modal:null,route:'lobby',room:null,levels:data,levelsOwner:owner,levelsSerial:0,chapterFoldOwner:'',chapterFolded:false,autoLevelChecked:false,bodyTop:80,bodyBottom:height-20,scroll:0,extent:0,rooms:[],lobbyPieces:'all',lobbySerial:0,lobbyCursor:null,historyRooms:[],historySerial:0,historyLoading:false,direction:'all',filterCount:0,serverOffset:0,contentOrigin:{x:0,y:0},cleanups:[],timers:[],attempts:new Map(),routeStack:[],routeFrames:[],savedRoutes:new Map(),handledQueries:new Set(),message:'',social:{close(){},refresh:async()=>{},blockedCodes:[]},invalidate:()=>stage.invalidate(),loadLobby:async()=>{events.push('lobby');},loadGallery:async()=>{},loadTasks:async()=>{},attachTicket:async ticket=>{app.route='room';app.room=ticket;}});
- return {app,client,platform,stage,texts,glyphs,buttons,frames,images,fills,strokes,paint,reads,created,storage,events,clear:()=>{texts.length=glyphs.length=buttons.length=frames.length=images.length=fills.length=strokes.length=paint.length=0;}};
+ const platform={config:{id:width>=1000?'web':'taptap',apiBase:'https://game.test/api'},initialQuery:{},viewport:()=>({width,height,top:0,bottom:0}),storage:{get:key=>storage.get(key)??null,set:(key,value)=>storage.set(key,value)},randomId:()=> 'request',onHide:()=>()=>{},onShow:()=>()=>{}};
+ Object.assign(app,{stage,client,platform,navItems:[['lobby'],['gallery'],['collection'],['tasks'],['friends']],privacyAccepted:true,privacyEpoch:0,ready:true,destroyed:false,busy:false,modal:null,route:'lobby',room:null,levels:data,levelsOwner:owner,levelsSerial:0,autoLevelChecked:false,chapterEntryChecked:false,previewReadOnly:false,bodyTop:80,bodyBottom:height-20,scroll:0,extent:0,rooms:[],lobbyPieces:'all',lobbySerial:0,lobbyCursor:null,historyRooms:[],historySerial:0,historyLoading:false,direction:'all',filterCount:0,serverOffset:0,contentOrigin:{x:0,y:0},cleanups:[],timers:[],attempts:new Map(),routeStack:[],routeFrames:[],savedRoutes:new Map(),handledQueries:new Set(),message:'',social:{close(){},refresh:async()=>{},blockedCodes:[]},invalidate:()=>stage.invalidate(),loadLobby:async()=>{events.push('lobby');},loadGallery:async()=>{},loadTasks:async()=>{},attachTicket:async ticket=>{app.route='room';app.room=ticket;}});
+ return {app,client,platform,stage,texts,glyphs,buttons,frames,images,fills,strokes,paint,reads,created,storage,events,hits,icons,dashes,clear:()=>{texts.length=glyphs.length=buttons.length=frames.length=images.length=fills.length=strokes.length=paint.length=hits.length=icons.length=dashes.length=0;}};
 }
 
-test('unfinished chapter draws progress, six nodes and a direct continue action above the daily puzzle in all layouts',async()=>{
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+function lobby(f){const heroes=[];f.app.drawDailyHero=r=>{heroes.push(r);return r.y+r.h;};f.app.drawRoomHeader=(_x,y)=>y+40;f.app.drawRoomGrid=(_x,y)=>y;f.app.drawRoomSection=(_x,y)=>y;f.app.drawLobby();return heroes;}
+async function artwork(f){
+ const photos=Array.from({length:6},(_,index)=>({id:'chapter-photo-'+index,title:'图片 '+index,src:'/chapter-'+index+'.webp',thumbSrc:'/chapter-'+index+'-thumb.webp',category:'其他'}));
+ f.client.json=async()=>({imageIds:photos.map(photo=>photo.id),packedImageIds:[],photos});delete f.app.loadGallery;await f.app.loadGallery();f.app.levels.chapters[0].levels.forEach((level,index)=>level.imageId=photos[index].id);return photos;
+}
+
+test('unfinished chapter draws a 34px gold book strip above the daily puzzle and opens the chapter in every layout',async()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]]){
-  const f=fixture({width,height});if(width===1280){f.platform.config.id='web';f.client.cookieIdentity=true;}
-  const heroes=[],roomHeaders=[];f.app.drawDailyHero=(r)=>{heroes.push(r);return r.y+r.h;};f.app.drawRoomHeader=(_x,y)=>{roomHeaders.push(y);return y+40;};f.app.drawRoomGrid=(_x,y)=>y;f.app.drawRoomSection=(_x,y)=>y;
-  f.app.drawLobby();assert.ok(f.texts.includes('新手章节 · 小窝的一天'));assert.ok(f.texts.includes('3/6'));assert.equal(f.texts.filter(text=>text==='✓').length,3);
-  const nodes=f.frames.filter(frame=>frame.key.startsWith('button-'));assert.equal(nodes.length,6);assert.equal(nodes[3].key,'button-berry-selected');
-  const next=f.buttons.find(button=>button.label==='继续 · 第 4 关（24 片）');assert.ok(next);assert.ok(next.r.y<heroes[0].y);if(width>height)assert.equal(roomHeaders[0],80,'public room header stays at its original top');
-  next.fn();await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(f.created,[{mode:'level',levelId:'ch1-4',requestId:'request'}]);
+  const f=fixture({width,height}),heroes=lobby(f),strip=f.frames.find(frame=>frame.key==='button-gold-normal');assert.ok(strip);assert.equal(strip.r.h,34);assert.ok(strip.r.y+34<heroes[0].y);assert.ok(f.icons.some(icon=>icon.key==='book'));assert.ok(f.texts.includes('拾光物语 3/6'));assert.ok(f.texts.includes('继续第 4 关 ›'));assert.equal(f.frames.filter(frame=>frame.key.startsWith('button-')).length,1);
+  f.hits.find(hit=>hit.r===strip.r).fn();await tick();assert.equal(f.app.route,'chapter');assert.equal(f.app.navVisible,false);assert.equal(f.created.length,0);
  }
 });
 
-test('all-cleared and unavailable chapters leave the existing lobby drawing unchanged',()=>{
+test('all-cleared and unavailable chapters preserve the lobby layout without a strip',()=>{
  for(const [width,height]of [[390,844],[844,390],[1280,800]]){
-  const draw=data=>{const f=fixture({width,height,data}),heroes=[];if(width===1280){f.platform.config.id='web';f.client.cookieIdentity=true;}f.app.drawDailyHero=r=>{heroes.push(r);return r.y+r.h;};f.app.drawRoomHeader=(_x,y)=>y+40;f.app.drawRoomGrid=(_x,y)=>y;f.app.drawRoomSection=(_x,y)=>y;f.app.drawLobby();return{heroes,labels:f.buttons.map(button=>button.label),texts:f.texts};};
-  const baseline=draw(null);for(const data of [levels(6),levels(0,'unavailable')])assert.deepEqual(draw(data),baseline);
+  const draw=data=>{const f=fixture({width,height,data}),heroes=lobby(f);return {heroes,frames:f.frames,texts:f.texts,buttons:f.buttons.map(({r,label})=>({r,label}))};},baseline=draw(null);
+  for(const data of [levels(6),levels(0,'unavailable')])assert.deepEqual(draw(data),baseline);
  }
 });
 
-test('landscape keeps chapter, daily actions and the previous room inside the left column',()=>{
- const f=fixture({width:844,height:390}),actions=[];f.app.historyRooms=[{id:'previous',pieces:48,placed:5,title:'上次的拼图'}];f.app.drawLobbyActions=r=>actions.push(r);f.app.drawRoomHeader=(_x,y)=>y+40;f.app.drawRoomGrid=(_x,y)=>y;f.app.drawLobby();
- for(const label of ['继续 · 第 4 关（24 片）','去大厅逛逛','开始拼 · 108 片','叫上朋友','回到这桌']){const button=f.buttons.find(item=>item.label===label);assert.ok(button,label);assert.ok(button.r.y+button.r.h<=f.app.bodyBottom,label+' remains visible');}assert.ok(actions[0].y+actions[0].h<=f.app.bodyBottom);
- const chapter=f.buttons.find(button=>button.label==='去大厅逛逛'),daily=f.buttons.find(button=>button.label==='开始拼 · 108 片'),previous=f.buttons.find(button=>button.label==='回到这桌');assert.ok(chapter.r.y+chapter.r.h<daily.r.y);assert.ok(daily.r.y+daily.r.h<previous.r.y);
-});
-
-test('folding draws only a persisted account-specific strip and clicking it restores the card',()=>{
- const f=fixture(),draw=app=>app.drawBeginnerChapter({x:12,y:80,w:366,h:app.chapterCollapsed?38:152},false);
- draw(f.app);f.buttons.find(button=>button.label==='去大厅逛逛').fn();f.clear();draw(f.app);
- assert.deepEqual(f.texts,[]);assert.equal(f.frames.length,0);assert.deepEqual(f.buttons.map(button=>button.label),['新手章节 · 小窝的一天  3/6']);
- const again=fixture({storage:f.storage});draw(again.app);assert.equal(again.buttons.length,1);again.buttons[0].fn();again.clear();draw(again.app);assert.ok(again.texts.includes('3/6'));assert.ok(again.buttons.some(button=>button.label.startsWith('继续 ·')));
- const other=fixture({owner:'owner-b',storage:f.storage});assert.equal(other.app.chapterCollapsed,false);assert.equal(f.app.chapterCollapsed,true);
-});
-
-test('chapter nodes use catalog thumbnails when available and otherwise draw numbers',async()=>{
- const f=fixture({data:levels(0)}),photoId='__level_thumbnail__';
- // Populate the same metadata map that normal gallery loading updates.
- f.client.json=async()=>({imageIds:[photoId],packedImageIds:[],photos:[{id:photoId,title:'窗边',src:'/window.webp',thumbSrc:'/window-thumb.webp',category:'其他'}]});
- delete f.app.loadGallery;await f.app.loadGallery();f.app.levels.chapters[0].levels[0].imageId=photoId;f.app.drawBeginnerChapter({x:12,y:80,w:366,h:152},false);assert.deepEqual(f.images.map(image=>image.src),['/window-thumb.webp']);for(const number of ['2','3','4','5','6'])assert.ok(f.texts.includes(number));
-});
-
-test('chapter states use contrast badges, a highlighted current node and cream veils over locked thumbnails or numbers',async()=>{
- for(const compact of [false,true])for(const thumbnails of [false,true]){
-  const f=fixture(),photoId='__state_thumbnail__';
-  if(thumbnails){f.client.json=async()=>({imageIds:[photoId],packedImageIds:[],photos:[{id:photoId,title:'窗边',src:'/state.webp',thumbSrc:'/state-thumb.webp',category:'其他'}]});delete f.app.loadGallery;await f.app.loadGallery();for(const level of f.app.levels.chapters[0].levels)level.imageId=photoId;}
-  f.app.drawBeginnerChapter({x:12,y:80,w:compact?300:366,h:compact?112:152},compact);
-  const nodes=f.frames.map(frame=>frame.r),badges=f.fills.filter(fill=>fill.alpha===1),veils=f.fills.filter(fill=>fill.alpha===.55),ticks=f.glyphs.filter(glyph=>glyph.value==='✓');
-  assert.equal(badges.length,3);assert.equal(ticks.length,3);assert.equal(f.strokes.length,3);assert.equal(veils.length,2);assert.equal(f.images.length,thumbnails?6:0);
-  for(let i=0;i<3;i++){const badge=badges[i],tick=ticks[i],node=nodes[i];assert.equal(badge.color,f.stage.palette.cream);assert.equal(tick.color,f.stage.palette.ink);assert.equal(f.strokes[i].color,f.stage.palette.ink);assert.ok(tick.size>=(compact?13:17));assert.ok(tick.x>=badge.r.x&&tick.y>=badge.r.y&&tick.x+tick.size<=badge.r.x+badge.r.w&&tick.y+tick.size<=badge.r.y+badge.r.h);assert.equal(badge.r.x+badge.r.w,node.x+node.w);assert.equal(badge.r.y+badge.r.h,node.y+node.h);if(thumbnails)assert.ok(f.paint.indexOf(badge)>f.paint.indexOf(f.images[i]));}
-  assert.equal(f.frames[3].key,'button-berry-selected');assert.ok(f.frames.filter((_,i)=>i!==3).every(frame=>frame.key==='button-linen-normal'));
-  for(let i=0;i<2;i++){const veil=veils[i],node=nodes[i+4],content=thumbnails?f.images[i+4]:f.glyphs.find(glyph=>glyph.value===String(i+5));assert.equal(veil.color,f.stage.palette.cream);assert.deepEqual(veil.r,{x:node.x+3,y:node.y+3,w:node.w-6,h:node.h-6});assert.ok(content);assert.ok(f.paint.indexOf(veil)>f.paint.indexOf(content));}
-  if(!thumbnails)for(const number of ['4','5','6'])assert.ok(f.texts.includes(number));assert.equal(f.stage.ctx.globalAlpha,1);
+test('landscape daily artwork uses the height left by the strip and keeps normal daily actions',()=>{
+ for(const previous of [false,true]){
+  const f=fixture({width:844,height:390});f.app.dailyPhoto={id:'daily',title:'窗边',src:'/daily.webp',thumbSrc:'/daily-thumb.webp'};if(previous)f.app.historyRooms=[{id:'previous',pieces:48,placed:5,title:'上次的拼图'}];f.app.drawRoomHeader=(_x,y)=>y+40;f.app.drawRoomGrid=(_x,y)=>y;f.app.drawLobby();
+  const card=f.frames.find(frame=>frame.key==='panel-cream').r,image=f.images.find(image=>image.src==='/daily.webp'),button=f.buttons.find(button=>button.label==='开始拼 · 108 片');assert.ok(image);assert.equal(button.r.h,34);assert.equal(card.h,390-20-80-44-(previous?62:0)-48);assert.equal(image.r.h,card.h-f.app.heroTextHeight(true)-8);assert.ok(button.r.y>=image.r.y+image.r.h);assert.ok(button.r.y+button.r.h<=card.y+card.h);
  }
 });
 
-test('landscape daily artwork fills the remaining height when folded or expanded and short cards shrink without blank space',()=>{
- for(const height of [320,390,430,480])for(const folded of [false,true])for(const previous of [false,true]){
-  const f=fixture({width:844,height});f.app.setChapterCollapsed(folded);f.app.dailyPhoto={id:'daily',title:'窗边',src:'/daily.webp',thumbSrc:'/daily-thumb.webp'};if(previous)f.app.historyRooms=[{id:'previous',pieces:48,placed:5,title:'上次的拼图'}];
-  f.app.drawRoomHeader=(_x,y)=>y+40;f.app.drawRoomGrid=(_x,y)=>y;f.app.drawLobby();
-  const card=f.frames.find(frame=>frame.key==='panel-cream').r,photo=f.images.find(image=>image.src==='/daily.webp'),button=f.buttons.find(button=>button.label==='开始拼 · 108 片'),available=height-20-80-(folded?48:122)-(previous?62:0)-48;
-  if(available>=126){assert.ok(photo,`${height} folded=${folded} previous=${previous}`);assert.equal(card.h,available);assert.deepEqual(photo.r,{x:card.x+8,y:card.y+8,w:card.w-16,h:card.h-f.app.heroTextHeight(true)-8});assert.ok(button.r.y>=photo.r.y+photo.r.h);}
-  else{assert.equal(photo,undefined);assert.equal(card.h,58);assert.equal(button.r.h,24);}
-  assert.ok(button.r.y+button.r.h<=card.y+card.h);assert.ok(card.y+card.h-button.r.y-button.r.h<=16,'no blank block below the daily actions');
-  const invite=f.buttons.find(button=>button.label==='叫上朋友');assert.equal(invite.r.y,button.r.y);assert.equal(invite.r.h,button.r.h);if(previous){const last=f.buttons.find(button=>button.label==='回到这桌');assert.ok(last.r.y>=card.y+card.h+10);}
+test('chapter pages show 0/6 and 3/6 states in 2x3 or 3x2 grids and both current actions launch the configured level',async()=>{
+ for(const [width,height]of [[390,844],[844,390],[1280,800]])for(const cleared of [0,3]){
+  const f=fixture({width,height,data:levels(cleared)});await artwork(f);f.app.drawChapter();assert.ok(f.texts.includes('拾光物语 · 第 1 章'));assert.ok(f.texts.includes('开张'));assert.ok(f.texts.includes(cleared+' / 6 格'));assert.ok(f.texts.includes('第 '+(cleared+1)+' 格'));assert.ok(f.texts.includes(f.app.levels.current.pieces+' 片 · 拼完揭晓'));assert.equal(f.texts.filter(text=>text==='?').length,5-cleared);
+  assert.equal(f.images.length,cleared+1);assert.ok(f.images.slice(0,cleared).every(image=>image.alpha===1));const current=f.images.at(-1);assert.equal(current.alpha,.28);assert.equal(current.filter,'grayscale(1) blur(2px)');assert.equal(f.stage.ctx.globalAlpha,1);assert.equal(f.stage.ctx.filter,'none');assert.equal(f.dashes.length,5-cleared);assert.equal(f.strokes.filter(stroke=>stroke.color===f.stage.palette.gold).length,1);
+  const cells=f.strokes.slice(1);assert.equal(cells.length,6);assert.ok(cells.every(cell=>Math.abs(cell.r.w+2-(cell.r.h+2)*1.5)<.01));const columns=width<height?2:3;assert.equal(cells[0].r.y,cells[columns-1].r.y);assert.ok(cells[columns].r.y>cells[0].r.y);
+  const button=f.buttons.find(button=>button.label==='拼第 '+(cleared+1)+' 格（'+f.app.levels.current.pieces+' 片）');assert.ok(button);if(width>height){assert.ok(button.r.x>cells[2].r.x+cells[2].r.w);assert.ok(button.r.y+button.r.h<=f.app.bodyBottom);}else assert.ok(f.app.extent>0);
+  button.fn();await tick();assert.deepEqual(f.created,[{mode:'level',levelId:'ch1-'+(cleared+1),requestId:'request'}]);f.app.route='chapter';f.app.room=null;f.hits.at(-1).fn();await tick();assert.equal(f.created.length,2);assert.equal(f.created[1].levelId,'ch1-'+(cleared+1));
  }
 });
 
-test('landscape daily artwork threshold has no empty intermediate layout',()=>{
- for(const height of [58,109,110,125,126,127,141,142,240]){
-  const f=fixture();f.app.dailyPhoto={id:'daily',title:'窗边',src:'/daily.webp',thumbSrc:'/daily-thumb.webp'};const end=f.app.drawDailyHero({x:12,y:80,w:300,h:height},true),card=f.frames[0].r,button=f.buttons[0];
-  assert.equal(f.images.length,height>=126?1:0);assert.equal(card.h,height>=126?height:58);assert.equal(end,card.y+card.h);assert.ok(card.y+card.h-button.r.y-button.r.h<=16);assert.ok(button.r.y+button.r.h<=card.y+card.h);
+test('chapter fallback title, reward text, speech bubbles and scrolling use the configured values',()=>{
+ const f=fixture({height:600});f.app.levels.seriesTitle=null;f.client.config.capabilities.energy=false;f.app.levels.chapters[0].levels[0].line='欢迎来小店';f.app.levels.chapters[0].levels[4].line='不能提前看到';f.app.drawChapter();assert.ok(f.texts.includes('新手章节 · 第 1 章'));assert.ok(f.texts.includes('欢迎来小店'));assert.ok(!f.texts.includes('不能提前看到'));assert.ok(!f.texts.some(text=>text.includes('体力')));assert.ok(f.app.extent>f.app.bodyBottom-f.app.bodyTop);const top=f.strokes[1].r.y;f.clear();f.app.scroll=50;f.app.drawChapter();assert.equal(f.strokes[1].r.y,top-50);
+ f.client.config.capabilities.energy=true;f.app.levels.firstClearEnergy=17;f.clear();f.app.drawChapter();assert.ok(f.texts.join('').includes('17 体力'));f.clear();f.app.drawChapterStrip({x:12,y:80,w:366,h:34});assert.ok(f.texts.includes('新手章节 3/6'));
+});
+
+test('chapter uses the lobby header without phone navigation and handles canvas filter and dash support being absent in a dark palette',async()=>{
+ for(const [width,height]of [[390,844],[844,390]]){
+  const f=fixture({width,height});f.stage.color=value=>value;f.platform.setOrientation=()=>{};f.app.drawHeader();const header={texts:[...f.texts],icons:[...f.icons],top:f.app.bodyTop,buttons:f.buttons.map(({r,label,opts})=>({r,label,opts}))};f.clear();f.app.route='chapter';f.app.drawHeader();assert.deepEqual({texts:f.texts,icons:f.icons,top:f.app.bodyTop,buttons:f.buttons.map(({r,label,opts})=>({r,label,opts}))},header);assert.equal(f.app.navVisible,false);
+ }
+ const f=fixture({data:levels(0)});await artwork(f);delete f.stage.ctx.filter;f.stage.ctx.setLineDash=undefined;Object.assign(f.stage.palette,{ink:'#fff2e3',cream:'#332a34',placeholder:'#463644',line:'#85616c'});f.app.drawChapter();assert.equal(f.images.length,1);assert.equal(f.dashes.length,0);const label=f.glyphs.find(glyph=>glyph.value==='第 1 格');assert.equal(label.color,f.stage.palette.cream);assert.notEqual(label.color,f.stage.palette.ink);assert.equal(f.stage.ctx.globalAlpha,1);
+});
+
+test('cleared cells open a read-only large preview containing only cleared artwork and close directly with Escape or the cross',async()=>{
+ const f=fixture();await artwork(f);f.app.stopCheers=()=>{};f.app.drawChapter();f.hits[1].fn();assert.equal(f.app.modal,'packPreview');assert.equal(f.app.previewReadOnly,true);assert.equal(f.app.previewPack.id,'chapter:ch1');assert.equal(f.app.previewPack.title,'开张');assert.equal(f.app.previewPack.images.length,3);assert.equal(f.app.previewIndex,1);f.clear();f.app.drawPackPreview();assert.equal(f.images.length,1);assert.equal(f.images[0].src,'/chapter-1.webp');assert.ok(!f.buttons.some(button=>button.label.includes('解锁')||button.label.includes('建房')||button.label==='‹ 返回全部图片'));assert.ok(!f.texts.some(text=>text.includes('永久解锁')||text.includes('开拼')));
+ f.buttons.find(button=>button.label==='›').fn();assert.equal(f.app.previewIndex,2);f.app.stepPackPreview(1);assert.equal(f.app.previewIndex,2);f.app.stepPackPreview(-10);assert.equal(f.app.previewIndex,0);f.app.input({type:'key',key:'Escape',keyDown:true,points:[],changed:[]});assert.equal(f.app.modal,null);assert.equal(f.app.previewReadOnly,false);assert.equal(f.app.route,'lobby');
+ f.app.openChapterPreview(f.app.beginnerChapter,'ch1-1');f.clear();f.app.drawPackPreview();f.buttons.find(button=>button.label==='').fn();assert.equal(f.app.modal,null);assert.equal(f.app.previewReadOnly,false);
+ const noPhoto=fixture();noPhoto.app.drawChapter();assert.equal(noPhoto.hits.length,1);noPhoto.app.openChapterPreview(noPhoto.app.beginnerChapter,'ch1-1');assert.equal(noPhoto.app.modal,null);
+});
+
+test('returning players enter the chapter once, while complete, unavailable, invited, busy and modal starts stay in place',async()=>{
+ for(const data of [levels(0),levels(3),levels(6),levels(0,'unavailable')]){
+  const f=fixture({data});await f.app.loadInitialContent({});const expected=data.chapters[0].status==='available'&&data.current?'chapter':'lobby';assert.equal(f.app.route,expected);assert.equal(f.created.length,0);f.app.navigate('lobby');await tick();await f.app.loadInitialContent({});assert.equal(f.app.route,'lobby');
+ }
+ for(const state of [{modal:'settings'},{busy:true},{route:'gallery'},{room:{}}]){const f=fixture();Object.assign(f.app,state);await f.app.loadInitialContent({});assert.equal(f.app.route,state.route??'lobby');assert.equal(f.created.length,0);}
+});
+
+test('switching accounts resets the one-time entry decision and loading a completed or unavailable chapter redirects to the lobby',async()=>{
+ const f=fixture();f.app.ensureListOwner();await f.app.loadInitialContent({});assert.equal(f.app.route,'chapter');f.app.navigate('lobby');await tick();f.client.account={id:'owner-b'};f.app.ensureListOwner();await tick();assert.equal(f.app.route,'chapter');assert.equal(f.app.levelsOwner,'owner-b');assert.equal(f.created.length,0);
+ for(const data of [levels(6),levels(0,'unavailable')]){f.app.route='chapter';f.client.json=async()=>data;await f.app.loadLevels();assert.equal(f.app.route,'lobby');await tick();}
+ f.app.route='chapter';f.client.json=async()=>{throw Error('offline');};await f.app.loadLevels();assert.equal(f.app.route,'lobby');await tick();
+});
+
+test('level room back returns to the chapter except after the last level or when unavailable; ordinary rooms restore their origin',async()=>{
+ for(const [levelId,complete,data,expected]of [['ch1-1',false,levels(),'chapter'],['ch1-6',true,levels(),'lobby'],['ch1-1',false,levels(6),'lobby'],['ch1-1',false,levels(0,'unavailable'),'lobby'],[null,false,levels(),'gallery']]){
+  const f=fixture({data});f.app.route='room';f.app.room={snapshot:{...(levelId?{levelId}:{}),mobileResult:{levelClear:{chapterComplete:complete}}}};f.app.roomReturn=f.app.defaultListView('gallery');let left=0;f.app.leaveRoom=()=>{left++;f.app.room=null;};f.app.exitRoom();await tick();assert.equal(left,1);assert.equal(f.app.room,null);assert.equal(f.app.route,expected);assert.equal(f.created.length,0);
  }
 });
 
@@ -101,7 +105,7 @@ test('startup fetches levels after ready and auto-launches the first unlocked le
 test('invitation and room links always take priority even if joining fails back to the lobby',async()=>{
  for(const query of [{invite:'ABCDEF'},{inviteCode:'ABCDEF'},{friend:'ABCDEF'},{ref:'ABCDEF'},{room:'a'.repeat(32)},{roomId:'a'.repeat(32)}]){
   const f=fixture({data:levels(0),newcomer:true}),handled=[];f.app.handleQuery=async value=>{assert.equal(f.reads.includes('/api/levels'),false);handled.push(value);};await f.app.loadInitialContent(query);
-  assert.deepEqual(handled,[query]);assert.equal(f.created.length,0);assert.equal(f.reads.includes('/api/levels'),true);assert.equal(f.storage.has(f.app.chapterStorageKey('auto')),false);await f.app.autoLaunchLevel();assert.equal(f.created.length,0);
+  assert.deepEqual(handled,[query]);assert.equal(f.app.route,'lobby');assert.equal(f.created.length,0);assert.equal(f.reads.includes('/api/levels'),true);assert.equal(f.storage.has(f.app.chapterStorageKey('auto')),false);await f.app.autoLaunchLevel();assert.equal(f.created.length,0);
  }
 });
 
@@ -123,7 +127,7 @@ test('level launches bypass the ordinary three-room limit while ordinary launche
 
 test('returning to the lobby refreshes chapter progress, including after room completion',async()=>{
  const f=fixture();f.app.levels=null;f.app.navigate('gallery');assert.equal(f.reads.includes('/api/levels'),false);f.app.navigate('lobby');await new Promise(resolve=>setImmediate(resolve));assert.ok(f.app.beginnerChapter);assert.equal(f.reads.filter(path=>path==='/api/levels').length,1);
- f.app.route='room';f.app.room={};f.app.roomReturn=f.app.defaultListView('lobby');f.app.leaveRoom=()=>{f.app.room=null;};f.client.json=async path=>{f.reads.push(path);return path==='/api/levels'?levels(6):{rooms:[]};};f.app.exitRoom();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.app.beginnerChapter,null);assert.equal(f.reads.filter(path=>path==='/api/levels').length,2);assert.equal(f.created.length,0);
+ f.app.route='room';f.app.room={snapshot:{}};f.app.roomReturn=f.app.defaultListView('lobby');f.app.leaveRoom=()=>{f.app.room=null;};f.client.json=async path=>{f.reads.push(path);return path==='/api/levels'?levels(6):{rooms:[]};};f.app.exitRoom();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.app.beginnerChapter,null);assert.equal(f.reads.filter(path=>path==='/api/levels').length,2);assert.equal(f.created.length,0);
 });
 
 test('level fetch failure is silent and stale account or superseded responses cannot show a card',async()=>{

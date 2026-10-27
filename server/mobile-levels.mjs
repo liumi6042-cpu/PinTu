@@ -2,16 +2,18 @@ import defaults from '../config/levels.json' with {type:'json'};
 
 const invalid=()=>{throw new TypeError('Invalid levels configuration');};
 const identifier=value=>typeof value==='string'&&/^[a-z0-9][a-z0-9-]{0,99}$/.test(value);
-function shape(value,fields){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!fields.includes(key))||fields.some(key=>!Object.hasOwn(value,key)))invalid();}
+function shape(value,fields,optional=[]){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!fields.includes(key)&&!optional.includes(key))||fields.some(key=>!Object.hasOwn(value,key)))invalid();}
 export function readLevelConfiguration(configuration){
  const document=configuration===undefined?defaults:configuration;
- shape(document,['schema','firstClearEnergy','chapters']);
+ shape(document,['schema','firstClearEnergy','chapters'],['seriesTitle']);
+ if(Object.hasOwn(document,'seriesTitle')&&(typeof document.seriesTitle!=='string'||!document.seriesTitle.trim()||document.seriesTitle.length>40))invalid();
  if(document.schema!=='jigsaw-levels/v1'||!Number.isSafeInteger(document.firstClearEnergy)||document.firstClearEnergy<0||!Array.isArray(document.chapters)||!document.chapters.length)invalid();
  const seen=new Set(),chapters=document.chapters.map(chapter=>{
-  shape(chapter,['id','title','albumId','pieces']);
+  shape(chapter,['id','title','albumId','pieces'],['lines']);
   if(!identifier(chapter.id)||seen.has(chapter.id)||!identifier(chapter.albumId)||typeof chapter.title!=='string'||!chapter.title.trim()||chapter.title.length>180||!Array.isArray(chapter.pieces)||chapter.pieces.length!==6||chapter.pieces.some(value=>!Number.isSafeInteger(value)||value<=0))invalid();
-  seen.add(chapter.id);return {...chapter,pieces:[...chapter.pieces]};
- });return {schema:document.schema,firstClearEnergy:document.firstClearEnergy,chapters};
+  if(Object.hasOwn(chapter,'lines')&&(!Array.isArray(chapter.lines)||chapter.lines.length>chapter.pieces.length||chapter.lines.some(line=>line!==null&&(typeof line!=='string'||!line.trim()||line.length>40))))invalid();
+  seen.add(chapter.id);return {...chapter,pieces:[...chapter.pieces],...(chapter.lines?{lines:[...chapter.lines]}:{})};
+ });return {schema:document.schema,firstClearEnergy:document.firstClearEnergy,chapters,...(Object.hasOwn(document,'seriesTitle')?{seriesTitle:document.seriesTitle}:{})};
 }
 
 /** Progress helpers share the caller's transaction; reading levels never grants rewards. */
@@ -32,10 +34,10 @@ export function createMobileLevels({db,photos,collection,configuration}){
    const levels=chapter.pieces.map((pieces,index)=>{
     const id=chapter.id+'-'+(index+1),imageId=images[index],photo=photoById.get(imageId);
     const status=!available?'unavailable':cleared.has(id)?'cleared':previous===null||previous.available&&cleared.has(previous.id)?'unlocked':'locked';
-    const level={id,imageId,title:photo?.title??null,pieces,status};previous={id,available};
+    const level={id,imageId,title:photo?.title??null,pieces,status,line:chapter.lines?.[index]??null};previous={id,available};
     if(status==='unlocked'&&current===null)current=level;return level;
    });return {id:chapter.id,title:chapter.title,albumId:chapter.albumId,coverImageId:cover?.id??null,coverSrc:cover?.thumbSrc??null,status:available?'available':'unavailable',levels};
-  });return {chapters,current,firstClearEnergy:config.firstClearEnergy};
+  });return {chapters,current,firstClearEnergy:config.firstClearEnergy,seriesTitle:config.seriesTitle??null};
  }
  return {progress,recordClear,destination,view};
 }

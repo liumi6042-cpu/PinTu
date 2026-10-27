@@ -22,7 +22,7 @@ function fixture(t,{config=configuration(),...options}={}){
 }
 
 test('levels configuration defaults and malformed documents fail during service creation',()=>{
- const defaults=readLevelConfiguration();assert.deepEqual(defaults,{schema:'jigsaw-levels/v1',firstClearEnergy:30,chapters:[{id:'ch1',title:'小窝的一天',albumId:'album-ch1-pending',pieces}]});
+ const defaults=readLevelConfiguration();assert.deepEqual(defaults,{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'开张',albumId:'album-ch1-pending',pieces}]});
  const bad=[null,[],{}, {...configuration(),schema:'other'}, {...configuration(),firstClearEnergy:-1}, {...configuration(),firstClearEnergy:1.5}, {...configuration(),firstClearEnergy:'30'}, {...configuration(),chapters:[]}, {...configuration(),chapters:{}}, {...configuration(),extra:true}];
  for(const patch of [{id:''},{id:'bad/id'},{title:' '},{albumId:null},{pieces:[12]},{pieces:[12,16,20,24,30,0]},{pieces:[12,16,20,24,30,1.5]},{pieces:[12,16,20,24,30,'35']},{pieces:[12,16,20,24,30,Number.MAX_SAFE_INTEGER+1]},{extra:true}])bad.push(configuration([{...chapter('ch1'),...patch}]));
  bad.push(configuration([chapter('ch1'),chapter('ch1')]));
@@ -39,6 +39,18 @@ test('level progress schema, owner isolation, first-write receipt and transactio
  assert.deepEqual(levels.progress(owner).map(row=>({...row})),[{level_id:'ch1-1',room_id:'room-a',cleared_at:now,energy:30}]);assert.deepEqual(levels.progress(peer),[]);
  db.exec('BEGIN');assert.equal(levels.recordClear(owner,'ch1-2','room-c',now,30),true);db.exec('ROLLBACK');assert.equal(levels.progress(owner).length,1);
  assert.equal(levels.recordClear(peer,'ch1-1','room-d',now,30),true);assert.equal(levels.progress(peer).length,1);
+});
+
+test('optional seriesTitle and chapter lines validate their shape and length and are copied independently',()=>{
+ const input={...configuration(),seriesTitle:'拾光物语',chapters:[{...chapter('ch1'),lines:['开张啦',null,'一'.repeat(40)]}]},copy=readLevelConfiguration(input);assert.equal(copy.seriesTitle,'拾光物语');assert.deepEqual(copy.chapters[0].lines,input.chapters[0].lines);input.chapters[0].lines[0]='changed';assert.equal(copy.chapters[0].lines[0],'开张啦');
+ for(const seriesTitle of [null,undefined,1,'',' ','一'.repeat(41)])assert.throws(()=>readLevelConfiguration({...configuration(),seriesTitle}),/Invalid levels configuration/);
+ for(const lines of [null,undefined,'line',{},Array(7).fill(null),[''],[' '],[1],[false],[{}],['一'.repeat(41)]])assert.throws(()=>readLevelConfiguration(configuration([{...chapter('ch1'),lines}])),/Invalid levels configuration/);
+ assert.equal(readLevelConfiguration({...configuration(),seriesTitle:'一'.repeat(40)}).seriesTitle.length,40);assert.deepEqual(readLevelConfiguration(configuration([{...chapter('ch1'),lines:[]}])).chapters[0].lines,[]);
+});
+
+test('GET levels returns configured series and each line, defaulting omitted values to null',t=>{
+ const f=fixture(t,{config:{...configuration([{...chapter('ch1'),lines:['开张啦',null,'第三格']}]),seriesTitle:'拾光物语'}}),view=f.view();assert.equal(view.seriesTitle,'拾光物语');assert.deepEqual(view.chapters[0].levels.map(level=>level.line),['开张啦',null,'第三格',null,null,null]);assert.equal(view.current.line,'开张啦');
+ const omitted=fixture(t).view();assert.equal(omitted.seriesTitle,null);assert.ok(omitted.chapters.every(chapter=>chapter.levels.every(level=>level.line===null)));
 });
 
 test('static and managed album readers preserve order, cover, source precedence and read-only results',t=>{

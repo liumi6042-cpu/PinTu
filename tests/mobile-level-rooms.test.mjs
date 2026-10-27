@@ -67,6 +67,12 @@ test('completed, closed and expired level rooms are not reused',t=>{
  assert.equal(f.events('level-start').length,4);
 });
 
+test('level snapshots expose levelId to owner and invited helpers, including deltas and completion; ordinary rooms omit it',t=>{
+ const f=fixture(t),ticket=f.make(),path='/api/rooms/'+ticket.room.id;assert.equal(ticket.room.levelId,'ch1-1');assert.equal(f.ok(owner,path,undefined,ticket.token).levelId,'ch1-1');
+ const helper=f.ok(peer,path+'/join',{inviteCode:ticket.inviteCode});assert.equal(helper.room.levelId,'ch1-1');const delta=f.ok(peer,path+'?since='+helper.room.revision,undefined,helper.token);assert.equal(delta.levelId,'ch1-1');assert.equal(f.finish(ticket,peer).levelId,'ch1-1');
+ const ordinary=f.ok(owner,'/api/rooms',{mode:'random',pieces:48,requestId:rid()});assert.equal(Object.hasOwn(ordinary.room,'levelId'),false);assert.equal(Object.hasOwn(f.ok(owner,'/api/rooms/'+ordinary.room.id,undefined,ordinary.token),'levelId'),false);
+});
+
 test('level rooms bypass gallery visibility and paid pack locks using existing static artwork',t=>{
  assert.ok(pack.imageIds.length>=6);for(const imageId of pack.imageIds)assert.ok(existsSync(resolve('public','.'+photos.find(photo=>photo.id===imageId).src)));
  const album={...pack,showOnPc:false,showOnMobile:false,purchasable:true,price:180,coverImageId:null};

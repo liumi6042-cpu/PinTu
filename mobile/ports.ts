@@ -104,5 +104,5 @@ export type Platform={
 };
 export type Rect={x:number;y:number;w:number;h:number};
 export type AudioLevels={music:number;effects:number};
-export type Route='lobby'|'gallery'|'room'|'tasks'|'friends'|'supplies'|'collection'|'help'|'privacy'|'terms';
+export type Route='lobby'|'chapter'|'gallery'|'room'|'tasks'|'friends'|'supplies'|'collection'|'help'|'privacy'|'terms';
 
