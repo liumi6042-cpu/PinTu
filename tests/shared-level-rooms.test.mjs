@@ -9,7 +9,7 @@ import {DEFAULT_TASK_REWARD_SETTINGS} from '../server/task-reward-settings.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)),origin='http://localhost',owner='a'.repeat(32),peer='b'.repeat(32),token='c'.repeat(64),peerToken='d'.repeat(64),pieces=[12,16,20,24,30,35];
 globalThis.__sharedLevelRoomsEnv={PUZZLE_LOCAL_ORIGIN:origin,PUZZLE_BETA_CAPACITY:'0'};
-const built=await build({absWorkingDir:root,stdin:{contents:'export {sharedClientApi} from "./lib/shared-client-api";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";export {levelProgress,recordLevelClear} from "./lib/shared-levels";export {ownedRoomCount,insertMemberRoom} from "./lib/membership-store";export {mutateRoom,readRoom} from "./lib/room-store";export {newPlayableRoom} from "./lib/lobby-store";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export const env=globalThis.__sharedLevelRoomsEnv;',loader:'js'}));}}]});
+const built=await build({absWorkingDir:root,stdin:{contents:'export {sharedClientApi} from "./lib/shared-client-api";export {RESTORABLE_PHOTOS} from "./lib/puzzle-catalog";export {levelProgress,recordLevelClear} from "./lib/shared-levels";export {ownedRoomCount,insertMemberRoom} from "./lib/membership-store";export {mutateRoom,readRoom} from "./lib/room-store";export {newPlayableRoom,saveCompletion} from "./lib/lobby-store";export {POST as legacyCreate} from "./app/api/rooms/route";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2022',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export const env=globalThis.__sharedLevelRoomsEnv;',loader:'js'}));}}]});
 const api=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
 function fixture(t){
  const db=new SqliteD1(':memory:',fileURLToPath(new URL('../drizzle/',import.meta.url))),now=Date.now();globalThis.__sharedLevelRoomsEnv.PUZZLE_DB=db;
@@ -136,4 +136,48 @@ test('ordinary 108, 300 and 500 piece creation and results keep their existing s
   const done=await finish(f,ticket);assert.equal(Object.hasOwn(done,'levelId'),false);assert.equal(Object.hasOwn(done.mobileResult,'levelClear'),false);assert.equal(f.db.sql.prepare('SELECT COUNT(*) n FROM puzzle_results WHERE room_id=?').get(ticket.room.id).n,1);
  }
  assert.deepEqual(await api.levelProgress(owner),[]);
+});
+
+const events=(f,kind)=>f.db.sql.prepare('SELECT owner,kind,room_id,data,created_at FROM mobile_events WHERE kind=? ORDER BY id').all(kind).map(row=>({...row,data:JSON.parse(row.data)}));
+test('shared create, join and completion write event payloads, credit every contributor once and ignore spectators',async t=>{
+ const f=fixture(t);f.album.purchasable=false;f.album.price=0;
+ const made=await f.request('/api/rooms',{method:'POST',body:{mode:'selected',imageId:f.photos[0].id,pieces:108}}),ticket=made.data;assert.equal(made.status,201);
+ assert.deepEqual(events(f,'room-create').map(({owner:who,room_id,data})=>({owner:who,room_id,data})),[{owner,room_id:ticket.room.id,data:{mode:'selected',pieces:108,visibility:'public'}}]);assert.ok(events(f,'room-create')[0].created_at>0);
+ const joined=await f.request('/api/rooms/'+ticket.room.id+'/join',{method:'POST',cookie:'puzzle_session='+peerToken});assert.equal(joined.status,200);assert.equal(events(f,'room-join').length,1);assert.equal(events(f,'room-join')[0].owner,peer);assert.deepEqual(events(f,'room-join')[0].data,{});
+ const room=f.room(ticket.room.id),spectator='e'.repeat(32);room.achievements={version:1,contributors:{[owner]:{count:2,days:[]},[peer]:{count:4,days:[]},[spectator]:{count:0,days:[]}}};f.save(room);
+ const done=await finish(f,ticket);await Promise.all([api.saveCompletion(f.room(room.id)),api.saveCompletion(f.room(room.id))]);await f.request('/api/rooms/'+room.id,{ticket:ticket.token});
+ assert.deepEqual(events(f,'room-complete').map(({owner:who,room_id,data,created_at})=>({owner:who,room_id,data,created_at})),[{owner,room_id:room.id,data:{contribution:3},created_at:done.completedAt},{owner:peer,room_id:room.id,data:{contribution:4},created_at:done.completedAt}]);assert.equal(events(f,'energy-empty').length,0);
+});
+
+test('new guest joins log the identity returned by the join route',async t=>{
+ const f=fixture(t),made=await f.create(),joined=await f.request('/api/rooms/'+made.data.room.id+'/join',{method:'POST',cookie:''});assert.equal(joined.status,200);
+ const cookie=joined.headers.get('set-cookie').split(';')[0],id='guest:'+createHash('sha256').update(cookie.split('=')[1]).digest('hex');assert.equal(events(f,'room-join')[0].owner,id);
+});
+
+test('level events distinguish new rooms, reuse, first clears and replay clears without duplicate completion events',async t=>{
+ const f=fixture(t),made=await f.create(),reused=await f.create();assert.equal(reused.status,200);assert.equal(events(f,'level-start').length,1);assert.deepEqual(events(f,'level-start')[0].data,{levelId:'ch1-1',pieces:12});assert.deepEqual(events(f,'room-create')[0].data,{mode:'level',pieces:12,visibility:'private'});
+ await finish(f,reused.data);await Promise.all([api.saveCompletion(f.room(made.data.room.id)),api.saveCompletion(f.room(made.data.room.id))]);
+ const replay=await f.create();await finish(f,replay.data);await api.saveCompletion(f.room(replay.data.room.id));
+ assert.equal(events(f,'level-start').length,2);assert.equal(events(f,'room-complete').length,2);assert.deepEqual(events(f,'level-clear').map(e=>[e.owner,e.room_id,e.data]),[[owner,made.data.room.id,{levelId:'ch1-1',firstClear:true,energy:0}],[owner,replay.data.room.id,{levelId:'ch1-1',firstClear:false,energy:0}]]);
+});
+
+test('pure legacy room creation and completion do not write shared events',async t=>{
+ const f=fixture(t);f.album.purchasable=false;f.album.price=0;
+ const response=await api.legacyCreate(new Request(origin+'/api/rooms',{method:'POST',headers:{Cookie:'puzzle_session='+token,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({imageId:f.photos[0].id,pieces:108,visibility:'public'})}));assert.equal(response.status,201);
+ const ticket=await response.json(),room=f.room(ticket.room.id);room.completedAt=Date.now();room.achievements={version:1,contributors:{[owner]:{count:1,days:[]}}};await api.saveCompletion(room);
+ assert.equal(f.db.sql.prepare('SELECT COUNT(*) n FROM mobile_events').get().n,0);
+});
+
+test('event insert and lookup failures never break shared creation, joining or level completion',async t=>{
+ const f=fixture(t),messages=[],log=console.error;console.error=(...args)=>messages.push(args);t.after(()=>{console.error=log;});
+ const made=await f.create();assert.equal(made.status,201);
+ f.db.sql.exec("CREATE TRIGGER reject_events BEFORE INSERT ON mobile_events BEGIN SELECT RAISE(ABORT,'event failure'); END;");
+ const joined=await f.request('/api/rooms/'+made.data.room.id+'/join',{method:'POST',cookie:'puzzle_session='+peerToken});assert.equal(joined.status,200);
+ const done=await finish(f,made.data);assert.equal(done.mobileResult.levelClear.firstClear,true);assert.equal((await api.levelProgress(owner)).length,1);
+ f.db.sql.exec('DROP TRIGGER reject_events');await api.saveCompletion(f.room(made.data.room.id));assert.deepEqual(events(f,'level-clear')[0].data,{levelId:'ch1-1',firstClear:true,energy:0});
+ f.db.sql.exec("CREATE TRIGGER reject_events BEFORE INSERT ON mobile_events BEGIN SELECT RAISE(ABORT,'event failure'); END;");
+ f.album.purchasable=false;f.album.price=0;
+ assert.equal((await f.request('/api/rooms',{method:'POST',body:{imageId:f.photos[0].id,pieces:108}})).status,201);
+ assert.equal((await f.create('ch1-2')).status,201);
+ f.db.sql.exec('DROP TABLE mobile_events');await api.saveCompletion(f.room(made.data.room.id));assert.ok(messages.length>=6);
 });

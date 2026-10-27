@@ -10,6 +10,7 @@ import {currentRoomArtwork,supportsArtworkSnapshot} from './room-artwork';
 import {RoomWriteQueue} from './room-write-queue';
 import type {ManagedContentSnapshot} from './managed-content';
 import {findLevel,levelsView} from './shared-levels';
+import {recordEvent} from './shared-events';
 import * as joinRoute from '../app/api/rooms/[id]/join/route';
 
 const writes=new RoomWriteQueue();
@@ -32,6 +33,8 @@ export async function createSharedLevelRoom(request:Request,levelId:string,conte
    puzzle:createFittedPuzzle(photo.id,grid.cols,grid.rows,now>>>0,3),revision:0,createdAt:now,expiresAt:now+ROOM_LIFETIME,completedAt:null,members:[],leases:{},startedAt:null,participants:{}};
   const token=newId(),member=addMember(room,newId(),player.name,await digestToken(token),now,player.accountId,player.guestId);
   await insertPlayableRoom(room);
+  await recordEvent(player.id,'room-create',room.id,{mode:'level',pieces:level.pieces,visibility:room.visibility},now);
+  await recordEvent(player.id,'level-start',room.id,{levelId:level.id,pieces:level.pieces},now);
   return withPlayerCookie(json({token,playerId:member.id,room:snapshot(room,now)},201),player);
  });
 }

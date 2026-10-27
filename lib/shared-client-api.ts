@@ -26,6 +26,7 @@ import {sharedLobbyExtras} from './shared-lobby-extras';
 import {sharedContributionView} from './shared-contribution-ranking';
 import {levelsView,levelProgress,destination} from './shared-levels';
 import {createSharedLevelRoom} from './shared-level-rooms';
+import {recordEvent} from './shared-events';
 
 type Data=Record<string,any>;
 const phrases=['大家好！','我来找边缘','这块放这里','稍等一下','一起加油！','我来拼边缘','我来拼中间','请稍等一下','这一块在这里','谢谢你！','拼得真棒！','我要离开了','👏','👍','😊','🧩'];
@@ -146,6 +147,7 @@ async function sharedRoom(request:Request,path:string,input:Data){
  const data=await responseData(response);
  const target=!part?data:part==='join'?data.room:null;
  const current=target?await readRoom(id):room;
+ if(part==='join'&&method==='POST'){const member=current.members.find(member=>member.id===data.playerId),owner=member?.accountId||member?.guestId;if(owner)await recordEvent(owner,'room-join',id,{},Date.now());}
  const contributionView=target?await sharedContributionView(current,(await currentPlayer(request))?.id):null;
  if(target){target.photo=roomPhoto(current,new URL(request.url).origin);target.members=(target.members??[]).map((member:Data)=>({...member,...contributionView!.member(member.id)}));}
  if(part==='cursors')data.cursors=(data.cursors??[]).map((cursor:Data)=>({...cursor,decoration:cursor.managedCursor??null}));
@@ -189,6 +191,7 @@ async function createSharedRoom(request:Request,input:Data){
  if(!response.ok){const data=await responseData(response);return replaceResponse(response,{...data,...(response.status===401?{code:'ACCOUNT_REQUIRED',compatUrl:'/account'}:response.status===403&&String(data.error).includes('会员')?{code:'MEMBERSHIP_REQUIRED',compatUrl:'/membership'}:{})});}
  const data=await responseData(response);await webRecordJoin(localDb(),[ctx.player.id],data.room.id);data.room.photo=roomPhoto(data.room,ctx.origin);
  const contributionView=await sharedContributionView(await readRoom(data.room.id),ctx.player.id);data.room.members=(data.room.members??[]).map((member:Data)=>({...member,...contributionView.member(member.id)}));
+ await recordEvent(ctx.player.id,'room-create',data.room.id,{mode,pieces,visibility:data.room.visibility},Date.now());
  return withPlayerCookie(replaceResponse(response,data),ctx.player);
 }
 async function playerCard(request:Request,code:string){
@@ -231,7 +234,7 @@ export async function sharedClientApi(request:Request,path:string){
     if(url.searchParams.get('active')==='1'&&r.players<=0)return false;
     const dimensions=r.customImage??r.artwork??photoGuidance(r.imageId),ratio=dimensions?dimensions.width/dimensions.height:1;
     return direction==='portrait'?ratio<1/1.1:direction==='landscape'?ratio>1.1:direction==='square'?Math.abs(ratio-1)<=.1:true;
-   });
+   }).sort((a:Data,b:Data)=>Number(!b.completed&&b.acceptingNew!==false&&b.players<8)-Number(!a.completed&&a.acceptingNew!==false&&a.players<8)||b.players-a.players||(b.lastPlayedAt??b.createdAt??0)-(a.lastPlayedAt??a.createdAt??0)||b.id.localeCompare(a.id));
    data.rooms=filtered.slice(start,start+limit).map((r:Data)=>({...r,...(r.customImage||r.pieces>500?{compatUrl:roomLink(r.id)}:{})}));Object.assign(data,await sharedLobbyExtras(data.rooms));data.nextCursor=start+limit<filtered.length?String(start+limit):null;return replaceResponse(response,data);
   }
   if(path==='/api/room-history'||path==='/api/my-rooms'){

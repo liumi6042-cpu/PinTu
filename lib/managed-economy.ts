@@ -106,7 +106,7 @@ export async function prepareManagedRoomEvent(room:Room,previous:Room,content:Ma
   const partners=room.members.filter(member=>!member.bot&&(member.accountId||member.guestId)!==owner&&member.lastSeen>0&&occurredAt-member.lastSeen<22000&&active.has((member.accountId||member.guestId)!));
   let friend=false;for(const partner of partners)if(await linked(owner,(partner.accountId||partner.guestId)!)){friend=true;break;}
   const invitation=await db.prepare('SELECT inviter,bound_at FROM puzzle_managed_invitation_bindings WHERE invitee=?').bind(owner).first<{inviter:string;bound_at:number}>();
-  owners.push({owner,count:contribution.count,previousCount:previous.achievements?.contributors[owner]?.count??0,cooperation:partners.length>0,friend,invitation});
+  owners.push({owner,count:contribution.count,previousCount:previous.achievements?.contributors[owner]?.count??0,cooperation:true,friend,invitation});
  }
  // Only the immutable facts needed for rewards are serialized. Bearer digests,
  // room tickets, image upload metadata and active drag state never enter receipts.
@@ -155,7 +155,7 @@ export async function syncManagedRoom(room:Room,content?:ManagedContentSnapshot|
   if(!event){
    const active=await db.prepare('SELECT owner FROM puzzle_managed_recent_activity WHERE room_id=? AND created_at>=? AND created_at<=? AND owner<>?').bind(room.id,now-120000,now,owner).all<{owner:string}>();
    const partners=room.members.filter(member=>!member.bot&&(member.accountId||member.guestId)!==owner&&now-member.lastSeen<22000&&active.results.some(row=>row.owner===(member.accountId||member.guestId)));
-   cooperation=partners.length>0;for(const partner of partners)if(await linked(owner,(partner.accountId||partner.guestId)!)){friend=true;break;}
+   cooperation=true;for(const partner of partners)if(await linked(owner,(partner.accountId||partner.guestId)!)){friend=true;break;}
    binding=await db.prepare('SELECT inviter,bound_at FROM puzzle_managed_invitation_bindings WHERE invitee=?').bind(owner).first<{inviter:string;bound_at:number}>();
   }
   let eventAt=0;
@@ -209,9 +209,9 @@ export async function managedPlayerView(owner:string,content:ManagedContentSnaps
   images:album.imageIds.flatMap((id:string)=>{const photo=photoById.get(id);return photo?[{...photo,thumbSrc:photo.thumbSrc??photo.thumbnailSrc??photo.src,collected:!!state.artworks[id],difficulties:state.artworks[id]??[],accessible:ownsManagedImage(state,id,allAlbums)}]:[];}),
   milestones:(album.milestones??[]).map((m:any)=>{const issued=state.milestones[album.id]?.[m.id];return {...m,...(issued?{target:issued.target,coins:issued.coins}:{}),decorationId:availableDecorationId(issued?issued.decorationId:m.decorationId),claimed:!!issued,claimable:false};})}));
  const taskView=TASK_DEFINITIONS.map(def=>{const id='daily:'+day+':'+def.id,gift=state.gifts[id],reward=gift??rewards.tasks.find((item:any)=>item.id===def.id),claimed=!!gift?.openedAt,claimable=!!gift&&!claimed;
-  const goal=def.group==='friend'?`与已互相添加的好友或绑定邀请的伙伴同桌，完成 ${def.target} 次有效拼合。伙伴也需要在最近两分钟内有效拼合。`:`与同桌伙伴一起完成 ${def.target} 次有效拼合。伙伴也需要在最近两分钟内有效拼合。`;
-  const goalEn=def.group==='friend'?`Make ${def.target} successful connections at a table with an accepted friend or invitation-linked partner who also made a successful connection in the last two minutes.`:`Make ${def.target} successful connections with a table partner who also made a successful connection in the last two minutes.`;
-  const titleEn=({'cooperation-10':'A first connection','cooperation-30':'In good company','cooperation-60':'A shared rhythm','friend-10':'Friends at the table','friend-30':'A familiar rhythm'} as Record<string,string>)[def.id];
+  const goal=def.group==='friend'?`与已互相添加的好友或绑定邀请的伙伴同桌，完成 ${def.target} 次有效拼合。伙伴也需要在最近两分钟内有效拼合。`:`完成 ${def.target} 次拼合`;
+  const goalEn=def.group==='friend'?`Make ${def.target} successful connections at a table with an accepted friend or invitation-linked partner who also made a successful connection in the last two minutes.`:`Make ${def.target} successful connections.`;
+  const titleEn=({'cooperation-10':'A first connection','cooperation-30':'Getting into it','cooperation-60':'In the zone','friend-10':'Friends at the table','friend-30':'A familiar rhythm'} as Record<string,string>)[def.id];
   return {...def,titleEn,goal,goalEn,progress:Math.min(def.target,daily[def.group]),coins:reward?.coins??0,xp:reward?.xp??0,fragments:0,claimed,claimable,status:claimed?'claimed':claimable?'claimable':'pending'};});
  const shares=daily.shares.length,todayInvited=qualified.filter(row=>managedDay(row.qualified_at)===day).length;
  const binding=await localDb().prepare('SELECT inviter FROM puzzle_managed_invitation_bindings WHERE invitee=?').bind(owner).first();

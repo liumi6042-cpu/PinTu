@@ -67,7 +67,7 @@ test('real concurrent task claims, album purchases and permanent retained rights
   assert.deepEqual(stateFor(db).ownedAlbums[paid.id].imageIds,['a','b']);
   assert.equal((await store.managedAccessibleImageIds(owner,moved,now)).has('a'),true);
   await assert.rejects(store.managedPlayerAction(guest,{action:'purchase-album',albumId:paid.id},moved),/相册暂未开放购买/);
-  assert.match(view.tasks.daily[0].goal,/有效拼合/);assert.ok(view.tasks.daily[0].goalEn.length>20);
+  assert.equal(view.tasks.daily[0].goal,'完成 10 次拼合');assert.ok(view.tasks.daily[0].goalEn.length>20);
   await assert.rejects(store.managedPlayerAction(guest,{action:'claim-task',taskId:'cooperation-10'},snapshot),/奖励不存在/);
  }finally{db.close();delete globalThis.__managedEconomyTestDatabase;}
 });
@@ -81,7 +81,7 @@ test('verified friend requests do not create task progress, bots are not eligibl
   const friends=await store.managedPlayerView(owner,snapshot,'http://localhost',{recover:false});assert.equal(friends.friends.list.length,1);assert.equal(friends.tasks.friends[0].progress,0);
   const now=Date.now(),committed=makeRoom('bot-room',1,now);committed.members[1]={id:'bot',guestId:bot,lastSeen:now,bot:true};writeRoom(db,committed);db.sql.prepare('INSERT INTO puzzle_managed_recent_activity VALUES(?,?,?,?)').run(committed.id,bot,1,now);
   await store.syncManagedRoom(committed,snapshot,makeRoom(committed.id,0,now));
-  const after=await store.managedPlayerView(owner,snapshot,'http://localhost',{recover:false});assert.equal(after.tasks.daily[0].progress,0);assert.equal(after.tasks.friends[0].progress,0);
+  const after=await store.managedPlayerView(owner,snapshot,'http://localhost',{recover:false});assert.equal(after.tasks.daily[0].progress,1);assert.equal(after.tasks.friends[0].progress,0);
  }finally{db.close();delete globalThis.__managedEconomyTestDatabase;}
 });
 test('invitation binds server codes, qualifies only after committed work and pays the gift snapshot once',async()=>{
@@ -108,6 +108,31 @@ async function enqueue(db,current,previous,content,occurredAt,unavailable=false)
   db.prepare('INSERT OR IGNORE INTO puzzle_managed_reward_events(id,room_id,revision,occurred_at,payload) SELECT ?,?,?,?,? WHERE changes()=1').bind(event.id,event.roomId,event.revision,event.occurredAt,event.payload)
  ]);return {event,results};
 }
+test('solo connections advance daily tasks through both live and frozen settlement without advancing friend tasks',async()=>{
+ const db=createDb(),now=Date.now();
+ try{
+  const previous=makeRoom('solo-live',0,now),current=makeRoom('solo-live',10,now);previous.members.length=1;current.members.length=1;previous.visibility=current.visibility='solo';writeRoom(db,current);
+  await store.syncManagedRoom(current,snapshot,previous);await store.syncManagedRoom(current,snapshot,previous);
+  let view=await store.managedPlayerView(owner,snapshot,'http://localhost',{recover:false});assert.equal(view.tasks.daily[0].progress,10);assert.equal(view.tasks.daily[0].claimable,true);assert.equal(view.tasks.friends[0].progress,0);
+  assert.deepEqual(view.tasks.daily.map(t=>[t.id,t.title,t.goal,t.titleEn]),[['cooperation-10','小试身手','完成 10 次拼合','A first connection'],['cooperation-30','渐入佳境','完成 30 次拼合','Getting into it'],['cooperation-60','心手相合','完成 60 次拼合','In the zone']]);
+  const before=makeRoom('solo-frozen',0,now),after=makeRoom('solo-frozen',1,now);before.members.length=1;after.members.length=1;before.visibility=after.visibility='solo';after.revision=1;writeRoom(db,before);
+  const {event}=await enqueue(db,after,before,snapshot,now),payload=JSON.parse(event.payload);assert.equal(payload.owners[0].cooperation,true);assert.equal(payload.owners[0].friend,false);
+  await store.drainManagedRewards(snapshot,owner);await store.drainManagedRewards(snapshot,owner);view=await store.managedPlayerView(owner,snapshot,'http://localhost',{recover:false});assert.equal(view.tasks.daily[1].progress,11);assert.equal(view.tasks.friends[0].progress,0);
+ }finally{db.close();delete globalThis.__managedEconomyTestDatabase;}
+});
+test('friend tasks still require an accepted friend to be present and recently contributing',async()=>{
+ const db=createDb(),now=Date.now();
+ try{
+  const first=await store.managedPlayerView(owner,snapshot,'http://localhost',{recover:false}),second=await store.managedPlayerView(guest,snapshot,'http://localhost',{recover:false});
+  await store.managedPlayerAction(owner,{action:'request-friend',code:second.friends.code},snapshot);await store.managedPlayerAction(guest,{action:'accept-friend',code:first.friends.code},snapshot);
+  for(const [index,present,active] of [[0,false,true],[1,true,false],[2,true,true]]){
+   const before=makeRoom('friends-'+index,0,now),after=makeRoom('friends-'+index,1,now);if(!present){before.members.length=1;after.members.length=1;}writeRoom(db,after);
+   if(active)db.sql.prepare('INSERT INTO puzzle_managed_recent_activity VALUES(?,?,?,?)').run(after.id,guest,1,now);
+   await store.syncManagedRoom(after,snapshot,before);
+  }
+  const view=await store.managedPlayerView(owner,snapshot,'http://localhost',{recover:false});assert.equal(view.tasks.daily[0].progress,3);assert.equal(view.tasks.friends[0].progress,1);
+ }finally{db.close();delete globalThis.__managedEconomyTestDatabase;}
+});
 test('durable known-version recovery retains yesterday tasks and exact rewards after a newer release',async()=>{
  const db=createDb(),occurredAt=Date.now()-86400000,previous=makeRoom('night-room',0,occurredAt),current=makeRoom('night-room',10,occurredAt);current.revision=1;writeRoom(db,previous);
  const historic=makeRoom('finished-before-growth',50,occurredAt-10000);historic.completedAt=occurredAt-10000;writeRoom(db,historic);

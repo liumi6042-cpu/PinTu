@@ -9,6 +9,7 @@ import type { RoomCard } from './lobby-types';
 import { env } from 'cloudflare:workers';
 import { PublicLobbyCache } from './public-lobby-cache';
 import {resolveRoomArtwork} from './room-artwork';
+import {recordSharedCompletion} from './shared-events';
 const publicLobbyCache=new PublicLobbyCache();
 function publicRoomTitle(title:string){
  const match=title.match(/^机器人练习桌\s*·\s*(.+)$/);
@@ -45,7 +46,9 @@ export async function saveCompletion(room:Room){
  commands.push(database.prepare('INSERT OR IGNORE INTO puzzle_result_players (room_id,owner_id) SELECT ?,value FROM json_each(?)').bind(room.id,JSON.stringify(Object.keys(room.participants||{}))));
  }
  await database.batch(commands);
- if(room.levelId&&room.ownerId){const {recordLevelClear}=await import('./shared-levels');await recordLevelClear(room.ownerId,room.levelId,room.id,room.completedAt);}
+ let firstClear=false;
+ if(room.levelId&&room.ownerId){const {recordLevelClear,levelProgress}=await import('./shared-levels');firstClear=await recordLevelClear(room.ownerId,room.levelId,room.id,room.completedAt)||(await levelProgress(room.ownerId)).some(row=>row.level_id===room.levelId&&row.room_id===room.id);}
+ await recordSharedCompletion(room,firstClear);
 }
 type CardRow={artworkData:string|null;customImageData:string|null;customTitle:number;acceptingNew:number;lastPlayedAt:number;id:string;title:string;imageId:string;pieces:number;visibility:RoomVisibility;expiresAt:number;completedAt:number|null;startedAt:number|null;online:number;placed:number};
 const summaryColumns=`json_extract(r.data,'$.artwork') AS artworkData,json_extract(r.data,'$.customImage') AS customImageData,(json_extract(r.data,'$.title') IS NOT NULL) AS customTitle,COALESCE(json_extract(r.data,'$.acceptingNew'),1) AS acceptingNew,d.room_id AS id,d.title,d.image_id AS imageId,d.piece_count AS pieces,d.visibility,d.expires_at AS expiresAt,d.completed_at AS completedAt,COALESCE(json_extract(r.data,'$.lastPlayedAt'),d.created_at) AS lastPlayedAt,json_extract(r.data,'$.startedAt') AS startedAt,

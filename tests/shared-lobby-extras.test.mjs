@@ -23,7 +23,7 @@ function fixture(){
  const snapshot={releaseId:'lobby-extras-test',gameSettings:game,taskRewards:structuredClone(DEFAULT_TASK_REWARD_SETTINGS),albums:{albums:[album]},photos,dailyRuntime:{select:()=>photos[0],managedImageIds:()=>new Set(),releasedImageIds:()=>new Set(),albumEntries:()=>[]}};
  globalThis.__lobbyExtrasEnv.PUZZLE_CONTENT_SNAPSHOT=()=>snapshot;
  const request=async(path,{body,cookie='puzzle_session='+token}={})=>{
-  const response=await api.sharedClientApi(new Request('http://localhost/api/shared'+path,{method:body?'POST':'GET',headers:{Origin:'http://localhost',Cookie:cookie,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})}),path);
+  const response=await api.sharedClientApi(new Request('http://localhost/api/shared'+path,{method:body?'POST':'GET',headers:{Origin:'http://localhost',Cookie:cookie,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})}),path.split('?')[0]);
   return {status:response.status,data:await response.json()};
  };
  const state=(id,extra)=>db.sql.prepare('INSERT INTO puzzle_managed_players(owner,data,updated_at) VALUES(?,?,?) ON CONFLICT(owner) DO UPDATE SET data=excluded.data').run(id,JSON.stringify({...newManagedProfile(),...extra}),now);
@@ -56,6 +56,24 @@ test('shared lobby adds counters and four online seated members in seat order wi
   const seats=lobby.data.rooms.find(r=>r.id===id).members;
   assert.deepEqual(seats,[{name:'玩家0',level:7,decoration:{id:decoration.id,artKey:decoration.artKey,color:decoration.color}},...['玩家2','玩家3','玩家4'].map(name=>({name,level:0,decoration:null}))]);
   assert.ok(!JSON.stringify(seats).includes('private-ticket'));assert.deepEqual(Object.keys(seats[0]).sort(),['decoration','level','name']);
+ }finally{f.close();}
+});
+
+test('shared lobby filters then sorts joinable tables by players, activity and id before offset pagination',async()=>{
+ const f=fixture();try{
+  const now=Date.now(),base=(await f.request('/api/rooms',{body:{imageId:f.photos[0].id,pieces:108}})).data.room,ids=[];
+  const specs=[[1,0,9000,true],[2,1,8000,true],[3,3,1000,true],[4,8,10000,true],[5,4,10000,false],[6,1,9000,true],[7,1,9000,true]];
+  f.db.sql.prepare('DELETE FROM puzzle_room_directory').run();f.db.sql.prepare('DELETE FROM puzzle_rooms').run();
+  for(const [n,players,activity,acceptingNew] of specs){
+   const id=n.toString().repeat(32),room={...base,id,createdAt:now-20000,acceptingNew,...(n===6?{}:{lastPlayedAt:now-10000+activity}),members:Array.from({length:players},(_,i)=>({id:'seat'+i,guestId:'guest:'+String(i).repeat(64),name:'玩家'+i,lastSeen:now,joinedAt:now,color:'#fff'}))};
+   if(n===6)room.createdAt=now-1000;
+   f.db.sql.prepare('INSERT INTO puzzle_rooms VALUES(?,?,?,?)').run(id,0,JSON.stringify(room),now+86400000);
+   f.db.sql.prepare('INSERT INTO puzzle_room_directory(room_id,visibility,owner_id,title,image_id,piece_count,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?)').run(id,'public',owner,'测试桌',f.photos[0].id,108,room.createdAt,now+86400000);ids.push(id);
+  }
+  const expected=[3,7,6,2,1,4,5].map(n=>String(n).repeat(32)),all=await f.request('/api/lobby');assert.equal(all.status,200);assert.deepEqual(all.data.rooms.map(r=>r.id),expected);
+  const paged=[];let cursor='0';do{const page=await f.request('/api/lobby?limit=2&cursor='+cursor);assert.equal(page.status,200);paged.push(...page.data.rooms.map(r=>r.id));cursor=page.data.nextCursor;}while(cursor);assert.deepEqual(paged,expected);assert.equal(new Set(paged).size,ids.length);
+  assert.deepEqual((await f.request('/api/lobby?open=1&active=1&limit=2')).data.rooms.map(r=>r.id),expected.slice(0,2));
+  assert.deepEqual((await f.request('/api/lobby?pieces=300')).data.rooms,[]);
  }finally{f.close();}
 });
 
