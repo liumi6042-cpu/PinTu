@@ -20,6 +20,7 @@ type ImagePreparation=Readonly<{phase:'loading'|'preparing'|'ready';completed:nu
 type DragSurface={canvas:HTMLCanvasElement;key:string};
 type GestureSurface=GestureFrame&{canvas:HTMLCanvasElement;key:string;sx:number;sy:number};
 type PaperSurface={canvas:HTMLCanvasElement;key:string;bytes:number;image?:CanvasImageSource;close?:()=>void};
+type PlacedSurface={canvas:HTMLCanvasElement;serial:number;ids:Set<number>;scratch?:HTMLCanvasElement};
 const DRAG_SURFACE_BYTES=24*1024*1024;
 /** Screen distance a held finger travels before the piece follows it, so a press or a shifted grip never nudges a piece. */
 export const DRAG_SLOP=8;
@@ -85,6 +86,7 @@ export class PuzzleBoard implements RoomTable {
  private surfaceBuffer:HTMLCanvasElement|null=null;
  private surfaceBuilds=0;private surfaceAllocations=0;
  private paperSurface:PaperSurface|null=null;
+ private placedSurface:PlacedSurface|null=null;
  paperCacheEnabled=true;
  phoneLandscapeRoom=false;
  gestureCacheEnabled=true;
@@ -116,7 +118,7 @@ export class PuzzleBoard implements RoomTable {
   const cancellation=()=>Object.assign(Error('已切换拼图图片'),{code:'IMAGE_LOAD_CANCELLED'});
   const checkCurrent=()=>{if(cancelled||this.destroyed||serial!==this.imageSerial)throw cancellation();};
   const cancel=()=>{cancelled=true;cancelStep?.();};this.cancelImage=cancel;
-  this.releaseSurfaceBuffer();this.ready=false;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.preparation={phase:'loading',completed:0,total:this.pieces.length};this.cancelInput(true);
+  this.releaseSurfaceBuffer();this.releasePlacedSurface();this.ready=false;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.preparation={phase:'loading',completed:0,total:this.pieces.length};this.cancelInput(true);
   // Timers yield to input/paint without depending on a visible RAF. A hidden
   // host may throttle timers, but show does not need to restart a lost frame.
   const yieldPreparation=()=>new Promise<void>((resolve,reject)=>{
@@ -163,7 +165,7 @@ export class PuzzleBoard implements RoomTable {
    checkCurrent();const started=Date.now();let batch=0;
    do{const piece=this.pieces[completed];
    c.save();c.translate((piece.id%columns)*tileW,Math.floor(piece.id/columns)*tileH);c.beginPath();c.rect(0,0,tileW,tileH);c.clip();c.scale(scale,scale);c.translate(pad,pad);tracePuzzlePath(c,this.paths[piece.id]);
-   c.save();c.fillStyle='#b89573';c.shadowColor='#70432845';c.shadowBlur=blur*scale;c.shadowOffsetX=offsetX*scale;c.shadowOffsetY=offsetY*scale;c.fill();c.restore();
+   c.save();c.fillStyle='#b89573';c.shadowColor='#5a321f80';c.shadowBlur=blur*scale;c.shadowOffsetX=offsetX*scale;c.shadowOffsetY=offsetY*scale;c.fill();c.restore();
    c.save();c.clip();drawPiecePicture(c,picture,piece,this.state.cols,this.state.rows,this.board.width,this.board.height);c.lineJoin='round';c.strokeStyle='#855348bd';c.lineWidth=edge*2.4;c.stroke();
    const light=c.createLinearGradient(0,-h*.2,w*.35,h*1.15);if(typeof light?.addColorStop==='function'){light.addColorStop(0,'#fffbe8e8');light.addColorStop(.3,'#fff8dec2');light.addColorStop(.58,'#fff8de32');light.addColorStop(1,'#77513f4d');c.strokeStyle=light;}else c.strokeStyle='#fff8dec2';c.lineWidth=edge*1.2;c.stroke();c.restore();c.restore();
    completed++;batch++;
@@ -450,7 +452,9 @@ export class PuzzleBoard implements RoomTable {
   const {rect:r,camera:cam}=view,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,colors=boardThemeColors(this.currentTheme);
   // Keep placed pieces below every loose group without reordering synced state.
   // Within each layer, preserve the existing raiseGroup / hit-testing order.
-  for(const locked of [true,false])for(const group of this.state.groups){if(group.id===skipId||(onlyId!==undefined&&group.id!==onlyId)||group.locked!==locked||!visibleGroup(group,this.pieces,this.edges))continue;const owner=this.owners[group.id];
+  const placedPicture=this.ready&&!!this.atlas&&paint!=='overlays'&&onlyId===undefined;
+  for(const locked of [true,false]){const layer=locked&&placedPicture?this.placedLayer():null;if(layer)ctx.drawImage(layer,this.board.x,this.board.y,this.board.width,this.board.height);
+  for(const group of this.state.groups){if(group.id===skipId||(onlyId!==undefined&&group.id!==onlyId)||group.locked!==locked||!visibleGroup(group,this.pieces,this.edges))continue;const owner=this.owners[group.id];
    const lift=view===this&&this.drag?.id===group.id?this.dragLift(group):null;
    if(lift&&paint!=='overlays'){
     // One silhouette under the whole group, so seams inside it never darken.
@@ -461,7 +465,7 @@ export class PuzzleBoard implements RoomTable {
    for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;if(x+w+this.tile.pad<(0-cam.x)/cam.z||x-this.tile.pad>(r.w-cam.x)/cam.z||y+h+this.tile.pad<(0-cam.y)/cam.z||y-this.tile.pad>(r.h-cam.y)/cam.z)continue;
     const hintIndex=this.hintUntil>now?this.hintIds.indexOf(id):-1;
     if(paint==='overlays'&&!owner&&this.focusedPiece!==id&&hintIndex<0)continue;
-    ctx.save();if(lift){ctx.translate(lift.x,lift.y);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);}ctx.translate(x,y);if(paint!=='overlays'){if(this.atlas){const t=this.tile;ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
+    ctx.save();if(lift){ctx.translate(lift.x,lift.y);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);}ctx.translate(x,y);if(paint!=='overlays'&&!(locked&&layer)){if(this.atlas){const t=this.tile;ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
     if(paint!=='pieces'){
     if(owner||this.drag?.id===group.id||this.focusedPiece===id){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=owner?.color||colors.focus;ctx.lineWidth=(owner&&this.phoneLandscapeRoom?2.5:2)/cam.z;ctx.stroke();}
     if(hintIndex>=0){ctx.fillStyle=colors.hint;ctx.font=`bold ${Math.max(13/cam.z,Math.min(w,h)*.3)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(hintIndex+1),w/2,h/2);}}
@@ -470,7 +474,7 @@ export class PuzzleBoard implements RoomTable {
    if(paint!=='pieces'&&owner&&group.pieces.length){const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;ctx.save();ctx.translate(x,y-7/cam.z);ctx.scale(1/cam.z,1/cam.z);ctx.font='11px sans-serif';const name=`${owner.name}${owner.level!==undefined?' Lv.'+owner.level:''}`,width=Math.min(190,ctx.measureText(name).width+12);
     if(this.phoneLandscapeRoom){this.drawPlayerArrow(ctx,owner.color);roomRoundPath(ctx,{x:19,y:-15,w:width,h:20},8);ctx.fillStyle=owner.color;ctx.fill();ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.fillText(name,25,-11,width-12);}
     else{ctx.fillStyle=colors.label;ctx.fillRect(0,-15,width,19);ctx.fillStyle=colors.labelInk;ctx.textBaseline='top';ctx.fillText(name,5,-12,width-10);}ctx.restore();}
-  }
+  }}
  }
  /** The held group is drawn slightly larger around the holding finger, so the
   * finger keeps its spot on the piece while the edges lift. Drawing only. */
@@ -480,6 +484,40 @@ export class PuzzleBoard implements RoomTable {
   for(const id of group.pieces){const piece=this.pieces[id],x=this.board.x+piece.col*w+group.dx,y=this.board.y+piece.row*h+group.dy;far=Math.max(far,Math.hypot(Math.max(Math.abs(x-anchor.x),Math.abs(x+w-anchor.x)),Math.max(Math.abs(y-anchor.y),Math.abs(y+h-anchor.y))));}
   return{x:anchor.x,y:anchor.y,s:1+Math.min(DRAG_LIFT_SCALE,DRAG_LIFT_PX/Math.max(1,far*this.camera.z))};
  }
+ /** Placed pieces become the picture itself, kept in one board-sized layer at the atlas
+  * scale. A snap repaints only the new pieces with their placed neighbours. Canvas clips
+  * leave faint anti-aliased gaps along shared edges, so the mask is the outlines filled
+  * and stroked 2 layer pixels wide, then filled from the source image (source-in): no
+  * edge, seam or shadow is left between placed pieces, and a loose piece lying on top
+  * keeps the only outline and shadow in sight. A restart or new image repaints it all. */
+ private placedLayer():HTMLCanvasElement|null{
+  const ids:number[]=[];for(const group of this.state.groups)if(group.locked)ids.push(...group.pieces);
+  if(!ids.length){this.releasePlacedSurface();return null;}
+  let surface=this.placedSurface,added=ids;
+  if(surface&&surface.serial===this.imageSerial){const fresh=ids.filter(id=>!surface!.ids.has(id));if(surface.ids.size+fresh.length===ids.length){if(!fresh.length)return surface.canvas;added=fresh;}else surface=null;}else surface=null;
+  const b=this.board,cols=this.state.cols,w=b.width/cols,h=b.height/this.state.rows,tab=Math.min(w,h)*.26;
+  try{
+   const full=!surface;
+   if(!surface){const canvas=this.placedSurface?.canvas??this.platform.createCanvas();canvas.width=Math.max(1,Math.ceil(b.width*this.tile.scale));canvas.height=Math.max(1,Math.ceil(b.height*this.tile.scale));surface={canvas,serial:this.imageSerial,ids:new Set(),scratch:this.placedSurface?.scratch};this.placedSurface=surface;}
+   const layer=surface.canvas,sx=layer.width/b.width,sy=layer.height/b.height;
+   const placed=new Set(ids),paint=new Set(added);for(const id of added)for(const next of [id-cols,id+cols,...(id%cols?[id-1]:[]),...((id+1)%cols?[id+1]:[])])if(placed.has(next))paint.add(next);
+   let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+   for(const id of paint){const p=this.pieces[id];left=Math.min(left,p.col*w-tab);top=Math.min(top,p.row*h-tab);right=Math.max(right,(p.col+1)*w+tab);bottom=Math.max(bottom,(p.row+1)*h+tab);}
+   // Whole layer pixels, so an incremental patch lands on the layer without resampling.
+   const x0=Math.max(0,Math.floor(left*sx)),y0=Math.max(0,Math.floor(top*sy)),x1=Math.min(layer.width,Math.ceil(right*sx)),y1=Math.min(layer.height,Math.ceil(bottom*sy));
+   if(x1<=x0||y1<=y0)throw Error('Empty placed patch');
+   const target=full?layer:(surface.scratch??=this.platform.createCanvas());if(!full){target.width=x1-x0;target.height=y1-y0;}
+   const c=target.getContext('2d');if(!c)throw Error('Canvas unavailable');
+   c.save();c.setTransform(sx,0,0,sy,full?0:-x0,full?0:-y0);c.beginPath();
+   for(const id of paint){const p=this.pieces[id];appendPuzzlePath(c,this.paths[id],p.col*w,p.row*h);}
+   c.fillStyle=c.strokeStyle='#000';c.lineJoin='round';c.lineWidth=2/sx;c.fill();c.stroke();
+   const px=this.picture.width/b.width,py=this.picture.height/b.height,bx=x0/sx,by=y0/sy,bw=(x1-x0)/sx,bh=(y1-y0)/sy;
+   c.globalCompositeOperation='source-in';c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(this.picture,bx*px,by*py,bw*px,bh*py,bx,by,bw,bh);c.restore();
+   if(!full){const l=layer.getContext('2d');if(!l)throw Error('Canvas unavailable');l.save();l.setTransform(1,0,0,1,0,0);l.drawImage(target,x0,y0);l.restore();target.width=target.height=1;}
+   for(const id of added)surface.ids.add(id);return layer;
+  }catch{this.releasePlacedSurface();return null;}
+ }
+ private releasePlacedSurface(){const placed=this.placedSurface;this.placedSurface=null;if(placed){placed.canvas.width=placed.canvas.height=1;if(placed.scratch)placed.scratch.width=placed.scratch.height=1;}}
  private releaseDragSurface(){this.dragSurface=null;}
  private drawPlayerArrow(ctx:CanvasRenderingContext2D,color:string){
   ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
@@ -583,5 +621,5 @@ export class PuzzleBoard implements RoomTable {
   if(this.drawDecoration&&decorations.length){ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const d of decorations)this.drawDecoration(d.value,d.rect);ctx.restore();}
   if(this.tray)this.drawTray(ctx);
  }
- destroy(){if(this.destroyed)return;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
+ destroy(){if(this.destroyed)return;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
 }

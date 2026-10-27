@@ -86,13 +86,21 @@ test('placed pieces render below all loose groups, including after a reordered s
  const p=platform(),state=createFittedPuzzle('test',4,3,123),board=new PuzzleBoard(p,state,()=>{});
  state.groups=[{id:0,pieces:[0],dx:0,dy:0,locked:false},{id:1,pieces:[1],dx:0,dy:0,locked:true},{id:2,pieces:[2,3],dx:0,dy:0,locked:false},{id:4,pieces:[4,5,6,7,8,9,10,11],dx:0,dy:0,locked:true}];
  board.setRect({x:0,y:0,w:390,h:600});await board.setImage('test.png');
- const drawn=()=>{const before=JSON.stringify(state);p.commands.length=0;board.draw(p.ctx);assert.equal(JSON.stringify(state),before,'drawing must not reorder shared room state');const t=board.tile;return p.commands.filter(c=>c[0]==='drawImage'&&c[1]===board.atlas).map(c=>c[2]/t.w+c[3]/t.h*t.columns);};
- assert.deepEqual(drawn(),[1,4,5,6,7,8,9,10,11,0,2,3]);
+ // Placed pieces are one cached layer filled from the picture; loose pieces are atlas tiles.
+ // paint:n is a layer repaint clipping n outlines: new pieces plus their placed neighbours.
+ const drawn=()=>{const before=JSON.stringify(state);p.commands.length=0;board.draw(p.ctx);assert.equal(JSON.stringify(state),before,'drawing must not reorder shared room state');const t=board.tile,c=p.commands,order=[];
+  for(const [i,command] of c.entries()){if(command[0]!=='drawImage')continue;if(command[1]===board.atlas)order.push(command[2]/t.w+command[3]/t.h*t.columns);
+   else if(command[1]===board.placedSurface?.canvas)order.push('placed');
+   else if(command[1]===board.picture&&c[i-1]?.[0]==='stroke'){const start=c.findLastIndex((d,k)=>k<i&&d[0]==='beginPath');order.push('paint:'+c.slice(start,i).filter(d=>d[0]==='moveTo').length);}}
+  return order;};
+ assert.deepEqual(drawn(),['paint:9','placed',0,2,3]);
  const next=structuredClone(state);next.groups=[next.groups[2],next.groups[3],next.groups[0],next.groups[1]];board.syncRemote(next,{},new Set(),false);
- assert.deepEqual(drawn(),[4,5,6,7,8,9,10,11,1,2,3,0]);
+ assert.deepEqual(drawn(),['placed',2,3,0],'an unchanged placed set reuses the layer');
  const placed=structuredClone(state);placed.groups.find(g=>g.id===0).locked=true;board.syncRemote(placed,{},new Set(),false);
- assert.deepEqual(drawn(),[4,5,6,7,8,9,10,11,0,1,2,3],'a newly placed group immediately moves below remaining loose groups');
- board.destroy();
+ assert.deepEqual(drawn(),['paint:3','placed',2,3],'a newly placed group joins the picture below remaining loose groups, repainted with its placed neighbours');
+ const restarted=structuredClone(state);restarted.groups.find(g=>g.id===4).locked=false;board.syncRemote(restarted,{},new Set(),false);
+ assert.deepEqual(drawn(),['paint:2','placed',2,3,4,5,6,7,8,9,10,11],'pieces leaving the placed set repaint the layer from scratch');
+ board.destroy();assert.equal(board.placedSurface,null);
 });
 
 test('overlapping loose pieces remain draggable above placed pieces with native and browser hit tests',async()=>{
