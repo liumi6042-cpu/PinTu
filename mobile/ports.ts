@@ -58,6 +58,7 @@ export type Platform={
  restoreWebIdentity?():Promise<void>;
  openUrl?(url:string):void;
  setOrientation?(value:'portrait'|'landscape'):Promise<void>;
+ orientationChoiceAvailable?():boolean;
  fullscreen?:{available():boolean;active():boolean;toggle():Promise<boolean>};
  randomId():string;
  frame(fn:(time:number)=>void):number;

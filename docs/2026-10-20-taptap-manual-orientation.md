@@ -13,3 +13,9 @@ mobile/tap-orientation.ts提供有界8秒等待和成功/失败/同步异常/缺
 用户要求设置页也提供横竖屏切换。已在TapTap“玩家与设置”内、外观选项之前增加同样按钮，复用toggleOrientation，不另建方向状态；按当前视口显示切换横屏/切换竖屏。更多菜单入口保留，Web与微信隐藏此项。
 
 类型检查和三尺寸设置渲染检查通过：TapTap设置按钮随横/竖视口改变，Web设置不显示方向按钮；已目测393×851。当前小提示条、声音开关、分享备用入口和主题缩略图保持。无服务器、玩家数据或审核修改。包上传结果位于work/taptap-settings-orientation-20261020/upload.log。
+
+## 首次大厅方向选择（2026-10-27，orientation-picker 工作树）
+
+当前启动规则为读取 `jigsaw:orientation:v1`，没有有效偏好时请求横屏；上文启动方向描述保留为历史记录。入场邀请、新手自动开关卡及未完成章节的跳转决定结束后，首次回到大厅才提供横屏/竖屏选择。仅支持原生切屏的 TapTap 手机宿主提供弹窗，Windows/Mac/PC 宿主隐藏。点击选项立即请求切屏并保留弹窗，确认或返回键保存方向及 `jigsaw:orientation-picker:v1=1`；游戏内手动切屏成功也更新方向偏好。存储读取失败时本次会话跳过弹窗，写入失败不阻断操作。
+
+验证：`tests/mobile-orientation-picker.test.mjs` 与关卡回归共 29 项、`npm run test:mobile`、`npm run test:h5`、图库校验（82 张已发布图片、813 个旧哈希衍生图）通过。`npx.cmd tsc --noEmit -p tsconfig.json` 仅报工作树缺少被忽略的 `./.openai/hosting.json`（`vite.config.ts:5`，TS2307，原有），本次文件无新增类型错误。本地截图用模拟 TapTap 宿主切屏（脚本在忽略目录 `work/orientation-shots/shots.mjs`），截图在 `D:\chat\拼图\ui-revamp-shots\orientation-picker`。尚未在 TapTap 真机验证，未部署或上传。
