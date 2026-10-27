@@ -49,6 +49,8 @@ export class PuzzleBoard implements RoomTable {
  readonly platform:Platform;readonly state:PuzzleState;readonly board:ReturnType<typeof boardFor>;
  network:RoomTable['network']=null;networkReady=false;
  camera={x:0,y:0,z:1};rect:Rect={x:0,y:0,w:0,h:0};
+ completionReveal=0;completionSweep:number|null=null;
+ pictureScreenRect():Rect{const r=this.rect,c=this.camera,b=this.board;return {x:r.x+c.x+b.x*c.z,y:r.y+c.y+b.y*c.z,w:b.width*c.z,h:b.height*c.z};}
  notice='';onNotice:((message:string)=>void)|null=null;soundUrl='';
  previewTopInset=6;
  selfDecoration:RoomDecoration|null=null;drawDecoration:((value:RoomDecoration,rect:Rect)=>void)|null=null;
@@ -536,9 +538,12 @@ export class PuzzleBoard implements RoomTable {
     this.drawPieceGroups(ctx,now,undefined,undefined,'overlays');
    }else this.drawPieceGroups(ctx,now);
   }
+  if(this.ready&&this.completionReveal>0){const b=this.board;ctx.save();ctx.globalAlpha=this.completionReveal;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(this.picture,b.x,b.y,b.width,b.height);ctx.restore();
+   if(this.completionSweep!==null){const slant=Math.tan(Math.PI/9),band=b.width*.35,travel=b.width+band+b.height*slant,x=b.x-band-b.height*slant+travel*this.completionSweep;ctx.save();ctx.beginPath();ctx.rect(b.x,b.y,b.width,b.height);ctx.clip();ctx.globalCompositeOperation='source-over';ctx.transform(1,0,slant,1,x,b.y);const light=ctx.createLinearGradient(0,0,band,0);light.addColorStop(0,'#fff8e000');light.addColorStop(.5,'#fff8e080');light.addColorStop(1,'#fff8e000');ctx.fillStyle=light;ctx.fillRect(0,0,band,b.height);ctx.restore();}
+  }
   for(const locked of [true,false])for(const group of this.state.groups){const owner=this.owners[group.id];if(group.locked!==locked||!owner?.decoration||!group.pieces.length||!visibleGroup(group,this.pieces,this.edges))continue;const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;decorations.push({value:owner.decoration,rect:{x:r.x+cam.x+x*cam.z-27,y:r.y+cam.y+y*cam.z-25,w:24,h:24}});}
   this.drawSnapFeedback(ctx,now);
-  if(this.hintUntil>now){for(const[idIndex,id]of this.hintIds.entries()){const p=this.pieces[id];ctx.save();ctx.translate(this.board.x+p.col*w,this.board.y+p.row*h);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=2/cam.z;ctx.stroke();ctx.fillStyle=colors.hint;ctx.font=`bold ${14/cam.z}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(idIndex+1),w/2,h/2);ctx.restore();}}
+  if(this.completionReveal<=0&&this.hintUntil>now){for(const[idIndex,id]of this.hintIds.entries()){const p=this.pieces[id];ctx.save();ctx.translate(this.board.x+p.col*w,this.board.y+p.row*h);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=2/cam.z;ctx.stroke();ctx.fillStyle=colors.hint;ctx.font=`bold ${14/cam.z}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(idIndex+1),w/2,h/2);ctx.restore();}}
   ctx.restore();
   if(this.preview&&this.ready){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.restore();}
   ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const cursor of this.cursors.values()){const p=this.worldToScreen(cursor),value=cursor.value;if(p.x<r.x||p.y<r.y||p.x>r.x+r.w||p.y>r.y+r.h)continue;ctx.save();ctx.translate(p.x,p.y);ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=value.color;ctx.fill();ctx.strokeStyle=colors.cursorLine;ctx.lineWidth=1;ctx.stroke();ctx.font='bold 11px sans-serif';const label=`${value.name} · Lv.${value.level??0}`,width=Math.min(190,ctx.measureText(label).width+12);if(this.phoneLandscapeRoom){roomRoundPath(ctx,{x:19,y:12,w:width,h:21},8);ctx.fillStyle=value.color;ctx.fill();}else{ctx.fillStyle=colors.cursorLabel;ctx.fillRect(19,12,width,21);}ctx.fillStyle=this.phoneLandscapeRoom?'#ffffff':colors.labelInk;ctx.textBaseline='top';ctx.fillText(label,25,17,width-12);ctx.restore();if(value.decoration)decorations.push({value:value.decoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}ctx.restore();
