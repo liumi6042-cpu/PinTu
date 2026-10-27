@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {mkdtempSync,rmSync} from 'node:fs';
-import {planTapTapArtwork,fullImageAlbumIds} from './bundle-taptap-artwork.mjs';
+import {planTapTapArtwork,fullImageAlbumIds,paidMobileAlbums,TAPTAP_ARTWORK_BUDGET_BYTES} from './bundle-taptap-artwork.mjs';
 import {buildOfflineCatalog,offlineRoomArtwork} from './offline-catalog.mjs';
 import {buildMobileShared} from './build-mobile-shared.mjs';
 import {TAR} from './release-files.mjs';
@@ -13,6 +13,8 @@ import {TAR} from './release-files.mjs';
 // single jigsaw-nook/ folder. Albums must be the live managed albums (what the server serves),
 // not a local guess, so bundled hashes match what clients will request.
 // Usage: node scripts/package-taptap.mjs YYYYMMDD-name --albums <live-albums.json> [--catalog <catalog.json>] [--revisions <artwork-revisions.json>]
+//   [--artwork-budget-mb <MiB>] [--cache-albums <id,id,...>]: paid albums (store order by default) add cache-only
+//   full images while artwork stays within the budget; ownership and the offline catalog are unchanged.
 const root=resolve(import.meta.dirname,'..');
 const name=process.argv[2],arg=key=>{const i=process.argv.indexOf(key);return i>0?process.argv[i+1]:undefined;};
 if(!/^\d{8}-[a-z0-9-]{2,40}$/.test(name||''))throw Error('Usage: node scripts/package-taptap.mjs YYYYMMDD-name --albums <live-albums.json>');
@@ -32,11 +34,14 @@ const effective=catalog.map(photo=>{
  return {...photo,thumbSrc:version.thumbSrc,optimizedSrc:version.src,playSrc:version.src};
 });
 const photos=effective.map(photo=>({...photo,src:photo.optimizedSrc??photo.playSrc}));
-const selectedAlbums=new Set(fullImageAlbumIds({albums,levelAlbumIds})),selectedImages=new Set(albums.filter(album=>selectedAlbums.has(album.id)).flatMap(album=>album.imageIds));
+const cacheAlbumIds=arg('--cache-albums')!==undefined?arg('--cache-albums').split(',').map(id=>id.trim()).filter(Boolean):paidMobileAlbums(albums).map(album=>album.id);
+const budgetBytes=arg('--artwork-budget-mb')!==undefined?Number(arg('--artwork-budget-mb'))*1024*1024:TAPTAP_ARTWORK_BUDGET_BYTES;
+if(!Number.isFinite(budgetBytes)||budgetBytes<=0)throw Error('--artwork-budget-mb must be a positive number');
+const selectedAlbums=new Set(fullImageAlbumIds({albums,levelAlbumIds})),selectedImages=new Set(albums.filter(album=>selectedAlbums.has(album.id)||cacheAlbumIds.includes(album.id)).flatMap(album=>album.imageIds));
 // Match the public TapTap room contract, including legacy artwork. Keep active
 // thumbnails for online cards; only one full edition per image enters the zip.
 const roomArtwork=photos.filter(photo=>selectedImages.has(photo.id)).map(photo=>({id:photo.id,...offlineRoomArtwork(photo,48)}));
-const plan=await planTapTapArtwork({root,catalog:effective,albums,levelAlbumIds,roomArtwork});
+const plan=await planTapTapArtwork({root,catalog:effective,albums,levelAlbumIds,roomArtwork,cacheAlbumIds,budgetBytes});
 const offlineCatalog=buildOfflineCatalog({levels,albums,photos,plan});
 const work=resolve(root,'work/taptap-package-'+name);
 if(existsSync(work))throw Error('Work directory exists; choose a fresh name: '+work);
@@ -61,6 +66,6 @@ try{
 const bytes=readFileSync(archive);
 if(bytes.length>55*1024*1024)throw Error('TapTap zip exceeds 55 MiB: '+bytes.length);
 const bundledFullImages=plan.files.filter(f=>f.kind==='puzzle').length;
-const report={archive,bytes:bytes.length,zipBytes:bytes.length,sha256:sha(bytes),files:record.files.length,bundledArtwork:plan.files.length,thumbnails:plan.thumbnailCount,puzzleImages:bundledFullImages,bundledFullImages,paidAlbumsExcluded:plan.paidAlbumsExcluded,bytesByKind:plan.bytesByKind,offlineLevels:offlineCatalog.chapters.reduce((n,chapter)=>n+chapter.levels.length,0),offlinePictures:offlineCatalog.free.length,albums:plan.albums.map(a=>a.id),config:{...record.config,bundledArtwork:Object.keys(record.config.bundledArtwork??{}).length}};
+const report={archive,bytes:bytes.length,zipBytes:bytes.length,sha256:sha(bytes),files:record.files.length,bundledArtwork:plan.files.length,thumbnails:plan.thumbnailCount,puzzleImages:bundledFullImages,bundledFullImages,paidAlbumsExcluded:plan.paidAlbumsExcluded,cachedAlbums:plan.cachedAlbums,cacheSkipped:plan.cacheSkipped,artworkBudgetBytes:plan.budgetBytes,bytesByKind:plan.bytesByKind,offlineLevels:offlineCatalog.chapters.reduce((n,chapter)=>n+chapter.levels.length,0),offlinePictures:offlineCatalog.free.length,albums:plan.albums.map(a=>a.id),config:{...record.config,bundledArtwork:Object.keys(record.config.bundledArtwork??{}).length}};
 writeFileSync(archive+'.json',JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report,null,2));

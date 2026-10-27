@@ -55,3 +55,16 @@ test('bundled output safety accepts thumb2x and rejects traversal, malformed nam
  assert.throws(()=>writeBundledArtwork(out,{files:[{...file,path:'../escape.webp'}]}),/Unsafe bundled artwork output/);
  assert.throws(()=>writeBundledArtwork(out,{files:[{...file,data:Buffer.from('changed')}]}),/Bundled artwork changed during build/);
 });
+
+test('paid albums add cache-only full images in order within the budget and stay out of the free album set',async t=>{
+ const input=await fixture(t),paid={id:'paid',title:'Paid',showOnMobile:true,purchasable:true,price:100,imageIds:['online']};
+ const albums=[...input.albums,paid],online=input.catalog[2],base=await planTapTapArtwork({...input,albums});
+ const roomy=await planTapTapArtwork({...input,albums,cacheAlbumIds:['paid'],budgetBytes:Infinity});
+ assert.deepEqual(roomy.cachedAlbums.map(album=>album.id),['paid']);assert.deepEqual(roomy.cacheSkipped,[]);
+ assert.equal(roomy.mapping[online.optimizedSrc],'assets'+online.optimizedSrc);assert.match(roomy.mapping[online.thumbSrc],/-thumb2x-/);
+ // Only free and story albums are playable offline; cached paid art is never listed there.
+ assert.deepEqual(roomy.albums.map(album=>album.id),['local']);assert.ok(!roomy.paidAlbumsExcluded.includes('paid'));
+ const tight=await planTapTapArtwork({...input,albums,cacheAlbumIds:['paid'],budgetBytes:base.totalBytes});
+ assert.deepEqual(tight.cachedAlbums,[]);assert.deepEqual(tight.cacheSkipped,['paid']);assert.equal(tight.mapping[online.optimizedSrc],undefined);
+ assert.deepEqual(tight.paidAlbumsExcluded,['paid']);
+});

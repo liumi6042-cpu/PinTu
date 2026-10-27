@@ -1,4 +1,4 @@
-import {readFileSync,realpathSync,lstatSync} from 'node:fs';
+import {readFileSync,realpathSync,lstatSync,statSync} from 'node:fs';
 import {resolve,sep} from 'node:path';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
@@ -14,7 +14,18 @@ export const freeMobileAlbums=albums=>albums.filter(a=>a.showOnMobile===true&&a.
 export function fullImageAlbumIds({albums,fullAlbumIds,levelAlbumIds=[]}){
  return [...new Set(fullAlbumIds??[...freeMobileAlbums(albums).map(a=>a.id),...levelAlbumIds])];
 }
-export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds,levelAlbumIds=[],roomArtwork=[]}){
+/** Paid mobile albums in store (content) order: candidates for cache-only full images. */
+export const paidMobileAlbums=albums=>albums.filter(a=>a.showOnMobile===true&&a.imageIds.length&&a.purchasable===true&&a.price>0);
+// Artwork bytes (full images + thumbnails) the zip may carry: about 48 MB of zip with the
+// client, fonts and music. package-taptap.mjs keeps its own 55 MiB hard gate.
+export const TAPTAP_ARTWORK_BUDGET_BYTES=38*1024*1024;
+/**
+ * cacheAlbumIds adds full images on top of the default (free + story) set, in the given order,
+ * while artwork stays within budgetBytes; an album that would not fit is skipped. They are only a
+ * local cache for the same URLs: they never enter the offline catalog and ownership stays with
+ * the server.
+ */
+export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds,levelAlbumIds=[],roomArtwork=[],cacheAlbumIds=[],budgetBytes=Infinity}){
  const base=realpathSync(resolve(root,'public')),files=new Map(),mapping={};
  // Package theme-album thumbnails, including newly created/hidden albums.
  // Web-gallery-only and daily-only material remains online.
@@ -46,6 +57,24 @@ export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds,levelA
    if(!puzzles.has(imageId)){puzzles.set(imageId,add(artwork?.src??photo.optimizedSrc??photo.playSrc,'puzzle',imageId));puzzleThumbs.set(imageId,artwork?.thumbSrc??photo.thumbSrc);}
   }
  }
+ const cached=[],cacheSkipped=[];
+ if(cacheAlbumIds.length){
+  // Thumbnails are counted at their server size; generated 2x thumbnails are of the same order.
+  const size=url=>{if(!/^\/puzzles\/[a-z0-9-]+-(?:thumbnail|optimized|play)-[a-f0-9]{12}\.webp$/.test(url??''))throw Error('Bundle requires a public content-addressed WebP: '+url);return statSync(resolve(base,'.'+url)).size;};
+  let used=[...puzzles.values()].reduce((sum,file)=>sum+file.bytes,0)+published.reduce((sum,photo)=>sum+size(photo.thumbSrc),0);
+  for(const id of new Set(cacheAlbumIds)){
+   if(puzzleAlbumIds.includes(id))continue;
+   const album=albums.find(a=>a.id===id);if(!album)throw Error('Cached album is absent from current content: '+id);
+   const fresh=[...new Set(album.imageIds)].filter(imageId=>!puzzles.has(imageId)).map(imageId=>{
+    const photo=byId.get(imageId);if(!photo)throw Error('Cached album image is not published: '+imageId);
+    const artwork=artworkById.get(imageId);return {imageId,url:artwork?.src??photo.optimizedSrc??photo.playSrc,thumb:artwork?.thumbSrc??photo.thumbSrc};
+   });
+   const extra=fresh.reduce((sum,item)=>sum+size(item.url),0);
+   if(used+extra>budgetBytes){cacheSkipped.push(id);continue;}
+   for(const item of fresh){puzzles.set(item.imageId,add(item.url,'puzzle',item.imageId));puzzleThumbs.set(item.imageId,item.thumb);}
+   used+=extra;cached.push({id,title:album.title,images:fresh.length,bytes:extra});
+  }
+ }
  for(const photo of published){
   const puzzle=puzzles.get(photo.id);
   if(!puzzle){add(photo.thumbSrc,'thumbnail',photo.id);continue;}
@@ -62,6 +91,7 @@ export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds,levelA
  }
  const bytesByKind={puzzle:0,thumbnail:0};for(const file of files.values())bytesByKind[file.kind]+=file.bytes;
  return {mapping,files:[...files.values()],albums:selected,thumbnailCount:published.length,
-  paidAlbumsExcluded:themeAlbums.filter(a=>a.showOnMobile===true&&a.imageIds.length&&a.purchasable===true&&a.price>0&&!puzzleAlbumIds.includes(a.id)).map(a=>a.id),
+  paidAlbumsExcluded:themeAlbums.filter(a=>a.showOnMobile===true&&a.imageIds.length&&a.purchasable===true&&a.price>0&&!puzzleAlbumIds.includes(a.id)&&!cached.some(item=>item.id===a.id)).map(a=>a.id),
+  cachedAlbums:cached,cacheSkipped,budgetBytes,
   bytesByKind,totalBytes:bytesByKind.puzzle+bytesByKind.thumbnail};
 }
