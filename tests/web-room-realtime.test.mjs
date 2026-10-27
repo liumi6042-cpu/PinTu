@@ -206,6 +206,22 @@ test('cheers use one HTTP/WS store, skip subscribe replay, isolate rooms and rej
  }finally{await f.close();}
 });
 
+test('a burst of room writes coalesces per peer so a cheer is not queued behind stale snapshots',async()=>{
+ const f=await fixture();try{
+  const first=await f.create(),second=await f.join(first),id=first.room.id;
+  const a=await f.socket(first),b=await f.socket(second,otherToken);await a.next(m=>m.type==='room');await b.next(m=>m.type==='room');
+  editRoom(f,id,room=>{room.completedAt=Date.now();});
+  const reads=f.hub.stats().roomReads,framesBefore=b.messages.filter(m=>m.type==='room').length;
+  // A fast finish: every drop is its own successful POST and its own notification.
+  for(let n=0;n<60;n++){f.hub.notify(id);await new Promise(resolve=>setImmediate(resolve));}
+  a.send({type:'cheer',data:{id:cheerId(30),emote:'clap'}});
+  const received=await b.next(m=>m.type==='cheers'&&m.data.cheers.some(c=>c.id===cheerId(30)));
+  const framesAhead=b.messages.slice(0,b.messages.indexOf(received)).filter(m=>m.type==='room').length-framesBefore;
+  assert.ok(framesAhead<=8,'only a bounded number of snapshots precede the cheer, got '+framesAhead);
+  assert.ok(f.hub.stats().roomReads-reads<=20,'sixty notifications do not cost sixty reads per peer');
+  assert.ok(Date.now()-received.data.cheers[0].at<4000,'the cheer arrives fresh enough for the client to show it');
+ }finally{await f.close();}
+});
 test('diagnostic rooms retain their existing realtime admission and use ephemeral cheers',async()=>{
  globalThis.__webRealtimeEnv.PUZZLE_DIAGNOSTIC_ACCOUNT_IDS=owner;
  const f=await fixture();try{

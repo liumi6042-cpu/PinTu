@@ -39,7 +39,15 @@ export function createRoomRealtimeHub(options){
   if(closed||!rooms.has(roomId))return;
   const old=pending.get(roomId);pending.set(roomId,{room:room||old?.room,cursors:cursors||old?.cursors,cheers:cheers||old?.cheers});
   if(old)return;
-  queueMicrotask(async()=>{const kind=pending.get(roomId);pending.delete(roomId);if(!kind)return;await Promise.all([...rooms.get(roomId)??[]].map(peer=>{peer.chain=peer.chain.then(()=>refresh(peer,kind));return peer.chain;}));});
+  queueMicrotask(async()=>{const kind=pending.get(roomId);pending.delete(roomId);if(!kind)return;await Promise.all([...rooms.get(roomId)??[]].map(peer=>schedule(peer,kind)));});
+ };
+ // At most one refresh waits per peer and it reads current state when it runs, so a
+ // burst of writes cannot queue seconds of stale snapshots ahead of a cheer.
+ const schedule=(peer,kind)=>{
+  const queued=peer.refreshKind;peer.refreshKind={room:kind.room||queued?.room,cursors:kind.cursors||queued?.cursors,cheers:kind.cheers||queued?.cheers};
+  if(queued)return peer.refreshQueued;
+  peer.refreshQueued=peer.chain=peer.chain.then(()=>{const next=peer.refreshKind;peer.refreshKind=null;return next&&refresh(peer,next);});
+  return peer.refreshQueued;
  };
  const upgrade=(request,socket,head)=>{
   let url;try{url=new URL(request.url,'http://realtime.invalid');}catch{socket.destroy();return;}
