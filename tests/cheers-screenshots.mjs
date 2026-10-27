@@ -85,7 +85,8 @@ try{
   async function makeRoom(count){
     const players=[];
     for(let i=0;i<count;i++)players.push({session:(await call(null,'/session',{})).token});
-    const owner=players[0];owner.ticket=await call(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});
+    // Tables seat 4 below 300 pieces and 8 from 500, so the 8-player table is a 500-piece one.
+    const owner=players[0];owner.ticket=await call(owner,'/api/rooms',{mode:'random',pieces:count>4?500:48,visibility:'public',requestId:rid()});
     const path='/api/rooms/'+owner.ticket.room.id;
     for(const actor of players.slice(1))actor.ticket=await call(actor,path+'/join',{});
     let snap=await call(owner,path,undefined,owner.ticket.token),drops=0;

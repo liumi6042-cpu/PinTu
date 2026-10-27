@@ -7,12 +7,12 @@ import {DatabaseSync} from 'node:sqlite';
 import {createMobileService} from '../server/mobile-service.mjs';
 
 const rid=()=>randomBytes(16).toString('hex'),identity=n=>n.toString(16).padStart(64,'0');
-function fixture(t,{completed=true}={}){
+function fixture(t,{completed=true,pieces=48}={}){
  mkdirSync(resolve('work'),{recursive:true});const dir=mkdtempSync(resolve('work/mobile-cheers-')),databasePath=resolve(dir,'mobile.sqlite');let now=1800000000000;
  const service=createMobileService({databasePath,now:()=>now}),db=new DatabaseSync(databasePath);
  t.after(()=>{db.close();service.close();rmSync(dir,{recursive:true,force:true});});
  const call=(url,body,token,owner=identity(1),method=body===undefined?'GET':'POST')=>service.handle({identity:owner,url,method,body,authorization:token?'Bearer '+token:undefined});
- const created=call('/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});assert.equal(created.status,201);const ticket=created.data,path='/api/rooms/'+ticket.room.id;
+ const created=call('/api/rooms',{mode:'random',pieces,visibility:'public',requestId:rid()});assert.equal(created.status,201);const ticket=created.data,path='/api/rooms/'+ticket.room.id;
  const patchRoom=updates=>{const room=JSON.parse(db.prepare('SELECT data FROM mobile_rooms WHERE id=?').get(ticket.room.id).data);Object.assign(room,updates);db.prepare('UPDATE mobile_rooms SET data=?,completed_at=?,closed_at=? WHERE id=?').run(JSON.stringify(room),room.completedAt,room.closedAt??null,room.id);return room;};
  if(completed)patchRoom({completedAt:now});
  return {service,db,databasePath,ticket,path,call,patchRoom,now:()=>now,advance:ms=>now+=ms,post:(input={id:rid(),emote:'clap'})=>call(path+'/cheers',input,ticket.token),get:after=>call(path+'/cheers'+(after===undefined?'':'?after='+encodeURIComponent(after)),undefined,ticket.token)};
@@ -72,7 +72,8 @@ test('the sweep drops closed rooms even when their cheers have not expired',t=>{
 });
 
 test('cheers expire at fifteen seconds, retain the newest sixty, and never replay after service restart',t=>{
- const f=fixture(t),tickets=[f.ticket];for(let n=2;n<=8;n++){const joined=f.call(f.path+'/join',{},undefined,identity(n));assert.equal(joined.status,200);tickets.push(joined.data);}
+ // Eight players need a 500-piece table; smaller tables seat four or six.
+ const f=fixture(t,{pieces:500}),tickets=[f.ticket];for(let n=2;n<=8;n++){const joined=f.call(f.path+'/join',{},undefined,identity(n));assert.equal(joined.status,200);tickets.push(joined.data);}
  const ids=[];for(let batch=0;batch<2;batch++){for(let player=0;player<8;player++)for(let n=0;n<4;n++){const id=rid();ids.push(id);assert.equal(f.call(f.path+'/cheers',{id,emote:'popper'},tickets[player].token,identity(player+1)).status,200);}if(!batch)f.advance(2000);}
  const snapshot=f.get().data;assert.equal(snapshot.cheers.length,60);assert.deepEqual(snapshot.cheers.map(item=>item.id),ids.slice(-60));assert.equal(snapshot.cheers.at(-1).seq,snapshot.cursor);
  const restarted=createMobileService({databasePath:f.databasePath,now:f.now});try{const result=restarted.handle({identity:identity(1),method:'GET',url:f.path+'/cheers',authorization:'Bearer '+f.ticket.token});assert.equal(result.status,200);assert.deepEqual(result.data.cheers,[]);}finally{restarted.close();}

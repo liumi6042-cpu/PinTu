@@ -6,6 +6,8 @@ import { supportsPieceCount,PIECE_RESOLUTION_ERROR,MAX_NEW_PIECES,HIGH_PIECES_PA
 export { PHOTO_IDS } from './puzzle-catalog';
 export const ROOM_LIFETIME=30*24*60*60*1000, LEASE_MS=10000, ONLINE_MS=22000;
 export const ORGANIZE_COOLDOWN_MS=2000;
+// Seats a table accepts unless the room carries its own playerLimit.
+export const DEFAULT_PLAYER_LIMIT=8;
 export const COLORS=['#d6e8b4','#99caf4','#eeafcf','#ffcb8e','#b6acf7','#8cddd1','#f3e192','#dda990'];
 export type Member={id:string;name:string;color:string;digest:string;previousDigests?:string[];lastSeen:number;joinedAt:number;accountId?:string;guestId?:string;bot?:boolean};
 export type Lease={playerId:string;expires:number;seq:number;previewId?:string};
@@ -13,7 +15,7 @@ export type RoomVisibility='public'|'private'|'solo';
 export type RoomArtwork={revision:string;src:string;thumbSrc:string;width:number;height:number};
 export type RoomPhoto={id:string;title:string;category:string;src:string;thumbSrc:string;width?:number;height?:number};
 export type BotTask={groupId:number;phase:'claim'|'approach'|'align'|'drop'|'reclaim';wrong:boolean;seq:number};
-export type Room={persistent?:boolean;artwork?:RoomArtwork;continuation?:{choices:string[];votes:Record<string,string>;selected?:string;roomId?:string};lastOrganizedAt?:number;customImage?:import('./custom-images').CustomImage;publicDeadline?:number;publicLastSeenAt?:number;title?:string;acceptingNew?:boolean;admitted?:Record<string,boolean>;achievements?:RoomAchievementState;syncHistory?:import('./room-sync').RoomChange[];retentionVersion?:2;lastPlayedAt?:number;botRoom?:boolean;botRoomSlot?:string;botState?:{nextAt:Record<string,number>;tasks?:Record<string,BotTask>};id:string;puzzle:PuzzleState;revision:number;createdAt:number;expiresAt:number;completedAt:number|null;members:Member[];leases:Record<string,Lease>;visibility?:RoomVisibility;ownerId?:string;startedAt?:number|null;participants?:Record<string,string>};
+export type Room={persistent?:boolean;playerLimit?:number;artwork?:RoomArtwork;continuation?:{choices:string[];votes:Record<string,string>;selected?:string;roomId?:string};lastOrganizedAt?:number;customImage?:import('./custom-images').CustomImage;publicDeadline?:number;publicLastSeenAt?:number;title?:string;acceptingNew?:boolean;admitted?:Record<string,boolean>;achievements?:RoomAchievementState;syncHistory?:import('./room-sync').RoomChange[];retentionVersion?:2;lastPlayedAt?:number;botRoom?:boolean;botRoomSlot?:string;botState?:{nextAt:Record<string,number>;tasks?:Record<string,BotTask>};id:string;puzzle:PuzzleState;revision:number;createdAt:number;expiresAt:number;completedAt:number|null;members:Member[];leases:Record<string,Lease>;visibility?:RoomVisibility;ownerId?:string;startedAt?:number|null;participants?:Record<string,string>};
 export type RoomSnapshot={artwork?:RoomArtwork;photo?:RoomPhoto;customImage?:import('./custom-images').CustomImage;title?:string;acceptingNew?:boolean;achievementDays?:Record<string,string>;id:string;puzzle:PuzzleState;revision:number;serverTime:number;expiresAt:number;members:Omit<Member,'digest'|'previousDigests'|'joinedAt'|'accountId'|'guestId'>[];leases:Record<string,Lease>;visibility?:RoomVisibility;completedAt?:number|null;startedAt?:number|null;participantCount?:number};
 export type RoomAction={type:'heartbeat'|'leave'|'claim'|'move'|'drop'|'release'|'shuffle';groupId?:number;dx?:number;dy?:number;seq?:number};
 export class RoomError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}
@@ -31,6 +33,7 @@ export function ensureOpen(room:Pick<Room,'expiresAt'|'visibility'|'puzzle'|'per
  if(room.visibility==='public'&&hasTableProgress(room.puzzle))return;
  throw new RoomError('房间已过期，请重新创建房间',410);
 }
+export function roomPlayerLimit(room:Pick<Room,'playerLimit'>){return room.playerLimit??DEFAULT_PLAYER_LIMIT;}
 export function hasRoomAdmission(room:Room,identity?:string){return !!identity&&(room.ownerId===identity||!!room.admitted?.[identity]||!!room.participants?.[identity]||room.members.some(m=>m.accountId===identity||m.guestId===identity));}
 export function touchRoom(room:Room,now:number){if(room.completedAt!==null)return;room.lastPlayedAt=Math.max(room.lastPlayedAt||0,now);if(room.visibility==='public')touchPublicRoom(room,now);else room.expiresAt=room.lastPlayedAt+ROOM_LIFETIME;}
 export function pruneLeases(room:Room,now:number){for(const [id,l] of Object.entries(room.leases))if(l.expires<=now||!room.puzzle.groups.some(g=>g.id===Number(id)&&!g.locked))delete room.leases[id];}
@@ -43,11 +46,12 @@ export function addMember(room:Room,id:string,name:string,digest:string,now:numb
  if(room.acceptingNew===false&&!returning)throw new RoomError('房主已暂停新玩家加入，已入座的朋友可以继续',403);
  if(identity)(room.admitted??={})[identity]=true;
  if(room.visibility==='solo'&&(!identity||room.ownerId!==identity))throw new RoomError('这是一局个人拼图，只能由创建者继续',403);
- const existing=room.members.find(m=>m.digest===digest||(accountId&&m.accountId===accountId)||(guestId&&m.guestId===guestId));if(existing){if(now-existing.lastSeen>=ONLINE_MS&&room.members.filter(m=>m.id!==existing.id&&now-m.lastSeen<ONLINE_MS).length>=8)throw new RoomError('房间已有 8 位玩家，请稍后再试',409);existing.name=validName(name);existing.lastSeen=now;touchRoom(room,now);
+ const existing=room.members.find(m=>m.digest===digest||(accountId&&m.accountId===accountId)||(guestId&&m.guestId===guestId));const limit=roomPlayerLimit(room);
+ if(existing){if(now-existing.lastSeen>=ONLINE_MS&&room.members.filter(m=>m.id!==existing.id&&now-m.lastSeen<ONLINE_MS).length>=limit)throw new RoomError('房间已有 '+limit+' 位玩家，请稍后再试',409);existing.name=validName(name);existing.lastSeen=now;touchRoom(room,now);
   // Concurrent tabs share one player; keep their recent identity-bound tickets valid.
   if(identity&&existing.digest!==digest)existing.previousDigests=[existing.digest,...(existing.previousDigests||[]).filter(value=>value!==digest)].slice(0,7);
   existing.digest=digest;return existing;}
- if(room.members.filter(m=>now-m.lastSeen<ONLINE_MS).length>=8)throw new RoomError('房间已有 8 位玩家，请稍后再试',409);
+ if(room.members.filter(m=>now-m.lastSeen<ONLINE_MS).length>=limit)throw new RoomError('房间已有 '+limit+' 位玩家，请稍后再试',409);
  room.members=room.members.filter(m=>now-m.lastSeen<5*60*1000);if(room.members.length>=32)throw new RoomError('加入过于频繁，请稍后再试',429);
  const used=new Set(room.members.filter(m=>now-m.lastSeen<ONLINE_MS).map(m=>m.color));const member={id,name:validName(name),digest,lastSeen:now,joinedAt:now,color:COLORS.find(c=>!used.has(c))||COLORS[room.members.length%8],...(accountId?{accountId}:{}),...(guestId?{guestId}:{})};room.members.push(member);touchRoom(room,now);return member;
 }
@@ -58,7 +62,7 @@ export function snapshot(room:Room,now:number):RoomSnapshot {const puzzle=struct
 function boundedOffset(room:Room,groupId:number,dx:number,dy:number){const group=room.puzzle.groups.find(g=>g.id===groupId)!,board=boardFor(room.puzzle.cols,room.puzzle.rows),w=board.width/room.puzzle.cols,h=board.height/room.puzzle.rows;const xs=group.pieces.map(id=>board.x+(id%room.puzzle.cols)*w),ys=group.pieces.map(id=>board.y+Math.floor(id/room.puzzle.cols)*h);return {dx:Math.max(WORLD.x+18-Math.min(...xs),Math.min(WORLD.x+WORLD.width-18-Math.max(...xs)-w,dx)),dy:Math.max(WORLD.y+18-Math.min(...ys),Math.min(WORLD.y+WORLD.height-18-Math.max(...ys)-h,dy))};}
 export function applyAction(room:Room,member:Member,action:RoomAction,now:number){
  ensureOpen(room,now);pruneLeases(room,now);
- if(action.type!=='leave'&&now-member.lastSeen>=ONLINE_MS&&room.members.filter(m=>m.id!==member.id&&now-m.lastSeen<ONLINE_MS).length>=8)throw new RoomError('房间已有 8 位玩家，请稍后再连接',409);
+ const limit=roomPlayerLimit(room);if(action.type!=='leave'&&now-member.lastSeen>=ONLINE_MS&&room.members.filter(m=>m.id!==member.id&&now-m.lastSeen<ONLINE_MS).length>=limit)throw new RoomError('房间已有 '+limit+' 位玩家，请稍后再连接',409);
  member.lastSeen=now;touchPublicRoom(room,now);
  if(action.type==='heartbeat'){const l=action.groupId===undefined?undefined:room.leases[action.groupId];if(l?.playerId===member.id)l.expires=now+LEASE_MS;return;}
  if(action.type==='leave'){member.lastSeen=0;for(const [key,l] of Object.entries(room.leases))if(l.playerId===member.id)delete room.leases[key];return;}
