@@ -74,11 +74,12 @@ export function createMobileService(options={}){
  // The host chooses this profile. No request body/header may disable stamina.
  const web=options.runtimeProfile==='web',guestNames=options.guestNames??true,energyEnabled=!web,shareRewards=options.shareRewards??!web,adsEnabled=!web&&options.adEnabled===true;
  const soloLocalPlay=!web&&(options.soloLocalPlay??process.env.MOBILE_SOLO_LOCAL_PLAY!=='false')===true;
+ const offlineLevelClears=!web&&(options.offlineLevelClears??process.env.MOBILE_OFFLINE_LEVEL_CLEARS!=='false')===true;
  // Only a trusted host option can re-enable free text. Local/development hosts
  // use the same safe mobile default as a public-test package.
  const customNames=options.publicTestPolicy?.customNames??web,privateMessages=options.publicTestPolicy?.privateMessages??web;
  if(typeof customNames!=='boolean'||typeof privateMessages!=='boolean')throw new TypeError('publicTestPolicy values must be booleans');
- const capabilities=Object.freeze({energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,soloLocalPlay,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
+ const capabilities=Object.freeze({energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,soloLocalPlay,offlineLevelClears,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
  const managedContent=options.managedContent??(options.contentDirectory?createMobileManagedContent({directory:options.contentDirectory,photos:engine.RESTORABLE_PHOTOS,assetDir:options.assetDir}):null);
  let operationRelease=managedContent?.read()??null,requestRelease;
  const taskRewardConfiguration=options.taskRewardSettings??createTaskRewardSettings({configurationPath:options.taskRewardConfigurationPath});
@@ -344,6 +345,39 @@ export function createMobileService(options={}){
   if(path==='/api/daily'&&method==='GET'){const photo=displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request);return {date:engine.dailyPuzzleDate(now),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,width:photo.width,height:photo.height},serverTime:now};}
   if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request)}:{}),serverTime:now};}
   if(path==='/api/levels'&&method==='GET')return levels.view(p.id,now);
+  if(path==='/api/levels/offline-clears'&&method==='POST'){
+   if(!offlineLevelClears)fail(503,'OFFLINE_CLEARS_UNAVAILABLE','离线通关同步暂不可用');
+   return replay(p,'level-offline-clears',input,now,()=>{
+    if(!Array.isArray(input.clears)||input.clears.length<1||input.clears.length>20)fail(400,'INVALID_OFFLINE_CLEARS','离线通关数据无效');
+    const ordered=levelConfiguration.chapters.flatMap(chapter=>chapter.pieces.map((_,index)=>chapter.id+'-'+(index+1))),order=new Map(ordered.map((id,index)=>[id,index]));
+    const clearIds=new Set(),levelIds=new Set(),entries=[],results=[];let totalEnergy=0;
+    for(const entry of input.clears){
+     const clearId=typeof entry?.clearId==='string'?entry.clearId:null,levelId=typeof entry?.levelId==='string'?entry.levelId:null;
+     if(clearId!==null&&clearIds.has(clearId)||levelId!==null&&levelIds.has(levelId))continue;
+     if(clearId!==null)clearIds.add(clearId);if(levelId!==null)levelIds.add(levelId);
+     if(!entry||typeof entry!=='object'||Array.isArray(entry)||!requestKey(clearId)||levelId===null||levelId.length>100||!Number.isSafeInteger(entry.completedAt)||!Number.isSafeInteger(entry.elapsedMs)||entry.elapsedMs<0||!Number.isSafeInteger(entry.pieces)||entry.pieces<=0){results.push({clearId,levelId,status:'rejected',energy:0,code:'INVALID'});continue;}
+     entries.push(entry);
+    }
+    entries.sort((a,b)=>(order.get(a.levelId)??Infinity)-(order.get(b.levelId)??Infinity));
+    for(const {clearId,levelId,completedAt,elapsedMs,pieces}of entries){
+     const level=levels.view(p.id,now).chapters.flatMap(chapter=>chapter.levels).find(level=>level.id===levelId);
+     let status='rejected',energy=0,code;
+     if(!level)code='INVALID_LEVEL';
+     else if(pieces!==level.pieces)code='PIECES_MISMATCH';
+     else if(elapsedMs<pieces*200)code='TOO_FAST';
+     else if(level.status==='cleared')status='duplicate';
+     else if(level.status==='locked'||level.status==='unavailable')status='deferred';
+     else{
+      const configuredEnergy=energyEnabled?levelConfiguration.firstClearEnergy:0;
+      const firstClear=levels.recordClear(p.id,levelId,'offline:'+clearId,Math.min(Math.max(completedAt,0),now),configuredEnergy);
+      status=firstClear?'accepted':'duplicate';energy=firstClear?configuredEnergy:0;p.energy+=energy;
+      events.record(p.id,'level-clear',null,{levelId,firstClear,energy,offline:true,clearId,elapsedMs},now);
+     }
+     totalEnergy+=energy;results.push({clearId,levelId,status,energy,...(code?{code}:{})});
+    }
+    saveProfile(p);return {results,energy:totalEnergy,levels:levels.view(p.id,now),profile:profileView(p,now)};
+   });
+  }
   if(path==='/api/mobile/profile'){
    if(method==='PATCH'){
     if(input.name!==undefined&&!customNames)fail(403,'CUSTOM_NAMES_UNAVAILABLE','公开测试暂不开放自定义昵称');
