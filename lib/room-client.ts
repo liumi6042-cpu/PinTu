@@ -36,7 +36,7 @@ const cloneRoomValue=<T>(value:T):T=>typeof structuredClone==='function'?structu
 const requestTimeout=()=>typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'?AbortSignal.timeout(6500):undefined;
 export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
 type MobileContribution = { requestId: string; groupId: number; creditedXp: number };
-type MobileRoomSnapshot = RoomSnapshot & { mobileContribution?: MobileContribution;diagnostic?:boolean;diagnosticTiming?:{serverMs:number} };
+type MobileRoomSnapshot = RoomSnapshot & { mobileContribution?: MobileContribution;offline?:boolean;diagnostic?:boolean;diagnosticTiming?:{serverMs:number} };
 type ClientAction = RoomAction | {type:'batch';ops:Omit<SoloOp,'snapped'>[]};
 type RoomReplyData = RoomUpdate & {error?:string;code?:string;profile?:unknown;mobileProfile?:unknown;mobileContribution?:MobileContribution;soloBatch?:SoloBatchReceipt;diagnosticTiming?:{serverMs:number}};
 export type RoomRequestTiming={action:string;ms:number;status:number;serverMs?:number};
@@ -172,7 +172,8 @@ export class RoomClient {
     }
     for (const task of this.drags.values()) {
       // An unconfirmed local drag is deliberately protected from older poll results.
-      if (task.granted && !task.ending && s.leases[task.id]?.playerId !== this.ticket.playerId) {
+      // Offline rooms have one local player and deliberately never issue leases.
+      if (task.granted && !task.ending && (s as MobileRoomSnapshot).offline !== true && s.leases[task.id]?.playerId !== this.ticket.playerId) {
         task.canceled = true; task.wake?.();
         if (this.active === task) this.active = null;
         this.table?.cancelNetworkDrag(task.id);
