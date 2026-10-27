@@ -14,7 +14,8 @@ import {CursorClient} from '../lib/cursor-client';
 import {CheerClient,CHEER_LABELS} from './cheer-client';
 import {CHEER_EMOTES,type Cheer,type CheerEmote} from '../lib/room-realtime';
 import {completionSeats,type CompletionSeat} from './completion-seats';
-import {CheerEffects,confettiAt} from './cheer-effects';
+import {CheerEffects} from './cheer-effects';
+import {drawCelebration} from './completion-celebration';
 import {CompletionTransition} from './completion-transition';
 import {CompletionFlow,type CompletionPhase,type CompletionPhaseEvent,type CompletionContext,type CompletionAction} from './completion-flow';
 import {drawCheerIcon} from './cheer-icons';
@@ -1416,7 +1417,7 @@ export class GameApp{
  }
  private drawCompletionTransition(){
   const fx=this.completionFx,board=this.board;if(!fx||!board||this.nineGridRoom)return;const s=this.stage,c=s.ctx,now=Date.now(),p=board.pictureScreenRect(),room=this.roomArea,left=Math.max(room.x,p.x-p.w*.2),right=Math.min(room.x+room.w,p.x+p.w*1.2),top=Math.max(room.y,p.y),bottom=Math.min(room.y+room.h,p.y+p.h),area={x:left,y:top,w:right-left,h:bottom-top};
-  if(area.w>0&&area.h>0){const k=clamp(area.w/600,1,2),colors=['#f4c24f','#e05a6e','#7fb069','#6fa3d8','#b98ad6','#f28aa6'];c.save();c.beginPath();c.rect(room.x,room.y,room.w,room.h);c.clip();for(const particle of fx.confetti(now)){const pos=confettiAt(particle,now,area.w);if(!pos)continue;c.globalAlpha=pos.alpha;c.fillStyle=colors[particle.color];c.fillRect(Math.round(area.x+pos.x*area.w),Math.round(area.y+pos.y*area.h),Math.round((3+particle.spin%3)*k),Math.round(5*k));}c.restore();}
+  if(area.w>0&&area.h>0){c.save();c.beginPath();c.rect(room.x,room.y,room.w,room.h);c.clip();drawCelebration(c,fx.celebration,now,{picture:p,field:{x:area.x,y:room.y,w:area.w,h:area.y+area.h-room.y},clip:room});c.restore();}
   const banner=fx.banner(now);if(!banner)return;const label='拼好啦！',w=s.measure(label,15,800)+58,h=32,x=clamp(p.x+p.w/2-w/2,room.x+8,room.x+room.w-w-8),topSafe=this.layout==='phoneLandscape'?this.roomHeaderTop()+58:room.y+10,y=Math.min(p.y+p.h/2,Math.max(topSafe,p.y-42)),scale=banner.scale,r={x:x+w*(1-scale)/2,y:y+h*(1-scale)/2,w:w*scale,h:h*scale};c.save();c.globalAlpha=banner.alpha;s.frame(r,'button-gold-normal');s.text(label,r.x+29*scale,r.y+8*scale,15*scale,this.colors.ink,800);drawCheerIcon(c,'star',{x:r.x+7*scale,y:r.y+8*scale,w:16*scale,h:16*scale});drawCheerIcon(c,'star',{x:r.x+r.w-23*scale,y:r.y+8*scale,w:16*scale,h:16*scale});c.restore();
  }
  private drawSettleButton(){
@@ -1829,7 +1830,8 @@ export class GameApp{
   const area=outside?{x:0,y:0,w:s.w,h:s.h}:this.modalArea,bubbleRect=(id:string)=>{const slot=this.completionSlotRects.get(id);if(slot)return !outside&&(slot.x+slot.w<=area.x||slot.x>=area.x+area.w||slot.y+slot.h<=area.y||slot.y>=area.y+area.h)?null:slot;return {x:clamp(p.x+p.w/2-21,area.x+2,area.x+area.w-44),y:clamp(p.y+p.h-48,area.y+2,area.y+area.h-40),w:42,h:38};};
   s.clip(area,()=>{
   const origin=(id:string)=>{const r=bubbleRect(id);return r?{x:r.x+r.w/2,y:r.y+r.h/2}:null;};
-  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();if(particle.kind==='confetti'){const pos=fx.confettiAt(particle,now,this.modalArea.w);if(pos&&pos.y>=0&&pos.y<=1){c.globalAlpha=pos.alpha;c.fillStyle=['#f4c24f','#e05a6e','#7fb069','#6fa3d8','#b98ad6','#f28aa6'][particle.color];c.fillRect(Math.round(this.modalArea.x+pos.x*this.modalArea.w),Math.round(this.modalArea.y+pos.y*this.modalArea.h),3+particle.spin%3,5);}}else{const o=origin(particle.playerId),slot=this.completionSlotRects.get(particle.playerId),rise=slot?t*((outside?64:60)+particle.y*12):t*100+particle.y*20,dx=slot?outside?Math.sin(t*8)*(particle.x*2-1)*Math.max(0,slot.w/2-12):(.35*rise*(slot.x<p.x+p.w/2?1:-1)+Math.sin(t*8)*(particle.x*2-1)*4):(particle.x-.5)*60;c.globalAlpha=1-t;if(o)drawCheerIcon(c,'heart',{x:o.x-12+dx,y:o.y-12-rise,w:24,h:24});}c.restore();}
+  for(const scene of fx.celebrations)drawCelebration(c,scene,now,{picture:this.completionPicture,field:this.modalArea,clip:area});
+  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();const o=origin(particle.playerId),slot=this.completionSlotRects.get(particle.playerId),rise=slot?t*((outside?64:60)+particle.y*12):t*100+particle.y*20,dx=slot?outside?Math.sin(t*8)*(particle.x*2-1)*Math.max(0,slot.w/2-12):(.35*rise*(slot.x<p.x+p.w/2?1:-1)+Math.sin(t*8)*(particle.x*2-1)*4):(particle.x-.5)*60;c.globalAlpha=1-t;if(o)drawCheerIcon(c,'heart',{x:o.x-12+dx,y:o.y-12-rise,w:24,h:24});c.restore();}
   if(now<fx.starsUntil){const size=16+Math.round(8*Math.abs(Math.sin(now/95)));for(const [x,y] of [[p.x,p.y],[p.x+p.w,p.y],[p.x,p.y+p.h],[p.x+p.w,p.y+p.h]])drawCheerIcon(c,'star',{x:x-size/2,y:y-size/2,w:size,h:size});}
   for(const bubble of fx.bubbles){const target=bubbleRect(bubble.playerId),scale=fx.bubbleScale(bubble);if(!target||scale<=0)continue;const r={x:target.x+target.w/2*(1-scale),y:target.y+target.h/2*(1-scale),w:target.w*scale,h:target.h*scale};this.completionBubbleRects.set(bubble.playerId,r);
    // Stage.frame paints in physical pixels, so animate its rectangle explicitly.

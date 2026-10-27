@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
-import {CompletionTransition,COMPLETION_POPUP_MS,COMPLETION_CAMERA_MS,COMPLETION_SEAM_MS,COMPLETION_CELEBRATE_MS,COMPLETION_SWEEP_END_MS,COMPLETION_BANNER_END_MS,COMPLETION_BANNER_ALPHA_END_MS,COMPLETION_SECOND_BURST_MS} from '../mobile/completion-transition.ts';
+import {CompletionTransition,COMPLETION_POPUP_MS,COMPLETION_CAMERA_MS,COMPLETION_SEAM_MS,COMPLETION_CELEBRATE_MS,COMPLETION_SWEEP_END_MS,COMPLETION_BANNER_END_MS,COMPLETION_BANNER_ALPHA_END_MS,COMPLETION_BURST_MS} from '../mobile/completion-transition.ts';
 import {CompletionFlow} from '../mobile/completion-flow.ts';
-import {CheerEffects,confettiAt} from '../mobile/cheer-effects.ts';
+import {completionCelebration,drawCelebration} from '../mobile/completion-celebration.ts';
+import {CheerEffects} from '../mobile/cheer-effects.ts';
 const bundled=await build({stdin:{contents:"export {GameApp} from './mobile/app.ts';export {PuzzleBoard} from './mobile/puzzle-board.ts';export {createPuzzle} from './lib/puzzle-engine.ts'",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
 const {GameApp,PuzzleBoard,createPuzzle}=await import('data:text/javascript;base64,'+Buffer.from(bundled.outputFiles[0].text).toString('base64'));
 const cheer=(id='friend',emote='clap')=>({seq:1,id:id.padEnd(32,'a'),playerId:id,name:id,emote,at:0});
@@ -20,16 +21,14 @@ function fixture(t,width=844,height=390){
 }
 test('timeline boundaries, geometric camera and world-centre interpolation',()=>{
  const from={x:-100,y:-50,z:2},to={x:20,y:10,z:.5},r={x:80,y:30,w:600,h:400},fx=new CompletionTransition(100,from,to,r);
- assert.deepEqual([COMPLETION_SEAM_MS,COMPLETION_CAMERA_MS,COMPLETION_CELEBRATE_MS,COMPLETION_SWEEP_END_MS,COMPLETION_BANNER_END_MS,COMPLETION_BANNER_ALPHA_END_MS,COMPLETION_SECOND_BURST_MS,COMPLETION_POPUP_MS],[900,900,900,2000,1120,1020,1150,3200]);
+ assert.deepEqual([COMPLETION_SEAM_MS,COMPLETION_CAMERA_MS,COMPLETION_CELEBRATE_MS,COMPLETION_SWEEP_END_MS,COMPLETION_BANNER_END_MS,COMPLETION_BANNER_ALPHA_END_MS,COMPLETION_BURST_MS,COMPLETION_POPUP_MS],[900,900,900,2000,1120,1020,[900,1150,1400],3200]);
  assert.deepEqual([fx.seam(99),fx.seam(100),fx.seam(550),fx.seam(1000)],[0,0,.5,1]);assert.deepEqual(fx.camera(100),from);const mid=fx.camera(550);assert.equal(mid.z,Math.sqrt(from.z*to.z));assert.ok(mid.z>to.z&&mid.z<from.z);assert.equal((300-mid.x)/mid.z,((300-from.x)/from.z+(300-to.x)/to.z)/2);assert.deepEqual(fx.camera(1000),to);assert.deepEqual(fx.camera(9999),to);
  assert.equal(new CompletionTransition(0).camera(0),null);assert.equal(new CompletionTransition(0,from,{...from,x:from.x+1,z:2.001},r).camera(0),null);fx.dropCamera();assert.equal(fx.camera(1000),null);
  assert.equal(fx.sweep(999),null);assert.equal(fx.sweep(1000),0);assert.equal(fx.sweep(2100),1);assert.equal(fx.sweep(2101),null);assert.equal(fx.banner(999),null);assert.ok(Math.abs(fx.banner(1000).scale-.6)<1e-12);assert.equal(fx.banner(1120).alpha,1);assert.deepEqual(fx.banner(1220),{scale:1,alpha:1});
  assert.equal(fx.celebrateDue(999),false);assert.equal(fx.celebrateDue(1000),true);assert.equal(fx.celebrateDue(1001),false);assert.equal(fx.popupDue(3299),false);assert.equal(fx.popupDue(3300),true);
 });
-test('two deterministic delayed confetti bursts use existing motion and expire before popup',()=>{
- const fx=new CompletionTransition(0),other=new CompletionTransition(0),seen=new Set();assert.equal(fx.confetti(899).length,0);
- for(let now=900;now<3200;now++){for(const p of fx.confetti(now)){seen.add(p);assert.ok(confettiAt(p,now));assert.ok(p.delay>=0&&p.delay<=600);assert.equal(p.duration,p.delay+1400);}}
- assert.equal([...seen].filter(p=>p.start===900).length,90);assert.equal([...seen].filter(p=>p.start===1150).length,60);assert.equal(fx.confetti(1750).length,150);assert.deepEqual(fx.confetti(1750),other.confetti(1750));assert.equal(fx.confetti(3200).length,0);
+test('transition owns the deterministic celebration with three bursts and no particles after popup',()=>{
+ const fx=new CompletionTransition(0),other=new CompletionTransition(0);assert.deepEqual(fx.celebration,completionCelebration(900));assert.deepEqual(fx.celebration,other.celebration);assert.deepEqual(fx.celebration.fireworks.map(b=>b.delay+fx.celebration.start),COMPLETION_BURST_MS);assert.equal(fx.celebration.end,COMPLETION_POPUP_MS);const ctx={globalAlpha:1,save(){},restore(){},fillRect(){assert.fail('expired celebration drew pixels');}};assert.equal(drawCelebration(ctx,fx.celebration,3200,{picture:{x:0,y:0,w:470,h:310},field:{x:0,y:0,w:782,h:390}}),0);
 });
 test('live completion fades, fits, chimes once, then opens at 3200 without a pending frame',t=>{
  const f=fixture(t);f.start();assert.ok(f.app.completionFx);assert.equal(f.app.modal,null);assert.equal(f.board.edgeOnly,false);assert.equal(f.board.trayOpen,false);f.app.animateCompletion();assert.equal(f.frames.size,1);
@@ -80,8 +79,8 @@ for(const [w,h] of [[844,390],[740,360],[390,844],[1280,800],[1920,1080]])test(`
  const settle=a.settleButtonRect;assert.ok(settle);for(const c of f.calls.filter(c=>c.kind==='hit'||c.kind==='button'&&c.label!=='查看结算'))assert.ok(!overlaps(settle,c.r),JSON.stringify(c.r));const giftLabel=f.calls.find(c=>c.kind==='text'&&c.label.startsWith('任务 '));if(giftLabel)assert.ok(!overlaps(settle,giftLabel.r));
  if(w>h&&w<1000){const bubble=f.calls.find(c=>c.kind==='hit'&&c.r.h===20);assert.ok(bubble);assert.ok(bubble.r.x+bubble.r.w<settle.x);}
 });
-test('transition banner animates its rectangle, confetti uses integers and the overlay adds no hits',t=>{
- const f=fixture(t);f.start();f.step(950);f.app.drawCompletionTransition();assert.ok(!f.calls.some(c=>c.kind==='hit'));const pop=f.calls.find(c=>c.kind==='frame'&&c.id==='button-gold-normal');assert.ok(pop);assert.ok(pop.alpha>0&&pop.alpha<1);assert.notEqual(pop.r.h,32);f.calls.length=0;f.step(1200);f.app.drawCompletionTransition();const banner=f.calls.find(c=>c.kind==='frame'&&c.id==='button-gold-normal');assert.equal(banner.r.h,32);assert.ok(banner.r.x>=f.app.roomArea.x+8);assert.ok(banner.r.y>=f.app.roomHeaderTop()+58);assert.ok(f.calls.some(c=>c.label==='拼好啦！'));assert.ok(!f.calls.some(c=>c.kind==='hit'));const pixels=f.calls.filter(c=>c.kind==='fill');assert.ok(pixels.length>0);assert.ok(pixels.every(c=>Object.values(c.r).every(Number.isInteger)));
+test('transition banner stays above integer celebration pixels and the overlay adds no hits',t=>{
+ const f=fixture(t);f.start();f.step(950);f.app.drawCompletionTransition();assert.ok(!f.calls.some(c=>c.kind==='hit'));const pop=f.calls.find(c=>c.kind==='frame'&&c.id==='button-gold-normal');assert.ok(pop);assert.ok(pop.alpha>0&&pop.alpha<1);assert.notEqual(pop.r.h,32);f.calls.length=0;f.step(1200);f.app.drawCompletionTransition();const banner=f.calls.find(c=>c.kind==='frame'&&c.id==='button-gold-normal');assert.equal(banner.r.h,32);assert.ok(banner.r.x>=f.app.roomArea.x+8);assert.ok(banner.r.y>=f.app.roomHeaderTop()+58);assert.ok(f.calls.some(c=>c.label==='拼好啦！'));assert.ok(!f.calls.some(c=>c.kind==='hit'));const pixels=f.calls.filter(c=>c.kind==='fill');assert.ok(pixels.length>0);assert.ok(pixels.every(c=>Object.values(c.r).every(Number.isInteger)));assert.ok(f.calls.indexOf(pixels[0])<f.calls.indexOf(banner));
 });
 test('negligible camera still finishes at the fit target, other modals survive transition start',t=>{
  const f=fixture(t);f.board.camera={...f.fit,x:f.fit.x+1};f.app.modal='chat';f.start();assert.equal(f.app.modal,'chat');assert.equal(f.app.completionFx.camera(10000),null);f.step(3200);assert.deepEqual(f.board.camera,f.fit);assert.equal(f.app.modal,'completion');
@@ -129,4 +128,8 @@ for(const [w,h] of [[844,390],[740,360],[667,375],[390,844],[1920,1080]])test(`c
   remove();assert.deepEqual(draw().map(c=>[c.label,c.r,c.opts]),base.map(c=>[c.label,c.r,c.opts]));for(const provider of [()=>null,()=>{throw Error('bad provider');}]){const off=a.registerCompletionAction(provider);assert.deepEqual(draw().map(c=>[c.label,c.r,c.opts]),base.map(c=>[c.label,c.r,c.opts]));off();}
   const long=a.registerCompletionAction(()=>({label:'翻开这一页'.repeat(5),tone:'cream',action(){}}));const small=draw().find(c=>c.label==='翻开这一页'.repeat(5));assert.equal(small.opts.fontSize,12);assert.equal(small.opts.tone,'cream');long();delete f.room.snapshot.mobileResult.levelClear;let syncing;a.registerCompletionAction(c=>{syncing=c;return null;});draw();assert.equal(syncing.levelClear,null);f.room.snapshot.mobileResult.levelClear=clear;draw();assert.equal(syncing.levelClear,clear);
  }
+});
+
+test('popup popper keeps its frame alive until the scene and existing bubbles/hearts expire',t=>{
+ for(const sceneOnly of [false,true]){const f=fixture(t);f.start();f.step(3200);assert.equal(f.frames.size,0);f.at(3600);f.app.drawModal();f.app.receiveCheer(f.room,cheer('friend','popper'),false);assert.equal(f.app.cheerEffects.celebrations.length,1);assert.equal(f.frames.size,1);const scene=f.app.cheerEffects.celebrations[0];assert.equal(scene.end,10000+5200);if(sceneOnly){f.app.cheerEffects.bubbles=[];f.app.cheerEffects.hops.clear();f.app.cheerEffects.particles=[{kind:'heart',playerId:'friend',start:10000+3500,duration:1600,x:.5,y:.5,delay:0,speed:1,spin:0,color:0}];}f.step(5199);assert.equal(f.frames.size,1);assert.equal(f.app.cheerEffects.celebrations.length,1);f.step(5200);assert.equal(f.app.cheerEffects.celebrations.length,0);if(!sceneOnly){assert.equal(f.frames.size,1);f.step(6300);}assert.equal(f.app.cheerEffects.alive(),false);assert.equal(f.frames.size,0);assert.equal(f.app.cheerFrame,null);}
 });

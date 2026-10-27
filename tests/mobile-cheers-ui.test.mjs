@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {completionSeats} from '../mobile/completion-seats.ts';
-import {CheerEffects,confettiAt} from '../mobile/cheer-effects.ts';
+import {CheerEffects} from '../mobile/cheer-effects.ts';
+import {celebrationCount,popperCelebration,drawCelebration} from '../mobile/completion-celebration.ts';
 import {ICON,PAL,drawCheerIcon} from '../mobile/cheer-icons.ts';
 import {build} from 'esbuild';
 
@@ -54,10 +55,10 @@ test('a different emote replaces that player\'s bubble and leaves other players\
 });
 test('combo requires three distinct players in 3s; storm stays bounded and expires',()=>{
  const {effects:fx,at}=clock();fx.receive(cheer('a'));at(1000);fx.receive(cheer('a'));fx.receive(cheer('b'));assert.equal(fx.combo,null);
- at(3000);fx.receive(cheer('c'));assert.equal(fx.combo.count,3);assert.equal(fx.particles.length,60);
+ at(3000);fx.receive(cheer('c'));assert.equal(fx.combo.count,3);assert.equal(fx.celebrations.length,1);assert.equal(celebrationCount(fx.celebrations[0]),59);assert.equal(fx.particles.length,0);
  at(3100);fx.receive(cheer('d'));assert.equal(fx.combo.count,4);
  for(let i=0;i<300;i++)fx.receive(cheer(String(i),'popper'));
- assert.ok(fx.particles.length<=180);assert.ok(fx.bubbles.length<=60);
+ assert.ok(fx.particles.length<=180);assert.ok(fx.bubbles.length<=60);assert.equal(fx.celebrations.length,4);assert.ok(fx.celebrations.reduce((n,s)=>n+celebrationCount(s),0)<=400);
  at(10000);assert.equal(fx.alive(),false);assert.equal(fx.hops.size,0);
  const outside=clock();outside.effects.receive(cheer('a'));outside.at(3001);outside.effects.receive(cheer('b'));outside.effects.receive(cheer('c'));assert.equal(outside.effects.combo,null);
 });
@@ -157,12 +158,12 @@ test('own button and bubble badges start at two cheers and stay inside the bubbl
  calls.length=0;app.cheerEffects.receive(cheer('0'),true);now=400;app.drawModal();const badges=calls.filter(c=>c[0]==='text'&&c[2]==='×2');assert.equal(badges.length,2);const bubble=app.completionBubbleRects.get('0');assert.equal(badges.filter(c=>contains(bubble,c[1])).length,1);
  const fill=calls.find(c=>c[0]==='fill'&&c[2]===app.colors.berry&&c[1].h===12);assert.ok(fill);assert.ok(contains(bubble,fill[1]));assert.equal(bubble.x+bubble.w-fill[1].x-fill[1].w,2);assert.equal(bubble.y+bubble.h-fill[1].y-fill[1].h,2);
 });
-test('confetti has independent deterministic height, delay and speed, spreads like rain and fades late',()=>{
- const {effects:fx}=clock(),other=clock();fx.receive(cheer('a','popper'));other.effects.receive(cheer('a','popper'));assert.equal(fx.particles.length,60);assert.deepEqual(fx.particles,other.effects.particles);
- const span=values=>Math.max(...values)-Math.min(...values),particles=fx.particles;assert.ok(span(particles.map(p=>p.y))>=.4);assert.ok(particles.every(p=>p.y>=-.15&&p.y<=.4&&p.delay>=0&&p.delay<=600&&p.speed>=.7&&p.speed<=1.3&&p.duration===p.delay+1400&&p.duration<=2000));assert.ok(Math.min(...particles.map(p=>p.delay))<=60);assert.ok(Math.max(...particles.map(p=>p.delay))>=540);
- const visible=particles.map(p=>confettiAt(p,560)).filter(p=>p&&p.y>=0&&p.y<=1);assert.ok(visible.length>10);assert.ok(span(visible.map(p=>p.y))>=.3);
- const p=particles[0],start=p.start+p.delay;assert.equal(confettiAt(p,start-1),null);assert.equal(confettiAt(p,start+1400),null);assert.equal(confettiAt(p,start).y,p.y);assert.equal(confettiAt(p,start+840).alpha,1);assert.ok(Math.abs(confettiAt(p,start+1120).alpha-.5)<1e-10);
- for(const elapsed of [0,200,840,1120,1399]){const pos=confettiAt(p,start+elapsed,326);assert.ok(Math.abs((pos.x-p.x)*326)<=12+1e-10);assert.ok(Math.abs(pos.y-p.y-elapsed/1400*.6*p.speed)<1e-10);}
+test('popper uses a deterministic small celebration, expires at 1600 and preserves bubble lifetime',()=>{
+ const {effects:fx,at}=clock(),other=clock();fx.receive(cheer('a','popper'));other.effects.receive(cheer('a','popper'));assert.equal(fx.particles.length,0);assert.equal(fx.celebrations.length,1);assert.deepEqual(fx.celebrations,other.effects.celebrations);assert.deepEqual(fx.celebrations[0],popperCelebration(0,1));assert.equal(fx.celebrations[0].confetti.length,28);at(1599);fx.update();assert.equal(fx.celebrations.length,1);at(1600);fx.update();assert.equal(fx.celebrations.length,0);assert.equal(fx.alive(),true);at(2700);assert.equal(fx.alive(),false);
+});
+
+test('popup draws the shared celebration inside its clip before hearts and bubbles',t=>{
+ let now=0;t.mock.method(Date,'now',()=>now);const {app,calls}=fixture(844,390,8,{now:()=>now});app.drawModal();app.cheerEffects.receive(cheer('0','popper'));app.cheerEffects.receive(cheer('1','heart'));now=300;calls.length=0;app.drawCompletionEffects();const scene=app.cheerEffects.celebrations[0],expected=[],ctx={globalAlpha:1,save(){},restore(){},fillRect(...r){expected.push(r);}};drawCelebration(ctx,scene,now,{picture:app.completionPicture,field:app.modalArea,clip:{x:0,y:0,w:844,h:390}});assert.ok(expected.length);assert.deepEqual(calls.filter(c=>c[0]==='fill').slice(0,expected.length).map(c=>Object.values(c[1])),expected);assert.ok(calls.findIndex(c=>c[0]==='frame'&&c[2]==='button-cream-normal')>calls.findIndex(c=>c[0]==='fill'));assert.equal(app.stage.ctx.globalAlpha,1);
 });
 test('departed seats keep opaque frames and me tint while avatar, crown, name and tags fade',()=>{
  const {app,calls}=fixture();app.drawCompletionSeat({playerId:'gone',name:'已离桌',contribution:42,present:false,me:true,crown:true,column:'left',row:0},{x:10,y:20,w:176,h:70});
