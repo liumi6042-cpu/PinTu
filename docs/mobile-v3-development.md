@@ -248,3 +248,19 @@ TypeScript、素材/图库检查、H5构建、3项画布测试及16个横竖屏�
 恢复手机浅色拼图区域默认目标框。消失原因为 mobilePaper 分支跳过目标底板与框线；现真实 board 范围默认填浅米色，并在底图之后、拼块之前画莓棕 1.25 屏幕像素细边。框不依赖底图功能，随画布移动缩放，PC/暗色模式、拼块位置、镜头和奖励规则保持原样。打开初始触摸视图仍可能只看到区域的一部分，工具“适配”可查看全桌。
 
 类型检查、82张图库来源校验、8项相关画布/托盘测试、H5构建通过。人工核对大厅图标、初始游戏及适配后横竖屏边框，无页面异常。截图见 verification/2026-10-11-b2-icons23/piece26 。预览：http://127.0.0.1:3211/?v=b2-piece26#/zh/lobby 。仅本地预览，未上传 TapTap。
+
+## 2026-10-29 可选 comicPage 接口（story-ch34）
+
+本轮仅接通可选漫画页字段，未给配置或 bundled story JSON 添加漫画页数据。服务端严格校验 src、可选 thumbSrc 和四个归一化裁切框，拒绝额外键；配置解析与关卡视图均复制嵌套数据。离线目录沿用原有 JSON 字段透传，无需修改目录读写代码。
+
+客户端独立解析服务器和 bundled 页字段，服务器有效值优先；原有分镜与台词保持原规则。打开/翻页时预加载页面图，绘制期间维持缓存使用。仅在 stage 横屏（w > h）且 src 或 thumbSrc 已解码时，使用页面图、页面裁切框及页面尺寸；竖屏、缺失、加载中或加载失败均继续使用关卡图片与原裁切框，台词和气泡仍由原分镜绘制。
+
+验收命令：
+
+```powershell
+node --import ./tests/ts-register.mjs --test --test-timeout=180000 tests/mobile-levels.test.mjs tests/mobile-level-rooms.test.mjs tests/taptap-offline-package.test.mjs tests/mobile-story-comic.test.mjs tests/mobile-story-chapters.test.mjs tests/mobile-story-landscape-layout.test.mjs tests/mobile-level-completion.test.mjs tests/mobile-offline-play.test.mjs
+npx.cmd tsc --noEmit -p .
+npm.cmd run check:images
+```
+
+指定测试共 297 项：296 通过，1 项因本地 dry2 打包产物缺失按原测试逻辑跳过。图库检查通过（82 张已发布图片、813 个旧哈希衍生图）。完整 TypeScript 检查仅报原有 `vite.config.ts:5` 缺少 `./.openai/hosting.json`（TS2307）；使用继承原 tsconfig 的临时配置检查 mobile、h5、lib 全部 TypeScript 文件通过，临时配置已移除。测试覆盖服务端拒绝/透传/复制、bundled 与服务器来源优先级、横竖屏与加载状态回退、缓存两种分辨率复用、页面尺寸用于过渡计算，以及离线目录往返。未提交或部署。

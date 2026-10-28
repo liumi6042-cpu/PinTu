@@ -17,11 +17,24 @@ function readComic(comic){
 function readStory(story,length){
  if(!Array.isArray(story)||story.length>length)invalid();
  return Array.from(story,item=>{
-  if(item===null)return null;shape(item,[],['timeLabel','intro','comic']);
+  if(item===null)return null;shape(item,[],['timeLabel','intro','comic','comicPage']);
   if(Object.hasOwn(item,'timeLabel'))storyText(item.timeLabel,8);
   if(Object.hasOwn(item,'intro'))storyText(item.intro,60);
-  return {...item,...(Object.hasOwn(item,'comic')?{comic:readComic(item.comic)}:{})};
+  return {...item,...(Object.hasOwn(item,'comic')?{comic:readComic(item.comic)}:{}),...(Object.hasOwn(item,'comicPage')?{comicPage:readComicPage(item.comicPage)}:{})};
  });
+}
+function readComicPage(page){
+ shape(page,['src','panels'],['thumbSrc']);
+ const source=value=>{
+  if(typeof value!=='string'||!value||value.length>300||/\s|\.\.|\\/.test(value))return false;
+  if(value.startsWith('/'))return !value.startsWith('//');
+  try{return value.startsWith('https://')&&new URL(value).protocol==='https:';}catch{return false;}
+ };
+ if(!source(page.src)||Object.hasOwn(page,'thumbSrc')&&!source(page.thumbSrc)||!Array.isArray(page.panels)||page.panels.length!==4)invalid();
+ return {...page,panels:Array.from(page.panels,crop=>{
+  if(!Array.isArray(crop)||crop.length!==4||!Array.from(crop).every(value=>typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=1)||crop[2]<=0||crop[3]<=0||crop[0]+crop[2]>1.0001||crop[1]+crop[3]>1.0001)invalid();
+  return [...crop];
+ })};
 }
 export function readLevelConfiguration(configuration){
  const document=configuration===undefined?defaults:configuration;
@@ -56,7 +69,7 @@ export function createMobileLevels({db,photos,collection,configuration}){
     const status=!available?'unavailable':cleared.has(id)?'cleared':previous===null||previous.available&&cleared.has(previous.id)?'unlocked':'locked';
     const level={id,imageId,title:photo?.title??null,pieces,status,line:chapter.lines?.[index]??null};previous={id,available};
     const story=chapter.story?.[index];
-    for(const key of ['timeLabel','intro','comic'])if(story&&Object.hasOwn(story,key))level[key]=key==='comic'?structuredClone(story[key]):story[key];
+    for(const key of ['timeLabel','intro','comic','comicPage'])if(story&&Object.hasOwn(story,key))level[key]=key==='comic'||key==='comicPage'?structuredClone(story[key]):story[key];
     for(const key of ['src','thumbSrc'])if(typeof photo?.[key]==='string')level[key]=photo[key];
     if(status==='unlocked'&&current===null)current=level;return level;
    });return {id:chapter.id,title:chapter.title,albumId:chapter.albumId,coverImageId:cover?.id??null,coverSrc:cover?.thumbSrc??null,status:available?'available':'unavailable',levels};

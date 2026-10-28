@@ -151,6 +151,42 @@ test('all three server packages include the levels module and default configurat
 });
 
 const storyEntry=()=>structuredClone(readLevelConfiguration().chapters[1].story[0]);
+const pageEntry=()=>({src:'/puzzles/page.webp',panels:[[0,0,.5,.5],[.5,0,.5,.5],[0,.5,.5,.5],[.5,.5,.5,.5]]});
+test('comicPage accepts local/https sources with optional thumbnails, deep copies, and passes through only when present',t=>{
+ const story=[];
+ for(const src of ['/puzzles/page.webp','https://example.test/page.webp'])for(const thumb of [false,true]){
+  const comicPage={...pageEntry(),src,...(thumb?{thumbSrc:src.replace('.webp','-thumb.webp')}:{})};
+  story.push({...storyEntry(),comicPage});
+ }
+ story.push(null,{});
+ const input=configuration([{...chapter('ch1'),story}]),expected=structuredClone(story),copy=readLevelConfiguration(input);
+ assert.deepEqual(copy.chapters[0].story,expected);
+ input.chapters[0].story[0].comicPage.src='/changed.webp';input.chapters[0].story[0].comicPage.panels[0][0]=.1;input.chapters[0].story[0].comicPage.panels.push([0,0,1,1]);
+ assert.deepEqual(copy.chapters[0].story,expected);
+ const f=fixture(t,{config:copy}),view=f.view();
+ view.chapters[0].levels.forEach((level,index)=>{
+  assert.equal(Object.hasOwn(level,'comicPage'),index<4);
+  if(index<4)assert.deepEqual(level.comicPage,expected[index].comicPage);
+ });
+ view.chapters[0].levels[0].comicPage.src='/changed.webp';view.chapters[0].levels[0].comicPage.panels[0][0]=.1;
+ assert.deepEqual(f.view().chapters[0].levels[0].comicPage,expected[0].comicPage);
+ const withPage=f.view().chapters[0].levels[0],baseline=fixture(t,{config:configuration([{...chapter('ch1'),story:[storyEntry()]}])}).view().chapters[0].levels[0];
+ const {comicPage,...withoutPage}=withPage;assert.deepEqual(withoutPage,baseline);
+ assert.ok(readLevelConfiguration().chapters.every(ch=>(ch.story??[]).every(level=>!Object.hasOwn(level??{},'comicPage'))));
+ assert.ok(fixture(t,{config:readLevelConfiguration()}).view().chapters.every(ch=>ch.levels.every(level=>!Object.hasOwn(level,'comicPage'))));
+ const boundary=pageEntry();boundary.src='/'+'x'.repeat(299);boundary.panels[0]=[.50005,.50005,.5,.5];
+ assert.deepEqual(readLevelConfiguration(configuration([{...chapter('ch1'),story:[{comicPage:boundary}]}])).chapters[0].story[0].comicPage,boundary);
+});
+
+test('invalid comicPage fails at startup with the levels configuration TypeError',async t=>{
+ const bad=[null,undefined,[],1,'page',{}, {...pageEntry(),extra:true}];
+ for(const src of [undefined,'',' ','/has space.webp','/has\nnewline.webp','http://example.test/a.webp','javascript:alert(1)','a.webp','/puzzles/../a.webp','https://example.test/../a.webp','https://','//example.test/a.webp','/\\example.test/a.webp','/'+'x'.repeat(300)])bad.push({...pageEntry(),src},{...pageEntry(),thumbSrc:src});
+ const missing=pageEntry();delete missing.src;bad.push(missing);
+ for(const panels of [undefined,null,{},[],pageEntry().panels.slice(0,3),[...pageEntry().panels,[0,0,1,1]]])bad.push({...pageEntry(),panels});
+ for(const crop of [null,{},[0,0,1],[0,0,1,1,0],['0',0,1,1],[NaN,0,1,1],[Infinity,0,1,1],[-.1,0,1,1],[1.1,0,.1,1],[0,0,0,1],[0,0,1,0],[0,0,-1,1],[.51,0,.5,1],[0,.51,1,.5],[.5002,0,.5,1]])bad.push({...pageEntry(),panels:[crop,...pageEntry().panels.slice(1)]});
+ for(const [index,comicPage]of bad.entries())await t.test(String(index),()=>assert.throws(()=>createMobileService({levels:configuration([{...chapter('ch1'),story:[{comicPage}]}])}),{name:'TypeError',message:'Invalid levels configuration'}));
+});
+
 test('story rejects malformed entries, nested shapes, crops and text bounds during startup',async t=>{
  const invalid=[['not array',()=>({})],['null array',()=>null],['too many entries',()=>Array(7).fill(null)],['string entry',()=>['story']]];
  const cases=[

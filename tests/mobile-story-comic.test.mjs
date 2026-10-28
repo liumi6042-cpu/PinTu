@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {fixture,levels,artwork} from './mobile-level-card-fixture.mjs';
 
-const bundle=await build({stdin:{contents:'export * from "./mobile/story-comic";export {Stage} from "./mobile/ui";export {createComicBack,createWebPlatform} from "./mobile/platform-web";',resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
-const {comicFor,cropCover,comicPageRect,comicLayout,comicLines,comicTextCount,Stage,createComicBack,createWebPlatform}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const bundle=await build({stdin:{contents:'export * from "./mobile/story-comic";export {bundledStory} from "./mobile/bundled-story";export {Stage} from "./mobile/ui";export {createComicBack,createWebPlatform} from "./mobile/platform-web";',resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
+const {comicFor,comicSource,bundledStory,cropCover,comicPageRect,comicLayout,comicLines,comicTextCount,Stage,createComicBack,createWebPlatform}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 const chapter=levels().chapters[0];
 const inside=(r,p)=>assert.ok(r.x>=p.x-.001&&r.y>=p.y-.001&&r.x+r.w<=p.x+p.w+.001&&r.y+r.h<=p.y+p.h+.001,JSON.stringify({r,p}));
 const overlap=(a,b)=>a.x<b.x+b.w-.001&&b.x<a.x+a.w-.001&&a.y<b.y+b.h-.001&&b.y<a.y+a.h-.001;
@@ -39,6 +39,77 @@ test('comicFor independently prefers server fields, falls back, rejects malforme
  assert.deepEqual(comicFor(chapter,3,{comic:{panels:[]}}),local);assert.equal(comicFor({id:'other',albumId:'other'},0,{}),null);assert.equal(comicFor(chapter,6,{}),null);
  assert.equal(comicFor({id:'other',albumId:'other'},0,{comic:custom,intro:'旁白'}).intro,'旁白');
  const copy=comicFor(chapter,3,{});copy.panels[0].crop[0]=.5;assert.equal(comicFor(chapter,3,{}).panels[0].crop[0],0);
+});
+
+const pageEntry=()=>({src:'/comic-page.webp',panels:[[0,0,.5,.5],[.5,0,.5,.5],[0,.5,.5,.5],[.5,.5,.5,.5]]});
+test('comicFor parses server and bundled pages independently of panels, prefers the server, and copies crops',()=>{
+ const local=comicFor(chapter,3,{}),entry=bundledStory(chapter).levels[3],bundledPage={...pageEntry(),src:'/bundled-page.webp'},serverPage={...pageEntry(),src:'https://example.test/page.webp',thumbSrc:'/page-thumb.webp'};
+ assert.ok(bundledStory(chapter).levels.every(level=>!Object.hasOwn(level,'comicPage')));
+ try{
+  entry.comicPage=bundledPage;
+  assert.deepEqual(comicFor(chapter,3,{}),{...local,page:{...bundledPage,thumbSrc:bundledPage.src}});
+  const comic=comicFor(chapter,3,{comicPage:serverPage});assert.deepEqual(comic,{...local,page:serverPage});
+  comic.page.panels[0][0]=.1;assert.equal(serverPage.panels[0][0],0);assert.equal(comicFor(chapter,3,{comicPage:serverPage}).page.panels[0][0],0);
+  assert.deepEqual(comicFor(chapter,3,{comicPage:{}}).page,{...bundledPage,thumbSrc:bundledPage.src});
+ }finally{delete entry.comicPage;}
+ const invalid=[null,[],{},'page',{...pageEntry(),extra:true}];
+ for(const src of [undefined,'',' ','http://example.test/a.webp','javascript:alert(1)','a.webp','/../a.webp','/a b.webp','//example.test/a.webp','/\\example.test/a.webp','https://','/'+'x'.repeat(300)])invalid.push({...pageEntry(),src},{...pageEntry(),thumbSrc:src});
+ for(const panels of [null,[],pageEntry().panels.slice(1),[...pageEntry().panels,[0,0,1,1]]])invalid.push({...pageEntry(),panels});
+ for(const crop of [null,{},[0,0,1],['0',0,1,1],[NaN,0,1,1],[Infinity,0,1,1],[-.1,0,1,1],[1.1,0,.1,1],[0,0,0,1],[0,0,1,0],[.51,0,.5,1],[0,.51,1,.5]])invalid.push({...pageEntry(),panels:[crop,...pageEntry().panels.slice(1)]});
+ const sparse=pageEntry();delete sparse.panels[0];invalid.push(sparse);
+ for(const comicPage of invalid){const comic=comicFor(chapter,3,{comicPage});assert.equal(comic.page,undefined);assert.deepEqual(comic,local);}
+ assert.equal(comicFor({id:'other',albumId:'other'},0,{comicPage:pageEntry()}),null);
+});
+
+test('comicSource uses page sources/crops only for landscape plus ready; all fallback states keep level crops',()=>{
+ const local=comicFor(chapter,3,{}),comic=comicFor(chapter,3,{comicPage:{...pageEntry(),thumbSrc:'/page-thumb.webp'}}),level={src:'/level.webp',thumb:'/level-thumb.webp'};
+ for(const landscape of [false,true])for(const pageReady of [false,true])for(const current of [local,comic]){
+  const source=comicSource(current,landscape,pageReady,level);
+  assert.deepEqual(source,landscape&&pageReady&&current.page?{src:current.page.src,thumb:current.page.thumbSrc,crops:current.page.panels}:{...level,crops:local.panels.map(p=>p.crop)});
+ }
+ // Loading and failed cache entries both report not ready.
+ for(const state of ['loading','failed'])assert.deepEqual(comicSource(comic,true,state==='loaded',level).crops,local.panels.map(p=>p.crop));
+});
+
+test('app preloads pages on open/turn, uses them after readiness in landscape, and keeps level artwork/texts otherwise',async t=>{
+ t.mock.method(Date,'now',()=>1000);
+ for(const [width,height]of [[844,390],[390,844]]){
+  const data=levels(6),comicPage={...pageEntry(),thumbSrc:'/comic-page-thumb.webp'};data.chapters[0].levels[3].comicPage=comicPage;data.chapters[0].levels[4].comicPage={...comicPage,src:'/next-page.webp'};
+  const f=fixture({width,height,data});await artwork(f);const loads=[];let ready=false;
+  f.stage.preloadComicImage=(src,thumb)=>loads.push({src,thumb});
+  f.stage.comicImageSize=(src,thumb,decoded)=>src===comicPage.src?(ready?{w:2000,h:1000}:null):{w:1536,h:1024};
+  f.app.room={snapshot:{levelId:'ch1-4'}};f.app.board={input(){},comicPicture:{width:1536,height:1024}};
+  f.app.openLevelComic('ch1-4');assert.deepEqual(loads,[{src:comicPage.src,thumb:comicPage.thumbSrc}]);
+  for(const state of ['loading','loaded','failed']){
+   ready=state==='loaded';f.app.advanceComic(true);f.clear();f.app.drawModal();const usePage=width>height&&ready;
+   assert.equal(f.images.length,4);f.images.forEach((image,index)=>{
+    assert.equal(image.src,usePage?comicPage.src:'/chapter-3.webp');assert.deepEqual(image.crop,usePage?comicPage.panels[index]:comicFor(chapter,3,{}).panels[index].crop);
+    assert.equal(image.decoded,usePage?null:f.app.board.comicPicture);
+   });
+   assert.ok(f.texts.includes('午后，店门口的铃响了。'));assert.ok(f.texts.includes('别哭，我们把它拼回来！'));
+  }
+  if(width>height){
+   ready=true;f.app.openLevelComic('ch1-4',{fromClear:true});f.clear();f.app.drawModal();
+   const area=f.app.modalArea,full=cropCover(2000,1000,[0,0,1,1],area),scale=area.w/full.w,crop=comicPage.panels[0];
+   assert.equal(f.images.length,5);assert.deepEqual(f.images[1].r,{x:area.x+(crop[0]*2000-full.x)*scale,y:area.y+(crop[1]*1000-full.y)*scale,w:crop[2]*2000*scale,h:crop[3]*1000*scale});
+  }
+  f.app.turnComic(4);assert.equal(loads.at(-1).src,'/next-page.webp');
+ }
+});
+
+test('Stage page preloading stays nonblocking, checks decoded cache only, and reuses either source or thumbnail',()=>{
+ const f=fixture(),loads=[],draws=[],pending=new Map(),ctx=f.stage.ctx;ctx.drawImage=(...args)=>draws.push(args);
+ const platform={config:{id:'web'},canvas:{width:100,height:100,getContext:()=>ctx},viewport:()=>({width:100,height:100,dpr:1}),createImage:()=>({width:2000,height:1000}),setImageSource:(image,src)=>{loads.push(src);pending.set(src,image);return ()=>{};}};
+ const s=new Stage(platform,src=>src),r={x:0,y:0,w:100,h:100};
+ try{
+  assert.equal(s.comicImageSize('/page','/thumb'),null);assert.deepEqual(loads,[]);
+  s.preloadComicImage('/page','/thumb');assert.deepEqual(loads,['/page','/thumb']);assert.equal(s.comicImageSize('/page','/thumb'),null);assert.equal(draws.length,0);
+  pending.get('/page').onerror();assert.equal(s.comicImageSize('/page','/thumb'),null);
+  pending.get('/thumb').onload();assert.deepEqual(s.comicImageSize('/page','/thumb'),{w:2000,h:1000});
+  s.comicImage('/page','/thumb',r,[.5,0,.5,.5]);assert.equal(draws[0][0],pending.get('/thumb'));
+  s.preloadComicImage('/full','/full');assert.equal(loads.filter(src=>src==='/full').length,1);pending.get('/full').onload();
+  assert.deepEqual(s.comicImageSize('/full',''),{w:2000,h:1000});s.comicImage('/full','',r,[0,0,1,1]);assert.equal(draws.at(-1)[0],pending.get('/full'));
+ }finally{s.destroy();}
 });
 
 test('comic wrapping keeps closing punctuation with the previous glyph without losing text',()=>{

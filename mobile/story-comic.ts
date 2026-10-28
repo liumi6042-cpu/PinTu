@@ -7,7 +7,7 @@ import {bundledStory} from './bundled-story';
 export type ComicCrop=[number,number,number,number];
 export type ComicText={kind:'caption'|'say'|'sfx';at:'tl'|'tr'|'bl'|'br';text:string};
 export type ComicPanel={crop:ComicCrop;texts:ComicText[]};
-export type Comic={intro:string;panels:ComicPanel[]};
+export type Comic={intro:string;panels:ComicPanel[];page?:{src:string;thumbSrc:string;panels:ComicCrop[]}};
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
 function panelsFrom(value:unknown):ComicPanel[]|null{
  const panels=(value as {panels?:unknown})?.panels;
@@ -15,11 +15,30 @@ function panelsFrom(value:unknown):ComicPanel[]|null{
  if(!panels.every(p=>p&&Array.isArray(p.crop)&&p.crop.length===4&&p.crop.every((v:unknown)=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1)&&p.crop[2]>0&&p.crop[3]>0&&p.crop[0]+p.crop[2]<=1.0001&&p.crop[1]+p.crop[3]<=1.0001&&Array.isArray(p.texts)&&p.texts.every((t:ComicText)=>t&&['caption','say','sfx'].includes(t.kind)&&['tl','tr','bl','br'].includes(t.at)&&typeof t.text==='string')))return null;
  return panels.map(p=>({crop:[...p.crop] as ComicCrop,texts:p.texts.map((t:ComicText)=>({...t}))}));
 }
+function pageFrom(value:unknown):Comic['page']{
+ if(!value||typeof value!=='object'||Array.isArray(value))return;
+ const page=value as {src?:unknown;thumbSrc?:unknown;panels?:unknown};
+ if(Object.keys(page).some(key=>!['src','thumbSrc','panels'].includes(key)))return;
+ const source=(v:unknown):v is string=>{
+  if(typeof v!=='string'||!v||v.length>300||/\s|\.\.|\\/.test(v))return false;
+  if(v.startsWith('/'))return !v.startsWith('//');
+  try{return v.startsWith('https://')&&new URL(v).protocol==='https:';}catch{return false;}
+ };
+ if(!source(page.src)||Object.prototype.hasOwnProperty.call(page,'thumbSrc')&&!source(page.thumbSrc)||!Array.isArray(page.panels)||page.panels.length!==4)return;
+ const panels=Array.from(page.panels);
+ if(!panels.every(crop=>Array.isArray(crop)&&crop.length===4&&Array.from(crop).every(v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1)&&crop[2]>0&&crop[3]>0&&crop[0]+crop[2]<=1.0001&&crop[1]+crop[3]<=1.0001))return;
+ return {src:page.src,thumbSrc:typeof page.thumbSrc==='string'?page.thumbSrc:page.src,panels:panels.map(crop=>[...crop] as ComicCrop)};
+}
 /** Server fields are optional and independently fall back on old servers. */
-export function comicFor(chapter:Pick<MobileChapter,'id'|'albumId'>,index:number,level:Pick<MobileLevel,'comic'|'intro'>):Comic|null{
+export function comicFor(chapter:Pick<MobileChapter,'id'|'albumId'>,index:number,level:Pick<MobileLevel,'comic'|'intro'|'comicPage'>):Comic|null{
  const bundled=bundledStory(chapter)?.levels[index];
  const panels=panelsFrom(level.comic)??panelsFrom(bundled?.comic);if(!panels)return null;
- return {intro:typeof level.intro==='string'&&level.intro.trim()?level.intro:bundled?.intro??'',panels};
+ const page=pageFrom(level.comicPage)??pageFrom((bundled as {comicPage?:unknown}|undefined)?.comicPage);
+ return {intro:typeof level.intro==='string'&&level.intro.trim()?level.intro:bundled?.intro??'',panels,...(page?{page}:{})};
+}
+/** Only an already decoded page may replace the level image, and only in landscape. */
+export function comicSource(comic:Comic,landscape:boolean,pageReady:boolean,level:{src:string;thumb:string}){
+ return landscape&&pageReady&&comic.page?{src:comic.page.src,thumb:comic.page.thumbSrc,crops:comic.page.panels}:{...level,crops:comic.panels.map(panel=>panel.crop)};
 }
 /** Cover the crop, centred on it; translate the source at image edges. */
 export function cropCover(imageW:number,imageH:number,crop:ComicCrop,panel:Pick<Rect,'w'|'h'>):Rect{

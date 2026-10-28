@@ -101,6 +101,16 @@ test('future server timeLabel/intro/comic and arbitrary JSON fields survive buil
  level.comic.panels[0].caption='changed';assert.equal(catalog.chapters[0].levels[0].comic.panels[0].caption,'第一天');
 });
 
+test('optional comicPage survives the actual server view, offline build and reader with independent copies',async t=>{
+ const f=await fixture(t),comicPage={src:'/puzzles/page.webp',thumbSrc:'https://example.test/page-thumb.webp',panels:[[0,0,.5,.5],[.5,0,.5,.5],[0,.5,.5,.5],[.5,.5,.5,.5]]};
+ f.levels.chapters[0].story=[{comicPage},{comicPage:{src:'https://example.test/page.webp',panels:comicPage.panels}}];
+ const catalog=buildOfflineCatalog(f),read=readOfflineCatalog(catalog);
+ assert.deepEqual(read.chapters[0].levels[0].comicPage,comicPage);assert.deepEqual(read.chapters[0].levels[1].comicPage,f.levels.chapters[0].story[1].comicPage);
+ assert.equal(Object.hasOwn(read.chapters[0].levels[2],'comicPage'),false);assert.equal(Object.keys(catalog.photos).length,7);
+ read.chapters[0].levels[0].comicPage.panels[0][0]=.1;read.chapters[0].levels[0].comicPage.src='/changed.webp';
+ assert.deepEqual(catalog.chapters[0].levels[0].comicPage,comicPage);
+});
+
 test('missing full image or thumbnail and unavailable levels fail the build clearly',async t=>{
  const f=await fixture(t);
  for(const url of [f.photos[2].src,f.photos[2].thumbSrc,f.photos[0].src,f.photos[0].thumbSrc]){

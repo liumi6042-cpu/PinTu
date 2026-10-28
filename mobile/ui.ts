@@ -96,6 +96,8 @@ export class Stage{
  clip(r:Rect,draw:()=>void){this.ctx.save();this.ctx.beginPath();this.ctx.rect(r.x,r.y,r.w,r.h);this.ctx.clip();this.clips.push({...r,x:r.x+this.offset.x,y:r.y+this.offset.y});try{draw();}finally{this.clips.pop();this.ctx.restore();}}
  retryImages(){this.images.retryFailed();this.invalidate();}
  private load(src:string){const ui=src.startsWith('/mobile-icons/'),extra=/b2-(supply-scenes|pixel-atlas)\.png$/.test(src);const url=ui?(extra?'art/':'assets/ui/')+src.split('/').pop():src.startsWith('/')?this.asset(src):src;return this.images.use(url,ui);}
+ /** Queue without painting; callers keep their existing artwork until ready. */
+ preloadComicImage(src:string,thumb:string){if(src)this.load(src);if(thumb&&thumb!==src)this.load(thumb);}
  /** Reuse either cached resolution; an unavailable image never blocks the page. */
  comicImage(src:string,thumb:string,r:Rect,crop:ComicCrop,zoom=1,decoded?:HTMLCanvasElement|null){
   const key=(value:string)=>value.startsWith('/')?this.asset(value):value;

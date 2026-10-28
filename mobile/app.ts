@@ -2,7 +2,7 @@ import type {Platform,Input,Rect,Route,WebLinks} from './ports';
 import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
 import {timeLabelFor,nodeState} from './story-timeline';
-import {comicFor,comicPageRect,comicLayout,comicTextCount,drawComicPage,drawComicText,reducedComicMotion,type ComicPageState} from './story-comic';
+import {comicFor,comicSource,comicPageRect,comicLayout,comicTextCount,drawComicPage,drawComicText,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
 import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
@@ -1124,12 +1124,17 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    return {chapterSwitch,cardSize:{w:cw,h:ch}};
   }
  }
+ private preloadComicPage(comic:Comic|null){
+  if(!comic?.page)return;
+  const src=this.client.asset(comic.page.src),thumb=this.client.asset(comic.page.thumbSrc);this.stage.preloadComicImage(src,thumb);return {src,thumb};
+ }
  /** Synchronous entry, also used by offline play. No refresh or API request. */
  openLevelComic(levelId:string,options:{sequence?:boolean;fromClear?:boolean}={}){
   const chapter=this.chapterForLevel(levelId);if(!chapter)return;this.syncComicClear(chapter);
   const index=options.sequence?0:chapter.levels.findIndex(level=>level.id===levelId),level=chapter.levels[index];
   if(!level||index<0||index>=this.comicLimit(chapter))return;
   const returnTo=this.modal==='completion'?'completion':this.modal==='levelComic'?this.comicPage?.returnTo??null:null,comic=comicFor(chapter,index,level)!;
+  this.preloadComicPage(comic);
   this.stopStoryFrame();this.comicGesture=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;
   if(!this.comicHintSeen){
    try{this.comicHintSeen=this.platform.storage.get('jigsaw:comic-hint:v1')==='1';}catch{}
@@ -1148,6 +1153,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const limit=this.comicLimit(chapter);if(index<0||index>limit||index===page.index)return;
   const ending=index===limit,level=chapter.levels[index],comic=!ending&&level?comicFor(chapter,index,level):null;
   if(!ending&&!comic)return;
+  this.preloadComicPage(comic);
   this.comicPage={...page,index,levelId:ending?'':level.id,ending,fromClear:false,started:Date.now()-520,shown:comic&&this.comicRead?.has(this.comicReadKey(level.id))?comicTextCount(comic):0,turn:reducedComicMotion()?undefined:{started:Date.now(),direction:index>page.index?1:-1}};this.invalidate();
  }
  private advanceComic(all=false){
@@ -1170,8 +1176,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   s.clip(area,()=>{c.save();c.translate(turn*turn*area.w*(page.turn?.direction??1),this.comicDrag);c.globalAlpha*=Math.max(.4,1-this.comicDrag/Math.max(1,area.h)*.65);
    try{
     if(comic){
-     const photo=this.levelPicture(level),src=photo.src?this.client.asset(photo.src):'',thumb=photo.thumbSrc?this.client.asset(photo.thumbSrc):'',roomLevel=this.room?.snapshot.levelId??this.room?.snapshot.mobileResult?.levelClear?.levelId,decoded=roomLevel===level.id?this.board?.comicPicture:null;
-     const result=drawComicPage(s,page,comic,'',(r,crop,zoom)=>s.comicImage(src,thumb,r,crop,zoom,decoded),now,s.comicImageSize(src,thumb,decoded),area);if(result.animating)this.animateStory();
+     const photo=this.levelPicture(level),pageImage=this.preloadComicPage(comic),pageSize=s.w>s.h&&pageImage?s.comicImageSize(pageImage.src,pageImage.thumb):null,usePage=!!pageSize;
+     const source=comicSource(comic,s.w>s.h,usePage,{src:photo.src??'',thumb:photo.thumbSrc??''}),src=source.src?this.client.asset(source.src):'',thumb=source.thumb?this.client.asset(source.thumb):'',roomLevel=this.room?.snapshot.levelId??this.room?.snapshot.mobileResult?.levelClear?.levelId,decoded=!usePage&&roomLevel===level.id?this.board?.comicPicture:null;
+     const drawing=usePage?{...comic,panels:comic.panels.map((panel,index)=>({...panel,crop:source.crops[index]}))}:comic;
+     const result=drawComicPage(s,page,drawing,'',(r,crop,zoom)=>s.comicImage(src,thumb,r,crop,zoom,decoded),now,pageSize??s.comicImageSize(src,thumb,decoded),area);if(result.animating)this.animateStory();
      s.hit(area,()=>this.advanceComic());
     }else{
      c.fillStyle='#fffdf8';c.fillRect(area.x,area.y,area.w,area.h);
