@@ -52,14 +52,20 @@ test('short body uses a measured single footer row while keeping 44px cards',()=
  for(const {r}of f.buttons)assert.ok(!overlaps(r,description.r));
 });
 
-// Portrait ignores TapTap's ••• capsule (owner, 2026-10-28): headers and the room bar draw exactly as without it.
-test('portrait headers and room chrome ignore the menu capsule',()=>{
- const [width,height]=[390,844],menu={x:width-102,y:8,w:94,h:40};
- const draw=withMenu=>{const f=fixture({width,height});f.platform.viewport=()=>({width,height,top:0,bottom:0,...(withMenu?{menu}:{})});f.platform.setOrientation=async()=>{};f.stage.w=width;const out=[];
-  for(const route of ['lobby','chapter','gallery','collection','friends','tasks','supplies']){f.app.route=route;f.clear();record(f);f.app.drawHeader();out.push(route,JSON.stringify(f.buttons.map(b=>b.r)),JSON.stringify(f.hits.map(h=>h.r)));}
+// Portrait keeps its rows at the normal top under TapTap's ••• capsule and only moves right-edge items left of it (v31).
+for(const width of [390,360])test(`portrait ${width}: headers and room bar keep their top and clear the capsule horizontally`,()=>{
+ const height=844,menu={x:width-95,y:8,w:87,h:32};
+ const draw=withMenu=>{const f=fixture({width,height});f.platform.viewport=()=>({width,height,top:0,bottom:0,...(withMenu?{menu}:{})});f.platform.setOrientation=async()=>{};f.stage.w=width;const out={};
+  for(const route of ['lobby','chapter','gallery','collection','friends','tasks','supplies']){f.app.route=route;f.clear();record(f);f.app.drawHeader();out[route]={top:Math.min(...f.buttons.map(b=>b.r.y)),rects:[...f.buttons,...f.hits].map(b=>b.r)};}
   f.app.route='room';f.app.room={state:{cols:4,rows:4,groups:[]},snapshot:{puzzle:{imageId:'test'},title:'一起拼图',visibility:'solo',members:[]}};f.app.board={};
-  f.clear();record(f);const top=f.app.roomHeaderTop();f.app.drawRoomTopBar({x:0,y:top,w:width,h:76},'portrait');out.push('room',top,JSON.stringify(f.buttons.map(b=>b.r)));return out;};
- const plain=draw(false),capsule=draw(true);assert.deepEqual(capsule,plain);assert.ok(capsule[capsule.indexOf('room')+1]<menu.y+menu.h,'room bar starts at the normal safe top');
+  f.clear();record(f);const top=f.app.roomHeaderTop();f.app.drawRoomTopBar({x:0,y:top,w:width,h:76},'portrait');out.room={top,rects:[...f.buttons,...f.hits].map(b=>b.r)};return out;};
+ const plain=draw(false),capsule=draw(true);
+ for(const [name,view]of Object.entries(capsule)){
+  assert.equal(view.top,plain[name].top,name+' row is not pushed down');
+  for(const r of view.rects)assert.ok(!overlaps(r,menu),name+' '+JSON.stringify(r)+' under the capsule');
+  for(const r of view.rects)assert.ok(r.x>=0&&r.x+r.w<=width,name+' '+JSON.stringify(r)+' off screen');
+ }
+ assert.ok(capsule.room.top<menu.y+menu.h,'room bar starts at the normal safe top');
 });
 
 for(const portrait of [false])test(`${portrait?'portrait':'landscape'} menu clears shared headers and room chrome`,()=>{

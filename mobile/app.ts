@@ -919,8 +919,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private copyInvitationCode(code:string){if(!this.platform.copyText){this.note('邀请码：'+code);return;}void this.platform.copyText(code).then(ok=>this.note(ok?'已复制邀请码 '+code:'复制失败，请手动记下邀请码 '+code));}
  /** Headers draw beside the nav rail in local coordinates, but keep the same screen right edge. */
- /** Landscape only: portrait headers keep the full width and top under TapTap's ••• capsule (owner's choice, v30). */
- private menuReserve(row:Rect){const view=this.platform.viewport(),menu=view.menu;return menu&&view.width>view.height&&row.y<menu.y+menu.h&&menu.y<row.y+row.h?Math.max(0,view.width-menu.x+8):0;}
+ /** Right-edge items end left of TapTap's ••• capsule; rows are never pushed below it (portrait since v31). */
+ private menuReserve(row:Rect){const view=this.platform.viewport(),menu=view.menu;return menu&&row.y<menu.y+menu.h&&menu.y<row.y+row.h?Math.max(0,view.width-menu.x+8):0;}
  // Puzzle rooms get the same visible top gap as the lobby header (inset + 12).
  private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+6;return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
  private drawSettingsBadge(avatar:Rect,offsetX=0){
@@ -947,7 +947,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const energy=(x:number,y:number,width:number,size=16)=>{if(!this.energyEnabled){s.icon('coin',{x,y:y+7,w:24,h:26});s.text(p?(p.collection?.coins??0):'—',x+29,y+13,size,this.colors.ink,800,Math.max(24,width-30));s.hit({x:x-3,y,w:Math.max(24,width+3),h:42},()=>this.showModal('coins'));return;}const compact=width<90;if(compact)size=Math.min(size,12);s.icon('lightning',{x,y:y+(compact?7:3),w:compact?17:22,h:compact?24:31});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=Math.min(s.measure(label,size,800),Math.max(24,width-(compact?40:49)));s.text(label,x+(compact?20:25),y+12,size,this.colors.ink,800,tw+1);s.frame({x:x+(compact?24:29)+tw,y:y+10,w:compact?16:19,h:21},'plus-gold-normal');s.text('+',x+(compact?27:33)+tw,y+11,17,'#fffaf0',700);s.hit({x,y,w:width,h:42},()=>this.navigate('supplies'));};
   if(this.route==='lobby'||this.route==='gallery'||this.route==='chapter'){
    let y=top;const gallery=this.route==='gallery';
-   if(gallery){s.text('图库',14,y+3,small?22:24,this.colors.ink,800,s.w-150);if(this.layout==='phonePortrait')s.button({x:s.w-136,y,w:124,h:32},'随机开一桌',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),{icon:'dice',fontSize:13,disabled:this.busy||!p});line(y+37);y+=43;if(this.layout==='phoneLandscape'){this.bodyTop=y;return;}}
+   if(gallery){s.text('图库',14,y+3,small?22:24,this.colors.ink,800,s.w-150);if(this.layout==='phonePortrait')s.button({x:s.w-136-reserve,y,w:124,h:32},'随机开一桌',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),{icon:'dice',fontSize:13,disabled:this.busy||!p});line(y+37);y+=43;if(this.layout==='phoneLandscape'){this.bodyTop=y;return;}}
    const h=wide?74:56,avatar=wide?64:small?43:49,playerWidth=gallery?(small?127:151):wide?174:small?96:110;
    if(!gallery)line(y);s.icon('avatar',{x:12,y:y+3,w:avatar,h:h-5});s.hit({x:12,y,w:playerWidth,h},()=>this.showModal('settings'));
    this.drawSettingsBadge({x:12,y:y+3,w:avatar,h:h-5},this.navVisible&&this.layout==='phoneLandscape'?72:0);
@@ -1819,8 +1819,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const inviteW=118;s.button({x:r.x+r.w-inviteW-14,y:r.y+12,w:inviteW,h:36},'＋ 邀请朋友',()=>this.showModal('invite'),{tone:'berry',fontSize:14});
    const start=avatars(r.x+r.w-inviteW-28,r.y+14,28);this.roomMembersArea={x:start-6,y:r.y+6,w:r.x+r.w-start,h:48};s.hit({x:start-6,y:r.y+6,w:r.x+r.w-inviteW-22-start,h:48},()=>this.focusRoomMembers());
   }else if(mode==='portrait'){
-   back(r.x+8,r.y+4);const inviteX=r.x+r.w-44;s.button({x:inviteX,y:r.y+6,w:34,h:34},'',()=>this.showModal('invite'),{tone:'berry'});s.icon('plus',{x:inviteX+9,y:r.y+15,w:16,h:16},this.colors.onAccent);
-   const start=avatars(inviteX-8,r.y+9,24);this.roomMembersArea={x:start-4,y:r.y+2,w:r.x+r.w-start,h:42};s.hit({x:start-4,y:r.y+2,w:inviteX-start,h:42},()=>this.showModal('chat'));
+   back(r.x+8,r.y+4);const inviteX=r.x+r.w-44-this.menuReserve({...r,h:44});s.button({x:inviteX,y:r.y+6,w:34,h:34},'',()=>this.showModal('invite'),{tone:'berry'});s.icon('plus',{x:inviteX+9,y:r.y+15,w:16,h:16},this.colors.onAccent);
+   const start=avatars(inviteX-8,r.y+9,24);this.roomMembersArea={x:start-4,y:r.y+2,w:inviteX+34-start,h:42};s.hit({x:start-4,y:r.y+2,w:inviteX-start,h:42},()=>this.showModal('chat'));
    s.text(title,r.x+50,r.y+5,16,ink,800,start-r.x-58);s.text(kind,r.x+50,r.y+26,11,this.colors.muted,600,start-r.x-58);
    const line=placed+' / '+total+' · '+percent+'%',lw=s.measure(line,14,800);s.icon('piece',{x:r.x+12,y:r.y+48,w:18,h:20});s.text(line,r.x+34,r.y+50,14,ink,800);s.meter({x:r.x+44+lw,y:r.y+55,w:Math.max(20,r.w-58-lw),h:9},placed/Math.max(1,total));
   }else if(this.platform.config.id==='web'){
