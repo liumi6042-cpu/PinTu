@@ -597,7 +597,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private receiveCheer(room:RoomClient,cheer:Cheer,own:boolean){if(this.room!==room)return;if(this.completionFx){this.completionCheerQueue.push({cheer,own,at:Date.now()});this.completionCheerQueue=this.completionCheerQueue.slice(-60);return;}if(this.modal!=='completion')return;this.cheerEffects.receive(cheer,own);this.animateCheers();}
  private async loadAssistance(){if(!this.room||this.offlineRoom)return;try{const room=this.room;const data=await this.client.json<typeof this.aid>('/api/rooms/'+room.ticket.room.id+'/assistance','GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(this.room!==room)return;if(data){const offset=Date.now()-data.serverTime;data.grants=data.grants.map(grant=>({...grant,expiresAt:grant.expiresAt+offset}));this.aid=data;this.applyAssistance();}}catch(error){this.note(errorText(error));}}
  private activeAid(kind:'hint'|'underlay'){const grants=this.aid?.grants??[],now=Date.now();for(let i=grants.length-1;i>=0;i--)if(grants[i].kind===kind&&grants[i].expiresAt>now)return grants[i];return undefined;}
- private applyAssistance(){if(!this.board)return;const underlay=this.activeAid('underlay'),hint=this.activeAid('hint');this.board.setUnderlay?.(underlay?.expiresAt??0);this.board.setHints?.(hint?.pieceIds??[],hint?.expiresAt??0);this.invalidate();}
+ private applyAssistance(){
+  const board=this.board;if(!board)return;const underlay=this.activeAid('underlay'),hint=this.activeAid('hint');board.setUnderlay?.(underlay?.expiresAt??0);
+  const activated=board.setHints?.(hint?.pieceIds??[],hint?.expiresAt??0,hint?.requestId);
+  if(activated)board.locateHints(this.roomLocateInsets());this.invalidate();
+ }
  private showShareFailureDiagnostic(){if(this.platform.config.id==='taptap'&&this.client.profile?.taptap?.diagnostics===true)this.platform.alert('分享诊断（仅管理员）\n'+(this.platform.shareDiagnostics?.()??'当前包未提供诊断'));}
  private async shareFromGame(input:Parameters<Platform['share']>[0]){
   if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return 'unavailable' as const;}
@@ -1743,10 +1747,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  /** Outside Web the fit slot locates loose pieces; fitting the whole table stays under 更多. */
  private get roomTools(){return ([['edge','边缘','E'],['hint','提示','H'],['underlay','底图','B'],this.platform.config.id==='web'?['fit','适配','F']:['locate','定位','L'],['organize','整理','R']] as const).filter(([kind])=>kind!=='organize'||this.soloRoom);}
  private locateLoose(){
-  const board=this.board;if(!board)return;const layout=this.layout;
-  const count=board.locateLoose(layout==='desktop'?{bottom:56,left:this.desktopToolsOpen?104:72}:layout==='phoneLandscape'?{top:this.roomHeaderTop()+56-this.roomArea.y,bottom:8}:{bottom:72});
+  const board=this.board;if(!board)return;
+  const count=board.locateLoose(this.roomLocateInsets());
   this.note(count?'已标出 '+count+' 块未拼的拼块'+(board.edgeOnly?'（边缘筛选中）':''):board.edgeOnly?'边缘拼块都已归位，关闭边缘筛选可找其余拼块':'所有拼块都已归位');
  }
+ private roomLocateInsets(){const layout=this.layout;return layout==='desktop'?{bottom:56,left:this.desktopToolsOpen?104:72}:layout==='phoneLandscape'?{top:this.roomHeaderTop()+56-this.roomArea.y,bottom:8}:{bottom:72};}
  private toolActive(kind:string){return kind==='edge'?!!this.board?.edgeOnly:kind==='locate'?!!this.board?.locating:kind==='hint'||kind==='underlay'?!!this.activeAid(kind):false;}
  private drawAidBadge(kind:string,right:number,y:number){
   if(kind!=='hint'&&kind!=='underlay')return;const s=this.stage,c=s.ctx,active=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,pending=!this.aid||this.busy;

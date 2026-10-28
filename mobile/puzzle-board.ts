@@ -33,6 +33,20 @@ export const CURSOR_SMOOTHING_MS=50;
 const inside=(p:Point,r:Rect)=>p.x>=r.x&&p.y>=r.y&&p.x<=r.x+r.w&&p.y<=r.y+r.h;
 const cloneGroups=(groups:Group[])=>groups.map(g=>({...g,pieces:[...g.pieces]}));
 
+/** Resolve a grant against device progress. Only a new grant may fill vacancies;
+ * subsequent snapshots remove unavailable pieces without spending another hint. */
+export function selectHintPieceIds(state:Pick<PuzzleState,'cols'|'rows'|'groups'>,ids:readonly number[],owners:Readonly<Record<string,Owner>>={},options:{count?:number;topUp?:boolean}={}):number[]{
+ const count=Math.min(3,Math.max(0,Math.floor(options.count??ids.length))),groups=new Map<number,Group>(),selected:number[]=[];
+ for(const group of state.groups)for(const id of group.pieces)groups.set(id,group);
+ const available=(id:number)=>{const group=groups.get(id);return Number.isInteger(id)&&id>=0&&id<state.cols*state.rows&&group&&!group.locked&&!owners[group.id];};
+ for(const id of ids)if(selected.length<count&&available(id)&&!selected.includes(id))selected.push(id);
+ if(options.topUp!==false&&selected.length<count){
+  const candidates=state.groups.filter(g=>!g.locked&&!owners[g.id]&&g.pieces.length).sort((a,b)=>a.pieces.length-b.pieces.length);
+  for(const group of candidates){if(selected.length>=count)break;if(group.pieces.some(id=>selected.includes(id)))continue;const id=group.pieces[0];if(available(id))selected.push(id);}
+ }
+ return selected;
+}
+
 /** The shared engine emits only these four SVG commands. Interpret the commands
  * directly so the same geometry works without a browser Path2D constructor. */
 export function parsePuzzlePath(source:string):Command[]{
@@ -76,7 +90,7 @@ export class PuzzleBoard implements RoomTable {
  private tray=false;private trayPage=0;private focusedPiece:number|null=null;
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null}|null=null;
  private drag:Drag|null=null;private pan:Pan|null=null;private pinch:Pinch|null=null;private serial=0;
- private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private underlayUntil=0;
+ private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private hintGrant:string|number|null=null;private underlayUntil=0;
  private flashes:SnapFlash[]=[];private locateStartedAt=0;private locateUntil=0;private frame=0;private destroyed=false;private feedbackHidden=false;
  private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();
  private removeHide:()=>void;private removeShow:()=>void;private timer:ReturnType<typeof setTimeout>|null=null;
@@ -231,7 +245,7 @@ export class PuzzleBoard implements RoomTable {
  }
  private groupAt(p:Point){
   const world=this.world(p),w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.27;
-  for(let i=this.state.groups.length-1;i>=0;i--){const group=this.state.groups[i];if(group.locked||!visibleGroup(group,this.pieces,this.edges))continue;
+  for(let i=this.state.groups.length-1;i>=0;i--){const group=this.state.groups[i];if(group.locked||!this.groupVisible(group))continue;
    for(const id of group.pieces){const piece=this.pieces[id],x=world.x-this.board.x-piece.col*w-group.dx,y=world.y-this.board.y-piece.row*h-group.dy;
     if(x < -pad||x>w+pad||y < -pad||y>h+pad)continue;if(this.polygons){if(inPolygon(this.polygons[id],x,y))return group;}else{tracePuzzlePath(this.hit,this.paths[id]);if(this.hit.isPointInPath(x,y))return group;}
    }
@@ -309,6 +323,7 @@ export class PuzzleBoard implements RoomTable {
   const before=cloneGroups(this.state.groups),previous=new Map(this.state.groups.map(g=>[g.id,g]));
   this.state.groups=next.groups.map(incoming=>{const old=previous.get(incoming.id),group={...incoming,pieces:[...incoming.pieces]};if(old&&!group.locked&&protectedIds.has(group.id)){group.dx=old.dx;group.dy=old.dy;}return group;});
   for(const id of protectedIds)raiseGroup(this.state,id);this.state.elapsed=next.elapsed;this.owners=owners;
+  this.pruneHints();
   if(showFeedback&&!this.feedbackHidden){const localIds=new Set([...protectedIds,...this.pendingDrops.keys()]);for(const glow of newMobileConnections(before,this.state,localIds))this.addFlash(glow);}
   this.changed();this.animateFeedback();
  }
@@ -327,10 +342,32 @@ export class PuzzleBoard implements RoomTable {
   flash.local=true;flash.xp=receipt.creditedXp;flash.startedAt=now;flash.until=now+(flash.reduced?MOBILE_REDUCED_GLOW_MS:CANVAS_SNAP_FEEDBACK_MS);this.changed();this.animateFeedback();
  }
  playConnectionSound(_source:'local'|'teammate'='local'){if(this.soundUrl)this.platform.playSound?.(this.soundUrl);}
- setHints(ids:number[],until:number){this.hintIds=ids.filter(id=>Number.isInteger(id)&&!!this.pieces[id]).slice(0,3);this.hintUntil=until;this.scheduleExpiry();this.changed();}
+ setHints(ids:number[],until:number,grantId:string|number=until){
+  const active=Number.isFinite(until)&&until>Date.now(),activated=active&&this.hintGrant!==grantId;
+  if(!active){this.hintIds=[];this.hintGrant=null;this.hintUntil=0;}
+  else{this.hintIds=activated?selectHintPieceIds(this.state,ids,this.owners):selectHintPieceIds(this.state,this.hintIds,this.owners,{topUp:false});this.hintGrant=grantId;this.hintUntil=until;}
+  this.scheduleExpiry();this.changed();this.animateFeedback();return activated;
+ }
+ private pruneHints(){if(this.hintIds.length)this.hintIds=this.hintUntil>Date.now()?selectHintPieceIds(this.state,this.hintIds,this.owners,{topUp:false}):[];}
+ private groupVisible(group:Group){return visibleGroup(group,this.pieces,this.edges)||(this.hintUntil>Date.now()&&group.pieces.some(id=>this.hintIds.includes(id)));}
  setUnderlay(until:number){this.underlayUntil=until;this.scheduleExpiry();this.changed();}
  /** Highlighting only: reward/advertising eligibility is handled by the caller. */
- hint(ids?:number[],duration=30000){this.setHints(ids??this.state.groups.filter(g=>!g.locked&&!this.owners[g.id]).slice(0,3).map(g=>g.pieces[0]),Date.now()+duration);}
+ hint(ids?:number[],duration=30000){this.setHints(ids??selectHintPieceIds(this.state,[],this.owners,{count:3}),Date.now()+duration);}
+ /** Show both ends of every hint, leaving an already visible camera untouched. */
+ locateHints(insets:{top?:number;right?:number;bottom?:number;left?:number}={}){
+  this.pruneHints();if(!this.hintIds.length||!this.rect.w||!this.rect.h)return false;
+  const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.27,cam=this.camera;
+  let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity,cxMin=Infinity,cyMin=Infinity,cxMax=-Infinity,cyMax=-Infinity;
+  for(const id of this.hintIds){const group=this.state.groups.find(g=>g.pieces.includes(id))!,piece=this.pieces[id],x=this.board.x+piece.col*w,y=this.board.y+piece.row*h;
+   for(const [dx,dy]of [[0,0],[group.dx,group.dy]]){left=Math.min(left,x+dx-pad);top=Math.min(top,y+dy-pad);right=Math.max(right,x+dx+w+pad);bottom=Math.max(bottom,y+dy+h+pad);cxMin=Math.min(cxMin,x+dx+w/2);cyMin=Math.min(cyMin,y+dy+h/2);cxMax=Math.max(cxMax,x+dx+w/2);cyMax=Math.max(cyMax,y+dy+h/2);}
+  }
+  const trayBottom=this.tray?this.rect.y+this.rect.h-this.trayLayout().r.y:0,l=Math.max(0,insets.left??0),t=Math.max(0,insets.top??0),vw=Math.max(1,this.rect.w-l-Math.max(0,insets.right??0)),vh=Math.max(1,this.rect.h-t-Math.max(trayBottom,insets.bottom??0)),margin=Math.min(14,vw*.1,vh*.1);
+  // Check the actual outline/badge extents, not the optional framing margin.
+  // A tiny tolerance prevents another camera change at a fitted boundary.
+  if(Math.min(cam.x+left*cam.z-2,cam.x+cxMin*cam.z-11)>=l-.01&&Math.min(cam.y+top*cam.z-2,cam.y+cyMin*cam.z-11)>=t-.01&&Math.max(cam.x+right*cam.z+2,cam.x+cxMax*cam.z+11)<=l+vw+.01&&Math.max(cam.y+bottom*cam.z+2,cam.y+cyMax*cam.z+11)<=t+vh+.01)return false;
+  this.cancelInput(true);const z=Math.max(.001,Math.min(cam.z,(vw-2*margin)/(right-left),(vh-2*margin)/(bottom-top)));
+  this.camera={x:l+vw/2-(left+right)/2*z,y:t+vh/2-(top+bottom)/2*z,z};this.changed();return true;
+ }
  /** Rings every loose piece for a few seconds, including pieces lying on the placed
   * picture. The camera moves only when some of them are outside the given view: it
   * centres on them and zooms out just enough. Returns the number of pieces marked. */
@@ -368,7 +405,7 @@ export class PuzzleBoard implements RoomTable {
  private animateFeedback(){
   const moving=[...this.cursors.values()].some(c=>Math.hypot(c.x-c.value.x,c.y-c.value.y)>.08);
   if(this.frame||this.destroyed||this.feedbackHidden)return;
-  if(!this.flashes.length&&!moving&&this.locateUntil<=Date.now()){this.frameAt=null;return;}
+  if(!this.flashes.length&&!moving&&this.locateUntil<=Date.now()&&!(this.hintIds.length&&this.hintUntil>Date.now())){this.frameAt=null;return;}
   const queuedAt=Date.now();
   this.frame=this.platform.frame(timestamp=>{
    this.frame=0;if(this.destroyed||this.feedbackHidden)return;
@@ -489,7 +526,7 @@ export class PuzzleBoard implements RoomTable {
   // Within each layer, preserve the existing raiseGroup / hit-testing order.
   const placedPicture=this.ready&&!!this.atlas&&paint!=='overlays'&&onlyId===undefined;
   for(const locked of [true,false]){const layer=locked&&placedPicture?this.placedLayer():null;if(layer)ctx.drawImage(layer,this.board.x,this.board.y,this.board.width,this.board.height);
-  for(const group of this.state.groups){if(group.id===skipId||(onlyId!==undefined&&group.id!==onlyId)||group.locked!==locked||!visibleGroup(group,this.pieces,this.edges))continue;const owner=this.owners[group.id];
+  for(const group of this.state.groups){if(group.id===skipId||(onlyId!==undefined&&group.id!==onlyId)||group.locked!==locked||!this.groupVisible(group))continue;const owner=this.owners[group.id];
    const lift=view===this&&this.drag?.id===group.id?this.dragLift(group):null;
    if(lift&&paint!=='overlays'){
     // One silhouette under the whole group, so seams inside it never darken.
@@ -498,18 +535,33 @@ export class PuzzleBoard implements RoomTable {
     ctx.fillStyle=colors.dragShadow;ctx.fill();ctx.restore();
    }
    for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;if(x+w+this.tile.pad<(0-cam.x)/cam.z||x-this.tile.pad>(r.w-cam.x)/cam.z||y+h+this.tile.pad<(0-cam.y)/cam.z||y-this.tile.pad>(r.h-cam.y)/cam.z)continue;
-    const hintIndex=this.hintUntil>now?this.hintIds.indexOf(id):-1;
-    if(paint==='overlays'&&!owner&&this.focusedPiece!==id&&hintIndex<0)continue;
+    if(paint==='overlays'&&!owner&&this.focusedPiece!==id)continue;
     ctx.save();if(lift){ctx.translate(lift.x,lift.y);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);}ctx.translate(x,y);if(paint!=='overlays'&&!(locked&&layer)){if(this.atlas){const t=this.tile;ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
     if(paint!=='pieces'){
     if(owner||this.drag?.id===group.id||this.focusedPiece===id){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=owner?.color||colors.focus;ctx.lineWidth=(owner&&this.phoneLandscapeRoom?2.5:2)/cam.z;ctx.stroke();}
-    if(hintIndex>=0){ctx.fillStyle=colors.hint;ctx.font=`bold ${Math.max(13/cam.z,Math.min(w,h)*.3)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(hintIndex+1),w/2,h/2);}}
+    }
     ctx.restore();
    }
    if(paint!=='pieces'&&owner&&group.pieces.length){const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;ctx.save();ctx.translate(x,y-7/cam.z);ctx.scale(1/cam.z,1/cam.z);ctx.font='11px sans-serif';const name=`${owner.name}${owner.level!==undefined?' Lv.'+owner.level:''}`,width=Math.min(190,ctx.measureText(name).width+12);
     if(this.phoneLandscapeRoom){this.drawPlayerArrow(ctx,owner.color);roomRoundPath(ctx,{x:19,y:-15,w:width,h:20},8);ctx.fillStyle=owner.color;ctx.fill();ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.fillText(name,25,-11,width-12);}
     else{ctx.fillStyle=colors.label;ctx.fillRect(0,-15,width,19);ctx.fillStyle=colors.labelInk;ctx.textBaseline='top';ctx.fillText(name,5,-12,width-10);}ctx.restore();}
   }}
+ }
+ /** A live world overlay shared by direct, gesture-cache and drag-cache drawing.
+  * Nothing animated is baked into the cached piece artwork. */
+ private drawHintFeedback(ctx:CanvasRenderingContext2D,now:number){
+  if(this.completionReveal>0||this.hintUntil<=now||!this.hintIds.length)return;
+  const z=this.camera.z,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,colors=boardThemeColors(this.currentTheme),badgeColor=this.currentTheme==='dark'?boardThemeColors('light').hint:colors.hint;
+  const badge=(x:number,y:number,index:number,scale=1)=>{ctx.save();ctx.translate(x,y);ctx.scale(1/(z*scale),1/(z*scale));ctx.globalAlpha=1;ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fillStyle=badgeColor;ctx.fill();ctx.fillStyle='#ffffff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(index+1),0,0);ctx.restore();};
+  for(const [index,id]of this.hintIds.entries()){
+   const group=this.state.groups.find(g=>g.pieces.includes(id));if(!group||group.locked)continue;
+   const p=this.pieces[id],x=this.board.x+p.col*w,y=this.board.y+p.row*h,lift=this.drag?.id===group.id?this.dragLift(group):null,cx=x+group.dx+w/2,cy=y+group.dy+h/2,from=lift?{x:lift.x+(cx-lift.x)*lift.s,y:lift.y+(cy-lift.y)*lift.s}:{x:cx,y:cy},to={x:x+w/2,y:y+h/2};
+   ctx.save();ctx.strokeStyle=colors.hintLine;ctx.lineWidth=1/z;ctx.globalAlpha=.6;ctx.lineDashOffset=0;
+   let dashed=false;if(typeof ctx.setLineDash==='function')try{ctx.setLineDash([5/z,4/z]);dashed=true;}catch{}
+   ctx.beginPath();if(dashed){ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);}else{const dx=to.x-from.x,dy=to.y-from.y,length=Math.hypot(dx,dy);for(let start=0;start<length;start+=9/z){const end=Math.min(length,start+5/z);ctx.moveTo(from.x+dx*start/length,from.y+dy*start/length);ctx.lineTo(from.x+dx*end/length,from.y+dy*end/length);}}ctx.stroke();ctx.restore();
+   ctx.save();ctx.translate(x,y);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=2/z;ctx.stroke();badge(w/2,h/2,index);ctx.restore();
+   ctx.save();if(lift){ctx.translate(lift.x,lift.y);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);}ctx.translate(x+group.dx,y+group.dy);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=3.5/(z*(lift?.s??1));ctx.globalAlpha=.65+.35*(.5+.5*Math.sin(now*Math.PI*2/1200));ctx.stroke();badge(w/2,h/2,index,lift?.s??1);ctx.restore();
+  }
  }
  /** The held group is drawn slightly larger around the holding finger, so the
   * finger keeps its spot on the piece while the edges lift. Drawing only. */
@@ -588,7 +640,7 @@ export class PuzzleBoard implements RoomTable {
   const {rect:r,camera:cam}=this,sx=transform.a,sy=transform.d,margin=Math.min(160,Math.max(64,Math.min(r.w,r.h)*.32));
   const mx=Math.ceil(margin*sx),my=Math.ceil(margin*sy),width=Math.ceil(r.w*sx)+mx*2,height=Math.ceil(r.h*sy)+my*2;
   if(width*height*4>DRAG_SURFACE_BYTES||width>8192||height>8192){this.releaseSurfaceBuffer();return null;}
-  const key=JSON.stringify([this.imageSerial,this.currentTheme,this.edges,r,sx,sy,width,height,ctx.imageSmoothingEnabled,ctx.imageSmoothingQuality,this.state.groups]);
+  const key=JSON.stringify([this.imageSerial,this.currentTheme,this.edges,this.edges?this.hintIds:[],r,sx,sy,width,height,ctx.imageSmoothingEnabled,ctx.imageSmoothingQuality,this.state.groups]);
   let surface=this.gestureSurface;
   if(surface?.key===key&&cam.z/surface.camera.z>=.8&&cam.z/surface.camera.z<=1.25&&gestureFrameSample(surface,cam,r.w,r.h))return surface;
   try{
@@ -603,7 +655,7 @@ export class PuzzleBoard implements RoomTable {
   * the caller's full device transform and pixel origin, without a resample.
   * Other drag orders and Canvas implementations keep the original draw path. */
  private cachedDragSurface(ctx:CanvasRenderingContext2D,now:number):DragSurface|null{
-  const drag=this.drag,groups=this.state.groups;let last:Group|undefined;for(let i=groups.length-1;i>=0;i--)if(!groups[i].locked&&visibleGroup(groups[i],this.pieces,this.edges)){last=groups[i];break;}
+  const drag=this.drag,groups=this.state.groups;let last:Group|undefined;for(let i=groups.length-1;i>=0;i--)if(!groups[i].locked&&this.groupVisible(groups[i])){last=groups[i];break;}
   if(!drag||this.pan||this.pinch||last?.id!==drag.id||!this.atlas||typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'||ctx.globalAlpha!==1||ctx.globalCompositeOperation!=='source-over'||ctx.shadowBlur!==0||ctx.shadowColor!=='rgba(0, 0, 0, 0)'||(ctx.filter!==undefined&&ctx.filter!=='none')){this.releaseDragSurface();return null;}
   // Stage rounds each backing dimension independently. Fractional phone DPRs
   // therefore produce slightly different X/Y scales; both remain axis-aligned
@@ -624,6 +676,7 @@ export class PuzzleBoard implements RoomTable {
   }catch{this.releaseSurfaceBuffer();return null;}
  }
  draw(ctx:CanvasRenderingContext2D){
+  this.pruneHints();
   if(this.destroyed||!this.rect.w)return;const {rect:r,camera:cam}=this,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,now=Date.now(),colors=boardThemeColors(this.currentTheme);
   const decorations:{value:RoomDecoration;rect:Rect}[]=[];let surface:DragSurface|null=null;
   let gesture:GestureSurface|null=null;
@@ -648,7 +701,7 @@ export class PuzzleBoard implements RoomTable {
   }
   for(const locked of [true,false])for(const group of this.state.groups){const owner=this.owners[group.id];if(group.locked!==locked||!owner?.decoration||!group.pieces.length||!visibleGroup(group,this.pieces,this.edges))continue;const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;decorations.push({value:owner.decoration,rect:{x:r.x+cam.x+x*cam.z-27,y:r.y+cam.y+y*cam.z-25,w:24,h:24}});}
   this.drawSnapFeedback(ctx,now);this.drawLocateGlow(ctx,now);
-  if(this.completionReveal<=0&&this.hintUntil>now){for(const[idIndex,id]of this.hintIds.entries()){const p=this.pieces[id];ctx.save();ctx.translate(this.board.x+p.col*w,this.board.y+p.row*h);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=2/cam.z;ctx.stroke();ctx.fillStyle=colors.hint;ctx.font=`bold ${14/cam.z}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(idIndex+1),w/2,h/2);ctx.restore();}}
+  this.drawHintFeedback(ctx,now);
   ctx.restore();
   if(this.preview&&this.ready){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.restore();}
   ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const cursor of this.cursors.values()){const p=this.worldToScreen(cursor),value=cursor.value;if(p.x<r.x||p.y<r.y||p.x>r.x+r.w||p.y>r.y+r.h)continue;ctx.save();ctx.translate(p.x,p.y);ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=value.color;ctx.fill();ctx.strokeStyle=colors.cursorLine;ctx.lineWidth=1;ctx.stroke();ctx.font='bold 11px sans-serif';const label=`${value.name} · Lv.${value.level??0}`,width=Math.min(190,ctx.measureText(label).width+12);if(this.phoneLandscapeRoom){roomRoundPath(ctx,{x:19,y:12,w:width,h:21},8);ctx.fillStyle=value.color;ctx.fill();}else{ctx.fillStyle=colors.cursorLabel;ctx.fillRect(19,12,width,21);}ctx.fillStyle=this.phoneLandscapeRoom?'#ffffff':colors.labelInk;ctx.textBaseline='top';ctx.fillText(label,25,17,width-12);ctx.restore();if(value.decoration)decorations.push({value:value.decoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}ctx.restore();
