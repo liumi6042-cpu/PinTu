@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {createHash,randomBytes} from 'node:crypto';
+import {randomBytes} from 'node:crypto';
 import {mkdirSync,mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {resolve,sep} from 'node:path';
 import {createMobileLevels,readLevelConfiguration} from '../server/mobile-levels.mjs';
@@ -27,8 +27,8 @@ test('levels configuration defaults and malformed documents fail during service 
  assert.equal(defaults.chapters.length,2);const {story,...breakfast}=defaults.chapters[1];
  assert.deepEqual(breakfast,{id:'ch2',title:'早餐街',albumId:'shiguang-ch2',pieces:[16,20,24,24,28,30],lines:['早餐店……飘到天上去了？','那天的包子什么味儿……想不起来喽。','团子，等等我！','这张菜谱……是奶奶的字！','奶奶也在！她在教福爷爷包包子。','奶奶的下一段回忆，在云上邮局。']});
  assert.equal(story.length,6);
- // Canonical JSON digest of timeLabel/intro/comic.panels from the original story-comics-ch2.json.
- assert.equal(createHash('sha256').update(JSON.stringify(story)).digest('hex'),'c7b734950c1a7d7df5d98f052a503e256153e4a2b12ef9f1ada2958338d28d39');
+ // Same timeLabel/intro/comic.panels as the bundled client copy of story-comics-ch2.json.
+ assert.deepEqual(story,JSON.parse(readFileSync(new URL('../mobile/story-comics-ch2.json',import.meta.url),'utf8')).levels.map(({timeLabel,intro,comic})=>({timeLabel,intro,comic:{panels:comic.panels}})));
  const bad=[null,[],{}, {...configuration(),schema:'other'}, {...configuration(),firstClearEnergy:-1}, {...configuration(),firstClearEnergy:1.5}, {...configuration(),firstClearEnergy:'30'}, {...configuration(),chapters:[]}, {...configuration(),chapters:{}}, {...configuration(),extra:true}];
  for(const patch of [{id:''},{id:'bad/id'},{title:' '},{albumId:null},{pieces:[12]},{pieces:[12,16,20,24,30,0]},{pieces:[12,16,20,24,30,1.5]},{pieces:[12,16,20,24,30,'35']},{pieces:[12,16,20,24,30,Number.MAX_SAFE_INTEGER+1]},{extra:true}])bad.push(configuration([{...chapter('ch1'),...patch}]));
  bad.push(configuration([chapter('ch1'),chapter('ch1')]));
