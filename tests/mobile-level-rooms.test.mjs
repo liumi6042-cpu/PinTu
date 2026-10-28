@@ -110,16 +110,26 @@ test('all six small grids satisfy count and pixel limits only in level mode; gal
 
 test('first clear adds 30 above the cap, replay adds none, and normal completion rewards remain',t=>{
  const f=fixture(t),ticket=f.make(),before=f.stored(owner).energy,result=f.finish(ticket),reward=result.profile.lastReward;
- assert.deepEqual(reward.levelClear,{levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2'});
+ assert.deepEqual(reward.levelClear,{levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false});
  assert.equal(result.profile.energy,before-reward.energySpent+reward.completion.energy+30);assert.ok(result.profile.energy>result.profile.energyCap);
  assert.equal(f.db.prepare('SELECT energy FROM mobile_level_progress WHERE owner=?').get(owner).energy,30);
  f.ok(owner,'/api/rooms/'+ticket.room.id,{type:'heartbeat'},ticket.token);assert.equal(f.events('level-clear').length,1);
  const replay=f.make(),replayBefore=f.stored(owner).energy;assert.notEqual(replay.room.id,ticket.room.id);
  const again=f.finish(replay),againReward=again.profile.lastReward;
- assert.deepEqual(againReward.levelClear,{levelId:'ch1-1',energy:0,firstClear:false,nextLevelId:'ch1-2'});
+ assert.deepEqual(againReward.levelClear,{levelId:'ch1-1',energy:0,firstClear:false,nextLevelId:'ch1-2',chapterComplete:false});
  assert.equal(again.profile.energy,replayBefore-againReward.energySpent+againReward.completion.energy);
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_level_progress WHERE owner=?').get(owner).n,1);
  assert.deepEqual(f.events('level-clear').map(event=>event.data),[{levelId:'ch1-1',firstClear:true,energy:30},{levelId:'ch1-1',firstClear:false,energy:0}]);
+});
+
+test('breakfast piece counts create playable level rooms while gallery limits stay unchanged',t=>{
+ const counts=[16,20,24,24,28,30],config=configuration();config.chapters[1].pieces=counts;
+ const f=fixture(t,{levels:config});for(let index=1;index<=6;index++)f.clear('ch1-'+index);
+ for(const [index,count]of counts.entries()){
+  const photo=photos.find(photo=>photo.id===pack.imageIds[index]),grid=mobileGridForPhoto(photo,count,'level');assert.ok(grid);assert.ok(Math.abs(grid.count-count)<=count*.15);assert.ok(grid.pixels>=20);
+  const ticket=f.make('ch2-'+(index+1));assert.equal(ticket.room.requestedPieces,count);assert.equal(ticket.room.puzzle.cols*ticket.room.puzzle.rows,grid.count);f.clear('ch2-'+(index+1));
+  assert.equal(mobileGridForPhoto(photo,count),null);
+ }
 });
 
 test('owner completion snapshots derive first-clear energy from persisted room progress after refresh and rejoin',t=>{
@@ -142,7 +152,7 @@ test('last chapter level snapshot marks chapter complete and has no next level',
 test('a helper completing the room clears only the offline owner even with no owner contribution',t=>{
  const f=fixture(t),ticket=f.make(),before=f.stored(owner).energy;
  f.ok(owner,'/api/rooms/'+ticket.room.id,{type:'leave'},ticket.token);const result=f.finish(ticket,peer),profile=f.ok(owner,'/api/mobile/profile');
- assert.deepEqual(profile.lastReward.levelClear,{levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2'});assert.equal(profile.energy,before+30);
+ assert.deepEqual(profile.lastReward.levelClear,{levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false});assert.equal(profile.energy,before+30);
  assert.equal(result.profile.lastReward.levelClear,undefined);assert.ok(result.profile.lastReward.completion);assert.equal(result.profile.lastReward.completion.contribution,1);
  assert.equal(Object.hasOwn(result.mobileResult,'levelClear'),false);
  assert.equal(Object.hasOwn(f.ok(peer,'/api/rooms/'+ticket.room.id+'/join',{inviteCode:ticket.inviteCode}).room.mobileResult,'levelClear'),false);
@@ -156,7 +166,7 @@ test('next level follows configured order across chapters and ends at null',t=>{
  const f=fixture(t);
  for(const [chapterId,nextLevelId]of [['ch1','ch2-1'],['ch2',null]]){
   for(let index=1;index<6;index++)f.clear(chapterId+'-'+index);
-  const ticket=f.make(chapterId+'-6');f.finish(ticket,peer);assert.equal(f.stored(owner).lastReward.levelClear.nextLevelId,nextLevelId);
+  const ticket=f.make(chapterId+'-6');f.finish(ticket,peer);assert.equal(f.stored(owner).lastReward.levelClear.nextLevelId,nextLevelId);assert.equal(f.stored(owner).lastReward.levelClear.chapterComplete,true);
   const result=f.ok(owner,'/api/rooms/'+ticket.room.id+'/join',{}).room.mobileResult.levelClear;assert.equal(result.nextLevelId,nextLevelId);assert.equal(result.chapterComplete,true);
  }
 });
@@ -171,7 +181,7 @@ test('offline contributing owner keeps both completion and level rewards when a 
 
 test('web level completion records first clear without adding energy',t=>{
  const f=fixture(t,{runtimeProfile:'web'}),ticket=f.make(),before=f.stored(owner).energy,result=f.finish(ticket);
- assert.deepEqual(result.profile.lastReward.levelClear,{levelId:'ch1-1',energy:0,firstClear:true,nextLevelId:'ch1-2'});assert.equal(result.profile.energy,before);
+ assert.deepEqual(result.profile.lastReward.levelClear,{levelId:'ch1-1',energy:0,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false});assert.equal(result.profile.energy,before);
  assert.equal(f.db.prepare('SELECT energy FROM mobile_level_progress WHERE owner=?').get(owner).energy,0);
  assert.deepEqual(result.mobileResult.levelClear,{levelId:'ch1-1',energy:0,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false});
 });

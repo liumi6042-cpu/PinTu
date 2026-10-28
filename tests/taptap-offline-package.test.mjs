@@ -7,16 +7,16 @@ import sharp from 'sharp';
 import {fullImageAlbumIds,planTapTapArtwork} from '../scripts/bundle-taptap-artwork.mjs';
 import {buildOfflineCatalog,offlineRoomArtwork} from '../scripts/offline-catalog.mjs';
 import {readOfflineCatalog} from '../lib/offline-catalog-types.ts';
-import {createMobileLevels} from '../server/mobile-levels.mjs';
+import {createMobileLevels,readLevelConfiguration} from '../server/mobile-levels.mjs';
 import {mobileGridForPhoto} from '../server/mobile-service.mjs';
 import {RESTORABLE_PHOTOS,currentRoomArtwork} from '../outputs/mobile/engine.mjs';
 
-async function fixture(t){
+async function fixture(t,{twoChapters=false}={}){
  const base=resolve('data');mkdirSync(base,{recursive:true});const root=mkdtempSync(join(base,'offline-package-'));
  t.after(()=>{assert.ok(root.startsWith(base+sep));rmSync(root,{recursive:true,force:true});});
  mkdirSync(join(root,'public/puzzles'),{recursive:true});
  const photos=[];
- for(const [index,id] of ['free-photo','paid-photo',...Array.from({length:6},(_,n)=>'story-'+(n+1))].entries()){
+ for(const [index,id] of ['free-photo','paid-photo',...Array.from({length:twoChapters?12:6},(_,n)=>'story-'+(n+1))].entries()){
   const width=index%2?800:1280,height=800;
   const bytes=await sharp({create:{width,height,channels:3,background:'#aa8877'}}).webp().toBuffer(),hash=createHash('sha256').update(bytes).digest('hex').slice(0,12);
   const src=`/puzzles/${id}-optimized-${hash}.webp`,thumbSrc=`/puzzles/${id}-thumbnail-${hash}.webp`;
@@ -26,10 +26,14 @@ async function fixture(t){
  const albums=[
   {id:'free',title:'免费',showOnMobile:true,imageIds:['free-photo'],purchasable:false,price:100},
   {id:'paid',title:'付费',showOnMobile:true,imageIds:['paid-photo'],purchasable:true,price:10},
-  {id:'story',title:'隐藏剧情',showOnMobile:false,imageIds:photos.slice(2).map(p=>p.id),purchasable:true,price:10},
+  {id:'story',title:'隐藏剧情',showOnMobile:false,imageIds:photos.slice(2,8).map(p=>p.id),purchasable:true,price:10},
  ];
- const levels={schema:'jigsaw-levels/v1',seriesTitle:'故事',firstClearEnergy:30,chapters:[{id:'chapter',title:'第一章',albumId:'story',pieces:[12,16,20,24,30,35],lines:['开场',null]}]};
- const plan=await planTapTapArtwork({root,catalog:photos,albums,levelAlbumIds:['story']});
+ let levels={schema:'jigsaw-levels/v1',seriesTitle:'故事',firstClearEnergy:30,chapters:[{id:'chapter',title:'第一章',albumId:'story',pieces:[12,16,20,24,30,35],lines:['开场',null]}]};
+ if(twoChapters){
+  levels=readLevelConfiguration();albums[2].id=levels.chapters[0].albumId;
+  albums.push({id:levels.chapters[1].albumId,title:'早餐街',showOnMobile:false,imageIds:photos.slice(8).map(p=>p.id),purchasable:false});
+ }
+ const plan=await planTapTapArtwork({root,catalog:photos,albums,levelAlbumIds:levels.chapters.map(chapter=>chapter.albumId)});
  return {root,photos,albums,levels,plan};
 }
 
@@ -62,12 +66,27 @@ test('catalog uses server level view/order and exact room artwork/grid functions
   assert.equal(level.id,'chapter-'+(index+1));assert.equal(level.imageId,f.albums[2].imageIds[index]);assert.equal(Object.hasOwn(level,'status'),false);
   assert.deepEqual({cols:level.cols,rows:level.rows},{cols:grid.cols,rows:grid.rows});assert.deepEqual(catalog.photos[level.imageId].artwork,artwork);
   assert.equal(level.line,index===0?'开场':null);
+  assert.equal(level.src,photo.src);assert.equal(level.thumbSrc,photo.thumbSrc);
  }
  for(const picture of catalog.free)for(const count of [48,108]){
   const photo=f.photos.find(p=>p.id===picture.imageId),artwork=currentRoomArtwork(photo,count,true),grid=mobileGridForPhoto({...photo,...artwork},count,'gallery');
   assert.deepEqual(picture.grids[count],{cols:grid.cols,rows:grid.rows});
  }
  assert.deepEqual(readOfflineCatalog(catalog),catalog);assert.ok(Buffer.byteLength(JSON.stringify(catalog))<50*1024);
+});
+
+test('two default chapters retain all breakfast story and source fields within the 50 KiB offline budget',async t=>{
+ const f=await fixture(t,{twoChapters:true}),catalog=buildOfflineCatalog(f),read=readOfflineCatalog(catalog),defaults=readLevelConfiguration();
+ assert.deepEqual(read,catalog);assert.equal(catalog.chapters.length,2);assert.equal(Object.keys(catalog.photos).length,13);
+ for(const [chapterIndex,chapter]of catalog.chapters.entries())for(const [index,level]of chapter.levels.entries()){
+  const photo=f.photos.find(photo=>photo.id===level.imageId);assert.equal(level.src,photo.src);assert.equal(level.thumbSrc,photo.thumbSrc);assert.equal(Object.hasOwn(level,'status'),false);
+  for(const key of ['timeLabel','intro','comic']){
+   assert.equal(Object.hasOwn(level,key),chapterIndex===1);
+   if(chapterIndex===1)assert.deepEqual(level[key],defaults.chapters[1].story[index][key]);
+  }
+ }
+ const bytes=Buffer.byteLength(JSON.stringify(catalog));assert.ok(bytes<50*1024,'offline catalog bytes: '+bytes);t.diagnostic('two-chapter offline catalog: '+bytes+' / '+(50*1024)+' bytes');
+ read.chapters[1].levels[0].comic.panels[0].texts[0].text='changed';assert.notDeepEqual(read.chapters[1].levels[0].comic,catalog.chapters[1].levels[0].comic);
 });
 
 test('future server timeLabel/intro/comic and arbitrary JSON fields survive build and read unchanged',async t=>{

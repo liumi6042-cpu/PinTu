@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
+import {createHash,randomBytes} from 'node:crypto';
 import {mkdirSync,mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {resolve,sep} from 'node:path';
 import {createMobileLevels,readLevelConfiguration} from '../server/mobile-levels.mjs';
@@ -22,7 +23,12 @@ function fixture(t,{config=configuration(),...options}={}){
 }
 
 test('levels configuration defaults and malformed documents fail during service creation',()=>{
- const defaults=readLevelConfiguration();assert.deepEqual(defaults,{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'奶奶的小店',albumId:'shiguang-ch1',pieces,lines:['这就是奶奶的店……好旧啊。','你是……这家店的猫？','回忆碎了，就把它拼回来。','爷爷想不起来早餐店开张那天了……','是爷爷！他在笑！','拾光镇还有好多回忆在等人拼。']}]});
+ const defaults=readLevelConfiguration();assert.deepEqual({...defaults,chapters:defaults.chapters.slice(0,1)},{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'奶奶的小店',albumId:'shiguang-ch1',pieces,lines:['这就是奶奶的店……好旧啊。','你是……这家店的猫？','回忆碎了，就把它拼回来。','爷爷想不起来早餐店开张那天了……','是爷爷！他在笑！','拾光镇还有好多回忆在等人拼。']}]});
+ assert.equal(defaults.chapters.length,2);const {story,...breakfast}=defaults.chapters[1];
+ assert.deepEqual(breakfast,{id:'ch2',title:'早餐街',albumId:'shiguang-ch2',pieces:[16,20,24,24,28,30],lines:['早餐店……飘到天上去了？','那天的包子什么味儿……想不起来喽。','团子，等等我！','这张菜谱……是奶奶的字！','奶奶也在！她在教福爷爷包包子。','奶奶的下一段回忆，在云上邮局。']});
+ assert.equal(story.length,6);
+ // Canonical JSON digest of timeLabel/intro/comic.panels from the original story-comics-ch2.json.
+ assert.equal(createHash('sha256').update(JSON.stringify(story)).digest('hex'),'c7b734950c1a7d7df5d98f052a503e256153e4a2b12ef9f1ada2958338d28d39');
  const bad=[null,[],{}, {...configuration(),schema:'other'}, {...configuration(),firstClearEnergy:-1}, {...configuration(),firstClearEnergy:1.5}, {...configuration(),firstClearEnergy:'30'}, {...configuration(),chapters:[]}, {...configuration(),chapters:{}}, {...configuration(),extra:true}];
  for(const patch of [{id:''},{id:'bad/id'},{title:' '},{albumId:null},{pieces:[12]},{pieces:[12,16,20,24,30,0]},{pieces:[12,16,20,24,30,1.5]},{pieces:[12,16,20,24,30,'35']},{pieces:[12,16,20,24,30,Number.MAX_SAFE_INTEGER+1]},{extra:true}])bad.push(configuration([{...chapter('ch1'),...patch}]));
  bad.push(configuration([chapter('ch1'),chapter('ch1')]));
@@ -128,4 +134,83 @@ test('all three server packages include the levels module and default configurat
   const script=readFileSync(new URL('../scripts/'+name+'.mjs',import.meta.url),'utf8');
   for(const path of ['server/mobile-levels.mjs','config/levels.json'])assert.ok(script.includes("'"+path+"'"),name+' missing '+path);
  }
+});
+
+const storyEntry=()=>structuredClone(readLevelConfiguration().chapters[1].story[0]);
+test('story rejects malformed entries, nested shapes, crops and text bounds during startup',async t=>{
+ const invalid=[['not array',()=>({})],['null array',()=>null],['too many entries',()=>Array(7).fill(null)],['string entry',()=>['story']]];
+ const cases=[
+  ['extra story key',s=>s.extra=true],['blank timeLabel',s=>s.timeLabel=' '],['long timeLabel',s=>s.timeLabel='时'.repeat(9)],['nonstring timeLabel',s=>s.timeLabel=1],
+  ['blank intro',s=>s.intro='\n'],['long intro',s=>s.intro='文'.repeat(61)],['null intro',s=>s.intro=null],
+  ['null comic',s=>s.comic=null],['extra comic key',s=>s.comic.extra=true],['missing panels',s=>delete s.comic.panels],['three panels',s=>s.comic.panels.pop()],['five panels',s=>s.comic.panels.push(s.comic.panels[0])],
+  ['extra panel key',s=>s.comic.panels[0].extra=true],['missing crop',s=>delete s.comic.panels[0].crop],['three crop numbers',s=>s.comic.panels[0].crop.pop()],
+  ['negative crop',s=>s.comic.panels[0].crop[0]=-.1],['crop above one',s=>s.comic.panels[0].crop[0]=1.1],['zero width',s=>s.comic.panels[0].crop[2]=0],['zero height',s=>s.comic.panels[0].crop[3]=0],
+  ['overflow x',s=>s.comic.panels[0].crop=[.51,0,.5,1]],['overflow y',s=>s.comic.panels[0].crop=[0,.51,1,.5]],['outside rounding tolerance',s=>s.comic.panels[0].crop=[.5002,0,.5,1]],
+  ['infinite crop',s=>s.comic.panels[0].crop[0]=Infinity],['NaN crop',s=>s.comic.panels[0].crop[0]=NaN],['string crop',s=>s.comic.panels[0].crop[0]='0'],
+  ['non-array texts',s=>s.comic.panels[0].texts={}],['five texts',s=>s.comic.panels[0].texts=Array(5).fill(s.comic.panels[0].texts[0])],
+  ['extra text key',s=>s.comic.panels[0].texts[0].extra=true],['invalid kind',s=>s.comic.panels[0].texts[0].kind='other'],['invalid at',s=>s.comic.panels[0].texts[0].at='center'],
+  ['long text',s=>s.comic.panels[0].texts[0].text='文'.repeat(41)],['blank text',s=>s.comic.panels[0].texts[0].text=' '],['missing text',s=>delete s.comic.panels[0].texts[0].text],
+ ];
+ for(const [name,mutate]of cases)invalid.push([name,()=>{const entry=storyEntry();mutate(entry);return [entry];}]);
+ for(const [name,make]of invalid)await t.test(name,()=>assert.throws(()=>createMobileService({levels:configuration([{...chapter('ch1'),story:make()}])}),/Invalid levels configuration/));
+});
+
+test('story accepts optional and boundary values and deep copies every mutable part',()=>{
+ const entry=storyEntry();entry.timeLabel='时'.repeat(8);entry.intro='文'.repeat(60);entry.comic.panels[0].crop=[.50005,.50005,.5,.5];
+ entry.comic.panels[0].texts=Array.from({length:4},()=>({kind:'say',at:'br',text:'文'.repeat(40)}));entry.comic.panels[1].texts=[];
+ const story=[entry,null,{}, {timeLabel:'清晨'}, {intro:'只有旁白'}, {comic:storyEntry().comic}],input=configuration([{...chapter('ch1'),story}]),copy=readLevelConfiguration(input),expected=structuredClone(story);
+ assert.deepEqual(copy.chapters[0].story,expected);
+ entry.timeLabel='changed';entry.comic.panels[0].crop[0]=0;entry.comic.panels[0].texts[0].text='changed';entry.comic.panels.push({});story[1]={};story.push(null);
+ assert.deepEqual(copy.chapters[0].story,expected);
+ assert.deepEqual(readLevelConfiguration(configuration([{...chapter('ch1'),story:[]}])).chapters[0].story,[]);
+});
+
+test('level view appends only present story and photo fields, preserves original fields and current identity, and copies comics',t=>{
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());const pack=catalog.packs[0],story=[storyEntry(),null,{}, {timeLabel:'上午'}, {intro:'旁白'}, {comic:storyEntry().comic}];
+ const config=configuration([{...chapter('ch1'),lines:['开场']},{...chapter('ch2'),story}]),collection={albumImages:()=>pack};
+ const levels=createMobileLevels({db,photos,collection,configuration:config}),view=levels.view(owner);
+ const originalKeys=['id','imageId','title','pieces','status','line'];
+ for(const [chapterIndex,ch]of view.chapters.entries())for(const [index,level]of ch.levels.entries()){
+  const photo=photos.find(photo=>photo.id===pack.imageIds[index]);assert.deepEqual(Object.keys(level).slice(0,6),originalKeys);
+  assert.deepEqual(Object.fromEntries(originalKeys.map(key=>[key,level[key]])),{id:ch.id+'-'+(index+1),imageId:photo.id,title:photo.title,pieces:pieces[index],status:chapterIndex===0&&index===0?'unlocked':'locked',line:chapterIndex===0&&index===0?'开场':null});
+  assert.equal(level.src,photo.src);assert.equal(level.thumbSrc,photo.thumbSrc);
+  for(const key of ['timeLabel','intro','comic'])assert.equal(Object.hasOwn(level,key),chapterIndex===1&&Object.hasOwn(story[index]??{},key));
+ }
+ assert.strictEqual(view.current,view.chapters[0].levels[0]);
+ assert.equal(view.chapters[1].levels[0].comic.panels.length,4);assert.deepEqual(view.chapters[1].levels[0].comic,story[0].comic);
+ view.chapters[1].levels[0].comic.panels[0].crop[0]=.1;view.chapters[1].levels[0].comic.panels[0].texts[0].text='changed';
+ assert.deepEqual(levels.view(owner).chapters[1].levels[0].comic,story[0].comic);
+ const noSources=photos.map(photo=>({...photo,src:null,thumbSrc:42})),without=createMobileLevels({db,photos:noSources,collection,configuration:config}).view(peer);
+ assert.ok(without.chapters.every(ch=>ch.levels.every(level=>!Object.hasOwn(level,'src')&&!Object.hasOwn(level,'thumbSrc'))));
+});
+
+test('default chapter albums unlock breakfast sequentially and preserve destination contracts',t=>{
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());const defaults=readLevelConfiguration(),packs=new Map(defaults.chapters.map((ch,index)=>[ch.albumId,catalog.packs[index]]));
+ const levels=createMobileLevels({db,photos,collection:{albumImages:id=>packs.get(id)??null}});
+ assert.equal(levels.view(owner).chapters[1].levels[0].status,'locked');
+ for(let n=1;n<=5;n++)levels.recordClear(owner,'ch1-'+n,'fixture',now,30);
+ assert.equal(levels.view(owner).chapters[1].levels[0].status,'locked');levels.recordClear(owner,'ch1-6','fixture',now,30);
+ const view=levels.view(owner);assert.equal(view.chapters[1].levels[0].status,'unlocked');assert.strictEqual(view.current,view.chapters[1].levels[0]);assert.equal(view.current.id,'ch2-1');
+ assert.deepEqual(view.current.comic,defaults.chapters[1].story[0].comic);assert.equal(view.current.timeLabel,'清晨');assert.equal(view.current.intro,defaults.chapters[1].story[0].intro);
+ assert.deepEqual(levels.destination('ch1-6'),{nextLevelId:'ch2-1',chapterComplete:true});assert.deepEqual(levels.destination('ch2-6'),{nextLevelId:null,chapterComplete:true});assert.deepEqual(levels.destination('ch1-3'),{nextLevelId:'ch1-4',chapterComplete:false});
+});
+
+test('missing breakfast album leaves chapter one playable and returns no current after its completion',t=>{
+ const f=fixture(t,{config:readLevelConfiguration(),albumContent:{read:()=>({albums:[{id:'shiguang-ch1',imageIds:catalog.packs[0].imageIds}]})}});
+ const first=f.view();assert.equal(first.chapters[0].status,'available');assert.equal(first.current.id,'ch1-1');assert.equal(first.chapters[1].status,'unavailable');assert.ok(first.chapters[1].levels.every(level=>level.status==='unavailable'));
+ for(let n=1;n<=6;n++)f.clear('ch1-'+n);const view=f.view();assert.equal(view.current,null);assert.equal(view.chapters[0].status,'available');assert.ok(view.chapters[0].levels.every(level=>level.status==='cleared'));
+});
+
+test('finishing chapter one persists and snapshots chapterComplete with breakfast as nextLevelId',t=>{
+ const defaults=readLevelConfiguration(),f=fixture(t,{config:defaults,albumContent:{read:()=>({albums:defaults.chapters.map((ch,index)=>({id:ch.albumId,imageIds:catalog.packs[index].imageIds}))})}}),rid=()=>randomBytes(16).toString('hex');
+ const ok=(url,body,token)=>{const result=f.service.handle({identity:owner,url,method:body===undefined?'GET':'POST',body,authorization:token?'Bearer '+token:undefined});assert.ok([200,201].includes(result.status),JSON.stringify(result));return result.data;};
+ ok('/api/mobile/profile');for(let n=1;n<=5;n++)f.clear('ch1-'+n);
+ const ticket=ok('/api/rooms',{mode:'level',levelId:'ch1-6',requestId:rid()}),room=JSON.parse(f.db.prepare('SELECT data FROM mobile_rooms WHERE id=?').get(ticket.room.id).data);
+ for(const group of room.puzzle.groups.slice(1)){group.locked=true;group.dx=0;group.dy=0;}
+ f.db.prepare('UPDATE mobile_rooms SET data=? WHERE id=?').run(JSON.stringify(room),room.id);
+ const groupId=room.puzzle.groups.find(group=>!group.locked).id,path='/api/rooms/'+room.id;ok(path,{type:'claim',groupId},ticket.token);
+ const result=ok(path,{type:'drop',groupId,seq:1,dx:0,dy:0,requestId:rid()},ticket.token),expected={levelId:'ch1-6',energy:30,firstClear:true,nextLevelId:'ch2-1',chapterComplete:true};
+ assert.ok(result.completedAt);assert.deepEqual(result.profile.lastReward.levelClear,expected);assert.deepEqual(result.mobileResult.levelClear,expected);
+ assert.deepEqual(JSON.parse(f.db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(owner).data).lastReward.levelClear,expected);
+ assert.deepEqual(ok(path,undefined,ticket.token).mobileResult.levelClear,expected);assert.equal(f.view().current.id,'ch2-1');
 });

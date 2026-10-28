@@ -98,7 +98,7 @@ test('a real online clear makes an offline submission duplicate without a second
 
 test('a level cleared offline still creates and completes online with no second first-clear energy',t=>{
  const f=fixture(t);f.sync([f.clear()]);const ticket=f.ok('/api/rooms',{mode:'level',levelId:'ch1-1',requestId:rid()}),before=f.stored().energy,result=f.finish(ticket),reward=result.profile.lastReward;
- assert.deepEqual(reward.levelClear,{levelId:'ch1-1',firstClear:false,energy:0,nextLevelId:'ch1-2'});assert.equal(result.profile.energy,before-reward.energySpent+reward.completion.energy);
+ assert.deepEqual(reward.levelClear,{levelId:'ch1-1',firstClear:false,energy:0,nextLevelId:'ch1-2',chapterComplete:false});assert.equal(result.profile.energy,before-reward.energySpent+reward.completion.energy);
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_level_progress').get().n,1);assert.deepEqual(f.events().map(e=>e.data.energy),[30,0]);
 });
 

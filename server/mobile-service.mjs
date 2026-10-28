@@ -34,7 +34,7 @@ const requestKey=value=>typeof value==='string'&&/^[a-f0-9]{32}$/.test(value);
 const directionOf=photo=>{const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id)??photo;return d.width===d.height?'square':d.width>d.height?'landscape':'portrait';};
 // Keep the artwork aspect ratio and square piece bodies while respecting mobile limits.
 export function mobileGridForPhoto(photo,count,mode='gallery'){
- const small=mode==='level'&&[12,16,20,24,30,35].includes(count);
+ const small=mode==='level'&&[12,16,20,24,28,30,35].includes(count);
  const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id);if(!d||!MOBILE_COUNTS.includes(count)&&!small)return null;
  const fitted=engine.gridForDimensions(d.width,d.height,count);if(!fitted)return null;
  if(small||fitted.count>=48&&fitted.count<=500)return fitted;
@@ -302,8 +302,8 @@ export function createMobileService(options={}){
   if(room.mobileMode==='level'){
    const p=room.ownerId===current.id?current:readProfile(room.ownerId,now),configuredEnergy=energyEnabled?levelConfiguration.firstClearEnergy:0;
    const firstClear=levels.recordClear(p.id,room.mobileLevelId,room.id,now,configuredEnergy),energy=firstClear?configuredEnergy:0;
-   const {nextLevelId}=levels.destination(room.mobileLevelId);
-   p.energy+=energy;p.lastReward={...p.lastReward,levelClear:{levelId:room.mobileLevelId,energy,firstClear,nextLevelId},at:now};saveProfile(p);
+   const {nextLevelId,chapterComplete}=levels.destination(room.mobileLevelId);
+   p.energy+=energy;p.lastReward={...p.lastReward,levelClear:{levelId:room.mobileLevelId,energy,firstClear,nextLevelId,chapterComplete},at:now};saveProfile(p);
    events.record(p.id,'level-clear',room.id,{levelId:room.mobileLevelId,firstClear,energy},now);
   }
   for(const row of db.prepare('SELECT id,data FROM mobile_profiles').all()){const p=row.id===current.id?current:JSON.parse(row.data);if(p.firstRoomId===room.id&&!p.firstRoomCompleted){p.firstRoomCompleted=true;saveProfile(p);}}
