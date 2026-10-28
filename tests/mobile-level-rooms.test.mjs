@@ -132,6 +132,17 @@ test('breakfast piece counts create playable level rooms while gallery limits st
  }
 });
 
+test('chapter three and four piece counts create playable level rooms while gallery rejects them',t=>{
+ const counts=[24,24,35,35,40,54],config=configuration();config.chapters[0].pieces=counts;
+ const f=fixture(t,{levels:config});
+ for(const [index,count]of counts.entries()){
+  const photo=photos.find(photo=>photo.id===pack.imageIds[index]),grid=mobileGridForPhoto(photo,count,'level');
+  assert.ok(grid);assert.equal(grid.cols*grid.rows,grid.count);assert.ok(Math.abs(grid.count-count)<=count*.15);assert.ok(grid.pixels>=20);
+  const ticket=f.make('ch1-'+(index+1));assert.equal(ticket.room.requestedPieces,count);assert.equal(ticket.room.puzzle.cols*ticket.room.puzzle.rows,grid.count);f.clear('ch1-'+(index+1));
+  assert.equal(mobileGridForPhoto(photo,count),null);assert.equal(mobileGridForPhoto(photo,count,'gallery'),null);
+ }
+});
+
 test('owner completion snapshots derive first-clear energy from persisted room progress after refresh and rejoin',t=>{
  const f=fixture(t),ticket=f.make(),path='/api/rooms/'+ticket.room.id,expected={levelId:'ch1-1',energy:30,firstClear:true,nextLevelId:'ch1-2',chapterComplete:false};
  assert.equal(ticket.room.mobileResult,undefined);assert.deepEqual(f.finish(ticket).mobileResult.levelClear,expected);

@@ -34,7 +34,7 @@ const requestKey=value=>typeof value==='string'&&/^[a-f0-9]{32}$/.test(value);
 const directionOf=photo=>{const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id)??photo;return d.width===d.height?'square':d.width>d.height?'landscape':'portrait';};
 // Keep the artwork aspect ratio and square piece bodies while respecting mobile limits.
 export function mobileGridForPhoto(photo,count,mode='gallery'){
- const small=mode==='level'&&[12,16,20,24,28,30,35].includes(count);
+ const small=mode==='level'&&[12,16,20,24,28,30,35,40,54].includes(count);
  const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id);if(!d||!MOBILE_COUNTS.includes(count)&&!small)return null;
  const fitted=engine.gridForDimensions(d.width,d.height,count);if(!fitted)return null;
  if(small||fitted.count>=48&&fitted.count<=500)return fitted;

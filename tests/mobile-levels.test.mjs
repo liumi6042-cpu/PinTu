@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {randomBytes} from 'node:crypto';
+import {createHash,randomBytes} from 'node:crypto';
 import {mkdirSync,mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {resolve,sep} from 'node:path';
 import {createMobileLevels,readLevelConfiguration} from '../server/mobile-levels.mjs';
@@ -12,6 +12,10 @@ import {RESTORABLE_PHOTOS as photos} from '../outputs/mobile/engine.mjs';
 const owner='a'.repeat(64),peer='b'.repeat(64),now=1800000000000,pieces=[12,16,20,24,30,35];
 const chapter=(id,albumId=catalog.packs[0].id)=>({id,title:'章节 '+id,albumId,pieces:[...pieces]});
 const configuration=(chapters=[chapter('ch1'),chapter('ch2',catalog.packs[1].id)])=>({schema:'jigsaw-levels/v1',firstClearEnergy:30,chapters});
+function defaultAlbums(defaults){
+ const used=new Set(catalog.packs.flatMap(pack=>pack.imageIds)),extra=photos.filter(photo=>!used.has(photo.id));
+ return defaults.chapters.map((ch,index)=>({id:ch.albumId,imageIds:catalog.packs[index]?.imageIds??extra.slice((index-catalog.packs.length)*6,(index-catalog.packs.length+1)*6).map(photo=>photo.id)}));
+}
 function fixture(t,{config=configuration(),...options}={}){
  const root=resolve('data');mkdirSync(root,{recursive:true});const dir=mkdtempSync(resolve(root,'mobile-levels-test-')),databasePath=resolve(dir,'mobile.sqlite');
  const service=createMobileService({databasePath,now:()=>now,randomInt:min=>min,levels:config,...options}),db=new DatabaseSync(databasePath);
@@ -24,11 +28,21 @@ function fixture(t,{config=configuration(),...options}={}){
 
 test('levels configuration defaults and malformed documents fail during service creation',()=>{
  const defaults=readLevelConfiguration();assert.deepEqual({...defaults,chapters:defaults.chapters.slice(0,1)},{schema:'jigsaw-levels/v1',seriesTitle:'拾光物语',firstClearEnergy:30,chapters:[{id:'ch1',title:'奶奶的小店',albumId:'shiguang-ch1',pieces,lines:['这就是奶奶的店……好旧啊。','你是……这家店的猫？','回忆碎了，就把它拼回来。','爷爷想不起来早餐店开张那天了……','是爷爷！他在笑！','拾光镇还有好多回忆在等人拼。']}]});
- assert.equal(defaults.chapters.length,2);const {story,...breakfast}=defaults.chapters[1];
+ assert.equal(defaults.chapters.length,4);const {story,...breakfast}=defaults.chapters[1];
  assert.deepEqual(breakfast,{id:'ch2',title:'早餐街',albumId:'shiguang-ch2',pieces:[16,20,24,24,28,30],lines:['早餐店……飘到天上去了？','那天的包子什么味儿……想不起来喽。','团子，等等我！','这张菜谱……是奶奶的字！','奶奶也在！她在教福爷爷包包子。','奶奶的下一段回忆，在云上邮局。']});
  assert.equal(story.length,6);
  // Same timeLabel/intro/comic.panels as the bundled client copy of story-comics-ch2.json.
  assert.deepEqual(story,JSON.parse(readFileSync(new URL('../mobile/story-comics-ch2.json',import.meta.url),'utf8')).levels.map(({timeLabel,intro,comic})=>({timeLabel,intro,comic:{panels:comic.panels}})));
+ assert.equal(createHash('sha256').update(JSON.stringify(story)).digest('hex'),'8e091598ca781891bad69cfcb1a92192abea786414c98d45a91f81aef394a4e0');
+ const {story:postOfficeStory,...postOffice}=defaults.chapters[2],{story:aquariumStory,...aquarium}=defaults.chapters[3];
+ assert.deepEqual(postOffice,{id:'ch3',title:'云上邮局',albumId:'shiguang-ch3',pieces:[24,24,35,35,35,40],lines:['这只纸鹤……是来接我们的？','欢迎来到云上邮局，咕。','这些信，都没能寄到。','收信人……是我？','奶奶写这封信的时候，我才五岁。','下一站，月光水族馆。']});
+ assert.deepEqual(aquarium,{id:'ch4',title:'月光水族馆',albumId:'shiguang-ch4',pieces:[35,35,40,40,40,54],lines:['水族馆……沉在海里？','团子，别怕，有泡泡呢。','慢慢说，这里好久没人来了。','这是奶奶最早的回忆。','原来，拼图小窝是从这里开始的。','奶奶，小窝我会好好守着的。']});
+ for(const chapterStory of [postOfficeStory,aquariumStory]){
+  assert.equal(chapterStory.length,6);
+  for(const level of chapterStory){assert.equal(typeof level.timeLabel,'string');assert.ok(level.timeLabel.trim());assert.equal(typeof level.intro,'string');assert.ok(level.intro.trim());assert.equal(level.comic.panels.length,4);}
+ }
+ assert.equal(createHash('sha256').update(JSON.stringify(postOfficeStory)).digest('hex'),'c5b324ebb79d6e817ba166abdec032c3684b4096d5b56f4b4ade62322202e391');
+ assert.equal(createHash('sha256').update(JSON.stringify(aquariumStory)).digest('hex'),'600d42a0011958b525441df1d09e58677758802e22d57304b1bcba31ce2af019');
  const bad=[null,[],{}, {...configuration(),schema:'other'}, {...configuration(),firstClearEnergy:-1}, {...configuration(),firstClearEnergy:1.5}, {...configuration(),firstClearEnergy:'30'}, {...configuration(),chapters:[]}, {...configuration(),chapters:{}}, {...configuration(),extra:true}];
  for(const patch of [{id:''},{id:'bad/id'},{title:' '},{albumId:null},{pieces:[12]},{pieces:[12,16,20,24,30,0]},{pieces:[12,16,20,24,30,1.5]},{pieces:[12,16,20,24,30,'35']},{pieces:[12,16,20,24,30,Number.MAX_SAFE_INTEGER+1]},{extra:true}])bad.push(configuration([{...chapter('ch1'),...patch}]));
  bad.push(configuration([chapter('ch1'),chapter('ch1')]));
@@ -185,14 +199,26 @@ test('level view appends only present story and photo fields, preserves original
 });
 
 test('default chapter albums unlock breakfast sequentially and preserve destination contracts',t=>{
- const db=new DatabaseSync(':memory:');t.after(()=>db.close());const defaults=readLevelConfiguration(),packs=new Map(defaults.chapters.map((ch,index)=>[ch.albumId,catalog.packs[index]]));
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());const defaults=readLevelConfiguration(),albums=defaultAlbums(defaults),packs=new Map(albums.map(album=>[album.id,album]));
+ assert.ok(albums.every(album=>album.imageIds.length===6));assert.equal(new Set(albums.flatMap(album=>album.imageIds)).size,24);
  const levels=createMobileLevels({db,photos,collection:{albumImages:id=>packs.get(id)??null}});
  assert.equal(levels.view(owner).chapters[1].levels[0].status,'locked');
  for(let n=1;n<=5;n++)levels.recordClear(owner,'ch1-'+n,'fixture',now,30);
  assert.equal(levels.view(owner).chapters[1].levels[0].status,'locked');levels.recordClear(owner,'ch1-6','fixture',now,30);
  const view=levels.view(owner);assert.equal(view.chapters[1].levels[0].status,'unlocked');assert.strictEqual(view.current,view.chapters[1].levels[0]);assert.equal(view.current.id,'ch2-1');
  assert.deepEqual(view.current.comic,defaults.chapters[1].story[0].comic);assert.equal(view.current.timeLabel,'清晨');assert.equal(view.current.intro,defaults.chapters[1].story[0].intro);
- assert.deepEqual(levels.destination('ch1-6'),{nextLevelId:'ch2-1',chapterComplete:true});assert.deepEqual(levels.destination('ch2-6'),{nextLevelId:null,chapterComplete:true});assert.deepEqual(levels.destination('ch1-3'),{nextLevelId:'ch1-4',chapterComplete:false});
+ assert.deepEqual(levels.destination('ch1-6'),{nextLevelId:'ch2-1',chapterComplete:true});assert.deepEqual(levels.destination('ch2-6'),{nextLevelId:'ch3-1',chapterComplete:true});assert.deepEqual(levels.destination('ch1-3'),{nextLevelId:'ch1-4',chapterComplete:false});
+ assert.deepEqual(levels.destination('ch3-6'),{nextLevelId:'ch4-1',chapterComplete:true});assert.deepEqual(levels.destination('ch4-6'),{nextLevelId:null,chapterComplete:true});assert.deepEqual(levels.destination('ch4-5'),{nextLevelId:'ch4-6',chapterComplete:false});
+ for(const [chapterIndex,nextLevelId]of [[1,'ch3-1'],[2,'ch4-1'],[3,null]]){
+  for(let n=1;n<=6;n++){
+   if(chapterIndex<3)assert.equal(levels.view(owner).chapters[chapterIndex+1].levels[0].status,'locked');
+   levels.recordClear(owner,defaults.chapters[chapterIndex].id+'-'+n,'fixture',now,30);
+  }
+  const next=levels.view(owner);assert.equal(next.current?.id??null,nextLevelId);
+  if(nextLevelId){assert.equal(next.chapters[chapterIndex+1].levels[0].status,'unlocked');assert.strictEqual(next.current,next.chapters[chapterIndex+1].levels[0]);}
+  if(chapterIndex===1)assert.equal(next.current.timeLabel,'清晨');
+ }
+ assert.equal(levels.progress(owner).length,24);const complete=levels.view(owner);assert.equal(complete.current,null);assert.ok(complete.chapters.every(ch=>ch.levels.every(level=>level.status==='cleared')));
 });
 
 test('missing breakfast album leaves chapter one playable and returns no current after its completion',t=>{
@@ -202,7 +228,7 @@ test('missing breakfast album leaves chapter one playable and returns no current
 });
 
 test('finishing chapter one persists and snapshots chapterComplete with breakfast as nextLevelId',t=>{
- const defaults=readLevelConfiguration(),f=fixture(t,{config:defaults,albumContent:{read:()=>({albums:defaults.chapters.map((ch,index)=>({id:ch.albumId,imageIds:catalog.packs[index].imageIds}))})}}),rid=()=>randomBytes(16).toString('hex');
+ const defaults=readLevelConfiguration(),f=fixture(t,{config:defaults,albumContent:{read:()=>({albums:defaultAlbums(defaults)})}}),rid=()=>randomBytes(16).toString('hex');
  const ok=(url,body,token)=>{const result=f.service.handle({identity:owner,url,method:body===undefined?'GET':'POST',body,authorization:token?'Bearer '+token:undefined});assert.ok([200,201].includes(result.status),JSON.stringify(result));return result.data;};
  ok('/api/mobile/profile');for(let n=1;n<=5;n++)f.clear('ch1-'+n);
  const ticket=ok('/api/rooms',{mode:'level',levelId:'ch1-6',requestId:rid()}),room=JSON.parse(f.db.prepare('SELECT data FROM mobile_rooms WHERE id=?').get(ticket.room.id).data);
@@ -213,4 +239,19 @@ test('finishing chapter one persists and snapshots chapterComplete with breakfas
  assert.ok(result.completedAt);assert.deepEqual(result.profile.lastReward.levelClear,expected);assert.deepEqual(result.mobileResult.levelClear,expected);
  assert.deepEqual(JSON.parse(f.db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(owner).data).lastReward.levelClear,expected);
  assert.deepEqual(ok(path,undefined,ticket.token).mobileResult.levelClear,expected);assert.equal(f.view().current.id,'ch2-1');
+});
+
+for(const [chapterIndex,nextLevelId]of [[1,'ch3-1'],[3,null]])test('finishing ch'+(chapterIndex+1)+'-6 persists and snapshots chapterComplete with nextLevelId '+nextLevelId,t=>{
+ const defaults=readLevelConfiguration(),f=fixture(t,{config:defaults,albumContent:{read:()=>({albums:defaultAlbums(defaults)})}}),rid=()=>randomBytes(16).toString('hex'),levelId=defaults.chapters[chapterIndex].id+'-6';
+ const ok=(url,body,token)=>{const result=f.service.handle({identity:owner,url,method:body===undefined?'GET':'POST',body,authorization:token?'Bearer '+token:undefined});assert.ok([200,201].includes(result.status),JSON.stringify(result));return result.data;};
+ ok('/api/mobile/profile');
+ for(let index=0;index<=chapterIndex;index++)for(let n=1;n<=(index===chapterIndex?5:6);n++)f.clear(defaults.chapters[index].id+'-'+n);
+ const ticket=ok('/api/rooms',{mode:'level',levelId,requestId:rid()}),room=JSON.parse(f.db.prepare('SELECT data FROM mobile_rooms WHERE id=?').get(ticket.room.id).data);
+ for(const group of room.puzzle.groups.slice(1)){group.locked=true;group.dx=0;group.dy=0;}
+ f.db.prepare('UPDATE mobile_rooms SET data=? WHERE id=?').run(JSON.stringify(room),room.id);
+ const groupId=room.puzzle.groups.find(group=>!group.locked).id,path='/api/rooms/'+room.id;ok(path,{type:'claim',groupId},ticket.token);
+ const result=ok(path,{type:'drop',groupId,seq:1,dx:0,dy:0,requestId:rid()},ticket.token),expected={levelId,energy:30,firstClear:true,nextLevelId,chapterComplete:true};
+ assert.ok(result.completedAt);assert.deepEqual(result.profile.lastReward.levelClear,expected);assert.deepEqual(result.mobileResult.levelClear,expected);
+ assert.deepEqual(JSON.parse(f.db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(owner).data).lastReward.levelClear,expected);
+ assert.deepEqual(ok(path,undefined,ticket.token).mobileResult.levelClear,expected);assert.equal(f.view().current?.id??null,nextLevelId);
 });
