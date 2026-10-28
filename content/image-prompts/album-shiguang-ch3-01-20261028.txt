@@ -1,0 +1,19 @@
+# ch3s-01-paper-crane
+
+- Mode: built-in image_gen
+- Output: ch3s-01-paper-crane.png
+- Size: 1536x1024
+- Reference: ../cast-sheet-final.png
+- Source: C:/Users/Administrator/.codex/generated_images/01a1835c-6129-7990-9f36-51d51838ae07/exec-f11418d6-8b53-4726-a725-767ef42726af.png
+
+## Final prompt
+
+Use case: illustration-story.
+Asset type: One landscape 1536x1024 picture-book story illustration for a 24-piece jigsaw puzzle. One continuous full-bleed scene, no puzzle cut lines.
+Input image: attached cast-sheet-final.png is the exact character identity, costume, calico marking and art-style reference; it is not a layout to reproduce.
+Scene: Wide shot, early morning, soft lilac-and-gold sky. In front of the old wooden puzzle shop with a round window and a completely blank wooden jigsaw-shaped sign on a hillside cobblestone lane, a giant paper crane folded from pale blue paper, as big as a small boat, has landed. The clearly recognizable origami crane is the single dominant focal subject; its folded paper wing lowers to the cobblestones like a boarding ramp. Xiaohe stands in her doorway with a cup of tea and stares in surprise; Tuanzi already sits on the crane's back. Morning glories climb the fence, puddles reflect dawn, a few blank envelopes flutter around the crane.
+Character invariants: Reproduce Xiaohe and Tuanzi from the reference without redesigning face, hair, flower clip, clothing, bag, fur pattern or neckerchief. Xiaohe is a 17-year-old girl, short brown bob, small pink flower clip above her left ear, warm brown eyes, friendly round face, mustard-yellow short jacket over cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch. Tuanzi is a chubby calico shop cat, mostly white; left ear and left eye area orange, right ear and right eye area black; large black back patch, orange rump patch, fluffy black tail, green eyes and pink nose; small sage-green neckerchief tied at the side of the neck. Follow the visible reference orientation and markings faithfully.
+Style: Same cozy hand-painted anime illustration as the character sheet, warm soft light, gentle saturated colors, clean shapes, soft painterly texture, welcoming storybook feel.
+Composition: Easy to recognize at a glance. Clearly differentiated foreground, middle ground and background colors and textures. Edge-to-edge filled scene including all corners, with cobblestones and puddles below, textured shop timber and doorway, flowering fence and hillside, and softly patterned lilac/gold clouds above. Avoid any large flat empty sky, wall, water or paper area; use soft lighting, paper-fold facets and painterly tonal texture while maintaining pale blue paper. Broad readable shapes suitable for 24 puzzle pieces; no tiny repetitive clutter. Keep crane, surprised girl and cat clearly readable in the wide shot.
+Strict exclusions: No text, letters, numbers, readable writing, UI, watermark, border, frame, speech bubbles, panel dividers or jigsaw grid. Envelopes, stamps, sign and paper contain only blank shapes, simple pictures or non-letterlike soft squiggles. Only one girl, one cat and one giant crane.
+

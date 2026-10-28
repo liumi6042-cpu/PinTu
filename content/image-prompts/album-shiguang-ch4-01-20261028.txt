@@ -1,0 +1,24 @@
+# ch4s-01-seaside-dawn
+
+- Tool: built-in image_gen
+- Reference: ../cast-sheet-final.png
+- Output: ch4s-01-seaside-dawn.png
+- Source: C:\Users\Administrator\.codex\generated_images\01a1836d-3ff2-7bd2-b6ce-28575ab5e313\exec-fee24375-31ef-494e-89ad-be3de59295d1.png
+- Size: 1536x1024
+- First call stopped after prolonged nonresponse; retry completed successfully.
+
+## Final prompt
+
+Create ONE landscape illustration exactly 1536x1024, a single full-bleed picture-book story panel for a 30-piece jigsaw puzzle. Use case: illustration-story. The attached cast sheet is the exact CHARACTER IDENTITY AND ART STYLE reference, not a layout to reproduce. Do not redesign Xiaohe or Tuanzi.
+
+Wide shot at dawn by the sea below the town. Pastel pink softly cloud-patterned sky over calm reflective water. Main clear focal subject: an old seaside aquarium building with a big glass dome HALF SUNK into the shallow sea. Its arched SHELL-SHAPED DOORWAY lies JUST UNDER THE WAVES, visible through clear shallow water and softly glowing blue. The dome and weathered architecture must be easily recognizable at a glance.
+
+Xiaohe stands at the end of a wooden pier, holding her bag strap and looking at the dome. Show her face in a readable three-quarter view while gazing toward the aquarium. She is a 17-year-old girl: exact sheet face, short brown bob, small pink flower clip above her left ear, warm brown eyes, friendly round face; mustard-yellow short jacket, cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch. Match the reference face, hair, clip, outfit and bag exactly.
+Tuanzi sits on a mooring post, nervously looking at the water. Exact sheet chubby calico shop cat: mostly white; left ear/eye area orange, right ear/eye area black; large black back patch, orange rump patch, fluffy black tail, green eyes, pink nose; small sage-green neckerchief tied at side. Match the reference directly, including fur pattern.
+Postmaster Gugu perches on a lamp post with a plain wrapped parcel. He is a BIG ROUND fluffy grey-and-white owl, as tall as Xiaohe's shoulder, wearing a small navy-blue postman cap with a PLAIN gold badge, round brass spectacles and a navy postal satchel across his chest. Preserve his large scale, not a tiny owl.
+
+Foreground tide pools, shells, seagrass and rocks fill the lower corners. Textured wooden pier and characters in the middle ground; clear turquoise water and blue glowing half-submerged aquarium; layered dawn clouds and coastal town in the background. One cohesive scene, one dominant aquarium focal subject. Cozy hand-painted anime, warm soft light, gentle saturated colors, clean shapes with soft painterly texture, the SAME storybook art style as the cast sheet.
+
+Jigsaw-friendly: clearly distinct colors and textures in foreground, middle and background; no large empty flat sky/water. Use soft clouds, ripples, reflected light and plants to make every region distinct. Objects and meaningful environmental shapes fill the frame edge to edge, including corners. Broad readable shapes, no tiny repetitive clutter. No puzzle cut lines.
+
+NO text, letters, numbers, readable writing anywhere, even envelopes, stamps, signs or parcel. Only blank shapes or simple nonletter pictures. NO UI, watermark, border, frame, comic speech bubbles or panel divisions.

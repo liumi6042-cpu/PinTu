@@ -1,0 +1,21 @@
+Mode: built-in image_gen
+Output: ch4s-05-first-piece-memory.png
+Verified dimensions: 1536x1024
+Reference: ../cast-sheet-final.png
+Generated source: C:/Users/Administrator/.codex/generated_images/01a1836d-402d-7ee2-ac0f-f68a945e2f77/exec-6774e0f0-d3b8-4131-90ce-6bdfb09f91d3.png
+
+Final prompt:
+
+Use case: illustration-story.
+Create ONE finished landscape illustration, exactly 1536x1024 pixels, a single picture-book story panel used as a 45-piece jigsaw puzzle.
+Input image: the attached cast sheet is the exact character-identity and painting-style reference, NOT a layout to reproduce. Preserve Xiaohe and Tuanzi without redesign.
+
+Scene: a magical memory moment underwater, warm golden sunset light pouring down through the water. Lower portion: Xiaohe kneels beside a giant open shell and carefully fits the last glowing golden puzzle piece into the shell's almost-complete puzzle, smiling with visible tears of emotion. Her fingers and the fitting piece are clearly readable. Tuanzi watches nearby with sparkling green eyes. Above them floats one large luminous memory vision made of fitted jigsaw pieces, with subtle clearly visible interlocking seams INSIDE the vision. Within this vision: long ago on this same beach at sunset, Grandma as a ten-year-old girl kneels barefoot in a tide pool, lifting ONE small glowing golden puzzle piece she has just found, her face full of wonder. She has brown hair in two short braids, the SAME small pink flower hair clip as Xiaohe, and a white sailor-collar dress. Behind young Grandma is the old aquarium building in its original new, bright, intact state on the beach, NOT sunken within the memory. The memory is a luminous integrated apparition, not a framed inset or a separate comic panel. Distinguish the sunset beach memory above from the real underwater scene below. The glowing memory connects visually to the last piece in the shell, making one coherent focal event.
+
+Xiaohe: 17-year-old girl matching the sheet exactly: short brown bob, small pink flower hair clip above her LEFT ear, warm brown eyes, friendly round face; mustard-yellow short jacket over a cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch.
+Tuanzi: chubby mostly-white calico shop cat matching the sheet exactly; anatomical LEFT ear and area around LEFT eye orange, anatomical RIGHT ear and area around RIGHT eye black, large black back patch, orange rump patch, fluffy black tail, green eyes, pink nose, small sage-green neckerchief tied at the side of the neck. Use the exact reference pattern, do not mirror or randomize markings.
+
+Style: match the supplied sheet, cozy hand-painted anime, clean shapes, soft painterly texture, gentle saturated colors, warm soft light, storybook tenderness.
+Composition: one coherent edge-to-edge image with a clearly recognizable focal event, the luminous puzzle memory and Xiaohe completing it. Keep both girls' faces and important actions legible. Foreground underwater sea plants, stones and shell textures; middle ground characters, giant shell and golden glow; upper background memory of sunset tide pool and bright aquarium. Make these zones distinct in color and texture. Fill all corners with useful scene forms, gently patterned water, shafts of light, bubbles, plants, beach rocks or sunset clouds as appropriate. No large flat empty sky or water. No tiny repetitive clutter. Do NOT overlay a jigsaw-cut grid across the whole image: puzzle seams belong only to the magical memory and the puzzle in the shell.
+No text, letters, numbers, readable writing, signage, UI, watermark, border, frame, speech bubbles. Any architectural signage must be blank with no letter-like marks. Opaque full-color illustration.
+
