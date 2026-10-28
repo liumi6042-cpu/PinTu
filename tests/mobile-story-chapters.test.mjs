@@ -90,6 +90,7 @@ test('missing chapter title uses 本章完成 and completion close selects the n
  const f=fixture({data:chapters(6)});f.app.levels.chapters[0].title='';completion(f,{levelId:'ch1-6',chapterComplete:true,nextLevelId:'ch2-1'});f.app.drawCompletionContent(12,40,366);assert.ok(f.texts.includes('本章完成！'));
  f.app.leaveRoom=()=>{f.app.room=null;};f.app.route='room';f.app.exitRoom();assert.equal(f.app.route,'chapter');assert.equal(f.app.selectedChapter.id,'ch2');
  for(const clear of [{levelId:'ch2-6',chapterComplete:true,nextLevelId:null},{levelId:'ch1-6',nextLevelId:null}]){completion(f,clear);f.app.route='room';f.app.exitRoom();assert.equal(f.app.route,'lobby');}
+ f.app.storyChapterId='ch1';completion(f,{levelId:'ch2-2',nextLevelId:'ch2-3'});f.app.route='room';f.app.exitRoom();assert.equal(f.app.route,'chapter','a mid-chapter ch2 clear returns to the story page');assert.equal(f.app.selectedChapter.id,'ch2');
 });
 
 test('ch2 comic keeps its chapter through turns/ending, intro and selected-chapter replay',()=>{
