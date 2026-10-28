@@ -919,10 +919,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private copyInvitationCode(code:string){if(!this.platform.copyText){this.note('邀请码：'+code);return;}void this.platform.copyText(code).then(ok=>this.note(ok?'已复制邀请码 '+code:'复制失败，请手动记下邀请码 '+code));}
  /** Headers draw beside the nav rail in local coordinates, but keep the same screen right edge. */
- private menuReserve(row:Rect){const view=this.platform.viewport(),menu=view.menu;return menu&&row.y<menu.y+menu.h&&menu.y<row.y+row.h?Math.max(0,view.width-menu.x+8):0;}
- private portraitMenuTop(top:number){const view=this.platform.viewport();return view.width<=view.height&&view.menu?Math.max(top,view.menu.y+view.menu.h+8):top;}
+ /** Landscape only: portrait headers keep the full width and top under TapTap's ••• capsule (owner's choice, v30). */
+ private menuReserve(row:Rect){const view=this.platform.viewport(),menu=view.menu;return menu&&view.width>view.height&&row.y<menu.y+menu.h&&menu.y<row.y+row.h?Math.max(0,view.width-menu.x+8):0;}
  // Puzzle rooms get the same visible top gap as the lobby header (inset + 12).
- private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+6;return this.portraitMenuTop(this.headerSafeTop()+(this.platform.config.id==='web'?0:12));}
+ private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+6;return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
  private drawSettingsBadge(avatar:Rect,offsetX=0){
   const s=this.stage,c=s.ctx,cx=avatar.x+avatar.w-9,cy=avatar.y+avatar.h-10;
   c.save();c.fillStyle=this.colors.cream;c.beginPath();c.arc(cx,cy,11,0,Math.PI*2);c.fill();c.restore();
@@ -940,7 +940,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
  private drawHeader(){
-  const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.platform.viewport().top,top=this.portraitMenuTop(safe+12+(this.formalWeb?23:0)),wide=s.w>=640&&s.h>560,small=s.w<360,reserve=this.menuReserve({x:0,y:top,w:s.w,h:wide?74:56});
+  const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.platform.viewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360,reserve=this.menuReserve({x:0,y:top,w:s.w,h:wide?74:56});
   if(this.formalWeb){s.text('测试版',13,safe+7,10,this.colors.muted);this.drawWebLinks(Math.max(75,s.w-224),safe+7,Math.min(212,s.w-87));}
   if(this.platform.config.id==='wechat'&&safe>=30)s.text(this.platform.config.gameName,14,safe-26,13,this.colors.ink,700,Math.max(100,s.w-160));
   const line=(y:number)=>{s.ctx.fillStyle=s.color('#c99586');s.ctx.fillRect(12,Math.round(y),s.w-24,1);};
