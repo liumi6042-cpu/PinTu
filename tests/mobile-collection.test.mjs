@@ -95,10 +95,10 @@ test('collection HTTP mutations are atomic, replay safe and enforce permanent pu
   assert.equal(publicRoom.status,201);
   assert.equal(publicRoom.data.room.members.find(m=>m.id===publicRoom.data.playerId).decoration.id,craft.id);
   assert.equal(h.call(a,'/api/mobile/profile').data.starterSelectionAvailable,false,'newcomers start without a free-selection allowance');
-  assert.equal(h.call(a,'/api/mobile/profile').data.supply.create,1);
+  assert.equal(h.call(a,'/api/mobile/profile').data.supply.create,3);
   assert.equal(h.call(b,'/api/rooms/'+publicRoom.data.room.id+'/join',{}).status,200,'nonowners can join');
   const privateInput={mode:'selected',imageId:pack.imageIds[0],pieces:48,visibility:'private',requestId:rid()};
-  assert.equal(h.call(a,'/api/mobile/profile').data.supply.create,1,'the newcomer ticket is still unspent');
+  assert.equal(h.call(a,'/api/mobile/profile').data.supply.create,3,'the newcomer tickets are still unspent');
   assert.equal(h.call(a,'/api/rooms',privateInput).status,201,'the newcomer ticket covers the first private room');
   h.patch(a,{supply:{energy:0,create:0}});
   assert.equal(h.call(a,'/api/rooms',{...privateInput,requestId:rid()}).data.code,'CREATE_TICKET_REQUIRED');

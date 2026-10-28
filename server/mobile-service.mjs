@@ -23,9 +23,9 @@ import {guestName} from './guest-names.mjs';
 const DEFAULT_PLAYER_NAME='拼图朋友';
 import {MOBILE_COUNTS,effectiveEnergyCap,inviteCapBonus,xpForLevel,newProfile,restoreEnergy,applyContribution,completionDistribution} from './mobile-economy.mjs';
 
-// A first-time mobile player starts with one creation ticket. Web play needs none,
+// A first-time mobile player starts with three creation tickets. Web play needs none,
 // so the runtime decides the amount instead of baking it into the profile factory.
-export const NEWCOMER_CREATION_TICKETS=1;
+export const NEWCOMER_CREATION_TICKETS=3;
 export const LOBBY_QUIET_HIDE_MS=5*60*1000;
 const id=()=>randomBytes(16).toString('hex');
 const hash=value=>createHash('sha256').update(value).digest('hex');

@@ -52,6 +52,7 @@ const directions:[Direction,string][]=[['all','全部'],['portrait','竖图'],['
 const themeOptions:[ThemeId,string][]=[['light','浅色'],['dark','夜间'],['wood','仿木']];
 const counts=[48,108,300,500] as const;
 const contentMaxWidth=1120;
+const settingsTipKey='jigsaw:settings-tip:v1';
 const phrases=publicPhrases;
 type PublicMessage={id:number;name:string;text:string;playerId:string;code:string;level?:number;sentAt?:number};
 type SharedPhoto={id:string;title:string;src:string;thumbSrc:string;category:string;width?:number;height?:number};
@@ -89,6 +90,7 @@ export class GameApp{
  private modal:Modal=null;private modalScroll=0;private modalExtent=0;private modalArea:Rect={x:0,y:0,w:0,h:0};private modalStart=0;
  private orientationChoice:ScreenOrientation|null=null;private orientationSwitching=false;
  private orientationEntryPending:Promise<void>|null=null;private orientationEntryResolve:(()=>void)|null=null;
+ private settingsTipSeen=false;private settingsTipDrawn=false;private settingsTipAnchor:Rect|null=null;
  private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;
  private rooms:RoomListing[]=[];private lobbyCursor:string|null=null;private lobbyLoading=false;private lobbyQuiet=false;private lobbySerial=0;private lobbyReload=false;
  private lobbyPieces:'all'|'small'|'large'='all';private dailyPhoto:SharedPhoto|null=null;private serverOffset=0;private listColumn:{x:number;w:number}|null=null;private lobbyMinute='';private lobbyOnline:number|null=null;private dailyFinished:number|null=null;
@@ -154,6 +156,7 @@ export class GameApp{
  constructor(readonly platform:Platform,readonly client:GameClient,readonly stage:Stage){
   this.offline=new OfflineMode(platform);for(const photo of Object.values(this.offline.catalog?.photos??{}))photoMap.set(photo.id,photo);
   try{const consent=JSON.parse(platform.storage.get(MOBILE_PRIVACY_CONSENT_KEY)||'null');this.privacyAccepted=consent?.version===MOBILE_PRIVACY_VERSION&&consent?.necessary===true&&consent?.hongKongStorage===true;}catch{}
+  try{this.settingsTipSeen=platform.storage.get(settingsTipKey)==='1';}catch{}
   this.shareReward=new TaskShareReward(platform,requestId=>client.post<MobileInviteShareResult>('/api/mobile/invitations/share',{requestId,shared:true}));
   const saved=platform.storage.get('jigsaw:shared:theme:'+platform.config.apiBase);stage.setTheme(isThemeId(saved)?saved:'light');if(platform.canvas.style)platform.canvas.style.colorScheme=stage.theme==='dark'?'dark':'light';
   this.renderMode=platform.storage.get('jigsaw:shared:performance:'+platform.config.apiBase)==='power-saving'?'power-saving':'smooth';
@@ -789,6 +792,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  drawForRenderProbe(directPaper:boolean){const board=this.board;if(!board||!directPaper){this.draw();return;}const enabled=board.paperCacheEnabled;board.paperCacheEnabled=false;try{this.draw();}finally{board.paperCacheEnabled=enabled;}}
  draw(){
+  this.settingsTipAnchor=null;this.settingsTipDrawn=false;
   const s=this.stage;if(this.route==='room'){s.ctx.fillStyle=boardThemeColors(s.theme).paper;s.ctx.fillRect(0,0,s.w,s.h);}else s.background();
   if(this.loginLogOpen){this.drawLoginLog();return;}
   if(this.needsPrivacyChoice||this.loginDialogActive||this.platform.tapAuthorizationPending?.()){this.drawPrivacyChoice();return;}
@@ -806,6 +810,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(rail||bar)s.withViewport(outer,page);else page();
    if(bar)this.drawTabBar();
   }
+  this.drawSettingsTip();
   if(this.modal)this.drawModal();
   if(this.message&&Date.now()<=this.messageUntil)this.drawNotice();
   if(this.busy){const cancel=this.sharing&&!!this.platform.cancelShare,label=cancel?'等待分享 · 取消等待':'正在处理…',width=cancel?184:144,r={x:(s.w-width)/2,y:Math.max(this.platform.viewport().top+6,this.platform.config.id==='taptap'?44:0),w:width,h:28};s.panel(r,'cream');s.text(label,r.x+(width-s.measure(label,12))/2,r.y+6,12,this.colors.ink);if(cancel)s.hit(r,()=>this.platform.cancelShare?.());}
@@ -817,6 +822,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   // Profile: the avatar art carries its own pixel frame.
   s.hit({x:18,y:18,w:nav-26,h:96},()=>this.showModal('settings'));
   s.icon('avatar',{x:24,y:26,w:44,h:48});s.text(p?.name??'读取玩家信息…',76,29,16,ink,800,nav-88);s.text(p?'Lv.'+p.level:'—',76,53,12,this.levelColor(p?.level??1),700,40);s.meter({x:116,y:57,w:nav-130,h:6},(p?.xp??0)/Math.max(1,p?.xpToNext??1));
+  this.drawSettingsBadge({x:24,y:26,w:44,h:48});
   const cy=88;if(this.energyEnabled){s.icon('lightning',{x:24,y:cy-2,w:17,h:24});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=s.measure(label,14,800);s.text(label,45,cy+2,14,ink,800,70);s.button({x:49+tw,y:cy,w:20,h:20},'',()=>this.navigate('supplies'),{tone:'gold'});s.text('+',54+tw,cy+1,16,'#fffaf0',700);}
   else{s.icon('coin',{x:24,y:cy,w:19,h:21});s.text(p?(p.collection?.coins??0):'—',47,cy+3,14,ink,800,56);s.hit({x:20,y:cy-4,w:84,h:28},()=>this.showModal('coins'));}
   s.icon('fragment',{x:112,y:cy,w:19,h:21});s.text(p?(p.collection?.fragments??0):'—',135,cy+3,14,ink,800,nav-147);s.hit({x:108,y:cy-4,w:nav-118,h:28},()=>this.showModal('fragments'));
@@ -913,6 +919,21 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private portraitMenuTop(top:number){const view=this.platform.viewport();return view.width<=view.height&&view.menu?Math.max(top,view.menu.y+view.menu.h+8):top;}
  // Puzzle rooms get the same visible top gap as the lobby header (inset + 12).
  private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+6;return this.portraitMenuTop(this.headerSafeTop()+(this.platform.config.id==='web'?0:12));}
+ private drawSettingsBadge(avatar:Rect,offsetX=0){
+  const s=this.stage,c=s.ctx,cx=avatar.x+avatar.w-9,cy=avatar.y+avatar.h-10;
+  c.save();c.fillStyle=this.colors.cream;c.beginPath();c.arc(cx,cy,11,0,Math.PI*2);c.fill();c.restore();
+  s.icon('tools',{x:cx-8,y:cy-8,w:16,h:16});
+  if(this.route==='lobby')this.settingsTipAnchor={...avatar,x:avatar.x+offsetX};
+ }
+ private get canShowSettingsTip(){return !this.settingsTipSeen&&this.ready&&this.route==='lobby'&&!this.modal&&!this.orientationEntryPending&&!this.storyIntro&&!this.needsPrivacyChoice&&!this.loginDialogActive&&!this.loginLogOpen&&!this.platform.tapAuthorizationPending?.();}
+ private drawSettingsTip(){
+  this.settingsTipDrawn=false;const a=this.settingsTipAnchor;if(!a||!this.canShowSettingsTip)return;
+  const s=this.stage,c=s.ctx,label='点头像打开设置：声音、夜间模式、画面',size=12,w=Math.min(s.w-16,s.measure(label,size,600)+24),x=clamp(a.x,8,s.w-w-8),y=a.y+a.h+12;
+  const lines:string[]=[];let line='';for(const char of label){if(line&&s.measure(line+char,size,600)>w-24){lines.push(line);line='';}line+=char;}if(line)lines.push(line);
+  const h=lines.length*18+18,tipX=clamp(a.x+a.w/2,x+12,x+w-12);
+  c.save();c.fillStyle=this.colors.cream;c.beginPath();c.moveTo(tipX-8,y+2);c.lineTo(tipX,y-10);c.lineTo(tipX+8,y+2);c.fill();c.restore();
+  s.panel({x,y,w,h},'cream');lines.forEach((text,index)=>s.text(text,x+12,y+9+index*18,size,this.colors.ink,600,w-24));this.settingsTipDrawn=true;
+ }
  private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
  private drawHeader(){
   const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.platform.viewport().top,top=this.portraitMenuTop(safe+12+(this.formalWeb?23:0)),wide=s.w>=640&&s.h>560,small=s.w<360,reserve=this.menuReserve({x:0,y:top,w:s.w,h:wide?74:56});
@@ -925,6 +946,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(gallery){s.text('图库',14,y+3,small?22:24,this.colors.ink,800,s.w-150);if(this.layout==='phonePortrait')s.button({x:s.w-136,y,w:124,h:32},'随机开一桌',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),{icon:'dice',fontSize:13,disabled:this.busy||!p});line(y+37);y+=43;if(this.layout==='phoneLandscape'){this.bodyTop=y;return;}}
    const h=wide?74:56,avatar=wide?64:small?43:49,playerWidth=gallery?(small?127:151):wide?174:small?96:110;
    if(!gallery)line(y);s.icon('avatar',{x:12,y:y+3,w:avatar,h:h-5});s.hit({x:12,y,w:playerWidth,h},()=>this.showModal('settings'));
+   this.drawSettingsBadge({x:12,y:y+3,w:avatar,h:h-5},this.navVisible&&this.layout==='phoneLandscape'?72:0);
    const lx=12+avatar+4,lw=gallery?small?66:85:wide?92:small?42:55;
    s.text('Lv.'+(p?.level??'—'),lx,y+5,wide?23:small?14:16,this.levelColor(p?.level??0),800,lw);s.meter({x:lx,y:y+(wide?36:28),w:lw,h:8},p?p.xp/Math.max(1,p.xpToNext):0);s.text(p?p.xp+' / '+p.xpToNext:'—',lx,y+(wide?48:40),wide?12:10,this.colors.ink,500,lw+8);
    if(gallery){energy(12+playerWidth,y+5,Math.min(135,s.w-playerWidth-60),wide?20:16);s.icon('sprig',{x:s.w-45,y:y+h-39,w:30,h:28});}
@@ -1240,9 +1262,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private setLobbyChip(change:()=>void){const before=JSON.stringify([this.direction,this.filterCount,this.lobbyPieces]);change();if(JSON.stringify([this.direction,this.filterCount,this.lobbyPieces])===before)return;this.scroll=0;this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();this.invalidate();}
  private drawRoomHeader(x:number,y:number,w:number,compact:boolean){
-  const s=this.stage,count=this.lobbyRooms.length,label=(this.lobbyCursor?count+'+':String(count))+' 桌在拼',size=compact?16:20,hw=compact?56:64;
+  const s=this.stage,count=this.lobbyRooms.length,label=(this.lobbyCursor?count+'+':String(count))+' 桌在拼',size=compact?16:20,historyLabel='历史拼图',historySize=12,hw=Math.ceil(s.measure(historyLabel,historySize,750))+Math.min(19,historySize+5)+(compact?16:22);
   s.text('公开房间',x,y+2,size,this.colors.ink,800);s.text(label,x+s.measure('公开房间',size,800)+10,y+(compact?5:8),12,this.colors.muted,600);
-  s.button({x:x+w-hw-2,y:y-2,w:hw,h:compact?26:30},'历史',()=>this.showModal('history'),{icon:'piece',fontSize:12});
+  s.button({x:x+w-hw-2,y:y-2,w:hw,h:compact?26:30},historyLabel,()=>this.showModal('history'),{icon:'piece',fontSize:historySize});
   y+=compact?28:36;
   const more=!!this.filterCount||this.activeOnly||!this.openOnly||this.direction==='square',chips:[string,boolean,()=>void][]=[
    ['全部',this.direction==='all'&&this.lobbyPieces==='all'&&!more,()=>this.setLobbyChip(()=>{this.direction='all';this.lobbyPieces='all';this.filterCount=0;})],
@@ -1569,7 +1591,6 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const s=this.stage,ink=this.colors.ink,gap=12,cw=(w-gap*(columns-1))/columns,ih=cw*.72,ch=ih+66;
   album.images.forEach((image,index)=>{const cx=x+(index%columns)*(cw+gap),cy=y+Math.floor(index/columns)*(ch+gap),r={x:cx,y:cy,w:cw,h:ch},art={x:cx+5,y:cy+5,w:cw-10,h:ih};if(cy+ch<0||cy>s.h)return;
    s.frame(r,'button-linen-normal');s.image(this.client.asset(image.thumbSrc),art,'cover');
-   if(!image.collected){s.ctx.save();s.ctx.globalAlpha=.62;s.frame(art,'panel-cream');s.ctx.restore();s.icon('lock',{x:art.x+art.w/2-10,y:art.y+art.h/2-12,w:20,h:24});}
    s.text(image.title,cx+9,cy+ih+13,12,image.collected?ink:this.colors.muted,700,cw-18);
    const pill={x:cx+8,y:cy+ih+34,w:cw-16,h:24};s.frame(pill,'button-linen-normal');s.icon(image.collected?'leaf':'lock',{x:pill.x+6,y:pill.y+4,w:15,h:16});s.text(image.collected?'已收藏':'未收集',pill.x+25,pill.y+6,11,this.colors.muted,700,pill.w-28);
    if(image.difficulties.length){const badge=String(Math.max(...image.difficulties)),bw=Math.min(art.w-8,s.measure(badge,11,700)+28);s.frame({x:art.x+art.w-bw-4,y:art.y+4,w:bw,h:22},'button-linen-normal');s.icon('piece',{x:art.x+art.w-bw,y:art.y+8,w:13,h:14});s.text(badge,art.x+art.w-bw+16,art.y+9,11,ink,700,bw-20);}
@@ -2222,7 +2243,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(this.energyEnabled){this.button(left,cy,width,(p?.autoSupply?'✓ ':'')+'体力耗尽自动使用库存包',()=>void this.run(async()=>{await this.client.json('/api/mobile/profile','PATCH',{autoSupply:!p?.autoSupply},{'Content-Type':'application/json'});await this.client.refresh();}));cy+=47;cy=this.paragraph('只消耗已有体力包，不会自动发起分享。',left,cy,width,12)+18;}
     const policyActions=this.formalWeb?[["隐私说明",()=>this.openWeb('privacy')],["服务说明",()=>this.openWeb('terms')]] as const:[["服务与隐私说明",()=>this.navigate('privacy')]] as const;
     if(this.formalWeb){this.button(left,cy,width,'用我的图片开一桌',()=>this.openWeb('uploads'),'berry',42);cy+=52;cy=this.paragraph('上传一张图片，选好片数，开一张自己的公开拼图桌。图片只在房间有效期内保留。',left,cy,width,12)+18;}
-    for(const [label,action]of [['拼图历史',()=>this.showModal('history')],['玩法帮助',()=>this.navigate('help')],...policyActions] as const){this.button(left,cy,width,label,action);cy+=48;}
+    for(const [label,action]of [['历史拼图',()=>this.showModal('history')],['玩法帮助',()=>this.navigate('help')],...policyActions] as const){this.button(left,cy,width,label,action);cy+=48;}
     if(this.formalWeb){this.button(left,cy,width,'问题反馈',()=>this.openWeb('feedback'));cy+=48;cy=this.paragraph('账号、进度与收藏会持续保存在当前网站。',left,cy+4,width,12)+10;}else{this.button(left,cy,width,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));cy+=48;cy=this.paragraph('当前为本机游客身份，尚未绑定平台账号存档。清除本机数据可能丢失进度。',left,cy+4,width,12)+10;}
     if(this.platform.config.id==='taptap'&&this.platform.loginLog){this.button(left,cy,width,'登录日志',()=>this.openLoginLog());cy+=48;}
     if(this.adTestingAllowed||this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest||this.platform.config.previewTestRoom||this.nineGridAvailable||this.platform.config.id==='taptap'&&p?.taptap?.diagnostics===true||this.diagnosticsAvailable){cy+=10;heading('测试与诊断');}
@@ -2293,6 +2314,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
 
  input(input:Input):boolean{
+  if(input.type==='down'&&this.settingsTipDrawn&&this.canShowSettingsTip){this.settingsTipSeen=true;this.settingsTipDrawn=false;try{this.platform.storage.set(settingsTipKey,'1');}catch{}this.invalidate();}
   if(this.needsPrivacyChoice||this.loginLogOpen){
    const point=input.changed[0]??input.points[0];
    if(input.type==='wheel'&&point&&inside(this.listArea,point.x,point.y)){this.scroll=clamp(this.scroll+(Number.isFinite(input.deltaY)?input.deltaY!:0),0,Math.max(0,this.extent-this.listArea.h));this.stage.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.invalidate();return true;}

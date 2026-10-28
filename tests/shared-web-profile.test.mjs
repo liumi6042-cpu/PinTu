@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {createMobileService} from '../server/mobile-service.mjs';
-import {createMobileTasks} from '../server/mobile-tasks.mjs';
+import {createMobileTasks,BEGINNER_TASKS} from '../server/mobile-tasks.mjs';
 import {createH5Gateway} from '../server/h5-gateway.mjs';
 import {defaultGameSettings} from '../server/game-settings.mjs';
 import {defaultTaskRewardSettings} from '../server/task-reward-settings.mjs';
@@ -19,12 +19,13 @@ function configuration(){
  return {settings,rewards,options:{now:()=>now,randomInt:min=>min,gameSettings:{read:()=>settings},taskRewardSettings:{read:()=>rewards},albumContent:{read:()=>albums}}};
 }
 const request=(service,url,body,token)=>service.handle({identity:owner,url,method:body===undefined?'GET':'POST',body,authorization:token?'Bearer '+token:undefined});
+const expectedCapabilities=web=>({energy:!web,ads:false,shareRewards:!web,tapMultiplayer:false,soloLocalPlay:!web,offlineLevelClears:!web,albumTarget:web?'pc':'mobile-shared',createTickets:!web,customNames:web,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:{friends:true,privateMessages:web,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'}});
 
 test('trusted Web profile completes a real zero-energy room, keeps shared rewards and idempotency, and selects PC albums',()=>{
  const config=configuration(),service=createMobileService({...config.options,runtimeProfile:'web',adEnabled:true});
  try{
   const initial=request(service,'/api/mobile/profile').data;
-  assert.deepEqual(initial.capabilities,{energy:false,ads:false,albumTarget:'pc',createTickets:false});assert.equal(initial.energy,0);
+  assert.deepEqual(initial.capabilities,expectedCapabilities(true));assert.equal(initial.energy,0);
   assert.deepEqual(request(service,'/api/mobile/collection').data.albums.map(album=>album.id),['pc-only']);
   assert.equal(request(service,'/api/mobile/supply/challenge',{kind:'create',requestId:rid()}).data.code,'ADS_UNAVAILABLE');
   const made=request(service,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});assert.equal(made.status,201);
@@ -33,7 +34,7 @@ test('trusted Web profile completes a real zero-energy room, keeps shared reward
    const group=room.puzzle.groups.find(group=>!group.locked);assert.ok(group);
    assert.equal(request(service,path,{type:'claim',groupId:group.id,requestId:rid()},ticket.token).status,200);
    const input={type:'drop',groupId:group.id,dx:0,dy:0,seq:1,requestId:rid()},result=request(service,path,input,ticket.token);
-   assert.equal(result.status,200);assert.equal(result.data.profile.energy,0);assert.equal(result.data.mobileContribution.creditedCoins,7);
+   assert.equal(result.status,200);assert.equal(result.data.profile.energy,0);assert.equal(result.data.mobileContribution.creditedCoins,7+(BEGINNER_TASKS.find(task=>task.target===count+1)?.coins??0));
    assert.deepEqual(request(service,path,input,ticket.token),JSON.parse(JSON.stringify(result)),'replayed snap cannot pay twice');
    room=result.data;count++;
   }
@@ -60,15 +61,19 @@ test('Web selected public and private rooms require no tickets and preserve crea
  }finally{service.close();}
 });
 
-test('mobile selected rooms spend the newcomer ticket once, then require an ad reward',()=>{
+test('mobile selected rooms spend three newcomer tickets once each, then require a reward',()=>{
  const config=configuration(),service=createMobileService(config.options);
  try{
   const photo=GALLERY_VISIBLE_PHOTOS[1],input={mode:'selected',imageId:photo.id,pieces:48,visibility:'public',runtimeProfile:'web',capabilities:{createTickets:false}};
   const initial=request(service,'/api/mobile/profile').data;
-  assert.equal(initial.supply.create,1,'a first-time mobile player owns one creation ticket');
+  assert.equal(initial.supply.create,3,'a first-time mobile player owns three creation tickets');
   assert.equal(initial.firstSelectionAvailable,false,'the ticket replaces the free-selection allowance');
-  assert.equal(request(service,'/api/rooms',{...input,requestId:rid()}).status,201);
-  assert.equal(request(service,'/api/mobile/profile').data.supply.create,0,'the first room spends the newcomer ticket');
+  for(let remaining=2;remaining>=0;remaining--){
+   const create={...input,requestId:rid()},result=request(service,'/api/rooms',create);assert.equal(result.status,201);
+   assert.equal(request(service,'/api/rooms',create).data.room.id,result.data.room.id,'replay keeps the original room');
+   assert.equal(request(service,'/api/mobile/profile').data.supply.create,remaining,'each room spends one ticket, including replay');
+   assert.equal(service.handle({identity:owner,url:'/api/rooms/'+result.data.room.id,method:'DELETE'}).status,200,'remove the entry so room limits do not hide ticket checks');
+  }
   const denied=request(service,'/api/rooms',{...input,requestId:rid()});assert.equal(denied.status,402);assert.equal(denied.data.code,'CREATE_TICKET_REQUIRED');
  }finally{service.close();}
 });
@@ -76,7 +81,7 @@ test('mobile selected rooms spend the newcomer ticket once, then require an ad r
 test('ordinary mobile profile still blocks zero-energy snaps and ignores client-supplied Web flags',()=>{
  const config=configuration(),service=createMobileService(config.options);
  try{
-  assert.deepEqual(service.capabilities,{energy:true,ads:false,albumTarget:'mobile-shared',createTickets:true});
+  assert.deepEqual(service.capabilities,expectedCapabilities(false));
   assert.deepEqual(request(service,'/api/mobile/collection').data.albums.map(album=>album.id),['mobile-only']);
   const ticket=request(service,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid(),runtimeProfile:'web',capabilities:{energy:false}}).data;
   const group=ticket.room.puzzle.groups.find(group=>!group.locked),path='/api/rooms/'+ticket.room.id;
@@ -104,7 +109,7 @@ test('gateway and browser client agree on explicit capabilities and never enable
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  try{
   const config=await(await fetch('http://127.0.0.1:'+server.address().port+'/h5/config')).json();
-  assert.deepEqual(config.capabilities,{energy:false,ads:false,albumTarget:'pc',createTickets:false});assert.equal(config.adRewardEnabled,false);assert.equal(config.rewardedAdUnitId,'');
+  assert.deepEqual(config.capabilities,expectedCapabilities(true));assert.equal(config.adRewardEnabled,false);assert.equal(config.rewardedAdUnitId,'');
   const store=new Map(),profile=request(service,'/api/mobile/profile').data;
   const client=new GameClient({config:{id:'web',apiBase:'http://127.0.0.1/h5',assetBase:'http://127.0.0.1/h5/assets',rewardedAdUnitId:'ignored'},storage:{get:key=>store.get(key),set:(key,value)=>store.set(key,value)},request:async input=>({status:200,headers:{},data:input.url.endsWith('/config')?config:input.url.endsWith('/session')?{token:'f'.repeat(64)}:profile})});
   await client.start();assert.deepEqual(client.config.capabilities,config.capabilities);assert.equal(client.config.adRewardEnabled,false);

@@ -41,7 +41,7 @@ test('each real shared supply grants exactly one at partial inventories; no ads,
  const f=fixture(t);assert.equal(f.service.capabilities.ads,false);assert.equal(f.service.capabilities.shareRewards,true);
  for(const kind of ['create','energy'])for(const stock of [0,1,2]){
   f.set(owner,kind,stock);const input={kind,context:'supply',requestId:rid()},challenge=f.call(owner,'/api/mobile/share/challenge',input);assert.equal(challenge.status,200);
-  const body={...input,rewardToken:challenge.data.rewardToken,completed:true};assert.equal(f.call(peer,'/api/mobile/share/redeem',body).status,403);
+  const body={...input,rewardToken:challenge.data.rewardToken,completed:true};f.set(peer,kind,0);assert.equal(f.call(peer,'/api/mobile/share/redeem',body).status,403);
   assert.equal(f.call(owner,'/api/mobile/share/redeem',{...body,completed:false}).status,403);
   assert.equal(f.call(owner,'/api/mobile/share/redeem',body).data.supply[kind],stock+1);
   assert.equal(f.call(owner,'/api/mobile/share/redeem',body).status,200);assert.equal(f.call(owner,'/api/mobile/profile').data.supply[kind],stock+1);
