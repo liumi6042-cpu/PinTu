@@ -26,6 +26,7 @@ import {MOBILE_COUNTS,effectiveEnergyCap,inviteCapBonus,xpForLevel,newProfile,re
 // A first-time mobile player starts with one creation ticket. Web play needs none,
 // so the runtime decides the amount instead of baking it into the profile factory.
 export const NEWCOMER_CREATION_TICKETS=1;
+export const LOBBY_QUIET_HIDE_MS=5*60*1000;
 const id=()=>randomBytes(16).toString('hex');
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const fail=(status,code,message,extra={})=>{throw Object.assign(new Error(message),{status,code,...extra});};
@@ -457,9 +458,13 @@ export function createMobileService(options={}){
    roomHistory.removeOwned(p.id,room.id,now);return {ok:true,rooms:profileView(p,now).ownedRooms,serverTime:now};
   }
   if(path==='/api/lobby'&&method==='GET'){
+   // A public table that nobody is sitting at and that is still under 10% done drops out of the lobby five
+   // minutes after the last sign of play; anyone joining or moving a piece brings it back. Invites, the
+   // owner's list and friend links still reach it. Tables with more progress keep their usual lobby day.
+   const quietBarelyStarted=r=>r.members.every(m=>now-m.lastSeen>=engine.ONLINE_MS)&&engine.placedCount(r.puzzle)<0.1*r.puzzle.cols*r.puzzle.rows&&now-Math.max(r.lastPlayedAt??r.createdAt,r.lastLeftAt??0,...r.members.map(m=>m.lastSeen))>=LOBBY_QUIET_HIDE_MS;
    const limit=Math.max(1,Math.min(24,Number(url.searchParams.get('limit'))||12)),cursor=url.searchParams.get('cursor');
    let before=null;if(cursor){try{before=JSON.parse(Buffer.from(cursor,'base64url').toString());if(!Array.isArray(before)||![2,3].includes(before.length)||!Number.isSafeInteger(before[0])||before[0]<0||!requestKey(before.at(-1))||before.length===3&&!Number.isSafeInteger(before[1]))throw Error();}catch{fail(400,'INVALID_CURSOR','列表游标无效');}}
-   const listed=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))),byId=new Map(listed.map(r=>[r.id,r]));
+   const listed=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now&&!quietBarelyStarted(r)&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))),byId=new Map(listed.map(r=>[r.id,r]));
    let cards=listed.map(r=>card(r,now));
    const dir=url.searchParams.get('direction'),pieces=Number(url.searchParams.get('pieces')),open=url.searchParams.get('open')==='1',active=url.searchParams.get('active')==='1';
    cards=cards.filter(r=>(!dir||dir==='all'||r.direction===dir)&&(!pieces||r.pieces===pieces)&&(!open||r.players<r.maxPlayers&&r.acceptingNew)&&(!active||r.players>0));
@@ -569,6 +574,7 @@ export function createMobileService(options={}){
    member.name=p.name;engine.applyAction(room,member,input,now);
    if(input.type==='claim'&&tapPreview.allowed(room))room.leases[input.groupId].previewId=id();
    if(input.type==='heartbeat'&&input.historyJoin===true)roomHistory.joined(p.id,room,now);
+   if(input.type==='leave')room.lastLeftAt=now;
    const streamState=room.diagnostic===true?room.diagnosticActions:room.roomActions;
    if(streamState?.leases&&['claim','drop','release'].includes(input.type))delete streamState.leases[input.groupId];
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
