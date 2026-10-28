@@ -32,7 +32,7 @@ import {customPhoto} from '../lib/custom-images';
 import {activeRoomPhoto} from './room-photo';
 import {ViewRequests} from './view-requests';
 import {AudioSettings} from './audio-settings';
-import {saveOrientationPreference} from './orientation-choice';
+import {orientationPreferenceKey,readOrientationPreference,saveOrientationPreference,type ScreenOrientation} from './orientation-choice';
 import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT,mobilePrivacySections,mobileTermsSections} from './privacy-policy';
 import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
@@ -44,7 +44,7 @@ import type {AssistanceGrant} from '../lib/assistance-policy';
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
-type Modal='members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
+type Modal='orientation'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
 type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
@@ -87,6 +87,8 @@ export class GameApp{
  private privacyRequests:PrivacyRequest[]=[];private privacyRequestsLoading=false;
  private scroll=0;private extent=0;private bodyTop=100;private bodyBottom=0;private pointer:{x:number;y:number;lastY:number;scroll:boolean;board:boolean;album?:boolean;modal?:boolean;landscapeBackgroundTap?:boolean}|null=null;
  private modal:Modal=null;private modalScroll=0;private modalExtent=0;private modalArea:Rect={x:0,y:0,w:0,h:0};private modalStart=0;
+ private orientationChoice:ScreenOrientation|null=null;private orientationSwitching=false;
+ private orientationEntryPending:Promise<void>|null=null;private orientationEntryResolve:(()=>void)|null=null;
  private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;
  private rooms:RoomListing[]=[];private lobbyCursor:string|null=null;private lobbyLoading=false;private lobbyQuiet=false;private lobbySerial=0;private lobbyReload=false;
  private lobbyPieces:'all'|'small'|'large'='all';private dailyPhoto:SharedPhoto|null=null;private serverOffset=0;private listColumn:{x:number;w:number}|null=null;private lobbyMinute='';private lobbyOnline:number|null=null;private dailyFinished:number|null=null;
@@ -177,6 +179,32 @@ export class GameApp{
   s.button({x:x+width-38,y:y+25,w:38,h:40},'+',()=>change(value+.1),{fontSize:20,disabled:value===1});
   return y+80;
  }
+ private get actualOrientation():ScreenOrientation{return this.stage.w>this.stage.h?'landscape':'portrait';}
+ private offerFirstOrientation():Promise<void>{
+  if(this.orientationEntryPending)return this.orientationEntryPending;
+  if(this.platform.config.id!=='taptap'||!this.platform.setOrientation||this.platform.orientationChoiceAvailable?.()!==true)return Promise.resolve();
+  // Read once outside the tolerant preference parser: unavailable storage must skip the offer.
+  try{const saved=this.platform.storage.get(orientationPreferenceKey);if(readOrientationPreference({get:()=>saved})!==null)return Promise.resolve();}catch{return Promise.resolve();}
+  this.orientationChoice=this.actualOrientation;
+  this.orientationEntryPending=new Promise(resolve=>{this.orientationEntryResolve=resolve;});
+  this.showModal('orientation');
+  return this.orientationEntryPending;
+ }
+ private finishOrientationOffer(){const resolve=this.orientationEntryResolve;this.orientationEntryResolve=null;this.orientationEntryPending=null;this.orientationChoice=null;resolve?.();}
+ private async chooseOrientation(value:ScreenOrientation){
+  if(this.modal!=='orientation'||this.orientationSwitching)return;
+  if(value===this.actualOrientation){this.orientationChoice=value;saveOrientationPreference(this.platform.storage,value);this.invalidate();return;}
+  this.orientationSwitching=true;this.invalidate();
+  const pending=this.orientationEntryPending;
+  try{await this.platform.setOrientation!(value);if(this.orientationEntryPending!==pending)return;this.orientationChoice=value;saveOrientationPreference(this.platform.storage,value);}
+  catch(error){if(this.orientationEntryPending===pending){this.orientationChoice=this.actualOrientation;this.note(errorText(error));}}
+  finally{this.orientationSwitching=false;this.invalidate();}
+ }
+ private confirmOrientation(){
+  if(this.modal!=='orientation'||this.orientationSwitching)return;
+  saveOrientationPreference(this.platform.storage,this.actualOrientation);
+  this.finishOrientationOffer();this.showModal(null);
+ }
  private async toggleOrientation(){if(!this.platform.setOrientation)return;await this.run(async()=>{if(!this.platform.setOrientation)throw Error('当前客户端不支持切换方向');const target=this.stage.w>this.stage.h?'portrait':'landscape';await this.platform.setOrientation(target);saveOrientationPreference(this.platform.storage,target);this.showModal(null);this.toolsOpen=false;this.invalidate();});}
  private async toggleFullscreen(){await this.run(async()=>{if(this.platform.config.id!=='web'||!this.platform.fullscreen?.available())return;try{await this.platform.fullscreen.toggle();this.showModal(null);this.invalidate();}catch{this.note('浏览器暂时无法切换全屏，请检查全屏权限后重试');}});}
  private toggleEffectsMute(){const key='jigsaw:shared:audio:last-effects',volume=this.audioSettings.levels.effects;if(volume>0){try{this.platform.storage.set(key,String(volume));}catch{}this.audioSettings.set('effects',0);}else{let previous=1;try{const saved=Number(this.platform.storage.get(key));if(Number.isFinite(saved)&&saved>0)previous=Math.min(1,saved);}catch{}this.audioSettings.set('effects',previous);}this.invalidate();}
@@ -254,7 +282,7 @@ export class GameApp{
  }
  private note(message:string,permanent=false){this.message=message;this.messageUntil=permanent?Infinity:Date.now()+3000;this.invalidate();}
  private attempt(key:string){let value=this.attempts.get(key);if(!value){value=this.platform.randomId();this.attempts.set(key,value);}return value;}
- private async run(action:()=>Promise<void>){if(this.busy)return;this.busy=true;this.invalidate();try{await action();}catch(error){if(this.formalWeb&&(error as {code?:string}|null)?.code==='LEGACY_ROOM_REQUIRED')this.note('这间历史房间的进度仍然保留，新版暂不支持继续拼。请先选择其他房间。');else if((error as {code?:string}|null)?.code==='PACK_LOCKED')this.note('这张图在未解锁的图包里，请先解锁图包');else this.note(errorText(error));}finally{this.busy=false;this.invalidate();}}
+ private async run(action:()=>Promise<void>){if(this.busy||this.orientationEntryPending)return;this.busy=true;this.invalidate();try{await action();}catch(error){if(this.formalWeb&&(error as {code?:string}|null)?.code==='LEGACY_ROOM_REQUIRED')this.note('这间历史房间的进度仍然保留，新版暂不支持继续拼。请先选择其他房间。');else if((error as {code?:string}|null)?.code==='PACK_LOCKED')this.note('这张图在未解锁的图包里，请先解锁图包');else this.note(errorText(error));}finally{this.busy=false;this.invalidate();}}
  private async reauthorizeNickname(){
   if(this.platform.config.id!=='taptap'||this.platform.config.tapAuthorizationTest!==true)return;
   if(this.authorizationTesting){this.platform.cancelIdentity?.();return;}
@@ -271,12 +299,12 @@ export class GameApp{
   if(!this.startupHooks){
    this.startupHooks=true;
    this.client.onChange=()=>{if(this.destroyed)return;const owner=this.ownerKey();this.ensureListOwner();if(owner!==this.lastDataOwner){this.lastDataOwner=owner;this.pendingViews?.invalidate();this.historyRooms=null;this.historySerial++;this.historyLoading=false;this.historyError='';this.tasks=null;this.collection=null;this.galleryIds=null;this.freeGalleryIds=null;this.sharedPhotos=null;this.selected=null;}if(this.formalWeb&&this.client.authRequired){this.ready=false;this.stage.input?.({type:'cancel',points:[],changed:[]});this.pointer=null;this.modal=null;this.leaveRoom();this.route='lobby';}else if(this.formalWeb&&this.room&&!this.client.ticket){this.modal=null;this.leaveRoom();this.navigate('lobby');this.note('账号已切换，请重新进入房间');}this.invalidate();};
-   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});this.syncOffline();if(!this.offlineRoom){void this.social.refresh();void this.handleQuery(query);}}this.invalidate();}));
+   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else if(this.orientationEntryPending){if(Object.keys(query).length)this.startupQuery=query;}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});this.syncOffline();if(!this.offlineRoom){void this.social.refresh();void this.handleQuery(query);}}this.invalidate();}));
   }
   this.startupError='';this.invalidate();
   const epoch=this.privacyEpoch;
   this.startupPending=(async()=>{
-  try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;if(this.client.profile&&!this.soloOutboxesFlushed){this.soloOutboxesFlushed=true;void flushStoredSoloOutboxes({storage:this.platform.storage,fetch:this.offline.onlineFetch(this.client.fetchLike),now:()=>Date.now(),randomId:()=>this.platform.randomId(),skipRoomId:this.room?.ticket.room.id}).catch(()=>{});}this.ready=true;this.offline.active=false;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);this.syncOffline();}
+  try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;if(this.client.profile&&!this.soloOutboxesFlushed){this.soloOutboxesFlushed=true;void flushStoredSoloOutboxes({storage:this.platform.storage,fetch:this.offline.onlineFetch(this.client.fetchLike),now:()=>Date.now(),randomId:()=>this.platform.randomId(),skipRoomId:this.room?.ticket.room.id}).catch(()=>{});}this.ready=true;this.loginDialogActive=false;this.offline.active=false;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);this.syncOffline();}
   catch(error){if(!this.destroyed){this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
@@ -286,10 +314,13 @@ export class GameApp{
   })().finally(()=>{if(epoch===this.privacyEpoch){this.startupPending=null;this.loginDialogActive=false;if(!this.destroyed)this.invalidate();}});
   return this.startupPending;
  }
- destroy(){this.destroyed=true;this.platform.cancelShare?.();this.platform.cancelIdentity?.();this.pendingViews?.invalidate();this.cancelChatPress();this.social.destroy();this.leaveRoom();this.client.onChange=undefined;for(const timer of this.timers)clearInterval(timer);for(const cleanup of this.cleanups)cleanup();}
+ destroy(){this.destroyed=true;this.finishOrientationOffer();this.platform.cancelShare?.();this.platform.cancelIdentity?.();this.pendingViews?.invalidate();this.cancelChatPress();this.social.destroy();this.leaveRoom();this.client.onChange=undefined;for(const timer of this.timers)clearInterval(timer);for(const cleanup of this.cleanups)cleanup();}
  private async loadInitialContent(query:Record<string,string>,epoch=this.privacyEpoch){
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
   if(this.offlineRoom)return;
+  await this.offerFirstOrientation();
+  if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
+  query=this.startupQuery??query;this.startupQuery=null;
   const direct=/^[a-f0-9]{32}$/.test(query.room||query.roomId||'')||/^[a-zA-Z0-9-]{6,64}$/.test(query.invite||query.inviteCode||query.friend||query.ref||'');
   if(direct){this.autoLevelChecked=true;this.chapterEntryChecked=true;await this.handleQuery(query);}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
@@ -310,6 +341,7 @@ export class GameApp{
   this.invalidate();
  }
  private async handleQuery(query:Record<string,string>){
+  if(this.orientationEntryPending)await this.orientationEntryPending;
   if(!this.ready||this.destroyed)return;
   const invitation=query.invite||query.inviteCode||query.friend||query.ref;
   const room=query.room||query.roomId,key=[room??'',invitation??'',query.roomInvite??query.code??''].join(':');
@@ -347,6 +379,7 @@ export class GameApp{
   this.finishNavigation();
  }
  private back(){
+  if(this.modal==='orientation'){this.confirmOrientation();return;}
   this.social.close();this.saveListView();const previous=this.routeStack.pop()??(this.room?'room':'lobby'),frame=this.routeFrames.pop(),route=previous==='room'&&!this.room?'lobby':previous;
   this.restoreListView(frame?.route===route?frame:this.savedRoutes.get(route)??this.defaultListView(route));this.finishNavigation();
  }
@@ -355,11 +388,11 @@ export class GameApp{
  private openPackGallery(id:string){this.navigate('gallery',{packId:id,source:'owned'});}
  private selectAlbum(id:string){this.changeListView(()=>{this.albumId=id;});}
  private exitRoom(){if(this.offlineRoom&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];this.enterOffline();return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,complete=this.room?.snapshot.mobileResult?.levelClear?.chapterComplete,target=this.roomReturn;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level)this.navigate(complete||!this.beginnerChapter?'lobby':'chapter');else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
- private closeModal(){if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
+ private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.comicGesture=null;this.comicPage=null;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
+ private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.comicGesture=null;this.comicPage=null;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
   if(this.offlineRoom||this.offline?.active&&!this.ready)return;
@@ -450,7 +483,7 @@ export class GameApp{
  private get beginnerChapter(){const chapter=this.storyChapter;return chapter?.levels.some(level=>level.status!=='cleared')?chapter:null;}
  private chapterStorageKey(kind:'auto'){return 'jigsaw:level:'+kind+':v1:'+this.platform.config.apiBase+':'+this.ownerKey();}
  private async checkLevelEntry(){
-  if(this.chapterEntryChecked)return;this.chapterEntryChecked=true;
+  if(this.orientationEntryPending||this.chapterEntryChecked)return;this.chapterEntryChecked=true;
   if(await this.autoLaunchLevel())return;
   if(this.route==='lobby'&&!this.room&&!this.modal&&!this.busy&&this.beginnerChapter)this.navigate('chapter');
  }
@@ -642,7 +675,7 @@ export class GameApp{
   this.privacyAccepted=true;this.privacyDocument=null;this.privacyRefused=false;this.loginDialogActive=this.platform.config.id==='taptap';this.scroll=0;this.pointer=null;this.invalidate();void this.start();
  }
  private withdrawPrivacy(){
-  this.privacyEpoch++;this.platform.cancelIdentity?.();this.startupPending=null;this.pendingViews?.invalidate();this.lobbySerial++;this.lobbyReload=false;
+  this.privacyEpoch++;this.finishOrientationOffer();this.platform.cancelIdentity?.();this.startupPending=null;this.pendingViews?.invalidate();this.lobbySerial++;this.lobbyReload=false;
   this.leaveRoom();for(const timer of this.timers)clearInterval(timer);this.timers=[];for(const off of this.cleanups)off();this.cleanups=[];this.social.close();this.client.onChange=undefined;
   this.startupHooks=false;this.identityHook=false;this.consentPreparing=false;this.ready=false;this.modal=null;this.route='lobby';this.pointer=null;this.privacyAccepted=false;this.privacyDocument=null;this.privacyRefused=true;this.loginDialogActive=false;this.scroll=0;
   try{this.platform.storage.remove(MOBILE_PRIVACY_CONSENT_KEY);}catch{}this.invalidate();
@@ -2044,7 +2077,26 @@ export class GameApp{
   if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',cx=p.x+p.w/2,room=outside?Infinity:Math.min(Infinity,...[...this.completionSlotRects.values()].filter(r=>r.y<p.y+29&&r.y+r.h>p.y-3).map(r=>(r.x+r.w<=cx?cx-r.x-r.w:r.x-cx)-2)),w=Math.min(p.w+60,s.measure(label,14,800)+58,room*2),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
   });
  }
+ private drawOrientationPicker(){
+  const s=this.stage,v=this.platform.viewport(),w=Math.min(s.w-32,420),tileH=clamp(s.h-v.top-v.bottom-216,84,116),h=tileH+184,x=(s.w-w)/2,y=v.top+(s.h-v.top-v.bottom-h)/2,left=x+20,width=w-40,tileW=(width-12)/2,cy=y+80;
+  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
+  const centered=(label:string,top:number,size:number,color:string,weight=500)=>s.text(label,x+(w-s.measure(label,size,weight))/2,top,size,color,weight,w-40);
+  this.modalArea={x,y,w,h};this.modalExtent=0;this.modalScroll=0;
+  s.button({x:x+w-38,y:y+8,w:28,h:28},'',()=>this.closeModal(),{icon:'close',disabled:this.orientationSwitching});
+  centered('选择屏幕方向',y+20,20,this.colors.ink,700);centered('点一下立即切换，选好后点确认',y+51,13,this.colors.muted);
+  const options:readonly(readonly[ScreenOrientation,string,string])[]=[['landscape','横屏','画面更宽'],['portrait','竖屏','单手更顺']];
+  options.forEach(([value,label,caption],index)=>{
+   const tile={x:left+index*(tileW+12),y:cy,w:tileW,h:tileH};s.button(tile,'',()=>void this.chooseOrientation(value),{selected:this.orientationChoice===value,disabled:this.orientationSwitching});
+   const c=s.ctx,on=this.orientationChoice===value,tint=on?this.colors.rose:this.colors.ink,dw=value==='landscape'?44:28,dh=value==='landscape'?28:44,dx=tile.x+(tile.w-dw)/2,dy=tile.y+(tile.h-46-dh)/2,r=5;
+   // The pixel frame's selected state is subtle; a rose inner ring makes the current choice obvious.
+   c.save();if(on){c.strokeStyle=this.colors.rose;c.lineWidth=3;c.strokeRect(tile.x+6.5,tile.y+6.5,tile.w-13,tile.h-13);}c.strokeStyle=tint;c.lineWidth=2;c.beginPath();c.moveTo(dx+r,dy);c.arcTo(dx+dw,dy,dx+dw,dy+dh,r);c.arcTo(dx+dw,dy+dh,dx,dy+dh,r);c.arcTo(dx,dy+dh,dx,dy,r);c.arcTo(dx,dy,dx+dw,dy,r);c.closePath();c.stroke();c.fillStyle=tint;c.beginPath();c.arc(value==='landscape'?dx+dw-5:dx+dw/2,value==='landscape'?dy+dh/2:dy+dh-5,1.5,0,Math.PI*2);c.fill();c.restore();
+   s.text(label,tile.x+(tile.w-s.measure(label,16,700))/2,tile.y+tile.h-46,16,this.colors.ink,700);s.text(caption,tile.x+(tile.w-s.measure(caption,12))/2,tile.y+tile.h-26,12,this.colors.muted);
+   if(on)s.icon('check',{x:tile.x+tile.w-28,y:tile.y+10,w:18,h:18},this.colors.rose);
+  });
+  centered('之后也能点右上角的旋转按钮随时切换',cy+tileH+12,12,this.colors.muted);s.button({x:left,y:cy+tileH+42,w:width,h:42},'确认',()=>this.confirmOrientation(),{tone:'berry',fontSize:15,disabled:this.orientationSwitching});
+ }
  private drawModal(){
+  if(this.modal==='orientation'){this.drawOrientationPicker();return;}
   if(this.modal==='levelComic'){this.drawLevelComic();return;}
   if(this.modal==='completion'&&this.layout==='phoneLandscape'){this.drawLandscapeCompletion();return;}
   if(this.modal==='playerCard'){this.drawPlayerCard();return;}
@@ -2054,7 +2106,7 @@ export class GameApp{
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
   const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const titles:Record<Exclude<Modal,null>,string>={levelComic:'小窝的故事',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
+  const titles:Record<Exclude<Modal,null>,string>={levelComic:'小窝的故事',orientation:'选择屏幕方向',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
   // A vector cross has the same visible size and center with browser and wx fonts.
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
