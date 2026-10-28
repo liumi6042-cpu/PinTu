@@ -5,7 +5,13 @@ import {setImmediate as turn} from 'node:timers/promises';
 import {RoomClient} from '../lib/room-client.ts';
 import {placedCount} from '../lib/puzzle-engine.ts';
 import {readOfflineCatalog} from '../lib/offline-catalog-types.ts';
-import {createOfflineRoomServer,offlineLevelsView,recordOfflineClear,pendingOfflineClears,removeOfflineClears,cacheServerLevels,readCachedServerLevels,syncOfflineClears,isNetworkFailure} from '../lib/offline-play.ts';
+import {createOfflineRoomServer,offlineLevelsView,recordOfflineClear,pendingOfflineClears,removeOfflineClears,cacheServerLevels,readCachedServerLevels,syncOfflineClears,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play.ts';
+import {build} from 'esbuild';
+import {fileURLToPath} from 'node:url';
+
+const root=fileURLToPath(new URL('../',import.meta.url));
+const bundle=await build({absWorkingDir:root,stdin:{contents:'export {GameApp} from "./mobile/app";',resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',target:'es2020'});
+const {GameApp}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 
 const hex=n=>n.toString(16).padStart(32,'0');
 const storage=()=>{const values=new Map();return {values,get:k=>values.get(k)??null,set:(k,v)=>values.set(k,v),remove:k=>values.delete(k)};};
@@ -28,6 +34,77 @@ const solve=async(server,ticket)=>{
  return room;
 };
 const until=async condition=>{for(let n=0;n<200;n++){if(condition())return;await turn();}assert.fail('RoomClient did not settle');};
+
+test('offline level preference requires more placed pieces in the same unfinished level',()=>{
+ const room={kind:'level',levelId:'ch-z-1',completed:false,placed:5};
+ const rooms=Object.freeze([Object.freeze(room)]);
+ assert.equal(preferOfflineLevelRoom(4,rooms,'ch-z-1'),true);
+ for(const [online,entries,levelId] of [[5,rooms,'ch-z-1'],[6,rooms,'ch-z-1'],[0,[],'ch-z-1'],[0,rooms,'ch-z-2'],[0,[{...room,completed:true}],'ch-z-1'],[0,[{...room,kind:'free'}],'ch-z-1']])assert.equal(preferOfflineLevelRoom(online,entries,levelId),false);
+ assert.equal(preferOfflineLevelRoom(4,[{...room,levelId:'other'},...rooms],'ch-z-1'),true);
+});
+
+function launchFixture(createRoom){
+ const f=fixture(),notes=[],attached=[],requests=[],app=Object.create(GameApp.prototype);
+ const online={...f.server.createRoom({kind:'level',levelId:'ch-z-1'}),room:{...f.server.createRoom({kind:'level',levelId:'ch-z-1'}).room,id:hex(900),offline:false}};
+ Object.assign(app,{ready:true,attempts:new Map(),platform:{randomId:f.randomId},offline:{active:false,catalog:f.book,server:f.server,isRoom:id=>f.server.isOfflineRoom(id),createRoom:input=>f.server.createRoom(input)},client:{createRoom:async input=>{requests.push(input);return createRoom?createRoom(input,requests.length,online):online;}},run:fn=>fn(),note:message=>notes.push(message),attachTicket:async ticket=>attached.push(ticket)});
+ return {...f,app,notes,attached,requests,online};
+}
+
+test('level launch retries at 800 and 2000 ms with one requestId before offline fallback',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ const f=launchFixture(()=>{throw new TypeError('network unavailable');}),pending=f.app.launch({mode:'level',levelId:'ch-z-1'});
+ await until(()=>f.requests.length===1);await turn();assert.equal(f.attached.length,0);assert.equal(f.notes.length,0);
+ t.mock.timers.tick(799);await turn();assert.equal(f.requests.length,1);
+ t.mock.timers.tick(1);await until(()=>f.requests.length===2);await turn();assert.equal(f.attached.length,0);
+ t.mock.timers.tick(1999);await turn();assert.equal(f.requests.length,2);
+ t.mock.timers.tick(1);await pending;
+ assert.equal(f.requests.length,3);assert.equal(new Set(f.requests.map(input=>input.requestId)).size,1);
+ assert.equal(f.attached[0].room.offline,true);assert.deepEqual(f.notes,['网络不可用，先离线拼，联网后自动同步通关']);assert.equal(f.app.attempts.size,0);
+});
+
+test('level launch keeps the online ticket when a retry recovers the connection',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ const f=launchFixture((_input,n,ticket)=>{if(n===1)throw new TypeError('network unavailable');return ticket;}),pending=f.app.launch({mode:'level',levelId:'ch-z-1'});
+ await until(()=>f.requests.length===1);await turn();t.mock.timers.tick(800);await pending;
+ assert.equal(f.requests.length,2);assert.equal(f.requests[0].requestId,f.requests[1].requestId);assert.deepEqual(f.attached,[f.online]);assert.deepEqual(f.notes,[]);
+ t.mock.timers.tick(2000);await turn();assert.equal(f.requests.length,2);
+});
+
+test('non-network level errors stop retries and preserve the attempt id without offline fallback',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ const denied=Object.assign(Error('locked'),{status:403}),f=launchFixture((_input,n)=>{if(n===1)throw new TypeError('network unavailable');throw denied;});
+ const pending=assert.rejects(f.app.launch({mode:'level',levelId:'ch-z-1'}),error=>error===denied);
+ await until(()=>f.requests.length===1);await turn();t.mock.timers.tick(800);await pending;
+ assert.equal(f.requests.length,2);assert.equal(f.attached.length,0);assert.deepEqual(f.notes,[]);assert.equal(f.app.attempts.size,1);
+ t.mock.timers.tick(2000);await turn();assert.equal(f.requests.length,2);
+});
+
+test('non-level launches do not retry or switch offline on network failures',async()=>{
+ const f=launchFixture(()=>{throw new TypeError('network unavailable');});
+ await assert.rejects(f.app.launch({mode:'daily'}),/network unavailable/);
+ assert.equal(f.requests.length,1);assert.equal(f.attached.length,0);assert.deepEqual(f.notes,[]);
+});
+
+test('online level launch opens the existing offline room only when its placed count is higher',async()=>{
+ for(const onlinePlaced of [0,1,2]){
+  const f=launchFixture(),offline=f.server.createRoom({kind:'level',levelId:'ch-z-1'});
+  await action(f.server,offline.room.id,{type:'drop',groupId:0,dx:0,dy:0});
+  for(const group of f.online.room.puzzle.groups.slice(0,onlinePlaced))group.locked=true;
+  await f.app.launch({mode:'level',levelId:'ch-z-1'});
+  assert.equal(f.attached[0].room.id,onlinePlaced===0?offline.room.id:f.online.room.id);
+  assert.deepEqual(f.notes,onlinePlaced===0?['继续你离线时拼的进度']:[]);
+  if(onlinePlaced===0)assert.equal(placedCount(f.attached[0].room.puzzle),1);
+ }
+});
+
+test('phone fit retains the whole-table camera and uses it as the opening 100 percent base',()=>{
+ for(const [w,h,bottom] of [[390,844,72],[844,390,8]]){
+  const app=Object.create(GameApp.prototype),camera={x:4,y:8,z:.25},calls=[];
+  const board={camera:{z:1},openMobileView:insets=>{calls.push(insets);board.camera={...camera};},zoom(){assert.fail('extra target zoom');}};
+  Object.assign(app,{stage:{w,h},platform:{config:{id:'taptap'},viewport:()=>({width:w,height:h})},board});
+  app.fitRoom();assert.deepEqual(calls,[{bottom}]);assert.deepEqual(board.camera,camera);assert.equal(app.roomZoomBase,camera.z);
+ }
+});
 
 test('level snapshot uses catalog artwork, exact grid, device identity and resumes unfinished rooms',async()=>{
  const f=fixture(),ticket=f.server.createRoom({kind:'level',levelId:'ch-z-1'}),room=ticket.room;

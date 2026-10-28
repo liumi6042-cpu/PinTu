@@ -74,6 +74,9 @@ export function offlineLevelsView(catalog:OfflineCatalog,cachedServerView:Mobile
 type StoredRoom={v:1;id:string;kind:'level'|'free';levelId?:string;imageId:string;pieces:number;puzzle:PuzzleState;revision:number;startedAt:number|null;completedAt:number|null;createdAt:number;updatedAt:number};
 export type OfflineRoomSnapshot=RoomSnapshot&{offline:true;requestedPieces:number;levelId?:string};
 type RoomInput={kind:'level';levelId:string}|{kind:'free';imageId:string;pieces:number};
+export function preferOfflineLevelRoom(onlinePlaced:number,offlineRooms:readonly {kind:string;levelId?:string;completed:boolean;placed:number}[],levelId:string){
+ return offlineRooms.some(room=>room.kind==='level'&&room.levelId===levelId&&!room.completed&&room.placed>onlinePlaced);
+}
 export function createOfflineRoomServer({catalog,storage,now,randomId,playerName='我'}:{catalog:OfflineCatalog;storage:SoloStorage;now:()=>number;randomId:()=>string;playerName?:string}){
  const id=()=>{const value=randomId().toLowerCase();if(!hex(value))throw new Error('Invalid offline id');return value;};
  const savedPlayer=read(storage,PLAYER_KEY);

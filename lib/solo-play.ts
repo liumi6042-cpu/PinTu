@@ -92,7 +92,8 @@ export async function flushStoredSoloOutboxes({storage,fetch,now,randomId,skipRo
     try{
       while(box.ops.length){
         const reply=await fetch(`/api/rooms/${box.roomId}`,{method:'POST',headers:{Authorization:`Bearer ${box.token}`,'Content-Type':'application/json'},body:JSON.stringify({type:'batch',requestId:randomId(),ops:box.ops.slice(0,SOLO_BATCH_MAX).map(({snapped,...op})=>op)})});
-        if([401,403,404,410].includes(reply.status)){removeOutbox(storage,box.roomId);summary.removed++;break;}
+        if([404,410].includes(reply.status)){removeOutbox(storage,box.roomId);summary.removed++;break;}
+        if([401,403].includes(reply.status)){summary.skipped++;break;}
         if(!reply.ok)throw new Error('Solo recovery failed');
         const data=await reply.json();
         const remaining=acknowledgeSoloOps(box.ops,data.soloBatch);

@@ -263,12 +263,83 @@ test('429 honors Retry-After while another player is waiting for the pending que
   t.mock.timers.tick(1);await until(()=>!f.client.localPlay);assert.equal(attempts,2);
 });
 
-for(const status of [400,409,401,403,404,410])test(`batch HTTP ${status} clears rejected ops and reconciles or disconnects`,async t=>{
-  const f=fixture(t,{batch:async()=>Response.json({error:'rejected',code:'REJECTED'},{status})});
+for(const [status,code] of [[400,'INVALID_BATCH'],[404],[410]])test(`batch HTTP ${status} ${code??''} clears unrecoverable ops`,async t=>{
+  const f=fixture(t,{batch:async()=>Response.json({error:'rejected',code},{status})});
   await until(()=>!f.client.polling);await drop(f,0);f.client.flushSoloNow();await until(()=>!f.client.flushing);
   assert.equal(f.client.pendingSoloOps,0);assert.equal(f.store.get(soloOutboxKey(roomId)),null);
   if(status===400||status===409){assert.equal(f.client.localPlay,true);assert.deepEqual(groups(f.client.state),groups(f.room.puzzle));assert.equal(f.requests.at(-1).action,null);}
   else{assert.equal(f.client.localPlay,false);assert.equal(f.client.connected,false);assert.equal(f.table.networkReady,false);}
+});
+
+for(const status of [400,401,403,409,422])test(`batch HTTP ${status} preserves every pending op and backs off`,async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:100000});
+  const reply=deferred(),f=fixture(t,{batch:async()=>{await reply.promise;return Response.json({error:'rejected'},{status});}});
+  await until(()=>!f.client.polling);clearTimeout(f.client.pollTimer);
+  await drop(f,0);await drop(f,2);f.client.flushSoloNow();await until(()=>f.batches().length===1);
+  await drop(f,4);const saved=loadSoloOutbox(f.store,roomId);reply.resolve();await until(()=>!f.client.flushing);
+  assert.equal(f.client.pendingSoloOps,3);assert.deepEqual(loadSoloOutbox(f.store,roomId),saved);
+  assert.equal(f.client.localPlay,false);assert.equal(f.client.soloFailures,1);assert.equal(f.client.soloRetryAt,102000);
+  assert.equal(f.client.message,'rejected');
+  const rejoins=()=>f.events.filter(e=>e.name==='room:rejoin-required');
+  assert.deepEqual(rejoins(),status===401||status===403?[{name:'room:rejoin-required',detail:{roomId}}]:[]);
+  t.mock.timers.tick(1999);await turn();assert.equal(f.batches().length,1);
+  t.mock.timers.tick(1);await until(()=>!f.client.flushing);assert.equal(f.batches().length,2);
+  assert.deepEqual(loadSoloOutbox(f.store,roomId),saved);assert.equal(f.client.soloFailures,2);
+  assert.equal(rejoins().length,status===401||status===403?1:0);
+});
+
+test('a new player identity adopts the room outbox and flushes with the current ticket',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:100000});
+  const store=storage(),op={requestId:randomId(),groupId:0,dx:0,dy:0,snapped:true};
+  saveSoloOutbox(store,{v:1,roomId,playerId,token,ops:[op],savedAt:Date.now()});
+  const nextPlayer='d'.repeat(32),nextToken='e'.repeat(32),room=makeRoom(roomId,catalogImage,108,Date.now());
+  addMember(room,nextPlayer,'我','new-digest',Date.now());
+  const f=fixture(t,{store,ticket:{playerId:nextPlayer,token:nextToken,room:snapshot(room,Date.now())}});
+  const adopted=loadSoloOutbox(store,roomId);
+  assert.equal(f.client.pendingSoloOps,1);assert.equal(adopted.playerId,nextPlayer);assert.equal(adopted.token,nextToken);assert.deepEqual(adopted.ops,[op]);
+  t.mock.timers.tick(0);await until(()=>!f.client.pendingSoloOps);
+  assert.equal(f.batches()[0].init.headers.Authorization,`Bearer ${nextToken}`);assert.equal(store.get(soloOutboxKey(roomId)),null);
+});
+
+for(const heartbeatStatus of [200,409,401])test(`stale room heartbeat ${heartbeatStatus} precedes any batch and preserves ops on refusal`,async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:100000});
+  let stale=false;
+  const f=fixture(t,{fetchOverride:async(action,{serverSnapshot,applyBatch})=>{
+    if(stale&&action?.type==='heartbeat'&&heartbeatStatus!==200)return Response.json({error:'seat refused'},{status:heartbeatStatus});
+    return Response.json(action?.type==='batch'?applyBatch(action):serverSnapshot());
+  }});
+  await until(()=>!f.client.polling);clearTimeout(f.client.pollTimer);await drop(f,0);await drop(f,2);
+  const saved=loadSoloOutbox(f.store,roomId),start=f.requests.length;
+  stale=true;f.client.receivedAt=Date.now()-15001;f.client.flushSoloNow();await until(()=>!f.client.flushing);
+  assert.deepEqual(f.requests.slice(start).map(r=>r.action?.type),heartbeatStatus===200?['heartbeat','batch']:['heartbeat']);
+  assert.equal(f.client.pendingSoloOps,heartbeatStatus===200?0:2);
+  if(heartbeatStatus===200)assert.equal(f.store.get(soloOutboxKey(roomId)),null);
+  else{assert.deepEqual(loadSoloOutbox(f.store,roomId),saved);assert.equal(f.client.soloFailures,1);assert.equal(f.client.localPlay,false);}
+});
+
+test('a stopped client acknowledged late only prunes its own ops from a replacement outbox',async t=>{
+  const reply=deferred(),f=fixture(t,{batch:async action=>{await reply.promise;return Response.json(f.applyBatch(action));}});
+  await until(()=>!f.client.polling);await drop(f,0);const sentOp=loadSoloOutbox(f.store,roomId).ops[0];f.client.leave();await until(()=>f.batches().length===1);
+  const newer={requestId:randomId(),groupId:2,dx:0,dy:0,snapped:true},replacement={v:1,roomId,playerId:'d'.repeat(32),token:'e'.repeat(32),ops:[sentOp,newer],savedAt:Date.now()};
+  saveSoloOutbox(f.store,replacement);reply.resolve();await until(()=>f.requests.some(r=>r.action?.type==='leave'));
+  const kept=loadSoloOutbox(f.store,roomId);assert.deepEqual(kept.ops,[newer]);assert.equal(kept.token,replacement.token);assert.equal(kept.playerId,replacement.playerId);
+});
+
+for(const status of [400,401,403,404,409,410,500])test(`stopped batch HTTP ${status} cannot rewrite a replacement client's outbox`,async t=>{
+  const reply=deferred(),f=fixture(t,{batch:async()=>{await reply.promise;return Response.json({error:'rejected',code:'SOLO_BATCH_DISABLED'},{status});}});
+  await until(()=>!f.client.polling);await drop(f,0);f.client.leave();await until(()=>f.batches().length===1);
+  const replacement={v:1,roomId,playerId:'d'.repeat(32),token:'e'.repeat(32),ops:[{requestId:randomId(),groupId:2,dx:0,dy:0,snapped:true}],savedAt:Date.now()};
+  saveSoloOutbox(f.store,replacement);reply.resolve();await until(()=>f.requests.some(r=>r.action?.type==='leave'));
+  assert.deepEqual(loadSoloOutbox(f.store,roomId),replacement);
+  assert.equal(f.events.some(e=>e.name==='room:rejoin-required'),false);assert.equal(f.client.soloFailures,0);
+});
+
+for(const status of [401,403,410])test(`launch recovery HTTP ${status} only removes a gone room`,async()=>{
+  const store=storage(),box={v:1,roomId,playerId,token,ops:[{requestId:randomId(),groupId:0,dx:0,dy:0,snapped:true}],savedAt:Date.now()};
+  saveSoloOutbox(store,box);let calls=0;
+  const summary=await flushStoredSoloOutboxes({storage:store,now:()=>Date.now(),randomId,fetch:async()=>{calls++;return Response.json({},{status});}});
+  assert.equal(calls,1);assert.deepEqual(summary,{flushed:0,removed:status===410?1:0,failed:0,skipped:status===410?0:1});
+  assert.deepEqual(loadSoloOutbox(store,roomId),status===410?null:box);
 });
 
 test('loaded ops drain before claims when a peer is already online',async t=>{

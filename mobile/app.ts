@@ -4,7 +4,7 @@ import {Stage} from './ui';
 import {timeLabelFor,nodeState} from './story-timeline';
 import {comicFor,comicLayout,comicTextCount,drawComicPage,drawComicText,reducedComicMotion,type ComicPageState} from './story-comic';
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
-import {cacheServerLevels,isNetworkFailure} from '../lib/offline-play';
+import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {PuzzleBoard} from './puzzle-board';
 import {SocialPanel} from './social-panel';
@@ -49,7 +49,7 @@ type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;creat
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
 const directions:[Direction,string][]=[['all','全部'],['portrait','竖图'],['landscape','横图'],['square','方图']];
-const themeOptions:[ThemeId,string][]=[['light','浅色'],['dark','深色'],['wood','仿木']];
+const themeOptions:[ThemeId,string][]=[['light','浅色'],['dark','夜间'],['wood','仿木']];
 const counts=[48,108,300,500] as const;
 const contentMaxWidth=1120;
 const phrases=publicPhrases;
@@ -513,7 +513,23 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private async launch(input:MobileRoomInput){
   if(this.offline?.active&&!this.ready){if(input.mode==='level')await this.run(()=>this.launchOffline({kind:'level',levelId:input.levelId!}));else this.note(OFFLINE_REQUIRED);return;}
   if(input.mode!=='level'&&!this.formalWeb&&this.ownedRoomCount>=3){this.showModal('manage');return;}
-  await this.run(async()=>{const key='create:'+JSON.stringify(input),ticket=await this.client.createRoom({...input,requestId:this.attempt(key)}).catch(error=>{if(input.mode!=='level'||!isNetworkFailure(error)||!this.offline.catalog?.chapters.some(chapter=>chapter.levels.some(level=>level.id===input.levelId)))throw error;this.note('网络不可用，先离线拼，联网后自动同步通关');return this.offline.createRoom({kind:'level',levelId:input.levelId!});});this.attempts.delete(key);await this.attachTicket(ticket);});
+  await this.run(async()=>{
+   const key='create:'+JSON.stringify(input),requestId=this.attempt(key);
+   let ticket:RoomTicket;
+   try{
+    for(let retry=0;;retry++){
+     try{ticket=await this.client.createRoom({...input,requestId});break;}
+     catch(error){if(input.mode!=='level'||!isNetworkFailure(error)||retry>=2)throw error;await new Promise(resolve=>setTimeout(resolve,[800,2000][retry]));}
+    }
+   }catch(error){
+    if(input.mode!=='level'||!isNetworkFailure(error)||!this.offline.catalog?.chapters.some(chapter=>chapter.levels.some(level=>level.id===input.levelId)))throw error;
+    this.note('网络不可用，先离线拼，联网后自动同步通关');ticket=this.offline.createRoom({kind:'level',levelId:input.levelId!});
+   }
+   if(input.mode==='level'&&this.offline.server&&!this.offline.isRoom(ticket.room.id)&&preferOfflineLevelRoom(placedCount(ticket.room.puzzle),this.offline.server.rooms(),input.levelId!)){
+    ticket=this.offline.createRoom({kind:'level',levelId:input.levelId!});this.note('继续你离线时拼的进度');
+   }
+   this.attempts.delete(key);await this.attachTicket(ticket);
+  });
  }
  private async enterRoom(id:string,invite?:string){if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}await this.run(async()=>{const ticket=await this.client.joinRoom(id,invite);await this.attachTicket(ticket);});}
  private async startNineGrid(){
@@ -539,6 +555,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;
   const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision)??null;this.realtime=realtime;
   const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+   if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
    if(name==='puzzle:successful-drop'&&this.room===room)this.board?.confirmMobileContribution(detail as MobileContributionReceipt);
    if(name==='mobile:profile')this.invalidate();
    if(name==='room:request-timing'&&this.room===room){const timing=detail as RoomRequestTiming;if(timing.action==='drop-start'){for(const key of ['drop','drop-queue','drop-total'])this.nineTimings.delete(key);}this.nineTimings.set(timing.action,timing);this.invalidate();}
@@ -1689,11 +1706,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private desktopFit(board:PuzzleBoard){board.fit(false,{bottom:56,left:this.desktopToolsOpen?104:72});}
  private fitRoom(){const board=this.board;if(!board)return;if(this.layout==='desktop')this.desktopFit(board);else this.phoneFit(board,this.layout==='phonePortrait'?'width':'height');this.roomZoomBase=board.camera.z;}
- /** Phones open on the target itself (full width in portrait, full height in landscape) instead of the whole scatter. */
+ /** Phones open on the whole table, with the target and loose pieces visible. */
  private phoneFit(board:PuzzleBoard,axis:'width'|'height'){
-  board.openMobileView({bottom:axis==='width'?72:8});if(board.state.groups.every(g=>g.locked))return;
-  const r=board.rect,b=board.board,top=axis==='height'?56:0,bottom=axis==='width'?72:8,z=Math.min(5,axis==='width'?Math.min((r.w-24)/b.width,(r.h-top-bottom-24)/b.height):Math.min((r.h-top-bottom-16)/b.height,(r.w-24)/b.width));
-  if(z<=board.camera.z)return;board.camera={x:(r.w-b.width*z)/2-b.x*z,y:top+(r.h-top-bottom-b.height*z)/2-b.y*z,z};board.zoom(1);
+  board.openMobileView({bottom:axis==='width'?72:8});
  }
  private roomTool(kind:string){
   if(this.completionFx&&['edge','fit','locate','hint','underlay','organize'].includes(kind))return;

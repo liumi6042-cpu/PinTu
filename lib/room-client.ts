@@ -90,6 +90,7 @@ export class RoomClient {
   private firstUnsentAt:number|null=null;
   private soloRetryAt=0;
   private soloRefused=false;
+  private rejoinRequired=false;
   private exitWake:(()=>void)|null=null;
   get localPlay(){return this.localMode;}
   get pendingSoloOps(){return this.soloOps.length;}
@@ -101,7 +102,7 @@ export class RoomClient {
     this.state = cloneRoomValue(ticket.room.puzzle);
     if(this.deps.solo?.storage){
       const box=loadSoloOutbox(this.deps.solo.storage,ticket.room.id);
-      if(box?.playerId===ticket.playerId){this.soloOps=box.ops;this.persistSolo();}
+      if(box){this.soloOps=box.ops;this.persistSolo();}
     }
   }
   subscribe(fn: () => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
@@ -427,6 +428,12 @@ export class RoomClient {
     const storage=this.deps.solo?.storage;
     if(storage)saveSoloOutbox(storage,{v:1,roomId:this.ticket.room.id,playerId:this.ticket.playerId,token:this.ticket.token,ops:this.soloOps,savedAt:this.deps.now()});
   }
+  private pruneStoredSolo(acknowledged:Set<string>){
+    const storage=this.deps.solo?.storage,box=storage&&loadSoloOutbox(storage,this.ticket.room.id);
+    if(!storage||!box)return;
+    const ops=box.ops.filter(op=>!acknowledged.has(op.requestId));
+    if(ops.length!==box.ops.length)saveSoloOutbox(storage,{...box,ops,savedAt:this.deps.now()});
+  }
   private maybeEnterLocal(){
     if(this.localMode||this.stopped||this.soloRefused||this.deps.solo?.enabled()!==true||!this.table||!this.connected
       ||(this.snapshot as MobileRoomSnapshot).diagnostic===true||this.snapshot.completedAt!=null
@@ -512,11 +519,15 @@ export class RoomClient {
     this.soloInflight=batch.length;this.firstUnsentAt=null;
     const discardBatch=()=>{this.soloOps=this.soloOps.filter(op=>!sent.has(op.requestId));this.persistSolo();};
     try{
+      // Refresh the seat before acknowledging moves after a long background pause.
+      if(this.deps.now()-this.receivedAt>15000)this.receive(await this.request({type:'heartbeat'}));
       const {snapshot,data}=await this.requestWithData({type:'batch',ops:batch.map(({snapped,...op})=>op)},opts);
       if(!data.soloBatch)throw new Error('Missing solo batch receipt');
       const remaining=acknowledgeSoloOps(this.soloOps,data.soloBatch);
       if(remaining.length===this.soloOps.length)throw new Error('Solo batch made no progress');
-      this.soloOps=remaining;this.persistSolo();this.soloFailures=0;this.soloRetryAt=0;
+      // A stopped client only prunes what the server acknowledged: a replacement client may own newer ops.
+      if(this.stopped)this.pruneStoredSolo(new Set(this.soloOps.filter(op=>!remaining.includes(op)).map(op=>op.requestId)));
+      this.soloOps=remaining;if(!this.stopped)this.persistSolo();this.soloFailures=0;this.soloRetryAt=0;
       this.soloInflight=0;
       if(data.soloBatch.stopped)this.energyEmpty(data.soloBatch.stopped.message);
       this.receive(snapshot,true);
@@ -525,19 +536,24 @@ export class RoomClient {
       this.scheduleSoloFlush(0);return true;
     }catch(error){
       this.soloInflight=0;
+      // A replacement client may already own this room's stored outbox.
+      if(this.stopped)return false;
       const status=(error as {status?:number})?.status;
-      if(this.soloTransient(error)){
-        this.soloFailures++;this.soloRetryAt=Math.max(this.retryAt,this.deps.now()+Math.min(15000,1000*2**this.soloFailures));
-        this.message='网络不稳，拼好的进度会自动保存';this.emit();this.scheduleSoloFlush(0);
-      }else if(status===400||status===409){
+      const code=(error as {code?:string})?.code;
+      if((status===400||status===409)&&(code==='SOLO_BATCH_DISABLED'||code==='SOLO_BATCH_UNAVAILABLE'||status===400&&code==='INVALID_BATCH')){
         // The server switched batching off: return to server drags instead of discarding every later drop.
-        const code=(error as {code?:string})?.code;
         if(code==='SOLO_BATCH_DISABLED'||code==='SOLO_BATCH_UNAVAILABLE'){this.soloRefused=true;this.soloOps=[];this.persistSolo();this.leaveLocalMode();}
         else discardBatch();
         try{this.receive(await this.request(),true);this.scheduleSoloFlush(0);return true;}catch(failure){this.fail(failure);}
-      }else if(status===401||status===403||status===404||status===410){
+      }else if(status===404||status===410){
         this.soloOps=[];this.persistSolo();this.leaveLocalMode();this.fail(error);
-      }else{this.leaveLocalMode();this.fail(error);}
+      }else{
+        this.soloFailures++;this.soloRetryAt=Math.max(this.retryAt,this.deps.now()+Math.min(15000,1000*2**this.soloFailures));
+        if(this.soloTransient(error)){this.message='网络不稳，拼好的进度会自动保存';this.emit();}
+        else{this.leaveLocalMode();this.fail(error);}
+        this.scheduleSoloFlush(0);
+        if((status===401||status===403)&&!this.rejoinRequired){this.rejoinRequired=true;this.deps.emit('room:rejoin-required',{roomId:this.ticket.room.id});}
+      }
       return false;
     }finally{this.soloInflight=0;this.exitWake?.();}
   }
