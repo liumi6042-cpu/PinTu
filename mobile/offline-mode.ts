@@ -48,13 +48,13 @@ export class OfflineMode{
    if(result.accepted)note(result.energy>0?'离线通关已同步，体力 +'+result.energy:'离线通关已同步');
   }catch{}finally{this.syncing=false;}
  }
- drawPage(s:Stage,scroll:number,actions:{paragraph:(text:string,x:number,y:number,w:number,size:number)=>number;chapter:(chapter:MobileLevelsView['chapters'][number],view:MobileLevelsView,height:number)=>void;asset:(src:string)=>string;reconnect:()=>void;launch:(input:OfflineInput)=>void;invalidate:()=>void}){
+ drawPage(s:Stage,scroll:number,actions:{paragraph:(text:string,x:number,y:number,w:number,size:number)=>number;selectedChapter:(view:MobileLevelsView)=>MobileLevelsView['chapters'][number]|null;chapter:(chapter:MobileLevelsView['chapters'][number],view:MobileLevelsView,height:number)=>void;asset:(src:string)=>string;reconnect:()=>void;launch:(input:OfflineInput)=>void;invalidate:()=>void}){
   const view=this.view;if(!view)return 0;
   const portrait=s.h>s.w,x=12,w=s.w-24,top=this.platform.viewport().top+12;
   let y=top-scroll;
   y=actions.paragraph('离线模式：故事关卡和免费图片可以直接玩，联网后自动同步通关',x,y,w,14)+12;
   s.button({x,y,w:132,h:36},'重新连接',actions.reconnect,{fontSize:13});y+=48;
-  for(const chapter of view.chapters){
+  const chapter=actions.selectedChapter(view);if(chapter){
    const height=portrait?Math.ceil(chapter.levels.length/2)*((w-28)/2/1.5+8)+350:Math.max(300,s.h-top-70);
    s.withViewport({x:0,y,w:s.w,h:height},()=>actions.chapter(chapter,view,height));y+=height+18;
   }
@@ -79,7 +79,7 @@ export class OfflineMode{
   y=actions.paragraph('离线完成 · 联网后同步通关',left,y,width,14)+18;
   // Story levels open their comic page offline too; the page needs no network.
   if(level&&actions.comic?.available(level.id)){s.button({x:left,y,w:width,h:40},'翻开这一页',()=>actions.comic!.open(level.id),{tone:'gold',fontSize:16});y+=48;}
-  if(level&&next&&['unlocked','cleared'].includes(next.status)){s.button({x:left,y,w:width,h:40},'下一关',()=>actions.launch({kind:'level',levelId:next.id}),{tone:'berrydark',fontSize:16});y+=48;}
+  if(level&&next&&['unlocked','cleared'].includes(next.status)){s.button({x:left,y,w:width,h:40},this.view?.chapters.some(chapter=>chapter.levels.at(-1)?.id===level.id)?'下一章':'下一关',()=>actions.launch({kind:'level',levelId:next.id}),{tone:'berrydark',fontSize:16});y+=48;}
   s.button({x:left,y,w:width,h:40},'返回',actions.back,{fontSize:16});return y+48;
  }
 }

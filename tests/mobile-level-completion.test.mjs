@@ -27,10 +27,11 @@ test('level primary action leaves then creates the configured next level in all 
  }
 });
 
-test('chapter complete or missing next level shows the chapter message and returns to the lobby',()=>{
+test('chapter completion shows the chapter message, launches the next chapter or returns to the lobby',async()=>{
  for(const levelClear of [{...clear,levelId:'ch1-6',chapterComplete:true,nextLevelId:null},{...clear,levelId:'ch1-6',chapterComplete:true,nextLevelId:'ch2-1'},{...clear,nextLevelId:null}]){
   const f=fixture({levelClear});f.app.levels.chapters[0].levels.push({id:'ch1-6'});f.draw();assert.ok(f.texts().includes('开张完成！'));assert.equal(f.button('下一关'),undefined);
-  f.button('去大厅').fn();assert.deepEqual(f.events,['leave','lobby']);assert.deepEqual(f.created,[]);
+  if(levelClear.nextLevelId){f.button('下一章').fn();await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(f.events,['leave','create','attach']);assert.equal(f.created[0].levelId,'ch2-1');}
+  else{f.button('去大厅').fn();assert.deepEqual(f.events,['leave','lobby']);assert.deepEqual(f.created,[]);}
  }
 });
 

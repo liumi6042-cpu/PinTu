@@ -39,7 +39,8 @@ for(const [width,height]of sizes)for(const count of [4,6,8])for(const cleared of
  for(const item of rectangles)assert.ok(inside(item.r,bounds),JSON.stringify({item,bounds}));
  for(let i=0;i<rectangles.length;i++)for(let j=0;j<i;j++)assert.ok(!overlaps(rectangles[i].r,rectangles[j].r),JSON.stringify([rectangles[i],rectangles[j]]));
  const subtitle=external.find(text=>text.value.startsWith('第 2 章'));assert.ok(!overlaps(subtitle.r,result.chapterSwitch));
- assert.ok(!rectangles.some(item=>overlaps(item.r,result.chapterSwitch)));
+ assert.ok(!rectangles.filter(item=>!['‹','›'].includes(item.label)).some(item=>overlaps(item.r,result.chapterSwitch)));
+ for(const button of f.buttons.filter(item=>['‹','›'].includes(item.label)))assert.ok(inside(button.r,result.chapterSwitch));
  for(let i=2;i<count;i++)assert.ok(cards[i].x-(cards[i-2].x+cards[i-2].w)>=8);
  assert.equal(f.app.extent,0);assert.equal(f.app.scroll,0);
 });

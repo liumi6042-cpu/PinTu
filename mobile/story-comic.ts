@@ -2,7 +2,7 @@ import type {MobileChapter,MobileLevel} from '../h5/mobile-api';
 import type {Rect} from './ports';
 import type {Stage} from './ui';
 import {roomRoundPath} from './room-chrome';
-import story from './story-comics-ch1.json';
+import {bundledStory} from './bundled-story';
 
 export type ComicCrop=[number,number,number,number];
 export type ComicText={kind:'caption'|'say'|'sfx';at:'tl'|'tr'|'bl'|'br';text:string};
@@ -17,7 +17,7 @@ function panelsFrom(value:unknown):ComicPanel[]|null{
 }
 /** Server fields are optional and independently fall back on old servers. */
 export function comicFor(chapter:Pick<MobileChapter,'id'|'albumId'>,index:number,level:Pick<MobileLevel,'comic'|'intro'>):Comic|null{
- const bundled=chapter.id==='ch1'||chapter.albumId===story.chapter?story.levels[index]:undefined;
+ const bundled=bundledStory(chapter)?.levels[index];
  const panels=panelsFrom(level.comic)??panelsFrom(bundled?.comic);if(!panels)return null;
  return {intro:typeof level.intro==='string'&&level.intro.trim()?level.intro:bundled?.intro??'',panels};
 }
@@ -63,7 +63,7 @@ export function drawComicText(s:Stage,item:ComicText,panel:Rect,reserveBottom=0)
  });
 }
 
-export type ComicPageState={levelId:string;index:number;sequence:boolean;fromClear:boolean;started:number;shown:number;returnTo:'completion'|null;ending?:boolean;turn?:{started:number;direction:number}};
+export type ComicPageState={chapterId:string;levelId:string;index:number;sequence:boolean;fromClear:boolean;started:number;shown:number;returnTo:'completion'|null;ending?:boolean;turn?:{started:number;direction:number}};
 export function reducedComicMotion(){return typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;}
 export function comicTextCount(comic:Comic){return comic.panels.reduce((n,p)=>n+p.texts.length,0);}
 /** Drawing uses a synchronous image painter, so a page never waits for an API. */
