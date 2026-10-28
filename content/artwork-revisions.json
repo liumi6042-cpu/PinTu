@@ -3109,6 +3109,60 @@
         "width": 1536,
         "height": 1024
       }
+    ],
+    "album-shiguang-ch2-01-20261028": [
+      {
+        "revision": "b833f2904b7895e73a52775f4d4bed6f6c0151b8ac32dfd43b18e7cdde83e43f",
+        "src": "/puzzles/album-shiguang-ch2-01-20261028-optimized-12f1debb5289.webp",
+        "thumbSrc": "/puzzles/album-shiguang-ch2-01-20261028-thumbnail-960c6639ce1e.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-shiguang-ch2-02-20261028": [
+      {
+        "revision": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+        "src": "/puzzles/album-shiguang-ch2-02-20261028-optimized-a044fc343d09.webp",
+        "thumbSrc": "/puzzles/album-shiguang-ch2-02-20261028-thumbnail-f3296d06f57d.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-shiguang-ch2-03-20261028": [
+      {
+        "revision": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+        "src": "/puzzles/album-shiguang-ch2-03-20261028-optimized-196fe7b7b795.webp",
+        "thumbSrc": "/puzzles/album-shiguang-ch2-03-20261028-thumbnail-c2e6413a604d.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-shiguang-ch2-04-20261028": [
+      {
+        "revision": "b89b62bcc83d00c55b8e620a1fa96c9faa70f9a05d786e74a385a632139fa41a",
+        "src": "/puzzles/album-shiguang-ch2-04-20261028-optimized-5ca9a23d1b78.webp",
+        "thumbSrc": "/puzzles/album-shiguang-ch2-04-20261028-thumbnail-66f5eb6bd5b6.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-shiguang-ch2-05-20261028": [
+      {
+        "revision": "a48eedacbba6e365f192ee41e86b605c74374316b552b1e27a762677cf9ea3b0",
+        "src": "/puzzles/album-shiguang-ch2-05-20261028-optimized-87cfd32610e6.webp",
+        "thumbSrc": "/puzzles/album-shiguang-ch2-05-20261028-thumbnail-e3bc7c014bdd.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-shiguang-ch2-06-20261028": [
+      {
+        "revision": "6f750238ac72ce7df4287d2c1086015ba81dcd7b6124e6b8c16ac377af4ed076",
+        "src": "/puzzles/album-shiguang-ch2-06-20261028-optimized-8fb4fa092add.webp",
+        "thumbSrc": "/puzzles/album-shiguang-ch2-06-20261028-thumbnail-13c138ef3652.webp",
+        "width": 1536,
+        "height": 1024
+      }
     ]
   },
   "active": {
