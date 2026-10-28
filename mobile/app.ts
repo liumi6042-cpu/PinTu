@@ -1161,6 +1161,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(page.index>limit||(!page.ending&&page.index>=limit)){this.closeModal();return;}
   const s=this.stage,c=s.ctx,view=this.platform.viewport(),area=comicPageRect(s,view,view.menu),layout=comicLayout(area,s.w>s.h),now=Date.now(),reduced=reducedComicMotion();
   this.modalArea=area;this.modalExtent=0;c.fillStyle='#3d2129';c.fillRect(0,0,s.w,s.h);
+  // The story page underneath stays drawn: margins and the dot strip must swallow taps, not reach its buttons.
+  s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});
   if(this.comicSnap){const t=reduced?1:clamp((now-this.comicSnap.started)/150,0,1);this.comicDrag=this.comicSnap.offset*(1-t)*(1-t);if(t===1)this.comicSnap=undefined;else this.animateStory();}
   const level=chapter.levels[page.index],comic=!page.ending&&level?comicFor(chapter,page.index,level):null;
   const turn=page.turn&&!reduced?Math.max(0,1-(now-page.turn.started)/250):0;if(!turn)page.turn=undefined;
