@@ -56,7 +56,7 @@ test('short body uses a measured single footer row while keeping 44px cards',()=
 for(const width of [390,360])test(`portrait ${width}: headers and room bar keep their top and clear the capsule horizontally`,()=>{
  const height=844,menu={x:width-95,y:8,w:87,h:32};
  const draw=withMenu=>{const f=fixture({width,height});f.platform.viewport=()=>({width,height,top:0,bottom:0,...(withMenu?{menu}:{})});f.platform.setOrientation=async()=>{};f.stage.w=width;const out={};
-  for(const route of ['lobby','chapter','gallery','collection','friends','tasks','supplies']){f.app.route=route;f.clear();record(f);f.app.drawHeader();out[route]={top:Math.min(...f.buttons.map(b=>b.r.y)),rects:[...f.buttons,...f.hits].map(b=>b.r)};}
+  for(const route of ['lobby','chapter','gallery','collection','friends','tasks','supplies']){f.app.route=route;f.clear();record(f);f.app.drawHeader();out[route]={top:Math.min(...[...f.buttons,...f.hits].map(b=>b.r.y)),rects:[...f.buttons,...f.hits].map(b=>b.r)};}
   f.app.route='room';f.app.room={state:{cols:4,rows:4,groups:[]},snapshot:{puzzle:{imageId:'test'},title:'一起拼图',visibility:'solo',members:[]}};f.app.board={};
   f.clear();record(f);const top=f.app.roomHeaderTop();f.app.drawRoomTopBar({x:0,y:top,w:width,h:76},'portrait');out.room={top,rects:[...f.buttons,...f.hits].map(b=>b.r)};return out;};
  const plain=draw(false),capsule=draw(true);

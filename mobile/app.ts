@@ -954,11 +954,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const lx=12+avatar+4,lw=gallery?small?66:85:wide?92:small?42:55;
    s.text('Lv.'+(p?.level??'—'),lx,y+5,wide?23:small?14:16,this.levelColor(p?.level??0),800,lw);s.meter({x:lx,y:y+(wide?36:28),w:lw,h:8},p?p.xp/Math.max(1,p.xpToNext):0);s.text(p?p.xp+' / '+p.xpToNext:'—',lx,y+(wide?48:40),wide?12:10,this.colors.ink,500,lw+8);
    if(gallery){energy(12+playerWidth,y+5,Math.min(135,s.w-playerWidth-60),wide?20:16);s.icon('sprig',{x:s.w-45,y:y+h-39,w:30,h:28});}
-   else{const ex=12+playerWidth+4,orientation=this.platform.config.id==='taptap'&&!!this.platform.setOrientation,taskX=s.w-76-(orientation?48:0)-reserve,right=this.route==='lobby'?taskX-8:s.w-(orientation?60:50)-reserve;energy(ex,y+(h-43)/2,Math.min(220,right-ex),wide?22:small?14:16);s.icon('sprig',{x:s.w-30-reserve,y:y-14,w:18,h:18});if(this.route==='lobby')this.drawLobbyTasks({x:taskX,y:y+(h-40)/2,w:64,h:40});if(orientation)s.button({x:s.w-52-reserve,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
+   // Beside TapTap's capsule the row is short: 任务 shows its icon only and the orientation switch stays in settings/room tools.
+   else{const ex=12+playerWidth+4,tight=reserve>0&&this.layout==='phonePortrait',orientation=this.platform.config.id==='taptap'&&!!this.platform.setOrientation&&!tight,taskX=s.w-(tight?40:76)-(orientation?48:0)-reserve,right=this.route==='lobby'?taskX-8:s.w-(orientation?60:50)-reserve;energy(ex,y+(h-43)/2,Math.min(220,right-ex),wide?22:small?14:16);s.icon('sprig',{x:s.w-30-reserve,y:y-14,w:18,h:18});if(this.route==='lobby')this.drawLobbyTasks({x:taskX,y:y+(h-40)/2,w:tight?34:64,h:40},tight);if(orientation)s.button({x:s.w-52-reserve,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
    line(y+h);this.bodyTop=y+h+9;return;
   }
   const title=this.route==='tasks'?'任务与礼包':this.route==='friends'?'好友':this.route==='supplies'?'补给站':this.route==='collection'?'我的收藏':this.route==='privacy'||this.route==='terms'?'服务与隐私说明':'玩法与设置';
-  const titleX=this.tabRoute?14:53;if(!this.tabRoute)s.button({x:12,y:top,w:32,h:34},'',()=>this.back(),{icon:'back'});s.text(title,titleX,top+6,this.route==='collection'&&small?20:23,this.colors.ink,800,(this.route==='collection'?s.w-220:s.w-112)-reserve);
+  const titleX=this.tabRoute?14:53,coinsW=this.route==='collection'?Math.max(61,s.measure(String((this.collection?.wallet??p?.collection)?.coins??0),12,700)+26):0;if(!this.tabRoute)s.button({x:12,y:top,w:32,h:34},'',()=>this.back(),{icon:'back'});s.text(title,titleX,top+6,this.route==='collection'&&small?20:23,this.colors.ink,800,(this.route==='collection'?s.w-77-coinsW-titleX:s.w-112)-reserve);
   if(this.route==='collection'){const c=this.collection?.wallet??p?.collection;const coin=String(c?.coins??0),fragment=String(c?.fragments??0),fx=s.w-67-reserve,cx=fx-Math.max(61,s.measure(coin,12,700)+26);s.icon('coin',{x:cx,y:top+7,w:20,h:22});s.text(coin,cx+23,top+11,12,this.colors.ink,700,fx-cx-25);s.icon('fragment',{x:fx,y:top+7,w:19,h:22});s.text(fragment,fx+22,top+11,12,this.colors.ink,700,42);s.hit({x:cx-5,y:top,w:fx-cx,h:37},()=>this.showModal('coins'));s.hit({x:fx-4,y:top,w:64,h:37},()=>this.showModal('fragments'));}
   else if(this.route==='supplies'){energy(Math.max(151,s.w-169-reserve),top-1,104,small?13:15);if(!this.formalWeb){s.icon('ticket',{x:s.w-58-reserve,y:top+5,w:24,h:25});s.text(p?.supply.create??0,s.w-30-reserve,top+12,13,this.colors.ink,700);}}
   else s.button({x:s.w-52-reserve,y:top+1,w:38,h:32},'设置',()=>this.showModal('settings'),{fontSize:10});
@@ -983,8 +984,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private clampListScroll(){if(this.route==='collection'&&!this.collection||this.route==='tasks'&&!this.tasks||this.route==='lobby'&&this.lobbyLoading&&!this.rooms.length)return;const next=clamp(this.scroll,0,Math.max(0,this.extent-Math.max(0,this.bodyBottom-this.bodyTop)));if(next!==this.scroll){this.scroll=next;this.invalidate();}}
  private cardImage(src:string,r:Rect){this.stage.frame(r,'panel-cream');this.stage.image(this.client.asset(src),{x:r.x+6,y:r.y+6,w:r.w-12,h:r.h-12},'cover');}
 
- private drawLobbyTasks(r:Rect){
-  const s=this.stage;s.icon('gift',{x:r.x+4,y:r.y+4,w:26,h:32});s.text('任务',r.x+34,r.y+13,13,this.colors.ink,750);this.navBadge('tasks',r.x+28,r.y+5);s.hit(r,()=>this.navigate('tasks'));
+ private drawLobbyTasks(r:Rect,iconOnly=false){
+  const s=this.stage;s.icon('gift',{x:r.x+4,y:r.y+4,w:26,h:32});if(!iconOnly)s.text('任务',r.x+34,r.y+13,13,this.colors.ink,750);this.navBadge('tasks',r.x+28,r.y+5);s.hit(r,()=>this.navigate('tasks'));
  }
  private drawLobby(){
   const s=this.stage,layout=this.layout,gap=layout==='phoneLandscape'?10:14,top=this.bodyTop,bottom=this.bodyBottom,width=Math.min(1400,s.w-24),left=(s.w-width)/2;
