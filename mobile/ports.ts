@@ -65,7 +65,9 @@ export type Platform={
  randomId():string;
  frame(fn:(time:number)=>void):number;
  cancelFrame(id:number):void;
- onInput(fn:(input:Input)=>void):()=>void;
+ onInput(fn:(input:Input)=>boolean|void):()=>void;
+ /** Temporarily consume the host back action while a reader is open. */
+ onBack?(handler:()=>boolean):()=>void;
  inputDiagnostics?():{pointerMoves:number;touchMoves:number;mode:'pointer'|'touch'};
  setTouchInputMode?(enabled:boolean):void;
  onResize(fn:()=>void):()=>void;

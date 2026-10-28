@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {fixture,levels,artwork} from './mobile-level-card-fixture.mjs';
 
-const bundle=await build({stdin:{contents:'export * from "./mobile/story-comic";export {Stage} from "./mobile/ui";',resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
-const {comicFor,cropCover,comicLayout,comicLines,comicTextCount,Stage}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const bundle=await build({stdin:{contents:'export * from "./mobile/story-comic";export {Stage} from "./mobile/ui";export {createComicBack,createWebPlatform} from "./mobile/platform-web";',resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
+const {comicFor,cropCover,comicPageRect,comicLayout,comicLines,comicTextCount,Stage,createComicBack,createWebPlatform}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 const chapter=levels().chapters[0];
 const inside=(r,p)=>assert.ok(r.x>=p.x-.001&&r.y>=p.y-.001&&r.x+r.w<=p.x+p.w+.001&&r.y+r.h<=p.y+p.h+.001,JSON.stringify({r,p}));
 const overlap=(a,b)=>a.x<b.x+b.w-.001&&b.x<a.x+a.w-.001&&a.y<b.y+b.h-.001&&b.y<a.y+a.h-.001;
@@ -20,8 +20,10 @@ test('cropCover covers the panel around the crop centre and translates at edges'
 });
 
 test('comicLayout gives four contained, disjoint panels and consistent gutters',()=>{
- for(const [w,h]of [[844,390],[390,844],[568,320]]){
-  const landscape=w>h,{page,panels,gutter}=comicLayout(w,h,landscape);inside(page,{x:0,y:0,w,h});assert.equal(panels.length,4);
+ for(const [w,h,top,bottom,menu]of [[390,844,44,34,{x:282,y:48,w:100,h:32}],[793,360,8,21,{x:680,y:12,w:105,h:32}],[844,390,8,21],[667,375,0,0],[1280,800,0,0],[568,320,0,0]]){
+  const landscape=w>h,{page,panels,gutter,dots}=comicLayout(comicPageRect({w,h},{top,bottom},menu),landscape);inside(page,{x:8,y:top+8,w:w-16,h:h-top-bottom-16});inside(dots,{x:8,y:top+8,w:w-16,h:h-top-bottom-16});assert.equal(panels.length,4);
+  if(menu){assert.equal(overlap(page,menu),false);assert.equal(overlap(dots,menu),false);const fullW=w-16,fullH=h-top-bottom-16,belowH=h-bottom-8-(menu.y+menu.h+8),leftW=menu.x-16;assert.ok(Math.abs(page.w*(page.h+14)-Math.max(fullW*belowH,leftW*fullH))<.001);}
+  assert.equal(dots.h,14);assert.equal(dots.y,page.y+page.h);panels.forEach(r=>assert.equal(overlap(r,dots),false));
   panels.forEach((r,i)=>{inside(r,page);assert.ok(r.w>0&&r.h>0);panels.slice(i+1).forEach(other=>assert.equal(overlap(r,other),false));});
   if(landscape){assert.ok(panels.every(p=>panels[0].w*panels[0].h>=p.w*p.h));assert.ok(panels[0].x<panels[1].x);assert.ok(Math.abs(panels[2].x-panels[1].x-panels[1].w-gutter)<.001);}
   else{assert.ok(panels[0].y<panels[1].y&&panels[1].y<panels[3].y);assert.ok(Math.abs(panels[1].y-panels[0].y-panels[0].h-gutter)<.001);}
@@ -50,21 +52,20 @@ async function comicFixture({width=844,height=390,index=3,fromClear=false,sequen
 }
 function reveal(f){f.app.advanceComic(true);f.clear();f.app.drawModal();}
 
-for(const [width,height]of [[844,390],[390,844],[1280,800],[320,640]])test(`${width}×${height} renders four crops, reveals one segment per click and keeps controls in bounds`,async()=>{
+for(const [width,height]of [[844,390],[390,844],[1280,800],[320,640]])test(`${width}×${height} renders four crops, reveals one segment per click with no buttons`,async()=>{
  const f=await comicFixture({width,height,cleared:4});f.app.drawModal();assert.equal(f.images.length,4);assert.ok(f.images.every(image=>image.src==='/chapter-3.webp'));assert.equal(f.app.comicPage.fromClear,false);
  const comic=comicFor(chapter,3,{});assert.equal(f.app.comicPage.shown,0);assert.equal(f.texts.some(t=>t.includes('午后，')),false);
  for(let i=1;i<=comicTextCount(comic);i++){f.hits.find(hit=>hit.r===f.app.modalArea).fn();assert.equal(f.app.comicPage.shown,i);f.clear();f.app.drawModal();}
  assert.ok(!f.texts.some(t=>t.includes('下一格')));assert.ok(f.texts.includes('午后，店门口的铃响了。'));assert.ok(f.texts.includes('别哭，我们把它拼回来！'));
- assert.ok(!f.buttons.some(b=>b.label.startsWith('去拼')));
- for(const b of f.buttons)inside(b.r,{x:0,y:0,w:width,h:height});for(let i=0;i<f.buttons.length;i++)for(const b of f.buttons.slice(i+1))assert.equal(overlap(f.buttons[i].r,b.r),false);
- f.app.advanceComic();assert.equal(f.app.comicPage.index,4);assert.equal(f.app.comicPage.ending,true);f.clear();f.app.drawModal();assert.ok(f.texts.includes('下一页：拼完第 5 格解锁'));assert.ok(f.buttons.some(b=>b.label==='去拼第 5 格（30 片）'));
- f.buttons.find(b=>b.label==='‹').fn();assert.equal(f.app.comicPage.index,3);assert.equal(f.app.comicPage.shown,comicTextCount(comic));
+ assert.equal(f.buttons.length,0);f.app.advanceComic();assert.equal(f.app.comicPage.index,3);
+ f.app.turnComic(4);assert.equal(f.app.comicPage.ending,true);f.clear();f.app.drawModal();assert.ok(f.texts.includes('下一页：拼完第 5 格解锁'));assert.ok(f.texts.includes('轻点这里去拼第 5 格（30 片）'));assert.equal(f.buttons.length,0);
+ f.app.turnComic(3);assert.equal(f.app.comicPage.shown,comicTextCount(comic));
 });
 
 test('sequence starts at one, reads all six pages, labels the ending and ends without opening a room',async()=>{
  const f=await comicFixture({index:4,sequence:true});assert.equal(f.app.comicPage.index,0);
- for(let index=0;index<6;index++){assert.equal(f.app.comicPage.index,index);reveal(f);assert.equal(f.images.length,4);assert.ok(!f.buttons.some(b=>b.label.startsWith('拼第')));if(index<5)f.app.advanceComic();}
- f.app.advanceComic();assert.equal(f.app.comicPage.index,6);assert.equal(f.app.comicPage.ending,true);f.clear();f.app.drawModal();assert.ok(f.texts.includes('第 1 章 完'));assert.equal(f.images.length,0);assert.ok(f.buttons.find(b=>b.label==='›').opts.disabled);f.buttons.find(b=>b.label==='✕').fn();assert.equal(f.app.modal,null);assert.equal(f.created.length,0);
+ for(let index=0;index<6;index++){assert.equal(f.app.comicPage.index,index);reveal(f);assert.equal(f.images.length,4);assert.equal(f.buttons.length,0);f.app.turnComic(index+1);}
+ assert.equal(f.app.comicPage.index,6);assert.equal(f.app.comicPage.ending,true);f.clear();f.app.drawModal();assert.ok(f.texts.includes('第 1 章 完'));assert.equal(f.images.length,0);assert.equal(f.buttons.length,0);assert.equal(f.hits.length,0);f.app.closeModal();assert.equal(f.app.modal,null);assert.equal(f.created.length,0);
 });
 
 test('fromClear splits from the full-image crop projection, ordinary reopening only fades panels, reduced motion draws four immediately',async t=>{
@@ -74,7 +75,7 @@ test('fromClear splits from the full-image crop projection, ordinary reopening o
    const f=await comicFixture({fromClear});const start=f.app.comicPage.started;now=start;f.app.drawModal();
    assert.equal(f.images.length,fromClear&&!reduced?5:4);
    if(fromClear&&!reduced){const full=f.images[0];assert.deepEqual(full.crop,[0,0,1,1]);assert.equal(f.images[1].zoom,0);f.clear();now=start+400;f.app.drawModal();assert.ok(f.images[1].zoom>0&&f.images[1].zoom<1);f.clear();now=start+900;f.app.drawModal();assert.equal(f.images.length,4);assert.ok(f.images.every(image=>image.alpha===1),'panels must stay visible after the split');}
-   else{const {panels}=comicLayout(f.stage.w,f.stage.h,true);f.images.forEach((image,index)=>assert.deepEqual(image.r,panels[index]));}
+   else{const {panels}=comicLayout(comicPageRect(f.stage,{top:0,bottom:0}),true);f.images.forEach((image,index)=>assert.deepEqual(image.r,panels[index]));}
    f.app.advanceComic(true);f.clear();f.app.drawModal();assert.ok(!f.texts.some(t=>t.includes('下一格')));
   }
  }
@@ -113,44 +114,44 @@ function swipe(f,dx){const r=f.app.modalArea,x=r.x+r.w/2,y=r.y+r.h/2;pointInput(
 function recordDots(f){
  const circles=[];let circle=null;const c=f.stage.ctx;c.beginPath=()=>{circle=null;};c.arc=(x,y,r)=>{circle={x,y,r};};
  c.fill=()=>{if(circle){circles.push({...circle,solid:true});circle=null;}};c.stroke=()=>{if(circle){circles.push({...circle,solid:false});circle=null;}};
- return ()=>circles.filter(dot=>dot.r===4&&dot.y===f.app.modalArea.y+f.app.modalArea.h+28);
+ return ()=>circles.filter(dot=>dot.r===2.5&&dot.y===f.app.modalArea.y+f.app.modalArea.h+7);
 }
 
 test('3/6 exposes three unlocked dots and one hollow ending dot; no entry paints locked artwork',async()=>{
- const f=await comicFixture({index:2,cleared:3}),dots=recordDots(f);f.app.drawModal();assert.equal(dots().length,4);assert.deepEqual(dots().map(d=>d.solid),[true,true,true,false]);assert.ok(f.texts.includes('3 / 6'));
+ const f=await comicFixture({index:2,cleared:3}),dots=recordDots(f);wireInput(f);f.app.drawModal();assert.equal(dots().length,4);assert.deepEqual(dots().map(d=>d.solid),[true,true,true,false]);assert.ok(!f.texts.includes('3 / 6'));assert.equal(f.hits.length,1);
  for(let index=4;index<=9;index++){f.app.turnComic(index);assert.equal(f.app.comicPage.index,2);}
  f.app.openLevelComic('ch1-4');assert.equal(f.app.comicPage.index,2);
- f.hits.find(h=>h.r.w===40&&h.r.x===dots()[0].x-20&&h.r.y===f.app.modalArea.y+f.app.modalArea.h+8).fn();assert.equal(f.app.comicPage.index,0);
+ tap(f,dots()[0].x,dots()[0].y);assert.equal(f.app.comicPage.index,2);assert.equal(f.app.comicPage.shown,0);
  f.app.openLevelComic('ch1-6',{sequence:true});assert.equal(f.app.comicPage.index,0);
- for(let index=0;index<3;index++){assert.equal(f.app.comicPage.index,index);f.app.advanceComic(true);f.app.advanceComic();}
+ for(let index=0;index<3;index++){assert.equal(f.app.comicPage.index,index);f.app.advanceComic(true);f.app.turnComic(index+1);}
  assert.equal(f.app.comicPage.ending,true);assert.equal(f.app.comicPage.index,3);redraw(f);assert.equal(f.images.length,0);assert.ok(f.texts.includes('下一页：拼完第 4 格解锁'));
- assert.equal(f.buttons.filter(b=>b.label.startsWith('去拼')).length,1);f.buttons.find(b=>b.label==='去拼第 4 格（24 片）').fn();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.created[0].levelId,'ch1-4');
+ assert.equal(f.buttons.length,0);assert.equal(f.hits.length,1);assert.deepEqual(f.hits[0].r,f.app.modalArea);tap(f,f.app.modalArea.x+12,f.app.modalArea.y+12);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.created[0].levelId,'ch1-4');
  const empty=await comicFixture({index:0,cleared:0});assert.equal(empty.app.modal,null);empty.app.openLevelComic('ch1-6',{sequence:true});assert.equal(empty.app.modal,null);
 });
 
-test('page taps reveal one segment, all-display reveals the rest, gestures turn, and read pages reopen in full',async()=>{
+test('page taps reveal one segment, stop at the last segment, gestures turn, and read pages reopen in full',async()=>{
  const f=await comicFixture({index:0,cleared:3});wireInput(f);redraw(f);const r=f.app.modalArea,n=comicTextCount(comicFor(chapter,0,{}));
- const left=f.buttons.find(b=>b.label==='‹');assert.equal(left.opts.disabled,true);tap(f,left.r.x+20,left.r.y+24);assert.equal(f.app.comicPage.shown,0,'disabled arrow cannot reveal text');
+ swipe(f,80);assert.equal(f.app.comicPage.index,0);assert.equal(f.app.comicPage.shown,0);
  tap(f,r.x+r.w/2,r.y+r.h/2);assert.equal(f.app.comicPage.shown,1);assert.equal(f.app.comicPage.index,0);
- f.buttons.find(b=>b.label==='全部显示').fn();assert.equal(f.app.comicPage.shown,n);redraw(f);assert.ok(!f.buttons.some(b=>b.label==='全部显示'));
+ for(let i=1;i<n;i++)tap(f,r.x+r.w/2,r.y+r.h/2);assert.equal(f.app.comicPage.shown,n);redraw(f);assert.equal(f.buttons.length,0);
  swipe(f,-80);assert.equal(f.app.comicPage.index,1);assert.equal(f.app.comicPage.shown,0);assert.equal(f.app.comicPage.turn.direction,1);redraw(f);
  swipe(f,80);assert.equal(f.app.comicPage.index,0);assert.equal(f.app.comicPage.shown,n);assert.equal(f.app.comicPage.turn.direction,-1);redraw(f);
- tap(f,r.x+r.w/2,r.y+r.h/2);assert.equal(f.app.comicPage.index,1);f.app.advanceComic(true);f.app.closeModal();f.app.openLevelComic('ch1-2');assert.equal(f.app.comicPage.shown,comicTextCount(comicFor(chapter,1,{})));
- f.app.closeModal();f.app.route='chapter';f.app.openLevelComic('ch1-1');redraw(f);f.buttons.find(b=>b.label==='✕').fn();assert.equal(f.app.modal,null);assert.equal(f.app.route,'chapter');
+ tap(f,r.x+r.w/2,r.y+r.h/2);assert.equal(f.app.comicPage.index,0);swipe(f,-80);f.app.advanceComic(true);f.app.closeModal();f.app.openLevelComic('ch1-2');assert.equal(f.app.comicPage.shown,comicTextCount(comicFor(chapter,1,{})));
+ f.app.closeModal();f.app.route='chapter';f.app.openLevelComic('ch1-1');redraw(f);f.app.closeModal();assert.equal(f.app.modal,null);assert.equal(f.app.route,'chapter');
  f.client.account={id:'owner-b'};f.app.levelsOwner='owner-b';f.app.openLevelComic('ch1-1');assert.equal(f.app.comicPage.shown,0,'read state is scoped to its owner');
 });
 
-test('the next arrow and a left swipe turn the page even before every line is shown',async()=>{
- const f=await comicFixture({index:0,cleared:3});wireInput(f);const alphas={},button=f.stage.button;f.stage.button=(r,label,fn,opts)=>{alphas[label]=f.stage.ctx.globalAlpha;return button(r,label,fn,opts);};redraw(f);assert.equal(f.app.comicPage.shown,0);assert.equal(alphas['‹'],.35,'no previous page: the arrow fades');
- f.buttons.find(b=>b.label==='›').fn();assert.equal(f.app.comicPage.index,1);assert.equal(f.app.comicPage.shown,0);redraw(f);
+test('left swipes turn before every line is shown and stop at the ending card',async()=>{
+ const f=await comicFixture({index:0,cleared:3});wireInput(f);redraw(f);assert.equal(f.app.comicPage.shown,0);assert.equal(f.buttons.length,0);
+ swipe(f,-80);assert.equal(f.app.comicPage.index,1);assert.equal(f.app.comicPage.shown,0);redraw(f);
  swipe(f,-80);assert.equal(f.app.comicPage.index,2);redraw(f);swipe(f,-80);assert.equal(f.app.comicPage.ending,true);assert.equal(f.app.comicPage.index,3);
- redraw(f);assert.ok(!f.texts.some(text=>/^\d+ \/ \d+$/.test(text)),'the ending card has no page counter');assert.equal(alphas['›'],.35);swipe(f,-80);assert.equal(f.app.comicPage.index,3,'nothing lies past the ending card');swipe(f,80);assert.equal(f.app.comicPage.index,2);
+ redraw(f);assert.ok(!f.texts.some(text=>/^\d+ \/ \d+$/.test(text)),'the ending card has no page counter');assert.equal(f.buttons.length,0);swipe(f,-80);assert.equal(f.app.comicPage.index,3,'nothing lies past the ending card');swipe(f,80);assert.equal(f.app.comicPage.index,2);
 });
 
 test('turn slides for 250ms; reduced-motion turns immediately without an animation frame',async t=>{
  const previous=globalThis.matchMedia;let reduced=false,now=1000;globalThis.matchMedia=()=>({matches:reduced});t.after(()=>{if(previous)globalThis.matchMedia=previous;else delete globalThis.matchMedia;});t.mock.method(Date,'now',()=>now);
  const f=await comicFixture({index:0,cleared:3}),translations=[];let frames=0;f.platform.frame=()=>{frames++;return frames;};f.platform.cancelFrame=()=>{};f.stage.ctx.translate=(x,y)=>translations.push([x,y]);
- f.app.advanceComic(true);f.app.advanceComic();assert.ok(f.app.comicPage.turn);redraw(f);assert.ok(frames>0);assert.ok(translations.some(([x])=>x>0));
+ f.app.comicHintUntil=0;f.app.advanceComic(true);f.app.turnComic(1);assert.ok(f.app.comicPage.turn);redraw(f);assert.ok(frames>0);assert.ok(translations.some(([x])=>x>0));
  now+=125;translations.length=0;redraw(f);assert.ok(translations.some(([x])=>x>0&&x<f.app.modalArea.w));now+=125;redraw(f);assert.equal(f.app.comicPage.turn,undefined);
  f.app.stopStoryFrame();reduced=true;frames=0;translations.length=0;f.app.turnComic(0);assert.equal(f.app.comicPage.turn,undefined);redraw(f);assert.equal(frames,0);assert.equal(translations[0][0],0);
 });
@@ -166,9 +167,67 @@ test('completion receipt unlocks immediately and completion action splits the ex
 
 test('safe areas and unavailable-next endings keep all controls inside the viewport without a launch action',async()=>{
  for(const [width,height,top,bottom]of [[390,844,44,34],[844,390,8,21],[1280,800,0,0]]){
-  const f=await comicFixture({width,height,index:2,cleared:3});f.platform.viewport=()=>({width,height,top,bottom});f.app.levels.chapters[0].levels[3].status='locked';f.app.advanceComic(true);f.app.advanceComic();redraw(f);
-  assert.equal(f.images.length,0);assert.ok(!f.buttons.some(b=>b.label.startsWith('去拼')));assert.ok(f.buttons.find(b=>b.label==='›').opts.disabled);
-  for(const b of f.buttons){inside(b.r,{x:0,y:top,w:width,h:height-top-bottom});assert.ok(b.r.w>=40&&b.r.h>=40);}
-  for(let i=0;i<f.buttons.length;i++)for(const b of f.buttons.slice(i+1))assert.equal(overlap(f.buttons[i].r,b.r),false);
+  const f=await comicFixture({width,height,index:2,cleared:3});f.platform.viewport=()=>({width,height,top,bottom});f.app.levels.chapters[0].levels[3].status='locked';f.app.turnComic(3);redraw(f);
+  assert.equal(f.images.length,0);assert.equal(f.buttons.length,0);assert.equal(f.hits.length,0);assert.ok(f.texts.includes('第 1 章 完'));assert.ok(f.texts.includes('故事待续'));inside(f.app.modalArea,{x:0,y:top,w:width,h:height-top-bottom});wireInput(f);tap(f,f.app.modalArea.x+20,f.app.modalArea.y+20);assert.equal(f.created.length,0);assert.equal(f.app.modal,'levelComic');
  }
+});
+
+test('downward drag follows the finger, fades, springs back in 150ms, and dismisses at 90px or on a flick',async t=>{
+ let now=1000;t.mock.method(Date,'now',()=>now);
+ const f=await comicFixture({index:0,cleared:3});wireInput(f);redraw(f);const r=f.app.modalArea,x=r.x+r.w/2,y=r.y+r.h/2,translations=[];f.stage.ctx.translate=(dx,dy)=>translations.push([dx,dy]);
+ pointInput(f,'down',x,y);now+=100;pointInput(f,'move',x+4,y+50);redraw(f);
+ assert.equal(f.app.comicDrag,50);assert.ok(translations.some(([,dy])=>dy===50));assert.ok(f.images.every(image=>image.alpha<1));assert.equal(f.app.comicPage.shown,0);
+ now+=120;pointInput(f,'up',x+4,y+50);assert.equal(f.app.modal,'levelComic');assert.ok(f.app.comicSnap);now+=75;redraw(f);assert.ok(f.app.comicDrag>0&&f.app.comicDrag<50);now+=75;redraw(f);assert.equal(f.app.comicDrag,0);assert.equal(f.app.comicSnap,undefined);
+ pointInput(f,'down',x,y);now+=200;pointInput(f,'up',x+10,y+100);assert.equal(f.app.modal,null);assert.equal(f.app.route,'lobby');
+ f.app.route='chapter';f.app.openLevelComic('ch1-1');redraw(f);pointInput(f,'down',x,y);now+=30;pointInput(f,'up',x,y+35);assert.equal(f.app.modal,null);assert.equal(f.app.route,'chapter');
+ f.app.room={snapshot:{levelId:'ch1-1'}};f.app.modal='completion';f.app.openLevelComic('ch1-1');redraw(f);pointInput(f,'down',x,y);now+=200;pointInput(f,'up',x,y+100);assert.equal(f.app.modal,'completion');assert.ok(f.app.room);
+});
+
+test('vertical gestures do not turn or reveal; cancelled and reduced-motion short drags return safely',async t=>{
+ let now=1000;t.mock.method(Date,'now',()=>now);const previous=globalThis.matchMedia;globalThis.matchMedia=()=>({matches:true});t.after(()=>{if(previous)globalThis.matchMedia=previous;else delete globalThis.matchMedia;});
+ const f=await comicFixture({index:0,cleared:3});wireInput(f);redraw(f);const r=f.app.modalArea,x=r.x+r.w/2,y=r.y+r.h/2;
+ pointInput(f,'down',x,y);now+=200;pointInput(f,'move',x+48,y+60);now+=200;pointInput(f,'up',x+48,y+60);assert.equal(f.app.comicPage.index,0);assert.equal(f.app.comicPage.shown,0);assert.equal(f.app.comicDrag,0);assert.equal(f.app.comicSnap,undefined);
+ pointInput(f,'down',x,y);pointInput(f,'move',x,y-100);pointInput(f,'up',x,y-100);assert.equal(f.app.modal,'levelComic');assert.equal(f.app.comicPage.shown,0);
+ pointInput(f,'down',x,y);pointInput(f,'move',x,y+60);pointInput(f,'cancel',x,y+60);assert.equal(f.app.comicDrag,0);assert.equal(f.app.comicGesture,null);assert.equal(f.app.modal,'levelComic');
+});
+
+test('reader owns arrow keys and back handler only while open, including completion return and alternate close cleanup',async()=>{
+ const f=fixture({data:levels(3)});let handler,registered=0,cleaned=0;f.platform.onBack=fn=>{handler=fn;registered++;return()=>{cleaned++;handler=null;};};
+ f.app.openLevelComic('ch1-1');assert.equal(registered,1);f.app.openLevelComic('ch1-1');assert.equal(registered,1);
+ const key=value=>f.app.input({type:'key',key:value,keyDown:true,points:[],changed:[]});
+ key('ArrowLeft');assert.equal(f.app.comicPage.index,0);key('ArrowRight');assert.equal(f.app.comicPage.index,1);key('ArrowLeft');assert.equal(f.app.comicPage.index,0);key('Escape');assert.equal(f.app.modal,null);assert.equal(cleaned,1);assert.equal(handler,null);
+ assert.equal(key('ArrowRight'),false);f.app.openLevelComic('ch1-1');assert.equal(handler(),true);assert.equal(cleaned,2);assert.equal(f.app.modal,null);
+ f.app.room={snapshot:{levelId:'ch1-1'}};f.app.modal='completion';f.app.openLevelComic('ch1-1');handler();assert.equal(f.app.modal,'completion');assert.equal(cleaned,3);
+});
+
+test('first-open hint expires, touch dismisses without consuming the tap, and storage persists across app instances',async t=>{
+ let now=1000;t.mock.method(Date,'now',()=>now);const f=await comicFixture({index:0});wireInput(f);redraw(f);const hint='左右滑动翻页 · 下滑关闭';assert.ok(f.texts.includes(hint));assert.equal(f.storage.get('jigsaw:comic-hint:v1'),'1');
+ now+=2300;redraw(f);assert.ok(f.texts.includes(hint));now+=200;redraw(f);assert.ok(!f.texts.includes(hint));
+ const fresh=await comicFixture({index:0});wireInput(fresh);redraw(fresh);const r=fresh.app.modalArea;tap(fresh,r.x+r.w/2,r.y+r.h/2);assert.equal(fresh.app.comicHintUntil,0);assert.equal(fresh.app.comicPage.shown,1);redraw(fresh);assert.ok(!fresh.texts.includes(hint));
+ fresh.app.closeModal();fresh.app.openLevelComic('ch1-1');redraw(fresh);assert.ok(!fresh.texts.includes(hint));
+ const again=fixture({storage:fresh.storage});again.app.openLevelComic('ch1-1');redraw(again);assert.ok(!again.texts.includes(hint));
+});
+
+function historyHost(){
+ const host=new EventTarget(),stack=[{original:true}];let index=0,pushes=0,backs=0,pending=false;
+ host.history={get state(){return stack[index];},pushState(state){stack.splice(++index);stack.push(structuredClone(state));pushes++;},back(){backs++;if(index>0){index--;pending=true;}}};
+ return {host,counts:()=>({pushes,backs}),pop(){host.history.back();this.flush();},flush(){if(pending){pending=false;host.dispatchEvent(new Event('popstate'));}}};
+}
+
+test('TapTap history pushes once, hardware back invokes once, alternate cleanup ignores its own pop, and fast reopen is safe',()=>{
+ const h=historyHost(),onBack=createComicBack(h.host);let calls=0,off=onBack(()=>{calls++;off();return true;});assert.equal(h.host.history.state.jigsawComic,1);assert.deepEqual(h.counts(),{pushes:1,backs:0});h.pop();assert.equal(calls,1);assert.deepEqual(h.host.history.state,{original:true});off();assert.equal(h.counts().backs,1);
+ off=onBack(()=>{calls++;return true;});off();assert.equal(h.counts().backs,2);h.flush();assert.equal(calls,1);
+ off=onBack(()=>{calls++;return true;});off();const second=onBack(()=>{calls++;return true;});assert.equal(h.counts().pushes,3);h.flush();assert.equal(h.counts().pushes,4);assert.equal(calls,1);h.pop();assert.equal(calls,2);second();
+ const third=onBack(()=>{calls++;return true;});h.host.history.pushState({other:1},'');const before=h.counts().backs;third();assert.equal(h.counts().backs,before,'do not remove an unrelated top entry');
+});
+
+test('web adapter forwards arrows and only prevents handled keys; history integration is TapTap-only',t=>{
+ const h=historyHost(),window=h.host,document=new EventTarget(),canvas=new EventTarget();Object.assign(window,{innerWidth:800,innerHeight:600,devicePixelRatio:1});Object.assign(document,{baseURI:'https://game.test/',body:{},hidden:false});document.activeElement=document.body;
+ Object.assign(canvas,{style:{},getAttribute:()=>null,setAttribute(){},removeAttribute(){},getBoundingClientRect:()=>({left:0,top:0,width:800,height:600})});
+ const restore=[];for(const [key,value]of Object.entries({window,document,location:{href:'https://game.test/',origin:'https://game.test'}})){const old=Object.getOwnPropertyDescriptor(globalThis,key);Object.defineProperty(globalThis,key,{configurable:true,value});restore.push(()=>old?Object.defineProperty(globalThis,key,old):delete globalThis[key]);}
+ const config={apiBase:'/api',assetBase:'/assets',gameName:'test'},web=createWebPlatform({...config,id:'web'},canvas),wechat=createWebPlatform({...config,id:'wechat'},canvas),tap=createWebPlatform({...config,id:'taptap'},canvas);
+ assert.equal(web.onBack,undefined);assert.equal(wechat.onBack,undefined);let calls=0,off=tap.onBack(()=>{calls++;off();return true;});assert.equal(h.counts().pushes,1);h.pop();assert.equal(calls,1);
+ let handled=false;const inputs=[],stop=web.onInput(input=>{inputs.push(input);return handled;});t.after(()=>{stop();restore.forEach(fn=>fn());});
+ for(const key of ['ArrowLeft','ArrowRight']){for(handled of [false,true]){const event=new Event('keydown',{cancelable:true});Object.assign(event,{key,code:key});window.dispatchEvent(event);assert.equal(event.defaultPrevented,handled);assert.equal(inputs.at(-1).key,key);assert.equal(inputs.at(-1).keyDown,true);}}
+ document.activeElement={tagName:'TEXTAREA'};const before=inputs.length,event=new Event('keydown',{cancelable:true});Object.assign(event,{key:'ArrowRight',code:'ArrowRight'});window.dispatchEvent(event);assert.equal(inputs.length,before);assert.equal(event.defaultPrevented,false);
 });

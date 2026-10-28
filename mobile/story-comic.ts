@@ -27,15 +27,27 @@ export function cropCover(imageW:number,imageH:number,crop:ComicCrop,panel:Pick<
  let w=cw,h=ch;if(w/h>ratio)w=h*ratio;else h=w/ratio;
  return {x:clamp((crop[0]+crop[2]/2)*iw-w/2,0,iw-w),y:clamp((crop[1]+crop[3]/2)*ih-h/2,0,ih-h),w,h};
 }
-export function comicLayout(stageW:number,stageH:number,landscape:boolean){
- const gutter=Math.min(10,stageW*.022,stageH*.022),page:Rect={x:44,y:56,w:stageW-88,h:stageH-144};
+/** Reserve the 14px dot strip, then choose the larger capsule-free reading area. */
+export function comicPageRect(stage:{w:number;h:number},insets:{top:number;bottom:number},menu?:Rect):Rect{
+ const x=8,y=Math.max(0,insets.top)+8,right=stage.w-8,bottom=stage.h-Math.max(0,insets.bottom)-8;
+ const available={x,y,w:Math.max(0,right-x),h:Math.max(0,bottom-y)};
+ let region=available;
+ if(menu&&menu.x<right&&menu.x+menu.w>x&&menu.y<bottom&&menu.y+menu.h>y){
+  const belowY=Math.min(bottom,Math.max(y,menu.y+menu.h+8)),leftRight=Math.max(x,Math.min(right,menu.x-8));
+  const below={x,y:belowY,w:available.w,h:bottom-belowY},left={x,y,w:leftRight-x,h:available.h};
+  region=below.w*below.h>=left.w*left.h?below:left;
+ }
+ return {...region,h:Math.max(0,region.h-14)};
+}
+export function comicLayout(page:Rect,landscape=page.w>page.h){
+ const gutter=Math.min(10,page.w*.022,page.h*.022),dots={x:page.x,y:page.y+page.h,w:page.w,h:14};
  const inner={x:page.x+gutter,y:page.y+gutter,w:page.w-2*gutter,h:page.h-2*gutter};let panels:Rect[];
  if(landscape){const left=(inner.w-gutter)*.48,right=inner.w-left-gutter,top=(inner.h-gutter)*.46,x=inner.x+left+gutter;
   panels=[{x:inner.x,y:inner.y,w:left,h:inner.h},{x,y:inner.y,w:(right-gutter)/2,h:top},{x:x+(right+gutter)/2,y:inner.y,w:(right-gutter)/2,h:top},{x,y:inner.y+top+gutter,w:right,h:inner.h-top-gutter}];
  }else{const unit=(inner.h-2*gutter)/3;
   panels=[{x:inner.x,y:inner.y,w:inner.w,h:unit},{x:inner.x,y:inner.y+unit+gutter,w:(inner.w-gutter)/2,h:unit},{x:inner.x+(inner.w+gutter)/2,y:inner.y+unit+gutter,w:(inner.w-gutter)/2,h:unit},{x:inner.x,y:inner.y+2*(unit+gutter),w:inner.w,h:unit}];
  }
- return {page,panels,gutter};
+ return {page,panels,gutter,dots};
 }
 /** Closing punctuation travels with the preceding glyph, as on the timeline. */
 export function comicLines(text:string,width:number,measure:(text:string)=>number):string[]{
@@ -67,15 +79,15 @@ export type ComicPageState={chapterId:string;levelId:string;index:number;sequenc
 export function reducedComicMotion(){return typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;}
 export function comicTextCount(comic:Comic){return comic.panels.reduce((n,p)=>n+p.texts.length,0);}
 /** Drawing uses a synchronous image painter, so a page never waits for an API. */
-export function drawComicPage(s:Stage,state:ComicPageState,comic:Comic,ending:string,paint:(r:Rect,crop:ComicCrop,zoom:number)=>void,now=Date.now(),imageSize:{w:number;h:number}|null=null){
- const layout=comicLayout(s.w,s.h,s.w>s.h),{page,panels}=layout,c=s.ctx,reduced=reducedComicMotion(),elapsed=now-state.started,split=state.fromClear&&!reduced&&elapsed<800,t=split?clamp(elapsed/800,0,1):1,ease=t*t*(3-2*t);
+export function drawComicPage(s:Stage,state:ComicPageState,comic:Comic,ending:string,paint:(r:Rect,crop:ComicCrop,zoom:number)=>void,now=Date.now(),imageSize:{w:number;h:number}|null=null,pageRect=comicPageRect(s,{top:0,bottom:0})){
+ const layout=comicLayout(pageRect,s.w>s.h),{page,panels}=layout,c=s.ctx,reduced=reducedComicMotion(),elapsed=now-state.started,split=state.fromClear&&!reduced&&elapsed<800,t=split?clamp(elapsed/800,0,1):1,ease=t*t*(3-2*t);
  c.fillStyle='#fffdf8';c.fillRect(page.x,page.y,page.w,page.h);
- if(split){c.save();c.globalAlpha=1-ease;paint(page,[0,0,1,1],1);c.restore();}
+ if(split){c.save();c.globalAlpha*=1-ease;paint(page,[0,0,1,1],1);c.restore();}
  const iw=imageSize?.w??page.w,ih=imageSize?.h??page.h,full=cropCover(iw,ih,[0,0,1,1],page),scale=page.w/full.w;
  let textIndex=0;
  s.clip(page,()=>comic.panels.forEach((panel,index)=>{
   const target=panels[index],source={x:page.x+(panel.crop[0]*iw-full.x)*scale,y:page.y+(panel.crop[1]*ih-full.y)*scale,w:panel.crop[2]*iw*scale,h:panel.crop[3]*ih*scale},r=split?{x:source.x+(target.x-source.x)*ease,y:source.y+(target.y-source.y)*ease,w:source.w+(target.w-source.w)*ease,h:source.h+(target.h-source.h)*ease}:target;
-  const fade=reduced||state.fromClear||state.shown>0?1:clamp((elapsed-index*100)/220,0,1);c.save();c.globalAlpha=split?1:fade;
+  const fade=reduced||state.fromClear||state.shown>0?1:clamp((elapsed-index*100)/220,0,1);c.save();c.globalAlpha*=split?1:fade;
   paint(r,panel.crop,ease);c.globalAlpha*=split?ease:1;c.lineWidth=2.5;c.strokeStyle='#2a1a1f';c.strokeRect(r.x+1.25,r.y+1.25,r.w-2.5,r.h-2.5);
   for(const text of panel.texts){if(!split&&textIndex<state.shown)drawComicText(s,text,target,index===3?24:0);textIndex++;}
   if(ending&&index===3&&!split&&state.shown>=comicTextCount(comic)){c.fillStyle='#fffdf8';c.fillRect(target.x+2,target.y+target.h-25,target.w-4,23);s.text(ending,target.x+9,target.y+target.h-20,12,'#2a1a1f',800,target.w-18);}

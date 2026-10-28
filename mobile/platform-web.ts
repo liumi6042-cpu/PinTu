@@ -45,6 +45,29 @@ export function readUiSize():UiSize{try{const value=localStorage.getItem(uiSizeK
 /** Logical zoom for large browser windows. Phones (below 1366×768) stay at 1; only 'small' may shrink. */
 export function uiScale(size:UiSize=readUiSize(),width=window.innerWidth,height=window.innerHeight){const k=Math.min(2,Math.max(1,Math.min(width/1366,height/768)))*uiSizeFactor[size];return size==='small'?k:Math.max(1,k);}
 
+/** A reader owns one history entry. Drain asynchronous cleanup before reopening. */
+export function createComicBack(host:Pick<Window,'history'|'addEventListener'|'removeEventListener'>){
+ let active:{handler:()=>boolean;token:number;pushed:boolean}|undefined,serial=0,draining=false,listening=false;
+ const listen=()=>{if(!listening){host.addEventListener('popstate',pop);listening=true;}};
+ const stop=()=>{if(listening&&!active&&!draining){host.removeEventListener('popstate',pop);listening=false;}};
+ const push=()=>{if(active&&!active.pushed){host.history.pushState({jigsawComic:1,jigsawComicEntry:active.token},'');active.pushed=true;}};
+ const pop=()=>{
+  if(draining){draining=false;push();stop();return;}
+  const entry=active;if(!entry)return;
+  active=undefined;entry.pushed=false;entry.handler();stop();
+ };
+ return (handler:()=>boolean)=>{
+  if(active)throw Error('Comic back handler already registered');
+  const entry={handler,token:++serial,pushed:false};active=entry;listen();if(!draining)push();
+  return ()=>{
+   if(active===entry)active=undefined;
+   if(entry.pushed&&host.history.state?.jigsawComic===1&&host.history.state?.jigsawComicEntry===entry.token){
+    entry.pushed=false;draining=true;host.history.back();
+   }
+   stop();
+  };
+ };
+}
 /** Browser/TapTap shell for the shared game. No game rules belong in this file. */
 export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement):Platform{
  const config={...input,apiBase:new URL(input.apiBase,document.baseURI).href.replace(/\/$/,''),assetBase:new URL(input.assetBase,document.baseURI).href.replace(/\/$/,'')};
@@ -183,7 +206,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   try{const reply=await request(input);loginLog.add(label+' · '+reply.status+' · '+(Date.now()-started)+'ms');return reply;}
   catch(error){loginLog.add(label+' · 网络失败 · '+(Date.now()-started)+'ms');throw error;}
  };
- const platform:Platform={config,canvas,viewport,request:loggedRequest,audio:audioPlayback.audio,loginLog,...(config.id==='taptap'?{tapAuthorizationDebug,tapNicknameUnavailable:()=>identityController?.nicknameUnavailable()===true}:{}),
+ const platform:Platform={config,canvas,viewport,request:loggedRequest,audio:audioPlayback.audio,loginLog,...(config.id==='taptap'?{onBack:createComicBack(window),tapAuthorizationDebug,tapNicknameUnavailable:()=>identityController?.nicknameUnavailable()===true}:{}),
   uiSize:()=>uiSize,setUiSize(size){if(!Object.hasOwn(uiSizeFactor,size))return;uiSize=size;try{localStorage.setItem(uiSizeKey,size);}catch{}for(const fn of resizeListeners)fn();},
   networkDiagnostics:()=>({http:config.id==='taptap'&&tap()?.request?apiTransport:'browser'}),
   openSocket(url,handlers){
@@ -247,6 +270,9 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     if(!keyDown&&event.code==='Space')space=false;
     // Native text dialogs own their keyboard; game shortcuts must not consume typing.
     const target=document.activeElement;if(textPromptOpen||(target&&target!==canvas&&target!==document.body)||event.ctrlKey||event.metaKey||event.altKey)return;
+    if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
+     if(fn({type:'key',points:[],changed:[],key:event.key,keyDown,repeat:event.repeat})===true)event.preventDefault();return;
+    }
     if(event.code!=='Space'&&event.key!=='Escape'&&!/^Key[EHBFRT]$/.test(event.code)&&!/^Digit[1-6]$/.test(event.code))return;
     event.preventDefault();if(event.code==='Space')space=keyDown;
     fn({type:'key',points:[],changed:[],key:event.code==='Space'?' ':event.code.startsWith('Key')?event.code.slice(3).toLowerCase():event.code.startsWith('Digit')?event.code.slice(5):event.key,keyDown,repeat:event.repeat});

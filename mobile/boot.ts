@@ -73,7 +73,7 @@ export function boot(platform:Platform){
   if(input.type==='down'||input.type==='key'&&input.keyDown)platform.audio?.unlock();
   if(probe){if(input.type==='move')probe.input();if(probe.finished&&input.type==='down'){stopProbe();swallowProbeInput=true;resetSamples();nextPaintAt=0;}return;}
   if(swallowProbeInput){if(input.type==='cancel'||(input.type==='up'&&!input.points.length))swallowProbeInput=false;return;}
-  if(app.performanceInfoVisible&&input.type==='move'){inputs.push(clock());if(inputs.length>1000)inputs.shift();}app.input(input);
+  if(app.performanceInfoVisible&&input.type==='move'){inputs.push(clock());if(inputs.length>1000)inputs.shift();}return app.input(input);
  }),offResize=platform.onResize(()=>{const view=platform.viewport();if(view.width===lastViewport.width&&view.height===lastViewport.height&&view.dpr===lastViewport.dpr&&view.top===lastViewport.top&&view.bottom===lastViewport.bottom)return;lastViewport=view;stopProbe();app.resize();stage.resize();});
  const offHide=platform.onHide(()=>{hidden=true;stopProbe();resetSamples();if(frame)platform.cancelFrame(frame);frame=0;}),offShow=platform.onShow(()=>{hidden=false;nextPaintAt=0;stage.resize();if(alive&&!frame)frame=platform.frame(draw);});
  void platform.loadFont?.('assets/fonts/jigsaw-ui-sc.'+(platform.config.id==='wechat'?'ttf':'woff2')).then(font=>{if(font){stage.font='"'+font+'", sans-serif';stage.invalidate();}});

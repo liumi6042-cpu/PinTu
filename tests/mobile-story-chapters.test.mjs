@@ -101,8 +101,8 @@ test('ch2 comic keeps its chapter through turns/ending, intro and selected-chapt
 
 test('receipt unlocks across chapters and comic ending launches next chapter after leaving its room',async()=>{
  const f=fixture({data:chapters(5)});completion(f,{levelId:'ch1-6',chapterComplete:true,nextLevelId:'ch2-1'});f.app.syncComicClear(f.app.levels.chapters[0]);assert.equal(f.app.levels.chapters[0].levels[5].status,'cleared');assert.equal(f.app.levels.chapters[1].levels[0].status,'unlocked');
- f.app.openLevelComic('ch1-6');f.app.turnComic(6);drawComic(f);assert.equal(f.app.comicPage.chapterId,'ch1');let left=0;f.app.leaveRoom=()=>{left++;f.app.room=null;};f.buttons.find(button=>button.label==='去第 2 章').fn();await tick();assert.equal(f.app.modal,null);assert.equal(left,1);assert.equal(f.created[0].levelId,'ch2-1');
- const blocked=fixture({data:chapters(6)});blocked.app.levels.chapters[1].levels[0].status='locked';blocked.app.openLevelComic('ch1-6');blocked.app.turnComic(6);drawComic(blocked);assert.ok(!blocked.buttons.some(button=>button.label==='去第 2 章'));
+ f.app.openLevelComic('ch1-6');f.app.turnComic(6);drawComic(f);assert.equal(f.app.comicPage.chapterId,'ch1');assert.ok(f.texts.includes('本章完'));assert.ok(f.texts.includes('轻点这里去第 2 章'));assert.equal(f.buttons.length,0);let left=0;f.app.leaveRoom=()=>{left++;f.app.room=null;};f.hits.find(hit=>hit.r===f.app.modalArea).fn();await tick();assert.equal(f.app.modal,null);assert.equal(left,1);assert.equal(f.created[0].levelId,'ch2-1');
+ const blocked=fixture({data:chapters(6)});blocked.app.levels.chapters[1].levels[0].status='locked';blocked.app.openLevelComic('ch1-6');blocked.app.turnComic(6);drawComic(blocked);assert.equal(blocked.buttons.length,0);assert.equal(blocked.hits.length,0);
 });
 
 test('story nav badge considers unlocked levels in any available chapter',()=>{
