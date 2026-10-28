@@ -931,7 +931,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const s=this.stage,c=s.ctx,label='点头像打开设置：声音、夜间模式、画面',size=12,w=Math.min(s.w-16,s.measure(label,size,600)+24),x=clamp(a.x,8,s.w-w-8),y=a.y+a.h+12;
   const lines:string[]=[];let line='';for(const char of label){if(line&&s.measure(line+char,size,600)>w-24){lines.push(line);line='';}line+=char;}if(line)lines.push(line);
   const h=lines.length*18+18,tipX=clamp(a.x+a.w/2,x+12,x+w-12);
-  c.save();c.fillStyle=this.colors.cream;c.beginPath();c.moveTo(tipX-8,y+2);c.lineTo(tipX,y-10);c.lineTo(tipX+8,y+2);c.fill();c.restore();
+  c.save();c.fillStyle=this.colors.cream;c.strokeStyle=this.colors.ink;c.lineWidth=2;c.beginPath();c.moveTo(tipX-9,y+3);c.lineTo(tipX,y-10);c.lineTo(tipX+9,y+3);c.fill();c.stroke();c.restore();
   s.panel({x,y,w,h},'cream');lines.forEach((text,index)=>s.text(text,x+12,y+9+index*18,size,this.colors.ink,600,w-24));this.settingsTipDrawn=true;
  }
  private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
