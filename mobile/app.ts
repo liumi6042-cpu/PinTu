@@ -32,7 +32,7 @@ import {customPhoto} from '../lib/custom-images';
 import {activeRoomPhoto} from './room-photo';
 import {ViewRequests} from './view-requests';
 import {AudioSettings} from './audio-settings';
-import {orientationPickerKey,saveOrientationPreference,type ScreenOrientation} from './orientation-choice';
+import {saveOrientationPreference} from './orientation-choice';
 import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT,mobilePrivacySections,mobileTermsSections} from './privacy-policy';
 import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
@@ -44,7 +44,7 @@ import type {AssistanceGrant} from '../lib/assistance-policy';
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
-type Modal='members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|'orientation'|null;
+type Modal='members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
 type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
@@ -97,7 +97,6 @@ export class GameApp{
  private chapterEntryChecked=false;
  private comicPage:ComicPageState|null=null;private comicRead?:Set<string>;private comicGesture:{x:number;y:number;swiping:boolean}|null=null;private storyFrame:number|null=null;
  private storyIntro:{text:string;until:number}|null=null;
- private orientationEntryReady=false;private orientationPickerState:'unknown'|'offered'|'done'='unknown';private orientationChoice:ScreenOrientation|null=null;private orientationSwitching=false;
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
  private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
  private previewPack:CollectionPack|null=null;private previewIndex=-1;private previewGridScroll=0;private previewReadOnly=false;
@@ -179,9 +178,6 @@ export class GameApp{
   return y+80;
  }
  private async toggleOrientation(){if(!this.platform.setOrientation)return;await this.run(async()=>{if(!this.platform.setOrientation)throw Error('当前客户端不支持切换方向');const target=this.stage.w>this.stage.h?'portrait':'landscape';await this.platform.setOrientation(target);saveOrientationPreference(this.platform.storage,target);this.showModal(null);this.toolsOpen=false;this.invalidate();});}
- private maybeOfferOrientation(){if(this.orientationPickerState!=='unknown'||!this.orientationEntryReady||!this.ready||this.route!=='lobby'||this.room||this.modal||this.busy||this.needsPrivacyChoice||this.loginDialogActive||this.platform.config.id!=='taptap'||!this.platform.setOrientation||this.platform.orientationChoiceAvailable?.()!==true)return;try{if(this.platform.storage.get(orientationPickerKey)==='1'){this.orientationPickerState='done';return;}}catch{this.orientationPickerState='done';return;}this.orientationPickerState='offered';this.orientationChoice=this.stage.w>this.stage.h?'landscape':'portrait';this.showModal('orientation');this.invalidate();}
- private async chooseOrientation(value:ScreenOrientation){if(this.orientationSwitching)return;this.orientationChoice=value;this.invalidate();if((this.stage.w>this.stage.h?'landscape':'portrait')===value)return;this.orientationSwitching=true;try{await this.platform.setOrientation!(value);}catch(error){this.orientationChoice=this.stage.w>this.stage.h?'landscape':'portrait';this.note(errorText(error));}finally{this.orientationSwitching=false;this.invalidate();}}
- private confirmOrientation(){const value=this.orientationChoice??(this.stage.w>this.stage.h?'landscape':'portrait');saveOrientationPreference(this.platform.storage,value);try{this.platform.storage.set(orientationPickerKey,'1');}catch{}this.orientationPickerState='done';this.orientationChoice=null;this.showModal(null);this.invalidate();}
  private async toggleFullscreen(){await this.run(async()=>{if(this.platform.config.id!=='web'||!this.platform.fullscreen?.available())return;try{await this.platform.fullscreen.toggle();this.showModal(null);this.invalidate();}catch{this.note('浏览器暂时无法切换全屏，请检查全屏权限后重试');}});}
  private toggleEffectsMute(){const key='jigsaw:shared:audio:last-effects',volume=this.audioSettings.levels.effects;if(volume>0){try{this.platform.storage.set(key,String(volume));}catch{}this.audioSettings.set('effects',0);}else{let previous=1;try{const saved=Number(this.platform.storage.get(key));if(Number.isFinite(saved)&&saved>0)previous=Math.min(1,saved);}catch{}this.audioSettings.set('effects',previous);}this.invalidate();}
  private get formalWeb(){return this.client.cookieIdentity;}
@@ -304,7 +300,7 @@ export class GameApp{
   if(!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)void this.social.refresh().catch(()=>{});
   await levels;
   if(!direct&&!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)await this.checkLevelEntry();
-  this.orientationEntryReady=true;this.invalidate();
+  this.invalidate();
  }
  resize(){
   const view=this.platform.viewport(),oldDesktop=this.layoutFor(this.stage.w,this.stage.h)==='desktop',newDesktop=this.layoutFor(view.width,view.height)==='desktop',rotated=(this.stage.w>this.stage.h)!==(view.width>view.height);
@@ -359,11 +355,11 @@ export class GameApp{
  private openPackGallery(id:string){this.navigate('gallery',{packId:id,source:'owned'});}
  private selectAlbum(id:string){this.changeListView(()=>{this.albumId=id;});}
  private exitRoom(){if(this.offlineRoom&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];this.enterOffline();return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,complete=this.room?.snapshot.mobileResult?.levelClear?.chapterComplete,target=this.roomReturn;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level)this.navigate(complete||!this.beginnerChapter?'lobby':'chapter');else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
- private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
+ private closeModal(){if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['completion','levelComic','tools','orientation','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.comicGesture=null;this.comicPage=null;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
+ private showModal(modal:Modal){if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.comicGesture=null;this.comicPage=null;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
   if(this.offlineRoom||this.offline?.active&&!this.ready)return;
@@ -751,7 +747,6 @@ export class GameApp{
   if(this.modal)this.drawModal();
   if(this.message&&Date.now()<=this.messageUntil)this.drawNotice();
   if(this.busy){const cancel=this.sharing&&!!this.platform.cancelShare,label=cancel?'等待分享 · 取消等待':'正在处理…',width=cancel?184:144,r={x:(s.w-width)/2,y:Math.max(this.platform.viewport().top+6,this.platform.config.id==='taptap'?44:0),w:width,h:28};s.panel(r,'cream');s.text(label,r.x+(width-s.measure(label,12))/2,r.y+6,12,this.colors.ink);if(cancel)s.hit(r,()=>this.platform.cancelShare?.());}
-  if(this.orientationPickerState==='unknown'&&this.orientationEntryReady&&this.route==='lobby'&&!this.modal)queueMicrotask(()=>{if(!this.destroyed)this.maybeOfferOrientation();});
  }
  private drawScene(){if(!this.ready){this.drawLobbyStartup();return;}switch(this.route){case'lobby':this.drawLobby();break;case'chapter':this.drawChapter();break;case'gallery':this.drawGallery();break;case'tasks':this.drawTasksPage();break;case'supplies':this.drawSupplies();break;case'collection':this.drawCollection();break;case'friends':this.drawFriends();break;default:this.drawPolicy();}this.clampListScroll();}
  private drawDesktopShell(){
@@ -2049,25 +2044,8 @@ export class GameApp{
   if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',cx=p.x+p.w/2,room=outside?Infinity:Math.min(Infinity,...[...this.completionSlotRects.values()].filter(r=>r.y<p.y+29&&r.y+r.h>p.y-3).map(r=>(r.x+r.w<=cx?cx-r.x-r.w:r.x-cx)-2)),w=Math.min(p.w+60,s.measure(label,14,800)+58,room*2),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
   });
  }
- private drawOrientationPicker(){
-  const s=this.stage,v=this.platform.viewport(),w=Math.min(s.w-32,420),tileH=clamp(s.h-v.top-v.bottom-216,84,116),h=tileH+184,x=(s.w-w)/2,y=v.top+(s.h-v.top-v.bottom-h)/2,left=x+20,width=w-40,tileW=(width-12)/2,cy=y+80;
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const centered=(label:string,top:number,size:number,color:string,weight=500)=>s.text(label,x+(w-s.measure(label,size,weight))/2,top,size,color,weight,w-40);
-  centered('选择屏幕方向',y+20,20,this.colors.ink,700);centered('点一下立即切换，选好后点确认',y+51,13,this.colors.muted);
-  const options:readonly(readonly[ScreenOrientation,string,string])[]=[['landscape','横屏','画面更宽'],['portrait','竖屏','单手更顺']];
-  options.forEach(([value,label,caption],index)=>{
-   const tile={x:left+index*(tileW+12),y:cy,w:tileW,h:tileH};s.button(tile,'',()=>void this.chooseOrientation(value),{selected:this.orientationChoice===value,disabled:this.orientationSwitching&&this.orientationChoice!==value});
-   const c=s.ctx,on=this.orientationChoice===value,tint=on?this.colors.rose:this.colors.ink,dw=value==='landscape'?44:28,dh=value==='landscape'?28:44,dx=tile.x+(tile.w-dw)/2,dy=tile.y+(tile.h-46-dh)/2,r=5;
-   // The pixel frame's selected state is subtle; a rose inner ring makes the current choice obvious.
-   c.save();if(on){c.strokeStyle=this.colors.rose;c.lineWidth=3;c.strokeRect(tile.x+6.5,tile.y+6.5,tile.w-13,tile.h-13);}c.strokeStyle=tint;c.lineWidth=2;c.beginPath();c.moveTo(dx+r,dy);c.arcTo(dx+dw,dy,dx+dw,dy+dh,r);c.arcTo(dx+dw,dy+dh,dx,dy+dh,r);c.arcTo(dx,dy+dh,dx,dy,r);c.arcTo(dx,dy,dx+dw,dy,r);c.closePath();c.stroke();c.fillStyle=tint;c.beginPath();c.arc(value==='landscape'?dx+dw-5:dx+dw/2,value==='landscape'?dy+dh/2:dy+dh-5,1.5,0,Math.PI*2);c.fill();c.restore();
-   s.text(label,tile.x+(tile.w-s.measure(label,16,700))/2,tile.y+tile.h-46,16,this.colors.ink,700);s.text(caption,tile.x+(tile.w-s.measure(caption,12))/2,tile.y+tile.h-26,12,this.colors.muted);
-   if(on)s.icon('check',{x:tile.x+tile.w-28,y:tile.y+10,w:18,h:18},this.colors.rose);
-  });
-  centered('之后也能点右上角的旋转按钮随时切换',cy+tileH+12,12,this.colors.muted);s.button({x:left,y:cy+tileH+42,w:width,h:42},'确认',()=>this.confirmOrientation(),{tone:'berry',fontSize:15,disabled:this.orientationSwitching});
- }
  private drawModal(){
   if(this.modal==='levelComic'){this.drawLevelComic();return;}
-  if(this.modal==='orientation'){this.drawOrientationPicker();return;}
   if(this.modal==='completion'&&this.layout==='phoneLandscape'){this.drawLandscapeCompletion();return;}
   if(this.modal==='playerCard'){this.drawPlayerCard();return;}
   if(this.modal==='history'){this.drawHistoryWindow();return;}
@@ -2076,7 +2054,7 @@ export class GameApp{
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
   const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const titles:Record<Exclude<Modal,null>,string>={levelComic:'小窝的故事',orientation:'选择屏幕方向',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
+  const titles:Record<Exclude<Modal,null>,string>={levelComic:'小窝的故事',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
   // A vector cross has the same visible size and center with browser and wx fonts.
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
