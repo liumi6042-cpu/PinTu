@@ -74,6 +74,14 @@ export function createMobileService(options={}){
  });
  // The host chooses this profile. No request body/header may disable stamina.
  const web=options.runtimeProfile==='web',guestNames=options.guestNames??true,energyEnabled=!web,shareRewards=options.shareRewards??!web,adsEnabled=!web&&options.adEnabled===true;
+ // The mobile daily turns over at this Beijing hour (20:00 gathers players in the lobby). The daily clock runs
+ // ahead so its Beijing midnight lands on that hour; every package's lobby countdown follows the gallery serverTime.
+ const dailyTurnoverHour=web?0:options.dailyTurnoverHour??Number(process.env.MOBILE_DAILY_TURNOVER_HOUR??20);
+ if(!Number.isInteger(dailyTurnoverHour)||dailyTurnoverHour<0||dailyTurnoverHour>23)throw new Error('MOBILE_DAILY_TURNOVER_HOUR must be an hour 0-23');
+ const dailyShift=dailyTurnoverHour?(24-dailyTurnoverHour)*3600000:0,dailyClock=now=>now+dailyShift;
+ // Receipts keep the real time, but never before their own Beijing date, so the web service (midnight turnover) reads them as valid.
+ const dailyActivation=clock=>Math.max(Date.parse(new Date(clock+8*3600000).toISOString().slice(0,10)+'T00:00:00+08:00'),clock-dailyShift);
+ const onDailyClock=content=>content&&dailyShift?{...content,...Object.fromEntries(['tick','select','albumEntries','managedImageIds','releasedImageIds','galleryPhotos'].filter(name=>typeof content[name]==='function').map(name=>[name,(now=clock(),...rest)=>content[name](dailyClock(now),...rest)]))}:content;
  const soloLocalPlay=!web&&(options.soloLocalPlay??process.env.MOBILE_SOLO_LOCAL_PLAY!=='false')===true;
  const offlineLevelClears=!web&&(options.offlineLevelClears??process.env.MOBILE_OFFLINE_LEVEL_CLEARS!=='false')===true;
  // Only a trusted host option can re-enable free text. Local/development hosts
@@ -176,7 +184,7 @@ export function createMobileService(options={}){
  const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);if(requestProfileData&&!requestProfileData.has(identity))requestProfileData.set(identity,row?.data??null);const p=row?JSON.parse(row.data):newProfile(identity,now,operationGameSettings,{creationTickets:web?0:NEWCOMER_CREATION_TICKETS});if(!row&&guestNames)p.name=randomName(identity);if(energyEnabled)restoreEnergy(p,now,operationGameSettings,{inviteBonus:readInviteCapBonus(p.id).count});else if(!row)p.energy=0;return p;};
  const saveProfile=p=>{const data=JSON.stringify(p);if(requestProfileData?.get(p.id)===data)return;const result=db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data WHERE mobile_profiles.data<>excluded.data').run(p.id,data);requestProfileData?.set(p.id,data);return result;};
  const tasks=createMobileTasks({db,readProfile,saveProfile,energyEnabled,readInviteCapBonus,invalidateInviteCapBonus:owner=>requestInviteBonuses?.delete(owner),areFriends:(owner,peer)=>social.areFriends(owner,peer),readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings,awardCoins:(owner,source,coins,now)=>collection.awardTaskCoins(owner,source,coins,now)});
- const dailyContent=managedContent?createManagedDailyContent({readSnapshot:()=>requestRelease===undefined?managedContent.read():requestRelease,legacy:options.dailyContent??null,photos:engine.RESTORABLE_PHOTOS,galleryPhotos:engine.GALLERY_VISIBLE_PHOTOS,fallback:engine.dailyPuzzle,appearanceDir:options.dailyAppearanceDir??resolve('work/daily-appearances'),now:clock}):options.dailyContent??null;
+ const dailyContent=onDailyClock(managedContent?createManagedDailyContent({readSnapshot:()=>requestRelease===undefined?managedContent.read():requestRelease,legacy:options.dailyContent??null,photos:engine.RESTORABLE_PHOTOS,galleryPhotos:engine.GALLERY_VISIBLE_PHOTOS,fallback:engine.dailyPuzzle,appearanceDir:options.dailyAppearanceDir??resolve('work/daily-appearances'),now:()=>dailyClock(clock()),activationTime:dailyActivation}):options.dailyContent??null);
  const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:capabilities.albumTarget});
  const levels=createMobileLevels({db,photos:engine.RESTORABLE_PHOTOS,collection,configuration:levelConfiguration});
  if(!options.deferDailyStart)dailyContent?.start();
@@ -254,8 +262,8 @@ export function createMobileService(options={}){
   view(room,context){const now=clock(),p=readProfile(context.identity,now);return {...snapshotView(room,now,null,p.id),profile:profileView(p,now)};},
  });
  function bindFirstRoom(p,room){if(room.diagnostic!==true&&room.completedAt===null&&!p.firstRoomId&&!p.firstRoomCompleted)p.firstRoomId=room.id;}
- /** Distinct players who completed a daily room today (Beijing day, matching the daily schedule). */
- function dailyFinishedCount(now){const day=engine.dailyPuzzleDate(now),start=Date.parse(day+'T00:00:00+08:00');return Number(db.prepare("SELECT COUNT(DISTINCT s.owner) n FROM mobile_settlements s JOIN mobile_rooms r ON r.id=s.room_id WHERE r.completed_at>=? AND json_extract(r.data,'$.mobileMode')='daily' AND json_extract(r.data,'$.mobileDay')=?").get(start,day).n);}
+ /** Distinct players who completed the current daily (its day starts at the turnover hour, matching the daily schedule). */
+ function dailyFinishedCount(now){const day=engine.dailyPuzzleDate(dailyClock(now)),start=Date.parse(day+'T00:00:00+08:00')-dailyShift;return Number(db.prepare("SELECT COUNT(DISTINCT s.owner) n FROM mobile_settlements s JOIN mobile_rooms r ON r.id=s.room_id WHERE r.completed_at>=? AND json_extract(r.data,'$.mobileMode')='daily' AND json_extract(r.data,'$.mobileDay')=?").get(start,day).n);}
  function join(room,p,input,now,request={}){
   requireArtworkClient(room,request);room.playerLimit=seatLimit(room);
   if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
@@ -345,8 +353,8 @@ export function createMobileService(options={}){
   }
   if(path==='/api/mobile/privacy-request')return privacy.route(request,input,now);
   if(path==='/api/mobile/social'||path.startsWith('/api/mobile/social/'))return social.route(request,p,input,url,now);
-  if(path==='/api/daily'&&method==='GET'){const photo=displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request);return {date:engine.dailyPuzzleDate(now),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,width:photo.width,height:photo.height},serverTime:now};}
-  if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(now),request)}:{}),serverTime:now};}
+  if(path==='/api/daily'&&method==='GET'){const photo=displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request);return {date:engine.dailyPuzzleDate(dailyClock(now)),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,width:photo.width,height:photo.height},serverTime:now};}
+  if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request)}:{}),serverTime:dailyClock(now)};}
   if(path==='/api/levels'&&method==='GET')return levels.view(p.id,now);
   if(path==='/api/levels/offline-clears'&&method==='POST'){
    if(!offlineLevelClears)fail(503,'OFFLINE_CLEARS_UNAVAILABLE','离线通关同步暂不可用');
@@ -491,7 +499,7 @@ export function createMobileService(options={}){
    const direction=input.direction??'all';if(!['all','portrait','landscape','square'].includes(direction))fail(400,'INVALID_DIRECTION','图片方向无效');
    let photo;
    if(level)photo=engine.RESTORABLE_PHOTOS.find(photo=>photo.id===level.imageId);
-   else if(mode==='daily')photo=dailyContent?.select(now)??engine.dailyPuzzle(now);
+   else if(mode==='daily')photo=dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now));
    else if(mode==='random'){
     if(input.imageId)fail(400,'RANDOM_IMAGE_NOT_SELECTABLE','随机模式不能指定图片');
     const pool=galleryPhotos(now).filter(photo=>{const bound={...photo,...creationArtwork(photo,pieces,request)};return collection.randomAllowed(p.id,photo.id,now)&&mobileGridForPhoto(bound,pieces)&&(direction==='all'||directionOf(bound)===direction);});if(!pool.length)fail(400,'NO_IMAGE_AVAILABLE','该条件下没有可用图片');photo=pool[randomInt(0,pool.length)];
@@ -500,13 +508,13 @@ export function createMobileService(options={}){
    if(!web&&mode==='selected'&&collection.packedImageIds(now).includes(photo.id)&&!collection.freeImageIds(now).includes(photo.id)&&!collection.ownsImage(p.id,photo.id,now))fail(403,'PACK_LOCKED','这张图在未解锁的图包里，请先解锁图包');
    const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces,mode);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
    if(mode==='daily'){
-    const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(now)&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<seatLimit(r)&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
+    const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(dailyClock(now))&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<seatLimit(r)&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
     if(existing)return join(existing,p,{},now,request);
    }
    const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,\'$.mobileMode\') IS NOT \'level\' AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;if(mode!=='level'&&owned>=3)fail(409,'ROOM_LIMIT','最多保留3个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
    const needsTicket=mode!=='level'&&!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
    if(needsTicket&&!starter&&p.supply.create<1)fail(402,'CREATE_TICKET_REQUIRED','需要1张建房券');
-   const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(now):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
+   const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(dailyClock(now)):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
    if(level)room.mobileLevelId=level.id;
    if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);events.record(p.id,'room-create',room.id,{mode,pieces,visibility},now);if(level)events.record(p.id,'level-start',room.id,{levelId:level.id,pieces},now);return join(room,p,{},now,request);
   });

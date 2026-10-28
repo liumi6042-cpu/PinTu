@@ -257,3 +257,34 @@ test('gateway records no first appearance before serving or after a failed bind,
   await new Promise(resolve=>occupied.close(resolve));f.close();
  }
 });
+
+test('mobile daily turns over at 20:00 Beijing without skipping a day, and every package countdown lands on 20:00',()=>{
+ const f=fixture();let service;
+ const call=(url,body)=>service.handle({identity:owner,url,method:body?'POST':'GET',body});
+ // The lobby countdown every TapTap package draws: minutes until the next Beijing midnight of the gallery serverTime.
+ const countdown=serverTime=>Math.ceil(((Math.floor((serverTime+8*3600000)/86400000)+1)*86400000-8*3600000-serverTime)/60000);
+ try{
+  f.writeV2({candidates:[{imageId:daily.id,albumId:'daily-anime'},{imageId:otherDaily.id,albumId:'daily-anime'}],pool:[daily.id,otherDaily.id]});
+  f.now=Date.parse('2026-10-13T08:00:00+08:00');
+  service=createMobileService({dailyContent:f.content,now:()=>f.now,randomInt:min=>min,dailyTurnoverHour:20});
+  const morning=call('/api/daily').data;assert.equal(morning.date,'2026-10-13');assert.equal(morning.photo.id,otherDaily.id);
+  f.now=Date.parse('2026-10-13T19:59:00+08:00');
+  assert.equal(call('/api/daily').data.photo.id,otherDaily.id,'the day that was already running keeps its puzzle until 20:00');
+  assert.equal(countdown(call('/api/mobile/gallery').data.serverTime),1);
+  f.now=Date.parse('2026-10-13T20:00:30+08:00');
+  const evening=call('/api/daily').data;assert.equal(evening.date,'2026-10-14');assert.equal(evening.photo.id,daily.id);
+  assert.equal(countdown(call('/api/mobile/gallery').data.serverTime),24*60);
+  const room=call('/api/rooms',{mode:'daily',pieces:108,requestId:rid()});assert.equal(room.status,201);assert.equal(room.data.room.puzzle.imageId,daily.id);
+  assert.deepEqual(readdirSync(f.appearanceDir).sort(),['2026-10-13.json','2026-10-14.json']);
+  f.now=Date.parse('2026-10-14T19:00:00+08:00');assert.equal(call('/api/daily').data.date,'2026-10-14');
+ }finally{service?.close();f.close();}
+});
+
+test('a daily turnover hour of 0 keeps the Beijing midnight schedule and real gallery serverTime',()=>{
+ const now=Date.parse('2026-10-13T20:30:00+08:00'),service=createMobileService({now:()=>now,dailyTurnoverHour:0});
+ try{
+  assert.equal(service.handle({identity:owner,method:'GET',url:'/api/daily'}).data.date,'2026-10-13');
+  assert.equal(service.handle({identity:owner,method:'GET',url:'/api/mobile/gallery'}).data.serverTime,now);
+  assert.throws(()=>createMobileService({now:()=>now,dailyTurnoverHour:24}),/0-23/);
+ }finally{service.close();}
+});

@@ -40,7 +40,8 @@ export function validateDailyConfiguration(input,{photos}){
 }
 
 /** Public configuration and appearance receipts only. No account or database access. */
-export function createDailyContent({configurationPath,readConfiguration,appearanceDir,photos,fallback,now=Date.now,randomInt=secureRandomInt}){
+/** activationTime stamps a new receipt; it must return a time on the receipt's Beijing date that is not after the clock. */
+export function createDailyContent({configurationPath,readConfiguration,appearanceDir,photos,fallback,now=Date.now,randomInt=secureRandomInt,activationTime=clock=>clock}){
  const filename=readConfiguration===undefined?resolve(configurationPath):null,directory=resolve(appearanceDir),photoById=new Map(photos.filter(photo=>['published','archived'].includes(photo.status)).map(photo=>[photo.id,photo]));
  let timer=null,tickError=null;
  function configuration(){
@@ -73,7 +74,7 @@ export function createDailyContent({configurationPath,readConfiguration,appearan
   }
   photo??=plan?photoById.get(plan.imageId):fallback(clock);
   if(!photo||!photoById.has(photo.id))invalid('今日每日图片不可用。');
-  const value={schema:config.version===2?'jigsaw-daily-appearance/v2':'jigsaw-daily-appearance/v1',target:'mobile-shared',date,imageId:photo.id,albumId:plan?.albumId??null,activatedAt:clock,configDigest:config.configDigest,planned:Boolean(plan),...(config.version===2?{source}:{})};
+  const value={schema:config.version===2?'jigsaw-daily-appearance/v2':'jigsaw-daily-appearance/v1',target:'mobile-shared',date,imageId:photo.id,albumId:plan?.albumId??null,activatedAt:activationTime(clock),configDigest:config.configDigest,planned:Boolean(plan),...(config.version===2?{source}:{})};
   try{mkdirSync(directory,{recursive:true});writeFileSync(join(directory,date+'.json'),JSON.stringify(value)+'\n',{flag:'wx'});}catch(error){if(error.code==='EEXIST'){const existing=receipt(date,clock);if(existing)return existing;}throw Object.assign(new Error('每日出场记录未能保存。'),{status:503,code:'DAILY_APPEARANCE_UNAVAILABLE',cause:error});}
   tickError=null;return value;
  }

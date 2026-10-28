@@ -71,3 +71,21 @@ test('request daily reads and the independent 30-second tick share durable facts
   f.now=Date.parse('2026-10-14T04:00:00Z');timer.callback();assert.equal(reads,3);const next=JSON.parse(readFileSync(join(f.appearanceDir,'2026-10-14.json'),'utf8'));assert.equal(next.imageId,dailyPhotos[1].id);assert.equal(next.configDigest,docs('B').daily.configDigest);assert.equal(content.select(f.now).id,dailyPhotos[1].id);assert.equal(readFileSync(path,'utf8'),original);
  }finally{content?.close();f.close();}
 });
+
+test('a 20:00 mobile turnover stamps receipts on their own Beijing date so the midnight web reader accepts them at once',()=>{
+ const f=fixture();
+ try{
+  f.start({dailyTurnoverHour:20});
+  f.now=Date.parse('2026-10-13T19:59:00+08:00');assert.equal(f.ok('/api/daily').date,'2026-10-13');
+  f.now=Date.parse('2026-10-13T20:00:30+08:00');const evening=f.ok('/api/daily');assert.equal(evening.date,'2026-10-14');assert.equal(evening.photo.id,dailyPhotos[0].id);
+  const receipt=JSON.parse(readFileSync(join(f.appearanceDir,'2026-10-14.json'),'utf8'));
+  assert.equal(receipt.activatedAt,Date.parse('2026-10-14T00:00:00+08:00'));assert.equal(receipt.source,'scheduled');
+  const web=createManagedDailyContent({readSnapshot:()=>f.reader.read(),photos:RESTORABLE_PHOTOS,galleryPhotos:GALLERY_VISIBLE_PHOTOS,fallback:dailyPuzzle,appearanceDir:f.appearanceDir,now:()=>f.now});
+  try{
+   assert.equal(web.select(f.now).id,dailyPhotos[0].id,'the web reader still serves its own 13th');
+   f.now=Date.parse('2026-10-14T00:00:00+08:00');assert.equal(web.select(f.now).id,dailyPhotos[0].id);
+   assert.equal(JSON.parse(readFileSync(join(f.appearanceDir,'2026-10-14.json'),'utf8')).activatedAt,receipt.activatedAt,'the web reader reuses the mobile receipt');
+  }finally{web.close();}
+  f.now=Date.parse('2026-10-14T10:00:00+08:00');assert.equal(f.ok('/api/daily').date,'2026-10-14');
+ }finally{f.close();}
+});
