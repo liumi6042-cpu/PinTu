@@ -878,13 +878,15 @@ export class GameApp{
   for(let index=0;index<columns;index++){const cx=x+index*(cw+gap);s.panel({x:cx,y:top,w:cw,h});s.ctx.fillStyle=this.colors.line;s.ctx.globalAlpha=.22;s.ctx.fillRect(cx+10,top+10,cw-20,h-55);s.ctx.fillRect(cx+12,top+h-31,cw*.58,8);s.ctx.fillRect(cx+12,top+h-16,cw*.35,5);s.ctx.globalAlpha=1;}
   this.extent=top+h-this.bodyTop+18;
  }
- // TapTap H5 shows a floating, movable capsule, so it cannot be used as a layout anchor; keep a fixed 2px inset.
  private copyInvitationCode(code:string){if(!this.platform.copyText){this.note('邀请码：'+code);return;}void this.platform.copyText(code).then(ok=>this.note(ok?'已复制邀请码 '+code:'复制失败，请手动记下邀请码 '+code));}
+ /** Headers draw beside the nav rail in local coordinates, but keep the same screen right edge. */
+ private menuReserve(row:Rect){const view=this.platform.viewport(),menu=view.menu;return menu&&row.y<menu.y+menu.h&&menu.y<row.y+row.h?Math.max(0,view.width-menu.x+8):0;}
+ private portraitMenuTop(top:number){const view=this.platform.viewport();return view.width<=view.height&&view.menu?Math.max(top,view.menu.y+view.menu.h+8):top;}
  // Puzzle rooms get the same visible top gap as the lobby header (inset + 12).
- private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+6;return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
+ private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+6;return this.portraitMenuTop(this.headerSafeTop()+(this.platform.config.id==='web'?0:12));}
  private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
  private drawHeader(){
-  const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.platform.viewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360;
+  const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.platform.viewport().top,top=this.portraitMenuTop(safe+12+(this.formalWeb?23:0)),wide=s.w>=640&&s.h>560,small=s.w<360,reserve=this.menuReserve({x:0,y:top,w:s.w,h:wide?74:56});
   if(this.formalWeb){s.text('测试版',13,safe+7,10,this.colors.muted);this.drawWebLinks(Math.max(75,s.w-224),safe+7,Math.min(212,s.w-87));}
   if(this.platform.config.id==='wechat'&&safe>=30)s.text(this.platform.config.gameName,14,safe-26,13,this.colors.ink,700,Math.max(100,s.w-160));
   const line=(y:number)=>{s.ctx.fillStyle=s.color('#c99586');s.ctx.fillRect(12,Math.round(y),s.w-24,1);};
@@ -897,14 +899,14 @@ export class GameApp{
    const lx=12+avatar+4,lw=gallery?small?66:85:wide?92:small?42:55;
    s.text('Lv.'+(p?.level??'—'),lx,y+5,wide?23:small?14:16,this.levelColor(p?.level??0),800,lw);s.meter({x:lx,y:y+(wide?36:28),w:lw,h:8},p?p.xp/Math.max(1,p.xpToNext):0);s.text(p?p.xp+' / '+p.xpToNext:'—',lx,y+(wide?48:40),wide?12:10,this.colors.ink,500,lw+8);
    if(gallery){energy(12+playerWidth,y+5,Math.min(135,s.w-playerWidth-60),wide?20:16);s.icon('sprig',{x:s.w-45,y:y+h-39,w:30,h:28});}
-   else{const ex=12+playerWidth+4,orientation=this.platform.config.id==='taptap'&&!!this.platform.setOrientation,taskX=s.w-76-(orientation?48:0),right=this.route==='lobby'?taskX-8:s.w-(orientation?60:50);energy(ex,y+(h-43)/2,Math.min(220,right-ex),wide?22:small?14:16);s.icon('sprig',{x:s.w-30,y:y-14,w:18,h:18});if(this.route==='lobby')this.drawLobbyTasks({x:taskX,y:y+(h-40)/2,w:64,h:40});if(orientation)s.button({x:s.w-52,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
+   else{const ex=12+playerWidth+4,orientation=this.platform.config.id==='taptap'&&!!this.platform.setOrientation,taskX=s.w-76-(orientation?48:0)-reserve,right=this.route==='lobby'?taskX-8:s.w-(orientation?60:50)-reserve;energy(ex,y+(h-43)/2,Math.min(220,right-ex),wide?22:small?14:16);s.icon('sprig',{x:s.w-30-reserve,y:y-14,w:18,h:18});if(this.route==='lobby')this.drawLobbyTasks({x:taskX,y:y+(h-40)/2,w:64,h:40});if(orientation)s.button({x:s.w-52-reserve,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
    line(y+h);this.bodyTop=y+h+9;return;
   }
   const title=this.route==='tasks'?'任务与礼包':this.route==='friends'?'好友':this.route==='supplies'?'补给站':this.route==='collection'?'我的收藏':this.route==='privacy'||this.route==='terms'?'服务与隐私说明':'玩法与设置';
-  const titleX=this.tabRoute?14:53;if(!this.tabRoute)s.button({x:12,y:top,w:32,h:34},'',()=>this.back(),{icon:'back'});s.text(title,titleX,top+6,this.route==='collection'&&small?20:23,this.colors.ink,800,this.route==='collection'?s.w-220:s.w-112);
-  if(this.route==='collection'){const c=this.collection?.wallet??p?.collection;const coin=String(c?.coins??0),fragment=String(c?.fragments??0),fx=s.w-67,cx=fx-Math.max(61,s.measure(coin,12,700)+26);s.icon('coin',{x:cx,y:top+7,w:20,h:22});s.text(coin,cx+23,top+11,12,this.colors.ink,700,fx-cx-25);s.icon('fragment',{x:fx,y:top+7,w:19,h:22});s.text(fragment,fx+22,top+11,12,this.colors.ink,700,42);s.hit({x:cx-5,y:top,w:fx-cx,h:37},()=>this.showModal('coins'));s.hit({x:fx-4,y:top,w:64,h:37},()=>this.showModal('fragments'));}
-  else if(this.route==='supplies'){energy(Math.max(151,s.w-169),top-1,104,small?13:15);if(!this.formalWeb){s.icon('ticket',{x:s.w-58,y:top+5,w:24,h:25});s.text(p?.supply.create??0,s.w-30,top+12,13,this.colors.ink,700);}}
-  else s.button({x:s.w-52,y:top+1,w:38,h:32},'设置',()=>this.showModal('settings'),{fontSize:10});
+  const titleX=this.tabRoute?14:53;if(!this.tabRoute)s.button({x:12,y:top,w:32,h:34},'',()=>this.back(),{icon:'back'});s.text(title,titleX,top+6,this.route==='collection'&&small?20:23,this.colors.ink,800,(this.route==='collection'?s.w-220:s.w-112)-reserve);
+  if(this.route==='collection'){const c=this.collection?.wallet??p?.collection;const coin=String(c?.coins??0),fragment=String(c?.fragments??0),fx=s.w-67-reserve,cx=fx-Math.max(61,s.measure(coin,12,700)+26);s.icon('coin',{x:cx,y:top+7,w:20,h:22});s.text(coin,cx+23,top+11,12,this.colors.ink,700,fx-cx-25);s.icon('fragment',{x:fx,y:top+7,w:19,h:22});s.text(fragment,fx+22,top+11,12,this.colors.ink,700,42);s.hit({x:cx-5,y:top,w:fx-cx,h:37},()=>this.showModal('coins'));s.hit({x:fx-4,y:top,w:64,h:37},()=>this.showModal('fragments'));}
+  else if(this.route==='supplies'){energy(Math.max(151,s.w-169-reserve),top-1,104,small?13:15);if(!this.formalWeb){s.icon('ticket',{x:s.w-58-reserve,y:top+5,w:24,h:25});s.text(p?.supply.create??0,s.w-30-reserve,top+12,13,this.colors.ink,700);}}
+  else s.button({x:s.w-52-reserve,y:top+1,w:38,h:32},'设置',()=>this.showModal('settings'),{fontSize:10});
   line(top+46);this.bodyTop=top+59;
  }
 
@@ -963,20 +965,23 @@ export class GameApp{
   const description='拼完一格，故事就往下走一格。'+(this.energyEnabled?'每格第一次拼完送 '+(view?.firstClearEnergy??0)+' 体力。':'');
   const mainLabel=complete?'从头看':current?'拼第 '+(chapter.levels.indexOf(current)+1)+' 格（'+current.pieces+' 片）':'暂未解锁';
   const mainAction=()=>{if(complete)this.openLevelComic(chapter.levels[0].id,{sequence:true});else if(current)void this.launch({mode:'level',levelId:current.id});};
+  const progressWidth=portrait?width:Math.min(172,width*.26),chapterSwitch={x:left+width-progressWidth-128,y:top,w:120,h:40};
   const heading=(y:number)=>{
-   s.text('小窝的故事',left,y,24,this.colors.ink,800,width);
-   s.text('第 '+number+' 章 · '+chapter.title,left,y+28,12,this.colors.muted,700,portrait?width:width-190);
-   const x=portrait?left:left+width-172,py=portrait?y+54:y;
+   const textWidth=portrait?width:chapterSwitch.x-left-12;
+   s.text('小窝的故事',left,y,24,this.colors.ink,800,textWidth);
+   s.text('第 '+number+' 章 · '+chapter.title,left,y+28,12,this.colors.muted,700,textWidth);
+   const x=portrait?left:left+width-progressWidth,py=portrait?y+54:y;
    s.text(cleared+' / '+total+' 格',x,py,14,this.colors.ink,700,172);
-   s.meter({x,y:py+23,w:portrait?width:172,h:6},total?cleared/total:0);
+   s.meter({x,y:py+23,w:progressWidth,h:6},total?cleared/total:0);
   };
+  const fit=(value:string,width:number,size:number,weight=600)=>{if(s.measure(value,size,weight)<=width)return value;let text=value;while(text.length&&s.measure(text+'…',size,weight)>width)text=text.slice(0,-1);return text+'…';};
   const bubble=(line:string,r:Rect)=>{
    // Wrap at most once. Move closing punctuation with the previous character.
-   const room=r.w-32,chars=[...line];let count=0;while(count<chars.length&&s.measure(chars.slice(0,count+1).join(''),11,600)<=room)count++;
+   const size=!portrait&&r.h<64?10:11,rowHeight=size+4,room=r.w-32,chars=[...line];let count=0;while(count<chars.length&&s.measure(chars.slice(0,count+1).join(''),size,600)<=room)count++;
    while(count>1&&count<chars.length&&/[。，、！？；：…）」』”’]/.test(chars[count]))count--;count=Math.max(1,count);
-   const rows=count<chars.length?[chars.slice(0,count).join(''),chars.slice(count).join('')]:[line],bw=Math.min(r.w-16,Math.max(...rows.map(row=>s.measure(row,11,600)))+18),bh=rows.length*15+10,bx=r.x+r.w-bw-8,by=r.y+r.h-bh-7;
+   const rows=(!portrait&&r.h<64?[line]:count<chars.length?[chars.slice(0,count).join(''),chars.slice(count).join('')]:[line]).map(row=>portrait?row:fit(row,room,size)),bw=Math.min(r.w-16,Math.max(...rows.map(row=>s.measure(row,size,600)))+18),bh=!portrait&&r.h<64?size+10:rows.length*rowHeight+10,bx=r.x+r.w-bw-8,by=r.y+r.h-bh-7;
    ctx.save();ctx.fillStyle=this.colors.cream;ctx.strokeStyle=this.colors.ink;ctx.lineWidth=2;roomRoundPath(ctx,{x:bx,y:by,w:bw,h:bh},7);ctx.fill();ctx.stroke();ctx.restore();
-   rows.forEach((row,index)=>s.text(row,bx+8,by+5+index*15,11,this.colors.ink,600,bw-16));
+   rows.forEach((row,index)=>s.text(row,bx+8,by+5+index*rowHeight,size,this.colors.ink,600,bw-16));
   };
   const card=(index:number,r:Rect)=>{
    const level=chapter.levels[index],state=nodeState(level,current),done=state==='cleared',active=state==='current',photo=level.imageId?photoMap.get(level.imageId):undefined,src=photo?.src||photo?.thumbSrc;
@@ -984,16 +989,16 @@ export class GameApp{
    if(src&&done)s.clip(r,()=>s.image(this.client.asset(src),r,'cover'));
    ctx.save();ctx.strokeStyle=active?'#cf9f52':done?this.colors.ink:'#b88f84';ctx.lineWidth=active?3:2;if(state==='locked')ctx.setLineDash?.([6,4]);ctx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);ctx.restore();
    if(done){
-    ctx.save();ctx.fillStyle=this.colors.ink;ctx.fillRect(r.x+3,r.y+3,22,22);ctx.restore();s.text(index+1,r.x+9,r.y+7,12,this.colors.cream,800,18);
+    const badge=!portrait&&r.h<64?14:22;ctx.save();ctx.fillStyle=this.colors.ink;ctx.fillRect(r.x+3,r.y+3,badge,badge);ctx.restore();s.text(index+1,r.x+(badge===14?6:9),r.y+(badge===14?5:7),badge===14?9:12,this.colors.cream,800,badge-4);
     if(level.line&&!portrait)bubble(level.line,r);
     s.hit(r,()=>this.openLevelComic(level.id));
    }else if(active){
-    const label='第 '+(index+1)+' 格 · '+level.pieces+' 片',hint='拼完解锁这一页',size=portrait?16:12,cx=r.x+r.w/2,cy=r.y+r.h/2;
-    ctx.save();ctx.fillStyle='#cf9f52';ctx.beginPath();ctx.moveTo(cx-5,cy-29);ctx.lineTo(cx-5,cy-15);ctx.lineTo(cx+7,cy-22);ctx.closePath();ctx.fill();ctx.restore();
-    s.text(label,cx-s.measure(label,size,800)/2,cy-8,size,this.colors.ink,800,r.w-12);
-    s.text(hint,cx-s.measure(hint,11,600)/2,cy+15,11,this.colors.muted,600,r.w-12);
+    const compact=!portrait&&r.h<72,size=portrait?16:compact?10:12,label=portrait?'第 '+(index+1)+' 格 · '+level.pieces+' 片':fit('第 '+(index+1)+' 格 · '+level.pieces+' 片',r.w-12,size,800),hint='拼完解锁这一页',hintSize=compact?9:11,cx=r.x+r.w/2,cy=r.y+r.h/2;
+    if(!compact){ctx.save();ctx.fillStyle='#cf9f52';ctx.beginPath();ctx.moveTo(cx-5,cy-29);ctx.lineTo(cx-5,cy-15);ctx.lineTo(cx+7,cy-22);ctx.closePath();ctx.fill();ctx.restore();}
+    s.text(label,cx-s.measure(label,size,800)/2,cy-(compact?12:8),size,this.colors.ink,800,r.w-12);
+    const hintText=portrait?hint:fit(hint,r.w-12,hintSize);s.text(hintText,cx-s.measure(hintText,hintSize,portrait?500:600)/2,cy+(compact?5:15),hintSize,this.colors.muted,600,r.w-12);
     s.hit(r,()=>{if(!this.busy&&(this.client.profile||this.offline?.active))void this.launch({mode:'level',levelId:level.id});});
-   }else{const label=timeLabelFor(chapter,index,level)??'第 '+(index+1)+' 格',w=s.measure(label,12,700),x=r.x+(r.w-w-28)/2;
+   }else{const raw=timeLabelFor(chapter,index,level)??'第 '+(index+1)+' 格',label=portrait?raw:fit(raw,r.w-40,12,700),w=s.measure(label,12,700),x=r.x+(r.w-w-28)/2;
     s.icon('lock',{x,y:r.y+(r.h-18)/2,w:18,h:18},this.colors.muted);s.text(label,x+28,r.y+(r.h-12)/2,12,this.colors.muted,700,r.w-40);
     s.hit(r,()=>this.note('先拼完前面的格子，就能解锁这里'));
    }
@@ -1034,18 +1039,23 @@ export class GameApp{
   }else{
    // Alternating cards share horizontal space. Keep both rows visible without scrolling.
    this.scroll=0;this.extent=0;heading(top);
-   const scale=s.w<760?Math.max(132/168,Math.min(1,s.w/760)):1,cw=168*scale,ch=92*scale,railTop=top+40,railBottom=bottom-40,cy=(railTop+railBottom)/2;
+   // Reserve title/footer first. The 34px rail band includes the largest node.
+   // A 36px gap between same-row cards also leaves a readable metadata slot.
+   const headingBottom=top+40,railBand=34,minHeight=44,buttonH=26,stacked=bottom-headingBottom-16-42>=minHeight*2+railBand,footerTop=bottom-(stacked?42:buttonH),railTop=headingBottom+8,railBottom=footerTop-8;
+   const heightLimit=Math.max(0,(railBottom-railTop-railBand)/2),widthLimit=total>1?(2*width-36*(total-1))/(total+1):width;
+   // For an exceptionally small host, bounds win over the preferred 44px minimum.
+   const ch=Math.min(92,heightLimit,Math.max(0,widthLimit)*92/168),cw=ch*168/92,cy=(railTop+railBottom)/2;
    const points=chapter.levels.map((_,index)=>({x:left+cw/2+(width-cw)*index/Math.max(1,total-1),y:cy}));track(points);
    chapter.levels.forEach((level,index)=>{
-    const point=points[index],above=index%2===0,r={x:point.x-cw/2,y:above?cy-13-ch:cy+13,w:cw,h:ch};card(index,r);node(index,point.x,point.y);
-    const label=timeLabelFor(chapter,index,level),my=above?cy+20:cy-46,mw=80;
-    if(label)s.text(label,point.x-s.measure(label,11,700)/2,my,11,this.colors.muted,700,mw);
-    const pieces=level.pieces+' 片';s.text(pieces,point.x-s.measure(pieces,11,600)/2,my+(label?16:0),11,this.colors.muted,600,mw);
+    const point=points[index],above=index%2===0,r={x:clamp(point.x-cw/2,left,left+width-cw),y:above?cy-railBand/2-ch:cy+railBand/2,w:cw,h:ch};card(index,r);node(index,point.x,point.y);
+    const step=total>1?(width-cw)/(total-1):width,mw=Math.max(1,Math.min(80,total>1?2*step-cw-8:width,2*(point.x-left),2*(left+width-point.x))),label=timeLabelFor(chapter,index,level),size=Math.min(11,Math.max(8,mw/4)),rows=label&&ch>=44?[label,level.pieces+' 片']:[label??level.pieces+' 片'],metaH=rows.length*size+(rows.length-1)*4,my=above?cy+railBand/2+4:cy-railBand/2-4-metaH;
+    rows.forEach((value,row)=>{const text=fit(value,mw,size,700);s.text(text,point.x-s.measure(text,size,700)/2,my+row*(size+4),size,this.colors.muted,700,mw);});
    });
-   s.text(description,left,bottom-39,10,this.colors.muted,500,width);
-   const bw=Math.min(240,(width-12)/2),by=bottom-26;
+   const showLobby=!this.offline?.active||this.ready,count=showLobby?2:1,bw=Math.min(stacked?240:132,(width-12)/2),by=bottom-buttonH,descriptionWidth=stacked?width:width-count*(bw+12),footerText=s.measure(description,10,500)<=descriptionWidth?description:'拼完一格，故事往下走一格';
+   s.text(fit(footerText,descriptionWidth,10,500),left,stacked?footerTop:by+8,10,this.colors.muted,500,descriptionWidth);
    if(!this.offline?.active||this.ready)s.button({x:left+width-bw*2-12,y:by,w:bw,h:26},'去大厅逛逛',()=>this.navigate('lobby'),{fontSize:12});
    s.button({x:left+width-bw,y:by,w:bw,h:26},mainLabel,mainAction,{tone:'berrydark',fontSize:13,disabled:this.busy||(!this.client.profile&&!this.offline?.active)||(!current&&!complete)});
+   return {chapterSwitch,cardSize:{w:cw,h:ch}};
   }
  }
  /** Synchronous entry, also used by offline play. No refresh or API request. */
@@ -1703,13 +1713,15 @@ export class GameApp{
    items.forEach(([kind,label],index)=>{const b={x:r.x+5,y:r.y+index*h,w:r.w-10,h:h-5},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
     if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+4,w:22,h:22});s.text(label,b.x+(b.w-s.measure(label,12,700))/2,b.y+b.h-17,12,disabled?this.colors.disabled:this.colors.ink,700);if(!disabled)s.hit(b,()=>this.roomTool(kind));});return;
   }
-  const s=this.stage,c=s.ctx,toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
+  const s=this.stage,c=s.ctx,menu=this.platform.viewport().menu;
+  if(menu){const y=Math.max(r.y,menu.y+menu.h+8);r={...r,y,h:Math.max(0,r.y+r.h-y)};}
+  const toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};toggle.x-=this.menuReserve(toggle);this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
   if(this.landscapeToolsOpen){
    c.fillStyle=roomColors.cream;c.fillRect(r.x,0,r.w,s.h);c.fillStyle=roomColors.line;c.fillRect(r.x,0,2,s.h);s.hit(r,()=>{});
-   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['locate','定位'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),height=Math.min(58,Math.floor(r.h/items.length)),gap=Math.min(4,Math.max(0,(r.h-items.length*height)/(items.length-1))),top=(r.h-(items.length*height+(items.length-1)*gap))/2;
+   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['locate','定位'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),height=Math.min(58,Math.floor(r.h/items.length)),gap=Math.min(4,Math.max(0,(r.h-items.length*height)/(items.length-1))),top=r.y+(r.h-(items.length*height+(items.length-1)*gap))/2;
    items.forEach(([kind,label],index)=>{const b={x:r.x+6,y:top+index*(height+gap),w:r.w-12,h:height},badge=kind==='hint'||kind==='underlay',active=this.toolActive(kind),disabled=badge&&this.assistanceUnavailable(kind);
     if(active||s.isPressed(b))this.drawLandscapeSurface(b,8,roomColors.roseL);
-    s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+10,w:22,h:22},roomColors.ink);s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+38,11,roomColors.ink,700);
+    s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+Math.min(10,Math.max(0,height-39)),w:22,h:22},roomColors.ink);s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+Math.min(38,height-11),11,roomColors.ink,700);
     if(badge){const grant=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,text=grant?Math.ceil((grant.expiresAt-Date.now())/1000)+'秒':!this.aid?'读取中':this.aid.newcomerProtected||free>0?'免费':this.shareAvailable?'分享':'暂未开放',bw=s.measure(text,8.5,700)+6;
      this.drawLandscapeSurface({x:b.x,y:b.y,w:bw,h:13},3,roomColors.goldL);s.text(text,b.x+3,b.y+2,8.5,'#7a4d10',700);
     }if(!disabled)s.hit(b,()=>this.roomTool(kind));
@@ -1735,6 +1747,7 @@ export class GameApp{
  private roomToolsArea:Rect={x:0,y:0,w:0,h:0};private roomMembersArea:Rect={x:0,y:0,w:0,h:0};
  private get chatUnread(){return this.messages.filter(message=>message.id>this.chatSeen&&message.code!==this.client.profile?.code&&!this.social.blockedCodes.includes(message.code)).length;}
  private drawRoomTopBar(r:Rect,mode:'desktop'|'portrait'|'landscape'){
+  if(mode!=='portrait')r={...r,w:Math.min(r.w,this.stage.w-this.menuReserve(r)-r.x)};
   const s=this.stage,room=this.room!,photo=activeRoomPhoto(room.snapshot,photoMap.get(room.state.imageId)),title=room.snapshot.title||photo?.title||'一起拼图',total=room.state.cols*room.state.rows,placed=placedCount(room.state),percent=Math.floor(placed/Math.max(1,total)*100),members=room.snapshot.members,kind=total+' 片 · '+(room.snapshot.visibility==='private'?'私人房':'公开房'),ink=this.colors.ink;
   const back=(x:number,y:number)=>{s.button({x,y,w:36,h:36},'',()=>this.exitRoom());s.icon('back',{x:x+7,y:y+7,w:22,h:22});};
   const avatars=(right:number,y:number,size:number)=>{const shown=members.slice(0,3),label=members.length+'/'+seatLimit(room.snapshot),lw=s.measure(label,13,700);let x=right-lw;s.text(label,x,y+(size-13)/2,13,ink,700);x-=6+(shown.length?size+(shown.length-1)*(size*.62):0);const start=x;shown.forEach((_member,index)=>s.icon('avatar',{x:x+index*size*.62,y,w:size,h:size*1.08}));return start;};

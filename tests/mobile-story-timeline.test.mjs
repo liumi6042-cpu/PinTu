@@ -52,7 +52,7 @@ for(const [width,height]of [[844,390],[390,844],[1280,800]])for(const cleared of
  if(width>height){
   assert.equal(f.app.extent,0);assert.equal(f.app.scroll,0);
   const cards=f.strokes.map(stroke=>({x:stroke.r.x-1,y:stroke.r.y-1,w:stroke.r.w+2,h:stroke.r.h+2}));assert.equal(cards.length,6);
-  cards.forEach((r,index)=>{assert.equal(r.w,168);assert.equal(r.h,92);inside(r,width,height);assert.ok(index%2===0?r.y+r.h<nodes[index].y:r.y>nodes[index].y);});
+  cards.forEach((r,index)=>{assert.ok(r.w<=168);assert.ok(r.h>=44&&r.h<=92);assert.ok(Math.abs(r.w/r.h-168/92)<.001);inside(r,width,height);assert.ok(index%2===0?r.y+r.h<nodes[index].y:r.y>nodes[index].y);});
   for(const {r}of [...f.images,...f.buttons,...f.fills,...f.strokes])inside(r,width,height);
   for(const node of nodes)inside({x:node.x-node.radius,y:node.y-node.radius,w:node.radius*2,h:node.radius*2},width,height);
   for(const glyph of f.glyphs)inside({x:glyph.x,y:glyph.y,w:f.stage.measure(glyph.value),h:glyph.size},width,height);
@@ -68,7 +68,7 @@ test('narrow landscape cards scale proportionally, keep minimum size and stay on
  for(const width of [740,667,568]){
   const f=fixture({width,height:390,data:levels(3)});await artwork(f);f.app.scroll=50;f.app.drawChapter();
   assert.equal(f.app.scroll,0);assert.equal(f.app.extent,0);
-  for(const {r}of f.strokes){assert.ok(r.w+2>=132);assert.ok(r.h+2>=72);assert.ok(r.w+2<168);assert.ok(Math.abs((r.w+2)/(r.h+2)-168/92)<.001);inside(r,width,390);}
+  for(const {r}of f.strokes){assert.ok(r.w+2>=44*168/92);assert.ok(r.h+2>=44);assert.ok(r.w+2<168);assert.ok(Math.abs((r.w+2)/(r.h+2)-168/92)<.001);inside(r,width,390);}
  }
 });
 

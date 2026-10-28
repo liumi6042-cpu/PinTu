@@ -111,7 +111,23 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   cancel.onclick=()=>finish(null);form.onsubmit=event=>{event.preventDefault();finish(field.value);};dialog.oncancel=event=>{event.preventDefault();finish(null);};
   actions.appendChild(cancel);actions.appendChild(send);form.appendChild(heading);form.appendChild(field);form.appendChild(actions);dialog.appendChild(form);document.body.appendChild(dialog);dialog.showModal();field.focus();
  });
- const viewport=():Viewport=>{const rect=canvas.getBoundingClientRect();scale=uiScale(uiSize);return {width:(rect.width||window.innerWidth)/scale,height:(rect.height||window.innerHeight)/scale,dpr:(window.devicePixelRatio||1)*scale,top:0,bottom:0};};
+ const orientationChoiceAvailable=()=>{const host=tap() as (TapHost&{getSystemInfoSync?:()=>{platform?:unknown}})|undefined;if(typeof host?.setDeviceOrientation!=='function')return false;try{return !['windows','mac','macos','pc'].includes(String(host.getSystemInfoSync?.()?.platform??'').toLowerCase());}catch{return false;}};
+ const viewport=():Viewport=>{
+  const rect=canvas.getBoundingClientRect();scale=uiScale(uiSize);
+  const width=rect.width||window.innerWidth,height=rect.height||window.innerHeight,view:Viewport={width:width/scale,height:height/scale,dpr:(window.devicePixelRatio||1)*scale,top:0,bottom:0};
+  if(config.id==='taptap'){
+   try{
+    const menu=tap()?.getMenuButtonBoundingClientRect?.();
+    // SDK rectangles use CSS window coordinates; Stage coordinates are canvas-local.
+    if(menu&&[menu.left,menu.top,menu.width,menu.height].every(Number.isFinite)&&menu.width>0&&menu.height>0){
+     const x=menu.left-(rect.left||0),y=menu.top-(rect.top||0),right=x+menu.width;
+     if(x>=0&&y>=0&&right>=width*.6&&right<=width&&y<height*.3&&y+menu.height<=height)view.menu={x:x/scale,y:y/scale,w:menu.width/scale,h:menu.height/scale};
+    }
+   }catch{}
+   if(!view.menu&&width>height&&orientationChoiceAvailable())view.menu={x:Math.max(0,width-100)/scale,y:0,w:Math.min(100,width)/scale,h:Math.min(48,height)/scale};
+  }
+  return view;
+ };
  function query(){const url=new URL(location.href),hash=url.hash.slice(1),at=hash.indexOf('?'),result=Object.fromEntries([...url.searchParams,...new URLSearchParams(at<0?'':hash.slice(at+1))]);try{const native=tap()?.getEnterOptionsSync?.()??tap()?.getLaunchOptionsSync?.();return {...result,...tapShareScene(native?.query?.sceneParam)};}catch{return result;}}
  let apiTransport:'undecided'|'browser'|'native'='undecided';
  let apiProbe:Promise<HttpReply>|null=null;
@@ -260,7 +276,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    return()=>{reset();resetInput=null;canvas.style.touchAction=restore;if(tabIndex===null)canvas.removeAttribute('tabindex');else canvas.setAttribute('tabindex',tabIndex);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',cancel);canvas.removeEventListener('pointerleave',leave);canvas.removeEventListener('lostpointercapture',lost);canvas.removeEventListener('touchstart',touchDown);canvas.removeEventListener('touchmove',touchMove);canvas.removeEventListener('touchend',touchUp);canvas.removeEventListener('touchcancel',touchCancel);canvas.removeEventListener('wheel',wheel);window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',reset);document.removeEventListener('visibilitychange',hide);};
   },
   ...(config.id==='web'?{fullscreen:webFullscreen(document)}:{}),
-  ...(config.id==='taptap'?{setOrientation:(value:'portrait'|'landscape')=>setTapOrientation(tap(),value),orientationChoiceAvailable:()=>{const host=tap() as (TapHost&{getSystemInfoSync?:()=>{platform?:unknown}})|undefined;if(typeof host?.setDeviceOrientation!=='function')return false;try{return !['windows','mac','macos','pc'].includes(String(host.getSystemInfoSync?.()?.platform??'').toLowerCase());}catch{return false;}}}:{}),
+  ...(config.id==='taptap'?{setOrientation:(value:'portrait'|'landscape')=>setTapOrientation(tap(),value),orientationChoiceAvailable}:{}),
   onResize(fn){const host=tap(),nativeChange=()=>{identityController?.refreshLayout();fn();};let nativeListening=false;if(host?.onDeviceOrientationChange&&host.offDeviceOrientationChange){try{host.onDeviceOrientationChange(nativeChange);nativeListening=true;}catch{}}window.addEventListener('resize',nativeChange);document.addEventListener('fullscreenchange',nativeChange);const observer=typeof ResizeObserver==='function'?new ResizeObserver(nativeChange):null;observer?.observe(canvas);resizeListeners.add(nativeChange);return()=>{resizeListeners.delete(nativeChange);window.removeEventListener('resize',nativeChange);document.removeEventListener('fullscreenchange',nativeChange);if(nativeListening)try{host?.offDeviceOrientationChange?.(nativeChange);}catch{}observer?.disconnect();};},
   onHide(fn){const hide=()=>{if(document.hidden){identityController?.setHidden(true);audioPlayback.setHidden(true);fn();}};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},
   onShow(fn){const show=()=>{if(!document.hidden){identityController?.refreshLayout();identityController?.setHidden(!identityVisible);audioPlayback.setHidden(false);fn(query());}};document.addEventListener('visibilitychange',show);window.addEventListener('hashchange',show);return()=>{document.removeEventListener('visibilitychange',show);window.removeEventListener('hashchange',show);};},

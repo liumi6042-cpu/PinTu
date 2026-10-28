@@ -3,7 +3,7 @@ import type {LoginLog} from './login-log';
 import type {OfflineCatalog} from '../lib/offline-catalog-types';
 export type PlatformId='web'|'taptap'|'wechat';
 export type UiSize='auto'|'small'|'large'|'xlarge';
-export type Viewport={width:number;height:number;dpr:number;top:number;bottom:number};
+export type Viewport={width:number;height:number;dpr:number;top:number;bottom:number;menu?:{x:number;y:number;w:number;h:number}};
 export type Point={id:number;x:number;y:number};
 export type Input={
  type:'down'|'move'|'up'|'cancel'|'wheel'|'key';points:Point[];changed:Point[];
