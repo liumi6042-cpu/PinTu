@@ -28,11 +28,10 @@ const DRAG_SURFACE_BYTES=24*1024*1024;
 export const DRAG_SLOP=8;
 /** A held group grows by at most this fraction, and at most DRAG_LIFT_PX at its far edge, around the finger. */
 const DRAG_LIFT_SCALE=.08,DRAG_LIFT_PX=6;
-/** A finger covers the piece it drops, so a release within this reach of the board spot or a
- * matching neighbour is aligned exactly before the drop is sent: at least DROP_ASSIST_MIN of a
- * piece, DROP_ASSIST_PX on screen when zoomed out, never more than DROP_ASSIST_MAX of a piece.
- * The server keeps its own tolerance, and an exact offset always passes it. */
-const DROP_ASSIST_MIN=.4,DROP_ASSIST_MAX=.6,DROP_ASSIST_PX=28;
+/** A finger covers the piece it drops, so a release within DROP_ASSIST of a piece from the board spot or a
+ * matching neighbour is aligned exactly before the drop is sent. The server keeps its own tolerance,
+ * and an exact offset always passes it. */
+const DROP_ASSIST=.375;
 /** The nearest offset within reach that the server's drop would snap or join to, or null. */
 export function dropAssistOffset(state:PuzzleState,id:number,reach:number,blocked:ReadonlySet<number>=new Set()):{dx:number;dy:number}|null{
  const active=state.groups.find(g=>g.id===id);if(!active||active.locked)return null;
@@ -579,7 +578,7 @@ export class PuzzleBoard implements RoomTable {
   }
  }
  private assistDrop(group:Group){
-  const unit=Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows),reach=Math.min(unit*DROP_ASSIST_MAX,Math.max(unit*DROP_ASSIST_MIN,DROP_ASSIST_PX/this.camera.z));
+  const unit=Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows),reach=unit*DROP_ASSIST;
   const to=dropAssistOffset(this.state,group.id,reach,new Set(Object.keys(this.owners).map(Number)));if(to)moveGroup(this.state,group.id,to.dx,to.dy);
  }
  /** The held group is drawn slightly larger around the holding finger, so the

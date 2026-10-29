@@ -74,22 +74,24 @@ test('wechat-style board sends claim/move/drop but never awards or merges before
  board.destroy();
 });
 
-test('a zoomed-out release half a piece off its spot is aligned before the drop is sent',async()=>{
- const drop=async z=>{
+test('a release within 3/8 of a piece is aligned before the drop is sent, at any zoom',async()=>{
+ const drop=async(z,frac)=>{
   const {board}=setup(),state=board.state,events=[];await board.setImage('local-test.png');board.networkReady=true;
   board.network={canAcquire:()=>true,acquire:async()=>true,move(){},drop:async(...args)=>events.push(args),release(){}};
-  const unit=Math.min(board.board.width/state.cols,board.board.height/state.rows),group=state.groups.at(-1),off=unit*.5;
+  const unit=Math.min(board.board.width/state.cols,board.board.height/state.rows),group=state.groups.at(-1),off=unit*frac;
   for(const other of state.groups)if(other!==group){other.dx=-2000;other.dy=-2000;}
   group.dx=0;group.dy=0;board.camera={x:0,y:0,z:1};const spot=piecePoint(board,group);
   board.camera={x:board.rect.w/2-(spot.x-board.rect.x)*z,y:board.rect.h/2-(spot.y-board.rect.y)*z,z};
   const start=piecePoint(board,group);
-  assert.ok(off>snapTolerance(state),'the old server tolerance alone would miss this drop');
+  if(frac<.375)assert.ok(off>snapTolerance(state),'the old server tolerance alone would miss this drop');
   const target={...start,x:start.x+off*z};
   board.input({type:'down',points:[start],changed:[start]});await Promise.resolve();board.input({type:'move',points:[target],changed:[target]});board.input({type:'up',points:[],changed:[target]});
   board.destroy();return {sent:events.at(-1),group,off};
  };
- const far=await drop(.3);assert.deepEqual(far.sent,[far.group.id,0,0],'zoomed out, the finger-covered drop lands exactly on its spot');
- const near=await drop(2);assert.equal(near.sent[0],near.group.id);assert.ok(Math.abs(near.sent[1]-near.off)<1e-6,'zoomed in, the drop keeps its place');
+ for(const z of [.3,2]){
+  const inside=await drop(z,.35);assert.deepEqual(inside.sent,[inside.group.id,0,0],`at zoom ${z}, a finger-covered drop lands exactly on its spot`);
+  const outside=await drop(z,.45);assert.equal(outside.sent[0],outside.group.id);assert.ok(Math.abs(outside.sent[1]-outside.off)<1e-6&&Math.abs(outside.sent[2])<1e-6,`at zoom ${z}, a drop beyond 3/8 of a piece keeps its place`);
+ }
 });
 
 test('drop assist aligns with a matching neighbour unless another player holds it',()=>{
