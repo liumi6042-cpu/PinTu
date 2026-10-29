@@ -2,7 +2,7 @@ import type {Platform,Input,Rect,Route,WebLinks} from './ports';
 import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
 import {timeLabelFor,nodeState} from './story-timeline';
-import {comicFor,comicSource,comicPageRect,comicLayout,comicTextCount,drawComicPage,drawComicText,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
+import {comicFor,comicSource,comicCloseRect,comicPageRect,comicLayout,comicTextCount,drawComicPage,drawComicText,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
 import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
@@ -101,6 +101,7 @@ export class GameApp{
  private chapterEntryChecked=false;private storyChapterId:string|null=null;
  private comicPage:ComicPageState|null=null;private comicRead?:Set<string>;
  private comicGesture:{id:number;x:number;y:number;lastY:number;lastAt:number;velocity:number;axis?:'x'|'y'}|null=null;
+ private comicClosePress:number|null=null;
  private comicDrag=0;private comicSnap?:{started:number;offset:number};private comicHintUntil=0;private comicHintSeen=false;private comicBack?:()=>void;private storyFrame:number|null=null;
  private storyIntro:{text:string;until:number}|null=null;
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
@@ -398,7 +399,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
+ private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
   if(this.offlineRoom||this.offline?.active&&!this.ready)return;
@@ -1135,7 +1136,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(!level||index<0||index>=this.comicLimit(chapter))return;
   const returnTo=this.modal==='completion'?'completion':this.modal==='levelComic'?this.comicPage?.returnTo??null:null,comic=comicFor(chapter,index,level)!;
   this.preloadComicPage(comic);
-  this.stopStoryFrame();this.comicGesture=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;
+  this.stopStoryFrame();this.comicClosePress=null;this.comicGesture=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;
   if(!this.comicHintSeen){
    try{this.comicHintSeen=this.platform.storage.get('jigsaw:comic-hint:v1')==='1';}catch{}
    if(!this.comicHintSeen){this.comicHintUntil=Date.now()+2500;this.comicHintSeen=true;try{this.platform.storage.set('jigsaw:comic-hint:v1','1');}catch{}}
@@ -1196,6 +1197,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   c.save();c.globalAlpha*=.45;c.strokeStyle='#fff4cf';c.lineWidth=1;
   for(let index=0;index<=limit;index++){c.fillStyle=index===page.index?'#fff4cf':'#cf9f9f';c.beginPath();c.arc(start+(index+.5)*step,dots.y+7,2.5,0,Math.PI*2);if(index<limit)c.fill();else c.stroke();}c.restore();
   if(this.comicHintUntil>now){c.save();c.globalAlpha*=.45*Math.min(1,(this.comicHintUntil-now)/400);const text='左右滑动翻页 · 下滑关闭',size=Math.min(12,(area.w-24)/text.length);s.text(text,area.x+(area.w-s.measure(text,size,500))/2,area.y+area.h-30,size,'#fffdf8',500,area.w-24);c.restore();this.animateStory();}
+  // Draw last, outside the animated/fading page and the first-open hint.
+  const close=comicCloseRect(view),cx=close.x+close.w/2,cy=close.y+close.h/2;
+  c.save();c.globalAlpha*=.55;c.fillStyle='#3d2129';c.beginPath();c.arc(cx,cy,20,0,Math.PI*2);c.fill();c.restore();
+  // The button sits on the same dark backdrop, so a faint ring keeps its outline readable.
+  c.save();c.strokeStyle='rgba(255,255,255,.4)';c.lineWidth=1.5;c.beginPath();c.arc(cx,cy,19.25,0,Math.PI*2);c.stroke();c.restore();
+  c.save();c.strokeStyle='#ffffff';c.lineWidth=2.5;c.lineCap='round';c.beginPath();c.moveTo(cx-7,cy-7);c.lineTo(cx+7,cy+7);c.moveTo(cx+7,cy-7);c.lineTo(cx-7,cy+7);c.stroke();c.restore();
+  s.hit(close,()=>this.closeModal());
  }
  private snapComicBack(){
   this.comicSnap=this.comicDrag&&!reducedComicMotion()?{started:Date.now(),offset:this.comicDrag}:undefined;
@@ -1205,7 +1213,15 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private inputComic(input:Input){
   const point=input.changed[0]??input.points[0],now=Date.now();
   if(input.type==='down'){this.comicHintUntil=0;this.invalidate();}
-  if(input.type==='cancel'||input.points.length>1){this.comicGesture=null;this.snapComicBack();this.stage.input({type:'cancel',points:[],changed:[]});return true;}
+  if(input.type==='cancel'||input.points.length>1){this.comicClosePress=null;this.comicGesture=null;this.snapComicBack();this.stage.input({type:'cancel',points:[],changed:[]});return true;}
+  const close=comicCloseRect(this.platform.viewport());
+  if(input.type==='down'&&point&&inside(close,point.x,point.y)){
+   this.comicClosePress=point.id;this.comicGesture=null;this.stage.input({type:'cancel',points:[],changed:[]});return true;
+  }
+  if(this.comicClosePress!==null){
+   if(input.type==='up'&&point?.id===this.comicClosePress){this.comicClosePress=null;if(inside(close,point.x,point.y))this.closeModal();}
+   return true;
+  }
   if(input.type==='down'){
    this.comicSnap=undefined;this.comicDrag=0;
    this.comicGesture=point&&inside(this.modalArea,point.x,point.y)?{id:point.id,x:point.x,y:point.y,lastY:point.y,lastAt:now,velocity:0}:null;

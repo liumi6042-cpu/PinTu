@@ -13,7 +13,8 @@ import {shareOnTapTap,subscribeTapShareReturn,tapShareScene,type TapShareHost} f
 import type {TapBattleManager} from './tap-preview';
 
 type RewardedVideo={load():Promise<unknown>;show():Promise<unknown>;onClose(fn:(result:{isEnded?:boolean})=>void):void;offClose?(fn:(result:{isEnded?:boolean})=>void):void;onError(fn:(error:unknown)=>void):void;offError?(fn:(error:unknown)=>void):void;destroy?():void};
-type TapHost=TapShareHost&TapOrientationHost&TapInterstitialHost&{getMenuButtonBoundingClientRect?:()=>{left:number;top:number;width:number;height:number};getLaunchOptionsSync?:()=>any;getEnterOptionsSync?:()=>any;request?:(options:Record<string,unknown>)=>{abort?():void};createRewardedVideoAd?:(options:{adUnitId:string})=>RewardedVideo;openFriendList?:()=>void;login?:(options?:Record<string,unknown>)=>unknown;getUserInfo?:(options?:Record<string,unknown>)=>unknown};
+type TapBackHost={onBackPress?:(handler:()=>boolean)=>void;offBackPress?:(handler:()=>boolean)=>void};
+type TapHost=TapShareHost&TapOrientationHost&TapInterstitialHost&TapBackHost&{getMenuButtonBoundingClientRect?:()=>{left:number;top:number;width:number;height:number};getLaunchOptionsSync?:()=>any;getEnterOptionsSync?:()=>any;request?:(options:Record<string,unknown>)=>{abort?():void};createRewardedVideoAd?:(options:{adUnitId:string})=>RewardedVideo;openFriendList?:()=>void;login?:(options?:Record<string,unknown>)=>unknown;getUserInfo?:(options?:Record<string,unknown>)=>unknown};
 /** Use the original site's persistent identity, including on a first guest visit. */
 export async function webGuestSecret():Promise<string>{
  const valid=(value:unknown):value is string=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
@@ -46,26 +47,35 @@ export function readUiSize():UiSize{try{const value=localStorage.getItem(uiSizeK
 export function uiScale(size:UiSize=readUiSize(),width=window.innerWidth,height=window.innerHeight){const k=Math.min(2,Math.max(1,Math.min(width/1366,height/768)))*uiSizeFactor[size];return size==='small'?k:Math.max(1,k);}
 
 /** A reader owns one history entry. Drain asynchronous cleanup before reopening. */
-export function createComicBack(host:Pick<Window,'history'|'addEventListener'|'removeEventListener'>){
- let active:{handler:()=>boolean;token:number;pushed:boolean}|undefined,serial=0,draining=false,listening=false;
+export function createComicBack(host:Pick<Window,'history'|'addEventListener'|'removeEventListener'>,tap:()=>TapBackHost|undefined=()=>undefined){
+ type Entry={handler:()=>boolean;token:number;pushed:boolean;offNative?:()=>void};
+ let active:Entry|undefined,serial=0,draining=false,listening=false;
  const listen=()=>{if(!listening){host.addEventListener('popstate',pop);listening=true;}};
  const stop=()=>{if(listening&&!active&&!draining){host.removeEventListener('popstate',pop);listening=false;}};
  const push=()=>{if(active&&!active.pushed){host.history.pushState({jigsawComic:1,jigsawComicEntry:active.token},'');active.pushed=true;}};
  const pop=()=>{
   if(draining){draining=false;push();stop();return;}
   const entry=active;if(!entry)return;
-  active=undefined;entry.pushed=false;entry.handler();stop();
+  active=undefined;entry.pushed=false;entry.offNative?.();entry.handler();stop();
  };
  return (handler:()=>boolean)=>{
   if(active)throw Error('Comic back handler already registered');
-  const entry={handler,token:++serial,pushed:false};active=entry;listen();if(!draining)push();
-  return ()=>{
+  const entry:Entry={handler,token:++serial,pushed:false};active=entry;listen();if(!draining)push();
+  const release=()=>{
    if(active===entry)active=undefined;
+   entry.offNative?.();
    if(entry.pushed&&host.history.state?.jigsawComic===1&&host.history.state?.jigsawComicEntry===entry.token){
     entry.pushed=false;draining=true;host.history.back();
    }
    stop();
   };
+  const native=tap();
+  if(typeof native?.onBackPress==='function'&&typeof native.offBackPress==='function'){
+   const back=()=>{if(active!==entry)return false;release();return handler();};
+   entry.offNative=()=>{entry.offNative=undefined;native.offBackPress?.(back);};
+   native.onBackPress(back);
+  }
+  return release;
  };
 }
 /** Browser/TapTap shell for the shared game. No game rules belong in this file. */
@@ -206,7 +216,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   try{const reply=await request(input);loginLog.add(label+' · '+reply.status+' · '+(Date.now()-started)+'ms');return reply;}
   catch(error){loginLog.add(label+' · 网络失败 · '+(Date.now()-started)+'ms');throw error;}
  };
- const platform:Platform={config,canvas,viewport,request:loggedRequest,audio:audioPlayback.audio,loginLog,...(config.id==='taptap'?{onBack:createComicBack(window),tapAuthorizationDebug,tapNicknameUnavailable:()=>identityController?.nicknameUnavailable()===true}:{}),
+ const platform:Platform={config,canvas,viewport,request:loggedRequest,audio:audioPlayback.audio,loginLog,...(config.id==='taptap'?{onBack:createComicBack(window,tap),tapAuthorizationDebug,tapNicknameUnavailable:()=>identityController?.nicknameUnavailable()===true}:{}),
   uiSize:()=>uiSize,setUiSize(size){if(!Object.hasOwn(uiSizeFactor,size))return;uiSize=size;try{localStorage.setItem(uiSizeKey,size);}catch{}for(const fn of resizeListeners)fn();},
   networkDiagnostics:()=>({http:config.id==='taptap'&&tap()?.request?apiTransport:'browser'}),
   openSocket(url,handlers){

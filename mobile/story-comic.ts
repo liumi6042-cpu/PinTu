@@ -46,9 +46,13 @@ export function cropCover(imageW:number,imageH:number,crop:ComicCrop,panel:Pick<
  let w=cw,h=ch;if(w/h>ratio)w=h*ratio;else h=w/ratio;
  return {x:clamp((crop[0]+crop[2]/2)*iw-w/2,0,iw-w),y:clamp((crop[1]+crop[3]/2)*ih-h/2,0,ih-h),w,h};
 }
-/** Reserve the 14px dot strip, then choose the larger capsule-free reading area. */
+/** Fixed reader chrome, independent of page animations and drag offsets. */
+export function comicCloseRect(insets:{top:number}):Rect{
+ return {x:8,y:Math.max(0,insets.top)+8,w:44,h:44};
+}
+/** Reserve the close-button band and 14px dots, then avoid the host capsule. */
 export function comicPageRect(stage:{w:number;h:number},insets:{top:number;bottom:number},menu?:Rect):Rect{
- const x=8,y=Math.max(0,insets.top)+8,right=stage.w-8,bottom=stage.h-Math.max(0,insets.bottom)-8;
+ const close=comicCloseRect(insets),x=8,y=close.y+close.h+8,right=stage.w-8,bottom=stage.h-Math.max(0,insets.bottom)-8;
  const available={x,y,w:Math.max(0,right-x),h:Math.max(0,bottom-y)};
  let region=available;
  if(menu&&menu.x<right&&menu.x+menu.w>x&&menu.y<bottom&&menu.y+menu.h>y){

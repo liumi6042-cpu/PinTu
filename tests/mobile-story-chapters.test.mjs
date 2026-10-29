@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fixture,levels,tick,artwork} from './mobile-level-card-fixture.mjs';
 import {build} from 'esbuild';
-const bundle=await build({stdin:{contents:'export {timeLabelFor} from "./mobile/story-timeline";export {comicFor} from "./mobile/story-comic";export {OfflineMode} from "./mobile/offline-mode";',resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
-const {timeLabelFor,comicFor,OfflineMode}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const bundle=await build({stdin:{contents:'export {timeLabelFor} from "./mobile/story-timeline";export {comicFor,comicCloseRect} from "./mobile/story-comic";export {OfflineMode} from "./mobile/offline-mode";',resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
+const {timeLabelFor,comicFor,comicCloseRect,OfflineMode}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 import {offlineLevelsView} from '../lib/offline-play.ts';
 import {buildOfflineCatalog,offlineRoomArtwork} from '../scripts/offline-catalog.mjs';
 
@@ -32,7 +32,7 @@ function completion(f,clear){
  f.app.room={ticket:{playerId:'self'},state:{cols:5,rows:7},snapshot:{id:'completed-room',title:'最后一格',levelId:clear.levelId,members:[],completedAt:1,mobileResult:{coins:1,fragments:1,levelClear:clear}},leave(){}};
  f.app.drawCompletionPicture=()=>{};
 }
-function drawComic(f){f.clear();f.app.drawLevelComic();}
+function drawComic(f){f.clear();f.app.drawLevelComic();const close=comicCloseRect(f.platform.viewport());assert.ok(f.hits.some(hit=>Object.keys(close).every(key=>hit.r[key]===close[key])),'close control is always available');}
 
 for(const mode of ['online','offline'])test(`${mode}: selection follows current, all-cleared, availability and invalid selection`,()=>{
  for(const [data,want]of [[chapters(3),'ch1'],[chapters(6,0),'ch2'],[chapters(6,6),'ch2'],[chapters(6,0,'unavailable'),'ch1']]){
@@ -148,12 +148,14 @@ test('ch2 comic keeps its chapter through turns/ending, intro and selected-chapt
  const f=fixture({data:chapters(6,6)});f.app.beginStoryIntro('ch2-1');assert.equal(f.app.storyIntro.text,story.levels[0].intro);
  f.app.openLevelComic('ch2-3');assert.equal(f.app.comicChapter.id,'ch2');f.app.turnComic(6);assert.equal(f.app.comicPage.chapterId,'ch2');drawComic(f);assert.ok(f.texts.includes('第 2 章 完'));
  f.app.closeModal();f.app.storyChapterId='ch2';f.clear();f.app.drawChapter();f.buttons.find(button=>button.label==='从头看').fn();assert.equal(f.app.comicPage.levelId,'ch2-1');assert.equal(f.app.comicPage.chapterId,'ch2');
+ f.app.route='chapter';f.app.scroll=123;f.app.turnComic(6);drawComic(f);const close=comicCloseRect(f.platform.viewport()),point={id:1,x:close.x+22,y:close.y+22};
+ f.app.input({type:'down',points:[point],changed:[point]});f.app.input({type:'up',points:[],changed:[point]});assert.equal(f.app.modal,null);assert.equal(f.app.route,'chapter');assert.equal(f.app.storyChapterId,'ch2');assert.equal(f.app.scroll,123);assert.equal(f.app.comicPage,null);
 });
 
 test('receipt unlocks across chapters and comic ending launches next chapter after leaving its room',async()=>{
  const f=fixture({data:chapters(5)});completion(f,{levelId:'ch1-6',chapterComplete:true,nextLevelId:'ch2-1'});f.app.syncComicClear(f.app.levels.chapters[0]);assert.equal(f.app.levels.chapters[0].levels[5].status,'cleared');assert.equal(f.app.levels.chapters[1].levels[0].status,'unlocked');
  f.app.openLevelComic('ch1-6');f.app.turnComic(6);drawComic(f);assert.equal(f.app.comicPage.chapterId,'ch1');assert.ok(f.texts.includes('本章完'));assert.ok(f.texts.includes('轻点这里去第 2 章'));assert.equal(f.buttons.length,0);let left=0;f.app.leaveRoom=()=>{left++;f.app.room=null;};f.hits.find(hit=>hit.r===f.app.modalArea).fn();await tick();assert.equal(f.app.modal,null);assert.equal(left,1);assert.equal(f.created[0].levelId,'ch2-1');
- const blocked=fixture({data:chapters(6)});blocked.app.levels.chapters[1].levels[0].status='locked';blocked.app.openLevelComic('ch1-6');blocked.app.turnComic(6);drawComic(blocked);assert.equal(blocked.buttons.length,0);assert.equal(blocked.hits.filter(hit=>!(hit.r.x===0&&hit.r.y===0&&hit.r.w===blocked.stage.w&&hit.r.h===blocked.stage.h)).length,0,'only the full-stage no-op blocker remains');
+ const blocked=fixture({data:chapters(6)});blocked.app.levels.chapters[1].levels[0].status='locked';blocked.app.openLevelComic('ch1-6');blocked.app.turnComic(6);drawComic(blocked);assert.equal(blocked.buttons.length,0);assert.equal(blocked.hits.filter(hit=>!(hit.r.x===0&&hit.r.y===0&&hit.r.w===blocked.stage.w&&hit.r.h===blocked.stage.h)).length,1,'only the close control acts outside the ending page');
 });
 
 test('last ch3 comic page offers ch4 and launches ch4-1 after leaving its room',async()=>{
@@ -167,7 +169,7 @@ test('last ch3 comic page offers ch4 and launches ch4-1 after leaving its room',
 test('last ch4 comic page ends with 第 4 章 完 and tapping launches nothing',async()=>{
  const f=fixture({data:fourChapters(6,6,6,6)});f.app.openLevelComic('ch4-6');assert.equal(f.app.comicPage.index,5);drawComic(f);assert.equal(f.images.length,4);
  f.app.turnComic(6);drawComic(f);assert.equal(f.app.comicPage.chapterId,'ch4');assert.equal(f.app.comicPage.ending,true);assert.ok(f.texts.includes('第 4 章 完'));assert.ok(f.texts.includes('故事待续'));assert.ok(!f.texts.some(text=>text.includes('去第')));assert.equal(f.buttons.length,0);
- assert.equal(f.hits.length,1,'only the full-stage no-op blocker remains');assert.ok(!f.hits.some(hit=>hit.r===f.app.modalArea));f.hits[0].fn();await tick();assert.equal(f.created.length,0);assert.equal(f.app.modal,'levelComic');assert.equal(f.app.comicPage.chapterId,'ch4');
+ assert.equal(f.hits.length,2,'the close control and full-stage no-op blocker remain');assert.ok(!f.hits.some(hit=>hit.r===f.app.modalArea));f.hits[0].fn();await tick();assert.equal(f.created.length,0);assert.equal(f.app.modal,'levelComic');assert.equal(f.app.comicPage.chapterId,'ch4');
 });
 
 test('story nav badge considers unlocked levels in any available chapter',()=>{
