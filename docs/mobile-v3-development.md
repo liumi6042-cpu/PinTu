@@ -264,3 +264,11 @@ npm.cmd run check:images
 ```
 
 指定测试共 297 项：296 通过，1 项因本地 dry2 打包产物缺失按原测试逻辑跳过。图库检查通过（82 张已发布图片、813 个旧哈希衍生图）。完整 TypeScript 检查仅报原有 `vite.config.ts:5` 缺少 `./.openai/hosting.json`（TS2307）；使用继承原 tsconfig 的临时配置检查 mobile、h5、lib 全部 TypeScript 文件通过，临时配置已移除。测试覆盖服务端拒绝/透传/复制、bundled 与服务器来源优先级、横竖屏与加载状态回退、缓存两种分辨率复用、页面尺寸用于过渡计算，以及离线目录往返。未提交或部署。
+
+## 2026-10-29 拾光物语第 3、4 章漫画页（comicPage 数据）
+
+第 3、4 章 12 关都有一张画好的四格漫画页（1536x1024，左侧大格、右上两小格、右下宽格，无字，留出气泡角落），放在 config/levels.json 各关 story 的 comicPage：src 为页面 WebP（质量 70），thumbSrc 为 384 像素缩略图（质量 82），panels 为在页面上量出的四个格子内框（level-art/story-ip/ch34/comic-pages/measure-panels.py，交付脚本 deliver-comic-pages.mjs）。原有 comic.panels 裁切保持不变，旧客户端、竖屏、离线和图片未加载时继续用关卡图裁切；横屏 v33 起使用漫画页，气泡仍由游戏绘制。
+
+漫画页不是图库图片：文件名 story-comic-<关卡>-(page|pagethumb)-<sha12>.webp，登记在 config/runtime-assets.json 的 static 和 h5/asset-manifest.json，不进 puzzle-catalog、相册、每日池和 TapTap 离线包。check-image-library 只接受已登记且字节与文件名哈希一致的漫画页；手机后端打包经 mobileStaticAsset 带上这些文件。线上客户端经 nginx 从共享素材目录 /srv/sites/jigsaw-content/assets/puzzles 读取 /h5-mobile-v3/assets/puzzles/，因此后端发布前要把 24 个文件复制到该目录。
+
+测试：tests/story-comic-pages.test.mjs（数据、版式、文件、哈希、登记、离线包排除）、tests/image-library.test.mjs、tests/mobile-levels.test.mjs（第 3、4 章原故事字段哈希不变，仅第 3、4 章带 comicPage）。

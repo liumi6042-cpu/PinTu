@@ -81,7 +81,9 @@ test('bundled ch2 metadata uses ID then album, and server fields each override i
 for(const id of ['ch3','ch4'])test(`bundled ${id} matches configured story and falls back by ID or album with independent server overrides`,()=>{
  const bundled=JSON.parse(readFileSync(new URL('../mobile/story-comics-'+id+'.json',import.meta.url),'utf8'));
  const config=JSON.parse(readFileSync(new URL('../config/levels.json',import.meta.url),'utf8')).chapters.find(chapter=>chapter.id===id);
- assert.equal(bundled.chapter,'shiguang-'+id);assert.equal(config.albumId,bundled.chapter);assert.equal(bundled.levels.length,6);assert.equal(config.story.length,6);assert.deepEqual(bundled.levels,config.story);
+ assert.equal(bundled.chapter,'shiguang-'+id);assert.equal(config.albumId,bundled.chapter);assert.equal(bundled.levels.length,6);assert.equal(config.story.length,6);
+ // comicPage (drawn page, 2026-10-29) is server-only: the bundled copy keeps the crops for offline and older servers.
+ assert.deepEqual(bundled.levels,config.story.map(({comicPage,...level})=>level));assert.ok(config.story.every(level=>level.comicPage)&&bundled.levels.every(level=>!level.comicPage));
  for(const [index,level]of bundled.levels.entries()){
   assert.equal(level.comic.panels.length,4);
   for(const chapter of [{id,albumId:'other'},{id:'renamed',albumId:bundled.chapter},{id,albumId:id==='ch3'?'shiguang-ch4':'shiguang-ch3'}]){

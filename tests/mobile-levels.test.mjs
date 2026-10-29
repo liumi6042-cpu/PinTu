@@ -41,8 +41,8 @@ test('levels configuration defaults and malformed documents fail during service 
   assert.equal(chapterStory.length,6);
   for(const level of chapterStory){assert.equal(typeof level.timeLabel,'string');assert.ok(level.timeLabel.trim());assert.equal(typeof level.intro,'string');assert.ok(level.intro.trim());assert.equal(level.comic.panels.length,4);}
  }
- assert.equal(createHash('sha256').update(JSON.stringify(postOfficeStory)).digest('hex'),'c5b324ebb79d6e817ba166abdec032c3684b4096d5b56f4b4ade62322202e391');
- assert.equal(createHash('sha256').update(JSON.stringify(aquariumStory)).digest('hex'),'600d42a0011958b525441df1d09e58677758802e22d57304b1bcba31ce2af019');
+ assert.equal(createHash('sha256').update(JSON.stringify(postOfficeStory.map(({comicPage,...level})=>level))).digest('hex'),'c5b324ebb79d6e817ba166abdec032c3684b4096d5b56f4b4ade62322202e391');
+ assert.equal(createHash('sha256').update(JSON.stringify(aquariumStory.map(({comicPage,...level})=>level))).digest('hex'),'600d42a0011958b525441df1d09e58677758802e22d57304b1bcba31ce2af019');
  const bad=[null,[],{}, {...configuration(),schema:'other'}, {...configuration(),firstClearEnergy:-1}, {...configuration(),firstClearEnergy:1.5}, {...configuration(),firstClearEnergy:'30'}, {...configuration(),chapters:[]}, {...configuration(),chapters:{}}, {...configuration(),extra:true}];
  for(const patch of [{id:''},{id:'bad/id'},{title:' '},{albumId:null},{pieces:[12]},{pieces:[12,16,20,24,30,0]},{pieces:[12,16,20,24,30,1.5]},{pieces:[12,16,20,24,30,'35']},{pieces:[12,16,20,24,30,Number.MAX_SAFE_INTEGER+1]},{extra:true}])bad.push(configuration([{...chapter('ch1'),...patch}]));
  bad.push(configuration([chapter('ch1'),chapter('ch1')]));
@@ -172,8 +172,9 @@ test('comicPage accepts local/https sources with optional thumbnails, deep copie
  assert.deepEqual(f.view().chapters[0].levels[0].comicPage,expected[0].comicPage);
  const withPage=f.view().chapters[0].levels[0],baseline=fixture(t,{config:configuration([{...chapter('ch1'),story:[storyEntry()]}])}).view().chapters[0].levels[0];
  const {comicPage,...withoutPage}=withPage;assert.deepEqual(withoutPage,baseline);
- assert.ok(readLevelConfiguration().chapters.every(ch=>(ch.story??[]).every(level=>!Object.hasOwn(level??{},'comicPage'))));
- assert.ok(fixture(t,{config:readLevelConfiguration()}).view().chapters.every(ch=>ch.levels.every(level=>!Object.hasOwn(level,'comicPage'))));
+ // Drawn pages exist for ch3/ch4 only (2026-10-29); ch1/ch2 keep their crops.
+ assert.deepEqual(readLevelConfiguration().chapters.map(ch=>(ch.story??[]).filter(level=>Object.hasOwn(level??{},'comicPage')).length),[0,0,6,6]);
+ assert.deepEqual(fixture(t,{config:readLevelConfiguration()}).view().chapters.map(ch=>ch.levels.filter(level=>Object.hasOwn(level,'comicPage')).length),[0,0,6,6]);
  const boundary=pageEntry();boundary.src='/'+'x'.repeat(299);boundary.panels[0]=[.50005,.50005,.5,.5];
  assert.deepEqual(readLevelConfiguration(configuration([{...chapter('ch1'),story:[{comicPage:boundary}]}])).chapters[0].story[0].comicPage,boundary);
 });
