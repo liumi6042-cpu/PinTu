@@ -1,4 +1,4 @@
-import { boardFor,normalizePuzzle,worldFor,piecesFor,pathFor,moveGroup,raiseGroup,visibleGroup,type PuzzleState,type Group } from '../lib/puzzle-engine';
+import { boardFor,normalizePuzzle,worldFor,piecesFor,pathFor,moveGroup,raiseGroup,visibleGroup,neighbors,type PuzzleState,type Group } from '../lib/puzzle-engine';
 import { pictureCrop,drawPiecePicture } from '../lib/puzzle-picture';
 import { newMobileConnections,MobileContributionGate,MOBILE_REDUCED_GLOW_MS,type MobileConnectionGlow,type MobileContributionReceipt } from '../lib/connection-feedback';
 import {cursorWorld,cursorScreen,type CursorPoint,type SharedCursor} from '../lib/room-cursors';
@@ -28,6 +28,21 @@ const DRAG_SURFACE_BYTES=24*1024*1024;
 export const DRAG_SLOP=8;
 /** A held group grows by at most this fraction, and at most DRAG_LIFT_PX at its far edge, around the finger. */
 const DRAG_LIFT_SCALE=.08,DRAG_LIFT_PX=6;
+/** A finger covers the piece it drops, so a release within this reach of the board spot or a
+ * matching neighbour is aligned exactly before the drop is sent: at least DROP_ASSIST_MIN of a
+ * piece, DROP_ASSIST_PX on screen when zoomed out, never more than DROP_ASSIST_MAX of a piece.
+ * The server keeps its own tolerance, and an exact offset always passes it. */
+const DROP_ASSIST_MIN=.4,DROP_ASSIST_MAX=.6,DROP_ASSIST_PX=28;
+/** The nearest offset within reach that the server's drop would snap or join to, or null. */
+export function dropAssistOffset(state:PuzzleState,id:number,reach:number,blocked:ReadonlySet<number>=new Set()):{dx:number;dy:number}|null{
+ const active=state.groups.find(g=>g.id===id);if(!active||active.locked)return null;
+ const owner=new Map<number,Group>();for(const group of state.groups)for(const piece of group.pieces)owner.set(piece,group);
+ let best:{dx:number;dy:number}|null=null,nearest=reach;
+ const consider=(dx:number,dy:number)=>{const distance=Math.hypot(dx-active.dx,dy-active.dy);if(distance<=nearest){nearest=distance;best={dx,dy};}};
+ consider(0,0);
+ for(const piece of active.pieces)for(const neighbor of neighbors(piece,state.cols,state.rows)){const target=owner.get(neighbor);if(target&&target!==active&&!blocked.has(target.id))consider(target.dx,target.dy);}
+ return best;
+}
 const PAPER_SURFACE_BYTES=12*1024*1024;
 export const CURSOR_SMOOTHING_MS=50;
 const inside=(p:Point,r:Rect)=>p.x>=r.x&&p.y>=r.y&&p.x<=r.x+r.w&&p.y<=r.y+r.h;
@@ -301,7 +316,7 @@ export class PuzzleBoard implements RoomTable {
    if(this.drag)this.publishCursor(this.pointers.get(this.drag.pointer)??null);else if(this.pointers.size===1)this.publishCursor([...this.pointers.values()][0]);else this.publishCursor(null);this.changed();return true;
   }
   if(input.type==='up'){
-   if(this.drag&&input.changed.some(p=>p.id===this.drag!.pointer)){const drag=this.drag,group=this.state.groups.find(g=>g.id===drag.id);this.drag=null;this.releaseDragSurface();if(group&&this.network){this.pendingDrops.set(group.id,drag.serial);void this.network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial)this.pendingDrops.delete(group.id);});}}
+   if(this.drag&&input.changed.some(p=>p.id===this.drag!.pointer)){const drag=this.drag,group=this.state.groups.find(g=>g.id===drag.id);this.drag=null;this.releaseDragSurface();if(group&&this.network){if(drag.live)this.assistDrop(group);this.pendingDrops.set(group.id,drag.serial);void this.network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial)this.pendingDrops.delete(group.id);});}}
    const heldPinch=!!this.pinch?.held;for(const p of input.changed)this.pointers.delete(p.id);this.pan=null;this.pinch=null;
    // A pinch begun while holding keeps zooming on two remaining fingers; otherwise one remaining finger pans.
    if(this.pointers.size){const others=[...this.pointers.values()].filter(p=>p.id!==this.drag?.pointer),p=others[0];if(heldPinch&&others.length>=2)this.pinch=this.pinchBetween(others[0],others[1],!!this.drag);else if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}else this.releaseGestureSurface();
@@ -562,6 +577,10 @@ export class PuzzleBoard implements RoomTable {
    ctx.save();ctx.translate(x,y);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=2/z;ctx.stroke();badge(w/2,h/2,index);ctx.restore();
    ctx.save();if(lift){ctx.translate(lift.x,lift.y);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);}ctx.translate(x+group.dx,y+group.dy);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=colors.hintLine;ctx.lineWidth=3.5/(z*(lift?.s??1));ctx.globalAlpha=.65+.35*(.5+.5*Math.sin(now*Math.PI*2/1200));ctx.stroke();badge(w/2,h/2,index,lift?.s??1);ctx.restore();
   }
+ }
+ private assistDrop(group:Group){
+  const unit=Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows),reach=Math.min(unit*DROP_ASSIST_MAX,Math.max(unit*DROP_ASSIST_MIN,DROP_ASSIST_PX/this.camera.z));
+  const to=dropAssistOffset(this.state,group.id,reach,new Set(Object.keys(this.owners).map(Number)));if(to)moveGroup(this.state,group.id,to.dx,to.dy);
  }
  /** The held group is drawn slightly larger around the holding finger, so the
   * finger keeps its spot on the piece while the edges lift. Drawing only. */

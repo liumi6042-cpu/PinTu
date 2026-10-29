@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PuzzleBoard,parsePuzzlePath,tracePuzzlePath } from '../mobile/puzzle-board.ts';
+import { PuzzleBoard,parsePuzzlePath,tracePuzzlePath,dropAssistOffset } from '../mobile/puzzle-board.ts';
 import { createFittedPuzzle,piecesFor,pathFor,dropGroup,snapTolerance,raiseGroup } from '../lib/puzzle-engine.ts';
 import { RoomClient } from '../lib/room-client.ts';
 import { boardThemeColors } from '../mobile/theme.ts';
@@ -72,6 +72,35 @@ test('wechat-style board sends claim/move/drop but never awards or merges before
  const confirmed=structuredClone(state);dropGroup(confirmed,group.id,snapTolerance(confirmed));board.syncRemote(confirmed,{},new Set());
  assert.equal(state.groups.find(v=>v.id===group.id).locked,true);
  board.destroy();
+});
+
+test('a zoomed-out release half a piece off its spot is aligned before the drop is sent',async()=>{
+ const drop=async z=>{
+  const {board}=setup(),state=board.state,events=[];await board.setImage('local-test.png');board.networkReady=true;
+  board.network={canAcquire:()=>true,acquire:async()=>true,move(){},drop:async(...args)=>events.push(args),release(){}};
+  const unit=Math.min(board.board.width/state.cols,board.board.height/state.rows),group=state.groups.at(-1),off=unit*.5;
+  for(const other of state.groups)if(other!==group){other.dx=-2000;other.dy=-2000;}
+  group.dx=0;group.dy=0;board.camera={x:0,y:0,z:1};const spot=piecePoint(board,group);
+  board.camera={x:board.rect.w/2-(spot.x-board.rect.x)*z,y:board.rect.h/2-(spot.y-board.rect.y)*z,z};
+  const start=piecePoint(board,group);
+  assert.ok(off>snapTolerance(state),'the old server tolerance alone would miss this drop');
+  const target={...start,x:start.x+off*z};
+  board.input({type:'down',points:[start],changed:[start]});await Promise.resolve();board.input({type:'move',points:[target],changed:[target]});board.input({type:'up',points:[],changed:[target]});
+  board.destroy();return {sent:events.at(-1),group,off};
+ };
+ const far=await drop(.3);assert.deepEqual(far.sent,[far.group.id,0,0],'zoomed out, the finger-covered drop lands exactly on its spot');
+ const near=await drop(2);assert.equal(near.sent[0],near.group.id);assert.ok(Math.abs(near.sent[1]-near.off)<1e-6,'zoomed in, the drop keeps its place');
+});
+
+test('drop assist aligns with a matching neighbour unless another player holds it',()=>{
+ const state=createFittedPuzzle('test',8,6,123),unit=100,find=id=>state.groups.find(g=>g.pieces.includes(id));
+ for(const group of state.groups){group.dx=-2000;group.dy=-2000;}
+ const a=find(9),b=find(10);b.dx=200;b.dy=150;a.dx=200+unit*.5;a.dy=150;
+ assert.deepEqual(dropAssistOffset(state,a.id,unit*.6),{dx:200,dy:150});
+ assert.equal(dropAssistOffset(state,a.id,unit*.6,new Set([b.id])),null);
+ assert.equal(dropAssistOffset(state,a.id,unit*.4),null);
+ const aligned=structuredClone(state),moved=aligned.groups.find(g=>g.id===a.id);moved.dx=200;moved.dy=150;
+ assert.equal(dropGroup(aligned,a.id,snapTolerance(aligned)).joined,1,'the server joins an aligned drop with its own tolerance');
 });
 
 test('pending drags keep their location during snapshots; server refusal restores it',()=>{
