@@ -29,12 +29,13 @@ test('every ch3/ch4 level has a valid comic page; ch1/ch2 keep crops only',()=>{
 
 test('page panels follow the game template: tall P1 left, P2 and P3 top right, wide P4 below',()=>{
  for(const {level,story} of pages.filter(page=>page.story.comicPage)){
-  // Generated pages keep the layout within a few percent; the client cover-fits each crop into its panel.
+  // Generated pages keep the layout within a few percent; the client cover-fits each crop into its panel. A crop may
+  // be narrowed to the landscape-phone panel aspect to keep off-centre content in view (deliver-comic-pages.mjs FOCUS).
   const [p1,p2,p3,p4]=story.comicPage.panels,right=p=>p[0]+p[2],bottom=p=>p[1]+p[3],within=(v,lo,hi)=>v>=lo&&v<=hi;
-  assert.ok(within(p1[0],0,.02)&&within(p1[1],0,.02)&&within(p1[2],.42,.5)&&within(bottom(p1),.97,1),level+' P1 '+p1);
+  assert.ok(within(p1[0],0,.02)&&within(p1[2],.42,.5)&&within(p1[3],.55,.98)&&bottom(p1)<=1,level+' P1 '+p1);
   assert.ok(right(p1)<p2[0]&&right(p1)<p4[0]&&right(p2)<p3[0]&&bottom(p2)<p4[1]&&bottom(p3)<p4[1],level+' order');
-  assert.ok(within(p2[3],.42,.5)&&within(p3[3],.42,.5)&&within(p4[3],.46,.54)&&within(p4[2],.48,.55),level+' sizes');
-  assert.ok(within(right(p3),.98,1)&&within(right(p4),.98,1)&&within(bottom(p4),.97,1),level+' edges');
+  assert.ok(within(p2[3],.28,.5)&&within(p3[3],.28,.5)&&within(p4[3],.3,.54)&&within(p4[2],.48,.55),level+' sizes');
+  assert.ok(within(right(p3),.98,1)&&within(right(p4),.98,1)&&bottom(p2)<.53&&bottom(p3)<.53&&bottom(p4)<=1,level+' edges');
  }
 });
 
