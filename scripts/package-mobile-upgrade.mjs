@@ -2,7 +2,7 @@ import {build} from 'vite';
 import {readFileSync,writeFileSync,mkdirSync,copyFileSync,realpathSync,existsSync} from 'node:fs';
 import {resolve,dirname,sep} from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {runtimeAssets,hash,TAR} from './release-files.mjs';
+import {runtimeAssets,mobileStaticAsset,hash,TAR} from './release-files.mjs';
 import {checkImageLibrary} from './check-image-library.mjs';
 import {buildRoomRealtime} from './build-room-realtime.mjs';
 
@@ -15,7 +15,7 @@ const root=realpathSync(process.cwd()),baselineBytes=readFileSync(baselinePath),
 if(baseline.service!=='jigsaw-mobile-v3'||baseline.frontendIncluded!==false||!/^\d{8}-[a-z0-9-]{2,32}$/.test(baseline.release)||baseline.release===release)throw Error('Invalid baseline release');
 await checkImageLibrary(root);
 const runtime=JSON.parse(readFileSync('config/runtime-assets.json','utf8'));
-const wanted=runtimeAssets(JSON.parse(readFileSync('content/puzzle-catalog.json','utf8')),{static:runtime.static.filter(path=>/^\/(?:cosmetics\/|favicon|apple-touch)/.test(path))});
+const wanted=runtimeAssets(JSON.parse(readFileSync('content/puzzle-catalog.json','utf8')),{static:runtime.static.filter(mobileStaticAsset)});
 // --keep-installed-assets: the installed release keeps legacy URLs that old clients still request (it was
 // packaged with --keep-assets). Serve exactly that verified list; current assets must be an unchanged subset.
 let assets=wanted;

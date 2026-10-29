@@ -53,6 +53,18 @@ test('all playable assets have matching originals and delivery records',async()=
   for(const id of RETIRED_PHOTO_IDS)assert.throws(()=>makeRoom('retired-test',id,108,100000));
 });
 
+test('a story comic page in public/puzzles must be listed in runtime assets and named after its hash',async t=>{
+  const dir=await fixture(t),bytes=await sharp({create:{width:96,height:64,channels:3,background:'#f5ecd8'}}).webp({quality:70}).toBuffer();
+  const name='story-comic-ch3-01-page-'+sha(bytes).slice(0,12)+'.webp';
+  await writeFile(join(dir,'public/puzzles',name),bytes);
+  await mkdir(join(dir,'config'),{recursive:true});await saveJson(join(dir,'config/runtime-assets.json'),{static:[]});
+  await assert.rejects(checkImageLibrary(dir),/漫画页未登记或内容不符/);
+  await saveJson(join(dir,'config/runtime-assets.json'),{static:['/puzzles/'+name]});
+  assert.deepEqual(await checkImageLibrary(dir),ONE);
+  await writeFile(join(dir,'public/puzzles',name),Buffer.from(bytes).fill(0xff,bytes.length-8,bytes.length-4));
+  await assert.rejects(checkImageLibrary(dir),/漫画页未登记或内容不符/);
+});
+
 test('an external-source catalog entry blocks publication',async t=>{
   const dir=await fixture(t),path=join(dir,'content/puzzle-catalog.json'),catalog=await readJson(path);
   catalog[0].origin='external-demo';await saveJson(path,catalog);

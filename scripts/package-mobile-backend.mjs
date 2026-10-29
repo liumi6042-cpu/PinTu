@@ -3,7 +3,7 @@ import {readFileSync,writeFileSync,mkdirSync,copyFileSync,statSync,realpathSync,
 import {resolve,dirname,sep} from 'node:path';
 import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
-import {runtimeAssets,TAR} from './release-files.mjs';
+import {runtimeAssets,mobileStaticAsset,TAR} from './release-files.mjs';
 import {checkImageLibrary} from './check-image-library.mjs';
 import {checkArtworkRevisions} from './check-artwork-revisions.mjs';
 import {buildRoomRealtime} from './build-room-realtime.mjs';
@@ -26,7 +26,7 @@ await build({configFile:false,publicDir:false,build:{ssr:resolve('server/mobile-
 await buildRoomRealtime(resolve(stage,'outputs/mobile'));
 const runtime=JSON.parse(readFileSync('config/runtime-assets.json','utf8'));
 const catalog=JSON.parse(readFileSync('content/puzzle-catalog.json','utf8'));
-const current=runtimeAssets(catalog,{static:runtime.static.filter(path=>/^\/(?:cosmetics\/|favicon|apple-touch)/.test(path))});
+const current=runtimeAssets(catalog,{static:runtime.static.filter(mobileStaticAsset)});
 const kept=keepPath?JSON.parse(readFileSync(keepPath,'utf8')):[];
 for(const url of kept)if(typeof url!=='string'||!/^\/(?:puzzles\/|cosmetics\/(?:assets\/)?)?[a-zA-Z0-9._-]+$/.test(url))throw Error('Unsafe kept asset: '+url);
 const assets=[...new Set([...current,...kept])].sort();
