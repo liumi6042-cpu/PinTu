@@ -54,7 +54,7 @@ if(prepareAssets){await import('./build-mobile-audio.mjs');await import('./build
 const outputNames={wechat:'wechat-game',taptap:'shared-web',web:'shared-desktop-web'};
 const outputs=Object.fromEntries(platforms.map(id=>[id,join(isolatedRoot??join(root,'outputs'),outputNames[id])]));
 const recordDir=isolatedRoot?join(isolatedRoot,'records'):join(root,'outputs/shared-build'),records=[];
-const commonArt=['b2-card-icons1023.png','b2-core-icons23.png','b2-task-icons23.png'];
+const commonArt=['b2-card-icons1023.png','b2-core-icons23.png','b2-task-icons23.png','b2-reward-cursors.png'];
 const extraArt=['b2-supply-scenes.png','b2-pixel-atlas.png'];
 const fonts=['OFL-NotoSansSC.txt','FONT-NOTICES.md'];
 // Original synthesized piano pieces; sources and manifest live in content/music/bgm.

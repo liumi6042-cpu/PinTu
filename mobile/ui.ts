@@ -123,7 +123,7 @@ export class Stage{
   const smoothing=c.imageSmoothingEnabled,quality=c.imageSmoothingQuality,enlarged=!!t&&typeof t.a==='number'&&Math.abs(t.a)*w>=sw;
   c.imageSmoothingEnabled=!enlarged;if(!enlarged)c.imageSmoothingQuality='high';c.drawImage(image,sx,sy,sw,sh,x,y,w,h);c.imageSmoothingEnabled=smoothing;if(quality)c.imageSmoothingQuality=quality;
  }
- icon(kind:string,r:Rect,color?:string){const aliases:Record<string,string>={quick:'players',star:'xpStar',tasks:'gift',supplies:'store',puzzle:'piece',collection:'book',refill:'refillGift',energyPack:'energy'};kind=aliases[kind]||kind;const extras:Record<string,{file:string;rect:number[]}>= {...Object.fromEntries(Object.entries(cardAtlas.bounds).map(([key,rect])=>['card'+key[0].toUpperCase()+key.slice(1),{file:'b2-card-icons1023.png',rect}])),supplyEnergy:{file:'b2-supply-scenes.png',rect:[0,0,887,887]},supplyTicket:{file:'b2-supply-scenes.png',rect:[887,0,887,887]},moon:{file:'b2-pixel-atlas.png',rect:[679,955,209,243]},lantern:{file:'b2-pixel-atlas.png',rect:[988,937,188,269]}};const extra=extras[kind];if(extra){const e=this.load('/mobile-icons/'+extra.file);if(e.loaded){const[sx,sy,sw,sh]=extra.rect;this.sprite(e.image,sx,sy,sw,sh,r);}return;}const core=(coreBounds as Record<string,readonly number[]>)[kind],task=(taskBounds as Record<string,readonly number[]>)[kind],bound=core||task,c=this.ctx;if(bound){const e=this.load('/mobile-icons/'+(core?'b2-core-icons23.png':'b2-task-icons23.png'));if(e.loaded){const [sx,sy,sw,sh]=bound;this.sprite(e.image,sx,sy,sw,sh,r);}return;}
+ icon(kind:string,r:Rect,color?:string){const aliases:Record<string,string>={quick:'players',star:'xpStar',tasks:'gift',supplies:'store',puzzle:'piece',collection:'book',refill:'refillGift',energyPack:'energy'};kind=aliases[kind]||kind;const extras:Record<string,{file:string;rect:number[]}>= {...Object.fromEntries(Object.entries(cardAtlas.bounds).map(([key,rect])=>['card'+key[0].toUpperCase()+key.slice(1),{file:'b2-card-icons1023.png',rect}])),supplyEnergy:{file:'b2-supply-scenes.png',rect:[0,0,887,887]},supplyTicket:{file:'b2-supply-scenes.png',rect:[887,0,887,887]},moon:{file:'b2-pixel-atlas.png',rect:[679,955,209,243]},lantern:{file:'b2-pixel-atlas.png',rect:[988,937,188,269]},paw:{file:'b2-reward-cursors.png',rect:[0,0,215,215]}};const extra=extras[kind];if(extra){const e=this.load('/mobile-icons/'+extra.file);if(e.loaded){const[sx,sy,sw,sh]=extra.rect;this.sprite(e.image,sx,sy,sw,sh,r);}return;}const core=(coreBounds as Record<string,readonly number[]>)[kind],task=(taskBounds as Record<string,readonly number[]>)[kind],bound=core||task,c=this.ctx;if(bound){const e=this.load('/mobile-icons/'+(core?'b2-core-icons23.png':'b2-task-icons23.png'));if(e.loaded){const [sx,sy,sw,sh]=bound;this.sprite(e.image,sx,sy,sw,sh,r);}return;}
   // Utility symbols share the original 24×24 SVG viewBox, including its padding.
   const box=fitInside(r,24,24),scale=box.w/24;
   c.save();c.translate(box.x,box.y);c.scale(scale,scale);c.fillStyle=color?themeTextColor(this.currentTheme,color):(['person','players','quick'].includes(kind)?this.color('#876158'):kind==='create'?this.palette.gold:['piece','fragment'].includes(kind)?this.palette.rose:this.palette.ink);c.strokeStyle=c.fillStyle;c.lineWidth=2;
@@ -145,12 +145,12 @@ export class Stage{
   else{c.strokeRect(4,4,16,16);c.fillRect(8,8,8,8);}c.restore();
  }
  decoration(value:{id?:string;artKey:string;color:string},r:Rect){
-  const original=collectionCatalog.decorations.find(item=>item.id===value.id);
+  const original=[...collectionCatalog.decorations,...collectionCatalog.rewardDecorations].find(item=>item.id===value.id);
   if(original?.color.toLowerCase()===value.color.toLowerCase()&&original.artKey===value.artKey){this.icon(value.artKey,r);return;}
   const kind=value.artKey==='star'?'xpStar':value.artKey,key=kind+':'+value.color.toLowerCase();
   let tint=this.decorationTints.get(key);
   if(!tint){
-   const extra=kind==='moon'?{file:'b2-pixel-atlas.png',bound:[679,955,209,243]}:kind==='lantern'?{file:'b2-pixel-atlas.png',bound:[988,937,188,269]}:null;
+   const extra=kind==='moon'?{file:'b2-pixel-atlas.png',bound:[679,955,209,243]}:kind==='lantern'?{file:'b2-pixel-atlas.png',bound:[988,937,188,269]}:kind==='paw'?{file:'b2-reward-cursors.png',bound:[0,0,215,215]}:null;
    const core=(coreBounds as Record<string,readonly number[]>)[kind],task=(taskBounds as Record<string,readonly number[]>)[kind],bound=extra?.bound??core??task;
    if(!bound){this.icon(value.artKey,r,value.color);return;}
    const e=this.load('/mobile-icons/'+(extra?.file??(core?'b2-core-icons23.png':'b2-task-icons23.png')));if(!e.loaded)return;

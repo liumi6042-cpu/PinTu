@@ -178,3 +178,35 @@ test('legacy completed rooms receive no retroactive collection rewards',()=>{
  }finally{db.close();}
 });
 
+
+test('gift decorations stay hidden until granted, cannot be crafted, and equip through the normal cursor path',async()=>{
+ const {grantRewardDecoration}=await import('../server/mobile-collection.mjs');
+ const {validateGameSettings}=await import('../server/game-settings.mjs');
+ const defaults=(await import('../config/game-settings-defaults.json',{with:{type:'json'}})).default;
+ const gift=catalog.rewardDecorations.find(item=>item.id==='cat-paw');
+ assert.deepEqual(gift,{id:'cat-paw',title:'猫爪',description:'在 TapTap 论坛或评论区反馈获得。',kind:'cursor',artKey:'paw',color:'#f0a0a8',cost:0,source:'gift'});
+ assert.ok(!catalog.decorations.some(item=>item.id===gift.id),'gift rewards stay out of the game-settings decoration list');
+ assert.equal(validateGameSettings(structuredClone(defaults)).decorations.length,defaults.decorations.length,'existing game-settings documents still validate');
+ const h=harness(),a=identity('a'),b=identity('b');
+ try{
+  const before=h.call(a,'/api/mobile/collection');
+  assert.ok(!before.data.decorations.some(item=>item.id===gift.id),'non-owners do not see the gift');
+  h.fixture.prepare("INSERT INTO mobile_collection_wallets VALUES(?,0,500,NULL)").run(a);
+  const crafted=h.call(a,'/api/mobile/collection/craft',{decorationId:gift.id,requestId:rid()});
+  assert.equal(crafted.status,409);assert.equal(crafted.data.code,'GIFT_ONLY');
+  assert.equal(h.call(a,'/api/mobile/collection/equip',{decorationId:gift.id,requestId:rid()}).data.code,'DECORATION_NOT_OWNED');
+  assert.throws(()=>grantRewardDecoration(h.fixture,a,'rose-butterfly',1),{code:'INVALID_DECORATION'});
+  assert.equal(grantRewardDecoration(h.fixture,a,gift.id,1),true);
+  assert.equal(grantRewardDecoration(h.fixture,a,gift.id,2),false,'grants are idempotent');
+  const owned=h.call(a,'/api/mobile/collection').data.decorations.find(item=>item.id===gift.id);
+  assert.deepEqual({...owned},{...gift,owned:true,equipped:false});
+  assert.equal(h.call(a,'/api/mobile/collection/craft',{decorationId:gift.id,requestId:rid()}).data.crafted.alreadyOwned,true);
+  assert.equal(h.call(a,'/api/mobile/collection').data.wallet.fragments,500,'no fragments are spent on a gift');
+  const equipped=h.call(a,'/api/mobile/collection/equip',{decorationId:gift.id,requestId:rid()});
+  assert.equal(equipped.data.equipped.id,gift.id);assert.equal(equipped.data.decorations.find(item=>item.id===gift.id).equipped,true);
+  const room=h.call(a,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});
+  assert.equal(room.status,201);
+  assert.deepEqual(room.data.room.members.find(m=>m.id===room.data.playerId).decoration,gift);
+  assert.ok(!h.call(b,'/api/mobile/collection').data.decorations.some(item=>item.id===gift.id),'other players still do not see it');
+ }finally{h.close();}
+});

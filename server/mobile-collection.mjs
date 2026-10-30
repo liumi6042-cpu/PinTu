@@ -3,14 +3,24 @@ import {DEFAULT_GAME_SETTINGS} from './game-settings.mjs';
 import {isRetiredDecoration,availableDecorationId} from '../lib/decoration-policy.mjs';
 
 export const MOBILE_COLLECTION_CATALOG=catalog;
+// Gift-only rewards stay out of game settings, whose decoration list must match the code.
+const REWARD_DECORATIONS=Object.freeze((catalog.rewardDecorations??[]).map(item=>Object.freeze({...item})));
 const reject=(status,code,message)=>{throw Object.assign(new Error(message),{status,code});};
+
+/** Operator grant for gift-only rewards, also used by scripts/grant-decoration.mjs
+ * on the live database. Idempotent; true only when newly granted. */
+export function grantRewardDecoration(db,owner,decorationId,now){
+ if(typeof owner!=='string'||!owner)throw new TypeError('Invalid decoration owner');
+ if(!REWARD_DECORATIONS.some(item=>item.id===decorationId))reject(400,'INVALID_DECORATION','装饰不存在');
+ return db.prepare('INSERT OR IGNORE INTO mobile_collection_owned VALUES(?,?,?,?)').run(owner,'decoration',decorationId,now).changes>0;
+}
 
 /** All mutations share the service's synchronous SQLite IMMEDIATE transaction
  * with puzzle actions and request receipts. The client never selects an owner. */
 export function createMobileCollection({db,photos,dailyContent=null,readSettings=()=>DEFAULT_GAME_SETTINGS,readAlbums=()=>null,albumTarget='mobile-shared'}){
  const photoById=new Map(photos.map(photo=>[photo.id,photo]));
  const packById=new Map(catalog.packs.map(pack=>[pack.id,pack]));
- const decorationById=()=>new Map(readSettings().decorations.map(decoration=>[decoration.id,decoration]));
+ const decorationById=()=>new Map([...readSettings().decorations,...REWARD_DECORATIONS].map(decoration=>[decoration.id,decoration]));
  const packsByImage=new Map();
  for(const pack of catalog.packs)for(const imageId of pack.imageIds){
   if(!photoById.has(imageId))throw new Error('Collection artwork unavailable: '+imageId);
@@ -42,6 +52,8 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
  function ensureWallet(owner){db.prepare('INSERT OR IGNORE INTO mobile_collection_wallets(owner,equipped) VALUES(?,NULL)').run(owner);}
  function has(owner,kind,itemId){return !!db.prepare('SELECT 1 FROM mobile_collection_owned WHERE owner=? AND kind=? AND item_id=?').get(owner,kind,itemId);}
  function ownsDecoration(owner,decorationId){return !isRetiredDecoration(decorationId)&&decorationById().get(decorationId)?.source==='default'||has(owner,'decoration',decorationId);}
+ // Gift decorations are listed only for players who already own them.
+ function ownedGifts(owner,equippedId){return REWARD_DECORATIONS.filter(item=>has(owner,'decoration',item.id)).map(item=>({...item,owned:true,equipped:equippedId===item.id}));}
  function equipped(owner){const item=decorationById().get(wallet(owner).equipped);return item&&!isRetiredDecoration(item.id)&&ownsDecoration(owner,item.id)?{...item}:null;}
  function overlay(now){
   return dailyContent?.albumEntries(now,albumTarget)??[];
@@ -109,7 +121,7 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
    return {id:album.id+'-'+m.id,target:reward?.target??m.target,coins:reward?.coins??m.coins,...(decorationId?{decorationId}:{}),earned,claimed:earned,claimable:false};
   })}));
   const packs=shown.filter(album=>requiresPurchase(album)&&album.imageIds.length).map(album=>({...album,owned:s.ownedPackIds.includes(album.id),images:album.imageIds.map(imageView),coverSrc:photoById.get(album.coverImageId&&album.imageIds.includes(album.coverImageId)?album.coverImageId:album.imageIds[0]).thumbSrc}));
-  const decorations=settings.decorations.filter(item=>!isRetiredDecoration(item.id)).map(item=>({...item,rewardAlbums:shown.flatMap(album=>album.milestones.filter(m=>m.decorationId===item.id).map(m=>({id:album.id,title:album.title,target:m.target}))),owned:ownsDecoration(owner,item.id),equipped:s.equipped?.id===item.id})).filter(item=>item.enabled!==false||item.owned);
+  const decorations=settings.decorations.filter(item=>!isRetiredDecoration(item.id)).map(item=>({...item,rewardAlbums:shown.flatMap(album=>album.milestones.filter(m=>m.decorationId===item.id).map(m=>({id:album.id,title:album.title,target:m.target}))),owned:ownsDecoration(owner,item.id),equipped:s.equipped?.id===item.id})).filter(item=>item.enabled!==false||item.owned).concat(ownedGifts(owner,s.equipped?.id));
   return {wallet:{coins:s.coins,fragments:s.fragments},albums,packs,decorations,equipped:s.equipped,tuning:settings.collection,serverTime:now};
  }
  function view(owner,now){
@@ -134,7 +146,7 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
    else albums.push({id:album.id,title:album.title,description:album.description,images:imageIds.map(imageView),collected:imageIds.filter(id=>collected.has(id)).length,total:imageIds.length,milestones:[]});
   }
   const packs=catalog.packs.map(pack=>{const imageIds=packImages(pack,now).filter(shown);return {...pack,imageIds,owned:s.ownedPackIds.includes(pack.id),images:imageIds.map(imageView),coverSrc:photoById.get(pack.imageIds[0]).thumbSrc};});
-  const decorations=settings.decorations.filter(item=>!isRetiredDecoration(item.id)).map(item=>({...item,owned:ownsDecoration(owner,item.id),equipped:s.equipped?.id===item.id})).filter(item=>item.enabled!==false||item.owned);
+  const decorations=settings.decorations.filter(item=>!isRetiredDecoration(item.id)).map(item=>({...item,owned:ownsDecoration(owner,item.id),equipped:s.equipped?.id===item.id})).filter(item=>item.enabled!==false||item.owned).concat(ownedGifts(owner,s.equipped?.id));
   return {wallet:{coins:s.coins,fragments:s.fragments},albums:albums.filter(album=>album.total>0),packs:packs.filter(pack=>pack.imageIds.length),decorations,equipped:s.equipped,tuning:settings.collection,serverTime:now};
  }
  function buy(owner,packId,now){
@@ -151,6 +163,7 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const item=decorationById().get(decorationId);if(!item)reject(400,'INVALID_DECORATION','装饰不存在');
   if(isRetiredDecoration(decorationId))reject(409,'DECORATION_RETIRED','这件装饰已移除，正在重新制作');
   if(ownsDecoration(owner,decorationId))return {alreadyOwned:true};
+  if(item.source==='gift')reject(409,'GIFT_ONLY','这件装饰在论坛或评论区反馈获得');
   if(item.enabled===false)reject(409,'DECORATION_DISABLED','这件装饰暂未开放');
   if(item.source!=='craft')reject(409,'ALBUM_REQUIRED','集齐对应图鉴即可获得这件装饰');
   change(owner,'craft:'+decorationId,0,-item.cost,now);
@@ -163,6 +176,7 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   if(decorationId!==null&&!ownsDecoration(owner,decorationId))reject(403,'DECORATION_NOT_OWNED','请先获得这件装饰');
   ensureWallet(owner);db.prepare('UPDATE mobile_collection_wallets SET equipped=? WHERE owner=?').run(decorationId,owner);
  }
+ function grantDecoration(owner,decorationId,now){return grantRewardDecoration(db,owner,decorationId,now);}
  function contribution(owner,roomId,requestId,now){
   const source='contribution:'+roomId+':'+requestId;if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return 0;
   const coins=readSettings().collection.contributionCoins;return change(owner,source,coins,0,now)?coins:0;
@@ -202,6 +216,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,equipped,awardTaskCoins,playerStats};
+ return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,equipped,awardTaskCoins,playerStats,grantDecoration};
 }
 
