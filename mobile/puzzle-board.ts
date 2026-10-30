@@ -14,6 +14,10 @@ type Owner=RoomPieceOwner;
 type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial:number;sx:number;sy:number;live:boolean};
 type Pan={pointer:number;x:number;y:number;cx:number;cy:number};
 type Pinch={a:number;b:number;distance:number;zoom:number;worldX:number;worldY:number;held:boolean};
+/** The large reference view: z multiplies the fitted size, x/y move its centre in screen pixels. */
+type PreviewView={z:number;x:number;y:number};
+type PreviewTouch={points:Map<number,Point>;start:Map<number,Point>;view:PreviewView;moved:boolean};
+const PREVIEW_MAX_ZOOM=8,PREVIEW_DOUBLE_TAP_MS=320;
 const CANVAS_SNAP_FEEDBACK_MS=720;
 /** The locate glow pulses four times, then fades out. */
 const LOCATE_MS=3600,LOCATE_PULSE_MS=900;
@@ -104,6 +108,10 @@ export class PuzzleBoard implements RoomTable {
  private tray=false;private trayPage=0;private focusedPiece:number|null=null;
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null}|null=null;
  private drag:Drag|null=null;private pan:Pan|null=null;private pinch:Pinch|null=null;private serial=0;
+ /** When locked, one finger on empty table no longer moves the view; a second finger still pans and zooms. */
+ viewLocked=false;
+ private lockedTouch:{id:number;x:number;y:number}|null=null;private lockTold=false;
+ private previewLarge=false;private previewView:PreviewView={z:1,x:0,y:0};private previewTouch:PreviewTouch|null=null;private previewThumb:Rect|null=null;private previewTap:{at:number;x:number;y:number}|null=null;
  private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private hintGrant:string|number|null=null;private underlayUntil=0;
  private flashes:SnapFlash[]=[];private locateStartedAt=0;private locateUntil=0;private frame=0;private destroyed=false;private feedbackHidden=false;
  private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();
@@ -132,13 +140,18 @@ export class PuzzleBoard implements RoomTable {
  }
  get theme(){return this.currentTheme;}
  get backgroundPanning(){return !!this.pan&&!this.drag&&!this.pinch;}
+ /** One finger on empty table, whether or not the view lock stops it from panning. */
+ get backgroundTouch(){return (!!this.pan||!!this.lockedTouch)&&!this.drag&&!this.pinch;}
  performanceDetails(){return {gesture:this.pinch?'缩放':this.pan?'移动背景':this.drag?'拖动碎片':'静止',cache:!!(this.dragSurface||this.gestureSurface),pieces:this.pieces.length,pointers:this.pointers.size,builds:this.surfaceBuilds,allocations:this.surfaceAllocations,bufferBytes:this.surfaceBuffer?this.surfaceBuffer.width*this.surfaceBuffer.height*4:0};}
  get imagePreparation():ImagePreparation{return this.preparation;}
  setTheme(theme:ThemeId){if(this.currentTheme===theme)return;this.currentTheme=theme;this.releasePaperSurface();this.changed();}
  get edgeOnly(){return this.edges;}set edgeOnly(value:boolean){this.cancelInput(true);this.edges=value;this.changed();}
  get trayOpen(){return this.tray;}set trayOpen(value:boolean){if(this.tray===value)return;this.cancelInput(true);this.tray=value;this.changed();}
  get underlay(){return this.backing||this.underlayUntil>Date.now();}set underlay(value:boolean){this.backing=value;if(!value)this.underlayUntil=0;this.changed();}
- get showPreview(){return this.preview;}set showPreview(value:boolean){this.preview=value;this.changed();}
+ get showPreview(){return this.preview;}set showPreview(value:boolean){this.preview=value;if(!value)this.previewLarge=false;this.changed();}
+ get previewZoomed(){return this.previewLarge;}
+ openPreviewZoom(){if(!this.ready)return false;this.cancelInput(true);this.previewLarge=true;this.previewView={z:1,x:0,y:0};this.previewTap=null;this.changed();return true;}
+ closePreviewZoom(){if(!this.previewLarge)return;this.previewLarge=false;this.previewTouch=null;this.previewTap=null;this.changed();}
  private changed(){if(!this.destroyed)this.invalidate();}
  private tell(message:string){this.notice=message;this.onNotice?.(message);this.changed();}
  async setImage(src:string){
@@ -269,9 +282,11 @@ export class PuzzleBoard implements RoomTable {
  input(input:Input):boolean{
   if(this.destroyed||!this.rect.w)return false;
   if(input.type==='key'){
+   if(input.key==='Escape'&&input.keyDown&&this.previewLarge){this.closePreviewZoom();return true;}
    if(input.key==='Escape'&&input.keyDown&&(this.pointers.size||this.trayTouch)){this.cancelInput(true);return true;}
    return false;
   }
+  if(this.previewInput(input))return true;
   if(input.type==='wheel'){
    const p=input.changed[0],delta=input.deltaY??0;if(!p||!inside(p,this.rect)||!Number.isFinite(delta)||delta===0)return false;
    // A wheel gesture cannot move the camera underneath an acquired piece.
@@ -294,19 +309,22 @@ export class PuzzleBoard implements RoomTable {
     this.publishCursor(this.pointers.get(this.drag.pointer)!);this.changed();return true;
    }
    if(this.pointers.size>=2){this.beginPinch();return true;}
-   const p=[...this.pointers.values()][0],world=this.world(p),group=input.pan?null:this.groupAt(p);
+   const p=[...this.pointers.values()][0],world=this.world(p),locked=this.viewLocked&&!input.pan,group=input.pan?null:this.groupAt(p)??(locked?this.groupNear(p):null);
    this.publishCursor(p);
    if(group&&this.ready&&this.network&&this.networkReady){
     if(this.owners[group.id]){this.tell(`${this.owners[group.id].name} 正在移动这组拼块`);return true;}
     if(this.network.canAcquire?.(group.id)===false){this.tell('这组拼块还在确认位置，请稍候');return true;}
     const serial=++this.serial;this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live:false};raiseGroup(this.state,group.id);
     void this.network.acquire(group.id).then(ok=>{if(!ok&&this.drag?.serial===serial){this.cancelNetworkDrag(group.id);this.tell('这组拼块没能确认，已恢复服务器位置');}}).catch(()=>{if(this.drag?.serial===serial)this.cancelNetworkDrag(group.id);});
-   }else{const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}
+   }else if(locked)this.lockedTouch={id:p.id,x:p.x,y:p.y};
+   else{const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}
    this.changed();return true;
   }
   if(!this.pointers.size){if(input.type==='move'){const p=input.changed[0]??input.points[0];this.publishCursor(p&&inside(p,this.rect)?p:null);this.changed();}return false;}
   if(input.type==='move'){
    for(const p of input.points)if(this.pointers.has(p.id))this.pointers.set(p.id,p);
+   // The first swipe on a locked table explains why the view stays put.
+   const held=this.lockedTouch&&this.pointers.get(this.lockedTouch.id);if(held&&!this.lockTold&&Math.hypot(held.x-this.lockedTouch!.x,held.y-this.lockedTouch!.y)>=DRAG_SLOP*2){this.lockTold=true;this.tell('画面已锁定：双指可移动和缩放，点锁可解开');}
    const a=this.pinch&&this.pointers.get(this.pinch.a),b=this.pinch&&this.pointers.get(this.pinch.b);
    if(this.pinch&&a&&b){const center={x:(a.x+b.x)/2-this.rect.x,y:(a.y+b.y)/2-this.rect.y},z=Math.min(5,Math.max(.08,this.pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/this.pinch.distance));this.camera={x:center.x-this.pinch.worldX*z,y:center.y-this.pinch.worldY*z,z};}
    else if(this.pan){const p=this.pointers.get(this.pan.pointer);if(p){const v=this.local(p);this.camera.x=this.pan.cx+v.x-this.pan.x;this.camera.y=this.pan.cy+v.y-this.pan.y;}}
@@ -316,7 +334,7 @@ export class PuzzleBoard implements RoomTable {
   }
   if(input.type==='up'){
    if(this.drag&&input.changed.some(p=>p.id===this.drag!.pointer)){const drag=this.drag,group=this.state.groups.find(g=>g.id===drag.id);this.drag=null;this.releaseDragSurface();if(group&&this.network){if(drag.live)this.assistDrop(group);this.pendingDrops.set(group.id,drag.serial);void this.network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial)this.pendingDrops.delete(group.id);});}}
-   const heldPinch=!!this.pinch?.held;for(const p of input.changed)this.pointers.delete(p.id);this.pan=null;this.pinch=null;
+   const heldPinch=!!this.pinch?.held;for(const p of input.changed)this.pointers.delete(p.id);this.pan=null;this.pinch=null;this.lockedTouch=null;
    // A pinch begun while holding keeps zooming on two remaining fingers; otherwise one remaining finger pans.
    if(this.pointers.size){const others=[...this.pointers.values()].filter(p=>p.id!==this.drag?.pointer),p=others[0];if(heldPinch&&others.length>=2)this.pinch=this.pinchBetween(others[0],others[1],!!this.drag);else if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}else this.releaseGestureSurface();
    // A release outside the board retains the last valid room position.
@@ -327,11 +345,11 @@ export class PuzzleBoard implements RoomTable {
  }
  private beginPinch(){
   this.releaseDragSurface();
-  if(this.drag){this.network?.release(this.drag.id);this.drag=null;++this.serial;}this.pan=null;
+  if(this.drag){this.network?.release(this.drag.id);this.drag=null;++this.serial;}this.pan=null;this.lockedTouch=null;
   const[a,b]=[...this.pointers.values()];this.pinch=this.pinchBetween(a,b,false);this.publishCursor(null);this.changed();
  }
  private pinchBetween(a:Point,b:Point,held:boolean):Pinch{const world=this.world({id:-1,x:(a.x+b.x)/2,y:(a.y+b.y)/2});return{a:a.id,b:b.id,distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:this.camera.z,worldX:world.x,worldY:world.y,held};}
- private cancelInput(release:boolean){if(release&&this.drag)this.network?.release(this.drag.id);this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.trayTouch=null;this.pointers.clear();this.publishCursor(null);++this.serial;this.changed();}
+ private cancelInput(release:boolean){if(release&&this.drag)this.network?.release(this.drag.id);this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.lockedTouch=null;this.previewTouch=null;this.trayTouch=null;this.pointers.clear();this.publishCursor(null);++this.serial;this.changed();}
  cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
  syncRemote(next:PuzzleState,owners:Record<string,Owner>,protectedIds:ReadonlySet<number>,showFeedback=true){
   const before=cloneGroups(this.state.groups),previous=new Map(this.state.groups.map(g=>[g.id,g]));
@@ -400,6 +418,65 @@ export class PuzzleBoard implements RoomTable {
  get locating(){return this.locateUntil>Date.now();}
  find(){const group=this.state.groups.find(g=>!g.locked&&!this.owners[g.id]&&visibleGroup(g,this.pieces,this.edges));return group?this.focusMobilePiece(group.pieces[0]):false;}
  private trayLayout(){const height=Math.min(Math.max(1,this.rect.h-76),210,Math.max(100,this.rect.h*.45)),r={x:this.rect.x+5,y:this.rect.y+this.rect.h-height-75,w:Math.max(1,this.rect.w-10),h:height},columns=Math.max(1,Math.min(12,Math.floor((r.w-16)/51))),rows=Math.max(1,Math.min(Math.floor((height-55)/48),Math.floor(24/columns))),pageSize=Math.max(1,columns*rows),groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),pages=Math.max(1,Math.ceil(groups.length/pageSize));this.trayPage=Math.min(this.trayPage,pages-1);return{r,columns,rows,pageSize,groups,pages,cellW:(r.w-16)/columns,cellH:(height-55)/rows};}
+ /** A locked table forgives a near miss: the touch picks up a loose piece within a fingertip of it. */
+ private groupNear(p:Point){for(const r of [6,12,18])for(let i=0;i<8;i++){const a=i*Math.PI/4,group=this.groupAt({id:p.id,x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r});if(group)return group;}return null;}
+ /** The large reference fills the table below any floating header; the picture is fitted inside a margin. */
+ private previewLayout(){
+  const r=this.rect,top=r.y+Math.max(12,Math.min(this.previewTopInset,r.h*.4)),area={x:r.x+12,y:top+40,w:r.w-24,h:r.y+r.h-top-40-34},scale=Math.max(.01,Math.min(area.w/this.board.width,area.h/this.board.height)),w=this.board.width*scale,h=this.board.height*scale;
+  return{area,close:{x:r.x+r.w-50,y:top,w:38,h:38},fit:{x:area.x+(area.w-w)/2,y:area.y+(area.h-h)/2,w,h}};
+ }
+ private previewImageRect(){const {fit}=this.previewLayout(),v=this.previewView,w=fit.w*v.z,h=fit.h*v.z;return{x:fit.x+fit.w/2+v.x-w/2,y:fit.y+fit.h/2+v.y-h/2,w,h};}
+ /** Keeps a zoomed reference covering its area; a fitted one stays centred. */
+ private clampPreview(view:PreviewView):PreviewView{const {area,fit}=this.previewLayout(),z=Math.min(PREVIEW_MAX_ZOOM,Math.max(1,view.z)),mx=Math.max(0,(fit.w*z-area.w)/2),my=Math.max(0,(fit.h*z-area.h)/2);return{z,x:Math.min(mx,Math.max(-mx,view.x)),y:Math.min(my,Math.max(-my,view.y))};}
+ /** Zooms the reference about a screen point, keeping that spot of the picture under it. */
+ private zoomPreviewAt(from:PreviewView,anchor:{x:number;y:number},target:{x:number;y:number},z:number){const {fit}=this.previewLayout(),cx=fit.x+fit.w/2,cy=fit.y+fit.h/2,next=Math.min(PREVIEW_MAX_ZOOM,Math.max(1,z)),k=next/from.z;return this.clampPreview({z:next,x:target.x-cx-(anchor.x-cx-from.x)*k,y:target.y-cy-(anchor.y-cy-from.y)*k});}
+ private previewInput(input:Input){
+  if(input.type==='key')return false;
+  if(!this.previewLarge){
+   // A tap on the corner thumbnail opens the large reference.
+   if(input.type!=='down'||this.pointers.size||this.trayTouch||!this.preview||!this.previewThumb)return false;
+   const p=input.changed[0];if(!p||!inside(p,this.previewThumb))return false;this.openPreviewZoom();return true;
+  }
+  if(input.type==='wheel'){const p=input.changed[0],delta=input.deltaY??0;if(!p||!Number.isFinite(delta)||delta===0)return true;this.previewView=this.zoomPreviewAt(this.previewView,p,p,this.previewView.z*Math.exp(-Math.max(-1000,Math.min(1000,delta))*.0018));this.changed();return true;}
+  if(input.type==='cancel'){this.previewTouch=null;return true;}
+  const rebase=(t:PreviewTouch)=>{t.start=new Map(t.points);t.view={...this.previewView};};
+  if(input.type==='down'){
+   const t=this.previewTouch??(this.previewTouch={points:new Map(),start:new Map(),view:{...this.previewView},moved:false});
+   for(const p of input.changed)t.points.set(p.id,p);if(t.points.size>1)t.moved=true;rebase(t);return true;
+  }
+  const t=this.previewTouch;if(!t)return true;
+  if(input.type==='move'){
+   for(const p of input.points)if(t.points.has(p.id))t.points.set(p.id,p);
+   const ids=[...t.start.keys()].filter(id=>t.points.has(id)).slice(0,2);
+   if(ids.length===2){const [a0,b0]=ids.map(id=>t.start.get(id)!),[a,b]=ids.map(id=>t.points.get(id)!),mid0={x:(a0.x+b0.x)/2,y:(a0.y+b0.y)/2},mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    this.previewView=this.zoomPreviewAt(t.view,mid0,mid,t.view.z*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,Math.hypot(a0.x-b0.x,a0.y-b0.y)));}
+   else if(ids.length===1){const s0=t.start.get(ids[0])!,p=t.points.get(ids[0])!;if(Math.hypot(p.x-s0.x,p.y-s0.y)>=DRAG_SLOP)t.moved=true;if(t.moved)this.previewView=this.clampPreview({...t.view,x:t.view.x+p.x-s0.x,y:t.view.y+p.y-s0.y});}
+   this.changed();return true;
+  }
+  if(input.type==='up'){
+   for(const p of input.changed)t.points.delete(p.id);
+   if(t.points.size){rebase(t);return true;}
+   this.previewTouch=null;const p=input.changed[0];if(t.moved||!p)return true;
+   const {close}=this.previewLayout(),image=this.previewImageRect();
+   if(inside(p,close)||!inside(p,image)){this.closePreviewZoom();return true;}
+   // Double tap zooms in on that spot, or back out to the whole picture.
+   const now=Date.now(),last=this.previewTap;
+   if(last&&now-last.at<=PREVIEW_DOUBLE_TAP_MS&&Math.hypot(p.x-last.x,p.y-last.y)<30){this.previewTap=null;this.previewView=this.previewView.z>1.2?{z:1,x:0,y:0}:this.zoomPreviewAt(this.previewView,p,p,3);}
+   else this.previewTap={at:now,x:p.x,y:p.y};
+   this.changed();return true;
+  }
+  return true;
+ }
+ private drawPreviewZoom(ctx:CanvasRenderingContext2D){
+  const r=this.rect,{area,close}=this.previewLayout(),image=this.previewImageRect();
+  ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.fillStyle='rgba(28,22,18,.82)';ctx.fillRect(r.x,r.y,r.w,r.h);
+  ctx.save();ctx.beginPath();ctx.rect(area.x,area.y,area.w,area.h);ctx.clip();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(this.picture,image.x,image.y,image.w,image.h);ctx.restore();
+  ctx.strokeStyle='rgba(255,248,236,.5)';ctx.lineWidth=1;ctx.strokeRect(Math.max(area.x,image.x)+.5,Math.max(area.y,image.y)+.5,Math.min(area.x+area.w,image.x+image.w)-Math.max(area.x,image.x)-1,Math.min(area.y+area.h,image.y+image.h)-Math.max(area.y,image.y)-1);
+  ctx.textBaseline='top';ctx.fillStyle='#fff8ec';ctx.font='bold 15px sans-serif';ctx.fillText('原图',r.x+16,close.y+10);
+  ctx.font='12px sans-serif';ctx.fillStyle='rgba(255,248,236,.78)';const tip=this.previewView.z>1.01?'双指缩放 · 拖动查看 · 双击还原':'双指或双击放大 · 点空白处关闭',tw=ctx.measureText(tip).width;ctx.fillText(tip,r.x+(r.w-tw)/2,area.y+area.h+11);
+  ctx.fillStyle='rgba(255,248,236,.94)';ctx.beginPath();ctx.arc(close.x+close.w/2,close.y+close.h/2,close.w/2,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#5b4337';ctx.lineWidth=2.4;ctx.lineCap='round';ctx.beginPath();const cx=close.x+close.w/2,cy=close.y+close.h/2;ctx.moveTo(cx-6,cy-6);ctx.lineTo(cx+6,cy+6);ctx.moveTo(cx+6,cy-6);ctx.lineTo(cx-6,cy+6);ctx.stroke();
+  ctx.restore();
+ }
  private trayInput(input:Input){
   if(this.trayTouch){const touch=this.trayTouch,p=input.changed.find(p=>p.id===touch.id)||input.points.find(p=>p.id===touch.id);if(input.type==='cancel'){this.trayTouch=null;return true;}if(p&&Math.hypot(p.x-touch.x,p.y-touch.y)>9)touch.action=null;if(input.type==='up'&&input.changed.some(p=>p.id===touch.id)){this.trayTouch=null;touch.action?.();this.changed();}return true;}
   if(!this.tray||input.type!=='down'||this.pointers.size)return false;const p=input.changed[0],v=this.trayLayout();if(!p||!inside(p,v.r))return false;
@@ -721,11 +798,16 @@ export class PuzzleBoard implements RoomTable {
   this.drawSnapFeedback(ctx,now);this.drawLocateGlow(ctx,now);
   this.drawHintFeedback(ctx,now);
   ctx.restore();
-  if(this.preview&&this.ready){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.restore();}
+  this.previewThumb=null;
+  if(this.preview&&this.ready&&!this.previewLarge){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);
+   // A magnifier in the corner says the thumbnail opens a large, zoomable view.
+   const mx=r.x+r.w-maxW-9+11,my=top+height-8;ctx.fillStyle='rgba(255,250,243,.92)';ctx.beginPath();ctx.arc(mx,my,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#5b4337';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(mx-1.5,my-1.5,4,0,Math.PI*2);ctx.moveTo(mx+1.5,my+1.5);ctx.lineTo(mx+5,my+5);ctx.stroke();
+   ctx.restore();this.previewThumb={x:r.x+r.w-maxW-12,y:top,w:maxW+6,h:height+6};}
   ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const cursor of this.cursors.values()){const p=this.worldToScreen(cursor),value=cursor.value;if(p.x<r.x||p.y<r.y||p.x>r.x+r.w||p.y>r.y+r.h)continue;ctx.save();ctx.translate(p.x,p.y);ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=value.color;ctx.fill();ctx.strokeStyle=colors.cursorLine;ctx.lineWidth=1;ctx.stroke();ctx.font='bold 11px sans-serif';const label=`${value.name} · Lv.${value.level??0}`,width=Math.min(190,ctx.measureText(label).width+12);if(this.phoneLandscapeRoom){roomRoundPath(ctx,{x:19,y:12,w:width,h:21},8);ctx.fillStyle=value.color;ctx.fill();}else{ctx.fillStyle=colors.cursorLabel;ctx.fillRect(19,12,width,21);}ctx.fillStyle=this.phoneLandscapeRoom?'#ffffff':colors.labelInk;ctx.textBaseline='top';ctx.fillText(label,25,17,width-12);ctx.restore();if(value.decoration)decorations.push({value:value.decoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}ctx.restore();
   if(this.selfDecoration&&this.ownPoint){const p=this.worldToScreen(this.ownPoint);decorations.push({value:this.selfDecoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}
   if(this.drawDecoration&&decorations.length){ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const d of decorations)this.drawDecoration(d.value,d.rect);ctx.restore();}
   if(this.tray)this.drawTray(ctx);
+  if(this.previewLarge&&this.ready)this.drawPreviewZoom(ctx);
  }
  destroy(){if(this.destroyed)return;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
 }

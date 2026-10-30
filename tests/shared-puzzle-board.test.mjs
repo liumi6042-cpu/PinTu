@@ -317,3 +317,45 @@ test('initial snapshots, teammate updates, hidden tabs and reduced motion cannot
   board.confirmMobileContribution({requestId:'fresh',groupId:1,creditedXp:2});assert.equal(board.flashes[0].reduced,true);now+=40;const arcs=[];let color='';const ctx=new Proxy(p.ctx,{get:(target,key)=>key==='arc'?(...args)=>{if(color==='#fff2b0')arcs.push(args);}:target[key],set:(target,key,value)=>{if(key==='fillStyle')color=value;target[key]=value;return true;}});board.draw(ctx);assert.equal(arcs.length,0,'reduced motion retains a short static outline and XP without sparks');
  }finally{board.destroy();Date.now=oldNow;if(oldMedia===undefined)delete globalThis.matchMedia;else globalThis.matchMedia=oldMedia;}
 });
+
+test('a locked view keeps one finger off the camera, forgives a near miss and still pans with a second finger',async()=>{
+ const run=async locked=>{
+  const {board,state}=setup(),events=[],notices=[];await board.setImage('test.png');board.networkReady=true;board.onNotice=m=>notices.push(m);board.viewLocked=locked;
+  board.network={canAcquire:()=>true,acquire:async()=>true,move(){},drop:async(...args)=>events.push(['drop',...args]),release:()=>events.push(['release'])};
+  const group=state.groups.at(-1);for(const other of state.groups)if(other!==group){other.dx=-4000;other.dy=-4000;}
+  board.camera={x:0,y:0,z:.5};const spot=piecePoint(board,group);board.camera={x:board.rect.w/2-(spot.x-board.rect.x),y:board.rect.h/2-(spot.y-board.rect.y),z:.5};
+  const start={...board.camera},w=board.board.width/state.cols*.5,center=piecePoint(board,group),near={id:1,x:center.x+w/2+w*.27+8,y:center.y};
+  const before=group.dx;board.input({type:'down',points:[near],changed:[near]});await Promise.resolve();
+  const moved={...near,x:near.x+40,y:near.y+30};board.input({type:'move',points:[moved],changed:[moved]});
+  const camera={...board.camera},dragged={dx:group.dx-before};board.input({type:'up',points:[],changed:[moved]});
+  board.destroy();return{camera:{x:camera.x-start.x,y:camera.y-start.y},dragged,events,notices};
+ };
+ const free=await run(false);assert.deepEqual([free.camera.x,free.camera.y],[40,30],'unlocked, a missed touch pans the table');assert.deepEqual(free.events,[]);
+ const held=await run(true);assert.deepEqual([held.camera.x,held.camera.y],[0,0],'locked, the table stays put');assert.ok(held.events.some(e=>e[0]==='drop'),'the near miss picked up the piece');assert.ok(Math.abs(held.dragged.dx-80)<1e-6,'the piece follows the finger');assert.equal(free.dragged.dx,0);
+
+ const {board}=setup();await board.setImage('test.png');board.viewLocked=true;const notices=[];board.onNotice=m=>notices.push(m);
+ for(const other of board.state.groups){other.dx=-4000;other.dy=-4000;}board.camera={x:0,y:0,z:1};
+ const a={id:1,x:200,y:300},b={id:2,x:260,y:300};board.input({type:'down',points:[a],changed:[a]});board.input({type:'move',points:[{...a,x:240}],changed:[{...a,x:240}]});
+ assert.deepEqual([board.camera.x,board.camera.y],[0,0]);assert.ok(board.backgroundTouch,'a locked empty touch still counts as a background touch');assert.equal(notices.length,1,'the first swipe explains the lock');
+ board.input({type:'down',points:[{...a,x:240},b],changed:[b]});board.input({type:'move',points:[{...a,x:280},{...b,x:300}],changed:[{...a,x:280},{...b,x:300}]});
+ assert.ok(Math.abs(board.camera.x-40)<1e-6&&Math.abs(board.camera.z-1)<1e-9,'two fingers still move the view');board.destroy();
+});
+
+test('the reference thumbnail opens a large view that pinches, pans within bounds, double-tap zooms and closes on the backdrop',async()=>{
+ const {p,board}=setup();await board.setImage('test.png');board.showPreview=true;board.draw(p.ctx);
+ const thumb=board.previewThumb;assert.ok(thumb,'the thumbnail has a hit area');
+ const t={id:1,x:thumb.x+thumb.w/2,y:thumb.y+thumb.h/2};assert.equal(board.input({type:'down',points:[t],changed:[t]}),true);board.input({type:'up',points:[],changed:[t]});
+ assert.ok(board.previewZoomed);board.draw(p.ctx);assert.equal(board.previewThumb,null,'the thumbnail hides while the large view is open');
+ const image=board.previewImageRect(),mid={x:image.x+image.w/2,y:image.y+image.h/2},a={id:1,x:mid.x-40,y:mid.y},b={id:2,x:mid.x+40,y:mid.y};
+ board.input({type:'down',points:[a],changed:[a]});board.input({type:'down',points:[a,b],changed:[b]});
+ board.input({type:'move',points:[{...a,x:mid.x-120},{...b,x:mid.x+120}],changed:[{...a,x:mid.x-120},{...b,x:mid.x+120}]});
+ assert.ok(Math.abs(board.previewView.z-3)<1e-9,'pinching spreads the reference');assert.ok(Math.abs(board.previewView.x)<1e-9,'about the pinch centre');
+ board.input({type:'up',points:[],changed:[{...a,x:mid.x-120},{...b,x:mid.x+120}]});assert.ok(board.previewZoomed,'a pinch never closes the view');
+ const d={id:3,x:mid.x,y:mid.y};board.input({type:'down',points:[d],changed:[d]});board.input({type:'move',points:[{...d,x:mid.x+5000}],changed:[{...d,x:mid.x+5000}]});
+ const {area,fit}=board.previewLayout();assert.ok(Math.abs(board.previewView.x-(fit.w*3-area.w)/2)<1e-6,'panning stops at the picture edge');board.input({type:'up',points:[],changed:[{...d,x:mid.x+5000}]});
+ const tap=q=>{board.input({type:'down',points:[q],changed:[q]});board.input({type:'up',points:[],changed:[q]});};
+ tap({id:4,x:mid.x,y:mid.y});tap({id:4,x:mid.x,y:mid.y});assert.deepEqual(board.previewView,{z:1,x:0,y:0},'double tap returns to the whole picture');
+ tap({id:5,x:mid.x+10,y:mid.y});tap({id:5,x:mid.x+10,y:mid.y});assert.equal(board.previewView.z,3,'double tap zooms in');
+ board.previewView={z:1,x:0,y:0};tap({id:6,x:board.rect.x+4,y:board.rect.y+board.rect.h-4});assert.equal(board.previewZoomed,false,'a tap on the backdrop closes it');assert.ok(board.showPreview,'the thumbnail stays on');
+ board.openPreviewZoom();board.showPreview=false;assert.equal(board.previewZoomed,false);board.destroy();
+});

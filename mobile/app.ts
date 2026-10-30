@@ -66,6 +66,7 @@ function taskCoinsText(min=0,max=min){return max>0?' · 金币 +'+min+(min===max
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
 // Seats come from the server (4/6/8 by piece count); backends without maxPlayers seat 8.
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
+const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -166,6 +167,7 @@ export class GameApp{
   this.roomPanelCollapsed=platform.storage.get('jigsaw:room-panel-collapsed:v1')==='1';
   this.desktopToolsOpen=platform.storage.get('jigsaw:desktop-tools-open:v1')!=='0';
   this.landscapeToolsOpen=platform.storage.get('jigsaw:landscape-tools-open:v1')==='1';
+  try{this.viewLocked=platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>{
    const room=this.room;if(!room||this.offlineRoom)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
@@ -568,7 +570,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(name==='mobile:gameplay-error')this.note((detail as {message?:string})?.message||'操作暂未完成');
    if(name==='mobile:energy-empty'){if(this.energyEnabled){this.note('体力不足，请使用礼包或补给');this.navigate('supplies');}else this.note('当前游戏规则需要重新连接，请返回大厅后再进入房间');}
   }});this.room=room;this.setCompletionPhase('idle');this.completionLive=!room.snapshot.completedAt;
-  const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;this.detachRoom=room.attach(board);
+  const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
   if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
   this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>this.receiveCheer(room,cheer,own)}):null;
   this.cheer?.setActive(this.modal==='completion');
@@ -1708,7 +1710,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
  private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
-  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
+  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“锁定”后单指只拖拼块不移动画面；“原图”可双指放大查看；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留3个未结束的自建房间。'],
   ['邀请与礼包',this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
@@ -1734,13 +1736,14 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.drawRoomTopBar({x:0,y:headerTop,w:s.w-column,h:52},'landscape');
    if(web){c.fillStyle=this.colors.cream;c.fillRect(s.w-column,0,column,s.h);c.fillStyle=this.colors.line;c.fillRect(s.w-column,0,2,s.h);this.drawToolColumn({x:s.w-column+2,y:headerTop+6,w:column-2,h:safeBottom-headerTop-6});}
    else this.drawToolColumn({x:s.w-72,y:0,w:72,h:s.h});
-   if(web)this.drawRoomGift(8,safeBottom-50,false);else{this.drawChatBubble(0);this.drawRoomGift(12,safeBottom-(this.landscapeChatVisible?88:50),false);}
+   if(web)this.drawRoomGift(8,safeBottom-50,false);else if(!board.previewZoomed){this.drawChatBubble(0);this.drawRoomGift(12,safeBottom-(this.landscapeChatVisible?88:50),false);this.drawBoardQuickTools(this.roomArea.x+this.roomArea.w-58,safeBottom-4);}
   }else{
    const headerBottom=headerTop+76;this.roomArea={x:0,y:headerBottom+1,w:s.w,h:Math.max(90,safeBottom-headerBottom-1)};
    this.placeBoard(board,6,()=>this.phoneFit(board,'width'));
    c.fillStyle=this.colors.cream;c.fillRect(0,0,s.w,headerBottom);c.fillStyle=this.colors.line;c.fillRect(0,headerBottom,s.w,1);
-   this.drawRoomTopBar({x:0,y:headerTop,w:s.w,h:76},'portrait');this.drawChatBubble(headerBottom+8);
-   this.drawRoomGift(10,safeBottom-62,true);this.drawRoomTools({x:s.w-63,y:safeBottom-65,w:50,h:50},false);
+   this.drawRoomTopBar({x:0,y:headerTop,w:s.w,h:76},'portrait');
+   // The large reference covers the board like a dialog; its own close button and backdrop dismiss it.
+   if(!board.previewZoomed){this.drawChatBubble(headerBottom+8);this.drawRoomGift(10,safeBottom-62,true);if(!this.toolsOpen)this.drawBoardQuickTools(s.w-61,safeBottom-67);this.drawRoomTools({x:s.w-63,y:safeBottom-65,w:50,h:50},false);}
   }
   if(!this.imageReady){const preparation=board.imagePreparation??{phase:'loading',completed:0,total:0},label=preparation.phase==='preparing'?'正在准备碎片 '+preparation.completed+'/'+preparation.total+'…':preparation.phase==='loading'?'正在加载图片…':'正在铺开拼图…',r=this.roomArea,w=Math.min(r.w-36,420);s.panel({x:r.x+(r.w-w)/2,y:r.y+20,w,h:74});this.paragraph(this.imageError||label,r.x+(r.w-w)/2+12,r.y+37,w-24,14);if(this.imageError)this.button(r.x+(r.w-w)/2+7,r.y+104,w-14,'重新加载图片',()=>void this.run(()=>this.retryRoomImage(board)));}
   if(this.platform.config.previewTestRoom){
@@ -1828,6 +1831,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     }if(!disabled)s.hit(b,()=>this.roomTool(kind));
    });
   }
+  if(this.board?.previewZoomed)return;
   this.drawLandscapeSurface(toggle,18,roomColors.card,roomColors.ink,2,2);s.icon(this.landscapeToolsOpen?'close':'tools',{x:toggle.x+8,y:toggle.y+8,w:20,h:20},roomColors.ink);s.hit(toggle,()=>this.setLandscapeToolsOpen(!this.landscapeToolsOpen));
  }
  /** Coordinates are Stage logical pixels, so the host's UI scale also scales this chrome and its hits. */
@@ -1887,13 +1891,26 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;
  private landscapeChatVisible=false;
+ private viewLocked=false;
+ private toggleViewLock(){
+  this.viewLocked=!this.viewLocked;try{this.platform.storage.set(VIEW_LOCK_KEY,this.viewLocked?'1':'0');}catch{}
+  if(this.board)this.board.viewLocked=this.viewLocked;this.clearRoomPointer();
+  this.note(this.viewLocked?'画面已锁定：单指只拖拼块，双指移动和缩放':'已解锁：单指拖空白处可移动画面');this.invalidate();
+ }
+ private toggleReference(){const board=this.board;if(!board||this.completionFx)return;this.clearRoomPointer();if(board.previewZoomed)board.closePreviewZoom();else board.openPreviewZoom();this.invalidate();}
+ /** Phones keep the view lock and the large reference one tap away, stacked above the room tools. */
+ private drawBoardQuickTools(x:number,bottom:number){
+  const board=this.board,room=this.room;if(!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
+  const s=this.stage,size=46,items=[['reference','原图',false,()=>this.toggleReference()],[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
+  items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-cream-selected':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
+ }
  private drawChatBubble(y:number){
   this.landscapeChatVisible=false;
   const s=this.stage,messages=this.messages.filter(message=>!this.social.blockedCodes.includes(message.code)),latest=messages[messages.length-1];
   if(latest){if(this.bubbleSeen<0)this.bubbleSeen=latest.id;else if(latest.id>this.bubbleSeen){this.bubbleSeen=latest.id;if(latest.code!==this.client.profile?.code||this.platform.config.id!=='web'&&this.layout==='phoneLandscape')this.chatBubble={message:latest,until:Date.now()+5000};}}
   const bubble=this.chatBubble;if(!bubble||Date.now()>bubble.until||this.modal)return;
   if(this.platform.config.id!=='web'&&this.layout==='phoneLandscape'){
-   const c=s.ctx,name=bubble.message.name,text='：'+bubble.message.text,nameW=Math.min(s.measure(name,12,700),this.roomArea.w*.35),w=Math.min(this.roomArea.w-24,this.room?.snapshot.completedAt&&!this.completionFx?(this.roomArea.w-112)/2-20:Infinity,nameW+s.measure(text,12,500)+20),r={x:12,y:this.roomArea.h-32,w,h:20},member=this.room?.snapshot.members.find(member=>member.id===bubble.message.playerId);
+   const c=s.ctx,name=bubble.message.name,text='：'+bubble.message.text,nameW=Math.min(s.measure(name,12,700),this.roomArea.w*.35),w=Math.min(this.roomArea.w-78,this.room?.snapshot.completedAt&&!this.completionFx?(this.roomArea.w-112)/2-20:Infinity,nameW+s.measure(text,12,500)+20),r={x:12,y:this.roomArea.h-32,w,h:20},member=this.room?.snapshot.members.find(member=>member.id===bubble.message.playerId);
    const remaining=bubble.until-Date.now();c.save();c.globalAlpha=Math.min(1,remaining/1000);this.drawLandscapeSurface(r,14,'rgba(255,250,243,.95)',roomColors.lineD,1.5);if(remaining<1000)this.invalidate();
    s.text(name,r.x+10,r.y+4,12,member?.color||roomColors.ink,700,nameW);s.text(text,r.x+10+nameW,r.y+4,12,roomColors.ink,500,w-nameW-20);c.restore();s.hit(r,()=>this.showModal('chat'));this.landscapeChatVisible=true;return;
   }
@@ -2341,7 +2358,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
      [this.platform.config.id==='web'?'定位未归位拼块':'定位未拼块 · 全部闪亮标出',()=>{if(this.platform.config.id==='web')board?.find();else this.locateLoose();this.modal=null;this.toolsOpen=false;this.invalidate();}],
      [board?.trayOpen?'关闭碎片托盘':'打开碎片托盘 · 点选定位',()=>{if(board)board.trayOpen=!board.trayOpen;this.modal=null;this.toolsOpen=false;this.invalidate();}],
      ['整理散落拼块',()=>void this.run(async()=>{await room?.organize();this.modal=null;this.toolsOpen=false;this.note('散片已整理');})],
-     [board?.showPreview?'关闭原图':'查看原图',()=>{if(board)board.showPreview=!board.showPreview;this.modal=null;this.invalidate();}],
+     [board?.showPreview?'关闭原图小窗':'原图小窗 · 点小窗可放大',()=>{if(board)board.showPreview=!board.showPreview;this.modal=null;this.invalidate();}],
     ] as const){if(label==='整理散落拼块'&&!this.soloRoom)continue;this.button(left,cy,width,label,action,'cream',40);cy+=51;}
     this.button(left,cy,width,'打开设置 · 声音、画面等',()=>this.showModal('settings'),'cream',40);cy+=51;break;
    }
@@ -2401,7 +2418,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const onModal=this.modalContains(point.x,point.y),board=!!this.board&&this.route==='room'&&!this.boardInputBlocked&&inside(this.roomArea,point.x,point.y)&&!this.stage.hasHit(point.x,point.y);
    if(input.pan&&!board)return true;
    this.pointer={x:point.x,y:point.y,lastY:point.y,scroll:false,board,modal:onModal,album:!onModal&&inside(this.albumListArea,point.x,point.y)};
-   if(board){const handled=this.board!.input(input);this.pointer.landscapeBackgroundTap=this.platform.config.id!=='web'&&this.layout==='phoneLandscape'&&this.landscapeToolsOpen&&!input.pan&&input.points.length===1&&this.board!.backgroundPanning;return handled;}return this.stage.input(input);
+   if(board){const handled=this.board!.input(input);this.pointer.landscapeBackgroundTap=this.platform.config.id!=='web'&&this.layout==='phoneLandscape'&&this.landscapeToolsOpen&&!input.pan&&input.points.length===1&&this.board!.backgroundTouch;return handled;}return this.stage.input(input);
   }
   if(this.pointer?.board&&!this.boardInputBlocked){const p=this.pointer;if(input.points.length>1||Math.hypot(point.x-p.x,point.y-p.y)>6)p.landscapeBackgroundTap=false;const handled=this.board?.input(input)??false;if(input.type==='cancel'||(input.type==='up'&&!input.points.length)){this.pointer=null;if(input.type==='up'&&p.landscapeBackgroundTap)this.setLandscapeToolsOpen(false);}return handled;}
   if(input.type==='move'&&this.pointer){const p=this.pointer,canScroll=p.modal?inside(this.modalArea,p.x,p.y):this.route!=='room'&&(p.album||inside(this.listArea,p.x,p.y));
