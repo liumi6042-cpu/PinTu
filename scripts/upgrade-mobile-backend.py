@@ -220,7 +220,9 @@ def extract_regular_files(archive, target):
 
 
 def online_backups(shared, folder):
-    databases = sorted(path for path in shared.rglob('*') if path.is_file() and path.suffix in ('.sqlite', '.sqlite3', '.db') and 'backups' not in path.relative_to(shared).parts)
+    # Only the live databases at the top of shared/. Snapshots in operations/ and backups/ are backups already; copying
+    # them too filled the disk on 2026-10-30 (about 5 GB of release snapshots) and took the service down.
+    databases = sorted(path for path in shared.glob('*') if path.is_file() and path.suffix in ('.sqlite', '.sqlite3', '.db'))
     ensure(shared / 'mobile-v3.sqlite' in databases and shared / 'sessions.sqlite' in databases, 'Expected persistent mobile/session databases missing')
     folder.mkdir(mode=0o700, parents=True, exist_ok=False)
     records = []

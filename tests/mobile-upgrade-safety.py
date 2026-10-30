@@ -158,9 +158,14 @@ class UpgradeSafety(unittest.TestCase):
                 source.execute('PRAGMA journal_mode=WAL')
                 source.execute('CREATE TABLE progress(value INTEGER)')
                 source.execute('INSERT INTO progress VALUES(1)')
+        # Release snapshots under operations/ are backups already and are not copied again.
+        (shared / 'operations' / 'older-release').mkdir(parents=True)
+        with closing(sqlite3.connect(shared / 'operations' / 'older-release' / 'mobile-v3.sqlite')) as snapshot, snapshot:
+            snapshot.execute('CREATE TABLE progress(value INTEGER)')
         folder = shared / 'backups' / 'upgrade-test'
         records = upgrade.online_backups(shared, folder)
-        self.assertEqual(len(records), 2)
+        self.assertEqual(sorted(pathlib.Path(record['path']).as_posix() for record in records), ['backups/upgrade-test/mobile-v3.sqlite', 'backups/upgrade-test/sessions.sqlite'])
+        self.assertFalse((folder / 'operations').exists())
         with closing(sqlite3.connect(shared / 'mobile-v3.sqlite')) as source, source:
             source.execute('UPDATE progress SET value=2')
         with closing(sqlite3.connect(folder / 'mobile-v3.sqlite')) as backup:
