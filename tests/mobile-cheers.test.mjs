@@ -12,6 +12,8 @@ function fixture(t,{completed=true,pieces=48}={}){
  const service=createMobileService({databasePath,now:()=>now}),db=new DatabaseSync(databasePath);
  t.after(()=>{db.close();service.close();rmSync(dir,{recursive:true,force:true});});
  const call=(url,body,token,owner=identity(1),method=body===undefined?'GET':'POST')=>service.handle({identity:owner,url,method,body,authorization:token?'Bearer '+token:undefined});
+ // 500-piece tables open at level 10 on TapTap.
+ if(pieces>=500){call('/api/mobile/profile');db.prepare("UPDATE mobile_profiles SET data=json_set(data,'$.level',10) WHERE id=?").run(identity(1));}
  const created=call('/api/rooms',{mode:'random',pieces,visibility:'public',requestId:rid()});assert.equal(created.status,201);const ticket=created.data,path='/api/rooms/'+ticket.room.id;
  const patchRoom=updates=>{const room=JSON.parse(db.prepare('SELECT data FROM mobile_rooms WHERE id=?').get(ticket.room.id).data);Object.assign(room,updates);db.prepare('UPDATE mobile_rooms SET data=?,completed_at=?,closed_at=? WHERE id=?').run(JSON.stringify(room),room.completedAt,room.closedAt??null,room.id);return room;};
  if(completed)patchRoom({completedAt:now});
