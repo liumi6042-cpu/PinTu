@@ -56,7 +56,7 @@ test('browser adapter resolves bundled music beside game.js and restores it afte
  const media=[],events=new EventTarget();let closeAd,failLoad=false;
  class Audio{volume=1;loop=false;currentTime=0;plays=0;pauses=0;loads=0;constructor(src){this.src=src;media.push(this);}play(){this.plays++;return Promise.resolve();}pause(){this.pauses++;}removeAttribute(name){if(name==='src')this.src='';}load(){this.loads++;}}
  const document={baseURI:'https://wrapper.test/boot/',scripts:[{src:'https://package.test/games/game.js'}],hidden:false,addEventListener:events.addEventListener.bind(events),removeEventListener:events.removeEventListener.bind(events)};
- const ad={load:async()=>{if(failLoad)throw Error('no ad');},show:async()=>{},onClose:fn=>closeAd=fn,offClose(){},onError(){},offError(){}};
+ const ad={load:async()=>{if(failLoad)throw Error('no ad');},show:async()=>{if(failLoad)throw Error('not ready');},onClose:fn=>closeAd=fn,offClose(){},onError(){},offError(){}};
  let p,offHide,offShow;t.after(()=>{offHide?.();offShow?.();p?.audio.dispose();});
  globals(t,{document,window:{tap:{createRewardedVideoAd:()=>ad},addEventListener(){},removeEventListener(){}},location:{href:'https://wrapper.test/game',origin:'https://wrapper.test'},Audio});
  p=createWebPlatform({id:'taptap',gameName:'test',apiBase:'https://game.test/h5',assetBase:'https://game.test/assets'},{style:{}});offHide=p.onHide(()=>{});offShow=p.onShow(()=>{});
@@ -82,12 +82,12 @@ test('WeChat uses native loop audio without DOM and resumes only when foreground
  p.audio.dispose();assert.ok(media.every(sound=>sound.destroys===1));hooks.get('Show')({});p.playSound('late.wav');assert.equal(media.length,2);
 });
 
-test('TapTap ad diagnostics preserve failing stage and error code, redact tokens and permit retry',async t=>{
+test('TapTap ad diagnostics preserve failing stage and error code, redact tokens and permit retry on one instance',async t=>{
  let mode='load',destroyed=0,created=0,close;
- const ad=()=>({load:async()=>{if(mode==='load')throw {errCode:1003,errMsg:'内部错误adnCode=12345, adnMsg=trace-placeholder token=private-value code=login-private https://private.test'};},show:async()=>{if(mode==='show')throw {errno:2001,adnCode:23456,errMsg:'show denied'};close({isEnded:true});},onClose:fn=>close=fn,offClose(){},onError(){},offError(){},destroy(){destroyed++;}});
+ const ad=()=>({load:async()=>{if(mode==='load')throw {errCode:1003,errMsg:'内部错误adnCode=12345, adnMsg=trace-placeholder token=private-value code=login-private https://private.test'};},show:async()=>{if(mode==='load')throw {errCode:1004,errMsg:'not ready'};if(mode==='show')throw {errno:2001,adnCode:23456,errMsg:'show denied'};setTimeout(()=>close({isEnded:true}),0);},onClose:fn=>close=fn,offClose(){},onError(){},offError(){},destroy(){destroyed++;}});
  globals(t,{document:{baseURI:'https://wrapper.test/',scripts:[{src:'https://package.test/game.js'}],hidden:false},window:{tap:{createRewardedVideoAd:()=>{created++;return ad();}}},location:{href:'https://wrapper.test/',origin:'https://wrapper.test'}});
  const p=createWebPlatform({id:'taptap',gameName:'test',apiBase:'https://game.test/h5',assetBase:'https://game.test/assets'},{style:{}});
- assert.equal(await p.watchAd('1071218'),'failed');assert.match(p.adDiagnostics(),/加载失败.*1003.*adnCode:12345/);assert.doesNotMatch(p.adDiagnostics(),/private-value|private.test|login-private/);
- mode='show';assert.equal(await p.watchAd('1071218'),'failed');assert.match(p.adDiagnostics(),/展示失败.*2001.*adnCode:23456/);assert.equal(destroyed,2);
- mode='success';assert.equal(await p.watchAd('1071218'),'completed');assert.match(p.adDiagnostics(),/完整观看/);assert.equal(created,3);p.audio.dispose();
+ assert.equal(await p.watchAd('1071218'),'failed');assert.match(p.adDiagnostics(),/推广位:1071218 · 加载失败.*1003.*adnCode:12345/);assert.doesNotMatch(p.adDiagnostics(),/private-value|private.test|login-private/);assert.equal(p.adFailure(),'错误码 1003 内部错误');
+ mode='show';assert.equal(await p.watchAd('1071218'),'failed');assert.match(p.adDiagnostics(),/展示失败.*2001.*adnCode:23456/);
+ mode='success';assert.equal(await p.watchAd('1071218'),'completed');assert.match(p.adDiagnostics(),/完整观看/);assert.equal(p.adFailure(),'');assert.equal(created,1);assert.equal(destroyed,0);p.audio.dispose();
 });

@@ -75,7 +75,18 @@ test('ad testing refuses other accounts and other platforms before any native ca
  for(const [id,taptap] of [['taptap',{bound:true,diagnostics:false}],['taptap',{bound:false,diagnostics:true}],['web',{bound:true,diagnostics:true}],['wechat',{bound:true,diagnostics:true}]]){const {app,profile,events}=fixture();app.platform.config.id=id;profile.taptap=taptap;app.platform.watchAd=()=>assert.fail('restricted account');await app.testRewardedAd();assert.deepEqual(events,[]);}
 });
 
-test('interstitial testing uses 1071588 without inventory, reward requests or account writes',async()=>{
- for(const outcome of ['closed','failed','unavailable']){const {app,profile,events}=fixture();app.platform.config.id='taptap';profile.taptap={bound:true,diagnostics:true};profile.supply.energy=3;app.platform.showInterstitialAd=async unit=>(events.push(['interstitial',unit]),outcome);app.platform.alert=message=>events.push(['alert',message]);const before=JSON.stringify(profile);await app.testInterstitialAd();assert.deepEqual(events.filter(e=>e[0]==='interstitial'),[['interstitial','1071588']]);assert.equal(JSON.stringify(profile),before);assert.equal(events.some(e=>e[0].startsWith('/api/')||e[0]==='ad'||e[0]==='share'),false);assert.equal(events.find(e=>e[0]==='alert')[1].includes('测试成功'),outcome==='closed');}
- const f=fixture();f.app.platform.showInterstitialAd=()=>assert.fail('not allowlisted');await f.app.testInterstitialAd();assert.deepEqual(f.events,[]);
+test('TapTap picks the ad slot for the current orientation and falls back to the single configured slot',async()=>{
+ for(const [width,height,config,expected] of [[390,844,{rewardedAdUnitId:'p0',rewardedAdUnitIdPortrait:'p1',rewardedAdUnitIdLandscape:'l1'},'p1'],[844,390,{rewardedAdUnitId:'p0',rewardedAdUnitIdPortrait:'p1',rewardedAdUnitIdLandscape:'l1'},'l1'],[844,390,{rewardedAdUnitId:'p0'},'p0']]){
+  const {app,events}=fixture();app.platform.config.id='taptap';app.platform.viewport=()=>({width,height,dpr:1,top:0,bottom:0});Object.assign(app.client.config,{adRewardEnabled:true,...config});app.platform.watchAd=async unit=>(events.push(['ad',unit]),'completed');
+  await app.claimSupply('energy');assert.deepEqual(events.filter(e=>e[0]==='ad'),[['ad',expected]]);
+  const prepared=[];app.platform.prepareAd=unit=>prepared.push(unit);app.prepareRewardedAd();assert.deepEqual(prepared,[expected]);
+ }
+});
+
+test('a failed TapTap ad unlocks at once: short challenge timeout, cancel not awaited, reason shown with the share hint',async()=>{
+ const {app,profile,events}=fixture();app.platform.config.id='taptap';app.client.config.adRewardEnabled=true;app.client.config.rewardedAdUnitId='1054324';
+ const post=app.client.post.bind(app.client),timeouts=[];app.client.post=(path,body,timeout)=>{timeouts.push([path,timeout]);return path.endsWith('/cancel')?(events.push([path,{...body}]),new Promise(()=>{})):post(path,body);};
+ app.platform.watchAd=async()=>'failed';app.platform.adFailure=()=>'错误码 1004 无合适的广告';
+ await assert.rejects(()=>app.claimSupply('energy'),/广告暂时加载不出来（错误码 1004 无合适的广告），可以先用分享领取/);
+ assert.deepEqual(timeouts.find(t=>t[0].endsWith('/challenge')),['/api/mobile/supply/challenge',5000]);assert.ok(events.some(e=>e[0]==='/api/mobile/supply/cancel'));assert.equal(profile.supply.energy,0);
 });

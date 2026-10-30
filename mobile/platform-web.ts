@@ -1,7 +1,7 @@
 import {createTapTapIdentity} from './tap-identity';
 import {createLoginLog} from './login-log';
 import {isBundledArtworkFile} from './bundled-artwork';
-import {createTapInterstitial,type TapInterstitialHost} from './tap-interstitial';
+import {createTapRewarded,type TapRewardedHost} from './tap-rewarded';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {setTapOrientation,type TapOrientationHost} from './tap-orientation';
 import {webFullscreen} from './web-fullscreen';
@@ -14,7 +14,7 @@ import type {TapBattleManager} from './tap-preview';
 
 type RewardedVideo={load():Promise<unknown>;show():Promise<unknown>;onClose(fn:(result:{isEnded?:boolean})=>void):void;offClose?(fn:(result:{isEnded?:boolean})=>void):void;onError(fn:(error:unknown)=>void):void;offError?(fn:(error:unknown)=>void):void;destroy?():void};
 type TapBackHost={onBackPress?:(handler:()=>boolean)=>void;offBackPress?:(handler:()=>boolean)=>void};
-type TapHost=TapShareHost&TapOrientationHost&TapInterstitialHost&TapBackHost&{getMenuButtonBoundingClientRect?:()=>{left:number;top:number;width:number;height:number};getLaunchOptionsSync?:()=>any;getEnterOptionsSync?:()=>any;request?:(options:Record<string,unknown>)=>{abort?():void};createRewardedVideoAd?:(options:{adUnitId:string})=>RewardedVideo;openFriendList?:()=>void;login?:(options?:Record<string,unknown>)=>unknown;getUserInfo?:(options?:Record<string,unknown>)=>unknown};
+type TapHost=TapShareHost&TapOrientationHost&TapBackHost&{getMenuButtonBoundingClientRect?:()=>{left:number;top:number;width:number;height:number};getLaunchOptionsSync?:()=>any;getEnterOptionsSync?:()=>any;request?:(options:Record<string,unknown>)=>{abort?():void};createRewardedVideoAd?:(options:{adUnitId:string})=>RewardedVideo;openFriendList?:()=>void;login?:(options?:Record<string,unknown>)=>unknown;getUserInfo?:(options?:Record<string,unknown>)=>unknown};
 /** Use the original site's persistent identity, including on a first guest visit. */
 export async function webGuestSecret():Promise<string>{
  const valid=(value:unknown):value is string=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
@@ -116,13 +116,13 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   return '视口 '+innerWidth+'×'+innerHeight+(innerWidth>innerHeight?' 横':' 竖')+' dpr '+devicePixelRatio+' 屏 '+screen.width+'×'+screen.height+' · 画布 '+[r.left,r.top,r.width,r.height].map(round).join(',')+' · 按钮 '+(state?.rect?[state.rect.left,state.rect.top,state.rect.width,state.rect.height].map(round).join(','):'无')+' 建'+(state?.mounts??0)+'/重建'+(state?.forced??0)+'/回调'+(state?.taps??0)+' · 中心元素 '+element+' · body子节点 '+document.body.childElementCount+' · 按钮键 '+(state?.keys.join('/')||'无')+' style '+(state?.styleType||'?')+(state?.handle?' handle '+state.handle:'')+' · '+system+' · '+apis;
  };
  const tapTapIdentity=(options?:{forceAuthorization?:boolean})=>identityController?.(config.tapAuthorizationTest===true&&options?.forceAuthorization===true)??Promise.resolve(null);
- let ad:RewardedVideo|undefined,adUnit='',watching=false,adDiagnostic='尚未请求广告';
+ let watching=false,adDiagnostic='尚未请求广告';
  const reportAd=(stage:string,unit:string,error?:unknown)=>{const value=error as any;const raw=String(value?.errMsg??value?.message??(typeof error==='string'?error:''));
   // adnCode 是广告平台子错误码，不是登录 code。先提取数值，再对原说明脱敏。
   const subcode=value?.adnCode??raw.match(/\badnCode\s*[=:]\s*(-?\d{1,12})\b/i)?.[1],safeSubcode=typeof subcode==='number'&&Number.isSafeInteger(subcode)||typeof subcode==='string'&&/^-?\d{1,12}$/.test(subcode)?String(subcode):'';
   const message=raw.replace(/https?:\/\/\S+/gi,'[URL]').replace(/(?:bearer\s+|(?:token|secret|session|openid|code)[=:]\s*)[^\s,;]+/gi,'[已隐藏]').slice(0,220);
   adDiagnostic='推广位:'+unit+' · '+stage+(error?' · 错误码:'+String(value?.errCode??value?.errno??value?.errNo??value?.code??'无').slice(0,30)+(safeSubcode?' · adnCode:'+safeSubcode:'')+' · '+message:'');};
- const interstitial=createTapInterstitial(tap,(stage,unit,error)=>reportAd('插屏 · '+stage,unit,error));
+ const rewarded=createTapRewarded(()=>tap() as TapRewardedHost|undefined,reportAd);
  const audioPlayback=new AudioPlayback((url,loop,onEnded)=>{
   const sound=new Audio(uiUrl(url));sound.loop=loop;const ended=()=>onEnded?.();if(onEnded)sound.addEventListener?.('ended',ended);
   return {get volume(){return sound.volume;},set volume(value){sound.volume=value;},play:()=>sound.play(),pause:()=>sound.pause(),rewind:()=>{sound.currentTime=0;},dispose:()=>{sound.removeEventListener?.('ended',ended);sound.pause();sound.removeAttribute('src');sound.load();}};
@@ -319,7 +319,8 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   shareDiagnostics:()=>shareDiagnostic,
   ...(config.id==='taptap'?{cancelShare:()=>shareController?.abort()}:{}),
   adDiagnostics:()=>adDiagnostic,
-  async showInterstitialAd(unit){if(watching){reportAd('上一条广告仍在处理中',unit);return 'unavailable';}watching=true;audioPlayback.setAdPlaying(true);try{return await interstitial(unit);}finally{watching=false;audioPlayback.setAdPlaying(false);}},
+  adFailure:()=>rewarded.failure(),
+  prepareAd(unit){if(config.id==='taptap'&&unit)rewarded.prepare(unit);},
   async share(input){const url=new URL(config.gameBase||location.href,document.baseURI),params=new URLSearchParams(input.query);if(input.roomId)params.set('room',input.roomId);if(input.inviteCode)params.set('ref',input.inviteCode);for(const [key,value]of params)url.searchParams.set(key,value);
    if(config.id==='taptap'){
     if(shareController)return 'unavailable';const controller=new AbortController();shareController=controller;
@@ -328,13 +329,9 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    try{if(navigator.share){await navigator.share({title:input.title,url:url.href});return 'shared';}if(navigator.clipboard){await navigator.clipboard.writeText(url.href);return 'copied';}return 'unavailable';}
    catch(error){return (error as {name?:string}).name==='AbortError'?'cancelled':'unavailable';}
   },
-  async watchAd(unit){const host=tap();if(!unit||!host?.createRewardedVideoAd||watching){reportAd(!unit?'广告位为空':watching?'上一条广告仍在处理中':'TapTap广告接口不可用',unit);return 'unavailable';}watching=true;audioPlayback.setAdPlaying(true);
-   let outcome:'completed'|'closed'|'failed'='failed';
-   try{reportAd('创建广告',unit);if(!ad||adUnit!==unit){ad?.destroy?.();ad=host.createRewardedVideoAd({adUnitId:unit});adUnit=unit;}const instance=ad;
-    outcome=await new Promise<'completed'|'closed'|'failed'>(resolve=>{let done=false,stage='加载';const finish=(result:'completed'|'closed'|'failed')=>{if(done)return;done=true;clearTimeout(timer);try{instance.offClose?.(close);instance.offError?.(error);}catch{}resolve(result);};const close=(result:{isEnded?:boolean})=>{if(done)return;reportAd(result?.isEnded===true?'完整观看':'提前关闭或未提供完播标记',unit);finish(result?.isEnded===true?'completed':'closed');};const error=(detail?:unknown)=>{if(done)return;reportAd(stage+'失败',unit,detail);finish('failed');};const timer=setTimeout(()=>{reportAd(stage+'超时（180秒）',unit);finish('failed');},180000);
-     try{instance.onClose(close);instance.onError(error);reportAd('加载中',unit);void Promise.resolve(instance.load()).then(()=>{if(done)return;stage='展示';reportAd('展示中',unit);return instance.show();}).catch(error);}catch(detail){error(detail);}
-    });return outcome;
-   }catch(detail){reportAd('创建广告异常',unit,detail);return 'failed';}finally{if(outcome==='failed'){try{ad?.destroy?.();}catch{}ad=undefined;adUnit='';}watching=false;audioPlayback.setAdPlaying(false);}
+  async watchAd(unit){if(!unit||typeof tap()?.createRewardedVideoAd!=='function'||watching){reportAd(!unit?'广告位为空':watching?'上一条广告仍在处理中':'TapTap广告接口不可用',unit);return 'unavailable';}
+   watching=true;audioPlayback.setAdPlaying(true);
+   try{return await rewarded.watch(unit);}finally{watching=false;audioPlayback.setAdPlaying(false);}
   },
   async prompt(title,value='',options){return options?.multiline?textPrompt(title,value,options.maxLength??2000):window.prompt(title,value);},alert:message=>window.alert(message),
   async copyText(text){

@@ -68,7 +68,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v46';
+const CLIENT_PACKAGE_VERSION='v47';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -672,28 +672,28 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private get energyAdAvailable(){return this.client.config.adRewardEnabled===true&&!!this.client.config.rewardedAdUnitId;}
  private get adTestingAllowed(){return this.platform.config.id==='taptap'&&this.client.profile?.taptap?.bound===true&&this.client.profile.taptap.diagnostics===true;}
+ /** 当前画面方向对应的激励广告位；服务端未分横竖屏时沿用 rewardedAdUnitId。 */
+ private rewardedSlot(){const v=typeof this.platform.viewport==='function'?this.platform.viewport():undefined,orientation:'portrait'|'landscape'=v&&v.width>v.height?'landscape':'portrait',c=this.client.config;return {orientation,unit:(orientation==='landscape'?c.rewardedAdUnitIdLandscape:c.rewardedAdUnitIdPortrait)||c.rewardedAdUnitId};}
+ /** 官方做法：广告实例提前创建并预加载，点击时直接展示。重复调用只查表。 */
+ private prepareRewardedAd(){if(this.platform.config.id==='taptap'&&this.energyAdAvailable)this.platform.prepareAd?.(this.rewardedSlot().unit);}
  private async testRewardedAd(){
   if(!this.adTestingAllowed)return;
-  // 优先使用服务端下发位；暂停广告时，诊断入口使用官方H5匹配且已真机验证的广告位。
-  await this.run(async()=>{const unit=this.client.config.rewardedAdUnitId||'1054324';let outcome:string;
+  // 优先使用服务端按方向下发的广告位；暂停广告时，诊断入口使用官方H5匹配且已真机验证的广告位。
+  await this.run(async()=>{const slot=this.rewardedSlot(),unit=slot.unit||'1054324',started=Date.now();let outcome:string;
    try{outcome=await this.platform.watchAd(unit);}catch{outcome='failed';}
    const result=outcome==='completed'?'已完整观看，广告测试成功':outcome==='closed'?'已提前关闭，本次未完整观看':'广告测试未成功';
    // 只验证广告链路，不申请奖励、不受补给库存影响，也不改全服广告开关。
-   this.platform.alert(result+'\n本入口仅测试观看，不发放奖励。\n'+(this.platform.adDiagnostics?.()??'未返回广告诊断'));this.note(result);
-  });
- }
- private async testInterstitialAd(){
-  if(!this.adTestingAllowed)return;
-  await this.run(async()=>{const outcome=await this.platform.showInterstitialAd?.('1071588')??'unavailable',result=outcome==='closed'?'插屏广告已展示并关闭，测试成功':'插屏广告测试未成功';
-   this.platform.alert(result+'\n本入口仅测试展示，不发放奖励。\n'+(this.platform.adDiagnostics?.()??'TapTap插屏接口不可用'));this.note(result);
+   this.platform.alert(result+'\n广告位 '+unit+' · '+(slot.orientation==='landscape'?'横屏':'竖屏')+' · 用时 '+Math.round((Date.now()-started)/1000)+' 秒'+(outcome==='failed'||outcome==='unavailable'?'\n原因：'+(this.platform.adFailure?.()||'未知'):'')+'\n本入口仅测试观看，不发放奖励。\n'+(this.platform.adDiagnostics?.()??'未返回广告诊断'));this.note(result);
   });
  }
  private async claimEnergyAd(){
   await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');if(!this.energyAdAvailable)throw Error('广告暂未开放，已有体力包可以正常使用');
    const storageKey='jigsaw:shared:supply-ad:v1:'+this.platform.config.apiBase+':'+profile.code;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
-   if(!pending?.completed){if(profile.supply.energy>=3)throw Error('库存已满，使用后再领取');const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/supply/challenge',{kind:'energy',requestId});pending={kind:'energy',requestId,rewardToken:challenge.rewardToken,completed:false};
-    let outcome:string;try{outcome=await this.platform.watchAd(this.client.config.rewardedAdUnitId);}catch{outcome='failed';}
-    if(outcome!=='completed'){await this.client.post('/api/mobile/supply/cancel',pending).catch(()=>{});if(outcome!=='closed'&&this.platform.config.id==='taptap'&&this.client.profile?.taptap?.diagnostics===true)this.platform.alert('广告诊断（仅测试账号）\n'+(this.platform.adDiagnostics?.()??'未获取到平台错误'));throw Error(outcome==='closed'?'广告未完整观看，本次未领取体力包':'广告暂不可用，可点下方“分享领1个”领取');}
+   if(!pending?.completed){if(profile.supply.energy>=3)throw Error('库存已满，使用后再领取');const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/supply/challenge',{kind:'energy',requestId},5000);pending={kind:'energy',requestId,rewardToken:challenge.rewardToken,completed:false};
+    let outcome:string;try{outcome=await this.platform.watchAd(this.rewardedSlot().unit);}catch{outcome='failed';}
+    // 取消票据不阻塞界面：失败后立刻解除按钮锁定。
+    if(outcome!=='completed'){void this.client.post('/api/mobile/supply/cancel',pending).catch(()=>{});if(outcome!=='closed'&&this.platform.config.id==='taptap'&&this.client.profile?.taptap?.diagnostics===true)this.platform.alert('广告诊断（仅测试账号）\n'+(this.platform.adDiagnostics?.()??'未获取到平台错误'));
+     const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，本次未领取体力包':'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+'，可以先用分享领取');}
     pending.completed=true;this.platform.storage.set(storageKey,JSON.stringify(pending));
    }
    try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.note('体力包 +1，已存入库存');
@@ -1497,7 +1497,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(energy){const stock=p?.supply.energy??0,ad=this.platform.config.id==='taptap'&&this.energyAdAvailable;s.icon('lightning',{x,y:ry,w:28,h:38});s.text('补满体力包 '+stock+'/3',x+38,ry+2,15,ink,800,cw-200);s.text('体力 '+(p?.energy??0)+'/'+(p?.energyCap??0),x+38,ry+24,12,muted,600,cw-200);
      const bw=72;let bx=x+cw-bw;s.button({x:bx,y:ry+4,w:bw,h:34},'使用',()=>void this.useEnergy(),{fontSize:13,disabled:this.busy||!p||stock===0||(p?.energy??0)>=(p?.energyCap??0)});
      if(this.shareAvailable){bx-=bw+6;s.button({x:bx,y:ry+4,w:bw,h:34},'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}
-     if(ad){bx-=bw+14;s.button({x:bx,y:ry+4,w:bw+8,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}ry+=70;}
+     if(ad){this.prepareRewardedAd();bx-=bw+14;s.button({x:bx,y:ry+4,w:bw+8,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}ry+=70;}
     if(tickets){const stock=p?.supply.create??0;s.icon('ticket',{x,y:ry,w:34,h:36});s.text('建房券 '+stock+'/3',x+44,ry+2,15,ink,800,cw-170);s.text('私人房或指定图片时使用',x+44,ry+24,12,muted,600,cw-170);
      s.button({x:x+cw-112,y:ry+4,w:112,h:34},stock>=3?'库存已满':this.shareAvailable?'分享领 1 张':'分享暂未开放',()=>void this.claimSupply('create','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3||!this.shareAvailable});}
    });}
@@ -1525,7 +1525,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     s.ctx.fillStyle=s.color('#f8e8d8');s.ctx.fillRect(dx,cy+103,dw,28);s.text('库存 '+stock+'/3',dx+8,cy+109,14,this.colors.ink,700,dw-16);
     const energyAd=kind==='energy'&&this.platform.config.id==='taptap'&&this.energyAdAvailable,available=energyAd?this.energyAdAvailable:this.shareAvailable;
     s.button({x:x+12,y:cy+150,w:cw-24,h:43},stock>=3?'库存已满':energyAd?'看广告领1个':this.shareAvailable?(kind==='create'?'分享领1张':'分享领1个'):'分享暂未开放',()=>void this.claimSupply(kind),{tone:'berry',fontSize:14,disabled:this.busy||stock>=3||!available});
-    if(energyAd)s.button({x:x+12,y:cy+201,w:cw-24,h:36},stock>=3?'库存已满':'分享领1个',()=>void this.claimSupply('energy','share'),{fontSize:14,disabled:this.busy||stock>=3||!this.shareAvailable});
+    if(energyAd){this.prepareRewardedAd();s.button({x:x+12,y:cy+201,w:cw-24,h:36},stock>=3?'库存已满':'分享领1个',()=>void this.claimSupply('energy','share'),{fontSize:14,disabled:this.busy||stock>=3||!this.shareAvailable});}
    }y=start+(landscape?ch:2*ch+12)+12;
    s.panel({x:pad,y,w,h:40},'linen');s.icon('store',{x:pad+10,y:y+5,w:31,h:28});s.text('已购图包可免费创建公开房间。',pad+49,y+14,11,this.colors.ink,700,w-92);s.icon('sprig',{x:s.w-pad-31,y:y+11,w:22,h:20});y+=52;
    const inventory={x:pad,y,w,h:100};s.panel(inventory);s.icon('bag',{x:pad+13,y:y+11,w:17,h:18},this.colors.ink);s.text('我的库存',pad+37,y+12,18,this.colors.ink,700);s.ctx.fillStyle=s.color('#dfbdad');s.ctx.fillRect(pad+9,y+38,w-18,1);
@@ -2347,7 +2347,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(this.formalWeb){this.button(left,cy,width,'问题反馈',()=>this.openWeb('feedback'));cy+=48;cy=this.paragraph('账号、进度与收藏会持续保存在当前网站。',left,cy+4,width,12)+10;}else{this.button(left,cy,width,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));cy+=48;cy=this.paragraph('当前为本机游客身份，尚未绑定平台账号存档。清除本机数据可能丢失进度。',left,cy+4,width,12)+10;}
     if(this.platform.config.id==='taptap'&&this.platform.loginLog){this.button(left,cy,width,'登录日志',()=>this.openLoginLog());cy+=48;}
     if(this.adTestingAllowed||this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest||this.platform.config.previewTestRoom||this.nineGridAvailable||this.platform.config.id==='taptap'&&p?.taptap?.diagnostics===true||this.diagnosticsAvailable){cy+=10;heading('测试与诊断');}
-    if(this.adTestingAllowed){s.button({x:left,y:cy,w:width,h:40},'广告观看测试',()=>void this.testRewardedAd(),{tone:'berry',disabled:this.busy});cy+=52;s.button({x:left,y:cy,w:width,h:40},'插屏广告测试',()=>void this.testInterstitialAd(),{tone:'berry',disabled:this.busy});cy+=52;cy=this.paragraph('仅当前测试账号可见，只测试展示，不发放奖励。',left,cy,width,11)+17;}
+    if(this.adTestingAllowed){s.button({x:left,y:cy,w:width,h:40},'广告观看测试',()=>void this.testRewardedAd(),{tone:'berry',disabled:this.busy});cy+=52;cy=this.paragraph('仅当前测试账号可见，只测试展示，不发放奖励。',left,cy,width,11)+17;}
     if(this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest){s.button({x:left,y:cy,w:width,h:40},this.authorizationTesting?'取消昵称授权测试':'重新走昵称授权',()=>void this.reauthorizeNickname(),{tone:'berry',disabled:!!this.room||this.busy&&!this.authorizationTesting});cy+=52;cy=this.paragraph((this.room?'请回大厅后进行授权自测。':this.platform.tapIdentityDiagnostics?.()??'仅当前自测包开放，不清除账号和进度。')+'\n版本 '+(this.platform.config.buildVersion??'自测'),left,cy,width,11)+17;}
     if(this.platform.config.previewTestRoom){
      const d=this.realtime?.diagnostics(),host=this.platform.onlineBattleDiagnostics?.(),available=d?.preview==='taptap-test';

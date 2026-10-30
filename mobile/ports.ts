@@ -78,8 +78,11 @@ export type Platform={
  /** End an unresolved native share wait; cancellation never reports a successful share. */
  cancelShare?():void;
  adDiagnostics?():string;
+ /** Short player-facing reason for the last failed ad (errCode meaning or timeout); empty when none. */
+ adFailure?():string;
+ /** Create the rewarded ad for this slot once and preload it, so a later watchAd can show at once. */
+ prepareAd?(unit:string):void;
  watchAd(unit:string):Promise<'completed'|'closed'|'failed'|'unavailable'>;
- showInterstitialAd?(unit:string):Promise<'closed'|'failed'|'unavailable'>;
  prompt(title:string,value?:string,options?:TextPromptOptions):Promise<string|null>;
  alert(message:string):void;
  /** Copy a short text (player ID, invitation code); false when the host cannot. */

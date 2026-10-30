@@ -144,7 +144,7 @@ test('one native approval confirms the agreement and logs in without a second au
 test('settings expose the real ad test button only for the server allowlisted TapTap account',async t=>{
  const f=fixture(t);f.platform.config.id='taptap';f.app.acceptPrivacy();await f.app.start();f.app.showModal('settings');f.draw();assert.equal(f.buttons.some(b=>b.label==='广告观看测试'||b.label==='插屏广告测试'),false);
  f.client.profile.taptap={bound:true,diagnostics:true};f.client.config.rewardedAdUnitId='1071218';let ads=0;f.platform.watchAd=async unit=>{assert.equal(unit,'1071218');ads++;return 'completed';};f.platform.alert=()=>{};f.draw();assert.equal(f.buttons.some(b=>b.label==='广告观看测试'),true);const before=f.calls.length;f.click('广告观看测试');await settle();assert.equal(ads,1);assert.equal(f.calls.length,before);
- f.platform.showInterstitialAd=async unit=>{assert.equal(unit,'1071588');ads++;return 'closed';};f.draw();f.click('插屏广告测试');await settle();assert.equal(ads,2);assert.equal(f.calls.length,before);
+ f.draw();assert.equal(f.buttons.some(b=>b.label==='插屏广告测试'),false);
 });
 
 function tapConsentFixture(t,{prepare='pending'}={}){

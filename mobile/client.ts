@@ -8,7 +8,7 @@ import type {TapPreviewDescriptor} from '../lib/room-preview';
 import {bundledArtworkPath} from './bundled-artwork';
 
 export type GameCapabilities={energy:boolean;ads:boolean;shareRewards?:boolean;tapMultiplayer?:boolean;albumTarget:'pc'|'mobile-shared';createTickets?:boolean;customNames?:boolean;cheers?:boolean;privacyRequests?:boolean;roomActionRevisionBody?:boolean;soloLocalPlay?:boolean;offlineLevelClears?:boolean;supportedPieces?:number[];social?:{friends?:boolean;privateMessages?:boolean;privateMessageHistory?:boolean;roomInvites?:boolean;reports?:boolean;blocking?:boolean;search?:boolean;presence?:boolean;codeFormat?:'hex12'|'digits9'}};
-export type GameConfig={mobileMode?:string|null;adRewardEnabled:boolean;rewardedAdUnitId:string;identityMode:'guest-device'|'web-cookie';wechatLoginConfigured:false;capabilities:GameCapabilities;compatUrls?:WebLinks;realtime?:{version:number};[key:string]:unknown};
+export type GameConfig={mobileMode?:string|null;adRewardEnabled:boolean;rewardedAdUnitId:string;rewardedAdUnitIdPortrait?:string;rewardedAdUnitIdLandscape?:string;identityMode:'guest-device'|'web-cookie';wechatLoginConfigured:false;capabilities:GameCapabilities;compatUrls?:WebLinks;realtime?:{version:number};[key:string]:unknown};
 export type FetchLikeInit={method?:string;headers?:HeadersInit;body?:BodyInit|null;signal?:AbortSignal|null;cache?:string;timeout?:number};
 export type FetchLikeReply={status:number;ok:boolean;headers:{get(name:string):string|null};json():Promise<any>};
 const sessionPattern=/^[a-f0-9]{64}$/,roomPattern=/^[a-f0-9]{32}$/;
@@ -64,7 +64,10 @@ export class GameClient{
     else try{tapIdentity=await this.requireTapTapIdentity(forceAuthorization);}catch(error){if(forceAuthorization)throw error;guestReason=String((error as {code?:string}).code??'TAPTAP_IDENTITY_REQUIRED');}
    }
    const reply=configPending?(await configPending).reply??await loadConfig():await loadConfig();if(reply.status!==200)throw Error('游戏服务暂时无法连接');if(reply.data?.mobileMode!==(this.cookieIdentity?'web-managed-shared':'mobile-v3-isolated'))throw Error(this.cookieIdentity?'网站共享服务尚未连接':'独立手机版服务尚未连接');
-   const wechat=this.platform.config.id==='wechat',web=this.platform.config.id==='web',unit=web?'':wechat?(this.platform.config.rewardedAdUnitId||''):String(reply.data.rewardedAdUnitId||this.platform.config.rewardedAdUnitId||'');
+   const wechat=this.platform.config.id==='wechat',web=this.platform.config.id==='web',slotId=(value:unknown)=>typeof value==='string'&&/^[\w-]{1,64}$/.test(value.trim())?value.trim():'';
+   // TapTap 按游戏方向下发横屏/竖屏两个激励位；旧服务只有 rewardedAdUnitId。
+   const portraitUnit=taptap?slotId(reply.data.rewardedAdUnitIdPortrait):'',landscapeUnit=taptap?slotId(reply.data.rewardedAdUnitIdLandscape):'';
+   const unit=web?'':wechat?(this.platform.config.rewardedAdUnitId||''):String(reply.data.rewardedAdUnitId||portraitUnit||landscapeUnit||this.platform.config.rewardedAdUnitId||'');
    const capabilities:GameCapabilities={energy:this.cookieIdentity?false:reply.data.capabilities?.energy!==false,shareRewards:!web&&reply.data.capabilities?.shareRewards===true,ads:!web&&reply.data.capabilities?.ads!==false&&reply.data.adRewardEnabled===true&&!!unit,albumTarget:this.cookieIdentity||reply.data.capabilities?.albumTarget==='pc'?'pc':'mobile-shared',createTickets:this.cookieIdentity?false:reply.data.capabilities?.createTickets??!web,
     tapMultiplayer:!web&&reply.data.capabilities?.tapMultiplayer===true,
     customNames:this.cookieIdentity?reply.data.capabilities?.customNames!==false:reply.data.capabilities?.customNames===true,
@@ -75,7 +78,7 @@ export class GameClient{
     offlineLevelClears:!this.cookieIdentity&&reply.data.capabilities?.offlineLevelClears===true,
     social:this.cookieIdentity?reply.data.capabilities?.social??{friends:false,privateMessages:false,reports:false,blocking:false,search:false,codeFormat:'hex12'}:{friends:true,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9',...reply.data.capabilities?.social,privateMessages:reply.data.capabilities?.social?.privateMessages===true},
     ...(this.cookieIdentity?{supportedPieces:reply.data.capabilities?.supportedPieces??[108,300,500]}:{})};
-   this.config={...reply.data,rewardedAdUnitId:unit,adRewardEnabled:capabilities.ads,identityMode:this.platform.config.id==='taptap'?'taptap':this.cookieIdentity?'web-cookie':'guest-device',wechatLoginConfigured:false,capabilities};
+   this.config={...reply.data,rewardedAdUnitId:unit,rewardedAdUnitIdPortrait:portraitUnit||undefined,rewardedAdUnitIdLandscape:landscapeUnit||undefined,adRewardEnabled:capabilities.ads,identityMode:this.platform.config.id==='taptap'?'taptap':this.cookieIdentity?'web-cookie':'guest-device',wechatLoginConfigured:false,capabilities};
    if(this.cookieIdentity){await this.platform.restoreWebIdentity?.();await this.refresh();}
    else if(taptap){
     // Bind before reading a profile when TapTap answered, so the session maps to the platform account first.
@@ -122,8 +125,8 @@ export class GameClient{
   if(expired){this.expire();throw Object.assign(Error('玩家连接已过期，请重新连接'),{status:401,code:'IDENTITY_REQUIRED'});}
   this.applyProfile(reply.data);return reply;
  }
- async json<T>(path:string,method='GET',body?:unknown,headers:Record<string,string>={}):Promise<T>{const reply=await this.request(path,method,body,headers);if(reply.status<200||reply.status>=300)throw Object.assign(Error(typeof reply.data?.error==='string'?reply.data.error:'暂时无法完成，请重试'),{status:reply.status,code:reply.data?.code,profile:reply.data?.profile,compatUrl:reply.data?.compatUrl});return reply.data as T;}
- post<T>(path:string,body:unknown){return this.json<T>(path,'POST',body,{'Content-Type':'application/json'});}
+ async json<T>(path:string,method='GET',body?:unknown,headers:Record<string,string>={},timeout?:number):Promise<T>{const reply=await this.request(path,method,body,headers,timeout);if(reply.status<200||reply.status>=300)throw Object.assign(Error(typeof reply.data?.error==='string'?reply.data.error:'暂时无法完成，请重试'),{status:reply.status,code:reply.data?.code,profile:reply.data?.profile,compatUrl:reply.data?.compatUrl});return reply.data as T;}
+ post<T>(path:string,body:unknown,timeout?:number){return this.json<T>(path,'POST',body,{'Content-Type':'application/json'},timeout);}
  playerCard(code:string,room?:string){return this.json<PlayerCard>('/api/mobile/players/'+encodeURIComponent(code)+'/card'+(room?'?room='+encodeURIComponent(room):''));}
  acceptOfflineProfile(profile:MobileProfile){this.applyProfile(profile);}
  async refresh(){await this.json<MobileProfile>('/api/mobile/profile');return this.profile;}
