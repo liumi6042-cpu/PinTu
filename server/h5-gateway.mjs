@@ -190,7 +190,9 @@ export function createH5Gateway(options){
       }
       if(url.pathname==='/h5/config'&&request.method==='GET'){
         const capabilities=options.mobileService?.capabilities??{energy:true,ads:adsEnabled,albumTarget:'mobile-shared'},available=adsEnabled&&capabilities.ads!==false;
-        json(response,200,{rewardedAdUnitId:available?options.rewardedAdUnitId||'':'',adRewardEnabled:available,mobileMode:options.mobileService?.mode??null,...(options.mobileService?.realtime?{realtime:{version:1}}:{}),capabilities:{...capabilities,ads:available}});return;
+        // 横屏/竖屏激励位为新增字段，旧客户端只读 rewardedAdUnitId。
+        const orientationUnits=available?{...(options.rewardedAdUnitIdPortrait?{rewardedAdUnitIdPortrait:options.rewardedAdUnitIdPortrait}:{}),...(options.rewardedAdUnitIdLandscape?{rewardedAdUnitIdLandscape:options.rewardedAdUnitIdLandscape}:{})}:{};
+        json(response,200,{rewardedAdUnitId:available?options.rewardedAdUnitId||'':'',...orientationUnits,adRewardEnabled:available,mobileMode:options.mobileService?.mode??null,...(options.mobileService?.realtime?{realtime:{version:1}}:{}),capabilities:{...capabilities,ads:available}});return;
       }
       if(url.pathname==='/h5/session'&&request.method==='POST'){
         if(!requestLimit(request,'session',30)){json(response,429,{error:'请稍后再试'},{'Retry-After':'60'});return;}
@@ -339,7 +341,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
     upstreamOrigin:process.env.H5_UPSTREAM_ORIGIN,
     allowedOrigins:(process.env.H5_ALLOWED_ORIGINS||'http://127.0.0.1:3211,http://localhost:3211').split(',').map(x=>x.trim()).filter(Boolean),
     databasePath:process.env.H5_SESSION_DB||resolve('data/h5-sessions.sqlite'),
-    logBlockedOrigins:process.env.H5_LOG_BLOCKED_ORIGINS==='true',adAssistanceEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true',trustLoopbackProxy:process.env.H5_TRUST_LOOPBACK_PROXY==='true',staticDir:resolve('outputs/h5'),assetPaths:JSON.parse(readFileSync(resolve('h5/asset-manifest.json'),'utf8')),rewardedAdUnitId:process.env.H5_REWARDED_AD_UNIT||'',
+    logBlockedOrigins:process.env.H5_LOG_BLOCKED_ORIGINS==='true',adAssistanceEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true',trustLoopbackProxy:process.env.H5_TRUST_LOOPBACK_PROXY==='true',staticDir:resolve('outputs/h5'),assetPaths:JSON.parse(readFileSync(resolve('h5/asset-manifest.json'),'utf8')),rewardedAdUnitId:process.env.H5_REWARDED_AD_UNIT||'',rewardedAdUnitIdPortrait:process.env.H5_REWARDED_AD_UNIT_PORTRAIT||'',rewardedAdUnitIdLandscape:process.env.H5_REWARDED_AD_UNIT_LANDSCAPE||'',
   });
   server.listen(port,host,()=>console.log('H5 preview: http://'+host+':'+server.address().port+'/#/zh/lobby'));
 }

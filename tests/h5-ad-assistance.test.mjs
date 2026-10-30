@@ -44,3 +44,13 @@ test('unconfigured advertising never grants help, including direct HTTP requests
   assert.equal((await fetch(base+'/h5/rewarded/challenge',options)).status,503);
  }finally{await close(gateway);}
 });
+
+test('config adds the orientation slots only when ads are on; rewardedAdUnitId stays for old clients',async()=>{
+ const read=async options=>{const gateway=createH5Gateway({upstream:'http://127.0.0.1:9',allowedOrigins:['https://h5.example'],...options}),base=await listen(gateway);try{return await (await fetch(base+'/h5/config')).json();}finally{await close(gateway);}};
+ const on=await read({adAssistanceEnabled:true,rewardedAdUnitId:'1054324',rewardedAdUnitIdPortrait:'1054324',rewardedAdUnitIdLandscape:'1054323'});
+ assert.equal(on.rewardedAdUnitId,'1054324');assert.equal(on.rewardedAdUnitIdPortrait,'1054324');assert.equal(on.rewardedAdUnitIdLandscape,'1054323');assert.equal(on.adRewardEnabled,true);
+ const off=await read({adAssistanceEnabled:false,rewardedAdUnitId:'1054324',rewardedAdUnitIdPortrait:'1054324',rewardedAdUnitIdLandscape:'1054323'});
+ assert.equal(off.rewardedAdUnitId,'');assert.equal('rewardedAdUnitIdPortrait' in off,false);assert.equal('rewardedAdUnitIdLandscape' in off,false);
+ const legacy=await read({adAssistanceEnabled:true,rewardedAdUnitId:'1054324'});
+ assert.equal(legacy.rewardedAdUnitId,'1054324');assert.equal('rewardedAdUnitIdLandscape' in legacy,false);
+});
