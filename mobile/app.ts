@@ -66,7 +66,7 @@ function taskCoinsText(min=0,max=min){return max>0?' · 金币 +'+min+(min===max
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
 // Seats come from the server (4/6/8 by piece count); backends without maxPlayers seat 8.
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
-const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1';
+const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
 const CLIENT_PACKAGE_VERSION='v41';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
@@ -170,6 +170,7 @@ export class GameApp{
   this.desktopToolsOpen=platform.storage.get('jigsaw:desktop-tools-open:v1')!=='0';
   this.landscapeToolsOpen=platform.storage.get('jigsaw:landscape-tools-open:v1')==='1';
   try{this.lockButtonEnabled=platform.storage.get(LOCK_BUTTON_KEY)==='1';this.viewLocked=this.lockButtonEnabled&&platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
+  try{this.minimapEnabled=platform.storage.get(MINIMAP_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>{
    const room=this.room;if(!room||this.offlineRoom)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
@@ -1730,7 +1731,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
  private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
-  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
+  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可打开小地图，放大时点小地图直接跳到那里；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留3个未结束的自建房间。'],
   ['邀请与礼包',this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
@@ -1763,7 +1764,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    c.fillStyle=this.colors.cream;c.fillRect(0,0,s.w,headerBottom);c.fillStyle=this.colors.line;c.fillRect(0,headerBottom,s.w,1);
    this.drawRoomTopBar({x:0,y:headerTop,w:s.w,h:76},'portrait');
    // The large reference covers the board like a dialog; its own close button and backdrop dismiss it.
-   if(!board.previewZoomed){this.drawChatBubble(headerBottom+8);this.drawRoomGift(10,safeBottom-62,true);if(!this.toolsOpen)this.drawBoardQuickTools(s.w-61,safeBottom-67);this.drawRoomTools({x:s.w-63,y:safeBottom-65,w:50,h:50},false);}
+   if(!board.previewZoomed){const map=board.minimapFrame;this.drawChatBubble(map?Math.max(headerBottom+8,map.y+map.h+8):headerBottom+8);this.drawRoomGift(10,safeBottom-62,true);if(!this.toolsOpen)this.drawBoardQuickTools(s.w-61,safeBottom-67);this.drawRoomTools({x:s.w-63,y:safeBottom-65,w:50,h:50},false);}
   }
   if(!this.imageReady){const preparation=board.imagePreparation??{phase:'loading',completed:0,total:0},label=preparation.phase==='preparing'?'正在准备碎片 '+preparation.completed+'/'+preparation.total+'…':preparation.phase==='loading'?'正在加载图片…':'正在铺开拼图…',r=this.roomArea,w=Math.min(r.w-36,420);s.panel({x:r.x+(r.w-w)/2,y:r.y+20,w,h:74});this.paragraph(this.imageError||label,r.x+(r.w-w)/2+12,r.y+37,w-24,14);if(this.imageError)this.button(r.x+(r.w-w)/2+7,r.y+104,w-14,'重新加载图片',()=>void this.run(()=>this.retryRoomImage(board)));}
   if(this.platform.config.previewTestRoom){
@@ -1791,7 +1792,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private roomZoomBase=1;
  private placeBoard(board:PuzzleBoard,topInset:number,fit:()=>void){
   board.phoneLandscapeRoom=this.platform.config.id!=='web'&&this.layout==='phoneLandscape';
-  board.selfDecoration=this.client.profile?.collection?.equipped??null;board.previewTopInset=topInset;board.setRect(this.roomArea);
+  board.selfDecoration=this.client.profile?.collection?.equipped??null;board.previewTopInset=topInset;
+  // The closed landscape tool toggle sits in the top-right corner, so the thumbnail starts below it.
+  board.previewThumbInset=board.phoneLandscapeRoom&&!this.landscapeToolsOpen?this.roomHeaderTop()+101:null;board.minimapEnabled=this.minimapEnabled&&this.layout!=='desktop';board.setRect(this.roomArea);
   if(this.roomViewPending){fit();this.roomZoomBase=board.camera.z;this.roomViewPending=false;}board.draw(this.stage.ctx);
  }
  private desktopFit(board:PuzzleBoard){board.fit(false,{bottom:56,left:this.desktopToolsOpen?104:72});}
@@ -1914,7 +1917,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;
  private landscapeChatVisible=false;
- private viewLocked=false;private lockButtonEnabled=false;
+ private viewLocked=false;private lockButtonEnabled=false;private minimapEnabled=false;
+ /** The corner map is opt-in under 更多 and only shows while zoomed in. */
+ private setMinimapEnabled(enabled:boolean){
+  this.minimapEnabled=enabled;try{this.platform.storage.set(MINIMAP_KEY,enabled?'1':'0');}catch{}
+  this.note(enabled?'已打开小地图：放大后左上角显示全桌，点小地图可直接跳过去':'已关闭小地图');this.invalidate();
+ }
  /** The lock is opt-in under 更多; turning the button off also unlocks the view. */
  private setLockButtonEnabled(enabled:boolean){
   this.lockButtonEnabled=enabled;try{this.platform.storage.set(LOCK_BUTTON_KEY,enabled?'1':'0');}catch{}
@@ -2389,7 +2397,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
      ['整理散落拼块',()=>void this.run(async()=>{await room?.organize();this.modal=null;this.toolsOpen=false;this.note('散片已整理');})],
      [this.lockButtonEnabled?'关闭锁定按钮':'启用锁定按钮 · 锁住后单指不移动画面',()=>{this.setLockButtonEnabled(!this.lockButtonEnabled);this.modal=null;this.toolsOpen=false;this.invalidate();}],
      [board?.showPreview?'关闭原图小窗':'原图小窗 · 点小窗可放大',()=>{if(board)board.showPreview=!board.showPreview;this.modal=null;this.invalidate();}],
-    ] as const){if(label==='整理散落拼块'&&!this.soloRoom)continue;this.button(left,cy,width,label,action,'cream',40);cy+=51;}
+     [this.minimapEnabled?'关闭小地图':'打开小地图 · 放大时左上角显示全桌',()=>{this.setMinimapEnabled(!this.minimapEnabled);this.modal=null;this.toolsOpen=false;this.invalidate();}],
+    ] as const){if(label==='整理散落拼块'&&!this.soloRoom)continue;if(label.includes('小地图')&&this.layout==='desktop')continue;this.button(left,cy,width,label,action,'cream',40);cy+=51;}
     this.button(left,cy,width,'打开设置 · 声音、画面等',()=>this.showModal('settings'),'cream',40);cy+=51;
     s.text('当前版本 '+CLIENT_PACKAGE_VERSION+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy,12,this.colors.muted,600,width);cy+=28;break;
    }
