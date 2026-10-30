@@ -1,16 +1,36 @@
-export type TapOrientationHost={setDeviceOrientation?:(options:{value:'portrait'|'landscape';success:()=>void;fail:(error?:unknown)=>void;complete?:()=>void})=>unknown;onDeviceOrientationChange?:(listener:()=>void)=>void;offDeviceOrientationChange?:(listener:()=>void)=>void};
-export type TapOrientationOptions={current?:()=>'portrait'|'landscape'|null;timeoutMs?:number;pollMs?:number};
-const failedText='TapTap没有切换屏幕方向，请更新TapTap后重试';
+type Orientation='portrait'|'landscape';
+type OrientationCall=(options:{value:Orientation;success:()=>void;fail:(error?:unknown)=>void;complete?:()=>void})=>unknown;
+export type TapOrientationHost={setDeviceOrientation?:OrientationCall;onDeviceOrientationChange?:(listener:()=>void)=>void;offDeviceOrientationChange?:(listener:()=>void)=>void};
+export type TapOrientationOptions={current?:()=>Orientation|null;common?:{setDeviceOrientation?:OrientationCall};lock?:(value:Orientation)=>unknown;viewport?:()=>string;log?:(line:string)=>void;stepMs?:number;pollMs?:number};
+const failedText='TapTap没有切换屏幕方向，请更新TapTap后重试',missingText='当前TapTap客户端不支持切换方向，请尝试更新TapTap';
+const clean=(text:unknown)=>String(text??'').replace(/\s+/g,' ').replace(/[^\w一-鿿 :.,\-()]/g,'').trim().slice(0,60);
+const errorDetail=(error:unknown)=>{if(error===undefined||error===null)return '';const value=error as {errCode?:unknown;errno?:unknown;code?:unknown;errMsg?:unknown;message?:unknown;name?:unknown};const code=value.errCode??value.errno??value.code;return clean([code,value.errMsg??value.message??(typeof error==='string'?error:value.name)].filter(part=>part!==undefined&&part!==null&&part!=='').join(' '));};
+const returned=(result:unknown)=>result&&typeof (result as PromiseLike<unknown>).then==='function'?'promise':result===null?'null':typeof result;
 /** Manual host rotation only; never rotates the Canvas or changes puzzle data.
- * Some TapTap clients turn the screen without calling success/fail (or answer through a Promise), so the switch also counts as done once the window itself has turned. */
-export function setTapOrientation(host:TapOrientationHost|undefined,value:'portrait'|'landscape',options:TapOrientationOptions={}):Promise<void>{
- if(!host?.setDeviceOrientation)return Promise.reject(Error('当前TapTap客户端不支持切换方向，请尝试更新TapTap'));
- const {current,timeoutMs=5000,pollMs=200}=options;
- return new Promise((resolve,reject)=>{let done=false;const turned=()=>{try{return current?.()===value;}catch{return false;}};
-  const finish=(message?:string)=>{if(done)return;done=true;clearTimeout(timer);if(poll)clearInterval(poll);if(message&&!turned())reject(Error(message));else resolve();};
-  const timer=setTimeout(()=>finish(failedText),timeoutMs),poll=current?setInterval(()=>{if(turned())finish();},pollMs):undefined;
-  try{const result=host.setDeviceOrientation!({value,success:()=>finish(),fail:()=>finish(failedText),complete:()=>{if(turned())finish();}});
-   if(result&&typeof (result as PromiseLike<unknown>).then==='function')(result as PromiseLike<unknown>).then(()=>finish(),()=>finish(failedText));}
-  catch{finish(failedText);}
+ * Some TapTap clients ignore tap.setDeviceOrientation (no callback, no turn), so the switch falls back to a global common.setDeviceOrientation and then screen.orientation.lock,
+ * giving each route stepMs to turn the window. Any success callback or the window turning counts as done; otherwise the error carries a short diagnostic the player can screenshot. */
+export function setTapOrientation(host:TapOrientationHost|undefined,value:Orientation,options:TapOrientationOptions={}):Promise<void>{
+ const {current,common,lock,viewport,log,stepMs=1500,pollMs=200}=options;
+ const routes:{name:string;call?:(route:{success:()=>void;fail:(error?:unknown)=>void;complete:()=>void})=>unknown}[]=[
+  {name:'tap',call:host?.setDeviceOrientation?callbacks=>host.setDeviceOrientation!({value,...callbacks}):undefined},
+  {name:'common',call:common?.setDeviceOrientation?callbacks=>common.setDeviceOrientation!({value,...callbacks}):undefined},
+  {name:'lock',call:lock?()=>lock(value):undefined},
+ ];
+ const notes=routes.map(route=>route.name+(route.call?'✓':'✗')),diagnostic=()=>{let size='';try{size=viewport?.()??'';}catch{}return '（诊断 '+notes.join(' ')+(size?' 视口'+size:'')+'）';};
+ const turned=()=>{try{return current?.()===value;}catch{return false;}};
+ if(!routes.some(route=>route.call)){const text=missingText+diagnostic();log?.('切换方向 '+value+' '+text);return Promise.reject(Error(text));}
+ return new Promise((resolve,reject)=>{let done=false,step=-1,timer:ReturnType<typeof setTimeout>|undefined;
+  const poll=current?setInterval(()=>{if(turned())finish(true);},pollMs):undefined;
+  function finish(ok:boolean){if(done)return;done=true;clearTimeout(timer);if(poll)clearInterval(poll);if(ok||turned()){log?.('切换方向 '+value+' 完成 '+notes.join(' '));resolve();return;}const text=failedText+diagnostic();log?.('切换方向 '+value+' '+text);reject(Error(text));}
+  function next(){if(done)return;clearTimeout(timer);if(turned()){finish(true);return;}
+   step=routes.findIndex((route,index)=>index>step&&!!route.call);if(step<0){finish(false);return;}
+   const index=step,route=routes[index],note=(text:string)=>{notes[index]=notes[index]+text;},live=()=>!done&&step===index;
+   timer=setTimeout(()=>{if(!live())return;note('无回应');next();},stepMs);
+   try{const result=route.call!({success:()=>{if(!done)finish(true);},fail:error=>{if(!live())return;const detail=errorDetail(error);note('失败'+(detail?':'+detail:''));next();},complete:()=>{if(turned())finish(true);}});
+    const kind=returned(result);if(kind!=='undefined')note('返回'+kind);
+    if(kind==='promise')(result as PromiseLike<unknown>).then(()=>{if(turned())finish(true);},error=>{if(!live())return;const detail=errorDetail(error);note('拒绝'+(detail?':'+detail:''));next();});}
+   catch(error){const detail=errorDetail(error);note('异常'+(detail?':'+detail:''));next();}
+  }
+  next();
  });
 }
