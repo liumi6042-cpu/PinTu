@@ -228,10 +228,13 @@ def online_backups(shared, folder):
         ensure(not source.is_symlink() and shared in source.resolve().parents, 'Database path escapes shared storage')
         destination = folder / source.relative_to(shared)
         destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        # VACUUM INTO copies one consistent read snapshot; the page-by-page online backup restarts whenever the
+        # busy live database is written to and never finished on the 1.5 GB mobile-v3.sqlite (2026-10-30).
+        ensure(not destination.exists(), 'Backup destination exists: ' + str(destination))
         with closing(sqlite3.connect(source.as_uri() + '?mode=ro', uri=True, timeout=30)) as original:
-            with closing(sqlite3.connect(destination, timeout=30)) as backup:
-                original.backup(backup, pages=256, sleep=.1)
-                ensure(backup.execute('PRAGMA quick_check').fetchone() == ('ok',), 'SQLite backup verification failed')
+            original.execute('VACUUM INTO ?', (str(destination),))
+        with closing(sqlite3.connect(destination.as_uri() + '?mode=ro', uri=True, timeout=30)) as backup:
+            ensure(backup.execute('PRAGMA quick_check').fetchone() == ('ok',), 'SQLite backup verification failed')
         destination.chmod(0o600)
         records.append({'path': str(destination.relative_to(shared)), 'sha256': digest(destination), 'bytes': destination.stat().st_size})
     return records
