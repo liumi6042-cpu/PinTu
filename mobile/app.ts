@@ -68,7 +68,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v38';
+const CLIENT_PACKAGE_VERSION='v39';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -1712,7 +1712,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
  private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
-  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；“原图”可双指放大查看；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
+  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留3个未结束的自建房间。'],
   ['邀请与礼包',this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
@@ -1905,11 +1905,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.board)this.board.viewLocked=this.viewLocked;this.clearRoomPointer();
   this.note(this.viewLocked?'画面已锁定：单指只拖拼块，双指移动和缩放':'已解锁：单指拖空白处可移动画面');this.invalidate();
  }
- private toggleReference(){const board=this.board;if(!board||this.completionFx)return;this.clearRoomPointer();if(board.previewZoomed)board.closePreviewZoom();else board.openPreviewZoom();this.invalidate();}
- /** Phones keep the view lock and the large reference one tap away, stacked above the room tools. */
+ /** Once enabled under 更多, phones keep the view lock one tap away, above the room tools. */
  private drawBoardQuickTools(x:number,bottom:number){
-  const board=this.board,room=this.room;if(!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
-  const s=this.stage,size=46,items=[['reference','原图',false,()=>this.toggleReference()],...(this.lockButtonEnabled?[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const:[])] as const;
+  const board=this.board,room=this.room;if(!this.lockButtonEnabled||!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
+  const s=this.stage,size=46,items=[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
   items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-gold-normal':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
  }
  private drawChatBubble(y:number){
