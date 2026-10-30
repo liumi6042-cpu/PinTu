@@ -554,8 +554,9 @@ export class PuzzleBoard implements RoomTable {
   // The current view stays clear and framed; the rest of the table is dimmed a little.
   const v=at(-cam.x/cam.z,-cam.y/cam.z),vw=Math.max(6,r.w/cam.z*m.scale),vh=Math.max(6,r.h/cam.z*m.scale),l=Math.min(i.x+i.w,Math.max(i.x,v.x)),t=Math.min(i.y+i.h,Math.max(i.y,v.y)),rr=Math.min(i.x+i.w,Math.max(l,v.x+vw)),bb=Math.min(i.y+i.h,Math.max(t,v.y+vh));
   ctx.fillStyle='rgba(60,40,34,.22)';ctx.fillRect(i.x,i.y,i.w,t-i.y);ctx.fillRect(i.x,bb,i.w,i.y+i.h-bb);ctx.fillRect(i.x,t,l-i.x,bb-t);ctx.fillRect(rr,t,i.x+i.w-rr,bb-t);
+  // Rings follow the piece size on the map so many marks do not bury it; the view frame is drawn over them.
+  const marks=this.minimapMarks(now);if(marks.length){const ring=Math.max(2.5,Math.min(5,Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)*m.scale*.6)),line=ring/5;ctx.beginPath();for(const mark of marks){const p=at(mark.x,mark.y);ctx.moveTo(p.x+ring,p.y);ctx.arc(p.x,p.y,ring,0,Math.PI*2);}ctx.strokeStyle='#3d1d0cb3';ctx.lineWidth=3.2*line;ctx.stroke();ctx.strokeStyle='#ffd447';ctx.lineWidth=1.8*line;ctx.stroke();}
   ctx.strokeStyle='#8c3b4f';ctx.lineWidth=2;ctx.strokeRect(v.x,v.y,vw,vh);ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1;ctx.strokeRect(v.x+2,v.y+2,vw-4,vh-4);
-  const marks=this.minimapMarks(now);if(marks.length){ctx.beginPath();for(const mark of marks){const p=at(mark.x,mark.y);ctx.moveTo(p.x+5,p.y);ctx.arc(p.x,p.y,5,0,Math.PI*2);}ctx.strokeStyle='#3d1d0cb3';ctx.lineWidth=3.2;ctx.stroke();ctx.strokeStyle='#ffd447';ctx.lineWidth=1.8;ctx.stroke();}
   for(const cursor of this.cursors.values()){const p=at(cursor.x,cursor.y);ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle=cursor.value.color;ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1.2;ctx.stroke();}
   ctx.restore();ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(f.x+.5,f.y+.5,f.w-1,f.h-1);
  }
