@@ -68,7 +68,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v47';
+const CLIENT_PACKAGE_VERSION='v48';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -1493,11 +1493,18 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     s.button({x,y:y+giftRows*136+4,w:cw,h:38},'全部开启',()=>void this.openAllGifts(),{tone:'berrydark',fontSize:14,disabled:this.busy});});
    // 5. 补给
    const tickets=this.usesCreationTickets,energy=this.energyEnabled;
-   if(tickets||energy){const rows=(tickets?1:0)+(energy?1:0);supplyY=section(1,'补给',44+rows*70+10,(x,y,cw)=>{let ry=y;
-    if(energy){const stock=p?.supply.energy??0,ad=this.platform.config.id==='taptap'&&this.energyAdAvailable;s.icon('lightning',{x,y:ry,w:28,h:38});s.text('补满体力包 '+stock+'/3',x+38,ry+2,15,ink,800,cw-200);s.text('体力 '+(p?.energy??0)+'/'+(p?.energyCap??0),x+38,ry+24,12,muted,600,cw-200);
-     const bw=72;let bx=x+cw-bw;s.button({x:bx,y:ry+4,w:bw,h:34},'使用',()=>void this.useEnergy(),{fontSize:13,disabled:this.busy||!p||stock===0||(p?.energy??0)>=(p?.energyCap??0)});
-     if(this.shareAvailable){bx-=bw+6;s.button({x:bx,y:ry+4,w:bw,h:34},'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}
-     if(ad){this.prepareRewardedAd();bx-=bw+14;s.button({x:bx,y:ry+4,w:bw+8,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}ry+=70;}
+   // Narrow portrait: the three energy buttons no longer fit beside the title, so they move to their own row.
+   const energyAd=energy&&this.platform.config.id==='taptap'&&this.energyAdAvailable,energyTitle='补满体力包 '+(p?.supply.energy??0)+'/3',energyLine='体力 '+(p?.energy??0)+'/'+(p?.energyCap??0),energyButtonsW=72+(this.shareAvailable?78:0)+(energyAd?94:0),energyStacked=energy&&38+Math.max(s.measure(energyTitle,15,800),s.measure(energyLine,12,600))+12+energyButtonsW>colW-32;
+   if(tickets||energy){supplyY=section(1,'补给',44+(tickets?70:0)+(energy?(energyStacked?106:70):0)+10,(x,y,cw)=>{let ry=y;
+    if(energy){const stock=p?.supply.energy??0,ad=energyAd,textW=energyStacked?cw-38:cw-50-energyButtonsW;s.icon('lightning',{x,y:ry,w:28,h:38});s.text(energyTitle,x+38,ry+2,15,ink,800,textW);s.text(energyLine,x+38,ry+24,12,muted,600,textW);
+     const useOptions={fontSize:13,disabled:this.busy||!p||stock===0||(p?.energy??0)>=(p?.energyCap??0)};
+     if(energyStacked){const n=1+(this.shareAvailable?1:0)+(ad?1:0),bw=(cw-8*(n-1))/n,by=ry+50;let bx=x;
+      if(ad){this.prepareRewardedAd();s.button({x:bx,y:by,w:bw,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});bx+=bw+8;}
+      if(this.shareAvailable){s.button({x:bx,y:by,w:bw,h:34},'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});bx+=bw+8;}
+      s.button({x:bx,y:by,w:bw,h:34},'使用',()=>void this.useEnergy(),useOptions);ry+=106;}
+     else{const bw=72;let bx=x+cw-bw;s.button({x:bx,y:ry+4,w:bw,h:34},'使用',()=>void this.useEnergy(),useOptions);
+      if(this.shareAvailable){bx-=bw+6;s.button({x:bx,y:ry+4,w:bw,h:34},'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}
+      if(ad){this.prepareRewardedAd();bx-=bw+14;s.button({x:bx,y:ry+4,w:bw+8,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}ry+=70;}}
     if(tickets){const stock=p?.supply.create??0;s.icon('ticket',{x,y:ry,w:34,h:36});s.text('建房券 '+stock+'/3',x+44,ry+2,15,ink,800,cw-170);s.text('私人房或指定图片时使用',x+44,ry+24,12,muted,600,cw-170);
      s.button({x:x+cw-112,y:ry+4,w:112,h:34},stock>=3?'库存已满':this.shareAvailable?'分享领 1 张':'分享暂未开放',()=>void this.claimSupply('create','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3||!this.shareAvailable});}
    });}
