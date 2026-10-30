@@ -17,6 +17,9 @@ type Pinch={a:number;b:number;distance:number;zoom:number;worldX:number;worldY:n
 /** The large reference view: z multiplies the fitted size, x/y move its centre in screen pixels. */
 type PreviewView={z:number;x:number;y:number};
 type PreviewTouch={points:Map<number,Point>;start:Map<number,Point>;view:PreviewView;moved:boolean};
+/** The corner map: frame and inner are screen rects; inner shows the table from world x/y at scale. */
+type MinimapLayout={frame:Rect;inner:Rect;x:number;y:number;scale:number};
+const MINIMAP_MARK_MS=60000,MINIMAP_REDRAW_MS=300;
 const PREVIEW_MAX_ZOOM=8,PREVIEW_DOUBLE_TAP_MS=320;
 const CANVAS_SNAP_FEEDBACK_MS=720;
 /** The locate glow pulses four times, then fades out. */
@@ -97,6 +100,10 @@ export class PuzzleBoard implements RoomTable {
  pictureScreenRect():Rect{const r=this.rect,c=this.camera,b=this.board;return {x:r.x+c.x+b.x*c.z,y:r.y+c.y+b.y*c.z,w:b.width*c.z,h:b.height*c.z};}
  notice='';onNotice:((message:string)=>void)|null=null;soundUrl='';
  previewTopInset=6;
+ /** Thumbnail top when a floating control sits in the top-right corner; null keeps previewTopInset. */
+ previewThumbInset:number|null=null;
+ /** Corner map of the whole table while zoomed in. Opt-in under 更多; phones only. */
+ minimapEnabled=false;
  selfDecoration:RoomDecoration|null=null;drawDecoration:((value:RoomDecoration,rect:Rect)=>void)|null=null;
  onCursor:((point:CursorPoint|null)=>void)|null=null;
  private pieces;private paths:Command[][];private polygons:{x:number;y:number}[][]|null=null;private hit:CanvasRenderingContext2D;
@@ -112,6 +119,8 @@ export class PuzzleBoard implements RoomTable {
  viewLocked=false;
  private lockedTouch:{id:number;x:number;y:number}|null=null;private lockTold=false;
  private previewLarge=false;private previewView:PreviewView={z:1,x:0,y:0};private previewTouch:PreviewTouch|null=null;private previewThumb:Rect|null=null;private previewTap:{at:number;x:number;y:number}|null=null;
+ private minimap:MinimapLayout|null=null;private minimapTouch:number|null=null;private minimapWorld:{x0:number;y0:number;x1:number;y1:number}|null=null;
+ private minimapCache:{canvas:HTMLCanvasElement;key:string;at:number}|null=null;private minimapTimer:ReturnType<typeof setTimeout>|null=null;private locatedMarks:{ids:number[];until:number}|null=null;
  private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private hintGrant:string|number|null=null;private underlayUntil=0;
  private flashes:SnapFlash[]=[];private locateStartedAt=0;private locateUntil=0;private frame=0;private destroyed=false;private feedbackHidden=false;
  private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();
@@ -150,6 +159,8 @@ export class PuzzleBoard implements RoomTable {
  get underlay(){return this.backing||this.underlayUntil>Date.now();}set underlay(value:boolean){this.backing=value;if(!value)this.underlayUntil=0;this.changed();}
  get showPreview(){return this.preview;}set showPreview(value:boolean){this.preview=value;if(!value)this.previewLarge=false;this.changed();}
  get previewZoomed(){return this.previewLarge;}
+ /** The corner map's screen rect from the last draw, or null while it is hidden. */
+ get minimapFrame(){return this.minimap?.frame??null;}
  openPreviewZoom(){if(!this.ready)return false;this.cancelInput(true);this.previewLarge=true;this.previewView={z:1,x:0,y:0};this.previewTap=null;this.changed();return true;}
  closePreviewZoom(){if(!this.previewLarge)return;this.previewLarge=false;this.previewTouch=null;this.previewTap=null;this.changed();}
  private changed(){if(!this.destroyed)this.invalidate();}
@@ -287,6 +298,7 @@ export class PuzzleBoard implements RoomTable {
    return false;
   }
   if(this.previewInput(input))return true;
+  if(this.minimapInput(input))return true;
   if(input.type==='wheel'){
    const p=input.changed[0],delta=input.deltaY??0;if(!p||!inside(p,this.rect)||!Number.isFinite(delta)||delta===0)return false;
    // A wheel gesture cannot move the camera underneath an acquired piece.
@@ -430,7 +442,8 @@ export class PuzzleBoard implements RoomTable {
   * centres on them and zooms out just enough. Returns the number of pieces marked. */
  locateLoose(insets:{top?:number;right?:number;bottom?:number;left?:number}={}){
   const groups=this.state.groups.filter(g=>!g.locked&&g.pieces.length&&visibleGroup(g,this.pieces,this.edges));
-  if(!groups.length){this.locateUntil=0;this.changed();return 0;}
+  if(!groups.length){this.locateUntil=0;this.locatedMarks=null;this.changed();return 0;}
+  this.locatedMarks={ids:groups.map(group=>group.pieces[0]),until:Date.now()+MINIMAP_MARK_MS};
   const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.27,cam=this.camera;let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity,count=0;
   for(const group of groups)for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;left=Math.min(left,x-pad);top=Math.min(top,y-pad);right=Math.max(right,x+w+pad);bottom=Math.max(bottom,y+h+pad);count++;}
   const l=Math.max(0,insets.left??0),t=Math.max(0,insets.top??0),vw=Math.max(1,this.rect.w-l-Math.max(0,insets.right??0)),vh=Math.max(1,this.rect.h-t-Math.max(0,insets.bottom??0));
@@ -491,6 +504,78 @@ export class PuzzleBoard implements RoomTable {
    this.changed();return true;
   }
   return true;
+ }
+ /** The table area the corner map shows: the board and every piece, clamped to the world.
+  * It only grows, so the map never rescales while pieces are gathered in. */
+ private minimapBounds(){
+  const b=this.board,w=b.width/this.state.cols,h=b.height/this.state.rows,pad=Math.min(w,h)*.6,world=worldFor(this.state);
+  let x0=b.x-pad,y0=b.y-pad,x1=b.x+b.width+pad,y1=b.y+b.height+pad;
+  for(const group of this.state.groups)for(const id of group.pieces){const p=this.pieces[id],x=b.x+p.col*w+group.dx,y=b.y+p.row*h+group.dy;x0=Math.min(x0,x-pad);y0=Math.min(y0,y-pad);x1=Math.max(x1,x+w+pad);y1=Math.max(y1,y+h+pad);}
+  const old=this.minimapWorld;if(old){x0=Math.min(x0,old.x0);y0=Math.min(y0,old.y0);x1=Math.max(x1,old.x1);y1=Math.max(y1,old.y1);}
+  x0=Math.max(world.x,x0);y0=Math.max(world.y,y0);x1=Math.max(x0+1,Math.min(world.x+world.width,x1));y1=Math.max(y0+1,Math.min(world.y+world.height,y1));
+  return this.minimapWorld={x0,y0,x1,y1};
+ }
+ /** Top-left on phones, opposite the 原图 thumbnail, and only while the view no longer holds the whole table. */
+ private minimapLayout():MinimapLayout|null{
+  const r=this.rect,cam=this.camera;
+  if(!this.minimapEnabled||!this.ready||this.previewLarge||this.tray||this.completionReveal>0||r.w<160||r.h<160||this.state.groups.every(g=>g.locked))return null;
+  const m=this.minimapBounds(),slack=Math.min(m.x1-m.x0,m.y1-m.y0)*.03,vx0=-cam.x/cam.z,vy0=-cam.y/cam.z,vx1=(r.w-cam.x)/cam.z,vy1=(r.h-cam.y)/cam.z;
+  if(this.minimapTouch===null&&vx0<=m.x0+slack&&vy0<=m.y0+slack&&vx1>=m.x1-slack&&vy1>=m.y1-slack)return null;
+  const maxW=Math.min(r.w*.34,this.phoneLandscapeRoom?134:120),maxH=Math.min(r.h*.3,this.phoneLandscapeRoom?96:100),scale=Math.min(maxW/(m.x1-m.x0),maxH/(m.y1-m.y0)),w=(m.x1-m.x0)*scale,h=(m.y1-m.y0)*scale,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-h-14));
+  return{frame:{x:r.x+12,y:top,w:w+6,h:h+6},inner:{x:r.x+15,y:top+3,w,h},x:m.x0,y:m.y0,scale};
+ }
+ /** Table artwork for the map. While pieces move it is redrawn at most every MINIMAP_REDRAW_MS. */
+ private minimapPicture(ctx:CanvasRenderingContext2D,m:MinimapLayout,now:number){
+  const t=typeof ctx.getTransform==='function'?ctx.getTransform():null,density=Math.max(1,Math.min(3,t?Math.abs(t.a):1)),width=Math.max(1,Math.round(m.inner.w*density)),height=Math.max(1,Math.round(m.inner.h*density));
+  let sum=0;for(const g of this.state.groups)sum=(sum*31+g.id*7+(g.locked?1:0)+Math.round(g.dx)*3+Math.round(g.dy)*5+g.pieces.length)%2147483647;
+  const key=[width,height,m.x,m.y,m.scale,this.edges?1:0,this.currentTheme,this.state.groups.length,sum].join('|'),cache=this.minimapCache;
+  if(cache&&cache.key===key)return cache.canvas;
+  if(cache&&now-cache.at<MINIMAP_REDRAW_MS){if(!this.minimapTimer)this.minimapTimer=setTimeout(()=>{this.minimapTimer=null;this.changed();},MINIMAP_REDRAW_MS);return cache.canvas;}
+  const canvas=cache?.canvas??this.platform.createCanvas();canvas.width=width;canvas.height=height;const c=canvas.getContext('2d');if(!c)return null;
+  const colors=boardThemeColors(this.currentTheme),b=this.board,s=m.scale*width/m.inner.w;
+  c.setTransform(1,0,0,1,0,0);c.fillStyle=this.phoneLandscapeRoom?landscapeRoomColors.table:colors.paper;c.fillRect(0,0,width,height);
+  c.setTransform(s,0,0,s,-m.x*s,-m.y*s);c.fillStyle=colors.target;c.fillRect(b.x-9,b.y-9,b.width+18,b.height+18);c.strokeStyle=colors.targetLine;c.lineWidth=1.5/s;c.strokeRect(b.x-9,b.y-9,b.width+18,b.height+18);
+  this.drawPieceGroups(c,now,undefined,undefined,'pieces',{rect:{x:0,y:0,w:width,h:height},camera:{x:-m.x*s,y:-m.y*s,z:s}});
+  this.minimapCache={canvas,key,at:now};return canvas;
+ }
+ /** Pieces found by 定位 keep a ring on the map until they are picked up or placed, or MINIMAP_MARK_MS passes. */
+ private minimapMarks(now:number){
+  const marks=this.locatedMarks;if(!marks)return[];if(marks.until<=now){this.locatedMarks=null;return[];}
+  const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,groupOf=new Map<number,Group>(),points:{x:number;y:number}[]=[];
+  for(const group of this.state.groups)for(const id of group.pieces)groupOf.set(id,group);
+  marks.ids=marks.ids.filter(id=>{const group=groupOf.get(id);if(!group||group.locked||this.owners[group.id]||this.drag?.id===group.id)return false;const p=this.pieces[id];points.push({x:this.board.x+(p.col+.5)*w+group.dx,y:this.board.y+(p.row+.5)*h+group.dy});return true;});
+  if(!marks.ids.length)this.locatedMarks=null;return points;
+ }
+ private drawMinimap(ctx:CanvasRenderingContext2D,now:number){
+  const m=this.minimap=this.minimapLayout();if(!m)return;
+  const {frame:f,inner:i}=m,colors=boardThemeColors(this.currentTheme),cam=this.camera,r=this.rect,map=this.minimapPicture(ctx,m,now),at=(x:number,y:number)=>({x:i.x+(x-m.x)*m.scale,y:i.y+(y-m.y)*m.scale});
+  ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(f.x,f.y,f.w,f.h);if(map)ctx.drawImage(map,i.x,i.y,i.w,i.h);
+  ctx.beginPath();ctx.rect(i.x,i.y,i.w,i.h);ctx.clip();
+  // The current view stays clear and framed; the rest of the table is dimmed a little.
+  const v=at(-cam.x/cam.z,-cam.y/cam.z),vw=Math.max(6,r.w/cam.z*m.scale),vh=Math.max(6,r.h/cam.z*m.scale),l=Math.min(i.x+i.w,Math.max(i.x,v.x)),t=Math.min(i.y+i.h,Math.max(i.y,v.y)),rr=Math.min(i.x+i.w,Math.max(l,v.x+vw)),bb=Math.min(i.y+i.h,Math.max(t,v.y+vh));
+  ctx.fillStyle='rgba(60,40,34,.22)';ctx.fillRect(i.x,i.y,i.w,t-i.y);ctx.fillRect(i.x,bb,i.w,i.y+i.h-bb);ctx.fillRect(i.x,t,l-i.x,bb-t);ctx.fillRect(rr,t,i.x+i.w-rr,bb-t);
+  // Rings follow the piece size on the map so many marks do not bury it; the view frame is drawn over them.
+  const marks=this.minimapMarks(now);if(marks.length){const ring=Math.max(2.5,Math.min(5,Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)*m.scale*.6)),line=ring/5;ctx.beginPath();for(const mark of marks){const p=at(mark.x,mark.y);ctx.moveTo(p.x+ring,p.y);ctx.arc(p.x,p.y,ring,0,Math.PI*2);}ctx.strokeStyle='#3d1d0cb3';ctx.lineWidth=3.2*line;ctx.stroke();ctx.strokeStyle='#ffd447';ctx.lineWidth=1.8*line;ctx.stroke();}
+  ctx.strokeStyle='#8c3b4f';ctx.lineWidth=2;ctx.strokeRect(v.x,v.y,vw,vh);ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1;ctx.strokeRect(v.x+2,v.y+2,vw-4,vh-4);
+  for(const cursor of this.cursors.values()){const p=at(cursor.x,cursor.y);ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle=cursor.value.color;ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1.2;ctx.stroke();}
+  ctx.restore();ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(f.x+.5,f.y+.5,f.w-1,f.h-1);
+ }
+ /** A finger that lands on the map moves the view there, keeping the zoom, and the view follows it until it lifts. */
+ private minimapInput(input:Input){
+  if(input.type==='key'||input.type==='wheel')return false;
+  const touch=this.minimapTouch;
+  if(touch===null){
+   if(input.type!=='down'||this.pointers.size||this.trayTouch||!this.minimap)return false;
+   const p=input.changed[0];if(!p||!inside(p,this.minimap.frame))return false;
+   this.minimapTouch=p.id;this.minimapJump(p);return true;
+  }
+  if(input.type==='move'){const p=input.points.find(point=>point.id===touch);if(p)this.minimapJump(p);return true;}
+  if(input.type==='cancel'||input.type==='up'&&input.changed.some(point=>point.id===touch)){this.minimapTouch=null;this.changed();}
+  return true;
+ }
+ private minimapJump(p:Point){
+  const m=this.minimap;if(!m)return;const i=m.inner,x=m.x+(Math.min(i.x+i.w,Math.max(i.x,p.x))-i.x)/m.scale,y=m.y+(Math.min(i.y+i.h,Math.max(i.y,p.y))-i.y)/m.scale,z=this.camera.z;
+  this.camera={x:this.rect.w/2-x*z,y:this.rect.h/2-y*z,z};this.changed();
  }
  private drawPreviewZoom(ctx:CanvasRenderingContext2D){
   const r=this.rect,{area,close}=this.previewLayout(),image=this.previewImageRect();
@@ -824,15 +909,16 @@ export class PuzzleBoard implements RoomTable {
   this.drawHintFeedback(ctx,now);
   ctx.restore();
   this.previewThumb=null;
-  if(this.preview&&this.ready&&!this.previewLarge){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);
+  if(this.preview&&this.ready&&!this.previewLarge){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewThumbInset??this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);
    // A magnifier in the corner says the thumbnail opens a large, zoomable view.
    const mx=r.x+r.w-maxW-9+11,my=top+height-8;ctx.fillStyle='rgba(255,250,243,.92)';ctx.beginPath();ctx.arc(mx,my,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#5b4337';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(mx-1.5,my-1.5,4,0,Math.PI*2);ctx.moveTo(mx+1.5,my+1.5);ctx.lineTo(mx+5,my+5);ctx.stroke();
    ctx.restore();this.previewThumb={x:r.x+r.w-maxW-12,y:top,w:maxW+6,h:height+6};}
   ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const cursor of this.cursors.values()){const p=this.worldToScreen(cursor),value=cursor.value;if(p.x<r.x||p.y<r.y||p.x>r.x+r.w||p.y>r.y+r.h)continue;ctx.save();ctx.translate(p.x,p.y);ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=value.color;ctx.fill();ctx.strokeStyle=colors.cursorLine;ctx.lineWidth=1;ctx.stroke();ctx.font='bold 11px sans-serif';const label=`${value.name} · Lv.${value.level??0}`,width=Math.min(190,ctx.measureText(label).width+12);if(this.phoneLandscapeRoom){roomRoundPath(ctx,{x:19,y:12,w:width,h:21},8);ctx.fillStyle=value.color;ctx.fill();}else{ctx.fillStyle=colors.cursorLabel;ctx.fillRect(19,12,width,21);}ctx.fillStyle=this.phoneLandscapeRoom?'#ffffff':colors.labelInk;ctx.textBaseline='top';ctx.fillText(label,25,17,width-12);ctx.restore();if(value.decoration)decorations.push({value:value.decoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}ctx.restore();
   if(this.selfDecoration&&this.ownPoint){const p=this.worldToScreen(this.ownPoint);decorations.push({value:this.selfDecoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}
   if(this.drawDecoration&&decorations.length){ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const d of decorations)this.drawDecoration(d.value,d.rect);ctx.restore();}
+  this.drawMinimap(ctx,now);
   if(this.tray)this.drawTray(ctx);
   if(this.previewLarge&&this.ready)this.drawPreviewZoom(ctx);
  }
- destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
+ destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;if(this.minimapTimer)clearTimeout(this.minimapTimer);this.minimapTimer=null;if(this.minimapCache)this.minimapCache.canvas.width=this.minimapCache.canvas.height=1;this.minimapCache=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
 }
