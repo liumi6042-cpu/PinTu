@@ -6,11 +6,12 @@
 //   node scripts/grant-decoration.mjs --db <mobile-v3.sqlite> --owner <canonical> --grant cat-paw [--yes]
 //   node scripts/grant-decoration.mjs --db <mobile-v3.sqlite> --owner <canonical> --energy 100 --fill-refills
 //       --source gift:20261030-echo [--game-settings <live game config>] [--yes]
-// Without --yes a grant is a dry run. A real grant first writes an online backup.
+// Without --yes a grant is a dry run. A real grant first writes a VACUUM INTO snapshot, or reuses a
+// recent one named by --assume-backup <path> (one snapshot for a batch of grants).
 // Energy may exceed the cap, as gameplay rewards do; natural recovery is settled first.
 // Energy/refill grants are recorded once per (owner, source) in mobile_operator_grants.
-import {DatabaseSync,backup} from 'node:sqlite';
-import {mkdirSync,existsSync} from 'node:fs';
+import {DatabaseSync} from 'node:sqlite';
+import {mkdirSync,existsSync,statSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import {grantRewardDecoration,MOBILE_COLLECTION_CATALOG} from '../server/mobile-collection.mjs';
 import {createGameSettings} from '../server/game-settings.mjs';
@@ -25,7 +26,7 @@ function parse(argv){
   const arg=argv[i];
   if(arg==='--yes'){options.yes=true;continue;}
   if(arg==='--fill-refills'){options.fillRefills=true;continue;}
-  const key={'--db':'db','--list-nickname':'nickname','--player-code':'code','--grant':'grant','--owner':'owner','--backup':'backup','--energy':'energy','--source':'source','--game-settings':'gameSettings'}[arg];
+  const key={'--db':'db','--list-nickname':'nickname','--player-code':'code','--grant':'grant','--owner':'owner','--backup':'backup','--assume-backup':'assumeBackup','--energy':'energy','--source':'source','--game-settings':'gameSettings'}[arg];
   if(!key||i+1>=argv.length)throw Error('Unknown or incomplete argument: '+arg);
   options[key]=argv[++i];
  }
@@ -105,12 +106,21 @@ async function main(){
  const plan={decoration:reward?(decorationPending?reward.id:'already-owned'):null,energy:supplies?(suppliesDone?'already-granted':energy):null,fillRefills:supplies?(suppliesDone?'already-granted':options.fillRefills):null,source:options.source??null};
  if(!decorationPending&&!(supplies&&!suppliesDone)){console.log(JSON.stringify({result:'already-granted',plan,player:before},null,2));return;}
  if(!options.yes){console.log(JSON.stringify({result:'dry-run',plan,player:before,next:'add --yes to grant'},null,2));return;}
- const stamp=new Date().toISOString().replace(/[:.]/g,'-');
- const backupPath=resolve(options.backup??join(dirname(dbPath),'operations','grant-decoration-'+stamp,'mobile-v3.sqlite'));
- mkdirSync(dirname(backupPath),{recursive:true});
+ // A live database under constant writes never finishes a page-by-page online backup, so take one
+ // consistent snapshot with VACUUM INTO. --assume-backup reuses a snapshot taken for a batch of grants.
+ let backupPath;
+ if(options.assumeBackup){
+  backupPath=resolve(options.assumeBackup);
+  if(!existsSync(backupPath)||Date.now()-statSync(backupPath).mtimeMs>6*3600e3)throw Error('--assume-backup must name a snapshot from the last 6 hours');
+ }else{
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+  backupPath=resolve(options.backup??join(dirname(dbPath),'operations','grant-decoration-'+stamp,'mobile-v3.sqlite'));
+  if(existsSync(backupPath))throw Error('Backup target exists: '+backupPath);
+  mkdirSync(dirname(backupPath),{recursive:true});
+ }
  const db=new DatabaseSync(dbPath,{timeout:5000});
  try{
-  await backup(db,backupPath);
+  if(!options.assumeBackup)db.prepare('VACUUM INTO ?').run(backupPath);
   const details={decoration:null,supplies:null};
   db.exec('BEGIN IMMEDIATE');
   try{
