@@ -3271,6 +3271,78 @@
         "width": 1536,
         "height": 1024
       }
+    ],
+    "album-warm-winter-town-01-20261030": [
+      {
+        "revision": "21aeaa0f54fa3f41c0f94ad0b6aa82dc6005ceb1e29701f45fcf7487829e7c70",
+        "src": "/puzzles/album-warm-winter-town-01-20261030-optimized-4fa0435b69f2.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-01-20261030-thumbnail-1a1e84fe9836.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-warm-winter-town-02-20261030": [
+      {
+        "revision": "7784ca1d90b4c24e6ac8de113db9cf14dbc06bb5feefa2aeab688368a2ece841",
+        "src": "/puzzles/album-warm-winter-town-02-20261030-optimized-f8694d40a717.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-02-20261030-thumbnail-a4408b6873bf.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-warm-winter-town-03-20261030": [
+      {
+        "revision": "36908ad587d33b4c26a9365e2be283ab7fa501d003e0d2c2edd2d93e1ebfcfc1",
+        "src": "/puzzles/album-warm-winter-town-03-20261030-optimized-fa7217c926d8.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-03-20261030-thumbnail-583619db9f94.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-warm-winter-town-04-20261030": [
+      {
+        "revision": "04b781673cae265c3f49b323acfc90168a20b870c2379a6ae6429864bc446853",
+        "src": "/puzzles/album-warm-winter-town-04-20261030-optimized-c10537806bd2.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-04-20261030-thumbnail-6595b8795612.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-warm-winter-town-05-20261030": [
+      {
+        "revision": "19ac668bb3684bf6f4819f67b095a1b9cd8d0b9a82a280320affa0f1b7495331",
+        "src": "/puzzles/album-warm-winter-town-05-20261030-optimized-d4464b2ae541.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-05-20261030-thumbnail-a044a8b141dd.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-warm-winter-town-06-20261030": [
+      {
+        "revision": "e2602cb79825c2ab8a562743df3cdf158700ff7a041724206d251b16679eae5f",
+        "src": "/puzzles/album-warm-winter-town-06-20261030-optimized-2e71b3d47c10.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-06-20261030-thumbnail-36c743b24c3a.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-warm-winter-town-07-20261030": [
+      {
+        "revision": "c8794a3b6b9c7767143dfeec67f4b51b2911c6a2489c0a1fc65b0383e74cf278",
+        "src": "/puzzles/album-warm-winter-town-07-20261030-optimized-ce11a583a1fa.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-07-20261030-thumbnail-0b161299c5c3.webp",
+        "width": 1536,
+        "height": 1024
+      }
+    ],
+    "album-warm-winter-town-08-20261030": [
+      {
+        "revision": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+        "src": "/puzzles/album-warm-winter-town-08-20261030-optimized-05ce8ea18957.webp",
+        "thumbSrc": "/puzzles/album-warm-winter-town-08-20261030-thumbnail-59b8f1bc0ef2.webp",
+        "width": 1536,
+        "height": 1024
+      }
     ]
   },
   "active": {
