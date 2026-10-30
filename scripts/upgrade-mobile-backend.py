@@ -343,12 +343,14 @@ def main():
             switch_current(BASE, target, args.release)
             switched = True
             run('systemctl', 'restart', SERVICE)
-            for attempt in range(40):
+            # Up to 60 s: a release that adds an index builds it at startup, which on the 1.5 GB live database
+            # took longer than the former 10 s (2026-10-30).
+            for attempt in range(240):
                 try:
                     ensure(json_get('http://127.0.0.1:3292/healthz').get('mode') == 'mobile-v3-isolated', 'Unexpected health mode')
                     break
                 except Exception:
-                    if attempt == 39:
+                    if attempt == 239:
                         raise
                     time.sleep(.25)
             config = json_get('http://127.0.0.1:3292/h5/config')
