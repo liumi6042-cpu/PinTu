@@ -66,7 +66,9 @@ function taskCoinsText(min=0,max=min){return max>0?' · 金币 +'+min+(min===max
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
 // Seats come from the server (4/6/8 by piece count); backends without maxPlayers seat 8.
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
-const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1';
+const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1';
+/** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
+const CLIENT_PACKAGE_VERSION='v38';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -167,7 +169,7 @@ export class GameApp{
   this.roomPanelCollapsed=platform.storage.get('jigsaw:room-panel-collapsed:v1')==='1';
   this.desktopToolsOpen=platform.storage.get('jigsaw:desktop-tools-open:v1')!=='0';
   this.landscapeToolsOpen=platform.storage.get('jigsaw:landscape-tools-open:v1')==='1';
-  try{this.viewLocked=platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
+  try{this.lockButtonEnabled=platform.storage.get(LOCK_BUTTON_KEY)==='1';this.viewLocked=this.lockButtonEnabled&&platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>{
    const room=this.room;if(!room||this.offlineRoom)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
@@ -1710,7 +1712,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
  private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
-  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“锁定”后单指只拖拼块不移动画面；“原图”可双指放大查看；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
+  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；“原图”可双指放大查看；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留3个未结束的自建房间。'],
   ['邀请与礼包',this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
@@ -1891,7 +1893,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;
  private landscapeChatVisible=false;
- private viewLocked=false;
+ private viewLocked=false;private lockButtonEnabled=false;
+ /** The lock is opt-in under 更多; turning the button off also unlocks the view. */
+ private setLockButtonEnabled(enabled:boolean){
+  this.lockButtonEnabled=enabled;try{this.platform.storage.set(LOCK_BUTTON_KEY,enabled?'1':'0');}catch{}
+  if(!enabled&&this.viewLocked){this.viewLocked=false;try{this.platform.storage.set(VIEW_LOCK_KEY,'0');}catch{}if(this.board)this.board.viewLocked=false;}
+  this.note(enabled?'已启用锁定按钮：在拼图区右下角，锁上后单指只拖拼块':'已关闭锁定按钮');this.invalidate();
+ }
  private toggleViewLock(){
   this.viewLocked=!this.viewLocked;try{this.platform.storage.set(VIEW_LOCK_KEY,this.viewLocked?'1':'0');}catch{}
   if(this.board)this.board.viewLocked=this.viewLocked;this.clearRoomPointer();
@@ -1901,8 +1909,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  /** Phones keep the view lock and the large reference one tap away, stacked above the room tools. */
  private drawBoardQuickTools(x:number,bottom:number){
   const board=this.board,room=this.room;if(!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
-  const s=this.stage,size=46,items=[['reference','原图',false,()=>this.toggleReference()],[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
-  items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-cream-selected':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
+  const s=this.stage,size=46,items=[['reference','原图',false,()=>this.toggleReference()],...(this.lockButtonEnabled?[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const:[])] as const;
+  items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-gold-normal':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
  }
  private drawChatBubble(y:number){
   this.landscapeChatVisible=false;
@@ -2305,6 +2313,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     const policyActions=this.formalWeb?[["隐私说明",()=>this.openWeb('privacy')],["服务说明",()=>this.openWeb('terms')]] as const:[["服务与隐私说明",()=>this.navigate('privacy')]] as const;
     if(this.formalWeb){this.button(left,cy,width,'用我的图片开一桌',()=>this.openWeb('uploads'),'berry',42);cy+=52;cy=this.paragraph('上传一张图片，选好片数，开一张自己的公开拼图桌。图片只在房间有效期内保留。',left,cy,width,12)+18;}
     for(const [label,action]of [['历史拼图',()=>this.showModal('history')],['玩法帮助',()=>this.navigate('help')],...policyActions] as const){this.button(left,cy,width,label,action);cy+=48;}
+    s.text('当前版本 '+CLIENT_PACKAGE_VERSION+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy+4,12,this.colors.muted,600,width);cy+=30;
     if(this.formalWeb){this.button(left,cy,width,'问题反馈',()=>this.openWeb('feedback'));cy+=48;cy=this.paragraph('账号、进度与收藏会持续保存在当前网站。',left,cy+4,width,12)+10;}else{this.button(left,cy,width,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));cy+=48;cy=this.paragraph('当前为本机游客身份，尚未绑定平台账号存档。清除本机数据可能丢失进度。',left,cy+4,width,12)+10;}
     if(this.platform.config.id==='taptap'&&this.platform.loginLog){this.button(left,cy,width,'登录日志',()=>this.openLoginLog());cy+=48;}
     if(this.adTestingAllowed||this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest||this.platform.config.previewTestRoom||this.nineGridAvailable||this.platform.config.id==='taptap'&&p?.taptap?.diagnostics===true||this.diagnosticsAvailable){cy+=10;heading('测试与诊断');}
@@ -2358,9 +2367,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
      [this.platform.config.id==='web'?'定位未归位拼块':'定位未拼块 · 全部闪亮标出',()=>{if(this.platform.config.id==='web')board?.find();else this.locateLoose();this.modal=null;this.toolsOpen=false;this.invalidate();}],
      [board?.trayOpen?'关闭碎片托盘':'打开碎片托盘 · 点选定位',()=>{if(board)board.trayOpen=!board.trayOpen;this.modal=null;this.toolsOpen=false;this.invalidate();}],
      ['整理散落拼块',()=>void this.run(async()=>{await room?.organize();this.modal=null;this.toolsOpen=false;this.note('散片已整理');})],
+     [this.lockButtonEnabled?'关闭锁定按钮':'启用锁定按钮 · 锁住后单指不移动画面',()=>{this.setLockButtonEnabled(!this.lockButtonEnabled);this.modal=null;this.toolsOpen=false;this.invalidate();}],
      [board?.showPreview?'关闭原图小窗':'原图小窗 · 点小窗可放大',()=>{if(board)board.showPreview=!board.showPreview;this.modal=null;this.invalidate();}],
     ] as const){if(label==='整理散落拼块'&&!this.soloRoom)continue;this.button(left,cy,width,label,action,'cream',40);cy+=51;}
-    this.button(left,cy,width,'打开设置 · 声音、画面等',()=>this.showModal('settings'),'cream',40);cy+=51;break;
+    this.button(left,cy,width,'打开设置 · 声音、画面等',()=>this.showModal('settings'),'cream',40);cy+=51;
+    s.text('当前版本 '+CLIENT_PACKAGE_VERSION+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy,12,this.colors.muted,600,width);cy+=28;break;
    }
    case'chat':{
     const room=this.room;s.text('同桌 '+(room?.snapshot.members.length??0)+'人',left,cy,15,this.colors.ink,700);cy+=29;for(const member of room?.snapshot.members??[]){s.text(member.name+' · Lv.'+((member as typeof member&{level?:number}).level??1),left,cy,13,member.color);cy+=25;}cy+=10;
