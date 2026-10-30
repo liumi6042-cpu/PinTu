@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {resolve} from 'node:path';
+import {DatabaseSync} from 'node:sqlite';
+import {createMobileService} from '../server/mobile-service.mjs';
+
+const HOUR=3600000,DAY=24*HOUR;
+
+test('room-action receipts older than a day are pruned in small batches; other receipts and recent ones stay',async()=>{
+ const dir=mkdtempSync(resolve(tmpdir(),'mobile-request-prune-')),databasePath=resolve(dir,'mobile.sqlite');let now=Date.parse('2026-10-30T08:00:00Z');
+ const service=createMobileService({shareRewards:false,databasePath,now:()=>now,requestPruneBatch:2,requestPruneYieldMs:0,requestPruneStartMs:DAY});
+ const db=new DatabaseSync(databasePath);
+ try{
+  assert.ok(db.prepare("SELECT 1 FROM pragma_index_list('mobile_requests') WHERE name='mobile_requests_created'").get(),'created_at index');
+  const insert=db.prepare('INSERT INTO mobile_requests VALUES(?,?,?,?,?,?)');
+  for(let index=0;index<5;index++)insert.run('owner-a','room-action:room-'+index,'old-'+index,'h','{"room":{}}',now-2*DAY-index);
+  insert.run('owner-a','room-action:room-1','recent','h','{"room":{}}',now-HOUR);
+  insert.run('owner-a','level-offline-clears','offline','h','{}',now-3*DAY);
+  insert.run('owner-b','collection-buy','buy','h','{}',now-3*DAY);
+  const first=service.pruneRequests(),again=service.pruneRequests();
+  assert.equal(first,again,'a running sweep is shared, not started twice');
+  assert.equal(await first,5);
+  assert.deepEqual(db.prepare('SELECT request_id FROM mobile_requests ORDER BY request_id').all().map(row=>row.request_id),['buy','offline','recent']);
+  now+=DAY;
+  assert.equal(await service.pruneRequests(),1,'the recent receipt goes once it is older than a day');
+  assert.deepEqual(db.prepare('SELECT request_id FROM mobile_requests ORDER BY request_id').all().map(row=>row.request_id),['buy','offline']);
+ }finally{db.close();service.close();rmSync(dir,{recursive:true,force:true});}
+});

@@ -109,6 +109,7 @@ export function createMobileService(options={}){
  CREATE INDEX IF NOT EXISTS mobile_rooms_owner ON mobile_rooms(owner,completed_at,closed_at);
  CREATE INDEX IF NOT EXISTS mobile_rooms_lobby ON mobile_rooms(visibility,created_at);
  CREATE TABLE IF NOT EXISTS mobile_requests(owner TEXT NOT NULL,scope TEXT NOT NULL,request_id TEXT NOT NULL,input_hash TEXT NOT NULL,response TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(owner,scope,request_id));
+ CREATE INDEX IF NOT EXISTS mobile_requests_created ON mobile_requests(created_at);
  CREATE TABLE IF NOT EXISTS mobile_ad_challenges(token TEXT PRIMARY KEY,owner TEXT NOT NULL,kind TEXT NOT NULL,request_id TEXT NOT NULL,context TEXT NOT NULL,auth_hash TEXT NOT NULL,expires_at INTEGER NOT NULL,used INTEGER NOT NULL DEFAULT 0,UNIQUE(owner,context,request_id));
  CREATE TABLE IF NOT EXISTS mobile_tool_uses(room_id TEXT NOT NULL,owner TEXT NOT NULL,kind TEXT NOT NULL,uses INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(room_id,owner,kind));
  CREATE TABLE IF NOT EXISTS mobile_tool_grants(room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,kind TEXT NOT NULL,expires_at INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(room_id,owner,request_id));
@@ -170,6 +171,25 @@ export function createMobileService(options={}){
   }
  };
  const cursorTimer=setInterval(flushCursors,options.cursorFlushMs??500);cursorTimer.unref();
+ // A room-action receipt stores the whole room reply for one drop and only guards client retries for a few minutes.
+ // Keep a day of them and delete older ones in small batches, yielding between batches so a sweep never holds the
+ // write lock for long. Other receipts (purchases, offline clears, invitations) are small and stay.
+ const requestRetentionMs=options.requestRetentionMs??86400000,requestPruneBatch=options.requestPruneBatch??2000,requestPruneYieldMs=options.requestPruneYieldMs??50;
+ const pruneRequestStatement=db.prepare("DELETE FROM mobile_requests WHERE rowid IN (SELECT rowid FROM mobile_requests WHERE created_at<? AND scope GLOB 'room-action:*' LIMIT ?)");
+ let requestPrune=null,requestPruneStep=null;
+ const pruneRequests=()=>requestPrune??=new Promise(done=>{
+  let removed=0;
+  const step=()=>{
+   requestPruneStep=null;
+   let changes=0;try{changes=Number(pruneRequestStatement.run(clock()-requestRetentionMs,requestPruneBatch).changes);}catch(error){console.warn('mobile request prune stopped:',error.message);}
+   removed+=changes;
+   if(changes>=requestPruneBatch){requestPruneStep=setTimeout(step,requestPruneYieldMs);requestPruneStep.unref?.();}
+   else{requestPrune=null;done(removed);}
+  };
+  step();
+ });
+ const requestPruneStart=setTimeout(pruneRequests,options.requestPruneStartMs??5000);requestPruneStart.unref();
+ const requestPruneTimer=setInterval(pruneRequests,options.requestPruneMs??600000);requestPruneTimer.unref();
  const resolveIdentity=identity=>db.prepare('SELECT canonical_identity FROM mobile_taptap_sessions WHERE session_identity=?').get(identity)?.canonical_identity??identity;
  const statePresent=identity=>{
   const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);if(row){const p=JSON.parse(row.data);if(Number(p.totalXp)>0||Number(p.level)>0||Number(p.supply?.energy)>0||Number(p.supply?.create)>NEWCOMER_CREATION_TICKETS||p.firstRoomCompleted===true)return true;}
@@ -658,5 +678,5 @@ export function createMobileService(options={}){
   }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'独立拼图服务暂时不可用',code:error.code??(error.status?'ROOM_ERROR':'INTERNAL_ERROR'),...(error.profile?{profile:error.profile}:{}),...(error.freeRemaining?{freeRemaining:error.freeRemaining}:{}),...(error.ownedRooms?{ownedRooms:error.ownedRooms}:{}),...(error.phrases?{phrases:error.phrases}:{})}};}
   finally{requestRelease=undefined;requestEnergyEmpty=null;requestProfileData=null;requestRoomChanges=null;requestCursorUndo=null;requestInviteBonuses=null;}
  }
- return {handle,bindTapTap,realtime,capabilities,contentStatus(){const selected=managedContent?.read()??null;return {contentReleaseId:selected?.releaseId??null};},startDaily(){dailyContent?.start();},close(){clearInterval(cursorTimer);clearInterval(cheerTimer);cheerRooms.clear();cheerRates.clear();flushCursors();tapPreview.clear();roomListeners.clear();dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
+ return {handle,bindTapTap,realtime,capabilities,contentStatus(){const selected=managedContent?.read()??null;return {contentReleaseId:selected?.releaseId??null};},startDaily(){dailyContent?.start();},pruneRequests,close(){clearTimeout(requestPruneStart);clearInterval(requestPruneTimer);clearTimeout(requestPruneStep);clearInterval(cursorTimer);clearInterval(cheerTimer);cheerRooms.clear();cheerRates.clear();flushCursors();tapPreview.clear();roomListeners.clear();dailyContent?.close();db.close();},mode:'mobile-v3-isolated'};
 }
