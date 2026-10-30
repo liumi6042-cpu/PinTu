@@ -68,7 +68,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v41';
+const CLIENT_PACKAGE_VERSION='v43';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -222,6 +222,8 @@ export class GameApp{
  private get formalWeb(){return this.client.cookieIdentity;}
  private get needsPrivacyChoice(){return (this.platform.config.id==='taptap'||this.platform.config.id==='wechat')&&!this.privacyAccepted;}
  private get usesCreationTickets(){return this.client.config.capabilities.createTickets??(this.platform.config.id!=='web'&&!this.formalWeb);}
+ // Level still needed to open a table of this size (0 = open). The server sends the rule; 500 pieces need level 10 on TapTap.
+ private pieceLevel(n:number){const p=this.client.profile,need=(p as {pieceLevels?:Record<string,number>}|null)?.pieceLevels?.[n]??(!this.formalWeb&&n>=500?10:0);return (p?.level??0)<need?need:0;}
  private get pieceCounts(){return this.formalWeb?counts.filter(count=>(this.client.config.capabilities.supportedPieces??[108,300,500]).includes(count)):counts;}
  private webLink(key:WebPage){return this.platform.config.webLinks?.[key]??this.client.config.compatUrls?.[key]??({account:'/account',security:'/account/security',membership:'/membership',uploads:'/upload',terms:'/terms',privacy:'/privacy',feedback:'/feedback'}[key]);}
  private openWeb(key:WebPage){this.platform.openUrl?.(this.webLink(key));}
@@ -1426,7 +1428,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(sheet){s.button({x:r.x+r.w-46,y:r.y+10,w:34,h:34},'',()=>{this.selected=null;this.invalidate();});s.icon('close',{x:r.x+r.w-41,y:r.y+15,w:24,h:24},ink);}
   y+=thumb+12;
   const row=(label:string,draw:(rr:Rect)=>void)=>{if(sheet){const lw=56;s.text(label,x,y+8,13,this.colors.muted,700);draw({x:x+lw,y,w:w-lw,h:32});y+=40;}else{s.text(label,x,y,13,this.colors.muted,700);draw({x,y:y+20,w,h:34});y+=66;}};
-  row('片数',rr=>s.segments(rr,this.pieceCounts.map(n=>[n,String(n)] as const),this.pieces,n=>{this.pieces=n;this.invalidate();}));
+  row('片数',rr=>s.segments(rr,this.pieceCounts.map(n=>[n,this.pieceLevel(n)?n+'·'+this.pieceLevel(n)+'级':String(n)] as const),this.pieces,n=>{if(this.pieceLevel(n)){this.note(this.pieceLevel(n)+'级解锁'+n+'片房间，你现在 Lv.'+(this.client.profile?.level??0));return;}this.pieces=n;this.invalidate();},this.pieceCounts.filter(n=>this.pieceLevel(n))));
   row('谁能加入',rr=>s.segments(rr,[['public','公开'],['private','私人']] as const,this.visibility,v=>{this.visibility=v;this.invalidate();}));
   const tables=this.selected?this.rooms.filter(room=>room.imageId===this.selected&&room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed):[];
   if(tables.length){const label='这张图有 '+tables.length+' 桌公开房正在拼 · 去加入 ›';s.text(label,x,y,12,this.colors.berry,700,w);s.hit({x:x-4,y:y-6,w,h:26},()=>{const best=[...tables].sort((a,b)=>b.placed/Math.max(1,b.actualPieces??b.pieces)-a.placed/Math.max(1,a.actualPieces??a.pieces))[0];if(best)void this.enterRoom(best.id);});y+=26;}

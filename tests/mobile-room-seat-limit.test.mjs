@@ -13,7 +13,8 @@ function fixture(t){
  let now=start;const service=createMobileService({databasePath,now:()=>now,randomInt:min=>min}),db=new DatabaseSync(databasePath);
  t.after(()=>{db.close();service.close();assert.ok(dir.startsWith(root+sep));rmSync(dir,{recursive:true,force:true});});
  const call=(identity,method,url,body,authorization)=>service.handle({identity,method,url,...(body?{body}:{}),...(authorization?{authorization:'Bearer '+authorization}:{})});
- const create=(identity,pieces,mode='random')=>{const r=call(identity,'POST','/api/rooms',{mode,...(mode==='daily'?{}:{pieces}),visibility:'public',requestId:rid()});assert.equal(r.status,201,JSON.stringify(r.data));return r.data;};
+ // 500-piece tables open at level 10 on TapTap.
+ const create=(identity,pieces,mode='random')=>{if(mode!=='daily'&&pieces>=500){call(identity,'GET','/api/mobile/profile');db.prepare("UPDATE mobile_profiles SET data=json_set(data,'$.level',10) WHERE id=?").run(identity);}const r=call(identity,'POST','/api/rooms',{mode,...(mode==='daily'?{}:{pieces}),visibility:'public',requestId:rid()});assert.equal(r.status,201,JSON.stringify(r.data));return r.data;};
  const join=(identity,roomId)=>call(identity,'POST','/api/rooms/'+roomId+'/join',{});
  const lobby=query=>{const r=call(player(999),'GET','/api/lobby?limit=24'+(query?'&'+query:''));assert.equal(r.status,200,JSON.stringify(r.data));return r.data.rooms;};
  return {call,create,join,lobby,db,advance:ms=>{now+=ms;}};
