@@ -68,7 +68,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v40';
+const CLIENT_PACKAGE_VERSION='v41';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -486,6 +486,21 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   return chapter??null;
  }
  private get selectedChapter(){return this.selectChapter(this.storyView);}
+ /** Where a finished story level leads: the server receipt, else the chapter order (offline rooms, or a
+  * room whose receipt is missing, e.g. after the account changed during play). */
+ private levelDestination():MobileLevelClear|null{
+  const snap=this.room?.snapshot;if(!snap?.completedAt)return null;const clear=snap.mobileResult?.levelClear;if(clear)return clear;
+  const levelId=snap.levelId;if(!levelId)return null;
+  const chapters=this.offlineRoom?this.offline.view?.chapters??[]:this.availableChapters,ordered=chapters.flatMap(chapter=>chapter.levels.map(level=>level.id)),index=ordered.indexOf(levelId);if(index<0)return null;
+  return {levelId,energy:0,firstClear:false,nextLevelId:ordered[index+1]??null,chapterComplete:chapters.some(chapter=>chapter.levels.at(-1)?.id===levelId)};
+ }
+ private levelNextLabel(clear:MobileLevelClear){return clear.chapterComplete||clear.nextLevelId===null?clear.nextLevelId?'下一章':'去大厅':'下一关';}
+ private continueLevel(clear:MobileLevelClear){
+  const next=clear.nextLevelId,offline=this.offlineRoom;this.leaveRoom();
+  if(!next){this.navigate('lobby');return;}
+  // An offline room continues offline, like its own completion card.
+  if(offline)void this.run(()=>this.launchOffline({kind:'level',levelId:next}));else void this.launch({mode:'level',levelId:next});
+ }
  private chapterForLevel(levelId:string|null|undefined){return this.availableChapters.find(chapter=>chapter.levels.some(level=>level.id===levelId))??null;}
  private get comicChapter(){return this.chapterForLevel(this.comicPage?.levelId)??this.availableChapters.find(chapter=>chapter.id===this.comicPage?.chapterId)??null;}
  private levelPicture(level:MobileLevel){const photo=level.imageId?photoMap.get(level.imageId):undefined;return {src:photo?.src||level.src||photo?.thumbSrc||level.thumbSrc||'',thumbSrc:photo?.thumbSrc||level.thumbSrc||photo?.src||level.src||''};}
@@ -1768,7 +1783,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const banner=fx.banner(now);if(!banner)return;const label='拼好啦！',w=s.measure(label,15,800)+58,h=32,x=clamp(p.x+p.w/2-w/2,room.x+8,room.x+room.w-w-8),topSafe=this.layout==='phoneLandscape'?this.roomHeaderTop()+58:room.y+10,y=Math.min(p.y+p.h/2,Math.max(topSafe,p.y-42)),scale=banner.scale,r={x:x+w*(1-scale)/2,y:y+h*(1-scale)/2,w:w*scale,h:h*scale};c.save();c.globalAlpha=banner.alpha;s.frame(r,'button-gold-normal');s.text(label,r.x+29*scale,r.y+8*scale,15*scale,this.colors.ink,800);drawCheerIcon(c,'star',{x:r.x+7*scale,y:r.y+8*scale,w:16*scale,h:16*scale});drawCheerIcon(c,'star',{x:r.x+r.w-23*scale,y:r.y+8*scale,w:16*scale,h:16*scale});c.restore();
  }
  private drawSettleButton(){
-  this.settleButtonRect=null;if(!this.room?.snapshot.completedAt||this.completionFx||this.modal!==null||this.nineGridRoom||this.room.snapshot.levelId)return;const area=this.roomArea,safeBottom=this.stage.h-this.platform.viewport().bottom,x=area.x+(area.w-112)/2,y=safeBottom-(this.layout==='phoneLandscape'?12:14)-36;this.settleButtonRect={x,y,w:112,h:36};this.button(x,y,112,'查看结算',()=>this.openCompletionPopup(),'gold',36);
+  this.settleButtonRect=null;if(!this.room?.snapshot.completedAt||this.completionFx||this.modal!==null||this.nineGridRoom)return;
+  // A finished story level always shows the way on, also after its popup was closed.
+  const destination=this.room.snapshot.levelId?this.levelDestination():null,label=destination?this.levelNextLabel(destination):'查看结算';
+  const area=this.roomArea,safeBottom=this.stage.h-this.platform.viewport().bottom,x=area.x+(area.w-112)/2,y=safeBottom-(this.layout==='phoneLandscape'?12:14)-36;this.settleButtonRect={x,y,w:112,h:36};this.button(x,y,112,label,()=>{if(destination)this.continueLevel(destination);else this.openCompletionPopup();},'gold',36);
  }
  private roomZoomBase=1;
  private placeBoard(board:PuzzleBoard,topInset:number,fit:()=>void){
@@ -2161,7 +2179,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawCompletionContent(left:number,cy:number,width:number,landscape=false,panel?:Rect){
   if(this.offlineRoom)return this.offline.drawCompletion(this.stage,{...this.room!.ticket,room:this.room!.snapshot},left,cy,width,landscape,panel,{picture:r=>this.drawCompletionPicture(r),paragraph:(...args)=>this.paragraph(...args),launch:input=>void this.run(()=>this.launchOffline(input)),back:()=>this.exitRoom(),comic:{available:id=>this.hasLevelComic(id),open:id=>this.openLevelComic(id,{fromClear:true})}});
   const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
-  const seats=this.completionSeats(),levelClear=result?.levelClear as import('../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
+  const seats=this.completionSeats(),levelClear=(result?.levelClear??this.levelDestination()??undefined) as import('../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
   if(!landscape&&!this.completionOutsideSeats(left-20,width+40)){this.completionAvatarRects.clear();this.completionSlotRects.clear();}
   if(landscape&&panel){const side=Math.min(240,panel.h-134,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+40,w:side,h:side});left=panel.x+16+side+16;width=panel.x+panel.w-16-left;
    // Short screens only lift the column when album reward lines need the room.
@@ -2188,7 +2206,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
      if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,landscape?12:13,muted,600);cy+=levelLandscape?16:landscape?18:26;}
      for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,landscape?12:13,ink,700);cy+=landscape?18:24;}
     }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
-    cy+=landscape?2:6;const extra=this.completionFlow.action(this.completionContext()),primaryW=extra?(width-8)/2:width;if(extra){const size=Math.max(12,Math.min(16,16*(primaryW-12)/s.measure(extra.label,16,750)));s.button({x:left,y:cy,w:primaryW,h:landscape?40:46},extra.label,extra.action,{tone:extra.tone??'gold',fontSize:size});}s.button({x:extra?left+primaryW+8:left,y:cy,w:primaryW,h:landscape?40:46},levelClear?chapterComplete?levelClear.nextLevelId?'下一章':'去大厅':'下一关':'再来一桌',()=>{this.leaveRoom();if(levelClear){if(chapterComplete&&!levelClear.nextLevelId)this.navigate('lobby');else void this.launch({mode:'level',levelId:levelClear.nextLevelId!});}else this.navigate('gallery');},{tone:'berrydark',fontSize:16});cy+=landscape?46:56;
+    cy+=landscape?2:6;const extra=this.completionFlow.action(this.completionContext()),primaryW=extra?(width-8)/2:width;if(extra){const size=Math.max(12,Math.min(16,16*(primaryW-12)/s.measure(extra.label,16,750)));s.button({x:left,y:cy,w:primaryW,h:landscape?40:46},extra.label,extra.action,{tone:extra.tone??'gold',fontSize:size});}s.button({x:extra?left+primaryW+8:left,y:cy,w:primaryW,h:landscape?40:46},levelClear?this.levelNextLabel(levelClear):'再来一桌',()=>{if(levelClear)this.continueLevel(levelClear);else{this.leaveRoom();this.navigate('gallery');}},{tone:'berrydark',fontSize:16});cy+=landscape?46:56;
     const third=(width-16)/3,albumId=(snap?.puzzle?.imageId&&this.collection?.albums.find(item=>item.images.some(image=>image.id===snap.puzzle!.imageId))?.id)||'';
     s.button({x:left,y:cy,w:third,h:landscape?34:40},'分享成品',()=>void this.run(async()=>{const outcome=await this.shareFromGame({title:'我们拼好了「'+(snap?.title||snap?.photo?.title||'一幅画')+'」，来'+this.platform.config.gameName+'一起拼',inviteCode:this.tasks?.invitation.code});this.note(outcome==='copied'?'链接已复制，可以发给朋友':outcome==='shared'||outcome==='opened'?'已分享':outcome==='cancelled'?'本次分享已取消':'暂时无法分享');}),{fontSize:13});
     s.button({x:left+third+8,y:cy,w:third,h:landscape?34:40},'查看图集',()=>{this.leaveRoom();this.openCollection('albums');if(albumId)this.openAlbum(albumId);},{fontSize:13});
