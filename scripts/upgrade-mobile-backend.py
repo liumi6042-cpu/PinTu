@@ -228,10 +228,13 @@ def online_backups(shared, folder):
         ensure(not source.is_symlink() and shared in source.resolve().parents, 'Database path escapes shared storage')
         destination = folder / source.relative_to(shared)
         destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        # VACUUM INTO copies one consistent read snapshot; the page-by-page online backup restarts whenever the
+        # busy live database is written to and never finished on the 1.5 GB mobile-v3.sqlite (2026-10-30).
+        ensure(not destination.exists(), 'Backup destination exists: ' + str(destination))
         with closing(sqlite3.connect(source.as_uri() + '?mode=ro', uri=True, timeout=30)) as original:
-            with closing(sqlite3.connect(destination, timeout=30)) as backup:
-                original.backup(backup, pages=256, sleep=.1)
-                ensure(backup.execute('PRAGMA quick_check').fetchone() == ('ok',), 'SQLite backup verification failed')
+            original.execute('VACUUM INTO ?', (str(destination),))
+        with closing(sqlite3.connect(destination.as_uri() + '?mode=ro', uri=True, timeout=30)) as backup:
+            ensure(backup.execute('PRAGMA quick_check').fetchone() == ('ok',), 'SQLite backup verification failed')
         destination.chmod(0o600)
         records.append({'path': str(destination.relative_to(shared)), 'sha256': digest(destination), 'bytes': destination.stat().st_size})
     return records
@@ -340,12 +343,14 @@ def main():
             switch_current(BASE, target, args.release)
             switched = True
             run('systemctl', 'restart', SERVICE)
-            for attempt in range(40):
+            # Up to 60 s: a release that adds an index builds it at startup, which on the 1.5 GB live database
+            # took longer than the former 10 s (2026-10-30).
+            for attempt in range(240):
                 try:
                     ensure(json_get('http://127.0.0.1:3292/healthz').get('mode') == 'mobile-v3-isolated', 'Unexpected health mode')
                     break
                 except Exception:
-                    if attempt == 39:
+                    if attempt == 239:
                         raise
                     time.sleep(.25)
             config = json_get('http://127.0.0.1:3292/h5/config')
