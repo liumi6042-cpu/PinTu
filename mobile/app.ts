@@ -1674,7 +1674,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     s.frame(r,selected?.id===item.id?'panel-gold':'button-linen-normal');s.decoration(item,{x:x+10,y:cy+12,w:44,h:50});s.text(item.title,x+62,cy+14,14,ink,800,cw-70);
     let status=item.equipped?'使用中':item.owned?'已拥有':'',tone=item.equipped?'#a85567':'#879864';
     if(!status&&item.source==='craft'){s.icon('fragment',{x:x+62,y:cy+38,w:16,h:18});s.text(item.cost+' 碎片',x+82,cy+40,13,ink,700);}
-    else if(!status&&item.source==='gift')s.wrap('论坛/评论区反馈获得',x+62,cy+40,cw-70,12,'#8a5a5f',17);
+    else if(!status&&item.source==='gift')s.wrap('论坛/评论区\n反馈获得',x+62,cy+40,cw-70,12,'#8a5a5f',17);
     else if(!status){const album=data.albums.find(a=>a.id===item.albumId);status='集齐「'+(album?.title??'图集')+'」获得';tone='#8a5a5f';if(album){s.meter({x:x+62,y:cy+64,w:cw-74,h:7},album.collected/Math.max(1,album.total));s.text(album.collected+'/'+album.total,x+62,cy+76,12,this.colors.muted,700);}}
     if(status)s.text(status,x+62,cy+40,13,tone,700,cw-70);
     s.hit(r,()=>{this.decorationId=item.id;this.scroll=0;this.invalidate();});});
