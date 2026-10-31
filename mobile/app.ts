@@ -634,7 +634,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const label=cell.label,fs=Math.min(11,11*(r.w-6)/Math.max(1,s.measure(label,11,700)));s.text(label,r.x+(r.w-s.measure(label,fs,700))/2,r.y+r.h-(cell.extra?34:19),fs,this.colors.ink,700,r.w-4);
    if(cell.extra)s.text(cell.extra,r.x+(r.w-s.measure(cell.extra,10,600))/2,r.y+r.h-18,10,this.colors.muted,600,r.w-4);
    c.restore();
-   if(claimed){s.icon('check',{x:r.x+r.w-21,y:r.y+5,w:16,h:16},this.colors.rose);const stamp='已领';s.text(stamp,r.x+(r.w-s.measure(stamp,11,800))/2,r.y+24+size/2-6,11,this.colors.rose,800);}
+   if(claimed){const stamp='已领';s.text(stamp,r.x+(r.w-s.measure(stamp,11,800))/2,r.y+24+size/2-6,11,this.colors.rose,800);}
   });
   if(!view)centered('正在读取七日礼…',y+76+cellH/2,13,this.colors.muted);
   const by=y+76+rows*cellH+(rows-1)*gap+18,granted=this.weeklyGrant;
@@ -654,11 +654,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   return completionFooter({tomorrowDay:gift?.tomorrowDay,now:Date.now()});
  }
  /** Story clears show chapter progress, the next album reward and a teaser of the next level. */
- private storyCompletionLines(levelId:string|undefined,chapters:readonly {albumId?:string;levels:readonly {id:string;status:string;intro?:string|null;line?:string|null}[]}[],maxChars:number):{progress:string;reward:string|null;teaser:string|null}|null{
+ private storyCompletionLines(levelId:string|undefined,chapters:readonly {albumId?:string;milestones?:readonly {target:number;coins?:number;earned?:boolean}[];levels:readonly {id:string;status:string;intro?:string|null;line?:string|null}[]}[],maxChars:number):{progress:string;reward:string|null;teaser:string|null}|null{
   if(!levelId)return null;const index=chapters.findIndex(chapter=>chapter.levels.some(level=>level.id===levelId));if(index<0)return null;
   const chapter=chapters[index],levels=chapter.levels,at=levels.findIndex(level=>level.id===levelId),cleared=levels.filter(level=>level.status==='cleared'||level.id===levelId).length;
   const album=this.collection?.albums.find(item=>item.id===chapter.albumId),numbers=['一','二','三','四','五','六','七','八','九','十'];
-  const {progress,reward}=chapterProgress({chapterTitle:'第'+(numbers[index]??String(index+1))+'章',cleared,total:levels.length,milestones:album?.milestones??[]});
+  const {progress,reward}=chapterProgress({chapterTitle:'第'+(numbers[index]??String(index+1))+'章',cleared,total:levels.length,milestones:album?.milestones??chapter.milestones??[]});
   const next=levels[at+1]??chapters[index+1]?.levels[0],text=next?.intro||next?.line||null,teaser=teaserLine(text,Math.max(6,maxChars-4));
   return {progress,reward,teaser:teaser?'下一关：'+teaser:null};
  }
@@ -1440,8 +1440,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(hasImage){const art={x:r.x+8,y:r.y+8,w:r.w-16,h:imageH};if(photo)s.image(this.client.asset(photo.src||photo.thumbSrc),art,'cover');else{s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(art.x,art.y,art.w,art.h);}s.hit(art,()=>{if(!busy)this.launchDaily();});}
   // 每日拼图连续天数: a gold tag on the picture (or in the label row when the card has no picture).
   const streak=this.dailyStreak,badge=streak?streakBadge(streak.count):'',hint=badge&&!compact?streakHint(streak):null;
-  if(badge&&hasImage){const bx=r.x+14,by=r.y+14,bw=s.measure(badge,12,800)+22;s.frame({x:bx,y:by,w:bw,h:26},'panel-gold');s.text(badge,bx+11,by+7,12,ink,800,bw-14);
-   if(hint&&imageH>=64){const hw=s.measure(hint,11,600)+18;s.frame({x:bx,y:by+30,w:hw,h:24},'button-cream-normal');s.text(hint,bx+9,by+36,11,this.colors.muted,600,hw-12);}}
+  // Top-right corner: the one-time settings tip points at the avatar on the left.
+  if(badge&&hasImage){const bw=s.measure(badge,12,800)+22,bx=r.x+r.w-14-bw,by=r.y+14;s.frame({x:bx,y:by,w:bw,h:26},'panel-gold');s.text(badge,bx+11,by+7,12,ink,800,bw-14);
+   if(hint&&imageH>=64){const hw=s.measure(hint,11,600)+18,hx=r.x+r.w-14-hw;s.frame({x:hx,y:by+30,w:hw,h:24},'button-cream-normal');s.text(hint,hx+9,by+36,11,this.colors.muted,600,hw-12);}}
   let y=r.y+(hasImage?imageH+8:0)+(compact?8:10);const x=r.x+14,w=r.w-28,left=this.dailyLeft,leftW=s.measure(left,11,600);
   const finished=this.dailyFinished?' · 今天已有 '+this.dailyFinished+' 人拼完':'';s.text(this.dailyLabel+(badge&&!hasImage?' · '+badge:'')+finished,x,y,11,this.colors.muted,700,w-leftW-10);s.text(left,x+w-leftW,y,11,this.colors.muted,600);y+=compact?16:18;
   const title=photo?.title??'正在读取今日拼图…',size=compact?15:22;s.text(title,x,y,size,ink,800,w);y+=size+(compact?6:8);

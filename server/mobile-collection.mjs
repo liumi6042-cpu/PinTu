@@ -66,6 +66,12 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const additions=overlay(now);
   return document.albums.map(album=>({...album,imageIds:[...new Set([...album.imageIds,...additions.filter(entry=>entry.album.id===album.id).flatMap(entry=>entry.imageIds).filter(imageId=>!assigned.has(imageId))])].filter(imageId=>!planned.has(imageId)||released.has(imageId))}));
  }
+ /** Coin milestones of one managed album for the story page, hidden chapter albums included. */
+ function albumMilestones(owner,albumId,now=Date.now()){
+  const album=managedAlbums(now)?.find(item=>item.id===albumId);if(!album)return [];
+  const issued=new Set(db.prepare('SELECT milestone_id FROM mobile_collection_milestone_rewards WHERE owner=? AND album_id=?').all(owner,albumId).map(row=>row.milestone_id));
+  return (album.milestones??[]).map(m=>({target:m.target,coins:m.coins??0,earned:issued.has(m.id)}));
+ }
  function albumImages(albumId,now=Date.now()){
   const managed=managedAlbums(now),album=managed?managed.find(album=>album.id===albumId):packById.get(albumId);
   return album?{imageIds:[...album.imageIds],coverImageId:album.coverImageId??null}:null;
@@ -221,6 +227,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,equipped,awardTaskCoins,awardCoins,playerStats,grantDecoration};
+ return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,equipped,awardTaskCoins,awardCoins,playerStats,grantDecoration};
 }
 

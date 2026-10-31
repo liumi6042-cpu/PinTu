@@ -292,3 +292,12 @@ for(const [chapterIndex,nextLevelId]of [[1,'ch3-1'],[3,null]])test('finishing ch
  assert.deepEqual(JSON.parse(f.db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(owner).data).lastReward.levelClear,expected);
  assert.deepEqual(ok(path,undefined,ticket.token).mobileResult.levelClear,expected);assert.equal(f.view().current?.id??null,nextLevelId);
 });
+
+test('chapters carry their album coin milestones, hidden chapter albums included, with earned flags',t=>{
+ const milestones=[{id:'milestone-3',target:3,coins:30,decorationId:null},{id:'milestone-6',target:6,coins:60,decorationId:null}];
+ const f=fixture(t,{config:readLevelConfiguration(),albumContent:{read:()=>({albums:[{id:'shiguang-ch1',imageIds:catalog.packs[0].imageIds,showOnMobile:false,milestones}]})}});
+ assert.deepEqual(f.view().chapters[0].milestones,[{target:3,coins:30,earned:false},{target:6,coins:60,earned:false}]);
+ f.db.prepare('INSERT INTO mobile_collection_milestone_rewards VALUES(?,?,?,?,?)').run(owner,'shiguang-ch1','milestone-3','{}',now);
+ assert.deepEqual(f.view().chapters[0].milestones.map(m=>m.earned),[true,false]);
+ assert.deepEqual(f.view().chapters[1].milestones,[]);
+});

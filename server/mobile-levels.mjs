@@ -72,7 +72,7 @@ export function createMobileLevels({db,photos,collection,configuration}){
     for(const key of ['timeLabel','intro','comic','comicPage'])if(story&&Object.hasOwn(story,key))level[key]=key==='comic'||key==='comicPage'?structuredClone(story[key]):story[key];
     for(const key of ['src','thumbSrc'])if(typeof photo?.[key]==='string')level[key]=photo[key];
     if(status==='unlocked'&&current===null)current=level;return level;
-   });return {id:chapter.id,title:chapter.title,albumId:chapter.albumId,coverImageId:cover?.id??null,coverSrc:cover?.thumbSrc??null,status:available?'available':'unavailable',levels};
+   });return {id:chapter.id,title:chapter.title,albumId:chapter.albumId,coverImageId:cover?.id??null,coverSrc:cover?.thumbSrc??null,status:available?'available':'unavailable',levels,milestones:collection.albumMilestones?.(owner,chapter.albumId,now)??[]};
   });return {chapters,current,firstClearEnergy:config.firstClearEnergy,seriesTitle:config.seriesTitle??null};
  }
  return {progress,recordClear,destination,view};
