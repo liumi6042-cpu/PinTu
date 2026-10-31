@@ -7,6 +7,7 @@ import type { Platform,Input,Point,Rect } from './ports';
 import {boardThemeColors,landscapeRoomColors,type ThemeId} from './theme';
 import {roomRoundPath} from './room-chrome';
 import {gestureFrameSample,type GestureFrame} from '../lib/puzzle-gesture-cache';
+import {MergeHolderLog,detectTeamMerges} from '../lib/team-merge';
 
 type Command={op:'M'|'L'|'C'|'Z';args:number[]};
 type Owner=RoomPieceOwner;
@@ -25,6 +26,9 @@ const CANVAS_SNAP_FEEDBACK_MS=720;
 /** The locate glow pulses four times, then fades out. */
 const LOCATE_MS=3600,LOCATE_PULSE_MS=900;
 type SnapFlash={anchor:number;ids:number[];local:boolean;startedAt:number;until:number;reduced:boolean;xp?:number};
+/** 默契拼合: hearts and sparkles in both players' colours at the seam two players just joined. */
+type TeamBurst={a:number;b:number;colors:[string,string];names:string;startedAt:number;until:number;reduced:boolean};
+const TEAM_BURST_MS=1500,TEAM_REDUCED_MS=600,SELF_HOLDER='\u0000self';
 type ImagePreparation=Readonly<{phase:'loading'|'preparing'|'ready';completed:number;total:number}>;
 type DragSurface={canvas:HTMLCanvasElement;key:string};
 type GestureSurface=GestureFrame&{canvas:HTMLCanvasElement;key:string;sx:number;sy:number};
@@ -124,6 +128,9 @@ export class PuzzleBoard implements RoomTable {
  private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private hintGrant:string|number|null=null;private underlayUntil=0;
  private flashes:SnapFlash[]=[];private locateStartedAt=0;private locateUntil=0;private frame=0;private destroyed=false;private feedbackHidden=false;
  private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();
+ private mergeLog=new MergeHolderLog();private teamBursts:TeamBurst[]=[];
+ /** The local player's name and room colour for 默契拼合; chimeUrl plays once per burst. */
+ selfPlayer:{name:string;color:string}|null=null;chimeUrl='';
  private removeHide:()=>void;private removeShow:()=>void;private timer:ReturnType<typeof setTimeout>|null=null;private strandedTimer:ReturnType<typeof setTimeout>|null=null;private strandedTries=new Map<number,number>();
  private invalidate:()=>void;
  private currentTheme:ThemeId='light';
@@ -144,7 +151,7 @@ export class PuzzleBoard implements RoomTable {
   this.preparation={phase:'loading',completed:0,total:this.pieces.length};
   this.picture=platform.createCanvas();const hit=platform.createCanvas();hit.width=1;hit.height=1;const context=hit.getContext('2d');if(!context)throw Error('当前设备的拼图画布暂不可用');this.hit=context;
   if(typeof this.hit.isPointInPath!=='function')this.polygons=this.paths.map(flattenPath);
-  this.removeHide=platform.onHide(()=>{this.feedbackHidden=true;this.flashes=[];this.locateUntil=0;if(this.frame)this.platform.cancelFrame(this.frame);this.frame=0;this.frameAt=null;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.changed();});
+  this.removeHide=platform.onHide(()=>{this.feedbackHidden=true;this.flashes=[];this.teamBursts=[];this.locateUntil=0;if(this.frame)this.platform.cancelFrame(this.frame);this.frame=0;this.frameAt=null;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.changed();});
   this.removeShow=platform.onShow?.(()=>{this.feedbackHidden=false;this.frameAt=null;this.changed();this.animateFeedback();})??(()=>{});
  }
  get theme(){return this.currentTheme;}
@@ -326,7 +333,7 @@ export class PuzzleBoard implements RoomTable {
    if(group&&this.ready&&this.network&&this.networkReady){
     if(this.owners[group.id]){this.tell(`${this.owners[group.id].name} 正在移动这组拼块`);return true;}
     if(this.network.canAcquire?.(group.id)===false){this.tell('这组拼块还在确认位置，请稍候');return true;}
-    const serial=++this.serial;this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live:false};raiseGroup(this.state,group.id);
+    const serial=++this.serial;this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live:false};raiseGroup(this.state,group.id);this.mergeLog.hold(group.id,{player:SELF_HOLDER,name:this.selfPlayer?.name??'我',color:this.selfPlayer?.color??'#f08aa6'});
     void this.network.acquire(group.id).then(ok=>{if(!ok&&this.drag?.serial===serial){this.cancelNetworkDrag(group.id);this.tell('这组拼块没能确认，已恢复服务器位置');}}).catch(()=>{if(this.drag?.serial===serial)this.cancelNetworkDrag(group.id);});
    }else if(locked)this.lockedTouch={id:p.id,x:p.x,y:p.y};
    else{const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}
@@ -364,9 +371,9 @@ export class PuzzleBoard implements RoomTable {
  /** Ends the held group. A moved group is dropped where it lies: when the WebView cancels the touch
   * instead of reporting the lift (or a modal, resize or pinch ends it), the piece must not stay drawn
   * on its spot while the room never hears of it. An unmoved group is only released. */
- private endDrag(){const drag=this.drag;if(!drag)return;this.drag=null;++this.serial;const group=this.state.groups.find(g=>g.id===drag.id);if(drag.live&&group&&!this.destroyed)this.commitDrop(group,drag);else{this.network?.release(drag.id);this.queueStrandedCheck();}}
+ private endDrag(){const drag=this.drag;if(!drag)return;this.drag=null;++this.serial;this.mergeLog.release(drag.id,Date.now());const group=this.state.groups.find(g=>g.id===drag.id);if(drag.live&&group&&!this.destroyed)this.commitDrop(group,drag);else{this.network?.release(drag.id);this.queueStrandedCheck();}}
  private commitDrop(group:Group,drag:{serial:number;live:boolean}){
-  const network=this.network;if(!network)return;if(drag.live)this.assistDrop(group);this.pendingDrops.set(group.id,drag.serial);
+  const network=this.network;if(!network)return;this.mergeLog.release(group.id,Date.now());if(drag.live)this.assistDrop(group);this.pendingDrops.set(group.id,drag.serial);
   void network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial)this.pendingDrops.delete(group.id);this.queueStrandedCheck();});
  }
  /** A loose group left within snap reach of its spot looks placed but never counts (its drop was lost
@@ -387,14 +394,23 @@ export class PuzzleBoard implements RoomTable {
   }
  }
  private cancelInput(release:boolean){if(release)this.endDrag();this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.lockedTouch=null;this.previewTouch=null;this.trayTouch=null;this.pointers.clear();this.publishCursor(null);++this.serial;this.changed();}
- cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
+ cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;if(this.drag)this.mergeLog.release(this.drag.id,Date.now());this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
  syncRemote(next:PuzzleState,owners:Record<string,Owner>,protectedIds:ReadonlySet<number>,showFeedback=true){
   const before=cloneGroups(this.state.groups),previous=new Map(this.state.groups.map(g=>[g.id,g]));
   this.state.groups=next.groups.map(incoming=>{const old=previous.get(incoming.id),group={...incoming,pieces:[...incoming.pieces]};if(old&&!group.locked&&protectedIds.has(group.id)){group.dx=old.dx;group.dy=old.dy;}return group;});
   for(const id of protectedIds)raiseGroup(this.state,id);this.state.elapsed=next.elapsed;this.owners=owners;
   this.pruneHints();
   if(showFeedback&&!this.feedbackHidden){const localIds=new Set([...protectedIds,...this.pendingDrops.keys()]);for(const glow of newMobileConnections(before,this.state,localIds))this.addFlash(glow);}
+  // Judge a merge by who held its parts before this snapshot, then take the snapshot's holds.
+  const now=Date.now(),merges=detectTeamMerges(before,this.state,this.mergeLog.holders,now);this.mergeLog.syncRemote(owners,now,SELF_HOLDER);
+  if(merges.length&&showFeedback&&!this.feedbackHidden)this.addTeamBursts(merges.map(m=>({a:m.a,b:m.b,colors:[m.holders[0].color,m.holders[1].color],names:`${m.holders[0].name} × ${m.holders[1].name}`})),now);
   this.changed();this.animateFeedback();
+ }
+ private addTeamBursts(merges:{a:number;b:number;colors:[string,string];names:string}[],now:number){
+  const reduced=typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  this.teamBursts=this.teamBursts.filter(burst=>burst.until>now);
+  for(const merge of merges){while(this.teamBursts.length>=2)this.teamBursts.shift();this.teamBursts.push({...merge,startedAt:now,until:now+(reduced?TEAM_REDUCED_MS:TEAM_BURST_MS),reduced});}
+  if(this.chimeUrl)try{this.platform.playSound?.(this.chimeUrl);}catch{}
  }
  private addFlash(glow:MobileConnectionGlow){
   const now=Date.now(),reduced=typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -606,13 +622,13 @@ export class PuzzleBoard implements RoomTable {
  private animateFeedback(){
   const moving=[...this.cursors.values()].some(c=>Math.hypot(c.x-c.value.x,c.y-c.value.y)>.08);
   if(this.frame||this.destroyed||this.feedbackHidden)return;
-  if(!this.flashes.length&&!moving&&this.locateUntil<=Date.now()&&!(this.hintIds.length&&this.hintUntil>Date.now())){this.frameAt=null;return;}
+  if(!this.flashes.length&&!this.teamBursts.length&&!moving&&this.locateUntil<=Date.now()&&!(this.hintIds.length&&this.hintUntil>Date.now())){this.frameAt=null;return;}
   const queuedAt=Date.now();
   this.frame=this.platform.frame(timestamp=>{
    this.frame=0;if(this.destroyed||this.feedbackHidden)return;
    // Interpolate only toward the newest authoritative point. Elapsed frame
    // time controls the curve; hidden time never becomes movement or prediction.
-   const now=Date.now(),hasTimestamp=Number.isFinite(timestamp),tick=hasTimestamp?timestamp:now,elapsed=this.frameAt===null?now-queuedAt:tick-this.frameAt,dt=Math.max(0,elapsed)||(!hasTimestamp?16:0),amount=1-Math.exp(-dt/CURSOR_SMOOTHING_MS);this.frameAt=tick;this.flashes=this.flashes.filter(f=>f.until>now);
+   const now=Date.now(),hasTimestamp=Number.isFinite(timestamp),tick=hasTimestamp?timestamp:now,elapsed=this.frameAt===null?now-queuedAt:tick-this.frameAt,dt=Math.max(0,elapsed)||(!hasTimestamp?16:0),amount=1-Math.exp(-dt/CURSOR_SMOOTHING_MS);this.frameAt=tick;this.flashes=this.flashes.filter(f=>f.until>now);if(this.teamBursts.length&&this.teamBursts[0].until<=now)this.teamBursts=this.teamBursts.filter(f=>f.until>now);
    for(const c of this.cursors.values()){c.x+=(c.value.x-c.x)*amount;c.y+=(c.value.y-c.y)*amount;if(Math.hypot(c.x-c.value.x,c.y-c.value.y)<=.08){c.x=c.value.x;c.y=c.value.y;}}
    this.changed();this.animateFeedback();
   });
@@ -743,7 +759,7 @@ export class PuzzleBoard implements RoomTable {
     }
     ctx.restore();
    }
-   if(paint!=='pieces'&&owner&&group.pieces.length){const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;ctx.save();ctx.translate(x,y-7/cam.z);ctx.scale(1/cam.z,1/cam.z);ctx.font='11px sans-serif';const name=`${owner.name}${owner.level!==undefined?' Lv.'+owner.level:''}`,width=Math.min(190,ctx.measureText(name).width+12);
+   if(paint!=='pieces'&&owner&&group.pieces.length&&!this.cursorShown(owner)){const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;ctx.save();ctx.translate(x,y-7/cam.z);ctx.scale(1/cam.z,1/cam.z);ctx.font='11px sans-serif';const name=`${owner.name}${owner.level!==undefined?' Lv.'+owner.level:''}`,width=Math.min(190,ctx.measureText(name).width+12);
     if(this.phoneLandscapeRoom){this.drawPlayerArrow(ctx,owner.color);roomRoundPath(ctx,{x:19,y:-15,w:width,h:20},8);ctx.fillStyle=owner.color;ctx.fill();ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.fillText(name,25,-11,width-12);}
     else{ctx.fillStyle=colors.label;ctx.fillRect(0,-15,width,19);ctx.fillStyle=colors.labelInk;ctx.textBaseline='top';ctx.fillText(name,5,-12,width-10);}ctx.restore();}
   }}
@@ -811,6 +827,40 @@ export class PuzzleBoard implements RoomTable {
  }
  private releasePlacedSurface(){const placed=this.placedSurface;this.placedSurface=null;if(placed){placed.canvas.width=placed.canvas.height=1;if(placed.scratch)placed.scratch.width=placed.scratch.height=1;}}
  private releaseDragSurface(){this.dragSurface=null;}
+ /** While a player holds a group, their shared cursor carries the one name and pointer;
+  * the group keeps only its coloured outline. Without an on-screen cursor the group is labelled. */
+ private cursorShown(owner:Owner){
+  const cursor=owner.playerId?this.cursors.get(owner.playerId):undefined;if(!cursor)return false;
+  const p=this.worldToScreen(cursor),r=this.rect;return p.x>=r.x&&p.y>=r.y&&p.x<=r.x+r.w&&p.y<=r.y+r.h;
+ }
+ private drawTeamBursts(ctx:CanvasRenderingContext2D,now:number){
+  if(!this.teamBursts.length||this.completionReveal>0)return;
+  const {board:b,camera:cam}=this,w=b.width/this.state.cols,h=b.height/this.state.rows,dark=this.currentTheme==='dark';
+  for(const burst of this.teamBursts){
+   if(burst.until<=now)continue;const group=this.state.groups.find(g=>g.pieces.includes(burst.a)),pa=this.pieces[burst.a],pb=this.pieces[burst.b];if(!group||!pa||!pb)continue;
+   const t=Math.max(0,Math.min(1,(now-burst.startedAt)/(burst.until-burst.startedAt))),ease=1-(1-t)**3,radius=14+(burst.reduced?0:16*ease);
+   ctx.save();ctx.translate(b.x+((pa.col+pb.col)/2+.5)*w+group.dx,b.y+((pa.row+pb.row)/2+.5)*h+group.dy);ctx.scale(1/cam.z,1/cam.z);
+   // A soft two-colour halo on the seam; reduced motion keeps only this, briefly.
+   ctx.globalAlpha=burst.reduced?.7*(1-t):Math.min(1,t/.08)*(1-t)*.8;ctx.lineWidth=4;
+   ctx.strokeStyle=burst.colors[0];ctx.beginPath();ctx.arc(0,0,radius,Math.PI*.5,Math.PI*1.5);ctx.stroke();
+   ctx.strokeStyle=burst.colors[1];ctx.beginPath();ctx.arc(0,0,radius,-Math.PI*.5,Math.PI*.5);ctx.stroke();
+   if(!burst.reduced){
+    // Twelve fixed particles: hearts and diamond sparkles alternate, two of each colour in turn.
+    ctx.globalAlpha=t<.1?t/.1:t>.65?(1-t)/.35:1;
+    for(let i=0;i<12;i++){
+     const angle=i*Math.PI/6+.26,reach=18+(i%3)*9+34*ease,x=Math.cos(angle)*reach,y=Math.sin(angle)*reach-22*t,size=(i%2?3.2:6.2)*(1-.35*t);
+     ctx.fillStyle=burst.colors[i%4<2?0:1];ctx.beginPath();
+     if(i%2){ctx.moveTo(x,y-size);ctx.lineTo(x+size*.6,y);ctx.lineTo(x,y+size);ctx.lineTo(x-size*.6,y);ctx.closePath();}
+     else{ctx.moveTo(x,y+size*.9);ctx.bezierCurveTo(x-size*1.4,y-size*.1,x-size*.6,y-size*1.2,x,y-size*.35);ctx.bezierCurveTo(x+size*.6,y-size*1.2,x+size*1.4,y-size*.1,x,y+size*.9);}
+     ctx.fill();
+    }
+    const rise=-40-14*ease;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.lineJoin='round';
+    ctx.font='800 17px sans-serif';ctx.lineWidth=4;ctx.strokeStyle=dark?'#2b271d':'#fff7ef';ctx.fillStyle=dark?'#ffd3de':'#d2547a';ctx.strokeText('默契拼合！',0,rise);ctx.fillText('默契拼合！',0,rise);
+    ctx.font='700 11px sans-serif';ctx.lineWidth=3;ctx.fillStyle=dark?'#f4e6d4':'#6b4a3a';ctx.strokeText(burst.names,0,rise+15,180);ctx.fillText(burst.names,0,rise+15,180);
+   }
+   ctx.restore();
+  }
+ }
  private drawPlayerArrow(ctx:CanvasRenderingContext2D,color:string){
   ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
  }
@@ -869,7 +919,7 @@ export class PuzzleBoard implements RoomTable {
   const {rect:r,camera:cam}=this,width=ctx.canvas?.width??0,height=ctx.canvas?.height??0;
   if(!Number.isFinite(width*height)||width<1||height<1||width*height*4>DRAG_SURFACE_BYTES){this.releaseSurfaceBuffer();return null;}
   const paint={imageSmoothingEnabled:ctx.imageSmoothingEnabled,imageSmoothingQuality:ctx.imageSmoothingQuality,lineCap:ctx.lineCap,lineJoin:ctx.lineJoin,miterLimit:ctx.miterLimit,lineDashOffset:ctx.lineDashOffset,textAlign:ctx.textAlign,textBaseline:ctx.textBaseline,direction:ctx.direction,fontKerning:ctx.fontKerning,fontStretch:ctx.fontStretch,fontVariantCaps:ctx.fontVariantCaps,letterSpacing:ctx.letterSpacing,wordSpacing:ctx.wordSpacing,textRendering:ctx.textRendering},dash=ctx.getLineDash?.()??[];
-  const activeHints=this.hintUntil>now?this.hintIds:[],key=JSON.stringify([this.imageSerial,r,cam,width,height,transform.a,transform.d,transform.e,transform.f,this.currentTheme,this.edges,this.underlay,this.focusedPiece,activeHints,paint,dash,groups.map(g=>[g.id,g.locked,g.pieces,...(g.id===drag.id?[]:[g.dx,g.dy])]),this.owners]);
+  const activeHints=this.hintUntil>now?this.hintIds:[],key=JSON.stringify([this.imageSerial,r,cam,width,height,transform.a,transform.d,transform.e,transform.f,this.currentTheme,this.edges,this.underlay,this.focusedPiece,activeHints,paint,dash,groups.map(g=>[g.id,g.locked,g.pieces,...(g.id===drag.id?[]:[g.dx,g.dy])]),this.owners,Object.keys(this.owners).filter(id=>this.cursorShown(this.owners[id]))]);
   if(this.dragSurface?.key===key)return this.dragSurface;
   let surface=this.dragSurface;
   try{
@@ -904,8 +954,8 @@ export class PuzzleBoard implements RoomTable {
   if(this.ready&&this.completionReveal>0){const b=this.board;ctx.save();ctx.globalAlpha=this.completionReveal;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(this.picture,b.x,b.y,b.width,b.height);ctx.restore();
    if(this.completionSweep!==null){const slant=Math.tan(Math.PI/9),band=b.width*.35,travel=b.width+band+b.height*slant,x=b.x-band-b.height*slant+travel*this.completionSweep;ctx.save();ctx.beginPath();ctx.rect(b.x,b.y,b.width,b.height);ctx.clip();ctx.globalCompositeOperation='source-over';ctx.transform(1,0,slant,1,x,b.y);const light=ctx.createLinearGradient(0,0,band,0);light.addColorStop(0,'#fff8e000');light.addColorStop(.5,'rgba(255,248,224,.55)');light.addColorStop(1,'#fff8e000');ctx.fillStyle=light;ctx.fillRect(0,0,band,b.height);const core=b.width*.08,coreX=(band-core)/2,bright=ctx.createLinearGradient(coreX,0,coreX+core,0);bright.addColorStop(0,'#fffdf400');bright.addColorStop(.5,'rgba(255,253,244,.8)');bright.addColorStop(1,'#fffdf400');ctx.fillStyle=bright;ctx.fillRect(coreX,0,core,b.height);ctx.restore();}
   }
-  for(const locked of [true,false])for(const group of this.state.groups){const owner=this.owners[group.id];if(group.locked!==locked||!owner?.decoration||!group.pieces.length||!visibleGroup(group,this.pieces,this.edges))continue;const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;decorations.push({value:owner.decoration,rect:{x:r.x+cam.x+x*cam.z-27,y:r.y+cam.y+y*cam.z-25,w:24,h:24}});}
-  this.drawSnapFeedback(ctx,now);this.drawLocateGlow(ctx,now);
+  for(const locked of [true,false])for(const group of this.state.groups){const owner=this.owners[group.id];if(group.locked!==locked||!owner?.decoration||!group.pieces.length||!visibleGroup(group,this.pieces,this.edges)||this.cursorShown(owner))continue;const p=this.pieces[group.pieces[0]],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;decorations.push({value:owner.decoration,rect:{x:r.x+cam.x+x*cam.z-27,y:r.y+cam.y+y*cam.z-25,w:24,h:24}});}
+  this.drawSnapFeedback(ctx,now);this.drawTeamBursts(ctx,now);this.drawLocateGlow(ctx,now);
   this.drawHintFeedback(ctx,now);
   ctx.restore();
   this.previewThumb=null;
@@ -920,5 +970,5 @@ export class PuzzleBoard implements RoomTable {
   if(this.tray)this.drawTray(ctx);
   if(this.previewLarge&&this.ready)this.drawPreviewZoom(ctx);
  }
- destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;if(this.minimapTimer)clearTimeout(this.minimapTimer);this.minimapTimer=null;if(this.minimapCache)this.minimapCache.canvas.width=this.minimapCache.canvas.height=1;this.minimapCache=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
+ destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;if(this.minimapTimer)clearTimeout(this.minimapTimer);this.minimapTimer=null;if(this.minimapCache)this.minimapCache.canvas.width=this.minimapCache.canvas.height=1;this.minimapCache=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.teamBursts=[];this.mergeLog.clear();this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
 }

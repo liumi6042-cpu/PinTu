@@ -54,6 +54,8 @@ const counts=[48,108,300,500] as const;
 const contentMaxWidth=1120;
 const settingsTipKey='jigsaw:settings-tip:v1';
 const phrases=publicPhrases;
+/** Phrases from this id on are newer than some live servers; show them only once the server lists them. */
+const NEWER_PHRASE_ID=16;
 type PublicMessage={id:number;name:string;text:string;playerId:string;code:string;level?:number;sentAt?:number};
 type SharedPhoto={id:string;title:string;src:string;thumbSrc:string;category:string;width?:number;height?:number};
 type WebPage=Exclude<keyof WebLinks,'legacyLobby'|'legacyRoom'|'largePuzzles'>;
@@ -68,7 +70,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v49';
+const CLIENT_PACKAGE_VERSION='v50';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -136,7 +138,9 @@ export class GameApp{
  private roomArea:Rect={x:0,y:0,w:0,h:0};private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';
  private aid:{grants:AssistanceGrant[];freeRemaining?:{hint:number;underlay:number};newcomerProtected?:boolean;serverTime:number}|null=null;
  private messages:PublicMessage[]=[];private chatCursor=0;private chatSeen=0;private chatLoading=false;private chatDraft='';
- private phraseGroup:0|1|2=0;
+ private phraseGroup:0|1|2|3=0;
+ /** The phrase list from the latest chat response; the server rejects any other text. */
+ private serverPhrases:ReadonlySet<string>=new Set();
  private chatHits:Array<{r:Rect;message:PublicMessage}>=[];private chatPress:{x:number;y:number;timer:ReturnType<typeof setTimeout>}|null=null;
  private chatEntryArea:Rect={x:0,y:0,w:0,h:0};private chatWindowArea:Rect={x:0,y:0,w:0,h:0};
  private readonly social:SocialPanel;
@@ -590,7 +594,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(name==='mobile:gameplay-error')this.note((detail as {message?:string})?.message||'操作暂未完成');
    if(name==='mobile:energy-empty'){if(this.energyEnabled){this.note('体力不足，请使用礼包或补给');this.navigate('supplies');}else this.note('当前游戏规则需要重新连接，请返回大厅后再进入房间');}
   }});this.room=room;this.setCompletionPhase('idle');this.completionLive=!room.snapshot.completedAt;
-  const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
+  const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
   if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
   this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>this.receiveCheer(room,cheer,own)}):null;
   this.cheer?.setActive(this.modal==='completion');
@@ -719,6 +723,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(!this.room||this.chatLoading)return;this.chatLoading=true;
   try{const room=this.room,data=await this.client.json<any>('/api/rooms/'+room.ticket.room.id+'/chat?after='+this.chatCursor,'GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(room!==this.room||this.destroyed)return;
    let changed=false;const incoming:PublicMessage[]=data.messages??[];
+   if(Array.isArray(data.phrases)){const next=new Set<string>(data.phrases.filter((text:unknown)=>typeof text==='string'));if(next.size!==this.serverPhrases.size||[...next].some(text=>!this.serverPhrases.has(text))){this.serverPhrases=next;changed=true;}}
    if(incoming.length){const map=new Map(this.messages.map(item=>[item.id,item]));for(const item of incoming)map.set(item.id,item);const next=[...map.values()].slice(-60);if(messageListKey(next)!==messageListKey(this.messages)){this.messages=next;changed=true;}}
    this.chatCursor=data.cursor??this.chatCursor;if(this.modal==='chat'){if(this.messages.some(item=>item.id>this.chatSeen&&item.id<=this.chatCursor&&item.code!==this.client.profile?.code&&!this.social.blockedCodes.includes(item.code)))changed=true;this.chatSeen=this.chatCursor;}if(changed)this.invalidate();
   }catch(error){if(this.modal==='chat')this.note(errorText(error));}finally{this.chatLoading=false;}
@@ -728,7 +733,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   try{await board.setImage(this.roomImage);if(this.board!==board)return;this.imageReady=board.imagePreparation.phase==='ready';this.message='';board.fit();}
   catch(error){if(this.board!==board)return;this.imageError=errorText(error);throw error;}
  }
- private async say(phraseId:number){if(!this.room||!Number.isSafeInteger(phraseId)||!phrases[phraseId])return;await this.run(async()=>{const room=this.room!,key='chat:'+phraseId;await this.client.json('/api/rooms/'+room.ticket.room.id+'/chat','POST',{phraseId,requestId:this.attempt(key),after:this.chatCursor},{Authorization:'Bearer '+room.ticket.token,'Content-Type':'application/json'});this.attempts.delete(key);await this.loadChat();});}
+ private phraseAvailable(id:number){return !!phrases[id]&&(id<NEWER_PHRASE_ID||this.serverPhrases.has(phrases[id]));}
+ private async say(phraseId:number){if(!this.room||!Number.isSafeInteger(phraseId)||!this.phraseAvailable(phraseId))return;await this.run(async()=>{const room=this.room!,key='chat:'+phraseId;await this.client.json('/api/rooms/'+room.ticket.room.id+'/chat','POST',{phraseId,requestId:this.attempt(key),after:this.chatCursor},{Authorization:'Bearer '+room.ticket.token,'Content-Type':'application/json'});this.attempts.delete(key);await this.loadChat();});}
  private async sayText(){if(!this.formalWeb||!this.room)return;await this.run(async()=>{const room=this.room!,value=await this.platform.prompt('输入消息',this.chatDraft,{multiline:true,maxLength:300});if(value===null)return;const text=value.trim();this.chatDraft=text;if(!text||room!==this.room)return;if(text.length>300)throw Error('消息最多 300 字');const key='chat-text:'+room.ticket.room.id+':'+text;await this.client.json('/api/rooms/'+room.ticket.room.id+'/chat','POST',{text,requestId:this.attempt(key),after:this.chatCursor},{Authorization:'Bearer '+room.ticket.token,'Content-Type':'application/json'});this.attempts.delete(key);this.chatDraft='';await this.loadChat();});}
 
  private acceptPrivacy(){
@@ -2120,7 +2126,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   strip.slice(0,memberColumns).forEach((member,index)=>{const sx=x+14+index*memberWidth,sy=y+50;s.icon('avatar',{x:sx,y:sy,w:24,h:26});s.text(member.name,sx+27,sy+1,12,this.colors.ink,700,46);s.text('Lv.'+((member as {level?:number}).level??0),sx+27,sy+16,10,this.colors.muted,600);s.hit({x:sx,y:sy,w:75,h:34},()=>void this.openPlayerCard(member));});
   s.button({x:x+w-86,y:y+50,w:72,h:30},'同桌 '+strip.length+' ›',()=>this.showModal('members'),{fontSize:12});
   s.button({x:x+w-42,y:y+12,w:29,h:31},'',()=>this.showModal(null),{icon:'close'});
-  const groups=[{label:'协作',ids:[1,5,6,2,8,3,7]},{label:'鼓励',ids:[0,4,9,10,11]},{label:'表情',ids:[12,13,14,15]}],selected=groups[this.phraseGroup],columns=w>=310?3:2,
+  const groups=[{label:'协作',ids:[1,5,6,2,8,3,7]},{label:'鼓励',ids:[0,4,9,10,11]},{label:'表情',ids:[12,13,14,15]},{label:'心情',ids:[16,17,18,19,20]}].map(g=>({...g,ids:g.ids.filter(id=>this.phraseAvailable(id))})).filter(g=>g.ids.length);
+  if(this.phraseGroup>=groups.length)this.phraseGroup=0;
+  const selected=groups[this.phraseGroup],columns=w>=310?3:2,
    rows=Math.ceil(selected.ids.length/columns),footerHeight=48+rows*34+(this.formalWeb?38:0),footerY=y+h-footerHeight-10,
    list={x:x+10,y:y+memberBottom+4,w:w-20,h:Math.max(24,footerY-y-memberBottom-11)};
   let messageY=0;const entries=messages.map(message=>{const lines:string[]=[];if(this.formalWeb){let line='';for(const char of message.text){if(char==='\n'||s.measure(line+char,14,650)>list.w-82){lines.push(line);line=char==='\n'?'':char;}else line+=char;}lines.push(line);}else lines.push(message.text);const h=this.formalWeb?Math.max(56,31+lines.length*21):56,entry={message,lines,y:messageY,h};messageY+=h;return entry;});
@@ -2139,7 +2147,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    }
   });
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x+12,footerY,w-24,1);if(w>=310)s.text(this.formalWeb?'快捷短句':'只发送预设短句',x+14,footerY+7,10,this.colors.muted);
-  s.segments({x:x+w-191,y:footerY+3,w:178,h:28},groups.map((g,i)=>[i as 0|1|2,g.label] as const),this.phraseGroup,value=>{this.phraseGroup=value;this.invalidate();});
+  const segmentW=Math.min(groups.length*58,w-26);s.segments({x:x+w-13-segmentW,y:footerY+3,w:segmentW,h:28},groups.map((g,i)=>[i as 0|1|2|3,g.label] as const),this.phraseGroup,value=>{this.phraseGroup=value;this.invalidate();});
   const bw=(w-26-(columns-1)*6)/columns;
   selected.ids.forEach((id,i)=>s.button({x:x+13+(i%columns)*(bw+6),y:footerY+39+Math.floor(i/columns)*34,w:bw,h:29},phrases[id],()=>void this.say(id),{fontSize:11,tone:'cream',disabled:this.busy}));
   if(this.formalWeb)s.button({x:x+13,y:footerY+39+rows*34,w:w-26,h:30},'输入消息',()=>void this.sayText(),{fontSize:12,disabled:this.busy});
@@ -2420,7 +2428,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    case'chat':{
     const room=this.room;s.text('同桌 '+(room?.snapshot.members.length??0)+'人',left,cy,15,this.colors.ink,700);cy+=29;for(const member of room?.snapshot.members??[]){s.text(member.name+' · Lv.'+((member as typeof member&{level?:number}).level??1),left,cy,13,member.color);cy+=25;}cy+=10;
     const last=this.messages.slice(-8);for(const item of last){s.text(item.name,left,cy,12,this.colors.muted,700);cy+=22;cy=this.paragraph(item.text,left+7,cy,width-14,14,this.colors.ink)+12;}if(!last.length){s.text('发一句问候吧',left,cy,14,this.colors.muted);cy+=36;}
-    phrases.forEach((text,index)=>{const bw=(width-8)/2;this.button(left+(index%2)*(bw+8),cy+Math.floor(index/2)*45,bw,text,()=>void this.say(index),'cream',35);});cy+=Math.ceil(phrases.length/2)*45+10;break;
+    const shown=phrases.map((text,index)=>({text,index})).filter(item=>this.phraseAvailable(item.index));
+    shown.forEach(({text,index},slot)=>{const bw=(width-8)/2;this.button(left+(slot%2)*(bw+8),cy+Math.floor(slot/2)*45,bw,text,()=>void this.say(index),'cream',35);});cy+=Math.ceil(shown.length/2)*45+10;break;
    }
    case'completion':{cy=this.drawCompletionContent(left,cy,width);break;}
    case'purchase':{

@@ -119,7 +119,7 @@ test('formal room text chat preserves the original endpoint, limit, authorizatio
 
 test('formal text messages wrap into scrollable rows and only formal Web has the text input button',()=>{
  const buttons=[],drawn=[],stage={w:844,h:390,palette:{},ctx:{fillRect(){}},measure:text=>text.length*14,panel(){},hit(){},segments(){},clip(_area,fn){fn();},icon(){},button(_area,label){buttons.push(label);},text(value,_x,_y,size){if(size===14)drawn.push(value);}};
- const app=Object.create(GameApp.prototype),message='共同完成这张拼图。'.repeat(20);Object.assign(app,{stage,platform:{viewport:()=>({top:0,bottom:0})},client:{cookieIdentity:true,profile:{code:'self'}},social:{blockedCodes:[]},roomArea:{y:63},messages:[{name:'玩家',code:'self',text:message}],phraseGroup:0,modalScroll:0,busy:false});
+ const app=Object.create(GameApp.prototype),message='共同完成这张拼图。'.repeat(20);Object.assign(app,{stage,platform:{viewport:()=>({top:0,bottom:0})},client:{cookieIdentity:true,profile:{code:'self'}},social:{blockedCodes:[]},roomArea:{y:63},messages:[{name:'玩家',code:'self',text:message}],phraseGroup:0,serverPhrases:new Set(),modalScroll:0,busy:false});
  app.drawPublicChat();assert.equal(drawn.join(''),message);assert.ok(drawn.length>1);assert.ok(app.modalExtent>app.modalArea.h);assert.ok(buttons.includes('输入消息'));
  buttons.length=0;app.client.cookieIdentity=false;app.drawPublicChat();assert.equal(app.modalExtent,56);assert.ok(!buttons.includes('输入消息'));
 });

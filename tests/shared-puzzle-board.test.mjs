@@ -359,3 +359,55 @@ test('the reference thumbnail opens a large view that pinches, pans within bound
  board.previewView={z:1,x:0,y:0};tap({id:6,x:board.rect.x+4,y:board.rect.y+board.rect.h-4});assert.equal(board.previewZoomed,false,'a tap on the backdrop closes it');assert.ok(board.showPreview,'the thumbnail stays on');
  board.openPreviewZoom();board.showPreview=false;assert.equal(board.previewZoomed,false);board.destroy();
 });
+
+test('a teammate holding a group shows one name and one pointer: the shared cursor when on screen, else the group label',()=>{
+ const {board,state,p}=setup(),group=state.groups[0],owners={[group.id]:{playerId:'friend',name:'好友',color:'#789',level:12}};
+ const labels=()=>p.commands.filter(c=>c[0]==='fillText').map(c=>c[1]),draw=()=>{p.commands.length=0;board.draw(p.ctx);return labels();};
+ try{
+  board.syncRemote(structuredClone(state),owners,new Set(),false);
+  let text=draw();assert.ok(text.includes('好友 Lv.12'),'no cursor yet: the held group carries the name');assert.ok(!text.includes('好友 · Lv.12'));
+  const onScreen=board.screenToWorld({x:board.rect.x+120,y:board.rect.y+160});
+  board.setCursors([{playerId:'friend',name:'好友',level:12,color:'#789',updatedAt:Date.now(),...onScreen}]);
+  text=draw();assert.ok(text.includes('好友 · Lv.12'),'the cursor names the player');assert.ok(!text.includes('好友 Lv.12'),'the held group drops its duplicate label');
+  assert.ok(p.commands.some(c=>c[0]==='stroke'),'the group keeps its coloured outline');
+  board.phoneLandscapeRoom=true;text=draw();assert.equal(text.filter(t=>String(t).startsWith('好友')).length,1,'landscape room: still one name');board.phoneLandscapeRoom=false;
+  board.setCursors([]);board.setCursors([{playerId:'friend',name:'好友',level:12,color:'#789',updatedAt:Date.now(),x:onScreen.x+100000,y:onScreen.y}]);
+  text=draw();assert.ok(text.includes('好友 Lv.12'),'cursor off screen: the group label returns');assert.ok(!text.includes('好友 · Lv.12'));
+  board.setCursors([{playerId:'friend',name:'好友',level:12,color:'#789',updatedAt:Date.now(),...onScreen}]);
+  board.syncRemote(structuredClone(state),{[group.id]:{name:'好友',color:'#789',level:12}},new Set(),false);
+  text=draw();assert.ok(text.includes('好友 Lv.12'),'an owner without a player id (older room client) keeps its label');
+  board.setCursors([]);board.syncRemote(structuredClone(state),owners,new Set(),false);
+  text=draw();assert.equal(text.filter(t=>String(t).startsWith('好友')).length,1,'stale cursor removed: the label is the one name');
+ }finally{board.destroy();}
+});
+
+test('默契拼合: a seam joined from two players\' holds plays one burst for everyone, respecting hidden and reduced motion',async()=>{
+ const oldNow=Date.now,oldMatch=globalThis.matchMedia;let now=20000;Date.now=()=>now;
+ try{
+  const run=({hide=false,reduced=false}={})=>{
+   globalThis.matchMedia=reduced?()=>({matches:true}):oldMatch;
+   const {board,state,p}=setup(),sounds=[];p.playSound=url=>sounds.push(url);board.chimeUrl='chime.wav';
+   const a=state.groups.find(g=>g.pieces[0]===0),b=state.groups.find(g=>g.pieces[0]===1);
+   board.syncRemote(structuredClone(state),{[a.id]:{playerId:'pa',name:'小红',color:'#e06'},[b.id]:{playerId:'pb',name:'小蓝',color:'#06e'}},new Set());
+   now+=600;const released=structuredClone(state);board.syncRemote(released,{[b.id]:{playerId:'pb',name:'小蓝',color:'#06e'}},new Set());
+   if(hide)p.hide();
+   now+=900;const merged=structuredClone(state),ga=merged.groups.find(g=>g.id===a.id),gb=merged.groups.find(g=>g.id===b.id);ga.pieces.push(...gb.pieces);gb.dx=ga.dx;merged.groups=merged.groups.filter(g=>g!==gb);
+   board.syncRemote(merged,{},new Set());
+   now+=300;p.commands.length=0;board.draw(p.ctx);const text=p.commands.filter(c=>c[0]==='fillText').map(c=>c[1]);
+   const result={bursts:board.teamBursts.length,reduced:board.teamBursts[0]?.reduced,text,sounds:[...sounds],flashes:board.flashes.length};
+   now+=1600;p.commands.length=0;board.draw(p.ctx);result.after=p.commands.some(c=>c[0]==='fillText'&&c[1]==='默契拼合！');board.destroy();return result;
+  };
+  const shown=run();
+  assert.equal(shown.bursts,1);assert.ok(shown.text.includes('默契拼合！'));assert.ok(shown.text.includes('小红 × 小蓝'));assert.deepEqual(shown.sounds,['chime.wav']);
+  assert.equal(shown.flashes,1,'the ordinary snap glow still plays');assert.equal(shown.after,false,'the burst ends after 1.5 s');
+  const hidden=run({hide:true});assert.equal(hidden.bursts,0);assert.deepEqual(hidden.sounds,[]);
+  const reduced=run({reduced:true});assert.equal(reduced.bursts,1);assert.equal(reduced.reduced,true);assert.ok(!reduced.text.includes('默契拼合！'),'reduced motion: glow only');
+  // The same player on both sides, or a partner whose hold ended over 3 s ago, is an ordinary snap.
+  globalThis.matchMedia=oldMatch;
+  const {board,state}=setup(),a=state.groups.find(g=>g.pieces[0]===0),b=state.groups.find(g=>g.pieces[0]===1);
+  board.syncRemote(structuredClone(state),{[a.id]:{playerId:'pa',name:'小红',color:'#e06'}},new Set());board.syncRemote(structuredClone(state),{[b.id]:{playerId:'pb',name:'小蓝',color:'#06e'}},new Set());
+  now+=3200;const merged=structuredClone(state),ga=merged.groups.find(g=>g.id===a.id),gb=merged.groups.find(g=>g.id===b.id);ga.pieces.push(...gb.pieces);merged.groups=merged.groups.filter(g=>g!==gb);
+  board.syncRemote(merged,{},new Set());assert.equal(board.teamBursts.length,0,'a released its hold 3.2 s before the merge');
+  board.destroy();
+ }finally{Date.now=oldNow;globalThis.matchMedia=oldMatch;}
+});

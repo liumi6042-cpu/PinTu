@@ -12,7 +12,7 @@ import {applySoloDrop,replaySoloOps,otherPlayersPresent,soloCanAfford,loadSoloOu
 export type RoomTable = Pick<PuzzleTable,'network'|'networkReady'|'syncRemote'|'cancelNetworkDrag'|'playConnectionSound'|'fit'>;
 export type RoomFetchReply = {ok:boolean;status:number;headers:{get(name:string):string|null};json():Promise<any>};
 export type RoomDecoration={id:string;title:string;artKey:string;color:string;kind?:string};
-export type RoomPieceOwner={name:string;color:string;level?:number;decoration?:RoomDecoration|null};
+export type RoomPieceOwner={name:string;color:string;level?:number;decoration?:RoomDecoration|null;playerId?:string};
 export type RoomClientDependencies = {
   fetch:(url:string,init?:RequestInit)=>Promise<RoomFetchReply>;
   randomId:()=>string;
@@ -183,7 +183,7 @@ export class RoomClient {
     const owners: Record<string,RoomPieceOwner> = {};
     for (const [id, lease] of Object.entries(s.leases)) if (lease.playerId !== this.ticket.playerId) {
       const member = s.members.find(p => p.id === lease.playerId);
-      owners[id] = { name: member?.name || '朋友', color: member?.color || '#99caf4',level:(member as typeof member & {level?:number})?.level,decoration:(member as typeof member & {decoration?:RoomDecoration|null})?.decoration??null };
+      owners[id] = { playerId: lease.playerId, name: member?.name || '朋友', color: member?.color || '#99caf4',level:(member as typeof member & {level?:number})?.level,decoration:(member as typeof member & {decoration?:RoomDecoration|null})?.decoration??null };
     }
     const ownersKey = JSON.stringify(owners);
     this.pieceOwners=owners;
