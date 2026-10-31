@@ -74,3 +74,16 @@ export function welcomeTieIn(context:WelcomeContext):WelcomeTieIn|null{
  if(!quiet&&context.energyFull)return {kind:'energy',text:'体力满满',icon:'lightning'};
  return null;
 }
+
+export type WelcomeOwnRoom={id:string;completed?:boolean;unavailable?:boolean};
+export type WelcomeOpenRoom={id:string;imageId:string;players:number;maxPlayers?:number;acceptingNew?:boolean;completed:boolean;placed:number;pieces:number;actualPieces?:number};
+export type WelcomeStart={kind:'rejoin'|'join';roomId:string}|{kind:'create'};
+/** 开拼: back to a table the player already sits at, else the fullest open table on today's daily (under 90 %, like 快速加入), else a new daily table. */
+export function welcomeStart(input:{own:readonly WelcomeOwnRoom[];rooms:readonly WelcomeOpenRoom[];dailyImageId:string|null}):WelcomeStart{
+ const own=input.own.find(room=>!room.completed&&!room.unavailable);
+ if(own)return {kind:'rejoin',roomId:own.id};
+ const progress=(room:WelcomeOpenRoom)=>room.placed/Math.max(1,room.actualPieces??room.pieces);
+ const daily=input.dailyImageId?input.rooms.filter(room=>room.imageId===input.dailyImageId&&!room.completed&&room.acceptingNew!==false&&room.players<(room.maxPlayers??8)&&progress(room)<.9):[];
+ const best=daily.sort((a,b)=>progress(b)-progress(a))[0];
+ return best?{kind:'join',roomId:best.id}:{kind:'create'};
+}

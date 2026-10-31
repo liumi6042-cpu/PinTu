@@ -41,7 +41,7 @@ import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileR
 import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
-import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,beijingClock,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
+import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,beijingClock,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
@@ -2302,7 +2302,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private setWelcomeEnabled(enabled:boolean){this.welcomeEnabled=enabled;try{this.platform.storage.set(WELCOME_ENABLED_KEY,enabled?'1':'0');}catch{}if(!enabled)this.welcomePending=false;this.invalidate();}
  private welcomePrimary(){
   const view=this.welcome;this.closeWelcome();
-  if(view?.storyChapterId){this.storyChapterId=view.storyChapterId;this.navigate('chapter');}else this.launchDaily();
+  if(view?.storyChapterId){this.storyChapterId=view.storyChapterId;this.navigate('chapter');return;}
+  // The table the player already sits at, else an open daily table, else a new daily table.
+  const own=this.historyRooms??this.client.profile?.ownedRooms??[],start=welcomeStart({own,rooms:this.rooms,dailyImageId:this.dailyPhoto?.id??null});
+  if(start.kind==='create')this.launchDaily();else void this.enterRoom(start.roomId);
  }
  /** Today's daily picture tinted for the time of day; without the picture the tint sits on the placeholder. */
  private drawWelcomeHero(r:Rect,slot:WelcomeSlot){
@@ -2347,7 +2350,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(pill){const size=13,pw=Math.min(w,s.measure(pill.text,size,700)+46),r={x,y:cy,w:pw,h:30};s.frame(r,'rail-cream-normal');s.icon(pill.icon,{x:r.x+9,y:r.y+6,w:18,h:18});s.text(pill.text,r.x+33,r.y+(30-size)/2-1,size,ink,700,pw-40);cy+=40;}
    return cy;
   };
-  const buttons=(x:number,y:number,w:number,h:number)=>{const primary=Math.round(w*.6);s.button({x,y,w:primary,h},story?'继续故事':'开拼 · 108 片',()=>this.welcomePrimary(),{tone:'berry',icon:story?'story':'daily',fontSize:15,disabled:this.busy});s.button({x:x+primary+10,y,w:w-primary-10,h},'先逛逛',()=>this.closeWelcome(),{fontSize:15});};
+  const buttons=(x:number,y:number,w:number,h:number)=>{const primary=Math.round(w*.6);s.button({x,y,w:primary,h},story?'继续故事':'开拼 · 108 片',()=>this.welcomePrimary(),{tone:'berrydark',icon:story?'story':'daily',fontSize:15,disabled:this.busy});s.button({x:x+primary+10,y,w:w-primary-10,h},'先逛逛',()=>this.closeWelcome(),{fontSize:15});};
   let panel:Rect;
   if(landscape){
    // Hero left, text right; the panel is only as tall as the text column needs.

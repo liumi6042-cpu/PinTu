@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {welcomeSlot,welcomeSlotKey,welcomeDue,pickWelcomeLine,welcomeTieIn,readWelcomeRecord,beijingClock,WELCOME_LINES,WELCOME_AWAY_LINE} from '../mobile/welcome-greeting.ts';
+import {welcomeSlot,welcomeSlotKey,welcomeDue,pickWelcomeLine,welcomeTieIn,readWelcomeRecord,beijingClock,welcomeStart,WELCOME_LINES,WELCOME_AWAY_LINE} from '../mobile/welcome-greeting.ts';
 
 // Beijing wall clock on a given October 2026 day.
 const at=(hour,minute,day=31)=>Date.UTC(2026,9,day,hour-8,minute);
@@ -55,4 +55,13 @@ test('tie-ins follow the priority order and stay quiet late at night',()=>{
  assert.equal(welcomeTieIn(context(at(23,30),{energyFull:true})),null);
  assert.equal(welcomeTieIn(context(at(3,0),{energyFull:true,story})).kind,'story');
  assert.equal(welcomeTieIn(context(at(15,0))),null);
+});
+
+test('开拼 rejoins, then joins an open daily table, then creates one',()=>{
+ const room=(id,extra={})=>({id,imageId:'daily-a',players:2,completed:false,placed:20,pieces:108,...extra});
+ const rooms=[room('other',{imageId:'b',placed:80}),room('full',{players:8,placed:90}),room('busy',{placed:60}),room('fresh',{placed:5}),room('done',{completed:true}),room('closing',{placed:100}),room('locked',{acceptingNew:false,placed:70}),room('small-cap',{players:4,maxPlayers:4,placed:70})];
+ assert.deepEqual(welcomeStart({own:[{id:'old',completed:true},{id:'gone',unavailable:true},{id:'mine'}],rooms,dailyImageId:'daily-a'}),{kind:'rejoin',roomId:'mine'});
+ assert.deepEqual(welcomeStart({own:[{id:'old',completed:true}],rooms,dailyImageId:'daily-a'}),{kind:'join',roomId:'busy'});
+ assert.deepEqual(welcomeStart({own:[],rooms:rooms.filter(r=>!['busy','fresh'].includes(r.id)),dailyImageId:'daily-a'}),{kind:'create'});
+ assert.deepEqual(welcomeStart({own:[],rooms,dailyImageId:null}),{kind:'create'});
 });
