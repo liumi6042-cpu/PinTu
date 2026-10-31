@@ -68,7 +68,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v48';
+const CLIENT_PACKAGE_VERSION='v49';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -825,7 +825,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const s=this.stage;if(this.route==='room'){s.ctx.fillStyle=boardThemeColors(s.theme).paper;s.ctx.fillRect(0,0,s.w,s.h);}else s.background();
   if(this.loginLogOpen){this.drawLoginLog();return;}
   if(this.needsPrivacyChoice||this.loginDialogActive||this.platform.tapAuthorizationPending?.()){this.drawPrivacyChoice();return;}
-  if(!this.ready&&!this.startupError&&!this.client.authRequired&&!this.offline?.active&&!this.offlineRoom){this.drawLoading();return;}
+  // Once start-up finishes the bar fills to 100% before the first scene; an error screen drops it.
+  const loading=!this.ready&&!this.startupError&&!this.client.authRequired&&!this.offline?.active&&!this.offlineRoom;
+  if(this.ready&&this.loadingStarted&&!this.loadingDone){this.loadingDone=Date.now();this.loadingFrom=this.loadingShown;}
+  if(loading||this.loadingDone&&Date.now()-this.loadingDone<300){this.drawLoading();return;}
+  this.loadingStarted=this.loadingShown=this.loadingDone=0;
   this.sceneArea={x:0,y:0,w:s.w,h:s.h};this.listArea={...this.sceneArea};this.listColumn=null;this.albumListArea={x:0,y:0,w:0,h:0};
   this.bodyBottom=s.h-this.platform.viewport().bottom-12;
   if(this.route==='room')this.drawRoom();
@@ -913,11 +917,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   });
   this.extent=Math.max(y,desktop?side:0)+this.scroll-this.bodyTop+12;
  }
- private loadingStarted=0;private loadingShown=0;
+ private loadingStarted=0;private loadingShown=0;private loadingDone=0;private loadingFrom=0;
  /** Full-screen start-up: logo, progress and rotating tips. Progress follows the real steps and eases in between. */
  private drawLoading(){
   const s=this.stage,now=Date.now(),v=this.platform.viewport(),ink=this.colors.ink,muted=this.colors.muted;if(!this.loadingStarted)this.loadingStarted=now;
-  const elapsed=(now-this.loadingStarted)/1000,target=this.client.profile?.97:.7,progress=Math.max(this.loadingShown,target*(1-Math.exp(-elapsed/1.4)));this.loadingShown=progress;
+  // Quick to ~70%, then a slow creep toward 99% so a long login never looks frozen; 100% only once start-up is done.
+  const elapsed=(now-this.loadingStarted)/1000,creep=.7*(1-Math.exp(-elapsed/1.4))+.29*(1-Math.exp(-elapsed/25)),target=this.client.profile?Math.max(creep,.97*(1-Math.exp(-elapsed/1.4))):creep,finish=this.loadingDone?Math.min(1,(now-this.loadingDone)/220):0;
+  const progress=this.loadingDone?this.loadingFrom+(1-this.loadingFrom)*(1-(1-finish)**2):Math.max(this.loadingShown,target);this.loadingShown=progress;
   const glow=s.ctx.createRadialGradient(s.w/2,s.h*.42,0,s.w/2,s.h*.42,Math.max(s.w,s.h)*.7);glow.addColorStop(0,this.colors.cream);glow.addColorStop(1,this.colors.paper);s.ctx.fillStyle=glow;s.ctx.fillRect(0,0,s.w,s.h);
   const cx=s.w/2,size=Math.min(112,s.w*.26,s.h*.2),top=Math.max(v.top+16,s.h*.42-size-60);
   s.icon('piece',{x:cx-size/2,y:top,w:size,h:size});
@@ -926,7 +932,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const barW=Math.min(320,s.w-64),barY=top+size+nameSize+76;s.meter({x:cx-barW/2,y:barY,w:barW,h:10},progress);const percent=Math.round(progress*100)+'%';s.text(percent,cx-s.measure(percent,13,700)/2,barY+18,13,ink,700);
   const tips=['先把边缘拼好，框架出来就快多了','双指缩放，拖空白处可以移动桌面','拼完的图会自动收进图集','公开房免费，叫上朋友一起拼','卡住的时候，试试提示和底图','每天都有一张新的每日拼图','集齐一个图包，有金币和装饰'],tip=tips[Math.floor(elapsed/3)%tips.length];
   s.text(tip,cx-Math.min(s.w-32,s.measure(tip,13,600))/2,Math.min(s.h-v.bottom-40,barY+64),13,muted,600,s.w-32);
-  setTimeout(()=>{if(!this.destroyed)this.invalidate();},120);
+  setTimeout(()=>{if(!this.destroyed)this.invalidate();},this.loadingDone?16:120);
  }
  private drawLobbyStartup(){
   const s=this.stage,left=12,width=Math.min(1120,s.w-24),x=(s.w-width)/2,y=this.bodyTop+8;
