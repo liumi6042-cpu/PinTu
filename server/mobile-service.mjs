@@ -180,17 +180,22 @@ export function createMobileService(options={}){
  const requestRetentionMs=options.requestRetentionMs??86400000,requestPruneBatch=options.requestPruneBatch??2000,requestPruneYieldMs=options.requestPruneYieldMs??50;
  const pruneRequestStatement=db.prepare("DELETE FROM mobile_requests WHERE rowid IN (SELECT rowid FROM mobile_requests WHERE created_at<? AND scope GLOB 'room-action:*' LIMIT ?)");
  let requestPrune=null,requestPruneStep=null;
- const pruneRequests=()=>requestPrune??=new Promise(done=>{
+ // The sweep is published before its first batch runs: a sweep that finishes in one batch clears requestPrune
+ // synchronously, and assigning afterwards would leave a settled promise there and stop every later sweep.
+ const pruneRequests=()=>{
+  if(requestPrune)return requestPrune;
+  let finish;const sweep=requestPrune=new Promise(done=>{finish=done;});
   let removed=0;
   const step=()=>{
    requestPruneStep=null;
    let changes=0;try{changes=Number(pruneRequestStatement.run(clock()-requestRetentionMs,requestPruneBatch).changes);}catch(error){console.warn('mobile request prune stopped:',error.message);}
    removed+=changes;
    if(changes>=requestPruneBatch){requestPruneStep=setTimeout(step,requestPruneYieldMs);requestPruneStep.unref?.();}
-   else{requestPrune=null;done(removed);}
+   else{requestPrune=null;finish(removed);}
   };
   step();
- });
+  return sweep;
+ };
  const requestPruneStart=setTimeout(pruneRequests,options.requestPruneStartMs??5000);requestPruneStart.unref();
  const requestPruneTimer=setInterval(pruneRequests,options.requestPruneMs??600000);requestPruneTimer.unref();
  const resolveIdentity=identity=>db.prepare('SELECT canonical_identity FROM mobile_taptap_sessions WHERE session_identity=?').get(identity)?.canonical_identity??identity;
@@ -297,13 +302,17 @@ export function createMobileService(options={}){
   const token=id(),known=room.members.some(m=>m.guestId===p.id),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);if(!known)events.record(p.id,'room-join',room.id,{},now);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
   return {token,playerId:member.id,room:snapshotView(room,now,null,p.id),...(room.ownerId===p.id&&room.mobileInviteCode?{inviteCode:room.mobileInviteCode}:{})};
  }
- function replay(p,scope,input,now,fn){
+ // With a receipt, only receipt.store(result) is kept (marked receipt:1) and a retry gets receipt.restore(stored).
+ // Rows written before receipts existed hold the whole reply and still replay as stored.
+ function replay(p,scope,input,now,fn,receipt){
   if(!requestKey(input.requestId))fail(400,'REQUEST_ID_REQUIRED','缺少有效请求编号，请重试');
   const fingerprint=hash(JSON.stringify(input)),old=db.prepare('SELECT input_hash,response FROM mobile_requests WHERE owner=? AND scope=? AND request_id=?').get(p.id,scope,input.requestId);
-  if(old){if(old.input_hash!==fingerprint)fail(409,'REQUEST_CONFLICT','同一请求编号不能用于其他操作');return JSON.parse(old.response);}
-  const result=fn();db.prepare('INSERT INTO mobile_requests VALUES(?,?,?,?,?,?)').run(p.id,scope,input.requestId,fingerprint,JSON.stringify(result),now);return result;
+  if(old){if(old.input_hash!==fingerprint)fail(409,'REQUEST_CONFLICT','同一请求编号不能用于其他操作');const stored=JSON.parse(old.response);return receipt&&stored?.receipt===1?receipt.restore(stored):stored;}
+  const result=fn();db.prepare('INSERT INTO mobile_requests VALUES(?,?,?,?,?,?)').run(p.id,scope,input.requestId,fingerprint,JSON.stringify(receipt?{...receipt.store(result),receipt:1}:result),now);return result;
  }
- const soloBatch=createSoloBatch({enabled:soloLocalPlay,replay,snapshotView,profileView,engine,fail,requestKey});
+ // A drop receipt keeps only the contribution; the whole room reply was ~12 KB per drop.
+ const roomActionReceipt=result=>result.mobileContribution?{mobileContribution:result.mobileContribution}:{};
+ const soloBatch=createSoloBatch({enabled:soloLocalPlay,roomActionReceipt,replay,snapshotView,profileView,engine,fail,requestKey});
  function challenge(p,{kind,requestId,context='supply',authorization=''},now){
   if(!requestKey(requestId))fail(400,'REQUEST_ID_REQUIRED','请求编号无效');
   const sharing=context.startsWith('share:');if(sharing?!shareRewards:!adsEnabled)fail(503,sharing?'SHARE_UNAVAILABLE':'ADS_UNAVAILABLE',sharing?'当前平台未开放分享奖励':'当前平台未开放广告');
@@ -634,7 +643,10 @@ export function createMobileService(options={}){
   };
   // Only drops affect growth: avoid writing permanent receipts for heartbeat/move polling.
   if(input.type==='batch')return soloBatch({room,member,p,input,now,since,act});
-  return input.type==='drop'&&requestKey(input.requestId)&&(!request[diagnosticTransport]||room.diagnostic!==true)?replay(p,'room-action:'+room.id,input,now,act):act();
+  // A retried drop gets the current room and profile, as any other action reply would, plus its original
+  // contribution; nothing is applied or granted again.
+  const dropReceipt={store:roomActionReceipt,restore:stored=>({...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(stored.mobileContribution?{mobileContribution:stored.mobileContribution}:{})})};
+  return input.type==='drop'&&requestKey(input.requestId)&&(!request[diagnosticTransport]||room.diagnostic!==true)?replay(p,'room-action:'+room.id,input,now,act,dropReceipt):act();
  }
  async function bindTapTap(request){
   const now=clock(),sessionIdentity=request.identity;
