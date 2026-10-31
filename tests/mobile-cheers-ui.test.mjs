@@ -98,7 +98,7 @@ function fixture(width=844,height=390,count=8,options={}){
 test('844x390 landscape has eight seats, all six cheers and existing actions inside the panel',()=>{
  const {app,calls}=fixture();app.drawModal();assert.equal(app.completionSeatRects.size,8);
  assert.equal(calls.filter(c=>c[0]==='hit'&&c[1].h===44).length,6);
- for(const label of ['再来一桌','分享成品','查看图集','回大厅']){
+ for(const label of ['去拼今日拼图','分享成品','查看图集','回大厅']){
   const button=calls.find(c=>c[0]==='button'&&c[2]===label);assert.ok(button,label);assert.ok(button[1].y+button[1].h<=382,label);
  }
  assert.ok(app.completionBar.y+app.completionBar.h+22<=382);assert.equal(app.modalScroll,0);
@@ -107,7 +107,7 @@ test('844x390 landscape has eight seats, all six cheers and existing actions ins
 test('portrait scrolls, desktop puts seats outside, solo has neither seats nor old contribution list',()=>{
  for(const [w,h,count] of [[390,844,8],[1200,900,8],[390,844,1],[844,390,1]]){
   const {app,calls}=fixture(w,h,count);app.drawModal();assert.equal(app.completionSeatRects.size,count>1?count:0);
-  assert.ok(!calls.some(c=>c[2]==='拼合贡献'));assert.ok(calls.some(c=>c[2]==='再来一桌'));
+  assert.ok(!calls.some(c=>c[2]==='拼合贡献'));assert.ok(calls.some(c=>c[2]==='去拼今日拼图'));
   if(w===1200)assert.ok([...app.completionSeatRects.values()].every(r=>r.x+r.w<320||r.x>880));
   if(w===390&&count===8)assert.ok(app.modalExtent>app.modalArea.h);
  }
@@ -176,7 +176,7 @@ test('departed seats keep opaque frames and me tint while avatar, crown, name an
 });
 test('390x844 with eight players and four reward tiles keeps the next-table button visible at scroll zero',()=>{
  const {app,calls}=fixture(390,844,8,{energyEnabled:true,album:true});app.drawModal();const labels=['金币 +20','碎片 +2','体力 +3','图集 1/8'],tiles=labels.map(label=>calls.find(c=>c[0]==='text'&&c[2]===label));assert.ok(tiles.every(Boolean));assert.equal(new Set(tiles.map(c=>c[1].y)).size,1);assert.equal(app.modalScroll,0);
- const button=calls.find(c=>c[0]==='button'&&c[2]==='再来一桌');assert.ok(contains(app.modalArea,button[1]));assert.ok([...app.completionSeatRects.values()].every(r=>r.h===74));
+ const button=calls.find(c=>c[0]==='button'&&c[2]==='去拼今日拼图');assert.ok(contains(app.modalArea,button[1]));assert.ok([...app.completionSeatRects.values()].every(r=>r.h===74));
 });
 test('portrait clips partially scrolled slot bubbles without clamping and skips fully hidden slots',t=>{
  let now=0;t.mock.method(Date,'now',()=>now);const {app}=fixture(390,844,8,{now:()=>now});for(const m of app.room.snapshot.members)app.cheerEffects.receive(cheer(m.id));now=560;

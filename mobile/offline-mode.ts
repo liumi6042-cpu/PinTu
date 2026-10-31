@@ -70,16 +70,17 @@ export class OfflineMode{
   });
   return y+Math.ceil(this.catalog!.free.length/cols)*(cw*.65+106)+scroll-top+16;
  }
- drawCompletion(s:Stage,ticket:RoomTicket,left:number,y:number,width:number,landscape:boolean,panel:Rect|undefined,actions:{picture:(rect:Rect)=>void;paragraph:(text:string,x:number,y:number,w:number,size:number)=>number;launch:(input:OfflineInput)=>void;back:()=>void;comic?:{available:(levelId:string)=>boolean;open:(levelId:string)=>void}}){
+ drawCompletion(s:Stage,ticket:RoomTicket,left:number,y:number,width:number,landscape:boolean,panel:Rect|undefined,actions:{picture:(rect:Rect)=>void;paragraph:(text:string,x:number,y:number,w:number,size:number)=>number;launch:(input:OfflineInput)=>void;back:()=>void;comic?:{available:(levelId:string)=>boolean;open:(levelId:string)=>void};story?:(levelId:string)=>string[]|null;nextButton?:(rect:Rect,label:string,action:()=>void)=>void}){
   const levels=this.view?.chapters.flatMap(chapter=>chapter.levels)??[],levelId=(ticket.room as RoomTicket['room']&{levelId?:string}).levelId,index=levels.findIndex(level=>level.id===levelId),level=levels[index],next=levels[index+1];
   if(landscape&&panel){const side=Math.min(240,panel.h-90,panel.w*.43);actions.picture({x:panel.x+16,y:panel.y+45,w:side,h:side});left=panel.x+side+32;width=panel.x+panel.w-left-16;y=panel.y+48;}
   else{const h=Math.min(width*.62,240);actions.picture({x:left,y,w:width,h});y+=h+16;}
   y=actions.paragraph(level?.title??ticket.room.title??'拼图完成',left,y,width,20)+12;
   if(level?.line)y=actions.paragraph(level.line,left,y,width,14)+14;
+  for(const line of (level&&actions.story?.(level.id))??[])y=actions.paragraph(line,left,y,width,13)+8;
   y=actions.paragraph('离线完成 · 联网后同步通关',left,y,width,14)+18;
   // Story levels open their comic page offline too; the page needs no network.
   if(level&&actions.comic?.available(level.id)){s.button({x:left,y,w:width,h:40},'翻开这一页',()=>actions.comic!.open(level.id),{tone:'gold',fontSize:16});y+=48;}
-  if(level&&next&&['unlocked','cleared'].includes(next.status)){s.button({x:left,y,w:width,h:40},this.view?.chapters.some(chapter=>chapter.levels.at(-1)?.id===level.id)?'下一章':'下一关',()=>actions.launch({kind:'level',levelId:next.id}),{tone:'berrydark',fontSize:16});y+=48;}
+  if(level&&next&&['unlocked','cleared'].includes(next.status)){const label=this.view?.chapters.some(chapter=>chapter.levels.at(-1)?.id===level.id)?'下一章':'下一关',go=()=>actions.launch({kind:'level',levelId:next.id});if(actions.nextButton)actions.nextButton({x:left,y,w:width,h:40},label,go);else s.button({x:left,y,w:width,h:40},label,go,{tone:'berrydark',fontSize:16});y+=48;}
   s.button({x:left,y,w:width,h:40},'返回',actions.back,{fontSize:16});return y+48;
  }
 }

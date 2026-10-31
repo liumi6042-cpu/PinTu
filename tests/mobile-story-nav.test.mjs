@@ -64,7 +64,7 @@ test('level completion, chapter completion and share copy ignore the server seri
   const f=fixture(),levelId=chapterComplete?'ch1-6':'ch1-4';f.client.config.capabilities.cheers=false;
   f.app.room={ticket:{playerId:'self'},state:{cols:5,rows:7},snapshot:{id:'level-room',title:'早餐店',levelId,members:[],completedAt:1,mobileResult:{coins:1,fragments:1,levelClear:{levelId,chapterComplete,nextLevelId:chapterComplete?null:'ch1-5',firstClear:true,energy:30}}}};
   f.app.drawCompletionPicture=()=>{};f.app.drawCompletionContent(12,80,366,false);
-  assert.ok(!f.texts.some(text=>text.includes('拾光物语')));assert.ok(f.buttons.some(button=>button.label==='翻开这一页'));assert.ok(f.buttons.some(button=>button.label===(chapterComplete?'去大厅':'下一关')));
+  assert.ok(!f.texts.some(text=>text.includes('拾光物语')));assert.ok(f.buttons.some(button=>button.label==='翻开这一页'));assert.ok(f.buttons.some(button=>button.label===(chapterComplete?'去拼今日拼图':'下一关')));
   if(chapterComplete)assert.ok(f.texts.includes('开张完成！'));
   let share;f.app.shareFromGame=async value=>{share=value;return 'cancelled';};f.app.note=()=>{};f.buttons.find(button=>button.label==='分享成品').fn();await tick();assert.ok(share);assert.ok(!share.title.includes('拾光物语'));
  }

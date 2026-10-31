@@ -119,10 +119,10 @@ test('local photoMap artwork retains precedence over optional server level URLs'
  const f=fixture({data:chapters(6,6)});await artwork(f);const level=f.app.levels.chapters[0].levels[0];level.src='/override';level.thumbSrc='/override-thumb';f.app.storyChapterId='ch1';f.app.drawChapter();assert.equal(f.images[0].src,'/chapter-0.webp');
 });
 
-for(const [clear,label]of [[{nextLevelId:'ch2-1',chapterComplete:true},'下一章'],[{nextLevelId:null,chapterComplete:true},'去大厅'],[{nextLevelId:null},'去大厅'],[{nextLevelId:'ch1-4'},'下一关']])test(`completion ${JSON.stringify(clear)} offers ${label} and executes it`,async()=>{
+for(const [clear,label]of [[{nextLevelId:'ch2-1',chapterComplete:true},'下一章'],[{nextLevelId:null,chapterComplete:true},'去拼今日拼图'],[{nextLevelId:null},'去拼今日拼图'],[{nextLevelId:'ch1-4'},'下一关']])test(`completion ${JSON.stringify(clear)} offers ${label} and executes it`,async()=>{
  const f=fixture({data:chapters(6)});completion(f,{...clear,levelId:'ch1-6'});let leaves=0;f.app.leaveRoom=()=>{leaves++;f.app.room=null;};f.app.drawCompletionContent(12,40,366);
  if(label!=='下一关')assert.ok(f.texts.includes('奶奶的小店完成！'));
- f.buttons.find(button=>button.label===label).fn();await tick();assert.equal(leaves,1);if(clear.nextLevelId)assert.equal(f.created[0].levelId,clear.nextLevelId);else assert.equal(f.app.route,'lobby');
+ f.buttons.find(button=>button.label===label).fn();await tick();assert.equal(leaves,1);if(clear.nextLevelId)assert.equal(f.created[0].levelId,clear.nextLevelId);else assert.equal(f.created[0].mode,'daily');
 });
 
 test('missing chapter title uses 本章完成 and completion close selects the next chapter; final and old receipts go to lobby',()=>{
@@ -132,13 +132,14 @@ test('missing chapter title uses 本章完成 and completion close selects the n
  f.app.storyChapterId='ch1';completion(f,{levelId:'ch2-2',nextLevelId:'ch2-3'});f.app.route='room';f.app.exitRoom();assert.equal(f.app.route,'chapter','a mid-chapter ch2 clear returns to the story page');assert.equal(f.app.selectedChapter.id,'ch2');
 });
 
-for(const [levelId,nextLevelId,title]of [['ch2-6','ch3-1','早餐街'],['ch3-6','ch4-1','云上邮局'],['ch4-6',null,'月光水族馆']])test(`${levelId} completion offers ${nextLevelId?'下一章':'去大厅'} and closing selects its destination`,async()=>{
+for(const [levelId,nextLevelId,title]of [['ch2-6','ch3-1','早餐街'],['ch3-6','ch4-1','云上邮局'],['ch4-6',null,'月光水族馆']])test(`${levelId} completion offers ${nextLevelId?'下一章':'去拼今日拼图'} and closing selects its destination`,async()=>{
  for(const action of ['close','primary']){
   const f=fixture({data:fourChapters(6,6,6,6)});f.app.storyChapterId=levelId.split('-')[0];completion(f,{levelId,nextLevelId,chapterComplete:true});f.app.route='room';f.app.modal='completion';
   let leaves=0;f.app.leaveRoom=()=>{leaves++;f.app.room=null;};f.app.drawCompletionContent(12,40,366);assert.ok(f.texts.includes(title+'完成！'));
-  const button=f.buttons.find(button=>button.label===(nextLevelId?'下一章':'去大厅'));assert.ok(button);assert.ok(!f.buttons.some(button=>button.label===(nextLevelId?'去大厅':'下一章')));
+  const button=f.buttons.find(button=>button.label===(nextLevelId?'下一章':'去拼今日拼图'));assert.ok(button);assert.ok(!f.buttons.some(button=>button.label===(nextLevelId?'去大厅':'下一章')));
   if(action==='close')f.app.closeModal();else button.fn();await tick();assert.equal(leaves,1);
-  if(!nextLevelId){assert.equal(f.app.route,'lobby');assert.equal(f.created.length,0);}
+  if(!nextLevelId&&action==='close'){assert.equal(f.app.route,'lobby');assert.equal(f.created.length,0);}
+  else if(!nextLevelId)assert.equal(f.created[0].mode,'daily');
   else if(action==='close'){assert.equal(f.app.route,'chapter');assert.equal(f.app.selectedChapter.id,nextLevelId.split('-')[0]);assert.equal(f.created.length,0);}
   else assert.equal(f.created[0].levelId,nextLevelId);
  }
