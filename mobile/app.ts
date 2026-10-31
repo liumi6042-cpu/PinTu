@@ -42,10 +42,11 @@ import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileR
 import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
+import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,beijingClock,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
-type Modal='orientation'|'weeklyGift'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
+type Modal='orientation'|'weeklyGift'|'welcome'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
 type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
@@ -71,7 +72,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v50';
+const CLIENT_PACKAGE_VERSION='v51';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -95,6 +96,8 @@ export class GameApp{
  private scroll=0;private extent=0;private bodyTop=100;private bodyBottom=0;private pointer:{x:number;y:number;lastY:number;scroll:boolean;board:boolean;album?:boolean;modal?:boolean;landscapeBackgroundTap?:boolean}|null=null;
  private modal:Modal=null;private modalScroll=0;private modalExtent=0;private modalArea:Rect={x:0,y:0,w:0,h:0};private modalStart=0;
  private orientationChoice:ScreenOrientation|null=null;private orientationSwitching=false;
+ // 欢迎回家: armed by a plain login, shown on the first quiet lobby frame after it.
+ private welcome:{slot:WelcomeSlot;line:string;tie:WelcomeTieIn|null;clock:string;openedAt:number;storyChapterId:string|null}|null=null;private welcomePending=false;private welcomeSkip=false;private welcomeEnabled=true;private welcomeLastVisit:number|null=null;private welcomeFrame:number|null=null;
  private orientationEntryPending:Promise<void>|null=null;private orientationEntryResolve:(()=>void)|null=null;
  private settingsTipSeen=false;private settingsTipDrawn=false;private settingsTipAnchor:Rect|null=null;
  private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;
@@ -176,6 +179,7 @@ export class GameApp{
   this.roomPanelCollapsed=platform.storage.get('jigsaw:room-panel-collapsed:v1')==='1';
   this.desktopToolsOpen=platform.storage.get('jigsaw:desktop-tools-open:v1')!=='0';
   this.landscapeToolsOpen=platform.storage.get('jigsaw:landscape-tools-open:v1')==='1';
+  try{this.welcomeEnabled=platform.storage.get(WELCOME_ENABLED_KEY)!=='0';}catch{}
   try{this.lockButtonEnabled=platform.storage.get(LOCK_BUTTON_KEY)==='1';this.viewLocked=this.lockButtonEnabled&&platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
   try{this.minimapEnabled=platform.storage.get(MINIMAP_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
@@ -204,7 +208,7 @@ export class GameApp{
   // Read once outside the tolerant preference parser: unavailable storage must skip the offer.
   try{const saved=this.platform.storage.get(orientationPreferenceKey);if(readOrientationPreference({get:()=>saved})!==null)return Promise.resolve();}catch{return Promise.resolve();}
   this.orientationChoice=this.actualOrientation;
-  this.orientationEntryPending=new Promise(resolve=>{this.orientationEntryResolve=resolve;});
+  this.orientationEntryPending=new Promise(resolve=>{this.orientationEntryResolve=resolve;});this.welcomeSkip=true;
   this.showModal('orientation');
   return this.orientationEntryPending;
  }
@@ -298,7 +302,10 @@ export class GameApp{
   if(this.chatBubble&&now>this.chatBubble.until){this.chatBubble=null;changed=true;}
   else if(this.chatBubble&&this.chatBubble.until-now<=1000&&this.route==='room'&&this.platform.config.id!=='web'&&this.layout==='phoneLandscape')changed=true;
   if(this.route==='lobby'){const minute=String(Math.floor(this.dailyNow()/60000));if(minute!==this.lobbyMinute){this.lobbyMinute=minute;changed=true;}}
+  // 七日礼 first; 欢迎回家 waits for it (weeklyGiftHolds).
   this.maybeWeeklyGift();this.checkStreakToast();
+  if(this.welcomePending)this.maybeWelcome();
+  if(this.modal==='welcome'&&this.welcome?.slot.tone==='night')changed=true;
   if(changed||this.authorizationTesting||this.platform.config.previewTestRoom&&(this.route==='room'||this.modal==='settings'))this.invalidate();
  }
  private note(message:string,permanent=false){this.message=message;this.messageUntil=permanent?Infinity:Date.now()+3000;this.invalidate();}
@@ -353,6 +360,7 @@ export class GameApp{
   await levels;
   if(!direct&&!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)await this.checkLevelEntry();
   if(!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)void this.loadRetention(true);
+  if(!direct&&!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)this.armWelcome();
   this.invalidate();
  }
  resize(){
@@ -411,7 +419,7 @@ export class GameApp{
  private selectAlbum(id:string){this.changeListView(()=>{this.albumId=id;});}
  private exitRoom(){if(this.offlineRoom&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];this.enterOffline();return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,clear=this.room?.snapshot.mobileResult?.levelClear,complete=clear&&(clear.chapterComplete||clear.nextLevelId===null),nextLevelId=complete?clear?.nextLevelId:null,nextChapter=this.chapterForLevel(nextLevelId),target=this.roomReturn;if(nextLevelId)this.storyChapterId=nextChapter?.id??null;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level){// Back to the story page while the played chapter still has unfinished levels, in any chapter.
 const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels.some(item=>item.status!=='cleared'):!!this.beginnerChapter);if(resume&&played)this.storyChapterId=played.id;this.navigate(nextLevelId||resume?'chapter':'lobby');}else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
- private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
+ private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
@@ -2414,6 +2422,100 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',cx=p.x+p.w/2,room=outside?Infinity:Math.min(Infinity,...[...this.completionSlotRects.values()].filter(r=>r.y<p.y+29&&r.y+r.h>p.y-3).map(r=>(r.x+r.w<=cx?cx-r.x-r.w:r.x-cx)-2)),w=Math.min(p.w+60,s.measure(label,14,800)+58,room*2),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
   });
  }
+ /** Arms the greeting after a plain login (no invite link, not a new device); the lobby shows it once nothing else is open. */
+ private armWelcome(){
+  if(this.welcomeSkip||!this.welcomeEnabled||this.platform.config.id!=='taptap'||this.client.profile?.newcomer===true)return;
+  let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{return;}
+  this.welcomeLastVisit=record?.visit??null;this.welcomePending=true;this.maybeWelcome();
+ }
+ private maybeWelcome(){
+  if(!this.welcomePending)return;
+  if(this.route!=='lobby'||this.room||this.destroyed){this.welcomePending=false;return;}
+  if(this.modal||this.busy||!this.ready||this.hidden||this.weeklyGiftHolds())return;
+  this.welcomePending=false;
+  const now=this.dailyNow();let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{return;}
+  const save=(value:object)=>{try{this.platform.storage.set(WELCOME_STORAGE_KEY,JSON.stringify(value));}catch{}};
+  if(!welcomeDue(record,now)){if(record)save({...record,visit:now});return;}
+  const slot=welcomeSlot(now),p=this.client.profile,daily=this.dailyPhoto?.id;
+  const chapter=this.availableChapters.find(item=>item.levels.some(level=>level.status==='unlocked'));
+  const tie=welcomeTieIn({now,lastVisit:this.welcomeLastVisit,dailyFinished:!!daily&&!!this.historyRooms?.some(room=>room.completed&&room.imageId===daily),
+   story:chapter?{title:chapter.title,left:chapter.levels.filter(level=>level.status!=='cleared').length}:null,energyFull:this.energyEnabled&&!!p&&p.energyCap>0&&p.energy>=p.energyCap});
+  const line=tie?.line??pickWelcomeLine(slot,record?.line??'');
+  save({at:now,key:welcomeSlotKey(now),line,visit:now});
+  this.welcome={slot,line,tie,clock:beijingClock(now),openedAt:Date.now(),storyChapterId:tie?.kind==='story'?chapter?.id??null:null};
+  this.showModal('welcome');
+ }
+ private closeWelcome(){if(this.welcomeFrame!=null)this.platform.cancelFrame?.(this.welcomeFrame);this.welcomeFrame=null;this.welcome=null;if(this.modal==='welcome')this.showModal(null);}
+ private setWelcomeEnabled(enabled:boolean){this.welcomeEnabled=enabled;try{this.platform.storage.set(WELCOME_ENABLED_KEY,enabled?'1':'0');}catch{}if(!enabled)this.welcomePending=false;this.invalidate();}
+ private welcomePrimary(){
+  const view=this.welcome;this.closeWelcome();
+  if(view?.storyChapterId){this.storyChapterId=view.storyChapterId;this.navigate('chapter');return;}
+  // The table the player already sits at, else an open daily table, else a new daily table.
+  const own=this.historyRooms??this.client.profile?.ownedRooms??[],start=welcomeStart({own,rooms:this.rooms,dailyImageId:this.dailyPhoto?.id??null});
+  if(start.kind==='create')this.launchDaily();else void this.enterRoom(start.roomId);
+ }
+ /** Today's daily picture tinted for the time of day; without the picture the tint sits on the placeholder. */
+ private drawWelcomeHero(r:Rect,slot:WelcomeSlot){
+  const s=this.stage,c=s.ctx,photo=this.dailyPhoto,tone=slot.tone;
+  if(photo)s.image(this.client.asset(photo.src||photo.thumbSrc),r,'cover');else{c.fillStyle=this.colors.placeholder;c.fillRect(r.x,r.y,r.w,r.h);}
+  c.save();
+  if(tone==='morning'){c.fillStyle='#ffd9bf33';c.fillRect(r.x,r.y,r.w,r.h);const g=c.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,'#fff0dcb0');g.addColorStop(.5,'#ffd8bf40');g.addColorStop(1,'#ffd8bf00');c.fillStyle=g;c.fillRect(r.x,r.y,r.w,r.h);}
+  if(tone==='dusk'){const g=c.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,'#e7a07a40');g.addColorStop(1,'#d9824c80');c.fillStyle=g;c.fillRect(r.x,r.y,r.w,r.h);}
+  if(tone==='night'){
+   c.fillStyle='#231d4459';c.fillRect(r.x,r.y,r.w,r.h);const g=c.createLinearGradient(0,r.y,0,r.y+r.h*.55);g.addColorStop(0,'#1c173a66');g.addColorStop(1,'#1c173a00');c.fillStyle=g;c.fillRect(r.x,r.y,r.w,r.h*.55);
+   // Pixel stars along the top; the 1 s lobby tick makes a couple of them blink.
+   const second=Math.floor(Date.now()/1000),alpha=c.globalAlpha;
+   [[.07,.12,3],[.19,.3,2],[.31,.09,2],[.47,.2,3],[.63,.08,2],[.78,.24,3],[.91,.1,2]].forEach(([fx,fy,size],index)=>{const x=Math.round(r.x+fx*r.w),y=Math.round(r.y+fy*r.h);
+    c.globalAlpha=alpha*((second+index)%3===0?.4:1);c.fillStyle='#fff6dc';c.fillRect(x-1.5,y-1.5,3,3);if(size>2){c.fillStyle='#f1d498';c.fillRect(x-1,y-5.5,2,3.5);c.fillRect(x-1,y+2,2,3.5);c.fillRect(x-5.5,y-1,3.5,2);c.fillRect(x+2,y-1,3.5,2);}});
+  }
+  c.restore();
+  if(!photo){const glyph=tone==='night'?'themeMoon':'themeSun',size=Math.min(56,r.h*.4);s.icon(glyph,{x:r.x+(r.w-size)/2,y:r.y+(r.h-size)/2,w:size,h:size},tone==='night'?'#fff6dc':this.colors.gold);return;}
+  const label='今日拼图 · '+(photo.title||'每日拼图'),size=11,lw=Math.min(r.w-16,s.measure(label,size,700)+30),chip={x:r.x+8,y:r.y+r.h-28,w:lw,h:20};
+  c.save();c.globalAlpha*=.86;c.fillStyle='#573b40';c.fillRect(chip.x,chip.y,chip.w,chip.h);c.restore();s.icon('piece',{x:chip.x+5,y:chip.y+3,w:14,h:14},'#fff8ed');s.text(label,chip.x+22,chip.y+4,size,'#fff8ed',700,chip.w-28);
+ }
+ /** The lobby's chibi friend art without its add-friend badge. */
+ private drawWelcomeArt(r:Rect){
+  const c=this.stage.ctx;c.save();c.beginPath();c.moveTo(r.x,r.y);c.lineTo(r.x+r.w,r.y);c.lineTo(r.x+r.w,r.y+r.h*.56);c.lineTo(r.x+r.w*.6,r.y+r.h*.56);c.lineTo(r.x+r.w*.6,r.y+r.h);c.lineTo(r.x,r.y+r.h);c.closePath();c.clip();this.stage.icon('friendArt',r);c.restore();
+  // A flower from the same sprite set hides the cut where the add-friend badge was.
+  this.stage.icon('flower',{x:r.x+r.w*.5,y:r.y+r.h*.5,w:r.w*.44,h:r.h*.46});
+ }
+ private drawWelcome(){
+  const view=this.welcome;if(!view){this.modal=null;return;}
+  const s=this.stage,c=s.ctx,v=this.platform.viewport(),landscape=this.layout==='phoneLandscape',{slot,tie}=view,t=clamp((Date.now()-view.openedAt)/180,0,1),ease=1-(1-t)**3,lift=Math.round((1-ease)*12);
+  if(t<1&&this.welcomeFrame==null&&this.platform.frame)this.welcomeFrame=this.platform.frame(()=>{this.welcomeFrame=null;if(!this.destroyed&&this.modal==='welcome')this.invalidate();});
+  c.save();c.globalAlpha=ease;
+  c.fillStyle=this.colors.overlay;c.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>this.closeWelcome());
+  const story=tie?.kind==='story',pill=tie&&tie.kind!=='away'?tie:null,ink=this.colors.ink,muted=this.colors.muted,availH=s.h-v.top-v.bottom-24;
+  const wrapLine=(width:number)=>{const lines:string[]=[];let row='';for(const ch of view.line){if(s.measure(row+ch,14)>width){lines.push(row);row=ch;}else row+=ch;}if(row)lines.push(row);return lines.slice(0,2);};
+  const textBlock=(x:number,y:number,w:number,art:number,artTop=-2)=>{
+   // Chip: sun or moon, the slot greeting and the Beijing clock.
+   const chipLabel=slot.greeting+' · '+view.clock,chip={x,y,w:s.measure(chipLabel,12,700)+40,h:26};s.frame(chip,'button-linen-normal');
+   s.icon(slot.tone==='night'?'themeMoon':'themeSun',{x:chip.x+8,y:chip.y+5,w:16,h:16},slot.tone==='night'?this.colors.gold:'#d9915a');s.text(chipLabel,chip.x+28,chip.y+6,12,muted,700);
+   if(art)this.drawWelcomeArt({x:x+w-art,y:y+artTop,w:art,h:Math.round(art*66/70)});
+   let cy=y+38;s.text('欢迎回家',x,cy,24,ink,800,w-art-6);cy+=36;
+   const lines=wrapLine(w-art);lines.forEach((text,index)=>s.text(text,x,cy+index*22,14,muted,500,w-art));cy+=lines.length*22+8;
+   if(pill){const size=13,pw=Math.min(w,s.measure(pill.text,size,700)+46),r={x,y:cy,w:pw,h:30};s.frame(r,'rail-cream-normal');s.icon(pill.icon,{x:r.x+9,y:r.y+6,w:18,h:18});s.text(pill.text,r.x+33,r.y+(30-size)/2-1,size,ink,700,pw-40);cy+=40;}
+   return cy;
+  };
+  const buttons=(x:number,y:number,w:number,h:number)=>{const primary=Math.round(w*.6);s.button({x,y,w:primary,h},story?'继续故事':'开拼 · 108 片',()=>this.welcomePrimary(),{tone:'berrydark',icon:story?'story':'daily',fontSize:15,disabled:this.busy});s.button({x:x+primary+10,y,w:w-primary-10,h},'先逛逛',()=>this.closeWelcome(),{fontSize:15});};
+  let panel:Rect;
+  if(landscape){
+   // Hero left, text right; the panel is only as tall as the text column needs.
+   const w=Math.min(s.w-32,640),heroW=Math.round(w*.47),tw=w-heroW-56,art=tw>=260?64:0,lines=wrapLine(tw-art).length,h=Math.min(availH,Math.max(232,22+74+lines*22+8+(pill?40:0)+12+42+20)),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
+   s.hit(panel,()=>{});s.panel(panel);
+   const hero={x:x+12,y:y+12,w:heroW,h:h-24};this.drawWelcomeHero(hero,slot);
+   const tx=hero.x+hero.w+20;textBlock(tx,y+22,tw,art,30);buttons(tx,y+h-62,tw,42);
+  }else{
+   const w=Math.min(s.w-32,420),heroH=Math.round(clamp((w-24)*.52,120,200)),art=70,lines=wrapLine(w-40-art).length,h=Math.min(availH,12+heroH+18+74+lines*22+8+(pill?40:0)+10+44+20),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
+   s.hit(panel,()=>{});s.panel(panel);
+   const hero={x:x+12,y:y+12,w:w-24,h:heroH};this.drawWelcomeHero(hero,slot);
+   textBlock(x+20,hero.y+hero.h+18,w-40,art);buttons(x+20,y+h-64,w-40,44);
+  }
+  s.ornaments(panel,18);
+  s.button({x:panel.x+panel.w-42,y:panel.y+8,w:30,h:30},'',()=>this.closeWelcome(),{icon:'close'});
+  this.modalArea=panel;this.modalExtent=0;this.modalScroll=0;
+  c.restore();
+ }
  private drawOrientationPicker(){
   const s=this.stage,v=this.platform.viewport(),w=Math.min(s.w-32,420),tileH=clamp(s.h-v.top-v.bottom-216,84,116),h=tileH+184,x=(s.w-w)/2,y=v.top+(s.h-v.top-v.bottom-h)/2,left=x+20,width=w-40,tileW=(width-12)/2,cy=y+80;
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
@@ -2434,6 +2536,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private drawModal(){
   if(this.modal==='orientation'){this.drawOrientationPicker();return;}
+  if(this.modal==='welcome'){this.drawWelcome();return;}
   if(this.modal==='levelComic'){this.drawLevelComic();return;}
   if(this.modal==='completion'&&this.layout==='phoneLandscape'){this.drawLandscapeCompletion();return;}
   if(this.modal==='playerCard'){this.drawPlayerCard();return;}
@@ -2444,7 +2547,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
   const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
+  const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
   // A vector cross has the same visible size and center with browser and wx fonts.
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
@@ -2503,6 +2606,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(this.platform.config.id==='web'||this.desktop||this.platform.config.id==='taptap'){heading('操作');if(this.desktop){cy=this.paragraph('快捷键（电脑）：E 边缘 · H 提示 · B 底图 · F 适配 · '+(this.soloRoom?'R 整理 · ':'')+'T 收起/展开工具 · 空格或中键拖动平移 · 滚轮缩放 · Esc 返回',left,cy,width,12)+12;}
      if(this.platform.config.id==='web'&&this.platform.fullscreen?.available()){this.button(left,cy,width,this.platform.fullscreen.active()?'退出全屏':'全屏',()=>void this.toggleFullscreen(),'cream',39);cy+=51;}
     if(this.platform.config.id==='taptap'){this.button(left,cy,width,this.stage.w>this.stage.h?'切换竖屏':'切换横屏',()=>void this.toggleOrientation(),'cream',39);cy+=51;}
+    if(this.platform.config.id==='taptap'){this.button(left,cy,width,(this.welcomeEnabled?'✓ ':'')+'进入问候',()=>this.setWelcomeEnabled(!this.welcomeEnabled),'cream',39);cy+=47;cy=this.paragraph('每天回到小窝时，按时间段打个招呼。',left,cy,width,12)+18;}
     }
     heading('账号与记录');
     this.button(left,cy,width,(this.formalWeb?'好友':'好友与消息')+(this.social.unread?' · '+this.social.unread+' 条未读':''),()=>{if(this.room)this.showModal('social');else this.navigate('friends');},'cream',39);cy+=50;
