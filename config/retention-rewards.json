@@ -1,0 +1,13 @@
+{
+  "schema": "jigsaw-retention/v1",
+  "weeklyGift": {"days": [
+    {"day": 1, "kind": "energy-pack", "amount": 1, "fallbackCoins": 50},
+    {"day": 2, "kind": "coins", "amount": 50},
+    {"day": 3, "kind": "create-ticket", "amount": 1, "fallbackCoins": 50},
+    {"day": 4, "kind": "coins", "amount": 80},
+    {"day": 5, "kind": "energy-pack", "amount": 1, "fallbackCoins": 50},
+    {"day": 6, "kind": "coins", "amount": 120},
+    {"day": 7, "kind": "decoration", "decorationId": "grandma-hairpin", "coins": 100}
+  ]},
+  "dailyStreak": {"cycle": 7, "milestones": [{"at": 3, "coins": 60}, {"at": 7, "coins": 150}]}
+}

@@ -91,6 +91,11 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   db.prepare('UPDATE mobile_collection_wallets SET coins=coins+?,fragments=fragments+? WHERE owner=?').run(coins,fragments,owner);
   return true;
  }
+ function awardCoins(owner,source,coins,now){
+  if(typeof source!=='string'||!source||source.length>512||!Number.isSafeInteger(coins)||coins<0)throw new TypeError('Invalid coin award');
+  if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return 0;
+  return change(owner,source,coins,0,now)?coins:0;
+ }
  // Task grants use the same wallet, ledger and transaction as all collection rewards.
  function awardTaskCoins(owner,source,coins,now){
   if(typeof source!=='string'||!source||source.length>512||!Number.isSafeInteger(coins)||coins<0)throw new TypeError('Invalid task coin award');
@@ -216,6 +221,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,equipped,awardTaskCoins,playerStats,grantDecoration};
+ return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,equipped,awardTaskCoins,awardCoins,playerStats,grantDecoration};
 }
 

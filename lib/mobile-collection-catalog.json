@@ -152,6 +152,16 @@
   ],
   "rewardDecorations": [
     {
+      "id": "grandma-hairpin",
+      "title": "奶奶的发夹",
+      "description": "七日礼第 7 天获得",
+      "kind": "cursor",
+      "artKey": "hairpin",
+      "color": "#f4a6c0",
+      "cost": 0,
+      "source": "gift"
+    },
+    {
       "id": "cat-paw",
       "title": "猫爪",
       "description": "在 TapTap 论坛或评论区反馈获得。",

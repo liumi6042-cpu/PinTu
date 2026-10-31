@@ -40,8 +40,8 @@ test('offline capability is additive, defaults on, and host/env/web kill switche
  const previous=process.env.MOBILE_OFFLINE_LEVEL_CLEARS;
  try{
   delete process.env.MOBILE_OFFLINE_LEVEL_CLEARS;
-  const f=fixture(t,{soloLocalPlay:true,tapMultiplayerEnabled:false}),{offlineLevelClears,...existing}=f.service.capabilities;
-  assert.equal(offlineLevelClears,true);
+  const f=fixture(t,{soloLocalPlay:true,tapMultiplayerEnabled:false}),{offlineLevelClears,weeklyGift,dailyStreak,...existing}=f.service.capabilities;
+  assert.equal(offlineLevelClears,true);assert.equal(weeklyGift,true);assert.equal(dailyStreak,true);
   assert.deepEqual(existing,{energy:true,ads:false,shareRewards:true,tapMultiplayer:false,soloLocalPlay:true,albumTarget:'mobile-shared',createTickets:true,customNames:false,cheers:true,privacyRequests:true,roomActionRevisionBody:true,social:{friends:true,privateMessages:false,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'}});
   assert.equal(f.ok('/api/mobile/profile').capabilities.offlineLevelClears,true);
   const disabled=[fixture(t,{offlineLevelClears:false}),fixture(t,{runtimeProfile:'web',offlineLevelClears:true})];

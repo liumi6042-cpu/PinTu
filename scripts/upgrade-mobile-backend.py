@@ -23,7 +23,7 @@ BASE = pathlib.Path('/srv/sites/jigsaw-mobile-v3')
 SERVICE = 'jigsaw-mobile-v3.service'
 CODE_PATHS = {
     'server/h5-gateway.mjs', 'server/mobile-service.mjs', 'server/mobile-social.mjs', 'server/mobile-privacy.mjs',
-    'server/mobile-collection.mjs', 'server/mobile-economy.mjs', 'server/mobile-tasks.mjs',
+    'server/mobile-collection.mjs', 'server/mobile-economy.mjs', 'server/mobile-tasks.mjs','server/mobile-retention.mjs','config/retention-rewards.json',
     'server/daily-content.mjs', 'config/social-phrases.json',
     'server/task-reward-settings.mjs', 'config/task-reward-defaults.json',
     'server/game-settings.mjs', 'config/game-settings-defaults.json',
