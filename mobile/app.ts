@@ -6,7 +6,7 @@ import {comicFor,comicSource,comicCloseRect,comicPageRect,comicLayout,comicTextC
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
 import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
-import {PuzzleBoard} from './puzzle-board';
+import {PuzzleBoard,DRAG_SLOP} from './puzzle-board';
 import {SocialPanel} from './social-panel';
 import {TaskShareReward} from './task-share-reward';
 import {contributionCopy,recoveryCopy} from './economy-copy';
@@ -76,6 +76,10 @@ const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
 const CLIENT_PACKAGE_VERSION='v53.1';
+/** A chat bubble that just popped up under a finger reaching for a piece does not open the chat until it has shown this long. */
+const CHAT_BUBBLE_ARM_MS=600;
+/** 整理 reshuffles every loose piece, so its first tap only arms it for this long. */
+const ORGANIZE_CONFIRM_MS=3000;
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -428,6 +432,17 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
+ /** Phones: a drag that starts on a control floating over the table (任务, chat bubble, tools button, landscape top bar)
+  * hands the finger to the table once it travels DRAG_SLOP: the press is cancelled and the board gets the landing point,
+  * so a piece under the control can still be picked up. Not inside modals, the portrait tools popup or the open landscape tools column. */
+ private dragThrough(p:{x:number;y:number;board:boolean;scroll:boolean;modal?:boolean},point:{id:number;x:number;y:number},input:Input){
+  const layout=this.layout;
+  if(p.board||p.scroll||p.modal||this.platform.config.id==='web'||layout==='desktop'||this.route!=='room'||this.modal||!this.board||this.boardInputBlocked)return false;
+  if(input.points.length!==1||!inside(this.roomArea,p.x,p.y)||Math.hypot(point.x-p.x,point.y-p.y)<DRAG_SLOP)return false;
+  if(layout==='phonePortrait'&&this.toolsOpen||layout==='phoneLandscape'&&this.landscapeToolsOpen&&inside(this.roomToolsArea,p.x,p.y))return false;
+  this.stage.input({type:'cancel',points:[],changed:input.changed});p.board=true;
+  const origin={id:point.id,x:p.x,y:p.y};this.board.input({type:'down',points:[origin],changed:[origin]});return true;
+ }
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
  private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if(modal==='completion'&&this.modal!=='completion'){void this.loadRetention(true);if(!this.collection&&!this.offlineRoom&&this.room?.snapshot.levelId)void this.loadCollection();}if(modal!=='weeklyGift')this.weeklyGrant=null;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history'){if(previous!=='history'&&previous!=='manage')this.historyTab='drafts';this.historyPreview=null;void this.loadRoomHistory();}if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
  private get ownRoomLimit(){return this.formalWeb?3:5;}
@@ -2019,7 +2034,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const board=this.board;if(!board)return;
   if(this.offlineRoom&&['hint','underlay','chat'].includes(kind)){this.note(OFFLINE_REQUIRED);return;}
   if(kind==='edge')board.edgeOnly=!board.edgeOnly;else if(kind==='hint'||kind==='underlay'){if(!this.assistanceUnavailable(kind))void this.activateAssistance(kind);}else if(kind==='fit')this.fitRoom();else if(kind==='locate')this.locateLoose();
-  else if(kind==='orientation')void this.toggleOrientation();else if(kind==='organize'&&this.soloRoom)void this.run(async()=>{await this.room?.organize();this.note('散片已整理');});else if(kind==='chat')this.showModal('chat');else if(kind==='more')this.showModal('tools');
+  else if(kind==='orientation')void this.toggleOrientation();else if(kind==='organize'&&this.soloRoom){
+   // The first tap (or R) only arms it: the tools stay open with 整理 lit, and a second tap within 3 s reshuffles.
+   if(Date.now()>this.organizeArmedUntil){this.organizeArmedUntil=Date.now()+ORGANIZE_CONFIRM_MS;this.note('再点一次「整理」，会把所有散片重新铺开');setTimeout(()=>{if(!this.destroyed)this.invalidate();},ORGANIZE_CONFIRM_MS+16);this.invalidate();return;}
+   this.organizeArmedUntil=0;void this.run(async()=>{await this.room?.organize();this.note('散片已整理');});
+  }else if(kind==='chat')this.showModal('chat');else if(kind==='more')this.showModal('tools');
   this.toolsOpen=false;this.invalidate();
  }
  private get soloRoom(){return this.room?.snapshot.visibility==='solo';}
@@ -2031,7 +2050,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   this.note(count?'已标出 '+count+' 块未拼的拼块'+(board.edgeOnly?'（边缘筛选中）':''):board.edgeOnly?'边缘拼块都已归位，关闭边缘筛选可找其余拼块':'所有拼块都已归位');
  }
  private roomLocateInsets(){const layout=this.layout;return layout==='desktop'?{bottom:56,left:this.desktopToolsOpen?104:72}:layout==='phoneLandscape'?{top:this.roomHeaderTop()+56-this.roomArea.y,bottom:8}:{bottom:72};}
- private toolActive(kind:string){return kind==='edge'?!!this.board?.edgeOnly:kind==='locate'?!!this.board?.locating:kind==='hint'||kind==='underlay'?!!this.activeAid(kind):false;}
+ private toolActive(kind:string){return kind==='organize'?Date.now()<=this.organizeArmedUntil:kind==='edge'?!!this.board?.edgeOnly:kind==='locate'?!!this.board?.locating:kind==='hint'||kind==='underlay'?!!this.activeAid(kind):false;}
  private drawAidBadge(kind:string,right:number,y:number){
   if(kind!=='hint'&&kind!=='underlay')return;const s=this.stage,c=s.ctx,active=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,pending=!this.aid||this.busy;
   const badge=active?Math.ceil((active.expiresAt-Date.now())/1000)+'秒':pending?'读取中':this.aid?.newcomerProtected?'新手免费':free>0?'免费'+free+'次':this.shareAvailable?'分享':'暂未开放',ad=!active&&!pending&&!this.aid?.newcomerProtected&&free===0,bw=s.measure(badge,10,600)+8,bx=right-bw;
@@ -2126,7 +2145,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.roomMembersArea={x:avatarX,y:r.y,w:avatarW,h:34};s.hit(this.roomMembersArea,()=>this.showModal('chat'));this.drawLandscapeButton(invite,'＋ 邀请',()=>this.showModal('invite'),roomColors.roseD,13);
   }
  }
- private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;
+ private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;private bubbleArmTimer:ReturnType<typeof setTimeout>|null=null;private organizeArmedUntil=0;
  private landscapeChatVisible=false;
  private viewLocked=false;private lockButtonEnabled=false;private minimapEnabled=false;
  /** The corner map is opt-in under 更多 and only shows while zoomed in. */
@@ -2159,9 +2178,16 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.platform.config.id!=='web'&&this.layout==='phoneLandscape'){
    const c=s.ctx,name=bubble.message.name,text='：'+bubble.message.text,nameW=Math.min(s.measure(name,12,700),this.roomArea.w*.35),w=Math.min(this.roomArea.w-78,this.room?.snapshot.completedAt&&!this.completionFx?(this.roomArea.w-112)/2-20:Infinity,nameW+s.measure(text,12,500)+20),r={x:12,y:this.roomArea.h-32,w,h:20},member=this.room?.snapshot.members.find(member=>member.id===bubble.message.playerId);
    const remaining=bubble.until-Date.now();c.save();c.globalAlpha=Math.min(1,remaining/1000);this.drawLandscapeSurface(r,14,'rgba(255,250,243,.95)',roomColors.lineD,1.5);if(remaining<1000)this.invalidate();
-   s.text(name,r.x+10,r.y+4,12,member?.color||roomColors.ink,700,nameW);s.text(text,r.x+10+nameW,r.y+4,12,roomColors.ink,500,w-nameW-20);c.restore();s.hit(r,()=>this.showModal('chat'));this.landscapeChatVisible=true;return;
+   s.text(name,r.x+10,r.y+4,12,member?.color||roomColors.ink,700,nameW);s.text(text,r.x+10+nameW,r.y+4,12,roomColors.ink,500,w-nameW-20);c.restore();this.bubbleHit(bubble,r);this.landscapeChatVisible=true;return;
   }
-  const text=bubble.message.name+'：'+bubble.message.text,w=Math.min(s.w-24,s.measure(text,13,600)+48),r={x:(s.w-w)/2,y,w,h:32};s.frame(r,'button-linen-normal');s.icon('chat',{x:r.x+10,y:r.y+8,w:16,h:16});s.text(text,r.x+31,r.y+8,13,this.colors.ink,600,w-40);s.hit(r,()=>this.showModal('chat'));
+  const text=bubble.message.name+'：'+bubble.message.text,w=Math.min(s.w-24,s.measure(text,13,600)+48),r={x:(s.w-w)/2,y,w,h:32};s.frame(r,'button-linen-normal');s.icon('chat',{x:r.x+10,y:r.y+8,w:16,h:16});s.text(text,r.x+31,r.y+8,13,this.colors.ink,600,w-40);this.bubbleHit(bubble,r);
+ }
+ /** The bubble's tap area arms CHAT_BUBBLE_ARM_MS after it appears (until-5000), so a bubble popping up under a finger that is
+  * reaching for a piece does not open the chat; a redraw is scheduled for the moment it arms. */
+ private bubbleHit(bubble:{until:number},r:Rect){
+  const wait=bubble.until-5000+CHAT_BUBBLE_ARM_MS-Date.now();
+  if(wait<=0){this.stage.hit(r,()=>this.showModal('chat'));return;}
+  if(!this.bubbleArmTimer)this.bubbleArmTimer=setTimeout(()=>{this.bubbleArmTimer=null;if(!this.destroyed)this.invalidate();},wait+16);
  }
  private drawRoomGift(x:number,y:number,label:boolean){
   const s=this.stage,p=this.client.profile,giftLabel='任务 '+(p?.giftProgress??0)+'/10',reserve=label&&this.room?.snapshot.completedAt&&!this.completionFx&&this.layout==='phonePortrait',hitW=reserve?Math.min(144,(this.roomArea.w-112)/2-8-x+3):label?144:44;s.icon('gift',{x,y:y+4,w:label?44:36,h:label?46:38});if(label)s.text(giftLabel,x+46,y+20,15,this.colors.ink,700,reserve?Math.max(1,hitW-49):undefined);s.hit({x:x-3,y,w:hitW,h:52},()=>this.navigate('tasks'));
@@ -2786,6 +2812,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.pointer={x:point.x,y:point.y,lastY:point.y,scroll:false,board,modal:onModal,album:!onModal&&inside(this.albumListArea,point.x,point.y)};
    if(board){const handled=this.board!.input(input);this.pointer.landscapeBackgroundTap=this.platform.config.id!=='web'&&this.layout==='phoneLandscape'&&this.landscapeToolsOpen&&!input.pan&&input.points.length===1&&this.board!.backgroundTouch;return handled;}return this.stage.input(input);
   }
+  if(input.type==='move'&&this.pointer&&this.dragThrough(this.pointer,point,input))return this.board!.input(input);
   if(this.pointer?.board&&!this.boardInputBlocked){const p=this.pointer;if(input.points.length>1||Math.hypot(point.x-p.x,point.y-p.y)>6)p.landscapeBackgroundTap=false;const handled=this.board?.input(input)??false;if(input.type==='cancel'||(input.type==='up'&&!input.points.length)){this.pointer=null;if(input.type==='up'&&p.landscapeBackgroundTap)this.setLandscapeToolsOpen(false);}return handled;}
   if(input.type==='move'&&this.pointer){const p=this.pointer,canScroll=p.modal?inside(this.modalArea,p.x,p.y):this.route!=='room'&&(p.album||inside(this.listArea,p.x,p.y));
    if(canScroll&&(p.scroll||Math.abs(point.y-p.y)>6)){if(!p.scroll)this.stage.input({type:'cancel',points:[],changed:input.changed});p.scroll=true;const delta=p.lastY-point.y;if(p.modal)this.modalScroll=clamp(this.modalScroll+delta,0,Math.max(0,this.modalExtent-this.modalArea.h));else if(p.album)this.albumListScroll=clamp(this.albumListScroll+delta,0,Math.max(0,this.albumListExtent-this.albumListArea.h));else{this.scroll=clamp(this.scroll+delta,0,Math.max(0,this.extent-this.listArea.h));if(this.route==='lobby'&&this.lobbyCursor&&this.scroll>this.extent-this.listArea.h-180)void this.loadLobby(true);}p.lastY=point.y;this.invalidate();return true;}p.lastY=point.y;
