@@ -583,9 +583,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(!view&&!live)return null;const count=live?.count??view!.count,todayDone=live?.todayDone??view!.todayDone;
   return {count,todayDone,next:view&&view.count===count&&view.todayDone===todayDone?view.next:null};
  }
+ /** The server's newcomer flag stays on until the very first room is finished, even after other rooms or story clears; popups only skip players with no progress at all. */
+ private get brandNewPlayer(){const p=this.client.profile as {newcomer?:boolean;totalXp?:number;level?:number}|null;return p?.newcomer===true&&!(Number(p.totalXp)>0||Number(p.level)>0||this.levels?.chapters.some(chapter=>chapter.levels.some(level=>level.status==='cleared')));}
  private weeklyGiftDue(){
   const view=this.retention?.weeklyGift??null;let shown:string|null=null;try{shown=readShownDay(this.platform.storage.get(WEEKLY_GIFT_KEY));}catch{return false;}
-  return weeklyGiftAutoShow({capable:this.retentionCapable('weeklyGift'),view,newcomer:this.client.profile?.newcomer===true,shownDay:shown,today:beijingDay(Date.now())});
+  return weeklyGiftAutoShow({capable:this.retentionCapable('weeklyGift'),view,newcomer:this.brandNewPlayer,shownDay:shown,today:beijingDay(Date.now())});
  }
  /** Pops the 七日礼 on a quiet lobby or story page, once per Beijing day, after story 1-1 (not over the orientation picker). */
  private maybeWeeklyGift(){
@@ -599,7 +601,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private noteWeeklySkip(){
   const view=this.retention?.weeklyGift;if(!view)return;
   let shown:string|null=null;try{shown=readShownDay(this.platform.storage.get(WEEKLY_GIFT_KEY));}catch{}
-  const reason=this.client.profile?.newcomer===true?'新手账号':view.done?'全部领完':!view.available?'今天已领':shown===beijingDay(Date.now())?'今天已弹过':'';
+  const reason=this.brandNewPlayer?'新手账号':view.done?'全部领完':!view.available?'今天已领':shown===beijingDay(Date.now())?'今天已弹过':'';
   if(reason)this.retentionNote('七日礼 · 不弹出：'+reason);
  }
  /** True while the 七日礼 may still pop or is open; later lobby greetings wait for it. */
@@ -2443,8 +2445,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  /** Arms the greeting after a plain login (no invite link, not a new device); the lobby or story page shows it once nothing else is open. */
  private armWelcome(){
-  const skip=this.welcomeSkip?'本次先选了屏幕方向':!this.welcomeEnabled?'设置里已关闭':this.platform.config.id!=='taptap'?'':this.client.profile?.newcomer===true?'新手账号':'';
-  if(this.welcomeSkip||!this.welcomeEnabled||this.platform.config.id!=='taptap'||this.client.profile?.newcomer===true){if(skip)this.retentionNote('问候 · 不弹出：'+skip);return;}
+  const skip=this.welcomeSkip?'本次先选了屏幕方向':!this.welcomeEnabled?'设置里已关闭':this.platform.config.id!=='taptap'?'':this.brandNewPlayer?'新手账号':'';
+  if(this.welcomeSkip||!this.welcomeEnabled||this.platform.config.id!=='taptap'||this.brandNewPlayer){if(skip)this.retentionNote('问候 · 不弹出：'+skip);return;}
   let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{this.retentionNote('问候 · 本机存储不可读');return;}
   this.welcomeLastVisit=record?.visit??null;this.welcomePending=true;this.maybeWelcome();
  }
