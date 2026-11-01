@@ -1,6 +1,7 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createMobileTasks} from './mobile-tasks.mjs';
 import {createMobileRetention,readRetentionConfiguration} from './mobile-retention.mjs';
+import {createMobileTuanzi} from './mobile-tuanzi.mjs';
 import {createMobileEvents} from './mobile-events.mjs';
 import {createMobileLevels,readLevelConfiguration} from './mobile-levels.mjs';
 import {createTaskRewardSettings} from './task-reward-settings.mjs';
@@ -35,7 +36,7 @@ const requestKey=value=>typeof value==='string'&&/^[a-f0-9]{32}$/.test(value);
 const directionOf=photo=>{const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id)??photo;return d.width===d.height?'square':d.width>d.height?'landscape':'portrait';};
 // Keep the artwork aspect ratio and square piece bodies while respecting mobile limits.
 export function mobileGridForPhoto(photo,count,mode='gallery'){
- const small=mode==='level'&&[12,16,20,24,28,30,35,40,54].includes(count);
+ const small=(mode==='level'||mode==='postcard')&&[12,16,20,24,28,30,35,40,54].includes(count);
  const d=Number.isFinite(photo.width)&&Number.isFinite(photo.height)?photo:engine.photoGuidance(photo.id);if(!d||!MOBILE_COUNTS.includes(count)&&!small)return null;
  const fitted=engine.gridForDimensions(d.width,d.height,count);if(!fitted)return null;
  if(small||fitted.count>=48&&fitted.count<=500)return fitted;
@@ -77,6 +78,8 @@ export function createMobileService(options={}){
  const web=options.runtimeProfile==='web',guestNames=options.guestNames??true,energyEnabled=!web,shareRewards=options.shareRewards??!web,adsEnabled=!web&&options.adEnabled===true;
  const retentionEnabled=!web&&options.retention!==false&&process.env.MOBILE_RETENTION!=='false';
  const retentionConfiguration=retentionEnabled?readRetentionConfiguration():null;
+ // 团子去旅行: the /h5/config capability tuanziTravel; MOBILE_TUANZI=false switches the whole feature off.
+ const tuanziEnabled=!web&&options.tuanzi!==false&&process.env.MOBILE_TUANZI!=='false';
  // The mobile daily turns over at this Beijing hour (20:00 gathers players in the lobby). The daily clock runs
  // ahead so its Beijing midnight lands on that hour; every package's lobby countdown follows the gallery serverTime.
  const dailyTurnoverHour=web?0:options.dailyTurnoverHour??Number(process.env.MOBILE_DAILY_TURNOVER_HOUR??20);
@@ -91,7 +94,7 @@ export function createMobileService(options={}){
  // use the same safe mobile default as a public-test package.
  const customNames=options.publicTestPolicy?.customNames??web,privateMessages=options.publicTestPolicy?.privateMessages??web;
  if(typeof customNames!=='boolean'||typeof privateMessages!=='boolean')throw new TypeError('publicTestPolicy values must be booleans');
- const capabilities=Object.freeze({weeklyGift:retentionEnabled,dailyStreak:retentionEnabled,energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,soloLocalPlay,offlineLevelClears,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
+ const capabilities=Object.freeze({weeklyGift:retentionEnabled,dailyStreak:retentionEnabled,tuanziTravel:tuanziEnabled,energy:energyEnabled,ads:adsEnabled,shareRewards:!web&&shareRewards,tapMultiplayer:tapMultiplayerEnabled,soloLocalPlay,offlineLevelClears,albumTarget:web?'pc':options.albumTarget??'mobile-shared',createTickets:!web,customNames,cheers:true,privacyRequests:true,roomActionRevisionBody:!web,social:Object.freeze({friends:true,privateMessages,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9'})});
  const managedContent=options.managedContent??(options.contentDirectory?createMobileManagedContent({directory:options.contentDirectory,photos:engine.RESTORABLE_PHOTOS,assetDir:options.assetDir}):null);
  let operationRelease=managedContent?.read()??null,requestRelease;
  const taskRewardConfiguration=options.taskRewardSettings??createTaskRewardSettings({configurationPath:options.taskRewardConfigurationPath});
@@ -216,6 +219,14 @@ export function createMobileService(options={}){
  const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:capabilities.albumTarget});
  const levels=createMobileLevels({db,photos:engine.RESTORABLE_PHOTOS,collection,configuration:levelConfiguration});
  const retention=retentionEnabled?createMobileRetention({db,config:retentionConfiguration,awardCoins:collection.awardCoins,grantDecoration:collection.grantDecoration}):null;
+ const storyImageIds=now=>new Set(levelConfiguration.chapters.flatMap(chapter=>collection.albumImages(chapter.albumId,now)?.imageIds??[]));
+ const tuanzi=tuanziEnabled?createMobileTuanzi({db,config:options.tuanziConfig,regions:options.tuanziRegions,randomInt,grantDecoration:collection.grantDecoration,
+  cleared:owner=>levels.progress(owner).some(row=>row.level_id===(options.tuanziConfig?.unlockLevelId??'ch1-2')&&row.cleared_at!==null),
+  // Postcards show the current artwork (v54 clients always send the artwork-snapshot header).
+  pool:now=>{const story=storyImageIds(now);return galleryPhotos(now).filter(photo=>!story.has(photo.id)).map(photo=>{const shown=engine.activeArtworkPhoto(photo);return {id:photo.id,title:shown.title??photo.title,src:shown.src,thumbSrc:shown.thumbSrc,width:shown.width??photo.width,height:shown.height??photo.height};});},
+  albumOf:(imageId,now)=>collection.albumOf(imageId,now),grid:(picture,pieces)=>mobileGridForPhoto(picture,pieces,'postcard')}):null;
+ /** A tuanzi side effect never breaks the request it rides on (completion, login, offline clears). */
+ const tuanziSide=(label,fn)=>{if(!tuanzi)return;db.exec('SAVEPOINT tuanzi_side');try{fn();db.exec('RELEASE tuanzi_side');}catch(error){db.exec('ROLLBACK TO tuanzi_side; RELEASE tuanzi_side');console.warn('mobile tuanzi '+label+' failed:',error.message);}};
  if(!options.deferDailyStart)dailyContent?.start();
  const galleryPhotos=now=>collection.galleryPhotos(now);
  // TapTap tables seat more players as they grow: under 300 pieces 4, 300-499 pieces 6, 500 or more 8.
@@ -336,7 +347,7 @@ export function createMobileService(options={}){
   if(room.diagnostic===true||!room.completedAt||room.mobileSettled)return;
   const counts=Object.fromEntries(Object.entries(room.achievements?.contributors??{}).map(([owner,v])=>[owner,v.count]));
   for(const configuredReward of completionDistribution(counts,room.mobilePieces,operationGameSettings)){
-   const reward=energyEnabled?configuredReward:{...configuredReward,energy:0};
+   const reward=energyEnabled&&room.mobileMode!=='postcard'?configuredReward:{...configuredReward,energy:0};
    const p=reward.id===current.id?current:readProfile(reward.id,now);
    const result=db.prepare('INSERT OR IGNORE INTO mobile_settlements VALUES(?,?,?,?,?)').run(room.id,p.id,reward.energy,reward.contribution,now);
    if(result.changes){events.record(p.id,'room-complete',room.id,{contribution:reward.contribution},now);const collected=collection.complete(p.id,room,reward.contribution,now);p.energy+=reward.energy;p.lastReward={...p.lastReward,completion:{roomId:room.id,...reward,...(collected??{})},at:now};}
@@ -350,6 +361,7 @@ export function createMobileService(options={}){
    events.record(p.id,'level-clear',room.id,{levelId:room.mobileLevelId,firstClear,energy},now);
   }
   for(const row of db.prepare('SELECT id,data FROM mobile_profiles').all()){const p=row.id===current.id?current:JSON.parse(row.data);if(p.firstRoomId===room.id&&!p.firstRoomCompleted){p.firstRoomCompleted=true;saveProfile(p);}}
+  tuanziSide('completion',()=>tuanzi.roomCompleted(room,Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).map(([owner])=>owner),now));
   room.mobileSettled=true;
  }
  function help(room,p,request,input,now){
@@ -417,6 +429,7 @@ export function createMobileService(options={}){
       const configuredEnergy=energyEnabled?levelConfiguration.firstClearEnergy:0;
       const firstClear=levels.recordClear(p.id,levelId,'offline:'+clearId,Math.min(Math.max(completedAt,0),now),configuredEnergy);
       status=firstClear?'accepted':'duplicate';energy=firstClear?configuredEnergy:0;p.energy+=energy;
+      if(firstClear)tuanziSide('offline clear',()=>tuanzi.levelClear(p.id,'offline:'+clearId,now));
       events.record(p.id,'level-clear',null,{levelId,firstClear,energy,offline:true,clearId,elapsedMs},now);
      }
      totalEnergy+=energy;results.push({clearId,levelId,status,energy,...(code?{code}:{})});
@@ -447,6 +460,7 @@ export function createMobileService(options={}){
   if(retention&&path==='/api/mobile/retention/weekly-claim'&&method==='POST')return replay(p,'weekly-gift-claim',input,now,()=>{
    const granted=retention.claim(p,now);saveProfile(p);return {...retention.view(p.id,now,engine.dailyPuzzleDate(dailyClock(now))),granted,profile:profileView(p,now)};
   });
+  if(path==='/api/mobile/tuanzi'||path.startsWith('/api/mobile/tuanzi/'))return tuanziRoute(request,p,input,path,now);
   if(path==='/api/mobile/tasks'&&method==='GET')return taskView();
   if(path==='/api/mobile/gifts/open'&&method==='POST')return replay(p,'gift-open',input,now,()=>{const opened=tasks.open(p,input,now);return {...taskView(),opened};});
   if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{if(shareRewards&&input.shared!==true)fail(403,'SHARE_REQUIRED','请通过分享面板完成分享，复制链接不计奖励');const shared=tasks.share(p,input,now);return {...taskView(),shared};});
@@ -553,7 +567,7 @@ export function createMobileService(options={}){
     const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(dailyClock(now))&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<seatLimit(r)&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
     if(existing)return join(existing,p,{},now,request);
    }
-   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,\'$.mobileMode\') IS NOT \'level\' AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;const ownLimit=web?3:5;if(mode!=='level'&&owned>=ownLimit)fail(409,'ROOM_LIMIT','最多保留'+ownLimit+'个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
+   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND COALESCE(json_extract(data,\'$.mobileMode\'),\'\') NOT IN (\'level\',\'postcard\') AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;const ownLimit=web?3:5;if(mode!=='level'&&owned>=ownLimit)fail(409,'ROOM_LIMIT','最多保留'+ownLimit+'个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
    const needsTicket=mode!=='level'&&!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
    if(needsTicket&&!starter&&p.supply.create<1)fail(402,'CREATE_TICKET_REQUIRED','需要1张建房券');
    const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(dailyClock(now)):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
@@ -630,7 +644,7 @@ export function createMobileService(options={}){
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
    if(added&&room.diagnostic!==true){
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
+    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,freeRoom:room.mobileMode==='postcard',now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
     room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
     p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
     if(retention&&room.mobileMode==='daily')try{
@@ -647,6 +661,36 @@ export function createMobileService(options={}){
   // contribution; nothing is applied or granted again.
   const dropReceipt={store:roomActionReceipt,restore:stored=>({...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(stored.mobileContribution?{mobileContribution:stored.mobileContribution}:{})})};
   return input.type==='drop'&&requestKey(input.requestId)&&(!request[diagnosticTransport]||room.diagnostic!==true)?replay(p,'room-action:'+room.id,input,now,act,dropReceipt):act();
+ }
+ /** 团子去旅行 endpoints: only when the capability is on, only after the unlock level. */
+ function tuanziRoute(request,p,input,path,now){
+  if(!tuanzi)fail(503,'TUANZI_DISABLED','团子去旅行暂未开放');
+  const method=request.method,view=()=>({...tuanzi.view(p.id,now),profile:profileView(p,now)});
+  if(path==='/api/mobile/tuanzi'&&method==='GET')return view();
+  if(method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
+  if(!tuanzi.ensure(p.id,now))fail(403,'TUANZI_LOCKED','通关故事 1-2 后，团子就会搬进小窝');
+  tuanzi.advance(p.id,now);
+  if(path==='/api/mobile/tuanzi/buy')return replay(p,'tuanzi-buy',input,now,()=>{const bought=tuanzi.buy(p.id,input.itemId,input.requestId,now);return {...view(),bought};});
+  if(path==='/api/mobile/tuanzi/pack')return replay(p,'tuanzi-pack',input,now,()=>{const packed=tuanzi.pack(p.id,input,now);return {...view(),packed};});
+  if(path==='/api/mobile/tuanzi/sill')return replay(p,'tuanzi-sill',input,now,()=>{const sill=tuanzi.sill(p.id,now);return {...view(),sillClaimed:sill};});
+  if(path==='/api/mobile/tuanzi/postcards/read')return replay(p,'tuanzi-read',input,now,()=>{const read=tuanzi.read(p.id,input.cardIds,now);return {...view(),read};});
+  const card=/^\/api\/mobile\/tuanzi\/postcards\/([a-z0-9-]{1,64})\/(complete|room)$/.exec(path);
+  if(card?.[2]==='complete')return replay(p,'tuanzi-complete',input,now,()=>{
+   if(!Number.isSafeInteger(input.elapsedMs)||input.elapsedMs<0)fail(400,'TUANZI_COMPLETE_INVALID','拼图记录无效');
+   const completed=tuanzi.completeCard(p.id,card[1],now);return {...view(),completed};
+  });
+  // A private table for a gallery postcard: friends join by invite, it costs no energy, never reaches the lobby
+  // and does not take one of the five unfinished-room slots.
+  if(card?.[2]==='room')return replay(p,'tuanzi-room',input,now,()=>{
+   const {row}=tuanzi.roomCard(p.id,card[1],now);
+   const existing=db.prepare("SELECT data FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,'$.mobileMode')='postcard'").all(p.id).map(r=>JSON.parse(r.data)).find(r=>r.tuanziCard?.cardId===card[1]&&r.expiresAt>now);
+   if(existing)return join(existing,p,{},now,request);
+   const photo=galleryPhotos(now).find(item=>item.id===row.image_id);if(!photo)fail(409,'TUANZI_CARD_UNAVAILABLE','这张图暂时不能拼');
+   const artwork=creationArtwork(photo,row.pieces,request),grid=mobileGridForPhoto({...photo,...artwork},row.pieces,'postcard');if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
+   const room={id:id(),ownerId:p.id,visibility:'private',title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:row.pieces,mobileMode:'postcard',mobileDay:null,mobileInviteCode:randomBytes(16).toString('hex'),revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{},tuanziCard:{owner:p.id,cardId:card[1]}};
+   saveRoom(room);events.record(p.id,'room-create',room.id,{mode:'postcard',pieces:row.pieces,visibility:'private'},now);return join(room,p,{},now,request);
+  });
+  fail(404,'NOT_FOUND','接口不存在');
  }
  async function bindTapTap(request){
   const now=clock(),sessionIdentity=request.identity;
@@ -698,7 +742,7 @@ export function createMobileService(options={}){
    }
    social.guard(request,input,url,now);
    db.exec('BEGIN IMMEDIATE');requestProfileData=new Map();requestRoomChanges=new Map();requestCursorUndo=new Map();requestInviteBonuses=new Map();
-   try{const p=readProfile(request.identity,now);if(needsName(p))p.name=randomName(p.id);saveProfile(p);social.touch(p.id,now);const transport=request[diagnosticTransport];
+   try{const p=readProfile(request.identity,now);if(needsName(p))p.name=randomName(p.id);saveProfile(p);social.touch(p.id,now);tuanziSide('activity',()=>tuanzi.activity(p.id,now));const transport=request[diagnosticTransport];
     const execute=(action,since)=>{const before=structuredClone(p);try{return route(request,p,{...action,...(since!==undefined?{since}:{})},new URL('/api/rooms/'+transport.context.roomId,'http://mobile.invalid'),now);}catch(error){for(const key of Object.keys(p))delete p[key];Object.assign(p,before);throw error;}};
     const actionResult=transport?(transport.disconnect?diagnosticActions.disconnect(transport.context,transport.connectionId,execute):diagnosticActions.write(transport.context,transport.input,transport.connectionId,execute)):null;
     const data=actionResult?actionResult.data:route(request,p,input,url,now);if(data?.room?.puzzle)requireArtworkClient(data.room,request);saveProfile(p);db.exec('COMMIT');if(requestEnergyEmpty)events.record(...requestEnergyEmpty);for(const [roomId,kind]of requestRoomChanges){if(kind.room)roomVersions.set(roomId,(roomVersions.get(roomId)??0)+1);for(const listener of roomListeners)listener(roomId,kind);}if(data?.diagnostic===true||transport){if(transport?.context.room.diagnostic===true)data.diagnostic=true;data.diagnosticTiming={serverMs:Math.max(0,performance.now()-handlingAt)};}return {status:actionResult?.status??(request.method==='POST'&&url.pathname==='/api/rooms'?201:200),data};}
