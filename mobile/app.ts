@@ -153,7 +153,7 @@ export class GameApp{
  private timers:Array<ReturnType<typeof setInterval>>=[];private cleanups:Array<()=>void>=[];private attempts=new Map<string,string>();
  private handledQueries=new Set<string>();
  // 七日礼 / 每日拼图连续天数 (server capabilities weeklyGift / dailyStreak).
- private retention:RetentionView|null=null;private retentionLoadedAt=0;private retentionPending:Promise<void>|null=null;private retentionPendingSince=0;private weeklyGrant:WeeklyGrant|null=null;private breathFrame:number|null=null;
+ private retention:RetentionView|null=null;private retentionLoadedAt=0;private retentionPending:Promise<void>|null=null;private retentionPendingSince=0;private retentionNotes:Set<string>|undefined=new Set();private weeklyGrant:WeeklyGrant|null=null;private breathFrame:number|null=null;
  private historyRooms:MobileOwnedRoom[]|null=null;private historyLoading=false;private historyError='';private historySerial=0;
  private pendingViews?:ViewRequests;private lastDataOwner='';private lastAidClock='';
  private renderMode:PerformanceMode='smooth';
@@ -560,15 +560,22 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   return this.platform.config.id!=='web'&&(caps?.[kind]===true||profile?.[kind]===true);
  }
  private loadRetention(force=false):Promise<void>{
-  if(!this.retentionCapable('weeklyGift')&&!this.retentionCapable('dailyStreak')||this.destroyed||!this.client.profile)return Promise.resolve();
+  if(this.destroyed||!this.client.profile)return Promise.resolve();
+  if(!this.retentionCapable('weeklyGift')&&!this.retentionCapable('dailyStreak')){this.retentionNote('七日礼 · 服务器未开放');return Promise.resolve();}
   if(this.offlineRoom||this.offline?.active&&!this.ready)return Promise.resolve();
   if(this.retentionPending)return this.retentionPending;
-  if(!force&&Date.now()-this.retentionLoadedAt<60000)return Promise.resolve();
+  // A failed fetch retries after 15 s instead of waiting for the next page change.
+  if(!force&&Date.now()-this.retentionLoadedAt<(this.retention?60000:15000))return Promise.resolve();
   this.retentionPendingSince=Date.now();
-  // Failures stay silent: the lobby simply shows no gift or streak.
-  this.retentionPending=this.client.json<RetentionView>('/api/mobile/retention').then(data=>{if(data?.weeklyGift&&data?.dailyStreak)this.retention={weeklyGift:data.weeklyGift,dailyStreak:data.dailyStreak};this.invalidate();}).catch(()=>{}).finally(()=>{this.retentionLoadedAt=Date.now();this.retentionPending=null;this.maybeWeeklyGift();});
+  // Failures stay silent on screen (no gift or streak); the 登录日志 keeps the reason.
+  this.retentionPending=this.client.json<RetentionView>('/api/mobile/retention').then(data=>{
+   if(data?.weeklyGift&&data?.dailyStreak){this.retention={weeklyGift:data.weeklyGift,dailyStreak:data.dailyStreak};const gift=data.weeklyGift;this.retentionNote('七日礼 · 已领'+gift.claimed+'天 · '+(gift.done?'全部领完':gift.available?'今天可领':'今天已领')+' · 连续'+data.dailyStreak.count+'天');}
+   else this.retentionNote('七日礼 · 返回内容不完整');
+   this.invalidate();}).catch(error=>{this.retentionNote('七日礼 · 读取失败 '+String((error as Error)?.message??error).slice(0,60));}).finally(()=>{this.retentionLoadedAt=Date.now();this.retentionPending=null;this.maybeWeeklyGift();});
   return this.retentionPending;
  }
+ /** One 登录日志 line per distinct retention/greeting decision, so a device test can be read back. */
+ private retentionNote(text:string){const notes=this.retentionNotes??=new Set();if(notes.has(text))return;notes.add(text);this.platform?.loginLog?.add(text);}
  /** Streak numbers between fetches come with every profile (room actions included). */
  private get dailyStreak(){
   if(!this.retentionCapable('dailyStreak'))return null;
@@ -583,9 +590,17 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  /** Pops the 七日礼 on a quiet lobby or story page, once per Beijing day, after story 1-1 (not over the orientation picker). */
  private maybeWeeklyGift(){
   if(this.route!=='lobby'&&this.route!=='chapter'||this.room||this.modal||this.busy||!this.ready||this.hidden||this.destroyed||this.orientationEntryPending||this.offlineRoom)return;
-  if(!this.weeklyGiftDue())return;
-  try{this.platform.storage.set(WEEKLY_GIFT_KEY,JSON.stringify({shownDay:beijingDay(Date.now())}));}catch{return;}
+  if(!this.retention&&this.retentionCapable('weeklyGift')){void this.loadRetention();return;}
+  if(!this.weeklyGiftDue()){this.noteWeeklySkip();return;}
+  try{this.platform.storage.set(WEEKLY_GIFT_KEY,JSON.stringify({shownDay:beijingDay(Date.now())}));}catch{this.retentionNote('七日礼 · 本机存储不可写，不弹出');return;}
+  this.retentionNote('七日礼 · 弹出');
   this.openWeeklyGift();
+ }
+ private noteWeeklySkip(){
+  const view=this.retention?.weeklyGift;if(!view)return;
+  let shown:string|null=null;try{shown=readShownDay(this.platform.storage.get(WEEKLY_GIFT_KEY));}catch{}
+  const reason=this.client.profile?.newcomer===true?'新手账号':view.done?'全部领完':!view.available?'今天已领':shown===beijingDay(Date.now())?'今天已弹过':'';
+  if(reason)this.retentionNote('七日礼 · 不弹出：'+reason);
  }
  /** True while the 七日礼 may still pop or is open; later lobby greetings wait for it. */
  private weeklyGiftHolds(){
@@ -2426,20 +2441,23 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',cx=p.x+p.w/2,room=outside?Infinity:Math.min(Infinity,...[...this.completionSlotRects.values()].filter(r=>r.y<p.y+29&&r.y+r.h>p.y-3).map(r=>(r.x+r.w<=cx?cx-r.x-r.w:r.x-cx)-2)),w=Math.min(p.w+60,s.measure(label,14,800)+58,room*2),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
   });
  }
- /** Arms the greeting after a plain login (no invite link, not a new device); the lobby shows it once nothing else is open. */
+ /** Arms the greeting after a plain login (no invite link, not a new device); the lobby or story page shows it once nothing else is open. */
  private armWelcome(){
-  if(this.welcomeSkip||!this.welcomeEnabled||this.platform.config.id!=='taptap'||this.client.profile?.newcomer===true)return;
-  let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{return;}
+  const skip=this.welcomeSkip?'本次先选了屏幕方向':!this.welcomeEnabled?'设置里已关闭':this.platform.config.id!=='taptap'?'':this.client.profile?.newcomer===true?'新手账号':'';
+  if(this.welcomeSkip||!this.welcomeEnabled||this.platform.config.id!=='taptap'||this.client.profile?.newcomer===true){if(skip)this.retentionNote('问候 · 不弹出：'+skip);return;}
+  let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{this.retentionNote('问候 · 本机存储不可读');return;}
   this.welcomeLastVisit=record?.visit??null;this.welcomePending=true;this.maybeWelcome();
  }
  private maybeWelcome(){
   if(!this.welcomePending)return;
-  if(this.route!=='lobby'||this.room||this.destroyed){this.welcomePending=false;return;}
+  // Players who still have story 1 left land on the chapter page at login; greet them there too.
+  if(this.route!=='lobby'&&this.route!=='chapter'||this.room||this.destroyed){this.welcomePending=false;this.retentionNote('问候 · 不弹出：已进入'+(this.room?'房间':this.route));return;}
   if(this.modal||this.busy||!this.ready||this.hidden||this.weeklyGiftHolds())return;
   this.welcomePending=false;
   const now=this.dailyNow();let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{return;}
   const save=(value:object)=>{try{this.platform.storage.set(WELCOME_STORAGE_KEY,JSON.stringify(value));}catch{}};
-  if(!welcomeDue(record,now)){if(record)save({...record,visit:now});return;}
+  if(!welcomeDue(record,now)){if(record)save({...record,visit:now});this.retentionNote('问候 · 不弹出：'+(record&&record.key===welcomeSlotKey(now)?'这个时段已问候过':'距上次问候不到3小时'));return;}
+  this.retentionNote('问候 · 弹出');
   const slot=welcomeSlot(now),p=this.client.profile,daily=this.dailyPhoto?.id;
   const chapter=this.availableChapters.find(item=>item.levels.some(level=>level.status==='unlocked'));
   const tie=welcomeTieIn({now,lastVisit:this.welcomeLastVisit,dailyFinished:!!daily&&!!this.historyRooms?.some(room=>room.completed&&room.imageId===daily),
