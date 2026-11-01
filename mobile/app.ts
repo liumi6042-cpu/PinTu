@@ -471,14 +471,16 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   return top+Math.ceil(rooms.length/columns)*(ch+gap);
  }
  private drawHistoryPreview(room:MobileOwnedRoom,left:number,top:number,width:number){
-  const s=this.stage,src=room.artwork?.src||room.photo?.src||room.thumbSrc||'',height=Math.max(160,Math.min(width*.72,this.modalArea.h-150));let cy=top;
-  s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(left,cy,width,height);
-  if(src)s.image(this.client.asset(src),{x:left,y:cy,w:width,h:height},'contain');cy+=height+14;
-  s.text(historyPhotoTitle(room),left,cy,18,this.colors.ink,800,width);cy+=28;
-  const total=room.actualPieces??room.pieces??0,meta=(total||'—')+'片'+(room.completedAt?' · '+beijingMonthDay(room.completedAt)+'完成':'');
-  s.text(meta,left,cy,13,this.colors.muted,undefined,width);cy+=30;
-  this.button(left,cy,width,'返回已完成历史',()=>{this.historyPreview=null;this.modalScroll=0;this.invalidate();},'cream',38);
-  return cy+50;
+  const s=this.stage,src=room.artwork?.src||room.photo?.src||room.thumbSrc||'',total=room.actualPieces??room.pieces??0,meta=(total||'—')+'片'+(room.completedAt?' · '+beijingMonthDay(room.completedAt)+'完成':'');
+  // 矮窗口（横屏手机）图放左边、文字放右边，免得说明和返回键被挤出窗口。
+  const side=width>=520&&this.modalArea.h<420,imageW=side?Math.round(width*.6):width,imageH=side?Math.max(150,this.modalArea.h-8):Math.max(160,Math.min(width,this.modalArea.h-150));
+  s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(left,top,imageW,imageH);
+  if(src)s.image(this.client.asset(src),{x:left,y:top,w:imageW,h:imageH},'contain');
+  const textX=side?left+imageW+18:left,textW=side?width-imageW-18:width;let cy=side?top+6:top+imageH+14;
+  s.text(historyPhotoTitle(room),textX,cy,18,this.colors.ink,800,textW);cy+=28;
+  s.text(meta,textX,cy,13,this.colors.muted,undefined,textW);cy+=30;
+  this.button(textX,cy,textW,'返回已完成历史',()=>{this.historyPreview=null;this.modalScroll=0;this.invalidate();},'cream',38);
+  return Math.max(cy+50,top+(side?imageH+8:0));
  }
  private drawHistoryWindow(){
   const s=this.stage,v=this.platform.viewport(),w=Math.min(s.w-24,1000),x=(s.w-w)/2,y=Math.max(v.top+15,s.h*.1),h=s.h-y-v.bottom-24;
@@ -492,7 +494,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const preview=this.historyTab==='finished'?this.historyPreview:null;
    if(preview){cy=this.drawHistoryPreview(preview,left,cy,width);return;}
    const limits=this.historyLimits,draftsTab=this.historyTab==='drafts',rooms=draftsTab?drafts:finished;
-   cy=this.paragraph(draftsTab?'没拼完的拼图都在这里，点卡片继续拼。保留最近'+limits.drafts+'张。':'拼好的作品都在这里，点卡片看完整大图。保留最近'+limits.completed+'张。',left,cy,width,13)+15;
+   cy=this.paragraph(draftsTab?'没拼完的拼图，点卡片继续拼。最多保留'+limits.drafts+'张。':'拼好的作品，点卡片看完整大图。最多保留'+limits.completed+'张。',left,cy,width,13)+15;
    if(this.historyLoading)cy=this.paragraph('正在读取历史记录…',left,cy,width,13)+15;
    if(this.historyError){cy=this.paragraph(this.historyError,left,cy,width,13)+12;this.button(left,cy,width,'重新读取',()=>void this.loadRoomHistory(),'cream',36);cy+=48;}
    cy=this.drawHistoryGrid(rooms,left,cy,width);
