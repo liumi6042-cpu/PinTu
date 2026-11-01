@@ -17,16 +17,22 @@ export type TuanziView={locked:true;unlockLevelId:string}|{locked:false;status:'
 type Open=Extract<TuanziView,{locked:false}>;
 type Colors={paper:string;cream:string;ink:string;muted:string;rose:string;berry:string;gold:string;line:string;green:string;onAccent:string;overlay:string;placeholder:string};
 export type TuanziHost={stage:Stage;colors:Colors;top:number;bottom:number;landscape:boolean;playerName:string;menu?:Rect|null;log?:(line:string)=>void;
- animate():void;close():void;note(text:string):void;invalidate():void;randomId():string;
+ animate(ms?:number):void;createCanvas?():HTMLCanvasElement;close():void;note(text:string):void;invalidate():void;randomId():string;
  storage:{get(key:string):string|null;set(key:string,value:string):void};
  get<T>(path:string):Promise<T>;post<T>(path:string,body:unknown):Promise<T>;
  play(card:TuanziPostcard):void;together(card:TuanziPostcard):void;openAlbum(albumId:string):void};
 export type TuanziScreen='nook'|'welcome'|'bag'|'shop'|'mailbox'|'postcard'|'album'|'home';
 
 // ---------------------------------------------------------------- art (团子去旅行/体素团子 pipeline, the owner's own cat)
-const ART={sheet:'/mobile-icons/tuanzi-cat.png',lobby:'/mobile-icons/tuanzi-lobby.png',room:'/mobile-icons/tuanzi-room.webp',roomFallback:'/mobile-icons/tuanzi-room.jpg',items:'/mobile-icons/tuanzi-items.png',stickers:'/mobile-icons/tuanzi-stickers.png'};
-/** 320 px frames covering 36 world units; the cat's ground point is at (.5, .8127). Lobby frames are 224×128, drawn at half size. */
-export const TUANZI_ANIMS={nap:{y:0,frames:10,fps:6,loop:true},napBare:{y:320,frames:10,fps:6,loop:true},wait:{y:640,frames:12,fps:8,loop:true},tap:{y:960,frames:10,fps:12,loop:false},leave:{y:1280,frames:8,fps:10,loop:true},walkBack:{y:1600,frames:8,fps:10,loop:true},back:{y:1920,frames:8,fps:6,loop:true},away:{y:2240,frames:6,fps:4,loop:true},awayBare:{y:2560,frames:6,fps:4,loop:true}} as const;
+// WebP first; the PNG beside each one is the fallback for WebViews that cannot decode WebP.
+const ART={lobby:'/mobile-icons/tuanzi-lobby.webp',lobbyFallback:'/mobile-icons/tuanzi-lobby.png',room:'/mobile-icons/tuanzi-room.webp',roomFallback:'/mobile-icons/tuanzi-room.jpg',
+ items:'/mobile-icons/tuanzi-items.webp',itemsFallback:'/mobile-icons/tuanzi-items.png',stickers:'/mobile-icons/tuanzi-stickers.webp',stickersFallback:'/mobile-icons/tuanzi-stickers.png'};
+/** One strip per state (tuanzi-cat-<anim>.webp/.png): 320 px frames covering 36 world units, `cols` per row; the cat's ground
+ * point is at (.5, .8127). Only the state on screen is downloaded and decoded. Lobby frames are 224×128, drawn at half size. */
+export const TUANZI_ANIMS={napBare:{frames:24,fps:12,cols:8,loop:true},wait:{frames:24,fps:16,cols:8,loop:true},tap:{frames:20,fps:24,cols:8,loop:false},
+ leave:{frames:16,fps:20,cols:8,loop:true},walkBack:{frames:16,fps:20,cols:8,loop:true},back:{frames:16,fps:12,cols:8,loop:true},awayBare:{frames:12,fps:8,cols:8,loop:true}} as const;
+type Anim=keyof typeof TUANZI_ANIMS;
+const strip=(anim:Anim)=>'/mobile-icons/tuanzi-cat-'+anim;
 export const TUANZI_LOBBY={nap:{y:0,frames:10,fps:6},away:{y:128,frames:6,fps:4}} as const;
 const FRAME=320,UNITS=36,GROUND=.8127,ROOM_W=1600,ROOM_H=1800,ROOM_PPU=1600/92,ROOM_CORNER=502/1600;
 /** Spots in the 1600×1800 room render (normalized). */
@@ -135,29 +141,39 @@ export class TuanziFeature{
   }
  }
  private icon(h:TuanziHost,id:string,r:Rect,fade=false){
-  const s=h.stage,index=ICONS.indexOf(id),atlas=index>=0?this.art(s,ART.items):null;
+  const s=h.stage,index=ICONS.indexOf(id),atlas=index>=0?this.art(s,ART.items,ART.itemsFallback):null;
   if(atlas){const size=Math.min(r.w,r.h),c=s.ctx;c.save();if(fade)c.globalAlpha*=.35;c.imageSmoothingEnabled=true;c.drawImage(atlas,(index%8)*128,Math.floor(index/8)*128,128,128,r.x+(r.w-size)/2,r.y+(r.h-size)/2,size,size);c.restore();return;}
   const fallback=(['onigiri','bento','deluxe','umbrella','ticket','tent','bell','knot','fish','envelope','bag','paw','shell'] as string[]).includes(id)?id:id==='seashell'?'shell':'paw';
   drawTravelIcon(s.ctx,fallback as TravelIcon,r,fade);
  }
  private sticker(h:TuanziHost,id:string,r:Rect){
-  const s=h.stage,index=STICKERS.indexOf(id),sheet=this.art(s,ART.stickers);
+  const s=h.stage,index=STICKERS.indexOf(id),sheet=this.art(s,ART.stickers,ART.stickersFallback);
   if(sheet&&index>=0){const size=Math.min(r.w,r.h);s.ctx.drawImage(sheet,index*160,0,160,160,r.x+(r.w-size)/2,r.y+(r.h-size)/2,size,size);}
   else drawTravelIcon(s.ctx,'paw',r);
  }
- private frameOf(anim:keyof typeof TUANZI_ANIMS,elapsed:number){const a=TUANZI_ANIMS[anim],n=Math.floor(elapsed*a.fps/1000);return a.loop?n%a.frames:Math.min(n,a.frames-1);}
- /** One cat frame with its ground point at (x, y); ppu = screen px per world unit. */
- private catFrame(h:TuanziHost,anim:keyof typeof TUANZI_ANIMS,frame:number,x:number,y:number,ppu:number){
-  const im=this.art(h.stage,ART.sheet);if(!im)return;const size=UNITS*ppu,c=h.stage.ctx;
-  c.save();c.imageSmoothingEnabled=true;c.drawImage(im,frame*FRAME,TUANZI_ANIMS[anim].y,FRAME,FRAME,Math.round(x-size/2),Math.round(y-size*GROUND),size,size);c.restore();
+ /** Frame index from the time spent in the state (never from the number of redraws). */
+ private frameOf(anim:Anim,elapsed:number){const a=TUANZI_ANIMS[anim],n=Math.floor(Math.max(0,elapsed)*a.fps/1000);return a.loop?n%a.frames:Math.min(n,a.frames-1);}
+ /** Milliseconds until the next frame of `anim` is due. */
+ private nextFrameIn(anim:Anim,elapsed:number){const step=1000/TUANZI_ANIMS[anim].fps;return Math.max(4,step-(Math.max(0,elapsed)%step));}
+ private catArt(s:Stage,anim:Anim){return this.art(s,strip(anim)+'.webp',strip(anim)+'.png');}
+ /** One cat frame with its ground point at (x, y), fractional positions allowed; ppu = screen px per world unit. */
+ private catFrame(h:TuanziHost,anim:Anim,frame:number,x:number,y:number,ppu:number){
+  const im=this.catArt(h.stage,anim);if(!im)return false;const a=TUANZI_ANIMS[anim],size=UNITS*ppu,c=h.stage.ctx;
+  c.save();c.imageSmoothingEnabled=true;c.drawImage(im,(frame%a.cols)*FRAME,Math.floor(frame/a.cols)*FRAME,FRAME,FRAME,x-size/2,y-size*GROUND,size,size);c.restore();return true;
  }
+ /** Starts downloading the strips the nook is about to need (images stay cached for the session). */
+ warm(h:TuanziHost,anims:Anim[]){for(const anim of anims)this.catArt(h.stage,anim);}
  private drawCat(h:TuanziHost,cushion:{x:number;y:number},ppu:number,scene:Rect){
-  const now=Date.now();h.animate();
+  const now=Date.now();
   const tap=TUANZI_ANIMS.tap;if(this.cat==='tap'&&now-this.catAt>tap.frames*1000/tap.fps+300){this.cat=this.catBefore;this.catAt=now;}
   const el=now-this.catAt,span=scene.x+scene.w+20*ppu-cushion.x;
-  if(this.cat==='leave'){const p=Math.min(1,el/3400);if(p>=1){this.cat='away';this.catAt=now;}this.catFrame(h,'leave',this.frameOf('leave',el),cushion.x+span*p,cushion.y+span*p*.18,ppu);return;}
-  if(this.cat==='back'){const walk=2800,p=Math.min(1,el/walk),from=cushion.x-scene.x+20*ppu;if(p<1){this.catFrame(h,'walkBack',this.frameOf('walkBack',el),cushion.x-from*(1-p),cushion.y,ppu);return;}this.catFrame(h,'back',this.frameOf('back',el-walk),cushion.x,cushion.y,ppu);return;}
-  const anim=this.cat==='nap'?'napBare':this.cat==='away'?'awayBare':this.cat;this.catFrame(h,anim,this.frameOf(anim,el),cushion.x,cushion.y,ppu);
+  // Walking moves every display frame; standing states redraw only when their next frame is due.
+  if(this.cat==='leave'){const p=Math.min(1,el/3400);if(p>=1){this.cat='away';this.catAt=now;}this.catFrame(h,'leave',this.frameOf('leave',el),cushion.x+span*p,cushion.y+span*p*.18,ppu);h.animate(0);this.warm(h,['awayBare']);return;}
+  if(this.cat==='back'){const walk=2800,p=Math.min(1,el/walk),from=cushion.x-scene.x+20*ppu;this.warm(h,['back']);if(p<1){this.catFrame(h,'walkBack',this.frameOf('walkBack',el),cushion.x-from*(1-p),cushion.y,ppu);h.animate(0);return;}this.catFrame(h,'back',this.frameOf('back',el-walk),cushion.x,cushion.y,ppu);h.animate(this.nextFrameIn('back',el-walk));return;}
+  const anim:Anim=this.cat==='nap'?'napBare':this.cat==='away'?'awayBare':this.cat;
+  // The room is already on screen while the state's strip arrives; then only that state's frames are redrawn on time.
+  if(!this.catFrame(h,anim,this.frameOf(anim,el),cushion.x,cushion.y,ppu))h.animate(120);
+  else{h.animate(this.nextFrameIn(anim,el));if(anim!=='tap')this.warm(h,['tap']);}
   if(this.cat==='tap'&&el<1100){const s=h.stage,label='喵～',bw=s.measure(label,14,800)+20,b={x:Math.round(cushion.x+8*ppu),y:Math.round(cushion.y-30*ppu),w:bw,h:30};s.frame(b,'button-cream-normal');s.text(label,b.x+10,b.y+7,14,h.colors.ink,800);}
  }
  private badge(h:TuanziHost,x:number,y:number,label:string){const s=h.stage,c=s.ctx,w=Math.max(20,s.measure(label,12,800)+12);c.fillStyle='#d9485f';c.fillRect(Math.round(x-w/2),Math.round(y-10),Math.round(w),20);c.fillStyle='#5a2232';c.fillRect(Math.round(x-w/2),Math.round(y+10),Math.round(w),2);s.text(label,x-s.measure(label,12,800)/2,y-7,12,'#fffaf0',800);}
@@ -167,9 +183,19 @@ export class TuanziFeature{
  }
  /** Floating surface over the room: translucent cream, soft shadow. */
  private float(h:TuanziHost,r:Rect,radius=14,alpha=.9){
-  const c=h.stage.ctx;c.save();c.shadowColor='rgba(92,52,40,.22)';c.shadowBlur=14;c.shadowOffsetY=3;c.fillStyle=`rgba(255,248,236,${alpha})`;
+  // The blurred shadow is costly to paint every frame: each size is painted once into a small canvas and reused.
+  const c=h.stage.ctx,scale=c.getTransform().a||1,pad=20,w=Math.round(r.w),hh=Math.round(r.h),key=[w,hh,radius,alpha,scale].join(':');
+  let cached=this.floats.get(key);
+  if(!cached&&h.createCanvas){const canvas=h.createCanvas();canvas.width=Math.ceil((w+pad*2)*scale);canvas.height=Math.ceil((hh+pad*2)*scale);const g=canvas.getContext('2d');
+   if(g){g.scale(scale,scale);g.shadowColor='rgba(92,52,40,.22)';g.shadowBlur=14*scale;g.shadowOffsetY=3*scale;g.fillStyle=`rgba(255,248,236,${alpha})`;g.beginPath();g.roundRect(pad,pad,w,hh,radius);g.fill();
+    g.shadowColor='transparent';g.strokeStyle='rgba(150,96,76,.28)';g.lineWidth=1;g.stroke();if(this.floats.size>40)this.floats.clear();this.floats.set(key,cached=canvas);}}
+  if(cached){c.drawImage(cached,r.x-pad,r.y-pad,w+pad*2,hh+pad*2);return;}
+  c.save();c.shadowColor='rgba(92,52,40,.22)';c.shadowBlur=14;c.shadowOffsetY=3;c.fillStyle=`rgba(255,248,236,${alpha})`;
   c.beginPath();c.roundRect(r.x,r.y,r.w,r.h,radius);c.fill();c.shadowColor='transparent';c.strokeStyle='rgba(150,96,76,.28)';c.lineWidth=1;c.stroke();c.restore();
  }
+ private floats=new Map<string,HTMLCanvasElement>();
+ /** The room scaled to the screen once (walls, picture), redrawn only when the size or the picture changes. */
+ private roomLayer:{key:string;canvas:HTMLCanvasElement}|null=null;
  /** Line breaks that never start a line with closing punctuation (it hangs at the end of the line before). */
  private lines(s:Stage,text:string,width:number,size:number){
   const rows:string[]=[];let line='';
@@ -233,8 +259,12 @@ export class TuanziFeature{
   const scene={x:0,y:0,w:s.w,h:s.h},k=Math.max(s.w/ROOM_W,s.h/ROOM_H*(h.landscape?1:.88)),dw=ROOM_W*k,dh=ROOM_H*k;
   const dx=Math.round(Math.min(0,Math.max(s.w-dw,s.w/2-dw*(h.landscape?.665:.64)))),dy=Math.round(dh<s.h?s.h-dh:Math.min(0,Math.max(s.h-dh,s.h/2-dh*.47)));
   const at=(nx:number,ny:number)=>({x:dx+nx*dw,y:dy+ny*dh});
-  if(dy>0){const corner=Math.round(dx+ROOM_CORNER*dw);s.ctx.fillStyle='#e6c69c';s.ctx.fillRect(0,0,s.w,dy+1);s.ctx.fillStyle='#be9d79';if(corner>0)s.ctx.fillRect(0,0,corner,dy+1);}
-  const im=this.art(s,ART.room,ART.roomFallback);if(im){s.ctx.save();s.ctx.imageSmoothingEnabled=true;s.ctx.drawImage(im,dx,dy,dw,dh);s.ctx.restore();}
+  const im=this.art(s,ART.room,ART.roomFallback),paint=(g:CanvasRenderingContext2D)=>{
+   if(dy>0){const corner=Math.round(dx+ROOM_CORNER*dw);g.fillStyle='#e6c69c';g.fillRect(0,0,s.w,dy+1);g.fillStyle='#be9d79';if(corner>0)g.fillRect(0,0,corner,dy+1);}
+   if(im){g.save();g.imageSmoothingEnabled=true;g.drawImage(im,dx,dy,dw,dh);g.restore();}};
+  const scale=s.ctx.getTransform().a||1,key=[s.w,s.h,scale,dx,dy,dw,!!im].join(':');
+  if(im&&h.createCanvas&&this.roomLayer?.key!==key){const canvas=this.roomLayer?.canvas??h.createCanvas();canvas.width=Math.round(s.w*scale);canvas.height=Math.round(s.h*scale);const g=canvas.getContext('2d');if(g){g.setTransform(scale,0,0,scale,0,0);g.fillStyle='#f6e7d2';g.fillRect(0,0,s.w,s.h);paint(g);this.roomLayer={key,canvas};}}
+  if(this.roomLayer?.key===key)s.ctx.drawImage(this.roomLayer.canvas,0,0,s.w,s.h);else paint(s.ctx);
   // Souvenirs stand on the shelf, newest last.
   const shelf=at(...SPOT.shelf),size=Math.max(18,Math.min(30,dw*.024));v.souvenirs.slice(-5).forEach((item,i)=>this.icon(h,item.id,{x:shelf.x-size*2.6+i*size*1.05,y:shelf.y-size*1.05,w:size,h:size}));
   const cushion=at(...SPOT.cushion);this.drawCat(h,cushion,ROOM_PPU*k,scene);
@@ -256,7 +286,7 @@ export class TuanziFeature{
  private drawWelcome(h:TuanziHost,v:Open){
   const s=h.stage,c=h.colors,area=this.sheet(h,'团子搬进小窝啦',h.landscape?560:400,h.landscape?320:420);
   let y=area.y;const art={x:area.x,y,w:area.w,h:Math.min(130,area.h*.34)};
-  const im=this.art(s,ART.sheet);if(im){const size=Math.min(art.h*1.25,art.w*.5);s.ctx.drawImage(im,0,TUANZI_ANIMS.wait.y,FRAME,FRAME,art.x+(art.w-size)/2,art.y-size*.12,size,size);}
+  const im=this.catArt(s,'wait');if(im){const size=Math.min(art.h*1.25,art.w*.5);s.ctx.drawImage(im,0,0,FRAME,FRAME,art.x+(art.w-size)/2,art.y-size*.12,size,size);}
   y+=art.h+8;
   y+=this.wrap(s,'奶奶给团子准备了一个旧布包。放进吃的，团子就会趁你离开的时候出门旅行，一路给你寄明信片——每一张都能拼。',area.x,y,area.w,13,c.ink,20)+10;
   const gift={x:area.x,y,w:area.w,h:48};s.frame(gift,'panel-gold');this.icon(h,'fish',{x:gift.x+8,y:gift.y+4,w:40,h:40});s.text(v.welcome.fish+' 条小鱼干',gift.x+52,gift.y+15,14,c.onAccent,800);
@@ -270,6 +300,7 @@ export class TuanziFeature{
   const name=item?.title??'空着';s.text(name,r.x+(r.w-s.measure(name,12,700))/2,r.y+r.h-22,12,item?c.ink:c.muted,700,r.w-6);
  }
  private drawBag(h:TuanziHost,v:Open){
+  this.warm(h,['leave']);
   const s=h.stage,c=h.colors,area=this.sheet(h,'奶奶的旧布包',h.landscape?680:420,h.landscape?370:520,'吃的决定走多远，道具决定去哪里，护身符可以带一个');
   if(v.status==='away'){this.wrap(s,'团子正背着布包在外面旅行，回来以后再装吧。',area.x,area.y+8,area.w,14,c.muted,22);return;}
   const gap=10,sw=h.landscape?Math.min(130,(area.w*.52-gap*2)/3):(area.w-gap*2)/3,sh=132,d=this.draft;
@@ -384,8 +415,8 @@ export class TuanziFeature{
   const s=h.stage,c=h.colors,trip=v.trip;if(!trip){this.screen='nook';return;}
   const area=this.sheet(h,'团子回来啦！',h.landscape?640:400,h.landscape?340:480);
   const souvenir=trip.souvenir?v.catalog.souvenirs.find(item=>item.id===trip.souvenir):null;
-  let y=area.y;const art={x:area.x,y,w:area.w,h:Math.min(150,area.h*.36)},im=this.art(s,ART.sheet);
-  if(im){const size=art.h*1.25;s.ctx.drawImage(im,0,TUANZI_ANIMS.back.y,FRAME,FRAME,art.x+(art.w-size)/2,art.y-size*.12,size,size);}
+  let y=area.y;const art={x:area.x,y,w:area.w,h:Math.min(150,area.h*.36)},im=this.catArt(s,'back');
+  if(im){const size=art.h*1.25;s.ctx.drawImage(im,0,0,FRAME,FRAME,art.x+(art.w-size)/2,art.y-size*.12,size,size);}
   y+=art.h+8;
   const box={x:area.x,y,w:area.w,h:76};s.frame(box,souvenir?'panel-gold':'button-linen-normal');
   if(souvenir){this.icon(h,souvenir.id,{x:box.x+8,y:box.y+6,w:64,h:64});s.text('带回了纪念品',box.x+80,box.y+12,11,c.onAccent,700);s.text(souvenir.title,box.x+80,box.y+30,18,c.onAccent,800,box.w-90);}
@@ -401,19 +432,24 @@ export class TuanziFeature{
   // Before story 1-2 the corner says what brings 团子 in and leads to the story.
   if(this.view?.locked){
    const s=h.stage,c=h.colors,lock=this.view.unlockLevelId;s.frame(r,'button-linen-normal');s.hit(r,story??open);
-   const art={x:r.x+4,y:r.y+2,w:120,h:r.h-4},sheet=this.art(s,ART.lobby),anim=TUANZI_LOBBY.away;
+   const art={x:r.x+4,y:r.y+2,w:120,h:r.h-4},sheet=this.art(s,ART.lobby,ART.lobbyFallback),anim=TUANZI_LOBBY.away;
    if(sheet){const w=112,hh=64;s.ctx.save();s.ctx.globalAlpha=.55;s.ctx.imageSmoothingEnabled=true;s.ctx.drawImage(sheet,0,anim.y,224,128,Math.round(art.x+(art.w-w)/2),Math.round(r.y+r.h-hh-4),w,hh);s.ctx.restore();}
    const tx=art.x+art.w+6,textW=r.x+r.w-10-tx;
    s.text('团子的小窝',tx,r.y+(r.h>70?14:9),15,c.ink,800,textW);s.text('通关'+levelName(lock)+'，团子就会搬进来',tx,r.y+(r.h>70?38:31),12,c.muted,600,textW);return;
   }
   const v=this.open;if(!v)return;
   const s=h.stage,c=h.colors;s.frame(r,'button-linen-normal');s.hit(r,open);
-  const art={x:r.x+4,y:r.y+2,w:120,h:r.h-4},away=v.status==='away',anim=away?TUANZI_LOBBY.away:TUANZI_LOBBY.nap,sheet=this.art(s,ART.lobby);
+  const art={x:r.x+4,y:r.y+2,w:120,h:r.h-4},away=v.status==='away',anim=away?TUANZI_LOBBY.away:TUANZI_LOBBY.nap,sheet=this.art(s,ART.lobby,ART.lobbyFallback);
   if(sheet){h.animate();const frame=Math.floor(Date.now()*anim.fps/1000)%anim.frames,w=112,hh=64;s.ctx.save();s.ctx.imageSmoothingEnabled=true;s.ctx.drawImage(sheet,frame*224,anim.y,224,128,Math.round(art.x+(art.w-w)/2),Math.round(r.y+r.h-hh-4),w,hh);s.ctx.restore();}
   const tx=art.x+art.w+6,right=r.x+r.w-10,textW=right-tx-(v.sill.portions?84:46);
   const line=away?'团子出门旅行了':v.trip?.returned&&!this.homeSeen(v)?'团子回来啦，带了东西':v.pack?.food?'团子装好包，在等你走开':'团子在垫子上打盹';
   s.text('团子的小窝',tx,r.y+(r.h>70?14:9),15,c.ink,800,textW);s.text(line,tx,r.y+(r.h>70?38:31),12,c.muted,600,textW);
   const mail={x:right-38,y:r.y+(r.h-36)/2,w:36,h:36};this.icon(h,'envelope',mail);if(v.unread)this.badge(h,mail.x+mail.w-2,mail.y+4,String(v.unread));
   if(v.sill.portions){const f={x:mail.x-40,y:mail.y,w:36,h:36};this.icon(h,'fish',f);this.badge(h,f.x+f.w-2,f.y+4,'+'+v.sill.fish);}
+  // Once the lobby has settled, fetch what the nook opens with (room, icons, the state's strip) so it appears at once.
+  const now=Date.now();if(this.warmAt===0)this.warmAt=now+2500;
+  if(now<this.warmAt)h.animate(this.warmAt-now);
+  else{this.art(s,ART.room,ART.roomFallback);this.art(s,ART.items,ART.itemsFallback);this.warm(h,[away?'awayBare':v.trip?.returned&&!this.homeSeen(v)?'walkBack':v.pack?.food?'wait':'napBare']);}
  }
+ private warmAt=0;
 }

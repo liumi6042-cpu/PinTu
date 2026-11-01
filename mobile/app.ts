@@ -77,7 +77,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v54.2';
+const CLIENT_PACKAGE_VERSION='v54.3';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -95,14 +95,15 @@ export class GameApp{
  /** 团子去旅行 postcards pieced on the phone: a local room with no server side. */
  private get postcardRoom(){return this.postcards?.isRoom(this.room?.ticket?.room?.id)??false;}
  private get localRoom(){return this.offlineRoom||this.postcardRoom;}
- private readonly tuanzi=new TuanziFeature();private postcards!:ReturnType<typeof createPostcardRooms>;private tuanziTimer:ReturnType<typeof setTimeout>|null=null;private postcardFlush:Promise<void>|null=null;
+ private readonly tuanzi=new TuanziFeature();private postcards!:ReturnType<typeof createPostcardRooms>;private tuanziTimer:ReturnType<typeof setTimeout>|null=null;private tuanziAt=0;private postcardFlush:Promise<void>|null=null;
  /** The nook is shown when the server offers it (capability tuanziTravel) and 团子 has moved in (story 1-2). */
  private get tuanziOn(){return !!this.tuanzi&&this.ready&&!this.formalWeb&&this.client.config.capabilities?.tuanziTravel===true;}
  private get tuanziCorner(){return this.tuanziOn&&!!this.tuanzi?.view;}
  private tuanziHost():TuanziHost{
   const v=this.platform.viewport();
   return {stage:this.stage,colors:this.colors,top:v.top,bottom:this.stage.h-v.bottom,menu:v.menu??null,log:line=>this.retentionNote(line),landscape:this.layout==='phoneLandscape'||this.layout==='desktop',playerName:this.client.profile?.name??'我',
-   animate:()=>{if(this.tuanziTimer==null)this.tuanziTimer=setTimeout(()=>{this.tuanziTimer=null;if(!this.destroyed&&!this.hidden)this.invalidate();},90);},
+   // One pending redraw at a time, at the soonest time asked for; nothing while the game is in the background.
+   animate:(ms=90)=>{const at=Date.now()+ms;if(this.tuanziTimer!=null){if(at>=this.tuanziAt)return;clearTimeout(this.tuanziTimer);}this.tuanziAt=at;this.tuanziTimer=setTimeout(()=>{this.tuanziTimer=null;if(!this.destroyed&&!this.hidden)this.invalidate();},ms);},createCanvas:()=>this.platform.createCanvas(),
    close:()=>{this.showModal(null);this.invalidate();},note:text=>this.note(text),invalidate:()=>this.invalidate(),randomId:()=>this.platform.randomId(),storage:this.platform.storage,
    get:path=>this.client.json(path),post:(path,body)=>this.client.post(path,body),
    play:card=>this.playPostcard(card),together:card=>void this.postcardTogether(card),openAlbum:id=>{this.showModal(null);this.navigate('gallery');this.selectAlbum(id);}};

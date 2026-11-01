@@ -54,7 +54,7 @@ if(prepareAssets){await import('./build-mobile-audio.mjs');await import('./build
 const outputNames={wechat:'wechat-game',taptap:'shared-web',web:'shared-desktop-web'};
 const outputs=Object.fromEntries(platforms.map(id=>[id,join(isolatedRoot??join(root,'outputs'),outputNames[id])]));
 const recordDir=isolatedRoot?join(isolatedRoot,'records'):join(root,'outputs/shared-build'),records=[];
-const commonArt=['b2-card-icons1023.png','b2-core-icons23.png','b2-task-icons23.png','b2-reward-cursors.png','tuanzi-cat.png','tuanzi-lobby.png','tuanzi-room.webp','tuanzi-room.jpg','tuanzi-items.png','tuanzi-stickers.png'];
+const commonArt=['b2-card-icons1023.png','b2-core-icons23.png','b2-task-icons23.png','b2-reward-cursors.png','tuanzi-cat-napBare.webp','tuanzi-cat-napBare.png','tuanzi-cat-wait.webp','tuanzi-cat-wait.png','tuanzi-cat-tap.webp','tuanzi-cat-tap.png','tuanzi-cat-leave.webp','tuanzi-cat-leave.png','tuanzi-cat-walkBack.webp','tuanzi-cat-walkBack.png','tuanzi-cat-back.webp','tuanzi-cat-back.png','tuanzi-cat-awayBare.webp','tuanzi-cat-awayBare.png','tuanzi-lobby.webp','tuanzi-items.webp','tuanzi-stickers.webp','tuanzi-lobby.png','tuanzi-room.webp','tuanzi-room.jpg','tuanzi-items.png','tuanzi-stickers.png'];
 const extraArt=['b2-supply-scenes.png','b2-pixel-atlas.png'];
 const fonts=['OFL-NotoSansSC.txt','FONT-NOTICES.md'];
 // Original synthesized piano pieces; sources and manifest live in content/music/bgm.
@@ -89,7 +89,7 @@ for(const [platform,out]of Object.entries(outputs)){
   // No game.json for TapTap: it makes the console parse the H5 zip as a native mini-game and reject it.
   // Landscape is requested at startup by mobile/entry-web.ts instead.
   const title=platform==='web'?'拼图小窝 · 桌面体验':config.gameName;
-  writeFileSync(join(out,'index.html'),'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#fdf6ed"><title>'+title+'</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fdf6ed}canvas{width:100%;height:100%;display:block;touch-action:none}</style></head><body><canvas id="game" aria-label="'+title+'"></canvas><script src="game.js"></script></body></html>\n');
+  writeFileSync(join(out,'index.html'),'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#fdf6ed"><title>'+title+'</title><style>*{-webkit-tap-highlight-color:transparent}html,body,canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}textarea,input{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fdf6ed}canvas{width:100%;height:100%;display:block;touch-action:none}</style></head><body><canvas id="game" aria-label="'+title+'"></canvas><script src="game.js"></script></body></html>\n');
  }
  function size(dir,skipArt=false){return readdirSync(dir,{withFileTypes:true}).reduce((n,item)=>n+(skipArt&&item.name==='art'?0:item.isDirectory()?size(join(dir,item.name)):statSync(join(dir,item.name)).size),0);}
  const main=size(out,true),total=size(out);if(platform==='wechat'&&main>4*1024*1024)throw Error('WeChat main package exceeds 4 MiB: '+main);

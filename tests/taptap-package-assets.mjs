@@ -16,7 +16,9 @@ const required=[
  ['assets/ui/b2-reward-cursors.png', 'image/png'],
  ['art/b2-pixel-atlas.png', 'image/png'],
  ['art/b2-supply-scenes.png', 'image/png'],
- ['assets/ui/tuanzi-cat.png', 'image/png'],
+ ['assets/ui/tuanzi-cat-wait.webp', 'image/webp'],
+ ['assets/ui/tuanzi-cat-wait.png', 'image/png'],
+ ['assets/ui/tuanzi-lobby.webp', 'image/webp'],
  ['assets/ui/tuanzi-lobby.png', 'image/png'],
  ['assets/ui/tuanzi-room.webp','assets/ui/tuanzi-room.jpg', 'image/webp'],
  ['assets/ui/tuanzi-room.jpg', 'image/jpeg'],
@@ -42,7 +44,7 @@ try{
  page.on('response',response=>{if(/(?:assets\/ui|art)\//.test(response.url()))assetResponses.set(response.url(),response.status());});
  await page.goto(`${base}/wrapper/index.html`,{waitUntil:'domcontentloaded'}).catch(()=>{});
  const decoded=await page.evaluate(async scriptUrl=>{
-  const files=['assets/ui/b2-card-icons1023.png','assets/ui/b2-core-icons23.png','assets/ui/b2-task-icons23.png','assets/ui/b2-reward-cursors.png','art/b2-pixel-atlas.png','art/b2-supply-scenes.png','assets/ui/tuanzi-cat.png','assets/ui/tuanzi-lobby.png','assets/ui/tuanzi-room.webp','assets/ui/tuanzi-items.png','assets/ui/tuanzi-stickers.png'];
+  const files=['assets/ui/b2-card-icons1023.png','assets/ui/b2-core-icons23.png','assets/ui/b2-task-icons23.png','assets/ui/b2-reward-cursors.png','art/b2-pixel-atlas.png','art/b2-supply-scenes.png','assets/ui/tuanzi-cat-napBare.webp','assets/ui/tuanzi-cat-wait.webp','assets/ui/tuanzi-cat-tap.webp','assets/ui/tuanzi-cat-leave.webp','assets/ui/tuanzi-cat-walkBack.webp','assets/ui/tuanzi-cat-back.webp','assets/ui/tuanzi-cat-awayBare.webp','assets/ui/tuanzi-cat-wait.png','assets/ui/tuanzi-lobby.webp','assets/ui/tuanzi-items.webp','assets/ui/tuanzi-stickers.webp','assets/ui/tuanzi-lobby.png','assets/ui/tuanzi-room.webp','assets/ui/tuanzi-items.png','assets/ui/tuanzi-stickers.png'];
   const results=[];
   for(const file of files){const image=new Image();const done=new Promise(resolve=>{image.onload=()=>resolve({file,ok:true,width:image.naturalWidth,height:image.naturalHeight});image.onerror=()=>resolve({file,ok:false,width:image.naturalWidth,height:image.naturalHeight});});image.src=new URL(file,scriptUrl).href;results.push(await done);}
   return {base:document.baseURI,scriptUrl,results};
