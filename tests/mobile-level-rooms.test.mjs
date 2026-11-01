@@ -84,10 +84,10 @@ test('level rooms bypass gallery visibility and paid pack locks using existing s
  assert.equal(f.make('ch1-1',peer).room.puzzle.imageId,pack.imageIds[0]);
 });
 
-test('level rooms neither consume the three-room allowance nor require an open slot',t=>{
+test('level rooms neither consume the five-room allowance nor require an open slot',t=>{
  const f=fixture(t),level=f.make();f.clear('ch1-1');
  const make=()=>f.ok(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});
- make();make();make();assert.equal(f.call(owner,'/api/rooms',{mode:'random',pieces:48,requestId:rid()}).data.code,'ROOM_LIMIT');
+ make();make();make();make();make();assert.equal(f.call(owner,'/api/rooms',{mode:'random',pieces:48,requestId:rid()}).data.code,'ROOM_LIMIT');
  assert.notEqual(f.make('ch1-2').room.id,level.room.id);assert.equal(f.make().room.id,level.room.id);
  assert.equal(f.stored(owner).supply.create,0);assert.equal(f.stored(owner).starterSelectionAvailable,false);
 });

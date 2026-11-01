@@ -500,7 +500,7 @@ export function createMobileService(options={}){
   if(path==='/api/guest'&&method==='POST')return {ready:true};
   if(path==='/api/connection'&&method==='GET')return {mode:'mobile-v3-isolated',inviteOrigin:null};
   if(path==='/api/my-rooms'&&method==='GET')return {rooms:profileView(p,now).ownedRooms,serverTime:now};
-  if(path==='/api/room-history'&&method==='GET')return {rooms:roomHistory.view(p.id,now),limit:10,serverTime:now};
+  if(path==='/api/room-history'&&method==='GET')return {rooms:roomHistory.view(p.id,now),limit:10,limits:roomHistory.limits,serverTime:now};
   if(path==='/api/my-rooms'&&method==='POST'){
    if(input.action!=='remove'||typeof input.roomId!=='string'||!requestKey(input.roomId))fail(400,'INVALID_MANAGEMENT','请选择自己的房间');
    const room=readRoom(input.roomId);if(room.ownerId!==p.id)fail(403,'OWNER_REQUIRED','只能删除自己的房间列表记录');
@@ -553,7 +553,7 @@ export function createMobileService(options={}){
     const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(dailyClock(now))&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<seatLimit(r)&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
     if(existing)return join(existing,p,{},now,request);
    }
-   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,\'$.mobileMode\') IS NOT \'level\' AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;if(mode!=='level'&&owned>=3)fail(409,'ROOM_LIMIT','最多保留3个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
+   const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND json_extract(data,\'$.mobileMode\') IS NOT \'level\' AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;const ownLimit=web?3:5;if(mode!=='level'&&owned>=ownLimit)fail(409,'ROOM_LIMIT','最多保留'+ownLimit+'个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
    const needsTicket=mode!=='level'&&!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
    if(needsTicket&&!starter&&p.supply.create<1)fail(402,'CREATE_TICKET_REQUIRED','需要1张建房券');
    const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(dailyClock(now)):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};

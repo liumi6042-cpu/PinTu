@@ -57,6 +57,7 @@ void test('isolated HTTP service: authoritative multiplayer, growth, supply, per
   assert.equal((await request(b,roomPath,undefined,{token:bt.token,fetch:{method:'DELETE'}})).data.code,'OWNER_REQUIRED','only the owner can remove a room from their own created list');
   const publicInput={mode:'random',pieces:108,visibility:'public',requestId:rid()};assert.equal((await request(a,'/api/rooms',publicInput)).status,201);
   assert.equal((await request(a,'/api/rooms',{...publicInput,requestId:rid()})).status,201);
+  for(let i=0;i<2;i++)assert.equal((await request(a,'/api/rooms',{...publicInput,requestId:rid()})).status,201);
   assert.equal((await request(a,'/api/rooms',{...publicInput,requestId:rid()})).data.code,'ROOM_LIMIT');
   const lobby=(await request(a,'/api/lobby?limit=1')).data;assert.equal(lobby.rooms.length,1);assert.ok(lobby.nextCursor);const second=(await request(a,'/api/lobby?limit=1&cursor='+lobby.nextCursor)).data;assert.equal(second.rooms.length,1);assert.notEqual(second.rooms[0].id,lobby.rooms[0].id);
   let current=ticket.room,successful=0;
