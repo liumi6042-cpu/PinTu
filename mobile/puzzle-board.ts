@@ -12,7 +12,7 @@ import {MergeHolderLog,detectTeamMerges} from '../lib/team-merge';
 type Command={op:'M'|'L'|'C'|'Z';args:number[]};
 type Owner=RoomPieceOwner;
 /** sx/sy is the finger's screen point at grab; live turns on once the finger passes DRAG_SLOP or another finger moves the camera. */
-type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial:number;sx:number;sy:number;live:boolean};
+type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial:number;sx:number;sy:number;live:boolean;at:number};
 type Pan={pointer:number;x:number;y:number;cx:number;cy:number};
 type Pinch={a:number;b:number;distance:number;zoom:number;worldX:number;worldY:number;held:boolean};
 /** The large reference view: z multiplies the fitted size, x/y move its centre in screen pixels. */
@@ -37,6 +37,11 @@ type PlacedSurface={canvas:HTMLCanvasElement;serial:number;ids:Set<number>;scrat
 const DRAG_SURFACE_BYTES=24*1024*1024;
 /** Screen distance a held finger travels before the piece follows it, so a press or a shifted grip never nudges a piece. */
 export const DRAG_SLOP=8;
+/** A second finger this soon after the first lands on a piece, before the piece moved, starts a pinch: the piece stays put. */
+export const PINCH_GRACE_MS=250;
+/** A finger held still this long, or one that landed this close to the board's left, right or bottom edge and has not
+ * moved, is a grip (a thumb or palm holding the phone). It does not turn the next touch into a pinch. */
+export const GRIP_MS=350,GRIP_EDGE_PX=16;
 /** A held group grows by at most this fraction, and at most DRAG_LIFT_PX at its far edge, around the finger. */
 const DRAG_LIFT_SCALE=.08,DRAG_LIFT_PX=6;
 /** A finger covers the piece it drops, so a release within DROP_ASSIST of a piece from the board spot or a
@@ -119,6 +124,10 @@ export class PuzzleBoard implements RoomTable {
  private tray=false;private trayPage=0;private focusedPiece:number|null=null;
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null}|null=null;
  private drag:Drag|null=null;private pan:Pan|null=null;private pinch:Pinch|null=null;private serial=0;
+ /** Where and when each board finger landed, and whether it has travelled DRAG_SLOP; gripping fingers are left out of gestures until they lift. */
+ private touchStarts=new Map<number,{x:number;y:number;at:number;moved:boolean}>();private gripping=new Set<number>();
+ /** A finger on the 原图 thumbnail opens the large view only when it lifts without moving; a drag hands it to the table. */
+ private thumbTouch:{id:number;x:number;y:number}|null=null;private thumbHandoff=false;
  /** When locked, one finger on empty table no longer moves the view; a second finger still pans and zooms. */
  viewLocked=false;
  private lockedTouch:{id:number;x:number;y:number}|null=null;private lockTold=false;
@@ -316,24 +325,33 @@ export class PuzzleBoard implements RoomTable {
   if(input.pan&&input.type==='down'&&this.tray&&input.changed[0]&&inside(input.changed[0],this.trayLayout().r))return true;
   if(this.trayInput(input)){this.publishCursor(null);return true;}
   if(input.type==='cancel'){const active=!!this.pointers.size;this.cancelInput(true);return active;}
+  if(input.type==='up')for(const p of input.changed){this.gripping.delete(p.id);if(!this.pointers.has(p.id))this.touchStarts.delete(p.id);}
   if(input.type==='down'){
-   const added=input.changed.filter(p=>inside(p,this.rect)&&!this.pointers.has(p.id));
-   for(const p of input.changed)if(inside(p,this.rect))this.pointers.set(p.id,p);
+   const now=Date.now(),added=input.changed.filter(p=>inside(p,this.rect)&&!this.pointers.has(p.id)&&!this.gripping.has(p.id));
+   for(const p of added){this.pointers.set(p.id,p);this.touchStarts.set(p.id,{x:p.x,y:p.y,at:now,moved:false});}
    if(!this.pointers.size)return false;
    if(this.drag&&this.pointers.has(this.drag.pointer)){
     // While a piece is held, one more finger pans; a third finger turns that pan into a pinch. Further fingers are ignored.
-    const others=[...this.pointers.values()].filter(p=>p.id!==this.drag!.pointer);if(others.length)this.drag.live=true;
+    const others=[...this.pointers.values()].filter(p=>p.id!==this.drag!.pointer);
+    // Two fingers landing together mean zoom, even when the first one happened to land on a piece.
+    if(others.length===1&&!this.drag.live&&now-this.drag.at<=PINCH_GRACE_MS){this.beginPinch();return true;}
+    if(others.length)this.drag.live=true;
     if(others.length>=2){if(!this.pinch){this.pan=null;this.pinch=this.pinchBetween(others[0],others[1],true);}}
     else if(!this.pan||this.pan.pointer===this.drag.pointer){const p=added.find(p=>p.id!==this.drag!.pointer);if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}
     this.publishCursor(this.pointers.get(this.drag.pointer)!);this.changed();return true;
    }
-   if(this.pointers.size>=2){this.beginPinch();return true;}
+   if(this.pointers.size>=2){
+    // A still thumb or palm already on the table must not turn this touch into a pinch: set it aside until it lifts.
+    const grip=this.pointers.size===2&&added.length===1?[...this.pointers.keys()].find(id=>id!==added[0].id&&this.gripFinger(id,now)):undefined;
+    if(grip===undefined){this.beginPinch();return true;}
+    this.pointers.delete(grip);this.gripping.add(grip);this.pan=null;this.lockedTouch=null;
+   }
    const p=[...this.pointers.values()][0],world=this.world(p),locked=this.viewLocked&&!input.pan,group=input.pan?null:this.groupAt(p)??(locked?this.groupNear(p):null);
    this.publishCursor(p);
    if(group&&this.ready&&this.network&&this.networkReady){
     if(this.owners[group.id]){this.tell(`${this.owners[group.id].name} 正在移动这组拼块`);return true;}
     if(this.network.canAcquire?.(group.id)===false){this.tell('这组拼块还在确认位置，请稍候');return true;}
-    const serial=++this.serial;this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live:false};raiseGroup(this.state,group.id);this.mergeLog.hold(group.id,{player:SELF_HOLDER,name:this.selfPlayer?.name??'我',color:this.selfPlayer?.color??'#f08aa6'});
+    const serial=++this.serial;this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live:false,at:now};raiseGroup(this.state,group.id);this.mergeLog.hold(group.id,{player:SELF_HOLDER,name:this.selfPlayer?.name??'我',color:this.selfPlayer?.color??'#f08aa6'});
     void this.network.acquire(group.id).then(ok=>{if(!ok&&this.drag?.serial===serial){this.cancelNetworkDrag(group.id);this.tell('这组拼块没能确认，已恢复服务器位置');}}).catch(()=>{if(this.drag?.serial===serial)this.cancelNetworkDrag(group.id);});
    }else if(locked)this.lockedTouch={id:p.id,x:p.x,y:p.y};
    else{const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}
@@ -341,7 +359,7 @@ export class PuzzleBoard implements RoomTable {
   }
   if(!this.pointers.size){if(input.type==='move'){const p=input.changed[0]??input.points[0];this.publishCursor(p&&inside(p,this.rect)?p:null);this.changed();}return false;}
   if(input.type==='move'){
-   for(const p of input.points)if(this.pointers.has(p.id))this.pointers.set(p.id,p);
+   for(const p of input.points)if(this.pointers.has(p.id)){this.pointers.set(p.id,p);const s=this.touchStarts.get(p.id);if(s&&!s.moved&&Math.hypot(p.x-s.x,p.y-s.y)>=DRAG_SLOP)s.moved=true;}
    // The first swipe on a locked table explains why the view stays put.
    const held=this.lockedTouch&&this.pointers.get(this.lockedTouch.id);if(held&&!this.lockTold&&Math.hypot(held.x-this.lockedTouch!.x,held.y-this.lockedTouch!.y)>=DRAG_SLOP*2){this.lockTold=true;this.tell('画面已锁定：双指可移动和缩放，点锁可解开');}
    const a=this.pinch&&this.pointers.get(this.pinch.a),b=this.pinch&&this.pointers.get(this.pinch.b);
@@ -353,7 +371,7 @@ export class PuzzleBoard implements RoomTable {
   }
   if(input.type==='up'){
    if(this.drag&&input.changed.some(p=>p.id===this.drag!.pointer)){const drag=this.drag,group=this.state.groups.find(g=>g.id===drag.id);this.drag=null;this.releaseDragSurface();if(group)this.commitDrop(group,drag);}
-   const heldPinch=!!this.pinch?.held;for(const p of input.changed)this.pointers.delete(p.id);this.pan=null;this.pinch=null;this.lockedTouch=null;
+   const heldPinch=!!this.pinch?.held;for(const p of input.changed){this.pointers.delete(p.id);this.touchStarts.delete(p.id);}this.pan=null;this.pinch=null;this.lockedTouch=null;
    // A pinch begun while holding keeps zooming on two remaining fingers; otherwise one remaining finger pans.
    if(this.pointers.size){const others=[...this.pointers.values()].filter(p=>p.id!==this.drag?.pointer),p=others[0];if(heldPinch&&others.length>=2)this.pinch=this.pinchBetween(others[0],others[1],!!this.drag);else if(p){const v=this.local(p);this.pan={pointer:p.id,x:v.x,y:v.y,cx:this.camera.x,cy:this.camera.y};}}else this.releaseGestureSurface();
    // A release outside the board retains the last valid room position.
@@ -393,7 +411,7 @@ export class PuzzleBoard implements RoomTable {
    catch{}finally{if(this.pendingDrops.get(id)===serial)this.pendingDrops.delete(id);}
   }
  }
- private cancelInput(release:boolean){if(release)this.endDrag();this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.lockedTouch=null;this.previewTouch=null;this.trayTouch=null;this.pointers.clear();this.publishCursor(null);++this.serial;this.changed();}
+ private cancelInput(release:boolean){if(release)this.endDrag();this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.lockedTouch=null;this.previewTouch=null;this.trayTouch=null;this.thumbTouch=null;this.pointers.clear();this.touchStarts.clear();this.gripping.clear();this.publishCursor(null);++this.serial;this.changed();}
  cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;if(this.drag)this.mergeLog.release(this.drag.id,Date.now());this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
  syncRemote(next:PuzzleState,owners:Record<string,Owner>,protectedIds:ReadonlySet<number>,showFeedback=true){
   const before=cloneGroups(this.state.groups),previous=new Map(this.state.groups.map(g=>[g.id,g]));
@@ -472,6 +490,7 @@ export class PuzzleBoard implements RoomTable {
  get locating(){return this.locateUntil>Date.now();}
  find(){const group=this.state.groups.find(g=>!g.locked&&!this.owners[g.id]&&visibleGroup(g,this.pieces,this.edges));return group?this.focusMobilePiece(group.pieces[0]):false;}
  private trayLayout(){const height=Math.min(Math.max(1,this.rect.h-76),210,Math.max(100,this.rect.h*.45)),r={x:this.rect.x+5,y:this.rect.y+this.rect.h-height-75,w:Math.max(1,this.rect.w-10),h:height},columns=Math.max(1,Math.min(12,Math.floor((r.w-16)/51))),rows=Math.max(1,Math.min(Math.floor((height-55)/48),Math.floor(24/columns))),pageSize=Math.max(1,columns*rows),groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),pages=Math.max(1,Math.ceil(groups.length/pageSize));this.trayPage=Math.min(this.trayPage,pages-1);return{r,columns,rows,pageSize,groups,pages,cellW:(r.w-16)/columns,cellH:(height-55)/rows};}
+ private gripFinger(id:number,now:number){const s=this.touchStarts.get(id),r=this.rect;if(!s||s.moved)return false;return now-s.at>=GRIP_MS||s.x-r.x<=GRIP_EDGE_PX||r.x+r.w-s.x<=GRIP_EDGE_PX||r.y+r.h-s.y<=GRIP_EDGE_PX;}
  /** A locked table forgives a near miss: the touch picks up a loose piece within a fingertip of it. */
  private groupNear(p:Point){for(const r of [6,12,18])for(let i=0;i<8;i++){const a=i*Math.PI/4,group=this.groupAt({id:p.id,x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r});if(group)return group;}return null;}
  /** The large reference fills the table below any floating header; the picture is fitted inside a margin. */
@@ -487,9 +506,21 @@ export class PuzzleBoard implements RoomTable {
  private previewInput(input:Input){
   if(input.type==='key')return false;
   if(!this.previewLarge){
-   // A tap on the corner thumbnail opens the large reference.
-   if(input.type!=='down'||this.pointers.size||this.trayTouch||!this.preview||!this.previewThumb)return false;
-   const p=input.changed[0];if(!p||!inside(p,this.previewThumb))return false;this.openPreviewZoom();return true;
+   // A tap on the corner thumbnail opens the large reference when the finger lifts. A finger that moves
+   // first was reaching for the table underneath: replay its landing there and let the move continue.
+   const t=this.thumbTouch;
+   if(t){
+    if(input.type==='cancel'){this.thumbTouch=null;return false;}
+    const p=input.changed.find(q=>q.id===t.id)??input.points.find(q=>q.id===t.id);
+    if(input.type==='up'&&input.changed.some(q=>q.id===t.id)){this.thumbTouch=null;if(p&&!this.pointers.size&&this.previewThumb&&inside(p,this.previewThumb))this.openPreviewZoom();return !this.pointers.size;}
+    if(input.type==='move'&&p&&Math.hypot(p.x-t.x,p.y-t.y)>=DRAG_SLOP){
+     this.thumbTouch=null;const origin={id:t.id,x:t.x,y:t.y};this.thumbHandoff=true;
+     try{this.input({type:'down',points:[origin],changed:[origin]});}finally{this.thumbHandoff=false;}return false;
+    }
+    return input.type==='move'&&!this.pointers.size;
+   }
+   if(this.thumbHandoff||input.type!=='down'||this.pointers.size||this.trayTouch||!this.preview||!this.previewThumb)return false;
+   const p=input.changed[0];if(!p||!inside(p,this.previewThumb))return false;this.thumbTouch={id:p.id,x:p.x,y:p.y};return true;
   }
   if(input.type==='wheel'){const p=input.changed[0],delta=input.deltaY??0;if(!p||!Number.isFinite(delta)||delta===0)return true;this.previewView=this.zoomPreviewAt(this.previewView,p,p,this.previewView.z*Math.exp(-Math.max(-1000,Math.min(1000,delta))*.0018));this.changed();return true;}
   if(input.type==='cancel'){this.previewTouch=null;return true;}
