@@ -56,6 +56,8 @@ export function readWelcomeRecord(raw:string|null):WelcomeRecord|null{
 export function welcomeDue(record:WelcomeRecord|null,now:number){
  if(!record)return true;
  if(record.at>now+DAY)return true;
+ // v53 and earlier saved the daily clock (4 h ahead): a record from the future only blocks its own slot.
+ if(record.at>now+MINUTE)return record.key!==welcomeSlotKey(now);
  return record.key!==welcomeSlotKey(now)&&now-record.at>=WELCOME_GAP;
 }
 export function pickWelcomeLine(slot:WelcomeSlot,last:string,random:()=>number=Math.random){

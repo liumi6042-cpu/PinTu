@@ -65,3 +65,10 @@ test('开拼 rejoins, then joins an open daily table, then creates one',()=>{
  assert.deepEqual(welcomeStart({own:[],rooms:rooms.filter(r=>!['busy','fresh'].includes(r.id)),dailyImageId:'daily-a'}),{kind:'create'});
  assert.deepEqual(welcomeStart({own:[],rooms,dailyImageId:null}),{kind:'create'});
 });
+
+test('a record saved on the old 4-hour-ahead daily clock only blocks its own slot',()=>{
+ const shifted=at(22,15),record={at:shifted,key:welcomeSlotKey(shifted),line:'',visit:shifted};
+ assert.equal(welcomeSlot(at(18,17)).greeting,'傍晚好','18:17 Beijing is 傍晚');
+ assert.equal(welcomeDue(record,at(18,17)),true,'v53 greeted "晚上好" from the shifted clock; the real 傍晚 slot may still greet');
+ assert.equal(welcomeDue(record,at(20,30)),false,'the real 晚上 slot was already used by that record');
+});

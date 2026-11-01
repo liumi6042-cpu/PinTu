@@ -42,7 +42,7 @@ import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileR
 import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
-import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,beijingClock,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
+import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
@@ -75,7 +75,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53';
+const CLIENT_PACKAGE_VERSION='v53.1';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -100,7 +100,7 @@ export class GameApp{
  private modal:Modal=null;private modalScroll=0;private modalExtent=0;private modalArea:Rect={x:0,y:0,w:0,h:0};private modalStart=0;
  private orientationChoice:ScreenOrientation|null=null;private orientationSwitching=false;
  // 欢迎回家: armed by a plain login, shown on the first quiet lobby frame after it.
- private welcome:{slot:WelcomeSlot;line:string;tie:WelcomeTieIn|null;clock:string;openedAt:number;storyChapterId:string|null}|null=null;private welcomePending=false;private welcomeEnabled=true;private welcomeLastVisit:number|null=null;private welcomeFrame:number|null=null;
+ private welcome:{slot:WelcomeSlot;line:string;tie:WelcomeTieIn|null;openedAt:number;storyChapterId:string|null}|null=null;private welcomePending=false;private welcomeEnabled=true;private welcomeLastVisit:number|null=null;private welcomeFrame:number|null=null;
  private orientationEntryPending:Promise<void>|null=null;private orientationEntryResolve:(()=>void)|null=null;
  private settingsTipSeen=false;private settingsTipDrawn=false;private settingsTipAnchor:Rect|null=null;
  private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;
@@ -2483,7 +2483,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.route!=='lobby'&&this.route!=='chapter'||this.room||this.destroyed){this.welcomePending=false;this.retentionNote('问候 · 不弹出：已进入'+(this.room?'房间':this.route));return;}
   if(this.modal||this.busy||!this.ready||this.hidden||this.weeklyGiftHolds())return;
   this.welcomePending=false;
-  const now=this.dailyNow();let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{return;}
+  // 问候按设备的北京时间；dailyNow() 是为 20 点换新提前 4 小时的每日拼图时钟，不能用来说「晚上好」。
+  const now=Date.now();let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{return;}
   const save=(value:object)=>{try{this.platform.storage.set(WELCOME_STORAGE_KEY,JSON.stringify(value));}catch{}};
   if(!welcomeDue(record,now)){if(record)save({...record,visit:now});this.retentionNote('问候 · 不弹出：'+(record&&record.key===welcomeSlotKey(now)?'这个时段已问候过':'距上次问候不到3小时'));return;}
   this.retentionNote('问候 · 弹出');
@@ -2493,7 +2494,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    story:chapter?{title:chapter.title,left:chapter.levels.filter(level=>level.status!=='cleared').length}:null,energyFull:this.energyEnabled&&!!p&&p.energyCap>0&&p.energy>=p.energyCap});
   const line=tie?.line??pickWelcomeLine(slot,record?.line??'');
   save({at:now,key:welcomeSlotKey(now),line,visit:now});
-  this.welcome={slot,line,tie,clock:beijingClock(now),openedAt:Date.now(),storyChapterId:tie?.kind==='story'?chapter?.id??null:null};
+  this.welcome={slot,line,tie,openedAt:Date.now(),storyChapterId:tie?.kind==='story'?chapter?.id??null:null};
   this.showModal('welcome');
  }
  private closeWelcome(){if(this.welcomeFrame!=null)this.platform.cancelFrame?.(this.welcomeFrame);this.welcomeFrame=null;this.welcome=null;if(this.modal==='welcome')this.showModal(null);}
@@ -2539,8 +2540,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const story=tie?.kind==='story',pill=tie&&tie.kind!=='away'?tie:null,ink=this.colors.ink,muted=this.colors.muted,availH=s.h-v.top-v.bottom-24;
   const wrapLine=(width:number)=>{const lines:string[]=[];let row='';for(const ch of view.line){if(s.measure(row+ch,14)>width){lines.push(row);row=ch;}else row+=ch;}if(row)lines.push(row);return lines.slice(0,2);};
   const textBlock=(x:number,y:number,w:number,art:number,artTop=-2)=>{
-   // Chip: sun or moon, the slot greeting and the Beijing clock.
-   const chipLabel=slot.greeting+' · '+view.clock,chip={x,y,w:s.measure(chipLabel,12,700)+40,h:26};s.frame(chip,'button-linen-normal');
+   // Chip: sun or moon and the slot greeting (no clock: players read it as a wrong time).
+   const chipLabel=slot.greeting,chip={x,y,w:s.measure(chipLabel,12,700)+40,h:26};s.frame(chip,'button-linen-normal');
    s.icon(slot.tone==='night'?'themeMoon':'themeSun',{x:chip.x+8,y:chip.y+5,w:16,h:16},slot.tone==='night'?this.colors.gold:'#d9915a');s.textCentered(chipLabel,chip.x+28,chip.y+chip.h/2,12,muted,700);
    if(art)this.drawWelcomeArt({x:x+w-art,y:y+artTop,w:art,h:Math.round(art*66/70)});
    let cy=y+38;s.text('欢迎回家',x,cy,24,ink,800,w-art-6);cy+=36;
