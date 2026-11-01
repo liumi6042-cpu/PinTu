@@ -120,6 +120,8 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
  }
  function packedImageIds(now=Date.now()){const managed=managedAlbums(now);if(managed){const free=new Set(managed.filter(album=>visibleAlbum(album)&&!requiresPurchase(album)).flatMap(album=>album.imageIds));return [...new Set(managed.filter(album=>visibleAlbum(album)&&requiresPurchase(album)).flatMap(album=>album.imageIds))].filter(id=>!free.has(id));}return [...new Set([...packsByImage.keys(),...overlay(now).filter(entry=>packById.has(entry.album.id)||entry.album.purchasable).flatMap(entry=>entry.imageIds)])];}
  function galleryPhotos(now=Date.now()){const managed=managedAlbums(now);if(!managed)return dailyContent?.galleryPhotos(now)??photos;const shown=new Set(managed.filter(visibleAlbum).flatMap(album=>album.imageIds));return photos.filter(photo=>shown.has(photo.id));}
+ /** The shown album a picture belongs to (a paid one first), for postcards that only link to it. */
+ function albumOf(imageId,now=Date.now()){const managed=managedAlbums(now);if(!managed)return null;const albums=managed.filter(album=>visibleAlbum(album)&&album.imageIds.includes(imageId)),album=albums.find(requiresPurchase)??albums[0];return album?{id:album.id,title:album.title,paid:requiresPurchase(album)}:null;}
  function photoView(photo){return {id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc};}
  function managedView(owner,now,configured){
   const settings=readSettings(),s=summary(owner,now),collected=new Map();
@@ -227,6 +229,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,equipped,awardTaskCoins,awardCoins,playerStats,grantDecoration};
+ return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,playerStats,grantDecoration};
 }
 
