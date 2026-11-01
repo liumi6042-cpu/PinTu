@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixture,levels,tick} from './mobile-level-card-fixture.mjs';
 import {createWebPlatform} from '../mobile/platform-web.ts';
-import {orientationPreferenceKey,launchOrientation,readOrientationPreference,saveOrientationPreference} from '../mobile/orientation-choice.ts';
+import {orientationPreferenceKey,launchOrientation,readOrientationPreference,requestLaunchOrientation,saveOrientationPreference} from '../mobile/orientation-choice.ts';
 
 function orientationFixture(options){
  const f=fixture(options),turns=[],storageReads=[];
@@ -139,6 +139,46 @@ test('native first-entry availability excludes desktop hosts and missing rotatio
   assert.equal(p.orientationChoiceAvailable(),['android','ios'].includes(platform));
  }
  window.tap.getSystemInfoSync=()=>{throw Error('不可用');};assert.equal(p.orientationChoiceAvailable(),false);
+ // TapTap PC refuses TapSystemInfo (an error object, no platform) but its preload exposes H5GameAPI.
+ window.tap={setDeviceOrientation(){},getSystemInfoSync:()=>({errno:1,errMsg:'bridge:fail invalid request data'})};assert.equal(p.orientationChoiceAvailable(),true);assert.equal(p.tapPcHost(),false);
+ window.H5GameAPI={tapCustomCommandSync(){}};assert.equal(p.orientationChoiceAvailable(),false);assert.equal(p.tapPcHost(),true);
+ window.tap.getSystemInfoSync=()=>({platform:'android'});assert.equal(p.orientationChoiceAvailable(),true);assert.equal(p.tapPcHost(),false);
+ delete window.H5GameAPI;
+});
+
+test('TapTap PC hides every orientation control and never rotates',async()=>{
+ for(const [width,height]of [[486,918],[1632,864]]){
+  const f=orientationFixture({width,height});f.platform.config.id='taptap';f.platform.tapPcHost=()=>true;
+  for(const route of ['lobby','chapter']){f.app.route=route;f.clear();f.app.drawHeader();assert.ok(!f.buttons.some(button=>button.opts?.icon==='orientation'));}
+  for(const modal of ['settings','tools']){f.clear();f.app.modal=modal;f.app.drawModal();assert.ok(!f.buttons.some(button=>/^切换[横竖]屏$/.test(button.label)));}
+  f.app.modal=null;await f.app.toggleOrientation();assert.deepEqual(f.turns,[]);assert.equal(f.storage.has(orientationPreferenceKey),false);
+ }
+});
+
+test('phone first launch waits for the startup portrait turn, then preselects where the screen ended up',async()=>{
+ for(const outcome of ['turned','failed']){
+  const f=orientationFixture({width:844,height:390,newcomer:true,data:levels(0)});let settle;
+  f.platform.startupOrientation=new Promise((resolve,reject)=>settle={resolve,reject});
+  const pending=f.app.loadInitialContent({});await tick();
+  assert.equal(f.app.modal,null);assert.equal(f.created.length,0);assert.equal(f.app.busy,false);
+  f.app.showModal('settings');assert.equal(f.app.modal,null);
+  if(outcome==='turned'){[f.stage.w,f.stage.h]=[390,844];settle.resolve();}else settle.reject(Error('旋转失败'));
+  await tick();await tick();assert.equal(f.app.modal,'orientation');assert.equal(f.app.message??'','');
+  const tiles=cards(f),selected=outcome==='turned'?1:0;assert.equal(tiles[selected].opts.selected,true);assert.equal(tiles[1-selected].opts.selected,false);
+  f.buttons.find(button=>button.label==='确认').fn();assert.equal(f.storage.get(orientationPreferenceKey),outcome==='turned'?'portrait':'landscape');
+  await pending;assert.equal(f.created.length,1);assert.equal(f.created[0].levelId,'ch1-1');
+ }
+});
+
+test('launch request: PC never rotates, saved choices are restored, phones start a first launch in portrait',async()=>{
+ const make=({saved,available=true,pc=false,fail=false}={})=>{const storage=new Map(saved?[[orientationPreferenceKey,saved]]:[]),turns=[];
+  return {turns,storage,platform:{storage:{get:key=>storage.get(key)??null},orientationChoiceAvailable:()=>available,tapPcHost:()=>pc,setOrientation:async value=>{turns.push(value);if(fail)throw Error('旋转失败');}}};};
+ for(const saved of [undefined,'landscape','portrait']){const pc=make({saved,pc:true});assert.equal(requestLaunchOrientation(pc.platform),undefined);assert.deepEqual(pc.turns,[]);}
+ for(const saved of ['landscape','portrait']){const back=make({saved});assert.equal(requestLaunchOrientation(back.platform),undefined);assert.deepEqual(back.turns,[saved]);assert.equal(back.storage.get(orientationPreferenceKey),saved);}
+ const first=make(),request=requestLaunchOrientation(first.platform);assert.ok(request);await request;assert.deepEqual(first.turns,['portrait']);assert.equal(first.storage.has(orientationPreferenceKey),false);
+ const failed=make({fail:true});await requestLaunchOrientation(failed.platform);assert.deepEqual(failed.turns,['portrait']);
+ const unavailable=make({available:false});assert.equal(requestLaunchOrientation(unavailable.platform),undefined);assert.deepEqual(unavailable.turns,[]);
+ assert.equal(requestLaunchOrientation({storage:{get:()=>null}}),undefined);
 });
 
 test('lobby and story header buttons switch in one click and remember the next launch',async()=>{

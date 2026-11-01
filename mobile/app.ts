@@ -72,7 +72,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v51';
+const CLIENT_PACKAGE_VERSION='v52';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -202,15 +202,18 @@ export class GameApp{
   return y+80;
  }
  private get actualOrientation():ScreenOrientation{return this.stage.w>this.stage.h?'landscape':'portrait';}
+ /** Manual switches exist on TapTap phones only; TapTap PC keeps the upload window (players resize or maximize it). */
+ private get canRotate(){return this.platform.config.id==='taptap'&&!!this.platform.setOrientation&&this.platform.tapPcHost?.()!==true;}
  private offerFirstOrientation():Promise<void>{
   if(this.orientationEntryPending)return this.orientationEntryPending;
   if(this.platform.config.id!=='taptap'||!this.platform.setOrientation||this.platform.orientationChoiceAvailable?.()!==true)return Promise.resolve();
   // Read once outside the tolerant preference parser: unavailable storage must skip the offer.
   try{const saved=this.platform.storage.get(orientationPreferenceKey);if(readOrientationPreference({get:()=>saved})!==null)return Promise.resolve();}catch{return Promise.resolve();}
-  this.orientationChoice=this.actualOrientation;
   this.orientationEntryPending=new Promise(resolve=>{this.orientationEntryResolve=resolve;});this.welcomeSkip=true;
-  this.showModal('orientation');
-  return this.orientationEntryPending;
+  const pending=this.orientationEntryPending,open=()=>{if(this.orientationEntryPending!==pending||this.destroyed)return;this.orientationChoice=this.actualOrientation;this.showModal('orientation');};
+  // A first launch on a phone first asks for portrait (uploads are landscape); the picker then preselects wherever the screen ended up.
+  const startup=this.platform.startupOrientation;if(startup)void startup.catch(()=>{}).then(open);else open();
+  return pending;
  }
  private finishOrientationOffer(){const resolve=this.orientationEntryResolve;this.orientationEntryResolve=null;this.orientationEntryPending=null;this.orientationChoice=null;resolve?.();}
  private async chooseOrientation(value:ScreenOrientation){
@@ -227,7 +230,7 @@ export class GameApp{
   saveOrientationPreference(this.platform.storage,this.actualOrientation);
   this.finishOrientationOffer();this.showModal(null);
  }
- private async toggleOrientation(){if(!this.platform.setOrientation)return;await this.run(async()=>{if(!this.platform.setOrientation)throw Error('当前客户端不支持切换方向');const target=this.stage.w>this.stage.h?'portrait':'landscape';await this.platform.setOrientation(target);saveOrientationPreference(this.platform.storage,target);this.showModal(null);this.toolsOpen=false;this.invalidate();});}
+ private async toggleOrientation(){if(!this.canRotate)return;await this.run(async()=>{if(!this.platform.setOrientation)throw Error('当前客户端不支持切换方向');const target=this.stage.w>this.stage.h?'portrait':'landscape';await this.platform.setOrientation(target);saveOrientationPreference(this.platform.storage,target);this.showModal(null);this.toolsOpen=false;this.invalidate();});}
  private async toggleFullscreen(){await this.run(async()=>{if(this.platform.config.id!=='web'||!this.platform.fullscreen?.available())return;try{await this.platform.fullscreen.toggle();this.showModal(null);this.invalidate();}catch{this.note('浏览器暂时无法切换全屏，请检查全屏权限后重试');}});}
  private toggleEffectsMute(){const key='jigsaw:shared:audio:last-effects',volume=this.audioSettings.levels.effects;if(volume>0){try{this.platform.storage.set(key,String(volume));}catch{}this.audioSettings.set('effects',0);}else{let previous=1;try{const saved=Number(this.platform.storage.get(key));if(Number.isFinite(saved)&&saved>0)previous=Math.min(1,saved);}catch{}this.audioSettings.set('effects',previous);}this.invalidate();}
  private get formalWeb(){return this.client.cookieIdentity;}
@@ -1128,7 +1131,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    s.text('Lv.'+(p?.level??'—'),lx,y+5,wide?23:small?14:16,this.levelColor(p?.level??0),800,lw);s.meter({x:lx,y:y+(wide?36:28),w:lw,h:8},p?p.xp/Math.max(1,p.xpToNext):0);s.text(p?p.xp+' / '+p.xpToNext:'—',lx,y+(wide?48:40),wide?12:10,this.colors.ink,500,lw+8);
    if(gallery){energy(12+playerWidth,y+5,Math.min(135,s.w-playerWidth-60),wide?20:16);s.icon('sprig',{x:s.w-45,y:y+h-39,w:30,h:28});}
    // Beside TapTap's capsule the row is short: 任务 shows its icon only and the orientation switch stays in settings/room tools.
-   else{const ex=12+playerWidth+4,tight=reserve>0&&this.layout==='phonePortrait',orientation=this.platform.config.id==='taptap'&&!!this.platform.setOrientation&&!tight,taskX=s.w-(tight?40:76)-(orientation?48:0)-reserve,right=this.route==='lobby'?taskX-8:s.w-(orientation?60:50)-reserve;energy(ex,y+(h-43)/2,Math.min(220,right-ex),wide?22:small?14:16);s.icon('sprig',{x:s.w-30-reserve,y:y-14,w:18,h:18});if(this.route==='lobby')this.drawLobbyTasks({x:taskX,y:y+(h-40)/2,w:tight?34:64,h:40},tight);if(orientation)s.button({x:s.w-52-reserve,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
+   else{const ex=12+playerWidth+4,tight=reserve>0&&this.layout==='phonePortrait',orientation=this.canRotate&&!tight,taskX=s.w-(tight?40:76)-(orientation?48:0)-reserve,right=this.route==='lobby'?taskX-8:s.w-(orientation?60:50)-reserve;energy(ex,y+(h-43)/2,Math.min(220,right-ex),wide?22:small?14:16);s.icon('sprig',{x:s.w-30-reserve,y:y-14,w:18,h:18});if(this.route==='lobby')this.drawLobbyTasks({x:taskX,y:y+(h-40)/2,w:tight?34:64,h:40},tight);if(orientation)s.button({x:s.w-52-reserve,y:y+(h-40)/2,w:40,h:40},'',()=>void this.toggleOrientation(),{icon:'orientation'});}
    line(y+h);this.bodyTop=y+h+9;return;
   }
   const title=this.route==='tasks'?'任务与礼包':this.route==='friends'?'好友':this.route==='supplies'?'补给站':this.route==='collection'?'我的收藏':this.route==='privacy'||this.route==='terms'?'服务与隐私说明':'玩法与设置';
@@ -2606,7 +2609,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     s.text('画面',left,cy,15,this.colors.ink,750);cy+=28;this.rowOptions([['smooth','流畅'],['power-saving','省电']],this.performanceMode,left,cy,width,value=>this.setPerformanceMode(value),39);cy+=48;cy=this.paragraph(this.performanceMode==='power-saving'?'持续画面最高30帧，拖动流畅度略有降低。':'跟随设备正常刷新频率，优先保证拖动流畅。',left,cy,width,12)+18;
     if(this.platform.config.id==='web'||this.desktop||this.platform.config.id==='taptap'){heading('操作');if(this.desktop){cy=this.paragraph('快捷键（电脑）：E 边缘 · H 提示 · B 底图 · F 适配 · '+(this.soloRoom?'R 整理 · ':'')+'T 收起/展开工具 · 空格或中键拖动平移 · 滚轮缩放 · Esc 返回',left,cy,width,12)+12;}
      if(this.platform.config.id==='web'&&this.platform.fullscreen?.available()){this.button(left,cy,width,this.platform.fullscreen.active()?'退出全屏':'全屏',()=>void this.toggleFullscreen(),'cream',39);cy+=51;}
-    if(this.platform.config.id==='taptap'){this.button(left,cy,width,this.stage.w>this.stage.h?'切换竖屏':'切换横屏',()=>void this.toggleOrientation(),'cream',39);cy+=51;}
+    if(this.canRotate){this.button(left,cy,width,this.stage.w>this.stage.h?'切换竖屏':'切换横屏',()=>void this.toggleOrientation(),'cream',39);cy+=51;}
     if(this.platform.config.id==='taptap'){this.button(left,cy,width,(this.welcomeEnabled?'✓ ':'')+'进入问候',()=>this.setWelcomeEnabled(!this.welcomeEnabled),'cream',39);cy+=47;cy=this.paragraph('每天回到小窝时，按时间段打个招呼。',left,cy,width,12)+18;}
     }
     heading('账号与记录');
@@ -2661,7 +2664,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    case'tools':{
     // The table look is changed here too, so players need not leave the board to reach settings.
     s.text('桌面外观',left,cy,15,this.colors.ink,800);cy+=28;this.rowOptions(themeOptions,this.stage.theme,left,cy,width,value=>this.setTheme(value),39);cy+=56;
-    if(this.platform.config.id==='taptap'){this.button(left,cy,width,this.stage.w>this.stage.h?'切换竖屏':'切换横屏',()=>void this.toggleOrientation(),'cream',40);cy+=51;}
+    if(this.canRotate){this.button(left,cy,width,this.stage.w>this.stage.h?'切换竖屏':'切换横屏',()=>void this.toggleOrientation(),'cream',40);cy+=51;}
     if(this.platform.config.id==='web'&&this.platform.fullscreen?.available()){this.button(left,cy,width,this.platform.fullscreen.active()?'退出全屏':'进入全屏',()=>void this.toggleFullscreen(),'cream',40);cy+=51;}
     const board=this.board,room=this.room;for(const [label,action]of [
      ['适配完整桌面',()=>{board?.fit();this.modal=null;this.toolsOpen=false;this.invalidate();}],

@@ -9,6 +9,15 @@ const returned=(result:unknown)=>result&&typeof (result as PromiseLike<unknown>)
 /** Manual host rotation only; never rotates the Canvas or changes puzzle data.
  * Some TapTap clients ignore tap.setDeviceOrientation (no callback, no turn), so the switch falls back to a global common.setDeviceOrientation and then screen.orientation.lock,
  * giving each route stepMs to turn the window. Any success callback or the window turning counts as done; otherwise the player sees a short update hint and the login log gets a diagnostic. */
+export type TapPcEnv={host?:{getSystemInfoSync?:()=>unknown};userAgent?:string;bridge?:unknown};
+/** TapTap PC (Electron "TapTap Instant Games" 2.16) opens the window in the upload orientation and refuses TapDeviceOrientation and TapSystemInfo,
+ * so getSystemInfoSync carries no platform there. A reported android/ios/harmony or a phone user agent is never PC; otherwise a desktop
+ * platform, an Electron/TapTapInstantGames user agent or the PC preload's H5GameAPI bridge marks the PC host. */
+export function isTapPcHost({host,userAgent='',bridge}:TapPcEnv):boolean{
+ let platform='';try{platform=String((host?.getSystemInfoSync?.() as {platform?:unknown}|undefined)?.platform??'').toLowerCase();}catch{}
+ if(['android','ios','ohos','harmony','harmonyos','openharmony'].includes(platform)||/Android|iPhone|iPad|iPod|HarmonyOS|OpenHarmony/i.test(userAgent))return false;
+ return ['windows','mac','macos','pc'].includes(platform)||/Electron\/|TapTapInstantGames/i.test(userAgent)||typeof (bridge as {tapCustomCommandSync?:unknown}|null|undefined)?.tapCustomCommandSync==='function';
+}
 export function setTapOrientation(host:TapOrientationHost|undefined,value:Orientation,options:TapOrientationOptions={}):Promise<void>{
  const {current,common,lock,viewport,log,stepMs=1500,pollMs=200}=options;
  const routes:{name:string;call?:(route:{success:()=>void;fail:(error?:unknown)=>void;complete:()=>void})=>unknown}[]=[

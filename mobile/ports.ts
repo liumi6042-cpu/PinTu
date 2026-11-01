@@ -61,6 +61,10 @@ export type Platform={
  setOrientation?(value:'portrait'|'landscape'):Promise<void>;
  /** First-entry choice is available only on a mobile host with native rotation. */
  orientationChoiceAvailable?():boolean;
+ /** TapTap PC host: the window keeps the upload orientation and cannot rotate; it only changes when the player resizes it. */
+ tapPcHost?():boolean;
+ /** Phone first launch (no saved choice): the portrait request made at startup; the picker opens once it settles. */
+ startupOrientation?:Promise<void>;
  fullscreen?:{available():boolean;active():boolean;toggle():Promise<boolean>};
  randomId():string;
  frame(fn:(time:number)=>void):number;
