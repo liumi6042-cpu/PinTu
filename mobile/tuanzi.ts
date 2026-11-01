@@ -167,9 +167,9 @@ export class TuanziFeature{
   const now=Date.now();
   const tap=TUANZI_ANIMS.tap;if(this.cat==='tap'&&now-this.catAt>tap.frames*1000/tap.fps+300){this.cat=this.catBefore;this.catAt=now;}
   const el=now-this.catAt,span=scene.x+scene.w+20*ppu-cushion.x;
-  // Walking moves every display frame; standing states redraw only when their next frame is due.
-  if(this.cat==='leave'){const p=Math.min(1,el/3400);if(p>=1){this.cat='away';this.catAt=now;}this.catFrame(h,'leave',this.frameOf('leave',el),cushion.x+span*p,cushion.y+span*p*.18,ppu);h.animate(0);this.warm(h,['awayBare']);return;}
-  if(this.cat==='back'){const walk=2800,p=Math.min(1,el/walk),from=cushion.x-scene.x+20*ppu;this.warm(h,['back']);if(p<1){this.catFrame(h,'walkBack',this.frameOf('walkBack',el),cushion.x-from*(1-p),cushion.y,ppu);h.animate(0);return;}this.catFrame(h,'back',this.frameOf('back',el-walk),cushion.x,cushion.y,ppu);h.animate(this.nextFrameIn('back',el-walk));return;}
+  // Walking moves every display frame (at most 60 a second); standing states redraw only when their next frame is due.
+  if(this.cat==='leave'){const p=Math.min(1,el/3400);if(p>=1){this.cat='away';this.catAt=now;}this.catFrame(h,'leave',this.frameOf('leave',el),cushion.x+span*p,cushion.y+span*p*.18,ppu);h.animate(16);this.warm(h,['awayBare']);return;}
+  if(this.cat==='back'){const walk=2800,p=Math.min(1,el/walk),from=cushion.x-scene.x+20*ppu;this.warm(h,['back']);if(p<1){this.catFrame(h,'walkBack',this.frameOf('walkBack',el),cushion.x-from*(1-p),cushion.y,ppu);h.animate(16);return;}this.catFrame(h,'back',this.frameOf('back',el-walk),cushion.x,cushion.y,ppu);h.animate(this.nextFrameIn('back',el-walk));return;}
   const anim:Anim=this.cat==='nap'?'napBare':this.cat==='away'?'awayBare':this.cat;
   // The room is already on screen while the state's strip arrives; then only that state's frames are redrawn on time.
   if(!this.catFrame(h,anim,this.frameOf(anim,el),cushion.x,cushion.y,ppu))h.animate(120);
@@ -446,9 +446,9 @@ export class TuanziFeature{
   s.text('团子的小窝',tx,r.y+(r.h>70?14:9),15,c.ink,800,textW);s.text(line,tx,r.y+(r.h>70?38:31),12,c.muted,600,textW);
   const mail={x:right-38,y:r.y+(r.h-36)/2,w:36,h:36};this.icon(h,'envelope',mail);if(v.unread)this.badge(h,mail.x+mail.w-2,mail.y+4,String(v.unread));
   if(v.sill.portions){const f={x:mail.x-40,y:mail.y,w:36,h:36};this.icon(h,'fish',f);this.badge(h,f.x+f.w-2,f.y+4,'+'+v.sill.fish);}
-  // Once the lobby has settled, fetch what the nook opens with (room, icons, the state's strip) so it appears at once.
+  // Once the lobby's own pictures are in, fetch what the nook opens with (room, icons, the state's strip) so it appears at once.
   const now=Date.now();if(this.warmAt===0)this.warmAt=now+2500;
-  if(now<this.warmAt)h.animate(this.warmAt-now);
+  if(now<this.warmAt||!h.stage.imagesIdle())h.animate(Math.max(500,this.warmAt-now));
   else{this.art(s,ART.room,ART.roomFallback);this.art(s,ART.items,ART.itemsFallback);this.warm(h,[away?'awayBare':v.trip?.returned&&!this.homeSeen(v)?'walkBack':v.pack?.food?'wait':'napBare']);}
  }
  private warmAt=0;
