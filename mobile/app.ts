@@ -35,6 +35,8 @@ import {AudioSettings} from './audio-settings';
 import {orientationPreferenceKey,readOrientationPreference,saveOrientationPreference,type ScreenOrientation} from './orientation-choice';
 import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT,mobilePrivacySections,mobileTermsSections} from './privacy-policy';
 import {placedCount} from '../lib/puzzle-engine';
+import {TuanziFeature,type TuanziHost,type TuanziPostcard} from './tuanzi';
+import {createPostcardRooms,pendingPostcards,settlePostcard} from '../lib/postcard-play';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import {HAIRPIN_ID,STREAK_SEEN_KEY,WEEKLY_GIFT_KEY,beijingDay,breathScale,chapterProgress,completionFooter,completionPrimary,readShownDay,readStreakSeen,streakBadge,streakHint,streakToast,teaserLine,weeklyCell,weeklyGiftAutoShow,weeklyGrantText,weeklyTaskRow,type RetentionSummary,type RetentionView,type WeeklyGrant} from './retention';
 import publicPhrases from '../config/social-phrases.json';
@@ -46,7 +48,7 @@ import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,pickWelcomeLine,readWelcomeRecor
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
-type Modal='orientation'|'weeklyGift'|'welcome'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
+type Modal='orientation'|'tuanzi'|'weeklyGift'|'welcome'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
 type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
@@ -75,7 +77,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.1';
+const CLIENT_PACKAGE_VERSION='v54';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -90,6 +92,47 @@ export class GameApp{
  private soloOutboxesFlushed=false;
  private readonly offline:OfflineMode;
  private get offlineRoom(){return this.offline?.isRoom(this.room?.ticket?.room?.id)??false;}
+ /** 团子去旅行 postcards pieced on the phone: a local room with no server side. */
+ private get postcardRoom(){return this.postcards?.isRoom(this.room?.ticket?.room?.id)??false;}
+ private get localRoom(){return this.offlineRoom||this.postcardRoom;}
+ private readonly tuanzi=new TuanziFeature();private postcards!:ReturnType<typeof createPostcardRooms>;private tuanziTimer:ReturnType<typeof setTimeout>|null=null;private postcardFlush:Promise<void>|null=null;
+ /** The nook is shown when the server offers it (capability tuanziTravel) and 团子 has moved in (story 1-2). */
+ private get tuanziOn(){return this.ready&&!this.formalWeb&&this.client.config.capabilities?.tuanziTravel===true;}
+ private get tuanziCorner(){return this.tuanziOn&&!!this.tuanzi.open;}
+ private tuanziHost():TuanziHost{
+  const v=this.platform.viewport();
+  return {stage:this.stage,colors:this.colors,top:v.top,bottom:this.stage.h-v.bottom,landscape:this.layout==='phoneLandscape'||this.layout==='desktop',playerName:this.client.profile?.name??'我',
+   animate:()=>{if(this.tuanziTimer==null)this.tuanziTimer=setTimeout(()=>{this.tuanziTimer=null;if(!this.destroyed&&!this.hidden)this.invalidate();},90);},
+   close:()=>{this.showModal(null);this.invalidate();},note:text=>this.note(text),invalidate:()=>this.invalidate(),randomId:()=>this.platform.randomId(),storage:this.platform.storage,
+   get:path=>this.client.json(path),post:(path,body)=>this.client.post(path,body),
+   play:card=>this.playPostcard(card),together:card=>void this.postcardTogether(card),openAlbum:id=>{this.showModal(null);this.navigate('gallery');this.selectAlbum(id);}};
+ }
+ private loadTuanzi(force=false){if(this.tuanziOn)void this.tuanzi.load(this.tuanziHost(),force).then(()=>void this.flushPostcards());}
+ private openTuanzi(){if(!this.tuanziOn)return;this.tuanzi.enter(this.tuanziHost());this.showModal('tuanzi');}
+ /** A postcard on the phone: a local room for its picture (rare and gallery cards alike). */
+ private playPostcard(card:TuanziPostcard){
+  if(!card.src||!card.thumbSrc||!card.cols||!card.rows){this.note('这张明信片暂时不能拼');return;}
+  const imageId=card.imageId??'tuanzi-card-'+(card.rareId??card.id);
+  if(!photoMap.has(imageId))photoMap.set(imageId,{id:imageId,title:card.title,src:card.src,thumbSrc:card.thumbSrc,category:'明信片',width:card.width,height:card.height});
+  let ticket;try{ticket=this.postcards.open({cardId:card.id,imageId,title:card.title,src:card.src,thumbSrc:card.thumbSrc,width:card.width??1536,height:card.height??1024,cols:card.cols,rows:card.rows,pieces:card.pieces});}catch(error){this.note(errorText(error));return;}
+  this.showModal(null);void this.run(()=>this.attachTicket(ticket));
+ }
+ /** A gallery postcard at a private table friends can join by invite (no energy, not in the lobby). */
+ private async postcardTogether(card:TuanziPostcard){
+  await this.run(async()=>{const ticket=await this.client.post<RoomTicket>('/api/mobile/tuanzi/postcards/'+card.id+'/room',{requestId:this.platform.randomId().replace(/-/g,'').toLowerCase()});this.showModal(null);await this.attachTicket(ticket);this.note('邀请拼友：右上角「邀请」把房间发给好友');});
+ }
+ /** Finished local postcards are reported until the server answers (a lost reply is replayed by its request id). */
+ private flushPostcards(){
+  if(this.postcardFlush||!this.tuanziOn)return this.postcardFlush??Promise.resolve();
+  const storage=this.platform.storage,pending=pendingPostcards(storage);if(!pending.length)return Promise.resolve();
+  this.postcardFlush=(async()=>{
+   for(const done of pending){
+    try{const reply=await this.client.post<{completed?:{fish:number}}>('/api/mobile/tuanzi/postcards/'+done.cardId+'/complete',{requestId:done.requestId,elapsedMs:done.elapsedMs});settlePostcard(storage,done.cardId);if(reply.completed?.fish)this.note('明信片拼好啦，小鱼干 +'+reply.completed.fish);}
+    catch(error){const status=(error as {status?:number})?.status??0;if(status>=400&&status<500&&status!==429)settlePostcard(storage,done.cardId);}
+   }
+  })().finally(()=>{this.postcardFlush=null;this.loadTuanzi(true);});
+  return this.postcardFlush;
+ }
  private syncOffline(){if(this.ready)void this.offline?.sync(this.client,levels=>{this.levels=levels;this.levelsOwner=this.ownerKey();this.invalidate();},message=>this.note(message));}
  private enterOffline(){this.offline.active=true;this.route='chapter';this.scroll=0;this.modal=null;this.invalidate();}
  private async launchOffline(input:OfflineInput){await this.attachTicket(this.offline.createRoom(input));}
@@ -174,6 +217,7 @@ export class GameApp{
  private albumListArea:Rect={x:0,y:0,w:0,h:0};private albumListScroll=0;private albumListExtent=0;
  constructor(readonly platform:Platform,readonly client:GameClient,readonly stage:Stage){
   this.offline=new OfflineMode(platform);for(const photo of Object.values(this.offline.catalog?.photos??{}))photoMap.set(photo.id,photo);
+  this.postcards=createPostcardRooms({storage:platform.storage,now:()=>Date.now(),randomId:()=>platform.randomId()});
   try{const consent=JSON.parse(platform.storage.get(MOBILE_PRIVACY_CONSENT_KEY)||'null');this.privacyAccepted=consent?.version===MOBILE_PRIVACY_VERSION&&consent?.necessary===true&&consent?.hongKongStorage===true;}catch{}
   try{this.settingsTipSeen=platform.storage.get(settingsTipKey)==='1';}catch{}
   this.shareReward=new TaskShareReward(platform,requestId=>client.post<MobileInviteShareResult>('/api/mobile/invitations/share',{requestId,shared:true}));
@@ -187,7 +231,7 @@ export class GameApp{
   try{this.minimapEnabled=platform.storage.get(MINIMAP_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>{
-   const room=this.room;if(!room||this.offlineRoom)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
+   const room=this.room;if(!room||this.localRoom)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
   }});
  }
  private get colors(){return this.stage.palette;}
@@ -280,9 +324,9 @@ export class GameApp{
  private get modalBlocksInput(){return this.modal!==null&&this.modal!=='tasks'&&this.modal!=='chat'||this.route==='room'&&this.roomGuideStep>0;}
  private get boardInputBlocked(){return this.modalBlocksInput||!!this.completionFx;}
  private modalContains(x:number,y:number){return this.modalBlocksInput||(this.modal==='tasks'&&inside(this.taskWindowArea,x,y))||(this.modal==='chat'&&inside(this.chatWindowArea,x,y));}
- private get energyEnabled(){return !this.offlineRoom&&!(this.offline?.active&&!this.ready)&&!this.formalWeb&&this.client.config.capabilities?.energy!==false;}
+ private get energyEnabled(){return !this.localRoom&&!(this.offline?.active&&!this.ready)&&!this.formalWeb&&this.client.config.capabilities?.energy!==false;}
  private get shareAvailable(){return this.client.config.capabilities.shareRewards===true;}
- private get cheersEnabled(){return !this.offlineRoom&&this.client.config.capabilities.cheers!==false;}
+ private get cheersEnabled(){return !this.localRoom&&this.client.config.capabilities.cheers!==false;}
  private rewardText(energy:number,xp:number,coins=0){return [this.energyEnabled&&energy>0?'体力 +'+energy:'',xp>0?'经验 +'+xp:'',coins>0?'金币 +'+coins:''].filter(Boolean).join(' · ')||'暂无可领取奖励';}
  private giftVisible(gift:{energyMax?:number;xp?:number;xpMax?:number;coins?:number;coinsMax?:number}){return this.energyEnabled||(gift.xpMax??gift.xp??0)>0||(gift.coinsMax??gift.coins??0)>0;}
  private setTheme(theme:ThemeId){this.stage.setTheme(theme);this.board?.setTheme(theme);if(this.platform.canvas.style)this.platform.canvas.style.colorScheme=theme==='dark'?'dark':'light';this.platform.storage.set('jigsaw:shared:theme:'+this.platform.config.apiBase,theme);this.invalidate();}
@@ -333,7 +377,7 @@ export class GameApp{
   if(!this.startupHooks){
    this.startupHooks=true;
    this.client.onChange=()=>{if(this.destroyed)return;const owner=this.ownerKey();this.ensureListOwner();if(owner!==this.lastDataOwner){this.lastDataOwner=owner;this.pendingViews?.invalidate();this.historyRooms=null;this.historySerial++;this.historyLoading=false;this.historyError='';this.tasks=null;this.collection=null;this.galleryIds=null;this.freeGalleryIds=null;this.sharedPhotos=null;this.selected=null;}if(this.formalWeb&&this.client.authRequired){this.ready=false;this.stage.input?.({type:'cancel',points:[],changed:[]});this.pointer=null;this.modal=null;this.leaveRoom();this.route='lobby';}else if(this.formalWeb&&this.room&&!this.client.ticket){this.modal=null;this.leaveRoom();this.navigate('lobby');this.note('账号已切换，请重新进入房间');}this.invalidate();};
-   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else if(this.orientationEntryPending){if(Object.keys(query).length)this.startupQuery=query;}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});this.syncOffline();if(!this.offlineRoom){void this.social.refresh();void this.handleQuery(query);}}this.invalidate();}));
+   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else if(this.orientationEntryPending){if(Object.keys(query).length)this.startupQuery=query;}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});this.syncOffline();if(!this.localRoom){void this.social.refresh();void this.handleQuery(query);}}this.invalidate();}));
   }
   this.startupError='';this.invalidate();
   const epoch=this.privacyEpoch;
@@ -341,8 +385,8 @@ export class GameApp{
   try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;if(this.client.profile&&!this.soloOutboxesFlushed){this.soloOutboxesFlushed=true;void flushStoredSoloOutboxes({storage:this.platform.storage,fetch:this.offline.onlineFetch(this.client.fetchLike),now:()=>Date.now(),randomId:()=>this.platform.randomId(),skipRoomId:this.room?.ticket.room.id}).catch(()=>{});}this.ready=true;this.loginDialogActive=false;this.offline.active=false;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);this.syncOffline();}
   catch(error){if(!this.destroyed){this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
-  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
-  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.modal==='social'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat'||this.route==='room'&&this.layout==='desktop')void this.loadChat();},3000));
+  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.localRoom)return;if(this.route==='lobby'&&!this.busy){void this.loadLobby(false,true);this.loadTuanzi();}if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
+  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.localRoom)return;if(this.modal==='social'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat'||this.route==='room'&&this.layout==='desktop')void this.loadChat();},3000));
   this.timers.push(setInterval(()=>this.tickVisibleTime(),1000));
   this.invalidate();
   })().finally(()=>{if(epoch===this.privacyEpoch){this.startupPending=null;this.loginDialogActive=false;if(!this.destroyed)this.invalidate();}});
@@ -351,7 +395,7 @@ export class GameApp{
  destroy(){this.destroyed=true;this.releaseComicBack();this.stopStoryFrame();this.finishOrientationOffer();this.platform.cancelShare?.();this.platform.cancelIdentity?.();this.pendingViews?.invalidate();this.cancelChatPress();this.social.destroy();this.leaveRoom();this.client.onChange=undefined;for(const timer of this.timers)clearInterval(timer);for(const cleanup of this.cleanups)cleanup();}
  private async loadInitialContent(query:Record<string,string>,epoch=this.privacyEpoch){
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
-  if(this.offlineRoom)return;
+  if(this.localRoom)return;
   await this.offerFirstOrientation();
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
   query=this.startupQuery??query;this.startupQuery=null;
@@ -403,10 +447,10 @@ export class GameApp{
   if(view.route==='collection')Object.assign(this,{collectionTab:view.collectionTab,albumId:view.albumId,albumListScroll:view.albumListScroll,decorationId:view.decorationId,decorationOwnedOnly:view.decorationOwnedOnly});
   if(view.route==='tasks')this.taskTab=view.taskTab;
  }
- private refreshRoute(){if(this.offline?.active&&!this.ready||this.offlineRoom)return;if(this.route==='chapter')void this.loadLevels();if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
+ private refreshRoute(){if(this.offline?.active&&!this.ready||this.localRoom)return;if(this.route==='chapter')void this.loadLevels();if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);this.loadTuanzi();if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
  private finishNavigation(){if(this.modal==='completion')this.showModal(null);else this.modal=null;this.filterView=null;this.toolsOpen=false;this.message='';if(this.route==='friends')void this.loadRecentPlayers();if(this.route==='lobby'||this.route==='chapter')void this.loadRetention();this.invalidate();this.refreshRoute();}
  private navigate(route:Route,context?:Partial<ListView>){
-  if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}
+  if(this.localRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}
   if(route==='supplies'&&(this.energyEnabled||this.usesCreationTickets)){this.supplyFocus=true;route='tasks';}
   if(this.formalWeb&&(route==='privacy'||route==='terms')){this.openWeb(route);return;}if(route==='tasks'&&this.floatingTasks&&this.route==='room'){this.showModal('tasks');return;}
   this.social.close();if(route!=='room')this.clearRoomPointer();const previous=this.saveListView();
@@ -423,17 +467,18 @@ export class GameApp{
  private openCollection(tab:ListView['collectionTab']){this.navigate('collection',{collectionTab:tab});}
  private openPackGallery(id:string){this.navigate('gallery',{packId:id,source:'owned'});}
  private selectAlbum(id:string){this.changeListView(()=>{this.albumId=id;});}
- private exitRoom(){if(this.offlineRoom&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];this.enterOffline();return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,clear=this.room?.snapshot.mobileResult?.levelClear,complete=clear&&(clear.chapterComplete||clear.nextLevelId===null),nextLevelId=complete?clear?.nextLevelId:null,nextChapter=this.chapterForLevel(nextLevelId),target=this.roomReturn;if(nextLevelId)this.storyChapterId=nextChapter?.id??null;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level){// Back to the story page while the played chapter still has unfinished levels, in any chapter.
+ private exitRoom(){if(this.postcardRoom){const card=this.postcards.cardOf(this.room?.ticket.room.id),target=this.roomReturn;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');if(card&&this.tuanziOn){this.tuanzi.enter(this.tuanziHost());this.tuanzi.showCard(card);this.showModal('tuanzi');}return;}
+  if(this.offlineRoom&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];this.enterOffline();return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,clear=this.room?.snapshot.mobileResult?.levelClear,complete=clear&&(clear.chapterComplete||clear.nextLevelId===null),nextLevelId=complete?clear?.nextLevelId:null,nextChapter=this.chapterForLevel(nextLevelId),target=this.roomReturn;if(nextLevelId)this.storyChapterId=nextChapter?.id??null;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level){// Back to the story page while the played chapter still has unfinished levels, in any chapter.
 const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels.some(item=>item.status!=='cleared'):!!this.beginnerChapter);if(resume&&played)this.storyChapterId=played.id;this.navigate(nextLevelId||resume?'chapter':'lobby');}else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
- private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
+ private closeModal(){if(this.modal==='tuanzi'){this.tuanzi.back(this.tuanziHost());return;}if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.localRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if(modal==='completion'&&this.modal!=='completion'){void this.loadRetention(true);if(!this.collection&&!this.offlineRoom&&this.room?.snapshot.levelId)void this.loadCollection();}if(modal!=='weeklyGift')this.weeklyGrant=null;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history'){if(previous!=='history'&&previous!=='manage')this.historyTab='drafts';this.historyPreview=null;void this.loadRoomHistory();}if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
+ private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if(modal==='completion'&&this.modal!=='completion'){void this.loadRetention(true);if(!this.collection&&!this.localRoom&&this.room?.snapshot.levelId)void this.loadCollection();}if(modal!=='weeklyGift')this.weeklyGrant=null;if((this.localRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history'){if(previous!=='history'&&previous!=='manage')this.historyTab='drafts';this.historyPreview=null;void this.loadRoomHistory();}if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
  private get ownRoomLimit(){return this.formalWeb?3:5;}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
-  if(this.offlineRoom||this.offline?.active&&!this.ready)return;
+  if(this.localRoom||this.offline?.active&&!this.ready)return;
   const owner=this.ownerKey(),serial=++this.historySerial;this.historyLoading=true;this.historyError='';this.invalidate();
   try{const data=await this.client.json<{rooms:MobileOwnedRoom[];limits?:{drafts:number;completed:number}}>('/api/room-history');if(owner!==this.ownerKey()||serial!==this.historySerial||this.destroyed)return;this.historyRooms=data.rooms;if(data.limits)this.historyLimits=data.limits;if(this.historyPreview)this.historyPreview=data.rooms.find(room=>room.id===this.historyPreview?.id&&room.completed)??null;}
   catch(error){if(owner===this.ownerKey()&&serial===this.historySerial&&!this.destroyed)this.historyError=errorText(error);}
@@ -589,7 +634,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private loadRetention(force=false):Promise<void>{
   if(this.destroyed||!this.client.profile)return Promise.resolve();
   if(!this.retentionCapable('weeklyGift')&&!this.retentionCapable('dailyStreak')){this.retentionNote('七日礼 · 服务器未开放');return Promise.resolve();}
-  if(this.offlineRoom||this.offline?.active&&!this.ready)return Promise.resolve();
+  if(this.localRoom||this.offline?.active&&!this.ready)return Promise.resolve();
   if(this.retentionPending)return this.retentionPending;
   // A failed fetch retries after 15 s instead of waiting for the next page change.
   if(!force&&Date.now()-this.retentionLoadedAt<(this.retention?60000:15000))return Promise.resolve();
@@ -618,7 +663,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  /** Pops the 七日礼 on a quiet lobby or story page, once per Beijing day, after story 1-1 (not over the orientation picker). */
  private maybeWeeklyGift(){
-  if(this.route!=='lobby'&&this.route!=='chapter'||this.room||this.modal||this.busy||!this.ready||this.hidden||this.destroyed||this.orientationEntryPending||this.offlineRoom)return;
+  if(this.route!=='lobby'&&this.route!=='chapter'||this.room||this.modal||this.busy||!this.ready||this.hidden||this.destroyed||this.orientationEntryPending||this.localRoom)return;
   if(!this.retention&&this.retentionCapable('weeklyGift')){void this.loadRetention();return;}
   if(!this.weeklyGiftDue()){this.noteWeeklySkip();return;}
   try{this.platform.storage.set(WEEKLY_GIFT_KEY,JSON.stringify({shownDay:beijingDay(Date.now())}));}catch{this.retentionNote('七日礼 · 本机存储不可写，不弹出');return;}
@@ -746,7 +791,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.attempts.delete(key);await this.attachTicket(ticket);
   });
  }
- private async enterRoom(id:string,invite?:string){if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}await this.run(async()=>{const ticket=await this.client.joinRoom(id,invite);await this.attachTicket(ticket);});}
+ private async enterRoom(id:string,invite?:string){if(this.localRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}await this.run(async()=>{const ticket=await this.client.joinRoom(id,invite);await this.attachTicket(ticket);});}
  private async startNineGrid(){
   if(!this.nineGridAvailable)return;
   await this.run(async()=>{const ticket=await this.client.createDiagnosticRoom();this.nineTimings.clear();await this.attachTicket(ticket);});
@@ -764,12 +809,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private async attachTicket(ticket:RoomTicket){
   this.clearCompletionTransition();
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
-  const offline=this.offline?.isRoom(ticket.room.id)??false;
+  const postcard=this.postcards.isRoom(ticket.room.id),offline=(this.offline?.isRoom(ticket.room.id)??false)||postcard;
   this.social.close();
   const source=this.saveListView();if(source.route!=='room'){this.roomReturn=source;this.roomReturnStack=[...this.routeStack];this.roomReturnFrames=[...this.routeFrames];}
   this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;
   const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision)??null;this.realtime=realtime;
-  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:postcard?this.postcards.fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
    if(name==='puzzle:successful-drop'&&this.room===room)this.board?.confirmMobileContribution(detail as MobileContributionReceipt);
    if(name==='mobile:profile')this.invalidate();
@@ -789,7 +834,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private syncCompletion(room:RoomClient){
   if(this.room!==room)return;const chapter=this.chapterForLevel(this.room.snapshot.levelId??this.room.snapshot.mobileResult?.levelClear?.levelId);if(chapter)this.syncComicClear(chapter);if(!room.snapshot.completedAt)this.completionLive=true;
-  if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{if(this.offlineRoom){room.flushSoloNow();}else{void this.client.refresh().catch(()=>{});void this.loadCollection();}if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}}}if(this.offlineRoom&&room.snapshot.completedAt)this.syncOffline();this.invalidate();
+  if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{if(this.localRoom){room.flushSoloNow();if(this.postcardRoom)setTimeout(()=>void this.flushPostcards(),300);}else{void this.client.refresh().catch(()=>{});void this.loadCollection();}if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}}}if(this.offlineRoom&&room.snapshot.completedAt)this.syncOffline();this.invalidate();
  }
  private clearCompletionTransition(){if(this.completionFxFrame!=null)this.platform.cancelFrame(this.completionFxFrame);this.completionFxFrame=null;this.completionFx=null;this.completionFxRect=null;this.completionCheerQueue=[];this.completionLive=false;this.settleButtonRect=null;}
  private beginCompletionTransition(){
@@ -807,7 +852,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const fx=this.completionFx,board=this.board;if(!fx||!board)return;const now=Date.now(),camera=fx.cameraDropped?null:fx.to;if(camera)board.camera={...camera};board.completionReveal=1;board.completionSweep=null;if(this.completionFxFrame!==null)this.platform.cancelFrame(this.completionFxFrame);this.completionFxFrame=null;this.completionFx=null;this.completionFxRect=null;this.showModal('completion');for(const item of this.completionCheerQueue)if(now-item.at<2700)this.cheerEffects.receive(item.cheer,item.own,item.at);this.completionCheerQueue=[];if(this.cheerEffects.alive())this.animateCheers();
  }
  private receiveCheer(room:RoomClient,cheer:Cheer,own:boolean){if(this.room!==room)return;if(this.completionFx){this.completionCheerQueue.push({cheer,own,at:Date.now()});this.completionCheerQueue=this.completionCheerQueue.slice(-60);return;}if(this.modal!=='completion')return;this.cheerEffects.receive(cheer,own);this.animateCheers();}
- private async loadAssistance(){if(!this.room||this.offlineRoom)return;try{const room=this.room;const data=await this.client.json<typeof this.aid>('/api/rooms/'+room.ticket.room.id+'/assistance','GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(this.room!==room)return;if(data){const offset=Date.now()-data.serverTime;data.grants=data.grants.map(grant=>({...grant,expiresAt:grant.expiresAt+offset}));this.aid=data;this.applyAssistance();}}catch(error){this.note(errorText(error));}}
+ private async loadAssistance(){if(!this.room||this.localRoom)return;try{const room=this.room;const data=await this.client.json<typeof this.aid>('/api/rooms/'+room.ticket.room.id+'/assistance','GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(this.room!==room)return;if(data){const offset=Date.now()-data.serverTime;data.grants=data.grants.map(grant=>({...grant,expiresAt:grant.expiresAt+offset}));this.aid=data;this.applyAssistance();}}catch(error){this.note(errorText(error));}}
  private activeAid(kind:'hint'|'underlay'){const grants=this.aid?.grants??[],now=Date.now();for(let i=grants.length-1;i>=0;i--)if(grants[i].kind===kind&&grants[i].expiresAt>now)return grants[i];return undefined;}
  private applyAssistance(){
   const board=this.board;if(!board)return;const underlay=this.activeAid('underlay'),hint=this.activeAid('hint');board.setUnderlay?.(underlay?.expiresAt??0);
@@ -816,7 +861,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private showShareFailureDiagnostic(){if(this.platform.config.id==='taptap'&&this.client.profile?.taptap?.diagnostics===true)this.platform.alert('分享诊断（仅管理员）\n'+(this.platform.shareDiagnostics?.()??'当前包未提供诊断'));}
  private async shareFromGame(input:Parameters<Platform['share']>[0]){
-  if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return 'unavailable' as const;}
+  if(this.localRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return 'unavailable' as const;}
   this.sharing=true;this.invalidate?.();try{return await this.platform.share(input);}finally{this.sharing=false;this.invalidate?.();}
  }
  private async releaseShareReservation(cancel:()=>Promise<unknown>){
@@ -829,7 +874,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(result!=='shared')throw Error(result==='copied'?'仅复制链接不会发奖，请在分享面板选择好友或分享渠道':result==='cancelled'?'已取消分享，本次未领取奖励':'TapTap分享面板暂不可用，请从TapTap内打开新测试包后重试');
  }
  private async activateAssistance(kind:'hint'|'underlay'){
-  if(this.offlineRoom){this.note(OFFLINE_REQUIRED);return;}
+  if(this.localRoom){this.note(OFFLINE_REQUIRED);return;}
   if(!this.room||!this.aid)return;if(this.aid.grants.some(grant=>grant.kind===kind&&grant.expiresAt>Date.now()))return;
   await this.run(async()=>{const room=this.room!,key='aid-share:'+room.ticket.room.id+':'+kind,headers={Authorization:'Bearer '+room.ticket.token,'Content-Type':'application/json'},path='/api/rooms/'+room.ticket.room.id+'/assistance',context='room/'+room.ticket.room.id,storageKey='jigsaw:shared:'+this.platform.config.apiBase+':'+(this.client.profile?.code??'')+':'+key;
    let pending:any=null;try{const stored=JSON.parse(this.platform.storage.get(storageKey)||'null');if(stored?.kind===kind&&stored.context===context&&stored.completed===true)pending=stored;}catch{}
@@ -902,7 +947,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  });}
  private async acceptInvitation(){const code=this.pendingInvitation.trim();if(!code)return;await this.run(async()=>{await this.client.post('/api/mobile/invitations/accept',{code,requestId:this.attempt('accept:'+code)});this.pendingViews?.invalidate();this.attempts.delete('accept:'+code);this.pendingInvitation='';await this.loadTasks();this.note('已关联邀请，一起完成拼图吧');});}
  private async collectionAction(kind:'buy'|'craft'|'equip',id:string){await this.run(async()=>{const key=kind+':'+id;const data=await this.client.post<MobileCollectionView>('/api/mobile/collection/'+kind,{[kind==='buy'?'packId':'decorationId']:id,requestId:this.attempt(key)});this.applyCollection(data);this.attempts.delete(key);this.modal=null;await this.client.refresh();if(kind==='buy')void this.loadGallery();this.note(kind==='buy'?'图包已永久解锁':kind==='craft'?'装饰已合成':'装饰已装备');});}
- private async loadChat(){if(this.offlineRoom)return;
+ private async loadChat(){if(this.localRoom)return;
   if(!this.room||this.chatLoading)return;this.chatLoading=true;
   try{const room=this.room,data=await this.client.json<any>('/api/rooms/'+room.ticket.room.id+'/chat?after='+this.chatCursor,'GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(room!==this.room||this.destroyed)return;
    let changed=false;const incoming:PublicMessage[]=data.messages??[];
@@ -1214,6 +1259,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    let y=top-this.scroll;const columns=width>=520?3:2;
    this.scrolled(()=>{
     const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
+    if(this.tuanziCorner){this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:width,h:84},()=>this.openTuanzi());y+=84+gap;}
     const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
     this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
     y=this.drawRoomSection(left,y,width,columns,top,bottom);
@@ -1222,8 +1268,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   }
   // Desktop and phone landscape: a fixed left column and a room list that scrolls by itself.
   const landscape=layout==='phoneLandscape',leftW=landscape?Math.min(300,width*.42):Math.min(380,width*.36),rightX=left+leftW+gap+6,rightW=left+width-rightX;
-  let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,rest=(last?continueH+gap:0)+actionH+gap,heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
+  let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,corner=this.tuanziCorner?(landscape?68:84):0,rest=(last?continueH+gap:0)+actionH+gap+(corner?corner+gap:0),heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
   y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
+  if(corner){this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:leftW,h:corner},()=>this.openTuanzi());y+=corner+gap;}
   if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
   this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
   const header=this.drawRoomHeader(rightX,top,rightW,landscape),columns=landscape?3:rightW>=900?4:3;
@@ -2017,7 +2064,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private roomTool(kind:string){
   if(this.completionFx&&['edge','fit','locate','hint','underlay','organize'].includes(kind))return;
   const board=this.board;if(!board)return;
-  if(this.offlineRoom&&['hint','underlay','chat'].includes(kind)){this.note(OFFLINE_REQUIRED);return;}
+  if(this.localRoom&&['hint','underlay','chat'].includes(kind)){this.note(OFFLINE_REQUIRED);return;}
   if(kind==='edge')board.edgeOnly=!board.edgeOnly;else if(kind==='hint'||kind==='underlay'){if(!this.assistanceUnavailable(kind))void this.activateAssistance(kind);}else if(kind==='fit')this.fitRoom();else if(kind==='locate')this.locateLoose();
   else if(kind==='orientation')void this.toggleOrientation();else if(kind==='organize'&&this.soloRoom)void this.run(async()=>{await this.room?.organize();this.note('散片已整理');});else if(kind==='chat')this.showModal('chat');else if(kind==='more')this.showModal('tools');
   this.toolsOpen=false;this.invalidate();
@@ -2090,16 +2137,16 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private get chatUnread(){return this.messages.filter(message=>message.id>this.chatSeen&&message.code!==this.client.profile?.code&&!this.social.blockedCodes.includes(message.code)).length;}
  private drawRoomTopBar(r:Rect,mode:'desktop'|'portrait'|'landscape'){
   if(mode!=='portrait')r={...r,w:Math.min(r.w,this.stage.w-this.menuReserve(r)-r.x)};
-  const s=this.stage,room=this.room!,photo=activeRoomPhoto(room.snapshot,photoMap.get(room.state.imageId)),title=room.snapshot.title||photo?.title||'一起拼图',total=room.state.cols*room.state.rows,placed=placedCount(room.state),percent=Math.floor(placed/Math.max(1,total)*100),members=room.snapshot.members,kind=total+' 片 · '+(room.snapshot.visibility==='private'?'私人房':'公开房'),ink=this.colors.ink;
+  const s=this.stage,room=this.room!,photo=activeRoomPhoto(room.snapshot,photoMap.get(room.state.imageId)),title=room.snapshot.title||photo?.title||'一起拼图',total=room.state.cols*room.state.rows,placed=placedCount(room.state),percent=Math.floor(placed/Math.max(1,total)*100),members=room.snapshot.members,kind=total+' 片 · '+(this.postcardRoom?'明信片':room.snapshot.visibility==='private'?'私人房':'公开房'),ink=this.colors.ink;
   const back=(x:number,y:number)=>{s.button({x,y,w:36,h:36},'',()=>this.exitRoom());s.icon('back',{x:x+7,y:y+7,w:22,h:22});};
   const avatars=(right:number,y:number,size:number)=>{const shown=members.slice(0,3),label=members.length+'/'+seatLimit(room.snapshot),lw=s.measure(label,13,700);let x=right-lw;s.text(label,x,y+(size-13)/2,13,ink,700);x-=6+(shown.length?size+(shown.length-1)*(size*.62):0);const start=x;shown.forEach((_member,index)=>s.icon('avatar',{x:x+index*size*.62,y,w:size,h:size*1.08}));return start;};
   if(mode==='desktop'){
    back(r.x+12,r.y+12);s.text(title,r.x+58,r.y+11,18,ink,800,300);s.text(kind,r.x+58,r.y+35,12,this.colors.muted,600,300);
    const count=placed+' / '+total+'  '+percent+'%',cw=s.measure(count,18,800),mid=84+(s.w-84-300)/2;s.icon('piece',{x:mid-cw/2-28,y:r.y+9,w:22,h:24});s.text(count,mid-cw/2,r.y+10,18,ink,800);s.meter({x:mid-170,y:r.y+38,w:340,h:9},placed/Math.max(1,total));
-   const inviteW=118;s.button({x:r.x+r.w-inviteW-14,y:r.y+12,w:inviteW,h:36},'＋ 邀请朋友',()=>this.showModal('invite'),{tone:'berry',fontSize:14});
+   const inviteW=this.postcardRoom?-14:118;if(!this.postcardRoom)s.button({x:r.x+r.w-inviteW-14,y:r.y+12,w:inviteW,h:36},'＋ 邀请朋友',()=>this.showModal('invite'),{tone:'berry',fontSize:14});
    const start=avatars(r.x+r.w-inviteW-28,r.y+14,28);this.roomMembersArea={x:start-6,y:r.y+6,w:r.x+r.w-start,h:48};s.hit({x:start-6,y:r.y+6,w:r.x+r.w-inviteW-22-start,h:48},()=>this.focusRoomMembers());
   }else if(mode==='portrait'){
-   back(r.x+8,r.y+4);const inviteX=r.x+r.w-44-this.menuReserve({...r,h:44});s.button({x:inviteX,y:r.y+6,w:34,h:34},'',()=>this.showModal('invite'),{tone:'berry'});s.icon('plus',{x:inviteX+9,y:r.y+15,w:16,h:16},this.colors.onAccent);
+   back(r.x+8,r.y+4);const inviteX=r.x+r.w-44-this.menuReserve({...r,h:44})+(this.postcardRoom?44:0);if(!this.postcardRoom){s.button({x:inviteX,y:r.y+6,w:34,h:34},'',()=>this.showModal('invite'),{tone:'berry'});s.icon('plus',{x:inviteX+9,y:r.y+15,w:16,h:16},this.colors.onAccent);}
    const start=avatars(inviteX-8,r.y+9,24);this.roomMembersArea={x:start-4,y:r.y+2,w:inviteX+34-start,h:42};s.hit({x:start-4,y:r.y+2,w:inviteX-start,h:42},()=>this.showModal('chat'));
    s.text(title,r.x+50,r.y+5,16,ink,800,start-r.x-58);s.text(kind,r.x+50,r.y+26,11,this.colors.muted,600,start-r.x-58);
    const line=placed+' / '+total+' · '+percent+'%',lw=s.measure(line,14,800);s.icon('piece',{x:r.x+12,y:r.y+48,w:18,h:20});s.text(line,r.x+34,r.y+50,14,ink,800);s.meter({x:r.x+44+lw,y:r.y+55,w:Math.max(20,r.w-58-lw),h:9},placed/Math.max(1,total));
@@ -2175,11 +2222,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.roomPanelCollapsed===collapsed)return;this.roomPanelCollapsed=collapsed;this.platform.storage.set('jigsaw:room-panel-collapsed:v1',collapsed?'1':'0');this.roomViewPending=true;this.invalidate();
  }
  private focusRoomMembers(){
-  if(this.offlineRoom){this.note(OFFLINE_REQUIRED);return;}
+  if(this.localRoom){this.note(OFFLINE_REQUIRED);return;}
   this.setRoomPanelCollapsed(false);this.roomMembersHighlight=Date.now()+1600;this.invalidate();setTimeout(()=>{if(!this.destroyed)this.invalidate();},1650);
  }
  private async openPlayerCard(member:{code?:string|null;name?:string}){
-  if(this.offlineRoom){this.note(OFFLINE_REQUIRED);return;}
+  if(this.localRoom){this.note(OFFLINE_REQUIRED);return;}
   if(!member.code){this.note('这位玩家的名片暂不可用');return;}
   if(this.modal!=='playerCard')this.cardReturn=this.modal;
   const code=member.code,owner=this.client.profile?.code,room=this.room?.snapshot.id;
@@ -2397,7 +2444,16 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const count=this.cheerEffects.count(emote);if(count>=2){const badge='×'+count;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(b.x+b.w-25,b.y-4,27,16);s.text(badge,b.x+b.w-23,b.y-3,10,this.colors.onAccent,700,25);}
    if(enabled)s.hit(b,()=>this.sendCompletionCheer(emote));s.ctx.restore();});
  }
+ private drawPostcardCompletion(left:number,y:number,width:number,landscape:boolean,panel?:Rect){
+  const s=this.stage,title=this.room?.snapshot.title??'明信片';
+  if(landscape&&panel){const side=Math.min(240,panel.h-90,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+45,w:side,h:side});left=panel.x+side+32;width=panel.x+panel.w-left-16;y=panel.y+48;}
+  else{const h=Math.min(width*.62,240);this.drawCompletionPicture({x:left,y,w:width,h});y+=h+16;}
+  y=this.paragraph('明信片拼好啦',left,y,width,20)+8;y=this.paragraph(title,left,y,width,14)+8;
+  y=this.paragraph(pendingPostcards(this.platform.storage).length?'正在收进明信片册…':'收进明信片册，小鱼干到手啦',left,y,width,13)+16;
+  s.button({x:left,y,w:width,h:40},'回小窝看看',()=>this.exitRoom(),{tone:'berrydark',fontSize:16});return y+48;
+ }
  private drawCompletionContent(left:number,cy:number,width:number,landscape=false,panel?:Rect){
+  if(this.postcardRoom)return this.drawPostcardCompletion(left,cy,width,landscape,panel);
   if(this.offlineRoom)return this.offline.drawCompletion(this.stage,{...this.room!.ticket,room:this.room!.snapshot},left,cy,width,landscape,panel,{picture:r=>this.drawCompletionPicture(r),paragraph:(...args)=>this.paragraph(...args),launch:input=>void this.run(()=>this.launchOffline(input)),back:()=>this.exitRoom(),comic:{available:id=>this.hasLevelComic(id),open:id=>this.openLevelComic(id,{fromClear:true})},story:id=>{const story=this.storyCompletionLines(id,this.offline.view?.chapters??[],Math.floor(width/13));return story?[story.progress+(story.reward?' · '+story.reward:''),...(story.teaser?[story.teaser]:[])]:null;},nextButton:(r,label,action)=>this.breathButton(r,label,action)});
   const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
   const seats=this.completionSeats(),levelClear=(result?.levelClear??this.levelDestination()??undefined) as import('../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
@@ -2537,7 +2593,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(t<1&&this.welcomeFrame==null&&this.platform.frame)this.welcomeFrame=this.platform.frame(()=>{this.welcomeFrame=null;if(!this.destroyed&&this.modal==='welcome')this.invalidate();});
   c.save();c.globalAlpha=ease;
   c.fillStyle=this.colors.overlay;c.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>this.closeWelcome());
-  const story=tie?.kind==='story',pill=tie&&tie.kind!=='away'?tie:null,ink=this.colors.ink,muted=this.colors.muted,availH=s.h-v.top-v.bottom-24;
+  const story=tie?.kind==='story',tiePill=tie&&tie.kind!=='away'?tie:null,mailLine=this.tuanzi.welcomeLine(),pill=tiePill??(mailLine?{text:mailLine,icon:'gift'}:null),mail=tiePill&&mailLine?{text:mailLine,icon:'gift'}:null,ink=this.colors.ink,muted=this.colors.muted,availH=s.h-v.top-v.bottom-24;
   const wrapLine=(width:number)=>{const lines:string[]=[];let row='';for(const ch of view.line){if(s.measure(row+ch,14)>width){lines.push(row);row=ch;}else row+=ch;}if(row)lines.push(row);return lines.slice(0,2);};
   const textBlock=(x:number,y:number,w:number,art:number,artTop=-2)=>{
    // Chip: sun or moon and the slot greeting (no clock: players read it as a wrong time).
@@ -2546,19 +2602,19 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(art)this.drawWelcomeArt({x:x+w-art,y:y+artTop,w:art,h:Math.round(art*66/70)});
    let cy=y+38;s.text('欢迎回家',x,cy,24,ink,800,w-art-6);cy+=36;
    const lines=wrapLine(w-art);lines.forEach((text,index)=>s.text(text,x,cy+index*22,14,muted,500,w-art));cy+=lines.length*22+8;
-   if(pill){const size=13,pw=Math.min(w,s.measure(pill.text,size,700)+46),r={x,y:cy,w:pw,h:30};s.frame(r,'rail-cream-normal');s.icon(pill.icon,{x:r.x+9,y:r.y+6,w:18,h:18});s.textCentered(pill.text,r.x+33,r.y+r.h/2,size,ink,700,pw-40);cy+=40;}
+   for(const item of [pill,mail]){if(!item)continue;const size=13,pw=Math.min(w,s.measure(item.text,size,700)+46),r={x,y:cy,w:pw,h:30};s.frame(r,'rail-cream-normal');s.icon(item.icon,{x:r.x+9,y:r.y+6,w:18,h:18});s.textCentered(item.text,r.x+33,r.y+r.h/2,size,ink,700,pw-40);cy+=40;}
    return cy;
   };
   const buttons=(x:number,y:number,w:number,h:number)=>{const primary=Math.round(w*.6);s.button({x,y,w:primary,h},story?'继续故事':'开拼 · 108 片',()=>this.welcomePrimary(),{tone:'berrydark',icon:story?'story':'daily',fontSize:15,disabled:this.busy});s.button({x:x+primary+10,y,w:w-primary-10,h},'先逛逛',()=>this.closeWelcome(),{fontSize:15});};
   let panel:Rect;
   if(landscape){
    // Hero left, text right; the panel is only as tall as the text column needs.
-   const w=Math.min(s.w-32,640),heroW=Math.round(w*.47),tw=w-heroW-56,art=tw>=260?64:0,lines=wrapLine(tw-art).length,h=Math.min(availH,Math.max(232,22+74+lines*22+8+(pill?40:0)+12+42+20)),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
+   const w=Math.min(s.w-32,640),heroW=Math.round(w*.47),tw=w-heroW-56,art=tw>=260?64:0,lines=wrapLine(tw-art).length,h=Math.min(availH,Math.max(232,22+74+lines*22+8+(pill?40:0)+(mail?40:0)+12+42+20)),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
    s.hit(panel,()=>{});s.panel(panel);
    const hero={x:x+12,y:y+12,w:heroW,h:h-24};this.drawWelcomeHero(hero,slot);
    const tx=hero.x+hero.w+20;textBlock(tx,y+22,tw,art,30);buttons(tx,y+h-62,tw,42);
   }else{
-   const w=Math.min(s.w-32,420),heroH=Math.round(clamp((w-24)*.52,120,200)),art=70,lines=wrapLine(w-40-art).length,h=Math.min(availH,12+heroH+18+74+lines*22+8+(pill?40:0)+10+44+20),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
+   const w=Math.min(s.w-32,420),heroH=Math.round(clamp((w-24)*.52,120,200)),art=70,lines=wrapLine(w-40-art).length,h=Math.min(availH,12+heroH+18+74+lines*22+8+(pill?40:0)+(mail?40:0)+10+44+20),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
    s.hit(panel,()=>{});s.panel(panel);
    const hero={x:x+12,y:y+12,w:w-24,h:heroH};this.drawWelcomeHero(hero,slot);
    textBlock(x+20,hero.y+hero.h+18,w-40,art);buttons(x+20,y+h-64,w-40,44);
@@ -2588,6 +2644,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private drawModal(){
   if(this.modal==='orientation'){this.drawOrientationPicker();return;}
+  if(this.modal==='tuanzi'){this.tuanzi.draw(this.tuanziHost());return;}
   if(this.modal==='welcome'){this.drawWelcome();return;}
   if(this.modal==='levelComic'){this.drawLevelComic();return;}
   if(this.modal==='completion'&&this.layout==='phoneLandscape'){this.drawLandscapeCompletion();return;}
@@ -2599,7 +2656,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
   const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史拼图',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
+  const titles:Record<Exclude<Modal,null>,string>={tuanzi:'团子的小窝',weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史拼图',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
   // A vector cross has the same visible size and center with browser and wx fonts.
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);

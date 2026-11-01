@@ -7,7 +7,7 @@ import {TapPreviewRealtime} from './tap-preview';
 import type {TapPreviewDescriptor} from '../lib/room-preview';
 import {bundledArtworkPath} from './bundled-artwork';
 
-export type GameCapabilities={energy:boolean;ads:boolean;shareRewards?:boolean;tapMultiplayer?:boolean;albumTarget:'pc'|'mobile-shared';createTickets?:boolean;customNames?:boolean;cheers?:boolean;privacyRequests?:boolean;roomActionRevisionBody?:boolean;soloLocalPlay?:boolean;offlineLevelClears?:boolean;supportedPieces?:number[];social?:{friends?:boolean;privateMessages?:boolean;privateMessageHistory?:boolean;roomInvites?:boolean;reports?:boolean;blocking?:boolean;search?:boolean;presence?:boolean;codeFormat?:'hex12'|'digits9'}};
+export type GameCapabilities={energy:boolean;ads:boolean;shareRewards?:boolean;tapMultiplayer?:boolean;albumTarget:'pc'|'mobile-shared';createTickets?:boolean;customNames?:boolean;cheers?:boolean;privacyRequests?:boolean;roomActionRevisionBody?:boolean;soloLocalPlay?:boolean;offlineLevelClears?:boolean;tuanziTravel?:boolean;supportedPieces?:number[];social?:{friends?:boolean;privateMessages?:boolean;privateMessageHistory?:boolean;roomInvites?:boolean;reports?:boolean;blocking?:boolean;search?:boolean;presence?:boolean;codeFormat?:'hex12'|'digits9'}};
 export type GameConfig={mobileMode?:string|null;adRewardEnabled:boolean;rewardedAdUnitId:string;rewardedAdUnitIdPortrait?:string;rewardedAdUnitIdLandscape?:string;identityMode:'guest-device'|'web-cookie';wechatLoginConfigured:false;capabilities:GameCapabilities;compatUrls?:WebLinks;realtime?:{version:number};[key:string]:unknown};
 export type FetchLikeInit={method?:string;headers?:HeadersInit;body?:BodyInit|null;signal?:AbortSignal|null;cache?:string;timeout?:number};
 export type FetchLikeReply={status:number;ok:boolean;headers:{get(name:string):string|null};json():Promise<any>};
@@ -76,6 +76,7 @@ export class GameClient{
     roomActionRevisionBody:!this.cookieIdentity&&reply.data.capabilities?.roomActionRevisionBody===true,
     soloLocalPlay:!this.cookieIdentity&&reply.data.capabilities?.soloLocalPlay===true,
     offlineLevelClears:!this.cookieIdentity&&reply.data.capabilities?.offlineLevelClears===true,
+    tuanziTravel:!this.cookieIdentity&&reply.data.capabilities?.tuanziTravel===true,
     social:this.cookieIdentity?reply.data.capabilities?.social??{friends:false,privateMessages:false,reports:false,blocking:false,search:false,codeFormat:'hex12'}:{friends:true,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9',...reply.data.capabilities?.social,privateMessages:reply.data.capabilities?.social?.privateMessages===true},
     ...(this.cookieIdentity?{supportedPieces:reply.data.capabilities?.supportedPieces??[108,300,500]}:{})};
    this.config={...reply.data,rewardedAdUnitId:unit,rewardedAdUnitIdPortrait:portraitUnit||undefined,rewardedAdUnitIdLandscape:landscapeUnit||undefined,adRewardEnabled:capabilities.ads,identityMode:this.platform.config.id==='taptap'?'taptap':this.cookieIdentity?'web-cookie':'guest-device',wechatLoginConfigured:false,capabilities};
