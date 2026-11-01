@@ -30,8 +30,8 @@ export function walk(root) {
   visit(root);return files.sort();
 }
 // Static files the mobile backend serves besides catalogue artwork: cosmetics, icons and the drawn
-// story comic pages (config/levels.json comicPage, listed in config/runtime-assets.json).
-export const mobileStaticAsset = path => /^\/(?:cosmetics\/|favicon|apple-touch|puzzles\/story-comic-)/.test(path);
+// story comic pages (config/levels.json comicPage) and 团子去旅行 postcards, both listed in config/runtime-assets.json.
+export const mobileStaticAsset = path => /^\/(?:cosmetics\/|favicon|apple-touch|puzzles\/story-comic-|puzzles\/tuanzi-card-)/.test(path);
 export function runtimeAssets(catalog, config) {
   const urls=new Set(config.static);
   for(const photo of catalog.filter(p=>isPlayableOrigin(p.origin)&&RETAINED_STATUSES.includes(p.status))){

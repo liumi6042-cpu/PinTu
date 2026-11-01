@@ -155,6 +155,14 @@ export async function checkImageLibrary(root){
       if(!runtimeStatic.has('/puzzles/'+file)||sha(bytes).slice(0,12)!==comic[1]||!lossyWebpSize(bytes))throw new Error(`public/puzzles 中的漫画页未登记或内容不符：${file}`);
       continue;
     }
+    // 团子去旅行 postcards (config/tuanzi-travel.json rare/special): drawn art, registered and hash-named the same way.
+    const card=/^tuanzi-card-[a-z0-9-]+-(?:card|thumb)-([a-f0-9]{12})\.webp$/.exec(file);
+    if(card){
+     runtimeStatic??=new Set(JSON.parse(await readFile(join(root,'config/runtime-assets.json'),'utf8')).static);
+     const bytes=await readFile(join(root,'public/puzzles',file));
+     if(!runtimeStatic.has('/puzzles/'+file)||sha(bytes).slice(0,12)!==card[1]||!lossyWebpSize(bytes))throw new Error(`public/puzzles 中的团子明信片未登记或内容不符：${file}`);
+     continue;
+    }
     const match=/^([a-z0-9-]+)-(compact|optimized|play|thumbnail|standard)-[a-f0-9]{12}.webp$/.exec(file);
     if(!match||!catalogIds.has(match[1]))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
     webpSize(await readFile(join(root,'public/puzzles',file)));
