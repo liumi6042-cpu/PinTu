@@ -249,7 +249,7 @@ export class TuanziFeature{
    s.frame(r,inBag?'panel-gold':left?'button-cream-normal':'button-cream-disabled');this.icon(h,item.id,{x:r.x+(r.w-36)/2,y:r.y+5,w:36,h:36},!left&&!inBag);
    s.text(item.title,r.x+(r.w-s.measure(item.title,12,700))/2,r.y+44,12,c.ink,700,r.w-4);const n=inBag?'在包里':'×'+left;s.text(n,r.x+(r.w-s.measure(n,11,600))/2,r.y+60,11,c.muted,600);
    s.hit(r,()=>{d[item.slot]=inBag?null:item.id;this.coachBag=false;h.invalidate();});
-   if(this.coachBag&&item.slot==='food'&&!d.food&&i===owned.findIndex(e=>e.item.slot==='food')){s.ctx.strokeStyle=c.berry;s.ctx.lineWidth=3;s.ctx.strokeRect(r.x-3,r.y-3,r.w+6,r.h+6);s.text('点一下放进去',r.x,r.y-22,12,c.berry,800);}
+   if(this.coachBag&&item.slot==='food'&&!d.food&&i===owned.findIndex(e=>e.item.slot==='food')){s.ctx.strokeStyle=c.berry;s.ctx.lineWidth=3;s.ctx.strokeRect(r.x-3,r.y-3,r.w+6,r.h+6);s.text('点一下放进去',r.x,r.y+r.h+6,12,c.berry,800);}
   });
   const by=area.y+area.h-46,first=v.trips===0;
   s.wrap(first?'第一次出门很快：放好吃的点「装好了」，团子马上出发，20 分钟后回来。':'装好后，你离开游戏十来分钟，团子就会出发。没有惩罚，明信片也不会过期。',area.x,by-36,area.w,12,c.muted,16);

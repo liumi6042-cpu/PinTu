@@ -31,9 +31,11 @@ export function settlePostcard(storage:SoloStorage,cardId:string){
 }
 
 export function createPostcardRooms({storage,now,randomId,playerName='我'}:{storage:SoloStorage;now:()=>number;randomId:()=>string;playerName?:string}){
- const id=()=>{const value=randomId().replace(/-/g,'').toLowerCase();if(!hex(value))throw new Error('Invalid id');return value;};
- const saved=read(storage,PLAYER),player=object(saved)&&hex(saved.token)&&hex(saved.playerId)?{token:saved.token,playerId:saved.playerId}:{token:id(),playerId:id()};
- write(storage,PLAYER,player);
+ // Never throws at startup: a platform id that is not 32 hex digits falls back to a random one.
+ const id=()=>{let value='';try{value=randomId().replace(/-/g,'').toLowerCase();}catch{}return hex(value)?value:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');};
+ // The local player identity is created on the first postcard, so starting the app writes nothing.
+ let known:{token:string;playerId:string}|null=null;
+ const me=()=>{if(known)return known;const saved=read(storage,PLAYER);known=object(saved)&&hex(saved.token)&&hex(saved.playerId)?{token:saved.token,playerId:saved.playerId}:{token:id(),playerId:id()};write(storage,PLAYER,known);return known;};
  const rooms=new Map<string,Stored>();
  const index=read(storage,INDEX);
  if(Array.isArray(index))for(const roomId of index){
@@ -50,7 +52,7 @@ export function createPostcardRooms({storage,now,randomId,playerName='我'}:{sto
  const elapsed=(room:Stored,time:number)=>room.startedAt===null?0:Math.max(0,(room.completedAt??time)-room.startedAt);
  function snapshot(room:Stored):RoomSnapshot&{offline:true;postcardId:string;requestedPieces:number}{
   const time=now(),p=room.picture,photo={id:p.imageId,title:p.title,src:p.src,thumbSrc:p.thumbSrc,width:p.width,height:p.height,category:'明信片'};
-  return clone({id:room.id,puzzle:{...room.puzzle,elapsed:Math.floor(elapsed(room,time)/1000)},revision:room.revision,serverTime:time,expiresAt:time+30*86400000,members:[{id:player.playerId,name:playerName,color:'#99caf4',lastSeen:time}],leases:{},visibility:'solo',startedAt:room.startedAt,completedAt:room.completedAt,title:p.title,acceptingNew:false,photo,requestedPieces:p.pieces,offline:true,postcardId:p.cardId}) as any;
+  return clone({id:room.id,puzzle:{...room.puzzle,elapsed:Math.floor(elapsed(room,time)/1000)},revision:room.revision,serverTime:time,expiresAt:time+30*86400000,members:[{id:me().playerId,name:playerName,color:'#99caf4',lastSeen:time}],leases:{},visibility:'solo',startedAt:room.startedAt,completedAt:room.completedAt,title:p.title,acceptingNew:false,photo,requestedPieces:p.pieces,offline:true,postcardId:p.cardId}) as any;
  }
  function apply(room:Stored,op:any){
   if(!object(op)||!Number.isSafeInteger(op.groupId)||!Number.isFinite(op.dx)||!Number.isFinite(op.dy))return false;
@@ -67,9 +69,9 @@ export function createPostcardRooms({storage,now,randomId,playerName='我'}:{sto
  function open(picture:PostcardPicture):RoomTicket{
   if(!validPicture(picture))throw new Error('这张明信片暂时不能拼');
   const existing=[...rooms.values()].find(room=>room.picture.cardId===picture.cardId&&room.picture.imageId===picture.imageId&&room.completedAt===null);
-  if(existing)return {...player,room:snapshot(existing)};
+  if(existing)return {...me(),room:snapshot(existing)};
   const time=now(),room:Stored={v:1,id:id(),picture,puzzle:createFittedPuzzle(picture.imageId,picture.cols,picture.rows,time>>>0),revision:0,startedAt:null,completedAt:null,createdAt:time,updatedAt:time};
-  persist(room);return {...player,room:snapshot(room)};
+  persist(room);return {...me(),room:snapshot(room)};
  }
  const fetch:RoomClientDependencies['fetch']=async(url,init)=>{
   const path=url.split(/[?#]/,1)[0],match=path.match(/\/api\/rooms\/([a-f0-9]{32})$/),room=match?rooms.get(match[1]):undefined;

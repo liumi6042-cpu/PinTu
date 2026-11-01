@@ -97,8 +97,8 @@ export class GameApp{
  private get localRoom(){return this.offlineRoom||this.postcardRoom;}
  private readonly tuanzi=new TuanziFeature();private postcards!:ReturnType<typeof createPostcardRooms>;private tuanziTimer:ReturnType<typeof setTimeout>|null=null;private postcardFlush:Promise<void>|null=null;
  /** The nook is shown when the server offers it (capability tuanziTravel) and 团子 has moved in (story 1-2). */
- private get tuanziOn(){return this.ready&&!this.formalWeb&&this.client.config.capabilities?.tuanziTravel===true;}
- private get tuanziCorner(){return this.tuanziOn&&!!this.tuanzi.open;}
+ private get tuanziOn(){return !!this.tuanzi&&this.ready&&!this.formalWeb&&this.client.config.capabilities?.tuanziTravel===true;}
+ private get tuanziCorner(){return this.tuanziOn&&!!this.tuanzi?.open;}
  private tuanziHost():TuanziHost{
   const v=this.platform.viewport();
   return {stage:this.stage,colors:this.colors,top:v.top,bottom:this.stage.h-v.bottom,landscape:this.layout==='phoneLandscape'||this.layout==='desktop',playerName:this.client.profile?.name??'我',
@@ -809,7 +809,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private async attachTicket(ticket:RoomTicket){
   this.clearCompletionTransition();
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
-  const postcard=this.postcards.isRoom(ticket.room.id),offline=(this.offline?.isRoom(ticket.room.id)??false)||postcard;
+  const postcard=this.postcards?.isRoom(ticket.room.id)??false,offline=(this.offline?.isRoom(ticket.room.id)??false)||postcard;
   this.social.close();
   const source=this.saveListView();if(source.route!=='room'){this.roomReturn=source;this.roomReturnStack=[...this.routeStack];this.roomReturnFrames=[...this.routeFrames];}
   this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;
@@ -2153,7 +2153,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   }else if(this.platform.config.id==='web'){
    const panel={x:r.x+6,y:r.y+4,w:Math.min(320,r.w*.48),h:r.h-6};s.frame(panel,'button-linen-normal');back(panel.x+5,panel.y+5);
    s.text(title,panel.x+48,panel.y+5,14,ink,800,panel.w-56);const line=placed+'/'+total+' · '+percent+'%',lw=s.measure(line,12,800);s.text(line,panel.x+48,panel.y+25,12,ink,800);s.meter({x:panel.x+56+lw,y:panel.y+29,w:Math.max(20,panel.w-66-lw),h:7},placed/Math.max(1,total));
-   const right=r.x+r.w-8,inviteW=64,box={x:right-inviteW-130,y:r.y+4,w:inviteW+130,h:r.h-6};s.frame(box,'button-linen-normal');s.button({x:right-inviteW-4,y:box.y+5,w:inviteW,h:box.h-10},'邀请',()=>this.showModal('invite'),{tone:'berry',icon:'invite',fontSize:13});
+   const right=r.x+r.w-8,inviteW=64,box={x:right-inviteW-130,y:r.y+4,w:inviteW+130,h:r.h-6};s.frame(box,'button-linen-normal');if(!this.postcardRoom)s.button({x:right-inviteW-4,y:box.y+5,w:inviteW,h:box.h-10},'邀请',()=>this.showModal('invite'),{tone:'berry',icon:'invite',fontSize:13});
    avatars(right-inviteW-12,box.y+8,24);this.roomMembersArea={...box};s.hit({x:box.x,y:box.y,w:box.w-inviteW-8,h:box.h},()=>this.showModal('chat'));
   }else{
    const size=26,step=size-7,avatarW=members.length?size+(members.length-1)*step:0,gap=8,inviteW=s.measure('＋ 邀请',13,900)+20;
@@ -2170,7 +2170,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const meter={x:capsule.x+12+countW+8,y:capsule.y+capsule.h/2-4,w:180,h:8};this.drawLandscapeSurface(meter,4,roomColors.meterTrack);const fill=placed/Math.max(1,total);if(fill>0)this.drawLandscapeSurface({...meter,w:meter.w*fill},4,roomColors.green);
    s.textMiddle(percentText,meter.x+meter.w+8,capsule.y+capsule.h/2,13,roomColors.green,900,'0123456789');s.hit(capsule,()=>{});
    members.forEach((_member,index)=>s.icon('avatar',{x:avatarX+index*step,y:r.y+4,w:size,h:size}));
-   this.roomMembersArea={x:avatarX,y:r.y,w:avatarW,h:34};s.hit(this.roomMembersArea,()=>this.showModal('chat'));this.drawLandscapeButton(invite,'＋ 邀请',()=>this.showModal('invite'),roomColors.roseD,13);
+   this.roomMembersArea={x:avatarX,y:r.y,w:avatarW,h:34};s.hit(this.roomMembersArea,()=>this.showModal('chat'));if(!this.postcardRoom)this.drawLandscapeButton(invite,'＋ 邀请',()=>this.showModal('invite'),roomColors.roseD,13);
   }
  }
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;
@@ -2593,7 +2593,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(t<1&&this.welcomeFrame==null&&this.platform.frame)this.welcomeFrame=this.platform.frame(()=>{this.welcomeFrame=null;if(!this.destroyed&&this.modal==='welcome')this.invalidate();});
   c.save();c.globalAlpha=ease;
   c.fillStyle=this.colors.overlay;c.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>this.closeWelcome());
-  const story=tie?.kind==='story',tiePill=tie&&tie.kind!=='away'?tie:null,mailLine=this.tuanzi.welcomeLine(),pill=tiePill??(mailLine?{text:mailLine,icon:'gift'}:null),mail=tiePill&&mailLine?{text:mailLine,icon:'gift'}:null,ink=this.colors.ink,muted=this.colors.muted,availH=s.h-v.top-v.bottom-24;
+  const story=tie?.kind==='story',tiePill=tie&&tie.kind!=='away'?tie:null,mailLine=this.tuanzi?.welcomeLine()??null,pill=tiePill??(mailLine?{text:mailLine,icon:'gift'}:null),mail=tiePill&&mailLine?{text:mailLine,icon:'gift'}:null,ink=this.colors.ink,muted=this.colors.muted,availH=s.h-v.top-v.bottom-24;
   const wrapLine=(width:number)=>{const lines:string[]=[];let row='';for(const ch of view.line){if(s.measure(row+ch,14)>width){lines.push(row);row=ch;}else row+=ch;}if(row)lines.push(row);return lines.slice(0,2);};
   const textBlock=(x:number,y:number,w:number,art:number,artTop=-2)=>{
    // Chip: sun or moon and the slot greeting (no clock: players read it as a wrong time).
