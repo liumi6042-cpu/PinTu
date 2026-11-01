@@ -106,6 +106,11 @@ export function createMobileService(options={}){
  const filename=options.databasePath??':memory:';
  if(filename!==':memory:')mkdirSync(dirname(resolve(filename)),{recursive:true,mode:0o700});
  const db=new DatabaseSync(filename);if(filename!==':memory:')chmodSync(filename,0o600);
+ // WAL + NORMAL syncs at checkpoints instead of on every commit (~1 ms each, and every request commits). The file
+ // cannot corrupt; a power cut or OS crash may drop the last moments of play. MOBILE_SQLITE_SYNCHRONOUS=full restores per-commit sync.
+ const synchronous=String(options.synchronous??process.env.MOBILE_SQLITE_SYNCHRONOUS??'normal').toUpperCase();
+ if(!['NORMAL','FULL'].includes(synchronous))throw new Error('MOBILE_SQLITE_SYNCHRONOUS must be normal or full');
+ db.exec('PRAGMA synchronous='+synchronous);
  db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
  CREATE TABLE IF NOT EXISTS mobile_profiles(id TEXT PRIMARY KEY,data TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS mobile_taptap_accounts(provider_key TEXT PRIMARY KEY,canonical_identity TEXT NOT NULL,nickname TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL);
@@ -136,7 +141,23 @@ export function createMobileService(options={}){
  const playerEnergyCap=p=>effectiveEnergyCap(p.level,operationGameSettings,readInviteCapBonus(p.id).count);
  const roomListeners=new Set(),roomVersions=new Map(),cursorRooms=new Map(),cheerRooms=new Map(),cheerRates=new Map();let cheerSeq=clock();
  const realtimeCounters={roomReads:0,authorizations:0,cursorWrites:0,cursorFlushes:0};
- const markRoom=(roomId,kind={room:true,cursors:true})=>{if(requestRoomChanges){const old=requestRoomChanges.get(roomId);requestRoomChanges.set(roomId,{room:kind.room||old?.room,cursors:kind.cursors||old?.cursors,cheers:kind.cheers||old?.cheers});}else for(const listener of roomListeners)listener(roomId,kind);};
+ const markRoom=(roomId,kind={room:true,cursors:true})=>{if(requestRoomChanges){const old=requestRoomChanges.get(roomId);requestRoomChanges.set(roomId,{room:kind.room||old?.room,cursors:kind.cursors||old?.cursors,cheers:kind.cheers||old?.cheers});}else{commitEpoch++;for(const listener of roomListeners)listener(roomId,kind);}};
+ // Read caches. Every committed write on this connection bumps commitEpoch; PRAGMA data_version moves when another
+ // connection commits. Realtime reads of one committed state share a single parsed room (read-only: handle() always
+ // parses its own copy, since actions mutate it) and one card per member, instead of each peer parsing the room again.
+ let commitEpoch=0;const dataVersionStatement=db.prepare('PRAGMA data_version');
+ const readKey=()=>commitEpoch+':'+dataVersionStatement.get().data_version;
+ const sharedRooms=new Map(),sharedRoomObjects=new WeakSet(),sharedMemberCards=new WeakMap();
+ const readSharedRoom=roomId=>{
+  const key=readKey(),hit=sharedRooms.get(roomId);if(hit?.key===key)return hit.room;
+  sharedRooms.delete(roomId);const room=readRoom(roomId);sharedRoomObjects.add(room);sharedRooms.set(roomId,{key,room});
+  if(sharedRooms.size>256)sharedRooms.delete(sharedRooms.keys().next().value);return room;
+ };
+ // Lists that only change when a room row changes: each owner's rooms (profileView), the open public tables (lobby,
+ // friends) and the daily finished count. A save bumps the owner's / public generation; a rollback drops them all.
+ let publicGeneration=0,settlementGeneration=0;const ownerGenerations=new Map(),ownedRoomRows=new Map();let openPublicRows=null,dailyFinishedMemo=null;
+ const touchRoomLists=room=>{publicGeneration++;ownerGenerations.set(room.ownerId,(ownerGenerations.get(room.ownerId)??0)+1);};
+ const dropReadCaches=()=>{commitEpoch++;sharedRooms.clear();ownedRoomRows.clear();openPublicRows=null;dailyFinishedMemo=null;publicGeneration++;settlementGeneration++;};
  const pruneCheers=(roomId,now)=>{
   const state=cheerRooms.get(roomId);if(state){state.items=state.items.filter(item=>item.at>now-15000).slice(-60);if(!state.items.length)cheerRooms.delete(roomId);}
   // Rate windows outlive the visible items, including when a sweep drops an empty room.
@@ -171,10 +192,16 @@ export function createMobileService(options={}){
   else {if(old?.clientId===value.clientId&&value.seq<=old.seq)return false;rememberCursors(room.id);state.set(member.id,{clientId:value.clientId,seq:value.seq,point:value.point,updatedAt:now,dirty:true});}
   realtimeCounters.cursorWrites++;return true;
  };
+ // One transaction per flush: a separate autocommit per cursor paid one WAL commit (and sync) each.
  const flushCursors=()=>{
-  for(const [roomId,state]of cursorRooms)for(const [playerId,value]of state)if(value.dirty){
-   db.prepare('INSERT INTO mobile_cursors VALUES(?,?,?,?,?,?) ON CONFLICT(room_id,player_id) DO UPDATE SET client_id=excluded.client_id,seq=excluded.seq,data=excluded.data,updated_at=excluded.updated_at WHERE excluded.updated_at>=mobile_cursors.updated_at AND (mobile_cursors.client_id!=excluded.client_id OR excluded.seq>=mobile_cursors.seq)').run(roomId,playerId,value.clientId,value.seq,JSON.stringify(value.point),value.updatedAt);value.dirty=false;realtimeCounters.cursorFlushes++;
-  }
+  const own=!db.isTransaction,written=[];let began=false;
+  try{
+   for(const [roomId,state]of cursorRooms)for(const [playerId,value]of state)if(value.dirty){
+    if(own&&!began){db.exec('BEGIN IMMEDIATE');began=true;}
+    db.prepare('INSERT INTO mobile_cursors VALUES(?,?,?,?,?,?) ON CONFLICT(room_id,player_id) DO UPDATE SET client_id=excluded.client_id,seq=excluded.seq,data=excluded.data,updated_at=excluded.updated_at WHERE excluded.updated_at>=mobile_cursors.updated_at AND (mobile_cursors.client_id!=excluded.client_id OR excluded.seq>=mobile_cursors.seq)').run(roomId,playerId,value.clientId,value.seq,JSON.stringify(value.point),value.updatedAt);value.dirty=false;written.push(value);realtimeCounters.cursorFlushes++;
+   }
+   if(began)db.exec('COMMIT');
+  }catch(error){if(began){db.exec('ROLLBACK');for(const value of written)value.dirty=true;}throw error;}
  };
  const cursorTimer=setInterval(flushCursors,options.cursorFlushMs??500);cursorTimer.unref();
  // A room-action receipt stores the whole room reply for one drop and only guards client retries for a few minutes.
@@ -234,7 +261,7 @@ export function createMobileService(options={}){
  // TapTap players open 500-piece tables from level 10; anyone may still join one.
  const pieceLevels=web?{}:{500:10},pieceLevel=pieces=>pieceLevels[pieces]??0;
  const readRoom=roomId=>{const row=db.prepare('SELECT data,closed_at FROM mobile_rooms WHERE id=?').get(roomId);if(!row||row.closed_at)fail(404,'ROOM_NOT_FOUND','房间不存在或已关闭');const room=JSON.parse(row.data);if(!web&&room.diagnostic!==true)room.persistent=true;room.playerLimit=seatLimit(room);return room;};
- const saveRoom=room=>{if(!web&&room.diagnostic!==true)room.persistent=true;const result=db.prepare('INSERT INTO mobile_rooms VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET completed_at=excluded.completed_at,closed_at=excluded.closed_at,data=excluded.data').run(room.id,room.ownerId,room.visibility,room.mobilePieces,room.createdAt,room.completedAt,room.closedAt??null,JSON.stringify(room));markRoom(room.id);return result;};
+ const saveRoom=room=>{if(!web&&room.diagnostic!==true)room.persistent=true;const result=db.prepare('INSERT INTO mobile_rooms VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET completed_at=excluded.completed_at,closed_at=excluded.closed_at,data=excluded.data').run(room.id,room.ownerId,room.visibility,room.mobilePieces,room.createdAt,room.completedAt,room.closedAt??null,JSON.stringify(room));touchRoomLists(room);markRoom(room.id);return result;};
  const pruneRoomCursors=room=>{
   rememberCursors(room.id);const state=cursorState(room.id);
   if(room.closedAt){state.clear();db.prepare('DELETE FROM mobile_cursors WHERE room_id=?').run(room.id);return;}
@@ -245,25 +272,49 @@ export function createMobileService(options={}){
   db.prepare("DELETE FROM mobile_cursors WHERE room_id=? AND NOT EXISTS(SELECT 1 FROM json_each(?) m WHERE json_extract(m.value,'$.id')=mobile_cursors.player_id)").run(room.id,members);
   db.prepare("UPDATE mobile_cursors SET data='null' WHERE room_id=? AND data!='null' AND EXISTS(SELECT 1 FROM json_each(?) m WHERE json_extract(m.value,'$.id')=mobile_cursors.player_id AND CAST(json_extract(m.value,'$.lastSeen') AS INTEGER)<=0)").run(room.id,members);
  };
- const social=createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom:authorize,roomCard:card,blockedWords:options.socialBlockedWords,privateMessages});
+ const social=createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom:authorize,roomCard:card,openPublicRooms:()=>openPublicRooms(),blockedWords:options.socialBlockedWords,privateMessages});
  const privacy=createMobilePrivacy({db});
  const roomHistory=createMobileRoomHistory({db,card});
- const profileView=(p,now)=>({capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id)}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND closed_at IS NULL AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id) ORDER BY created_at DESC').all(p.id).map(row=>{const r=JSON.parse(row.data);return {...card(r,now),...(r.completedAt!==null?{title:'已完成'}:{}),inviteCode:r.mobileInviteCode??null};})});
+ {const removeOwned=roomHistory.removeOwned;roomHistory.removeOwned=(owner,roomId,now)=>{const result=removeOwned(owner,roomId,now);ownerGenerations.set(owner,(ownerGenerations.get(owner)??0)+1);return result;};}
+ // profileView rides on every room action reply: parse an owner's rooms once per change of those rooms, not per reply.
+ const ownedRoomCards=(owner,now)=>{
+  const key=(ownerGenerations.get(owner)??0)+':'+dataVersionStatement.get().data_version;let hit=ownedRoomRows.get(owner);
+  if(hit?.key!==key){
+   hit={key,rooms:db.prepare('SELECT data FROM mobile_rooms WHERE owner=? AND closed_at IS NULL AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id) ORDER BY created_at DESC').all(owner).map(row=>JSON.parse(row.data))};
+   ownedRoomRows.delete(owner);ownedRoomRows.set(owner,hit);if(ownedRoomRows.size>2048)ownedRoomRows.delete(ownedRoomRows.keys().next().value);
+  }
+  return hit.rooms.map(r=>({...card(r,now),...(r.completedAt!==null?{title:'已完成'}:{}),inviteCode:r.mobileInviteCode??null}));
+ };
+ // The open public tables, newest first (lobby, friends' tables). Parsed once per change of any public room.
+ const openPublicRooms=()=>{
+  const key=publicGeneration+':'+dataVersionStatement.get().data_version;
+  if(openPublicRows?.key!==key)openPublicRows={key,rooms:db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(row=>JSON.parse(row.data))};
+  return openPublicRows.rooms;
+ };
+ /** Per-member extras of a room reply. On a shared (realtime) room they are worked out once per committed state. */
+ const memberCard=(room,member,now)=>{
+  let cards=sharedMemberCards.get(room);if(!cards){cards=new Map();if(sharedRoomObjects.has(room))sharedMemberCards.set(room,cards);}
+  let value=cards.get(member.id);if(value)return value;
+  const identity=member.guestId||member.accountId;
+  value=identity?{contribution:room.achievements?.contributors?.[identity]?.count??0,code:social.person(identity,now).code,level:readProfile(identity,now).level,decoration:collection.equipped(identity)}:{contribution:0,code:null,level:0,decoration:null};
+  cards.set(member.id,value);return value;
+ };
+ const profileView=(p,now)=>({capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id)}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)});
  const photoOf=room=>engine.roomArtworkPhoto(room,engine.RESTORABLE_PHOTOS);
  const displayPhoto=(photo,request)=>photo&&request.artworkSnapshot===true?engine.activeArtworkPhoto(photo):photo;
  const creationArtwork=(photo,pieces,request)=>engine.currentRoomArtwork(engine.RESTORABLE_PHOTOS.find(item=>item.id===photo.id)??photo,pieces,request.artworkSnapshot!==true);
  function requireArtworkClient(room,request){if(engine.roomUsesUpgradedArtwork(room)&&request.artworkSnapshot!==true)fail(409,'ARTWORK_CLIENT_UPDATE_REQUIRED','这间拼图使用新版图片，请刷新页面或更新小游戏后重新进入');}
  function card(room,now){const photo=photoOf(room);return {id:room.id,title:room.title||photo?.title||'一起拼图',imageId:room.puzzle.imageId,pieces:room.mobilePieces,actualPieces:room.puzzle.cols*room.puzzle.rows,visibility:room.visibility,players:room.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length,maxPlayers:seatLimit(room),placed:engine.placedCount(room.puzzle),completed:room.completedAt!==null,acceptingNew:room.acceptingNew!==false,started:room.startedAt!==null,startedAt:room.startedAt,createdAt:room.createdAt,expiresAt:room.expiresAt,lastPlayedAt:room.lastPlayedAt,direction:photo?directionOf(photo):'landscape',artwork:engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS),photo,thumbSrc:photo?.thumbSrc};}
- function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;result.maxPlayers=seatLimit(room);if(room.mobileMode==='level')result.levelId=room.mobileLevelId;const preview=tapPreview.descriptor(room);if(preview)result.tapPreview=preview;if(room.diagnostic===true)result.diagnostic=true;result.artwork=engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS);result.photo=photoOf(room);if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),identity=member?.guestId||member?.accountId;return {...m,contribution:identity?room.achievements?.contributors?.[identity]?.count??0:0,code:identity?social.person(identity,now).code:null,level:identity?readProfile(identity,now).level:0,decoration:identity?collection.equipped(identity):null};});if(identity&&room.completedAt!==null&&room.diagnostic!==true){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id),ranking:Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).sort((x,y)=>y[1].count-x[1].count).slice(0,8).map(([owner,c])=>({name:readProfile(owner,now).name,code:social.person(owner,now).code,contribution:c.count,mine:owner===identity}))};if(room.mobileMode==='level'&&identity===room.ownerId){const progress=levels.progress(identity).find(row=>row.level_id===room.mobileLevelId),firstClear=progress?.room_id===room.id;result.mobileResult.levelClear={levelId:room.mobileLevelId,energy:firstClear?progress.energy:0,firstClear,...levels.destination(room.mobileLevelId)};}}return result;}
+ function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;result.maxPlayers=seatLimit(room);if(room.mobileMode==='level')result.levelId=room.mobileLevelId;const preview=tapPreview.descriptor(room);if(preview)result.tapPreview=preview;if(room.diagnostic===true)result.diagnostic=true;result.artwork=engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS);result.photo=photoOf(room);if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),extra=member?memberCard(room,member,now):null;return {...m,contribution:extra?.contribution??0,code:extra?.code??null,level:extra?.level??0,decoration:extra?.decoration??null};});if(identity&&room.completedAt!==null&&room.diagnostic!==true){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id),ranking:Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).sort((x,y)=>y[1].count-x[1].count).slice(0,8).map(([owner,c])=>({name:readProfile(owner,now).name,code:social.person(owner,now).code,contribution:c.count,mine:owner===identity}))};if(room.mobileMode==='level'&&identity===room.ownerId){const progress=levels.progress(identity).find(row=>row.level_id===room.mobileLevelId),firstClear=progress?.room_id===room.id;result.mobileResult.levelClear={levelId:room.mobileLevelId,energy:firstClear?progress.energy:0,firstClear,...levels.destination(room.mobileLevelId)};}}return result;}
  function authorize(room,request,now){
   if(room.diagnostic===true){request.identity=resolveIdentity(request.identity);if(room.ownerId!==request.identity||!diagnosticAllowed(request.identity))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');}
   const token=/^Bearer ([a-f0-9]{32})$/.exec(request.authorization??'')?.[1];if(!token)fail(401,'ROOM_ADMISSION_REQUIRED','请重新加入房间');
   const member=engine.authenticate(room,hash(token),now);if(member.guestId!==request.identity)fail(403,'ROOM_IDENTITY_MISMATCH','请用当前身份重新加入房间');return member;
  }
- function cursorMembers(room,now){return room.members.filter(m=>m.lastSeen>0).map(m=>({playerId:m.id,name:m.name,color:m.color,level:readProfile(m.guestId,now).level,decoration:collection.equipped(m.guestId)}));}
+ function cursorMembers(room,now){return room.members.filter(m=>m.lastSeen>0).map(m=>{const extra=m.guestId?memberCard(room,m,now):null;return {playerId:m.id,name:m.name,color:m.color,level:extra?extra.level:readProfile(m.guestId,now).level,decoration:extra?extra.decoration:collection.equipped(m.guestId)};});}
  function cursorsView(room,now,members=cursorMembers(room,now),refresh=false){return {cursors:[...cursorState(room.id,refresh)].flatMap(([playerId,value])=>{const member=members.find(m=>m.playerId===playerId);return value.point&&member?[{...value.point,...member,updatedAt:now,positionUpdatedAt:value.updatedAt}]:[];}),serverTime:now};}
  function realtimeAuthorize(context){
-  realtimeCounters.authorizations++;const now=clock(),room=readRoom(context.roomId);requireArtworkClient(room,context);const member=authorize(room,context,now);
+  realtimeCounters.authorizations++;const now=clock(),room=readSharedRoom(context.roomId);requireArtworkClient(room,context);const member=authorize(room,context,now);
   if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
   context.room=room;context.member=member;context.cursorMembers=cursorMembers(room,now);context.version=roomVersions.get(room.id)??0;return context;
  }
@@ -305,7 +356,7 @@ export function createMobileService(options={}){
  });
  function bindFirstRoom(p,room){if(room.diagnostic!==true&&room.completedAt===null&&!p.firstRoomId&&!p.firstRoomCompleted)p.firstRoomId=room.id;}
  /** Distinct players who completed the current daily (its day starts at the turnover hour, matching the daily schedule). */
- function dailyFinishedCount(now){const day=engine.dailyPuzzleDate(dailyClock(now)),start=Date.parse(day+'T00:00:00+08:00')-dailyShift;return Number(db.prepare("SELECT COUNT(DISTINCT s.owner) n FROM mobile_settlements s JOIN mobile_rooms r ON r.id=s.room_id WHERE r.completed_at>=? AND json_extract(r.data,'$.mobileMode')='daily' AND json_extract(r.data,'$.mobileDay')=?").get(start,day).n);}
+ function dailyFinishedCount(now){const day=engine.dailyPuzzleDate(dailyClock(now)),start=Date.parse(day+'T00:00:00+08:00')-dailyShift,key=day+':'+settlementGeneration+':'+dataVersionStatement.get().data_version;if(dailyFinishedMemo?.key===key)return dailyFinishedMemo.value;const value=Number(db.prepare("SELECT COUNT(DISTINCT s.owner) n FROM mobile_settlements s JOIN mobile_rooms r ON r.id=s.room_id WHERE r.completed_at>=? AND json_extract(r.data,'$.mobileMode')='daily' AND json_extract(r.data,'$.mobileDay')=?").get(start,day).n);dailyFinishedMemo={key,value};return value;}
  function join(room,p,input,now,request={}){
   requireArtworkClient(room,request);room.playerLimit=seatLimit(room);
   if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
@@ -349,7 +400,7 @@ export function createMobileService(options={}){
   for(const configuredReward of completionDistribution(counts,room.mobilePieces,operationGameSettings)){
    const reward=energyEnabled&&room.mobileMode!=='postcard'?configuredReward:{...configuredReward,energy:0};
    const p=reward.id===current.id?current:readProfile(reward.id,now);
-   const result=db.prepare('INSERT OR IGNORE INTO mobile_settlements VALUES(?,?,?,?,?)').run(room.id,p.id,reward.energy,reward.contribution,now);
+   const result=db.prepare('INSERT OR IGNORE INTO mobile_settlements VALUES(?,?,?,?,?)').run(room.id,p.id,reward.energy,reward.contribution,now);if(result.changes)settlementGeneration++;
    if(result.changes){events.record(p.id,'room-complete',room.id,{contribution:reward.contribution},now);const collected=collection.complete(p.id,room,reward.contribution,now);p.energy+=reward.energy;p.lastReward={...p.lastReward,completion:{roomId:room.id,...reward,...(collected??{})},at:now};}
    if(p.firstRoomId===room.id)p.firstRoomCompleted=true;saveProfile(p);
   }
@@ -360,7 +411,9 @@ export function createMobileService(options={}){
    p.energy+=energy;p.lastReward={...p.lastReward,levelClear:{levelId:room.mobileLevelId,energy,firstClear,nextLevelId,chapterComplete},at:now};saveProfile(p);
    events.record(p.id,'level-clear',room.id,{levelId:room.mobileLevelId,firstClear,energy},now);
   }
-  for(const row of db.prepare('SELECT id,data FROM mobile_profiles').all()){const p=row.id===current.id?current:JSON.parse(row.data);if(p.firstRoomId===room.id&&!p.firstRoomCompleted){p.firstRoomCompleted=true;saveProfile(p);}}
+  // 第一桌: only profiles whose stored firstRoomId is this room (SQLite filters; it used to parse every profile), plus the acting player in memory.
+  const firstRoomRows=db.prepare("SELECT id,data FROM mobile_profiles WHERE json_extract(data,'$.firstRoomId')=?").all(room.id);
+  for(const p of [current,...firstRoomRows.filter(row=>row.id!==current.id).map(row=>JSON.parse(row.data))])if(p.firstRoomId===room.id&&!p.firstRoomCompleted){p.firstRoomCompleted=true;saveProfile(p);}
   tuanziSide('completion',()=>tuanzi.roomCompleted(room,Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).map(([owner])=>owner),now));
   room.mobileSettled=true;
  }
@@ -527,7 +580,7 @@ export function createMobileService(options={}){
    const quietBarelyStarted=r=>r.members.every(m=>now-m.lastSeen>=engine.ONLINE_MS)&&engine.placedCount(r.puzzle)<0.1*r.puzzle.cols*r.puzzle.rows&&now-Math.max(r.lastPlayedAt??r.createdAt,r.lastLeftAt??0,...r.members.map(m=>m.lastSeen))>=LOBBY_QUIET_HIDE_MS;
    const limit=Math.max(1,Math.min(24,Number(url.searchParams.get('limit'))||12)),cursor=url.searchParams.get('cursor');
    let before=null;if(cursor){try{before=JSON.parse(Buffer.from(cursor,'base64url').toString());if(!Array.isArray(before)||![2,3].includes(before.length)||!Number.isSafeInteger(before[0])||before[0]<0||!requestKey(before.at(-1))||before.length===3&&!Number.isSafeInteger(before[1]))throw Error();}catch{fail(400,'INVALID_CURSOR','列表游标无效');}}
-   const listed=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL").all().map(r=>JSON.parse(r.data)).filter(r=>r.expiresAt>now&&!quietBarelyStarted(r)&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))),byId=new Map(listed.map(r=>[r.id,r]));
+   const listed=openPublicRooms().filter(r=>r.expiresAt>now&&!quietBarelyStarted(r)&&(request.artworkSnapshot===true||!engine.roomUsesUpgradedArtwork(r))),byId=new Map(listed.map(r=>[r.id,r]));
    let cards=listed.map(r=>card(r,now));
    const dir=url.searchParams.get('direction'),pieces=Number(url.searchParams.get('pieces')),open=url.searchParams.get('open')==='1',active=url.searchParams.get('active')==='1';
    cards=cards.filter(r=>(!dir||dir==='all'||r.direction===dir)&&(!pieces||r.pieces===pieces)&&(!open||r.players<r.maxPlayers&&r.acceptingNew)&&(!active||r.players>0));
@@ -715,8 +768,8 @@ export function createMobileService(options={}){
     db.prepare('INSERT INTO mobile_taptap_sessions VALUES(?,?,?) ON CONFLICT(session_identity) DO UPDATE SET canonical_identity=excluded.canonical_identity,updated_at=excluded.updated_at').run(sessionIdentity,canonical,now);
     if(!account)db.prepare('INSERT INTO mobile_taptap_codes VALUES(?,?,?,?)').run(codeHash,providerKey,canonical,now);
     const p=readProfile(canonical,now);const nickname=displayName(request.nickname)||(existing?.nickname??null);if(nickname){p.name=nickname;p.nameSource='taptap';saveProfile(p);}
-    db.exec('COMMIT');return {status:200,data:{bound:true,identity:'taptap',taptap:taptapView(canonical),profile:profileView(p,now)}};
-   }catch(error){db.exec('ROLLBACK');throw error;}
+    db.exec('COMMIT');commitEpoch++;return {status:200,data:{bound:true,identity:'taptap',taptap:taptapView(canonical),profile:profileView(p,now)}};
+   }catch(error){db.exec('ROLLBACK');dropReadCaches();throw error;}
   }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'TapTap账号绑定暂时失败',code:error.code??'TAPTAP_BIND_FAILED'}};}
  }
  function handle(request){
@@ -745,8 +798,8 @@ export function createMobileService(options={}){
    try{const p=readProfile(request.identity,now);if(needsName(p))p.name=randomName(p.id);saveProfile(p);social.touch(p.id,now);tuanziSide('activity',()=>tuanzi.activity(p.id,now));const transport=request[diagnosticTransport];
     const execute=(action,since)=>{const before=structuredClone(p);try{return route(request,p,{...action,...(since!==undefined?{since}:{})},new URL('/api/rooms/'+transport.context.roomId,'http://mobile.invalid'),now);}catch(error){for(const key of Object.keys(p))delete p[key];Object.assign(p,before);throw error;}};
     const actionResult=transport?(transport.disconnect?diagnosticActions.disconnect(transport.context,transport.connectionId,execute):diagnosticActions.write(transport.context,transport.input,transport.connectionId,execute)):null;
-    const data=actionResult?actionResult.data:route(request,p,input,url,now);if(data?.room?.puzzle)requireArtworkClient(data.room,request);saveProfile(p);db.exec('COMMIT');if(requestEnergyEmpty)events.record(...requestEnergyEmpty);for(const [roomId,kind]of requestRoomChanges){if(kind.room)roomVersions.set(roomId,(roomVersions.get(roomId)??0)+1);for(const listener of roomListeners)listener(roomId,kind);}if(data?.diagnostic===true||transport){if(transport?.context.room.diagnostic===true)data.diagnostic=true;data.diagnosticTiming={serverMs:Math.max(0,performance.now()-handlingAt)};}return {status:actionResult?.status??(request.method==='POST'&&url.pathname==='/api/rooms'?201:200),data};}
-   catch(error){db.exec('ROLLBACK');if(requestEnergyEmpty)events.record(...requestEnergyEmpty);for(const [roomId,state]of requestCursorUndo)cursorRooms.set(roomId,state);throw error;}
+    const data=actionResult?actionResult.data:route(request,p,input,url,now);if(data?.room?.puzzle)requireArtworkClient(data.room,request);saveProfile(p);db.exec('COMMIT');commitEpoch++;if(requestEnergyEmpty)events.record(...requestEnergyEmpty);for(const [roomId,kind]of requestRoomChanges){if(kind.room)roomVersions.set(roomId,(roomVersions.get(roomId)??0)+1);for(const listener of roomListeners)listener(roomId,kind);}if(data?.diagnostic===true||transport){if(transport?.context.room.diagnostic===true)data.diagnostic=true;data.diagnosticTiming={serverMs:Math.max(0,performance.now()-handlingAt)};}return {status:actionResult?.status??(request.method==='POST'&&url.pathname==='/api/rooms'?201:200),data};}
+   catch(error){db.exec('ROLLBACK');dropReadCaches();if(requestEnergyEmpty)events.record(...requestEnergyEmpty);for(const [roomId,state]of requestCursorUndo)cursorRooms.set(roomId,state);throw error;}
   }catch(error){return {status:error.status??500,data:{error:error.status?error.message:'独立拼图服务暂时不可用',code:error.code??(error.status?'ROOM_ERROR':'INTERNAL_ERROR'),...(error.profile?{profile:error.profile}:{}),...(error.freeRemaining?{freeRemaining:error.freeRemaining}:{}),...(error.ownedRooms?{ownedRooms:error.ownedRooms}:{}),...(error.requiredLevel?{requiredLevel:error.requiredLevel}:{}),...(error.phrases?{phrases:error.phrases}:{})}};}
   finally{requestRelease=undefined;requestEnergyEmpty=null;requestProfileData=null;requestRoomChanges=null;requestCursorUndo=null;requestInviteBonuses=null;}
  }
