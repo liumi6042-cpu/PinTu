@@ -6,7 +6,9 @@ function restore(target,backup){
  return target;
 }
 
-export function createSoloBatch({enabled,replay,snapshotView,profileView,engine,fail,requestKey}){
+export function createSoloBatch({enabled,replay,roomActionReceipt=result=>({mobileContribution:result.mobileContribution}),snapshotView,profileView,engine,fail,requestKey}){
+ // A batch only reads mobileContribution from each drop's reply, so a retried op needs nothing more than its receipt.
+ const receipt={store:roomActionReceipt,restore:stored=>stored};
  return ({room,member,p,input,now,since,act})=>{
   if(!enabled)fail(409,'SOLO_BATCH_DISABLED','当前版本暂不支持本地拼图同步');
   if(room.diagnostic===true)fail(409,'SOLO_BATCH_UNAVAILABLE','测试房间不支持批量同步');
@@ -24,7 +26,7 @@ export function createSoloBatch({enabled,replay,snapshotView,profileView,engine,
      for(const [id,lease]of Object.entries(room.leases))if(Number(id)!==groupId&&lease.playerId===member.id)delete room.leases[id];
      engine.applyAction(room,member,{type:'claim',groupId},now);
      return act(drop);
-    });
+    },receipt);
     applied.push(requestId);
     if(reply.mobileContribution)mobileContributions.push(reply.mobileContribution);
    }catch(error){
