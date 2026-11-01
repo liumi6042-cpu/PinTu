@@ -72,7 +72,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v52.4';
+const CLIENT_PACKAGE_VERSION='v52.5';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -2495,7 +2495,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   c.restore();
   if(!photo){const glyph=tone==='night'?'themeMoon':'themeSun',size=Math.min(56,r.h*.4);s.icon(glyph,{x:r.x+(r.w-size)/2,y:r.y+(r.h-size)/2,w:size,h:size},tone==='night'?'#fff6dc':this.colors.gold);return;}
   const label='今日拼图 · '+(photo.title||'每日拼图'),size=11,lw=Math.min(r.w-16,s.measure(label,size,700)+30),chip={x:r.x+8,y:r.y+r.h-28,w:lw,h:20};
-  c.save();c.globalAlpha*=.86;c.fillStyle='#573b40';c.fillRect(chip.x,chip.y,chip.w,chip.h);c.restore();s.icon('piece',{x:chip.x+5,y:chip.y+3,w:14,h:14},'#fff8ed');s.text(label,chip.x+22,chip.y+4,size,'#fff8ed',700,chip.w-28);
+  c.save();c.globalAlpha*=.86;c.fillStyle='#573b40';c.fillRect(chip.x,chip.y,chip.w,chip.h);c.restore();s.icon('piece',{x:chip.x+5,y:chip.y+3,w:14,h:14},'#fff8ed');s.textCentered(label,chip.x+22,chip.y+chip.h/2,size,'#fff8ed',700,chip.w-28);
  }
  /** The lobby's chibi friend art without its add-friend badge. */
  private drawWelcomeArt(r:Rect){
@@ -2514,11 +2514,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const textBlock=(x:number,y:number,w:number,art:number,artTop=-2)=>{
    // Chip: sun or moon, the slot greeting and the Beijing clock.
    const chipLabel=slot.greeting+' · '+view.clock,chip={x,y,w:s.measure(chipLabel,12,700)+40,h:26};s.frame(chip,'button-linen-normal');
-   s.icon(slot.tone==='night'?'themeMoon':'themeSun',{x:chip.x+8,y:chip.y+5,w:16,h:16},slot.tone==='night'?this.colors.gold:'#d9915a');s.text(chipLabel,chip.x+28,chip.y+6,12,muted,700);
+   s.icon(slot.tone==='night'?'themeMoon':'themeSun',{x:chip.x+8,y:chip.y+5,w:16,h:16},slot.tone==='night'?this.colors.gold:'#d9915a');s.textCentered(chipLabel,chip.x+28,chip.y+chip.h/2,12,muted,700);
    if(art)this.drawWelcomeArt({x:x+w-art,y:y+artTop,w:art,h:Math.round(art*66/70)});
    let cy=y+38;s.text('欢迎回家',x,cy,24,ink,800,w-art-6);cy+=36;
    const lines=wrapLine(w-art);lines.forEach((text,index)=>s.text(text,x,cy+index*22,14,muted,500,w-art));cy+=lines.length*22+8;
-   if(pill){const size=13,pw=Math.min(w,s.measure(pill.text,size,700)+46),r={x,y:cy,w:pw,h:30};s.frame(r,'rail-cream-normal');s.icon(pill.icon,{x:r.x+9,y:r.y+6,w:18,h:18});s.text(pill.text,r.x+33,r.y+(30-size)/2-1,size,ink,700,pw-40);cy+=40;}
+   if(pill){const size=13,pw=Math.min(w,s.measure(pill.text,size,700)+46),r={x,y:cy,w:pw,h:30};s.frame(r,'rail-cream-normal');s.icon(pill.icon,{x:r.x+9,y:r.y+6,w:18,h:18});s.textCentered(pill.text,r.x+33,r.y+r.h/2,size,ink,700,pw-40);cy+=40;}
    return cy;
   };
   const buttons=(x:number,y:number,w:number,h:number)=>{const primary=Math.round(w*.6);s.button({x,y,w:primary,h},story?'继续故事':'开拼 · 108 片',()=>this.welcomePrimary(),{tone:'berrydark',icon:story?'story':'daily',fontSize:15,disabled:this.busy});s.button({x:x+primary+10,y,w:w-primary-10,h},'先逛逛',()=>this.closeWelcome(),{fontSize:15});};
