@@ -4,7 +4,7 @@ import { saveTicket, roomSessionKey, type RoomTicket } from '../lib/room-client'
 
 export type SupplyKind = 'energy' | 'create';
 export type MobileLevelClear={levelId:string;energy:number;firstClear:boolean;nextLevelId:string|null;chapterComplete:boolean};
-export type MobileOwnedRoom = {id:string;title?:string;imageId?:string;pieces?:number;actualPieces?:number;placed?:number;players?:number;completed?:boolean;completedAt?:number|null;visibility?:string;inviteCode?:string;thumbSrc?:string;lastJoinedAt?:number;unavailable?:boolean};
+export type MobileOwnedRoom = {id:string;title?:string;imageId?:string;pieces?:number;actualPieces?:number;placed?:number;players?:number;completed?:boolean;completedAt?:number|null;visibility?:string;inviteCode?:string;thumbSrc?:string;lastJoinedAt?:number;unavailable?:boolean;photo?:{title?:string;src?:string;thumbSrc?:string}|null;artwork?:{src?:string}|null};
 export type MobileProfile = {
  diagnostics?:boolean;
  code?:string;

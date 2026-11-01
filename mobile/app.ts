@@ -68,11 +68,14 @@ function orientation(id:string):Direction{const photo=photoMap.get(id),size=phot
 function errorText(error:unknown){return error instanceof Error?error.message:'连接暂时中断，请重试';}
 function taskCoinsText(min=0,max=min){return max>0?' · 金币 +'+min+(min===max?'':'～'+max):'';}
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
+// 服务端把已完成房间标题改成「已完成」，作品页要显示图片原名。
+function historyPhotoTitle(room:MobileOwnedRoom){return room.photo?.title||(room.imageId?photoMap.get(room.imageId)?.title:undefined)||'拼好的作品';}
+function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return (day.getUTCMonth()+1)+'月'+day.getUTCDate()+'日';}
 // Seats come from the server (4/6/8 by piece count); backends without maxPlayers seat 8.
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v52.5';
+const CLIENT_PACKAGE_VERSION='v53';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -154,7 +157,7 @@ export class GameApp{
  private handledQueries=new Set<string>();
  // 七日礼 / 每日拼图连续天数 (server capabilities weeklyGift / dailyStreak).
  private retention:RetentionView|null=null;private retentionLoadedAt=0;private retentionPending:Promise<void>|null=null;private retentionPendingSince=0;private retentionNotes:Set<string>|undefined=new Set();private weeklyGrant:WeeklyGrant|null=null;private breathFrame:number|null=null;
- private historyRooms:MobileOwnedRoom[]|null=null;private historyLoading=false;private historyError='';private historySerial=0;
+ private historyRooms:MobileOwnedRoom[]|null=null;private historyTab:'drafts'|'finished'='drafts';private historyPreview:MobileOwnedRoom|null=null;private historyLimits={drafts:20,completed:30};private historyLoading=false;private historyError='';private historySerial=0;
  private pendingViews?:ViewRequests;private lastDataOwner='';private lastAidClock='';
  private renderMode:PerformanceMode='smooth';
  private performanceInfoEnabled=false;
@@ -426,12 +429,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if(modal==='completion'&&this.modal!=='completion'){void this.loadRetention(true);if(!this.collection&&!this.offlineRoom&&this.room?.snapshot.levelId)void this.loadCollection();}if(modal!=='weeklyGift')this.weeklyGrant=null;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history')void this.loadRoomHistory();if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
+ private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if(modal==='completion'&&this.modal!=='completion'){void this.loadRetention(true);if(!this.collection&&!this.offlineRoom&&this.room?.snapshot.levelId)void this.loadCollection();}if(modal!=='weeklyGift')this.weeklyGrant=null;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history'){if(previous!=='history'&&previous!=='manage')this.historyTab='drafts';this.historyPreview=null;void this.loadRoomHistory();}if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
+ private get ownRoomLimit(){return this.formalWeb?3:5;}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
   if(this.offlineRoom||this.offline?.active&&!this.ready)return;
   const owner=this.ownerKey(),serial=++this.historySerial;this.historyLoading=true;this.historyError='';this.invalidate();
-  try{const data=await this.client.json<{rooms:MobileOwnedRoom[]}>('/api/room-history');if(owner!==this.ownerKey()||serial!==this.historySerial||this.destroyed)return;this.historyRooms=data.rooms.slice(0,10);}
+  try{const data=await this.client.json<{rooms:MobileOwnedRoom[];limits?:{drafts:number;completed:number}}>('/api/room-history');if(owner!==this.ownerKey()||serial!==this.historySerial||this.destroyed)return;this.historyRooms=data.rooms;if(data.limits)this.historyLimits=data.limits;if(this.historyPreview)this.historyPreview=data.rooms.find(room=>room.id===this.historyPreview?.id&&room.completed)??null;}
   catch(error){if(owner===this.ownerKey()&&serial===this.historySerial&&!this.destroyed)this.historyError=errorText(error);}
   finally{if(owner===this.ownerKey()&&serial===this.historySerial&&!this.destroyed){this.historyLoading=false;this.invalidate();}}
  }
@@ -446,6 +450,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(withDelete)this.button(left+16+(width-26)/2,cy+65,(width-26)/2,'删除',()=>void this.removeOwnRoom(room.id),'cream',30);
   return cy+116;
  }
+ private get historyDrafts(){return (this.historyRooms??[]).filter(room=>!room.completed);}
+ private get historyFinished(){return (this.historyRooms??[]).filter(room=>room.completed).sort((a,b)=>(b.completedAt??0)-(a.completedAt??0));}
+ private setHistoryTab(tab:'drafts'|'finished'){this.historyTab=tab;this.historyPreview=null;this.modalScroll=0;this.invalidate();}
  private drawHistoryGrid(rooms:MobileOwnedRoom[],left:number,top:number,width:number){
   const s=this.stage,columns=width>=720?Math.min(4,Math.floor((width+12)/210)):width>=520?3:2,gap=12,cw=(width-gap*(columns-1))/columns,imageHeight=(cw-12)/1.12,ch=imageHeight+76;
   rooms.forEach((room,index)=>{
@@ -453,26 +460,44 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    s.frame({x,y,w:cw,h:ch},'button-linen-normal');s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(x+6,y+6,cw-12,ch-12);
    if(room.thumbSrc)s.image(this.client.asset(room.thumbSrc),art);
    const total=room.actualPieces??room.pieces??0,percent=room.completed?100:Math.max(0,Math.min(100,Math.round((room.placed??0)/Math.max(1,total)*100))),copyY=y+imageHeight+13,small=cw<160;
-   s.text(room.completed?'已完成':room.title??'一起拼图',x+10,copyY,small?13:16,this.colors.ink,800,cw-20);
-   const metaY=copyY+24,font=small?10:12;s.text((total||'—')+'片',x+10,metaY,font,this.colors.muted);s.text((room.players??0)+'人',x+cw*.44,metaY,font,this.colors.muted);s.text(percent+'%',x+cw-10-s.measure(percent+'%',font,700),metaY,font,this.colors.ink,700);
-   s.meter({x:x+10,y:y+ch-16,w:cw-20,h:8},percent/100);
-   if(room.completed||room.unavailable){s.ctx.fillStyle='#6f374edb';s.ctx.fillRect(art.x,art.y+art.h-23,art.w,23);s.text(room.completed?'已完成':'暂不可用',art.x+8,art.y+art.h-18,11,'#fff9f0',700);}
+   s.text(room.completed?historyPhotoTitle(room):room.title??'一起拼图',x+10,copyY,small?13:16,this.colors.ink,800,cw-20);
+   const metaY=copyY+24,font=small?10:12;s.text((total||'—')+'片',x+10,metaY,font,this.colors.muted);
+   if(room.completed){const day=room.completedAt?beijingMonthDay(room.completedAt)+'完成':'已完成';s.text(day,x+cw-10-s.measure(day,font,700),metaY,font,this.colors.ink,700);s.meter({x:x+10,y:y+ch-16,w:cw-20,h:8},1);}
+   else{s.text((room.players??0)+'人',x+cw*.44,metaY,font,this.colors.muted);s.text(percent+'%',x+cw-10-s.measure(percent+'%',font,700),metaY,font,this.colors.ink,700);s.meter({x:x+10,y:y+ch-16,w:cw-20,h:8},percent/100);}
+   if(room.unavailable&&!room.completed){s.ctx.fillStyle='#6f374edb';s.ctx.fillRect(art.x,art.y+art.h-23,art.w,23);s.text('暂不可用',art.x+8,art.y+art.h-18,11,'#fff9f0',700);}
+   else if(room.completed)s.hit({x,y,w:cw,h:ch},()=>{this.historyPreview=room;this.modalScroll=0;this.invalidate();});
    else s.hit({x,y,w:cw,h:ch},()=>{if(!this.busy)void this.enterRoom(room.id);});
   });
   return top+Math.ceil(rooms.length/columns)*(ch+gap);
  }
+ private drawHistoryPreview(room:MobileOwnedRoom,left:number,top:number,width:number){
+  const s=this.stage,src=room.artwork?.src||room.photo?.src||room.thumbSrc||'',height=Math.max(160,Math.min(width*.72,this.modalArea.h-150));let cy=top;
+  s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(left,cy,width,height);
+  if(src)s.image(this.client.asset(src),{x:left,y:cy,w:width,h:height},'contain');cy+=height+14;
+  s.text(historyPhotoTitle(room),left,cy,18,this.colors.ink,800,width);cy+=28;
+  const total=room.actualPieces??room.pieces??0,meta=(total||'—')+'片'+(room.completedAt?' · '+beijingMonthDay(room.completedAt)+'完成':'');
+  s.text(meta,left,cy,13,this.colors.muted,undefined,width);cy+=30;
+  this.button(left,cy,width,'返回已完成历史',()=>{this.historyPreview=null;this.modalScroll=0;this.invalidate();},'cream',38);
+  return cy+50;
+ }
  private drawHistoryWindow(){
   const s=this.stage,v=this.platform.viewport(),w=Math.min(s.w-24,1000),x=(s.w-w)/2,y=Math.max(v.top+15,s.h*.1),h=s.h-y-v.bottom-24;
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  s.text('历史记录',x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>this.showModal(null));s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
-  this.modalStart=y+59;this.modalArea={x:x+12,y:this.modalStart,w:w-24,h:h-73};let cy=this.modalStart-this.modalScroll;const left=x+20,width=w-40;
+  s.text('历史拼图',x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>this.showModal(null));s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
+  const left=x+20,width=w-40,drafts=this.historyDrafts,finished=this.historyFinished,tabW=Math.min(220,(width-8)/2),tabY=y+54,compact=tabW<150;
+  s.button({x:left,y:tabY,w:tabW,h:34},'草稿存档 '+drafts.length,()=>this.setHistoryTab('drafts'),{tone:this.historyTab==='drafts'?'berry':'cream',icon:'piece',fontSize:compact?12:14});
+  s.button({x:left+tabW+8,y:tabY,w:tabW,h:34},'已完成历史 '+finished.length,()=>this.setHistoryTab('finished'),{tone:this.historyTab==='finished'?'berry':'cream',icon:'check',fontSize:compact?12:14});
+  this.modalStart=tabY+46;this.modalArea={x:x+12,y:this.modalStart,w:w-24,h:y+h-14-this.modalStart};let cy=this.modalStart-this.modalScroll;
   s.clip(this.modalArea,()=>{
-   cy=this.paragraph('最近加入的10个房间，点击卡片继续拼图。',left,cy,width,13)+15;
+   const preview=this.historyTab==='finished'?this.historyPreview:null;
+   if(preview){cy=this.drawHistoryPreview(preview,left,cy,width);return;}
+   const limits=this.historyLimits,draftsTab=this.historyTab==='drafts',rooms=draftsTab?drafts:finished;
+   cy=this.paragraph(draftsTab?'没拼完的拼图都在这里，点卡片继续拼。保留最近'+limits.drafts+'张。':'拼好的作品都在这里，点卡片看完整大图。保留最近'+limits.completed+'张。',left,cy,width,13)+15;
    if(this.historyLoading)cy=this.paragraph('正在读取历史记录…',left,cy,width,13)+15;
    if(this.historyError){cy=this.paragraph(this.historyError,left,cy,width,13)+12;this.button(left,cy,width,'重新读取',()=>void this.loadRoomHistory(),'cream',36);cy+=48;}
-   cy=this.drawHistoryGrid(this.historyRooms??[],left,cy,width);
-   if(!this.historyLoading&&!this.historyError&&!this.historyRooms?.length)cy=this.paragraph('还没有加入过房间，去大厅拼一会儿吧。',left,cy,width,14)+24;
-   this.button(left,cy,width,'自己的房间',()=>this.showModal('manage'),'cream',40);cy+=52;
+   cy=this.drawHistoryGrid(rooms,left,cy,width);
+   if(!this.historyLoading&&!this.historyError&&!rooms.length)cy=this.paragraph(draftsTab?'没有没拼完的拼图，去大厅拼一会儿吧。':'还没有拼完的作品，拼完一张就会出现在这里。',left,cy,width,14)+24;
+   if(draftsTab){this.button(left,cy,width,'自己的房间',()=>this.showModal('manage'),'cream',40);cy+=52;}
   });
   this.modalExtent=cy-(this.modalStart-this.modalScroll)+7;const next=Math.max(0,Math.min(this.modalScroll,Math.max(0,this.modalExtent-this.modalArea.h)));if(next!==this.modalScroll){this.modalScroll=next;this.invalidate();}
  }
@@ -700,7 +725,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private availableGallery():SharedPhoto[]{if(this.sharedPhotos)return this.sharedPhotos.filter(photo=>!this.galleryIds||this.galleryIds.has(photo.id));if(!this.galleryIds)return GALLERY_PHOTOS;const baseIds=new Set(GALLERY_PHOTOS.map(photo=>photo.id));return [...GALLERY_PHOTOS,...RESTORABLE_PHOTOS.filter(photo=>!baseIds.has(photo.id))].filter(photo=>this.galleryIds!.has(photo.id));}
  private async launch(input:MobileRoomInput){
   if(this.offline?.active&&!this.ready){if(input.mode==='level')await this.run(()=>this.launchOffline({kind:'level',levelId:input.levelId!}));else this.note(OFFLINE_REQUIRED);return;}
-  if(input.mode!=='level'&&!this.formalWeb&&this.ownedRoomCount>=3){this.showModal('manage');return;}
+  if(input.mode!=='level'&&!this.formalWeb&&this.ownedRoomCount>=this.ownRoomLimit){this.showModal('manage');return;}
   await this.run(async()=>{
    const key='create:'+JSON.stringify(input),requestId=this.attempt(key);
    let ticket:RoomTicket;
@@ -1590,9 +1615,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const s=this.stage,p=this.client.profile,ink=this.colors.ink,x=r.x+14,w=r.w-28,compact=r.w<300;
   s.frame(r,'panel-cream');s.hit(r,()=>{});let y=r.y+14;
   // Creation rules are unchanged: owned public rooms are free, otherwise the first choice or a ticket.
-  const freeOwned=!!this.selected&&owned.has(this.selected)&&this.visibility==='public',freeFirst=!!p?.firstSelectionAvailable,available=(p?.supply.create??0)>0,roomCount=p?.ownedRooms.length??0;
+  const freeOwned=!!this.selected&&owned.has(this.selected)&&this.visibility==='public',freeFirst=!!p?.firstSelectionAvailable,available=(p?.supply.create??0)>0,roomCount=this.ownedRoomCount;
   const lockedPack=!this.formalWeb&&photo&&this.photoTag(photo.id,owned).tone==='locked'?this.galleryPack(photo.id):null;
-  const createLabel=lockedPack?'解锁图包':!this.usesCreationTickets?'开一桌':roomCount>=3?'管理房间':freeOwned||freeFirst||available?'开一桌':this.shareAvailable?'分享领建房券':'暂无建房券',createAction=()=>{if(lockedPack){const full=this.collection?.packs.find(item=>item.id===lockedPack.id);if(full)this.openPackPreview(full);else this.navigate('collection');return;}if(!this.formalWeb&&roomCount>=3){this.showModal('manage');return;}if(!this.selected){this.note('先选择一张图片');return;}if(!this.usesCreationTickets||freeOwned||freeFirst||available)void this.launch({mode:'selected',pieces:this.pieces,visibility:this.visibility,imageId:this.selected});else void this.claimSupply('create');};
+  const createLabel=lockedPack?'解锁图包':!this.usesCreationTickets?'开一桌':roomCount>=this.ownRoomLimit?'管理房间':freeOwned||freeFirst||available?'开一桌':this.shareAvailable?'分享领建房券':'暂无建房券',createAction=()=>{if(lockedPack){const full=this.collection?.packs.find(item=>item.id===lockedPack.id);if(full)this.openPackPreview(full);else this.navigate('collection');return;}if(!this.formalWeb&&roomCount>=this.ownRoomLimit){this.showModal('manage');return;}if(!this.selected){this.note('先选择一张图片');return;}if(!this.usesCreationTickets||freeOwned||freeFirst||available)void this.launch({mode:'selected',pieces:this.pieces,visibility:this.visibility,imageId:this.selected});else void this.claimSupply('create');};
   const disabled=this.busy||!p||(!lockedPack&&this.usesCreationTickets&&!freeOwned&&!freeFirst&&!available&&!this.shareAvailable&&roomCount<3);
   const thumb=compact?52:64;
   if(photo){s.frame({x,y,w:Math.round(thumb*1.3),h:thumb},'plus-cream-normal');s.image(this.client.asset(photo.thumbSrc),{x:x+3,y:y+3,w:Math.round(thumb*1.3)-6,h:thumb-6});const tx=x+thumb*1.3+10,tw=w-thumb*1.3-(sheet?44:10);s.text(photo.title,tx,y+4,compact?15:17,ink,800,tw);s.text(photo.category,tx,y+(compact?26:30),12,this.colors.muted,600,tw);
@@ -1917,7 +1942,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
   ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可打开小地图，放大时点小地图直接跳到那里；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
-  ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留3个未结束的自建房间。'],
+  ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留'+this.ownRoomLimit+'个未结束的自建房间。'],
   ['邀请与礼包',this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
  ];this.scrolled(()=>{for(const[title,text]of sections){s.text(title,20,y,18,this.colors.ink,700);y=this.paragraph(text,20,y+31,s.w-40,14)+24;}if(!this.formalWeb){this.button(20,y,s.w-40,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));y+=48;}this.button(20,y,s.w-40,'服务与隐私说明',()=>this.navigate('privacy'));y+=52;});this.extent=y-(this.bodyTop-this.scroll);}
 
@@ -2571,7 +2596,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
   const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史记录',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
+  const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史拼图',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
   // A vector cross has the same visible size and center with browser and wx fonts.
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
@@ -2666,8 +2691,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     break;
    }
    case'manage':{
-    {this.button(left,cy,width,'返回历史记录',()=>this.showModal('history'),'cream',36);cy+=48;}
-    cy=this.paragraph(this.formalWeb?'删除只移除自创列表入口，历史记录和大家的拼图进度仍保留。':'最多保留3个未完成的自创房间入口。删除只释放名额，最近10间历史和大家的拼图进度仍保留。',left,cy,width,13)+15;
+    {this.button(left,cy,width,'返回草稿存档',()=>this.showModal('history'),'cream',36);cy+=48;}
+    cy=this.paragraph(this.formalWeb?'删除只移除自创列表入口，历史记录和大家的拼图进度仍保留。':'最多保留'+this.ownRoomLimit+'个未完成的自创房间入口。删除只释放名额，草稿存档和大家的拼图进度仍保留。',left,cy,width,13)+15;
     for(const room of this.client.profile?.ownedRooms??[])cy=this.drawSavedRoom(room,left,cy,width,true);
     if(!this.client.profile?.ownedRooms.length){s.text('还没有自创房间',left,cy+15,14,this.colors.muted);cy+=65;}break;
    }

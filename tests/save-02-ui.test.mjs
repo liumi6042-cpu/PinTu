@@ -74,3 +74,29 @@ test('album previews show uncollected art at full opacity and retain small colle
  for(const image of f.images){assert.ok(!f.frames.some(frame=>frame.r.x===image.r.x&&frame.r.y===image.r.y&&frame.r.w===image.r.w&&frame.r.h===image.r.h));assert.ok(!f.icons.some(icon=>icon.key==='lock'&&icon.r.y<image.r.y+image.r.h&&icon.r.y+icon.r.h>image.r.y));}
  assert.equal(f.icons.filter(icon=>icon.key==='lock').length,1);assert.ok(f.icons.find(icon=>icon.key==='lock').r.y>f.images[1].r.y+f.images[1].r.h);
 });
+
+test('history splits unfinished drafts and finished work into two pages; finished cards open the full picture',()=>{
+ for(const [width,height]of [[390,844],[844,390]]){
+  const f=fixture({width,height}),day=Date.UTC(2026,10,1,4);let entered=null;
+  f.app.enterRoom=async id=>{entered=id;};
+  f.app.historyRooms=[
+   {id:'d1',title:'一起拼图',pieces:48,actualPieces:48,placed:12,players:1,completed:false,thumbSrc:'/d1.webp'},
+   {id:'c1',title:'已完成',pieces:108,actualPieces:108,placed:108,completed:true,completedAt:day-86400000,thumbSrc:'/c1.webp',photo:{title:'旧作品',src:'/c1-full.webp'}},
+   {id:'d2',title:'夜市',pieces:96,actualPieces:96,placed:0,players:2,completed:false,thumbSrc:'/d2.webp'},
+   {id:'c2',title:'已完成',pieces:48,actualPieces:48,placed:48,completed:true,completedAt:day,thumbSrc:'/c2.webp',photo:{title:'新作品',src:'/c2-full.webp'},artwork:{src:'/c2-play.webp'}},
+  ];
+  f.app.historyLoading=false;f.app.loadRoomHistory=async()=>{};f.app.showModal('history');f.clear();f.stage.segments=()=>{};f.app.drawModal();
+  assert.ok(f.buttons.some(b=>b.label==='草稿存档 2'));assert.ok(f.buttons.some(b=>b.label==='已完成历史 2'));
+  assert.deepEqual(f.images.map(i=>i.src).filter(src=>/\/[dc]\d\.webp$/.test(src)).map(src=>src.match(/([dc]\d)\.webp/)[1]),['d1','d2'],'draft page shows only unfinished rooms');
+  assert.ok(f.texts.includes('25%'));assert.ok(f.buttons.some(b=>b.label==='自己的房间'));
+  const draftHit=f.hits.filter(h=>h.r.h>100).at(-2);draftHit.fn();assert.equal(entered,'d1');
+  f.buttons.find(b=>b.label==='已完成历史 2').fn();f.clear();f.app.drawModal();
+  assert.deepEqual(f.images.map(i=>i.src).filter(src=>/\/c\d\.webp$/.test(src)).map(src=>src.match(/(c\d)\.webp/)[1]),['c2','c1'],'finished page is newest completion first');
+  assert.ok(f.texts.includes('新作品'));assert.ok(f.texts.includes('11月1日完成'));assert.ok(!f.texts.includes('已完成'));assert.ok(!f.buttons.some(b=>b.label==='自己的房间'));
+  f.hits.filter(h=>h.r.h>100).at(-2).fn();assert.equal(f.app.historyPreview?.id,'c2');entered=null;
+  f.clear();f.app.drawModal();const full=f.images.find(i=>i.src.endsWith('/c2-play.webp'));assert.ok(full,'preview draws the played artwork');assert.equal(full.mode,'contain');
+  assert.ok(f.texts.includes('48片 · 11月1日完成'));assert.equal(entered,null,'finished work is viewed, not re-entered');
+  f.buttons.find(b=>b.label==='返回已完成历史').fn();assert.equal(f.app.historyPreview,null);
+  f.app.showModal(null);f.app.showModal('history');assert.equal(f.app.historyTab,'drafts','reopening starts on the draft page');
+ }
+});
