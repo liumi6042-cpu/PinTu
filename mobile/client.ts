@@ -114,7 +114,9 @@ export class GameClient{
   return identity;
  }
  private applyProfile(value:any){const profile=profileOf(value?.profile)?value.profile:profileOf(value?.mobileProfile)?value.mobileProfile:profileOf(value)?value:null;if(!profile)return;
-  if(this.profile?.serverTime&&profile.serverTime&&profile.serverTime<this.profile.serverTime)return;const previous=this.ownerIdentity();this.profile=profile;this.authRequired=false;if(this.cookieIdentity){this.account=value?.account??(profile as MobileProfile&{account?:GameClient['account']}).account??null;if(value?.compatUrls)this.config.compatUrls=value.compatUrls;if(previous&&previous!==this.ownerIdentity()){this.ticket=null;this.ticketOwner=null;}}this.onChange?.();
+  if(this.profile?.serverTime&&profile.serverTime&&profile.serverTime<this.profile.serverTime)return;const previous=this.ownerIdentity();this.profile=profile;this.authRequired=false;
+  // A feature switched on while the game stayed open (e.g. 团子去旅行) arrives with the next profile, not only with /config.
+  const offered=(profile as {capabilities?:{tuanziTravel?:unknown}}).capabilities?.tuanziTravel;if(!this.cookieIdentity&&typeof offered==='boolean'&&offered!==this.config.capabilities.tuanziTravel)this.config.capabilities={...this.config.capabilities,tuanziTravel:offered};if(this.cookieIdentity){this.account=value?.account??(profile as MobileProfile&{account?:GameClient['account']}).account??null;if(value?.compatUrls)this.config.compatUrls=value.compatUrls;if(previous&&previous!==this.ownerIdentity()){this.ticket=null;this.ticketOwner=null;}}this.onChange?.();
  }
  private expire(){this.token=null;this.ticket=null;this.platform.storage.remove(this.sessionKey());}
  private async request(path:string,method:string,body:unknown,headers:Record<string,string>,timeout=12000){

@@ -18,14 +18,15 @@ const required=[
  ['art/b2-supply-scenes.png', 'image/png'],
  ['assets/ui/tuanzi-cat.png', 'image/png'],
  ['assets/ui/tuanzi-lobby.png', 'image/png'],
- ['assets/ui/tuanzi-room.webp', 'image/webp'],
+ ['assets/ui/tuanzi-room.webp','assets/ui/tuanzi-room.jpg', 'image/webp'],
+ ['assets/ui/tuanzi-room.jpg', 'image/jpeg'],
  ['assets/ui/tuanzi-items.png', 'image/png'],
  ['assets/ui/tuanzi-stickers.png', 'image/png'],
  ['assets/fonts/jigsaw-ui-sc.woff2', 'font/woff2'],
 ];
 for(const [file] of required){const path=resolve(root,file);assert.ok(path.startsWith(root),`unsafe package path: ${file}`);assert.ok(existsSync(path),`missing package file: ${file}`);assert.ok(statSync(path).size>0,`empty package file: ${file}`);}
 
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.webp':'image/webp','.woff2':'font/woff2','.wav':'audio/wav','.json':'application/json'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.woff2':'font/woff2','.wav':'audio/wav','.json':'application/json'};
 const server=http.createServer((req,res)=>{
  const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
  const file=resolve(root,'.'+(pathname==='/wrapper/index.html'?'/index.html':pathname));

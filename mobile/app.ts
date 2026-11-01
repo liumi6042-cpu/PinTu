@@ -77,7 +77,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v54';
+const CLIENT_PACKAGE_VERSION='v54.1';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -101,7 +101,7 @@ export class GameApp{
  private get tuanziCorner(){return this.tuanziOn&&!!this.tuanzi?.open;}
  private tuanziHost():TuanziHost{
   const v=this.platform.viewport();
-  return {stage:this.stage,colors:this.colors,top:v.top,bottom:this.stage.h-v.bottom,landscape:this.layout==='phoneLandscape'||this.layout==='desktop',playerName:this.client.profile?.name??'我',
+  return {stage:this.stage,colors:this.colors,top:v.top,bottom:this.stage.h-v.bottom,menu:v.menu??null,landscape:this.layout==='phoneLandscape'||this.layout==='desktop',playerName:this.client.profile?.name??'我',
    animate:()=>{if(this.tuanziTimer==null)this.tuanziTimer=setTimeout(()=>{this.tuanziTimer=null;if(!this.destroyed&&!this.hidden)this.invalidate();},90);},
    close:()=>{this.showModal(null);this.invalidate();},note:text=>this.note(text),invalidate:()=>this.invalidate(),randomId:()=>this.platform.randomId(),storage:this.platform.storage,
    get:path=>this.client.json(path),post:(path,body)=>this.client.post(path,body),
@@ -377,7 +377,7 @@ export class GameApp{
   if(!this.startupHooks){
    this.startupHooks=true;
    this.client.onChange=()=>{if(this.destroyed)return;const owner=this.ownerKey();this.ensureListOwner();if(owner!==this.lastDataOwner){this.lastDataOwner=owner;this.pendingViews?.invalidate();this.historyRooms=null;this.historySerial++;this.historyLoading=false;this.historyError='';this.tasks=null;this.collection=null;this.galleryIds=null;this.freeGalleryIds=null;this.sharedPhotos=null;this.selected=null;}if(this.formalWeb&&this.client.authRequired){this.ready=false;this.stage.input?.({type:'cancel',points:[],changed:[]});this.pointer=null;this.modal=null;this.leaveRoom();this.route='lobby';}else if(this.formalWeb&&this.room&&!this.client.ticket){this.modal=null;this.leaveRoom();this.navigate('lobby');this.note('账号已切换，请重新进入房间');}this.invalidate();};
-   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else if(this.orientationEntryPending){if(Object.keys(query).length)this.startupQuery=query;}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});this.syncOffline();if(!this.localRoom){void this.social.refresh();void this.handleQuery(query);}}this.invalidate();}));
+   this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else if(this.orientationEntryPending){if(Object.keys(query).length)this.startupQuery=query;}else{void this.client.refresh().then(()=>this.loadTuanzi(true)).catch(error=>{if(!this.destroyed)this.note(errorText(error));});this.syncOffline();if(!this.localRoom){void this.social.refresh();void this.handleQuery(query);}}this.invalidate();}));
   }
   this.startupError='';this.invalidate();
   const epoch=this.privacyEpoch;
@@ -1259,7 +1259,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    let y=top-this.scroll;const columns=width>=520?3:2;
    this.scrolled(()=>{
     const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
-    if(this.tuanziCorner){this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:width,h:84},()=>this.openTuanzi());y+=84+gap;}
+    if(this.tuanziCorner){this.tuanzi.guard(this.tuanziHost(),'lobby',()=>this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:width,h:84},()=>this.openTuanzi()));y+=84+gap;}
     const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
     this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
     y=this.drawRoomSection(left,y,width,columns,top,bottom);
@@ -1270,7 +1270,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const landscape=layout==='phoneLandscape',leftW=landscape?Math.min(300,width*.42):Math.min(380,width*.36),rightX=left+leftW+gap+6,rightW=left+width-rightX;
   let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,corner=this.tuanziCorner?(landscape?68:84):0,rest=(last?continueH+gap:0)+actionH+gap+(corner?corner+gap:0),heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
   y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
-  if(corner){this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:leftW,h:corner},()=>this.openTuanzi());y+=corner+gap;}
+  if(corner){this.tuanzi.guard(this.tuanziHost(),'lobby',()=>this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:leftW,h:corner},()=>this.openTuanzi()));y+=corner+gap;}
   if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
   this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
   const header=this.drawRoomHeader(rightX,top,rightW,landscape),columns=landscape?3:rightW>=900?4:3;
@@ -2644,7 +2644,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private drawModal(){
   if(this.modal==='orientation'){this.drawOrientationPicker();return;}
-  if(this.modal==='tuanzi'){this.tuanzi.draw(this.tuanziHost());return;}
+  if(this.modal==='tuanzi'){const host=this.tuanziHost();this.tuanzi.guard(host,'nook',()=>this.tuanzi.draw(host));return;}
   if(this.modal==='welcome'){this.drawWelcome();return;}
   if(this.modal==='levelComic'){this.drawLevelComic();return;}
   if(this.modal==='completion'&&this.layout==='phoneLandscape'){this.drawLandscapeCompletion();return;}

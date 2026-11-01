@@ -16,7 +16,7 @@ export type TuanziView={locked:true;unlockLevelId:string}|{locked:false;status:'
  catalog:{regions:{id:TuanziRegion;title:string}[];shop:ShopItem[];stickers:{id:string;title:string}[];souvenirs:{id:string;title:string;region:TuanziRegion}[];rare:{id:string;title:string;region:TuanziRegion;thumbSrc:string}[];firstTripMinutes:number;idleMinutes:number;postcardFish:number};serverTime:number};
 type Open=Extract<TuanziView,{locked:false}>;
 type Colors={paper:string;cream:string;ink:string;muted:string;rose:string;berry:string;gold:string;line:string;green:string;onAccent:string;overlay:string;placeholder:string};
-export type TuanziHost={stage:Stage;colors:Colors;top:number;bottom:number;landscape:boolean;playerName:string;
+export type TuanziHost={stage:Stage;colors:Colors;top:number;bottom:number;landscape:boolean;playerName:string;menu?:Rect|null;
  animate():void;close():void;note(text:string):void;invalidate():void;randomId():string;
  storage:{get(key:string):string|null;set(key:string,value:string):void};
  get<T>(path:string):Promise<T>;post<T>(path:string,body:unknown):Promise<T>;
@@ -24,11 +24,11 @@ export type TuanziHost={stage:Stage;colors:Colors;top:number;bottom:number;lands
 export type TuanziScreen='nook'|'welcome'|'bag'|'shop'|'mailbox'|'postcard'|'album'|'home';
 
 // ---------------------------------------------------------------- art (团子去旅行/体素团子 pipeline, the owner's own cat)
-const ART={sheet:'/mobile-icons/tuanzi-cat.png',lobby:'/mobile-icons/tuanzi-lobby.png',room:'/mobile-icons/tuanzi-room.webp',items:'/mobile-icons/tuanzi-items.png',stickers:'/mobile-icons/tuanzi-stickers.png'};
+const ART={sheet:'/mobile-icons/tuanzi-cat.png',lobby:'/mobile-icons/tuanzi-lobby.png',room:'/mobile-icons/tuanzi-room.webp',roomFallback:'/mobile-icons/tuanzi-room.jpg',items:'/mobile-icons/tuanzi-items.png',stickers:'/mobile-icons/tuanzi-stickers.png'};
 /** 320 px frames covering 36 world units; the cat's ground point is at (.5, .8127). Lobby frames are 224×128, drawn at half size. */
 export const TUANZI_ANIMS={nap:{y:0,frames:10,fps:6,loop:true},napBare:{y:320,frames:10,fps:6,loop:true},wait:{y:640,frames:12,fps:8,loop:true},tap:{y:960,frames:10,fps:12,loop:false},leave:{y:1280,frames:8,fps:10,loop:true},walkBack:{y:1600,frames:8,fps:10,loop:true},back:{y:1920,frames:8,fps:6,loop:true},away:{y:2240,frames:6,fps:4,loop:true},awayBare:{y:2560,frames:6,fps:4,loop:true}} as const;
 export const TUANZI_LOBBY={nap:{y:0,frames:10,fps:6},away:{y:128,frames:6,fps:4}} as const;
-const FRAME=320,UNITS=36,GROUND=.8127,ROOM_W=1600,ROOM_H=1800,ROOM_PPU=1600/92;
+const FRAME=320,UNITS=36,GROUND=.8127,ROOM_W=1600,ROOM_H=1800,ROOM_PPU=1600/92,ROOM_CORNER=502/1600;
 /** Spots in the 1600×1800 room render (normalized). */
 const SPOT={sill:[.51,.347],mailbox:[.875,.413],cat:[.5178,.567],bag:[.87,.533],shelf:[.756,.333],cushion:[.5178,.606]} as const;
 /** Voxel icon atlas (128 px cells, 8 per row): shop items, money, mail and the 16 souvenirs. */
@@ -56,6 +56,8 @@ export class TuanziFeature{
  private draft:{food:string|null;tool:string|null;charm:string|null}={food:null,tool:null,charm:null};
  private cat:Cat='nap';private catAt=Date.now();private catBefore:Cat='nap';private lastStatus:string|null=null;
  private coachBag=false;
+ /** Last load or drawing failure, shown in the nook instead of a silent blank. */
+ error:string|null=null;
 
  // ---------------------------------------------------------------- data
  get open():Open|null{return this.view&&!this.view.locked?this.view:null;}
@@ -64,7 +66,7 @@ export class TuanziFeature{
  welcomeLine(){const n=this.unread;return n>0?'团子寄来了 '+n+' 张明信片':null;}
  load(h:TuanziHost,force=false){
   if(this.loading)return this.loading;if(!force&&Date.now()-this.loadedAt<15000&&this.view)return Promise.resolve();
-  this.loading=h.get<TuanziView>('/api/mobile/tuanzi').then(view=>{this.accept(view);h.invalidate();}).catch(()=>{}).finally(()=>{this.loading=null;});
+  this.loading=h.get<TuanziView>('/api/mobile/tuanzi').then(view=>{this.error=null;this.accept(view);h.invalidate();}).catch(error=>{this.error=(error as {message?:string})?.message||String(error);console.error('[tuanzi] load',error);h.invalidate();}).finally(()=>{this.loading=null;});
   return this.loading;
  }
  private accept(view:TuanziView){
@@ -115,7 +117,15 @@ export class TuanziFeature{
  showCard(cardId:string){this.cardId=cardId;this.side='front';this.screen='postcard';}
 
  // ---------------------------------------------------------------- art helpers
- private art(s:Stage,src:string){const e=(s as unknown as {load(src:string):{loaded:boolean;image:HTMLImageElement}}).load(src);return e.loaded?e.image:null;}
+ private art(s:Stage,src:string,fallback?:string):HTMLImageElement|null{const e=(s as unknown as {load(src:string):{loaded:boolean;failed:boolean;image:HTMLImageElement}}).load(src);return e.loaded?e.image:e.failed&&fallback?this.art(s,fallback):null;}
+ /** Draws a part of the feature; a failure is logged and shown, never left as a blank screen. */
+ guard(h:TuanziHost,part:'nook'|'lobby',draw:()=>void){
+  try{draw();}catch(error){
+   const message=(error as {message?:string})?.message||String(error);if(this.error!==message){this.error=message;console.error('[tuanzi] draw '+part,error);}
+   if(part==='nook'){const s=h.stage;s.ctx.fillStyle=h.colors.paper;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.button({x:12,y:h.top+10,w:40,h:40},'',()=>h.close(),{icon:'back'});
+    s.text('团子的小窝暂时打不开',24,s.h/2-30,16,h.colors.ink,800,s.w-48);this.wrap(s,'错误：'+message,24,s.h/2,s.w-48,12,h.colors.muted,18);}
+  }
+ }
  private icon(h:TuanziHost,id:string,r:Rect,fade=false){
   const s=h.stage,index=ICONS.indexOf(id),atlas=index>=0?this.art(s,ART.items):null;
   if(atlas){const size=Math.min(r.w,r.h),c=s.ctx;c.save();if(fade)c.globalAlpha*=.35;c.imageSmoothingEnabled=true;c.drawImage(atlas,(index%8)*128,Math.floor(index/8)*128,128,128,r.x+(r.w-size)/2,r.y+(r.h-size)/2,size,size);c.restore();return;}
@@ -147,10 +157,32 @@ export class TuanziFeature{
   const s=h.stage,label=(this.open?.fish??0)+' 条',w=s.measure(label,14,800)+52,r={x:right-w,y,w,h:36};s.frame(r,'button-linen-normal');this.icon(h,'fish',{x:r.x+6,y:r.y+2,w:32,h:32});s.text(label,r.x+40,r.y+10,14,h.colors.ink,800);
   s.hit(r,()=>h.note('小鱼干：拼每日拼图、故事关、明信片都会得到，窗台每 3 小时也会晒好一些'));return r;
  }
+ /** Floating surface over the room: translucent cream, soft shadow. */
+ private float(h:TuanziHost,r:Rect,radius=14,alpha=.9){
+  const c=h.stage.ctx;c.save();c.shadowColor='rgba(92,52,40,.22)';c.shadowBlur=14;c.shadowOffsetY=3;c.fillStyle=`rgba(255,248,236,${alpha})`;
+  c.beginPath();c.roundRect(r.x,r.y,r.w,r.h,radius);c.fill();c.shadowColor='transparent';c.strokeStyle='rgba(150,96,76,.28)';c.lineWidth=1;c.stroke();c.restore();
+ }
+ /** Line breaks that never start a line with closing punctuation (it hangs at the end of the line before). */
+ private lines(s:Stage,text:string,width:number,size:number){
+  const rows:string[]=[];let line='';
+  for(const char of text){if(char==='\n'){rows.push(line);line='';continue;}if(line&&s.measure(line+char,size)>width&&!'，。、！？；：）」』…'.includes(char)){rows.push(line);line=char;}else line+=char;}
+  if(line)rows.push(line);return rows;
+ }
+ /** Stage.wrap with the same line breaks as lines(); returns the height used. */
+ private wrap(s:Stage,text:string,x:number,y:number,width:number,size=14,color?:string,lineHeight=size*1.6){
+  const rows=this.lines(s,text,width,size);rows.forEach((row,i)=>s.text(row,x,y+i*lineHeight,size,color));return rows.length*lineHeight;
+ }
+ /** Right edge for top-row items: left of TapTap's ••• capsule when it shares the row. */
+ private rightEdge(h:TuanziHost,y:number,rowH:number){const m=h.menu,w=h.stage.w;return m&&m.y<y+rowH&&y<m.y+m.h?Math.min(w-12,m.x-8):w-12;}
+ /** Back, title and fish float on the room; returns the y below them. */
  private header(h:TuanziHost,title:string,sub?:string){
-  const s=h.stage,y=h.top+10;s.button({x:12,y,w:40,h:40},'',()=>this.back(h),{icon:'back'});
-  s.text(title,62,y+(sub?1:9),20,h.colors.ink,800,s.w-190);if(sub)s.text(sub,62,y+26,12,h.colors.muted,600,s.w-190);
-  this.fishPill(h,s.w-12,y+2);return y+52;
+  const s=h.stage,y=h.top+8;s.button({x:12,y:y+2,w:40,h:40},'',()=>this.back(h),{icon:'back'});
+  const right=this.rightEdge(h,y,44),fishW=s.measure((this.open?.fish??0)+' 条',14,800)+52;
+  // Beside the capsule on narrow phones the title keeps its full name: smaller, without the subtitle.
+  const maxW=Math.max(80,right-fishW-8-60),roomy=s.measure(title,18,800)+24<=maxW,size=roomy?18:16;if(!roomy)sub=undefined;
+  const tw=Math.min(maxW,Math.max(s.measure(title,size,800),sub?s.measure(sub,11,600):0)+24),pill={x:58,y,w:tw,h:44};
+  this.float(h,pill,14);s.text(title,pill.x+12,pill.y+(sub?5:(44-size)/2),size,h.colors.ink,800,tw-24);if(sub)s.text(sub,pill.x+12,pill.y+27,11,h.colors.muted,600,tw-24);
+  this.fishPill(h,right,y+4);return y+52;
  }
  private dim(h:TuanziHost){const s=h.stage;s.ctx.fillStyle=h.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});}
  private sheet(h:TuanziHost,title:string,maxW:number,height:number,sub?:string){
@@ -160,8 +192,8 @@ export class TuanziFeature{
   return {x:x+16,y:y+(sub?66:52),w:w-32,h:hh-(sub?78:64)};
  }
  private tile(h:TuanziHost,r:Rect,icon:string,label:string,action:()=>void,badge?:string){
-  const s=h.stage;s.frame(r,'button-cream-normal');const size=Math.min(44,r.h-30);this.icon(h,icon,{x:r.x+(r.w-size)/2,y:r.y+6,w:size,h:size});
-  s.text(label,r.x+(r.w-s.measure(label,13,750))/2,r.y+r.h-22,13,h.colors.ink,750,r.w-6);if(badge)this.badge(h,r.x+r.w-12,r.y+8,badge);s.hit(r,action);
+  const s=h.stage;this.float(h,r,16,.88);const size=Math.min(40,r.h-28);this.icon(h,icon,{x:r.x+(r.w-size)/2,y:r.y+4,w:size,h:size});
+  s.text(label,r.x+(r.w-s.measure(label,12,750))/2,r.y+r.h-19,12,h.colors.ink,750,r.w-6);if(badge)this.badge(h,r.x+r.w-10,r.y+6,badge);s.hit(r,action);
  }
  private postmark(h:TuanziHost,cx:number,cy:number,place:string,date:string,r=36){
   const s=h.stage,c=s.ctx,ink='#b05a5a';c.save();c.strokeStyle=ink;c.lineWidth=2.5;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.stroke();c.lineWidth=1.2;c.beginPath();c.arc(cx,cy,r-6,0,Math.PI*2);c.stroke();
@@ -183,45 +215,42 @@ export class TuanziFeature{
  private drawWaiting(h:TuanziHost){
   const s=h.stage;s.ctx.fillStyle=h.colors.paper;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});
   s.button({x:12,y:h.top+10,w:40,h:40},'',()=>h.close(),{icon:'back'});
-  const t=this.view?.locked?'通关故事 1-2 后，团子就会搬进小窝':'团子正在整理小窝…';s.text(t,(s.w-s.measure(t,16,700))/2,s.h/2-10,16,h.colors.muted,700);
+  const t=this.view?.locked?'通关故事 1-2 后，团子就会搬进小窝':this.error?'团子没连上，点一下再试':'团子正在整理小窝…';s.text(t,(s.w-s.measure(t,16,700))/2,s.h/2-10,16,h.colors.muted,700);
+  if(this.error&&!this.view){const e='错误：'+this.error;this.wrap(s,e,24,s.h/2+18,s.w-48,12,h.colors.muted,18);s.hit({x:0,y:h.top+60,w:s.w,h:s.h-h.top-60},()=>{this.error=null;void this.load(h,true);h.invalidate();});}
  }
  private drawNook(h:TuanziHost,v:Open){
-  const s=h.stage,c=h.colors;s.ctx.fillStyle=c.paper;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});
-  const top=this.header(h,'团子的小窝','奶奶拼图小店的一角');
-  const actions:[string,string,TuanziScreen,string?][]=[['bag','布包','bag'],['bento','杂货铺','shop'],['envelope','信箱','mailbox',v.unread?String(v.unread):undefined],['postcard','明信片册','album']];
-  let scene:Rect,status:Rect,buttons:Rect;
-  if(h.landscape){const sw=Math.min(620,s.w*.6);scene={x:12,y:top,w:sw,h:h.bottom-top-10};const rx=scene.x+sw+12,rw=s.w-rx-12;status={x:rx,y:top,w:rw,h:104};buttons={x:rx,y:top+114,w:rw,h:h.bottom-top-124};}
-  else{scene={x:12,y:top,w:s.w-24,h:h.bottom-top-214};status={x:12,y:scene.y+scene.h+10,w:s.w-24,h:92};buttons={x:12,y:status.y+status.h+10,w:s.w-24,h:Math.min(150,h.bottom-status.y-status.h-20)};}
-  s.frame({x:scene.x-4,y:scene.y-4,w:scene.w+8,h:scene.h+8},'panel-cream');
-  // The room keeps its full width (a little cropped above and below on phones); the cat is drawn at the room's scale.
-  const k=Math.max(scene.w/ROOM_W,Math.min(scene.h/1200,scene.w/ROOM_W*1.6)),dw=ROOM_W*k,dh=ROOM_H*k;
-  const dx=Math.round(scene.x+Math.min(0,Math.max(scene.w-dw,scene.w/2-dw*.55))),dy=Math.round(dh<=scene.h?scene.y+(scene.h-dh)/2:scene.y+Math.min(0,Math.max(scene.h-dh,scene.h/2-dh*.54)));
-  s.ctx.fillStyle='#f6e7d2';s.ctx.fillRect(scene.x,scene.y,scene.w,scene.h);
+  const s=h.stage,c=h.colors;s.ctx.fillStyle='#f6e7d2';s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});
+  // The room covers the whole screen; the crop keeps the cushion, the sill and the mailbox in view. Tall phones see the
+  // room a little smaller, standing on the bottom edge, with its two walls carried on up to the top.
+  const scene={x:0,y:0,w:s.w,h:s.h},k=Math.max(s.w/ROOM_W,s.h/ROOM_H*(h.landscape?1:.88)),dw=ROOM_W*k,dh=ROOM_H*k;
+  const dx=Math.round(Math.min(0,Math.max(s.w-dw,s.w/2-dw*(h.landscape?.665:.64)))),dy=Math.round(dh<s.h?s.h-dh:Math.min(0,Math.max(s.h-dh,s.h/2-dh*.47)));
   const at=(nx:number,ny:number)=>({x:dx+nx*dw,y:dy+ny*dh});
-  s.clip(scene,()=>{
-   const im=this.art(s,ART.room);if(im){s.ctx.save();s.ctx.imageSmoothingEnabled=true;s.ctx.drawImage(im,dx,dy,dw,dh);s.ctx.restore();}
-   // Souvenirs stand on the shelf, newest last; the travel map hangs once 30 postcards are in.
-   const shelf=at(...SPOT.shelf),size=Math.max(18,Math.min(30,dw*.024));v.souvenirs.slice(-5).forEach((item,i)=>this.icon(h,item.id,{x:shelf.x-size*2.6+i*size*1.05,y:shelf.y-size*1.05,w:size,h:size}));
-   const cushion=at(...SPOT.cushion);this.drawCat(h,cushion,ROOM_PPU*k,scene);
-   if(v.sill.portions){const sill=at(...SPOT.sill),bubble={x:sill.x-38,y:sill.y-56,w:76,h:34};s.frame(bubble,'button-gold-normal');this.icon(h,'fish',{x:bubble.x+4,y:bubble.y+1,w:32,h:32});s.text('+'+v.sill.fish,bubble.x+40,bubble.y+9,14,c.onAccent,800);s.hit(bubble,()=>void this.act(h,'/api/mobile/tuanzi/sill',{},()=>h.note('收下 '+v.sill.fish+' 条小鱼干')));}
-   const mail=at(...SPOT.mailbox);if(v.unread)this.badge(h,mail.x+26,mail.y-8,String(v.unread));s.hit({x:mail.x-40,y:mail.y-30,w:80,h:70},()=>this.go('mailbox',h));
-   const cat=at(...SPOT.cat);s.hit({x:cat.x-70,y:cat.y-50,w:140,h:90},()=>{if(this.cat!=='away'&&this.cat!=='leave'){this.setCat('tap');h.invalidate();}else this.go('mailbox',h);});
-   const bag=at(...SPOT.bag);s.hit({x:bag.x-36,y:bag.y-50,w:72,h:100},()=>this.go('bag',h));
-  });
-  s.frame(status,'button-linen-normal');
+  if(dy>0){const corner=Math.round(dx+ROOM_CORNER*dw);s.ctx.fillStyle='#e6c69c';s.ctx.fillRect(0,0,s.w,dy+1);s.ctx.fillStyle='#be9d79';if(corner>0)s.ctx.fillRect(0,0,corner,dy+1);}
+  const im=this.art(s,ART.room,ART.roomFallback);if(im){s.ctx.save();s.ctx.imageSmoothingEnabled=true;s.ctx.drawImage(im,dx,dy,dw,dh);s.ctx.restore();}
+  // Souvenirs stand on the shelf, newest last.
+  const shelf=at(...SPOT.shelf),size=Math.max(18,Math.min(30,dw*.024));v.souvenirs.slice(-5).forEach((item,i)=>this.icon(h,item.id,{x:shelf.x-size*2.6+i*size*1.05,y:shelf.y-size*1.05,w:size,h:size}));
+  const cushion=at(...SPOT.cushion);this.drawCat(h,cushion,ROOM_PPU*k,scene);
+  const mail=at(...SPOT.mailbox);if(v.unread)this.badge(h,mail.x+26,mail.y-8,String(v.unread));s.hit({x:mail.x-40,y:mail.y-30,w:80,h:70},()=>this.go('mailbox',h));
+  const cat=at(...SPOT.cat);s.hit({x:cat.x-70,y:cat.y-50,w:140,h:90},()=>{if(this.cat!=='away'&&this.cat!=='leave'){this.setCat('tap');h.invalidate();}else this.go('mailbox',h);});
+  const bag=at(...SPOT.bag);s.hit({x:bag.x-36,y:bag.y-50,w:72,h:100},()=>this.go('bag',h));
+  s.hit({x:shelf.x-size*3,y:shelf.y-size*1.4,w:size*6,h:size*1.8},()=>{this.albumTab='souvenirs';this.go('album',h);});
+  if(v.sill.portions){const sill=at(...SPOT.sill),bubble={x:sill.x-38,y:sill.y-56,w:76,h:34};s.frame(bubble,'button-gold-normal');this.icon(h,'fish',{x:bubble.x+4,y:bubble.y+1,w:32,h:32});s.text('+'+v.sill.fish,bubble.x+40,bubble.y+9,14,c.onAccent,800);s.hit(bubble,()=>void this.act(h,'/api/mobile/tuanzi/sill',{},()=>h.note('收下 '+v.sill.fish+' 条小鱼干')));}
+  // Floating layer: header, the status note under it, the four buttons along the bottom.
+  const top=this.header(h,'团子的小窝','奶奶拼图小店的一角');
   const [line,sub]=STATUS[this.cat]??STATUS.nap;
-  s.text(line,status.x+14,status.y+12,16,c.ink,800,status.w-28);
   const detail=this.cat==='away'&&v.trip?(v.trip.first?'第一次出门，一会儿就回来。':'带着'+(this.itemOf(v.trip.food)?.title??'吃的')+'出发的，吃完就回家。')+(v.trip.cardsSent?' 已经寄来 '+v.trip.cardsSent+' 张。':''):sub;
-  s.wrap(detail,status.x+14,status.y+38,status.w-28,12,c.muted,18);
-  if(h.landscape){const gap=8,bw=(buttons.w-gap)/2,bh=Math.min(92,(buttons.h-gap)/2);actions.forEach(([icon,label,screen,badge],i)=>this.tile(h,{x:buttons.x+(i%2)*(bw+gap),y:buttons.y+Math.floor(i/2)*(bh+gap),w:bw,h:bh},icon,label,()=>this.go(screen,h),badge));}
-  else{const gap=8,bw=(buttons.w-gap*3)/4,bh=Math.min(88,buttons.h);actions.forEach(([icon,label,screen,badge],i)=>this.tile(h,{x:buttons.x+i*(bw+gap),y:buttons.y,w:bw,h:bh},icon,label,()=>this.go(screen,h),badge));}
+  const noteW=Math.min(h.landscape?320:300,s.w-24),rows=this.lines(s,detail,noteW-28,12),note={x:12,y:top,w:noteW,h:36+rows.length*17};
+  this.float(h,note,14,.86);s.text(line,note.x+14,note.y+10,15,c.ink,800,note.w-28);rows.forEach((row,i)=>s.text(row,note.x+14,note.y+31+i*17,12,c.muted));
+  const actions:[string,string,TuanziScreen,string?][]=[['bag','布包','bag'],['bento','杂货铺','shop'],['envelope','信箱','mailbox',v.unread?String(v.unread):undefined],['postcard','明信片册','album']];
+  const gap=10,bh=68,bw=h.landscape?76:Math.min(84,(s.w-24-gap*3)/4),rowW=bw*4+gap*3,bx=h.landscape?12:Math.round((s.w-rowW)/2),by=h.bottom-bh-10;
+  actions.forEach(([icon,label,screen,badge],i)=>this.tile(h,{x:bx+i*(bw+gap),y:by,w:bw,h:bh},icon,label,()=>this.go(screen,h),badge));
  }
  private drawWelcome(h:TuanziHost,v:Open){
   const s=h.stage,c=h.colors,area=this.sheet(h,'团子搬进小窝啦',h.landscape?560:400,h.landscape?320:420);
   let y=area.y;const art={x:area.x,y,w:area.w,h:Math.min(130,area.h*.34)};
   const im=this.art(s,ART.sheet);if(im){const size=Math.min(art.h*1.25,art.w*.5);s.ctx.drawImage(im,0,TUANZI_ANIMS.wait.y,FRAME,FRAME,art.x+(art.w-size)/2,art.y-size*.12,size,size);}
   y+=art.h+8;
-  y+=s.wrap('奶奶给团子准备了一个旧布包。放进吃的，团子就会趁你离开的时候出门旅行，一路给你寄明信片——每一张都能拼。',area.x,y,area.w,13,c.ink,20)+10;
+  y+=this.wrap(s,'奶奶给团子准备了一个旧布包。放进吃的，团子就会趁你离开的时候出门旅行，一路给你寄明信片——每一张都能拼。',area.x,y,area.w,13,c.ink,20)+10;
   const gift={x:area.x,y,w:area.w,h:48};s.frame(gift,'panel-gold');this.icon(h,'fish',{x:gift.x+8,y:gift.y+4,w:40,h:40});s.text(v.welcome.fish+' 条小鱼干',gift.x+52,gift.y+15,14,c.onAccent,800);
   this.icon(h,v.welcome.itemId,{x:gift.x+gift.w/2+8,y:gift.y+4,w:40,h:40});s.text('一个'+(this.itemOf(v.welcome.itemId)?.title??'饭团'),gift.x+gift.w/2+52,gift.y+15,14,c.onAccent,800);
   s.button({x:area.x,y:area.y+area.h-46,w:area.w,h:44},'去装包',()=>{this.writeStorage(TUTORIAL_KEY,'done');this.coachBag=true;this.go('bag',h);},{tone:'berrydark',fontSize:16});
@@ -234,7 +263,7 @@ export class TuanziFeature{
  }
  private drawBag(h:TuanziHost,v:Open){
   const s=h.stage,c=h.colors,area=this.sheet(h,'奶奶的旧布包',h.landscape?680:420,h.landscape?370:520,'吃的决定走多远，道具决定去哪里，护身符可以带一个');
-  if(v.status==='away'){s.wrap('团子正背着布包在外面旅行，回来以后再装吧。',area.x,area.y+8,area.w,14,c.muted,22);return;}
+  if(v.status==='away'){this.wrap(s,'团子正背着布包在外面旅行，回来以后再装吧。',area.x,area.y+8,area.w,14,c.muted,22);return;}
   const gap=10,sw=h.landscape?Math.min(130,(area.w*.52-gap*2)/3):(area.w-gap*2)/3,sh=132,d=this.draft;
   const slots:[string,string,'food'|'tool'|'charm'][]=[['吃的','必须放','food'],['道具','可以空着','tool'],['护身符','可以空着','charm']];
   slots.forEach(([label,need,slot],i)=>this.slot(h,{x:area.x+i*(sw+gap),y:area.y,w:sw,h:sh},label,need,this.itemOf(d[slot]),()=>{d[slot]=null;h.invalidate();}));
@@ -243,7 +272,7 @@ export class TuanziFeature{
   s.text('柜子里的东西',listX,listY,14,c.ink,800);
   const owned=v.catalog.shop.map(item=>({item,count:(v.inventory[item.id]??0)+(v.pack&&(v.pack as Record<string,string|null>)[item.slot]===item.id?1:0)})).filter(e=>e.count>0);
   const cols=h.landscape?3:4,cw=(listW-(cols-1)*8)/cols,ch=78;
-  if(!owned.length)s.wrap('柜子空空的，去杂货铺买点吃的吧。',listX,listY+26,listW,12,c.muted,18);
+  if(!owned.length)this.wrap(s,'柜子空空的，去杂货铺买点吃的吧。',listX,listY+26,listW,12,c.muted,18);
   owned.forEach(({item,count},i)=>{
    const r={x:listX+(i%cols)*(cw+8),y:listY+24+Math.floor(i/cols)*(ch+8),w:cw,h:ch},inBag=d[item.slot]===item.id,left=count-(inBag?1:0);
    s.frame(r,inBag?'panel-gold':left?'button-cream-normal':'button-cream-disabled');this.icon(h,item.id,{x:r.x+(r.w-36)/2,y:r.y+5,w:36,h:36},!left&&!inBag);
@@ -252,7 +281,7 @@ export class TuanziFeature{
    if(this.coachBag&&item.slot==='food'&&!d.food&&i===owned.findIndex(e=>e.item.slot==='food')){s.ctx.strokeStyle=c.berry;s.ctx.lineWidth=3;s.ctx.strokeRect(r.x-3,r.y-3,r.w+6,r.h+6);s.text('点一下放进去',r.x,r.y+r.h+6,12,c.berry,800);}
   });
   const by=area.y+area.h-46,first=v.trips===0;
-  s.wrap(first?'第一次出门很快：放好吃的点「装好了」，团子马上出发，20 分钟后回来。':'装好后，你离开游戏十来分钟，团子就会出发。没有惩罚，明信片也不会过期。',area.x,by-36,area.w,12,c.muted,16);
+  this.wrap(s,first?'第一次出门很快：放好吃的点「装好了」，团子马上出发，20 分钟后回来。':'装好后，你离开游戏十来分钟，团子就会出发。没有惩罚，明信片也不会过期。',area.x,by-36,area.w,12,c.muted,16);
   const changed=JSON.stringify(d)!==JSON.stringify(v.pack??{food:null,tool:null,charm:null});
   s.button({x:area.x,y:by,w:area.w,h:44},this.busy?'正在装…':first?'装好了，出发！':changed?'装好了':'就这样',()=>{
    if(!d.food&&(d.tool||d.charm)){h.note('先放一份吃的');return;}
@@ -270,7 +299,7 @@ export class TuanziFeature{
    const size=h.landscape?40:44;this.icon(h,item.id,{x:r.x+6,y:r.y+6,w:size,h:size});
    const have=(v.inventory[item.id]??0);
    s.text(item.title,r.x+size+12,r.y+10,14,c.ink,800,r.w-size-18);s.text({food:'吃的',tool:'道具',charm:'护身符'}[item.slot]+(have?' · 已有 '+have:''),r.x+size+12,r.y+29,11,c.muted,600,r.w-size-18);
-   s.wrap(desc(item),r.x+10,r.y+size+12,r.w-20,11,c.muted,15);
+   this.wrap(s,desc(item),r.x+10,r.y+size+12,r.w-20,11,c.muted,15);
    const b={x:r.x+8,y:r.y+r.h-38,w:r.w-16,h:32},label=String(item.price),poor=v.fish<item.price;s.frame(b,poor||this.busy?'button-gold-disabled':'button-gold-normal');
    const tw=s.measure(label,15,800),bx=b.x+(b.w-tw-36)/2;this.icon(h,'fish',{x:bx,y:b.y,w:32,h:32});s.text(label,bx+36,b.y+8,15,c.ink,800);
    s.hit(b,()=>{if(poor){h.note('小鱼干不够，拼一张图再来吧');return;}void this.act(h,'/api/mobile/tuanzi/buy',{itemId:item.id},()=>h.note('买好了：'+item.title));});
@@ -279,7 +308,7 @@ export class TuanziFeature{
  private drawMailbox(h:TuanziHost,v:Open){
   const s=h.stage,c=h.colors,area=this.sheet(h,'信箱',h.landscape?600:420,h.landscape?360:560,'团子寄来的明信片，不会过期');
   const list=v.postcards,rowH=78,rows=Math.max(1,Math.floor(area.h/(rowH+8)));
-  if(!list.length){s.wrap('还没有明信片。给团子装好布包，它出门以后就会寄来。',area.x,area.y+8,area.w,13,c.muted,20);return;}
+  if(!list.length){this.wrap(s,'还没有明信片。给团子装好布包，它出门以后就会寄来。',area.x,area.y+8,area.w,13,c.muted,20);return;}
   list.slice(0,rows).forEach((card,i)=>{
    const r={x:area.x,y:area.y+i*(rowH+8),w:area.w,h:rowH};s.frame(r,card.read?'button-linen-disabled':'button-cream-normal');
    this.icon(h,'envelope',{x:r.x+8,y:r.y+7,w:62,h:62});
@@ -313,7 +342,7 @@ export class TuanziFeature{
   const stamp={x:r.x+r.w-76,y:r.y+14,w:60,h:72};s.ctx.fillStyle='#fffaf0';s.ctx.fillRect(stamp.x-4,stamp.y-4,stamp.w+8,stamp.h+8);if(card.thumbSrc)s.image(card.thumbSrc,stamp,'cover');
   this.postmark(h,stamp.x-12,stamp.y+50,card.place,card.date.slice(5),34);s.ctx.restore();
   const lx=r.x+16,lw=r.w*.56-28,ly=r.y+r.h*.18,size=Math.min(16,Math.floor(lw/11));
-  const end=ly+s.wrap(card.line,lx,ly,lw,size,c.ink,size*1.55);s.text('—— 团子',lx+lw-s.measure('—— 团子',12,700),end+6,12,c.muted,700);
+  const end=ly+this.wrap(s,card.line,lx,ly,lw,size,c.ink,size*1.55);s.text('—— 团子',lx+lw-s.measure('—— 团子',12,700),end+6,12,c.muted,700);
   this.sticker(h,card.sticker,{x:lx,y:end+6,w:64,h:64});
   const ax=r.x+r.w*.56+14,aw=r.w*.44-28;['拾光镇 奶奶的小店',h.playerName+' 收'].forEach((line,i)=>{const yy=r.y+r.h*.62+i*30;s.text(line,ax,yy,12,c.ink,700,aw);s.ctx.strokeStyle='#d8bfa6';s.ctx.setLineDash([3,3]);s.ctx.beginPath();s.ctx.moveTo(ax,yy+22.5);s.ctx.lineTo(ax+aw,yy+22.5);s.ctx.stroke();s.ctx.setLineDash([]);});
   const by=r.y+r.h+22,bw=(w-10)/2,playable=!card.unavailable&&card.cols&&card.rows;
@@ -352,7 +381,7 @@ export class TuanziFeature{
   y+=art.h+8;
   const box={x:area.x,y,w:area.w,h:76};s.frame(box,souvenir?'panel-gold':'button-linen-normal');
   if(souvenir){this.icon(h,souvenir.id,{x:box.x+8,y:box.y+6,w:64,h:64});s.text('带回了纪念品',box.x+80,box.y+12,11,c.onAccent,700);s.text(souvenir.title,box.x+80,box.y+30,18,c.onAccent,800,box.w-90);}
-  else{this.icon(h,'paw',{x:box.x+8,y:box.y+6,w:64,h:64});s.wrap('这趟没带纪念品，不过玩得很开心。',box.x+80,box.y+18,box.w-90,13,c.ink,19);}
+  else{this.icon(h,'paw',{x:box.x+8,y:box.y+6,w:64,h:64});this.wrap(s,'这趟没带纪念品，不过玩得很开心。',box.x+80,box.y+18,box.w-90,13,c.ink,19);}
   y+=box.h+12;this.icon(h,'envelope',{x:area.x,y:y-6,w:32,h:32});s.text('这趟寄回 '+trip.cardsSent+' 张明信片'+(trip.duplicates?'（重复的换成了 '+trip.duplicates*3+' 条小鱼干）':''),area.x+38,y+2,13,c.ink,700,area.w-40);
   const done=()=>{this.writeStorage(HOME_SEEN_KEY,trip.id);this.setCat(v.pack?.food?'wait':'nap');};
   const by=area.y+area.h-46,bw=(area.w-10)/2;
