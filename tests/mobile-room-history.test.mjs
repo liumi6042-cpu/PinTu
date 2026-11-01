@@ -18,19 +18,19 @@ function fixture(){
  return {call,make,history,stored,patch,db,databasePath,get now(){return now;},advance(ms){now+=ms;},close(){service.close();db.close();rmSync(dir,{recursive:true,force:true});}};
 }
 
-test('history keeps ten distinct recent admissions; polling does not reorder, explicit cached-ticket reentry does',()=>{
+test('history keeps twenty distinct recent unfinished admissions; polling does not reorder, explicit cached-ticket reentry does',()=>{
  const f=fixture();try{
   const tickets=[];
-  for(let i=0;i<12;i++){const ticket=f.make((i+100).toString(16).padStart(64,'0'));tickets.push(ticket);assert.equal(f.call(peer,'/api/rooms/'+ticket.room.id+'/join',{}).status,200);f.advance(100);}
-  const rooms=f.history(peer);assert.equal(rooms.length,10);assert.equal(rooms[0].id,tickets[11].room.id);assert.equal(rooms.at(-1).id,tickets[2].room.id);
-  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_room_history WHERE owner=?').get(peer).n,10);
+  for(let i=0;i<22;i++){const ticket=f.make((i+100).toString(16).padStart(64,'0'));tickets.push(ticket);assert.equal(f.call(peer,'/api/rooms/'+ticket.room.id+'/join',{}).status,200);f.advance(100);}
+  const rooms=f.history(peer);assert.equal(rooms.length,20);assert.equal(rooms[0].id,tickets[21].room.id);assert.equal(rooms.at(-1).id,tickets[2].room.id);
+  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_room_history WHERE owner=?').get(peer).n,22,'drafts are stored up to forty');
   const oldest=tickets[0],joined=f.call(peer,'/api/rooms/'+oldest.room.id+'/join',{}).data;
   assert.equal(f.history(peer)[0].id,oldest.room.id);
-  const recent=tickets[11],recentJoin=f.call(peer,'/api/rooms/'+recent.room.id+'/join',{}).data;
+  const recent=tickets[21],recentJoin=f.call(peer,'/api/rooms/'+recent.room.id+'/join',{}).data;
   f.call(peer,'/api/rooms/'+oldest.room.id,{type:'heartbeat'},joined.token);
   assert.equal(f.history(peer)[0].id,recent.room.id,'presence polling must not replace the most recently entered room');
   f.call(peer,'/api/rooms/'+oldest.room.id,{type:'heartbeat',historyJoin:true},joined.token);
-  assert.equal(f.history(peer)[0].id,oldest.room.id);assert.equal(f.history(peer).length,10);
+  assert.equal(f.history(peer)[0].id,oldest.room.id);assert.equal(f.history(peer).length,20);
   assert.ok(recentJoin.token);assert.equal(f.history(outsider).length,0);
  }finally{f.close();}
 });
@@ -39,7 +39,7 @@ test('deleting an owned entry releases quota without changing either player hist
  const f=fixture();try{
   const ticket=f.make(),path='/api/rooms/'+ticket.room.id,joined=f.call(peer,path+'/join',{}).data;
   const room=f.stored(ticket.room.id);room.puzzle.groups[0].locked=true;f.patch(room.id,room);
-  f.make();f.make();assert.equal(f.call(owner,'/api/rooms',{mode:'random',pieces:48,requestId:rid()}).data.code,'ROOM_LIMIT');
+  for(let i=0;i<4;i++)f.make();assert.equal(f.call(owner,'/api/rooms',{mode:'random',pieces:48,requestId:rid()}).data.code,'ROOM_LIMIT');
   assert.equal(f.call(outsider,'/api/my-rooms',{action:'remove',roomId:room.id}).status,403);
   const before=f.db.prepare('SELECT data FROM mobile_rooms WHERE id=?').get(room.id).data;
   const action={action:'remove',roomId:room.id};assert.equal(f.call(owner,'/api/my-rooms',action).status,200);assert.equal(f.call(owner,'/api/my-rooms',action).status,200);
@@ -56,12 +56,28 @@ test('deleting an owned entry releases quota without changing either player hist
 
 test('completed names are resolved on fetch in history and owned lists; completed rooms do not use quota',()=>{
  const f=fixture();try{
-  const ticket=f.make(),id=ticket.room.id;f.make();f.make();
+  const ticket=f.make(),id=ticket.room.id;for(let i=0;i<4;i++)f.make();
+  assert.equal(f.call(owner,'/api/rooms',{mode:'random',pieces:48,requestId:rid()}).data.code,'ROOM_LIMIT');
   f.patch(id,{completedAt:f.now});
   assert.equal(f.history().find(r=>r.id===id).title,'已完成');assert.equal(f.history().find(r=>r.id===id).completed,true);
   assert.equal(f.call(owner,'/api/my-rooms').data.rooms.find(r=>r.id===id).title,'已完成');f.make();
   assert.equal(f.call(owner,'/api/rooms/'+id,{},undefined,'DELETE').status,200);
   assert.ok(f.history().some(r=>r.id===id));assert.equal(f.db.prepare('SELECT closed_at FROM mobile_rooms WHERE id=?').get(id).closed_at,null);
+ }finally{f.close();}
+});
+
+test('finished rooms keep their own thirty slots and never push unfinished drafts out',()=>{
+ const f=fixture();try{
+  const join=i=>{const ticket=f.make((i+300).toString(16).padStart(64,'0'));assert.equal(f.call(peer,'/api/rooms/'+ticket.room.id+'/join',{}).status,200);f.advance(100);return ticket.room.id;};
+  const drafts=[];for(let i=0;i<20;i++)drafts.push(join(i));
+  const finished=[];for(let i=0;i<35;i++){const id=join(100+i);f.patch(id,{completedAt:f.now});finished.push(id);}
+  const rooms=f.history(peer),open=rooms.filter(r=>!r.completed),done=rooms.filter(r=>r.completed);
+  assert.deepEqual(open.map(r=>r.id).sort(),[...drafts].sort(),'35 finished rooms must not evict any of the 20 drafts');
+  assert.equal(done.length,30);assert.deepEqual(done.map(r=>r.id),finished.slice(5).reverse());assert.ok(done.every(r=>typeof r.completedAt==='number'));
+  assert.equal(rooms[0].id,finished.at(-1),'combined list stays newest first for older clients');
+  const late=join(500);const after=f.history(peer).filter(r=>!r.completed);assert.equal(after.length,20);assert.equal(after[0].id,late);assert.ok(!after.some(r=>r.id===drafts[0]));
+  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM mobile_room_history WHERE owner=?').get(peer).n,51,'older drafts stay stored so they can return when a newer table finishes');
+  assert.deepEqual(f.call(peer,'/api/room-history').data.limits,{drafts:20,completed:30});
  }finally{f.close();}
 });
 

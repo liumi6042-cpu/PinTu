@@ -105,6 +105,7 @@ test('collection HTTP mutations are atomic, replay safe and enforce permanent pu
   h.patch(a,{supply:{energy:0,create:1}});
   assert.equal(h.call(a,'/api/rooms',{...privateInput,requestId:rid()}).status,201);
   assert.equal(h.call(a,'/api/mobile/profile').data.supply.create,0);
+  for(let i=0;i<2;i++)assert.equal(h.call(a,'/api/rooms',{mode:'selected',imageId:pack.imageIds[0],pieces:48,visibility:'public',requestId:rid()}).status,201);
   assert.equal(h.call(a,'/api/rooms',{mode:'selected',imageId:pack.imageIds[0],pieces:48,visibility:'public',requestId:rid()}).data.code,'ROOM_LIMIT');
   assert.equal(h.call(a,'/api/mobile/collection/equip',{decorationId:null,requestId:rid()}).data.equipped,null);
   const random=h.call(b,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});
