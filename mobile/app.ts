@@ -72,7 +72,7 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v52.3';
+const CLIENT_PACKAGE_VERSION='v52.4';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -97,7 +97,7 @@ export class GameApp{
  private modal:Modal=null;private modalScroll=0;private modalExtent=0;private modalArea:Rect={x:0,y:0,w:0,h:0};private modalStart=0;
  private orientationChoice:ScreenOrientation|null=null;private orientationSwitching=false;
  // 欢迎回家: armed by a plain login, shown on the first quiet lobby frame after it.
- private welcome:{slot:WelcomeSlot;line:string;tie:WelcomeTieIn|null;clock:string;openedAt:number;storyChapterId:string|null}|null=null;private welcomePending=false;private welcomeSkip=false;private welcomeEnabled=true;private welcomeLastVisit:number|null=null;private welcomeFrame:number|null=null;
+ private welcome:{slot:WelcomeSlot;line:string;tie:WelcomeTieIn|null;clock:string;openedAt:number;storyChapterId:string|null}|null=null;private welcomePending=false;private welcomeEnabled=true;private welcomeLastVisit:number|null=null;private welcomeFrame:number|null=null;
  private orientationEntryPending:Promise<void>|null=null;private orientationEntryResolve:(()=>void)|null=null;
  private settingsTipSeen=false;private settingsTipDrawn=false;private settingsTipAnchor:Rect|null=null;
  private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;
@@ -209,7 +209,7 @@ export class GameApp{
   if(this.platform.config.id!=='taptap'||!this.platform.setOrientation||this.platform.orientationChoiceAvailable?.()!==true)return Promise.resolve();
   // Read once outside the tolerant preference parser: unavailable storage must skip the offer.
   try{const saved=this.platform.storage.get(orientationPreferenceKey);if(readOrientationPreference({get:()=>saved})!==null)return Promise.resolve();}catch{return Promise.resolve();}
-  this.orientationEntryPending=new Promise(resolve=>{this.orientationEntryResolve=resolve;});this.welcomeSkip=true;
+  this.orientationEntryPending=new Promise(resolve=>{this.orientationEntryResolve=resolve;});
   const pending=this.orientationEntryPending,open=()=>{if(this.orientationEntryPending!==pending||this.destroyed)return;this.orientationChoice=this.actualOrientation;this.showModal('orientation');};
   // A first launch on a phone first asks for portrait (uploads are landscape); the picker then preselects wherever the screen ended up.
   const startup=this.platform.startupOrientation;if(startup)void startup.catch(()=>{}).then(open);else open();
@@ -2443,10 +2443,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',cx=p.x+p.w/2,room=outside?Infinity:Math.min(Infinity,...[...this.completionSlotRects.values()].filter(r=>r.y<p.y+29&&r.y+r.h>p.y-3).map(r=>(r.x+r.w<=cx?cx-r.x-r.w:r.x-cx)-2)),w=Math.min(p.w+60,s.measure(label,14,800)+58,room*2),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
   });
  }
- /** Arms the greeting after a plain login (no invite link, not a new device); the lobby or story page shows it once nothing else is open. */
+ /** Arms the greeting after a plain login (no invite link); the lobby or story page shows it once the orientation picker and 七日礼 are done. */
  private armWelcome(){
-  const skip=this.welcomeSkip?'本次先选了屏幕方向':!this.welcomeEnabled?'设置里已关闭':this.platform.config.id!=='taptap'?'':this.brandNewPlayer?'新手账号':'';
-  if(this.welcomeSkip||!this.welcomeEnabled||this.platform.config.id!=='taptap'||this.brandNewPlayer){if(skip)this.retentionNote('问候 · 不弹出：'+skip);return;}
+  const skip=!this.welcomeEnabled?'设置里已关闭':this.platform.config.id!=='taptap'?'':this.brandNewPlayer?'新手账号':'';
+  if(!this.welcomeEnabled||this.platform.config.id!=='taptap'||this.brandNewPlayer){if(skip)this.retentionNote('问候 · 不弹出：'+skip);return;}
   let record;try{record=readWelcomeRecord(this.platform.storage.get(WELCOME_STORAGE_KEY));}catch{this.retentionNote('问候 · 本机存储不可读');return;}
   this.welcomeLastVisit=record?.visit??null;this.welcomePending=true;this.maybeWelcome();
  }
