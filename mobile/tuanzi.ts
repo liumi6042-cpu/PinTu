@@ -16,7 +16,7 @@ export type TuanziView={locked:true;unlockLevelId:string}|{locked:false;status:'
  catalog:{regions:{id:TuanziRegion;title:string}[];shop:ShopItem[];stickers:{id:string;title:string}[];souvenirs:{id:string;title:string;region:TuanziRegion}[];rare:{id:string;title:string;region:TuanziRegion;thumbSrc:string}[];firstTripMinutes:number;idleMinutes:number;postcardFish:number};serverTime:number};
 type Open=Extract<TuanziView,{locked:false}>;
 type Colors={paper:string;cream:string;ink:string;muted:string;rose:string;berry:string;gold:string;line:string;green:string;onAccent:string;overlay:string;placeholder:string};
-export type TuanziHost={stage:Stage;colors:Colors;top:number;bottom:number;landscape:boolean;playerName:string;menu?:Rect|null;
+export type TuanziHost={stage:Stage;colors:Colors;top:number;bottom:number;landscape:boolean;playerName:string;menu?:Rect|null;log?:(line:string)=>void;
  animate():void;close():void;note(text:string):void;invalidate():void;randomId():string;
  storage:{get(key:string):string|null;set(key:string,value:string):void};
  get<T>(path:string):Promise<T>;post<T>(path:string,body:unknown):Promise<T>;
@@ -46,6 +46,7 @@ const STATUS:Record<string,[string,string]>={
  tap:['喵～','团子蹭了蹭你的手。']};
 
 type Cat='nap'|'wait'|'leave'|'away'|'back'|'tap';
+const levelName=(id:string)=>{const m=/^ch(\d+)-(\d+)$/.exec(id);return m?'故事 '+m[1]+'-'+m[2]:id;};
 const hexId=(h:TuanziHost)=>{const v=h.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(v)?v:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');};
 
 export class TuanziFeature{
@@ -66,9 +67,16 @@ export class TuanziFeature{
  welcomeLine(){const n=this.unread;return n>0?'团子寄来了 '+n+' 张明信片':null;}
  load(h:TuanziHost,force=false){
   if(this.loading)return this.loading;if(!force&&Date.now()-this.loadedAt<15000&&this.view)return Promise.resolve();
-  this.loading=h.get<TuanziView>('/api/mobile/tuanzi').then(view=>{this.error=null;this.accept(view);h.invalidate();}).catch(error=>{this.error=(error as {message?:string})?.message||String(error);console.error('[tuanzi] load',error);h.invalidate();}).finally(()=>{this.loading=null;});
+  const started=Date.now();
+  this.loading=h.get<TuanziView>('/api/mobile/tuanzi').then(view=>{this.error=null;this.accept(view);this.note(h,'团子 · 能力 on · '+(view.locked?'解锁 否（未通关'+levelName(view.unlockLevelId)+'）':'解锁 是 · '+(view.status==='away'?'出门中':'在家'))+' · 请求 200',started);h.invalidate();})
+   .catch(error=>{const e=error as {message?:string;status?:number;code?:string};this.error=e?.message||String(error);console.error('[tuanzi] load',error);this.note(h,'团子 · 能力 on · 请求失败 '+(e?.status??e?.code??'')+' '+this.error,started);h.invalidate();}).finally(()=>{this.loading=null;});
   return this.loading;
  }
+ /** One login-log line per change of state (the lobby polls the nook every few seconds). */
+ private noted='';
+ private note(h:TuanziHost,line:string,started:number){if(line===this.noted)return;this.noted=line;h.log?.(line+' · '+(Date.now()-started)+'ms');}
+ /** Another account on this device (e.g. after TapTap binds the guest): nothing of the previous one is kept. */
+ reset(){this.noted='';this.view=null;this.loadedAt=0;this.error=null;this.lastStatus=null;this.cat='nap';this.screen='nook';this.cardId=null;this.coachBag=false;}
  private accept(view:TuanziView){
   this.view=view;this.loadedAt=Date.now();if(view.locked)return;
   const status=view.status==='away'?'away':view.trip?.returned&&!this.homeSeen(view)?'back':view.pack?.food?'wait':'nap';
@@ -389,7 +397,15 @@ export class TuanziFeature{
   s.button({x:area.x+bw+10,y:by,w:bw,h:44},'再装个包',()=>{done();this.go('bag',h);},{tone:'berrydark',fontSize:15});
  }
  /** 大厅团子角落: the nap / away cut, the status, unread postcards and the windowsill. */
- drawLobbyCorner(h:TuanziHost,r:Rect,open:()=>void){
+ drawLobbyCorner(h:TuanziHost,r:Rect,open:()=>void,story?:()=>void){
+  // Before story 1-2 the corner says what brings 团子 in and leads to the story.
+  if(this.view?.locked){
+   const s=h.stage,c=h.colors,lock=this.view.unlockLevelId;s.frame(r,'button-linen-normal');s.hit(r,story??open);
+   const art={x:r.x+4,y:r.y+2,w:120,h:r.h-4},sheet=this.art(s,ART.lobby),anim=TUANZI_LOBBY.away;
+   if(sheet){const w=112,hh=64;s.ctx.save();s.ctx.globalAlpha=.55;s.ctx.imageSmoothingEnabled=true;s.ctx.drawImage(sheet,0,anim.y,224,128,Math.round(art.x+(art.w-w)/2),Math.round(r.y+r.h-hh-4),w,hh);s.ctx.restore();}
+   const tx=art.x+art.w+6,textW=r.x+r.w-10-tx;
+   s.text('团子的小窝',tx,r.y+(r.h>70?14:9),15,c.ink,800,textW);s.text('通关'+levelName(lock)+'，团子就会搬进来',tx,r.y+(r.h>70?38:31),12,c.muted,600,textW);return;
+  }
   const v=this.open;if(!v)return;
   const s=h.stage,c=h.colors;s.frame(r,'button-linen-normal');s.hit(r,open);
   const art={x:r.x+4,y:r.y+2,w:120,h:r.h-4},away=v.status==='away',anim=away?TUANZI_LOBBY.away:TUANZI_LOBBY.nap,sheet=this.art(s,ART.lobby);

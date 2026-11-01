@@ -77,7 +77,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v54.1';
+const CLIENT_PACKAGE_VERSION='v54.2';
 function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
 function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
@@ -98,16 +98,24 @@ export class GameApp{
  private readonly tuanzi=new TuanziFeature();private postcards!:ReturnType<typeof createPostcardRooms>;private tuanziTimer:ReturnType<typeof setTimeout>|null=null;private postcardFlush:Promise<void>|null=null;
  /** The nook is shown when the server offers it (capability tuanziTravel) and 团子 has moved in (story 1-2). */
  private get tuanziOn(){return !!this.tuanzi&&this.ready&&!this.formalWeb&&this.client.config.capabilities?.tuanziTravel===true;}
- private get tuanziCorner(){return this.tuanziOn&&!!this.tuanzi?.open;}
+ private get tuanziCorner(){return this.tuanziOn&&!!this.tuanzi?.view;}
  private tuanziHost():TuanziHost{
   const v=this.platform.viewport();
-  return {stage:this.stage,colors:this.colors,top:v.top,bottom:this.stage.h-v.bottom,menu:v.menu??null,landscape:this.layout==='phoneLandscape'||this.layout==='desktop',playerName:this.client.profile?.name??'我',
+  return {stage:this.stage,colors:this.colors,top:v.top,bottom:this.stage.h-v.bottom,menu:v.menu??null,log:line=>this.retentionNote(line),landscape:this.layout==='phoneLandscape'||this.layout==='desktop',playerName:this.client.profile?.name??'我',
    animate:()=>{if(this.tuanziTimer==null)this.tuanziTimer=setTimeout(()=>{this.tuanziTimer=null;if(!this.destroyed&&!this.hidden)this.invalidate();},90);},
    close:()=>{this.showModal(null);this.invalidate();},note:text=>this.note(text),invalidate:()=>this.invalidate(),randomId:()=>this.platform.randomId(),storage:this.platform.storage,
    get:path=>this.client.json(path),post:(path,body)=>this.client.post(path,body),
    play:card=>this.playPostcard(card),together:card=>void this.postcardTogether(card),openAlbum:id=>{this.showModal(null);this.navigate('gallery');this.selectAlbum(id);}};
  }
- private loadTuanzi(force=false){if(this.tuanziOn)void this.tuanzi.load(this.tuanziHost(),force).then(()=>void this.flushPostcards());}
+ private loadTuanzi(force=false){
+  if(!this.tuanzi)return;
+  const owner=this.ownerKey();if(owner!==this.tuanziOwner){this.tuanziOwner=owner;this.tuanzi.reset();force=true;}
+  if(!this.tuanziOn){if(this.ready&&!this.formalWeb)this.retentionNote('团子 · 能力 off（服务器未开放）');return;}
+  void this.tuanzi.load(this.tuanziHost(),force).then(()=>void this.flushPostcards());
+ }
+ private tuanziOwner:string|null|undefined;
+ /** The locked corner leads to the chapter with the unlock level. */
+ private openStoryForTuanzi(){const v=this.tuanzi.view;const level=v&&v.locked?v.unlockLevelId:'ch1-2';this.storyChapterId=this.chapterForLevel(level)?.id??'ch1';this.navigate('chapter');}
  private openTuanzi(){if(!this.tuanziOn)return;this.tuanzi.enter(this.tuanziHost());this.showModal('tuanzi');}
  /** A postcard on the phone: a local room for its picture (rare and gallery cards alike). */
  private playPostcard(card:TuanziPostcard){
@@ -1259,7 +1267,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    let y=top-this.scroll;const columns=width>=520?3:2;
    this.scrolled(()=>{
     const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
-    if(this.tuanziCorner){this.tuanzi.guard(this.tuanziHost(),'lobby',()=>this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:width,h:84},()=>this.openTuanzi()));y+=84+gap;}
+    if(this.tuanziCorner){this.tuanzi.guard(this.tuanziHost(),'lobby',()=>this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:width,h:84},()=>this.openTuanzi(),()=>this.openStoryForTuanzi()));y+=84+gap;}
     const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
     this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
     y=this.drawRoomSection(left,y,width,columns,top,bottom);
@@ -1270,7 +1278,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const landscape=layout==='phoneLandscape',leftW=landscape?Math.min(300,width*.42):Math.min(380,width*.36),rightX=left+leftW+gap+6,rightW=left+width-rightX;
   let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,corner=this.tuanziCorner?(landscape?68:84):0,rest=(last?continueH+gap:0)+actionH+gap+(corner?corner+gap:0),heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
   y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
-  if(corner){this.tuanzi.guard(this.tuanziHost(),'lobby',()=>this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:leftW,h:corner},()=>this.openTuanzi()));y+=corner+gap;}
+  if(corner){this.tuanzi.guard(this.tuanziHost(),'lobby',()=>this.tuanzi.drawLobbyCorner(this.tuanziHost(),{x:left,y,w:leftW,h:corner},()=>this.openTuanzi(),()=>this.openStoryForTuanzi()));y+=corner+gap;}
   if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
   this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
   const header=this.drawRoomHeader(rightX,top,rightW,landscape),columns=landscape?3:rightW>=900?4:3;
