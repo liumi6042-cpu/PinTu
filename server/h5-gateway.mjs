@@ -37,6 +37,16 @@ function updateCookies(cookies,lines){
   }
   return [...values].map(([k,v])=>k+'='+v).join('; ');
 }
+// TapTap v53.3 and older call built-ins that WebViews before Chrome 93 lack: Array.prototype.at in every solo-local
+// drop and Object.hasOwn in each WebSocket action reply. On those phones pieces looked placed at 0 / 12 and drags were
+// cancelled (2026-11-02, Huawei P50 Pro). Such a WebView gets solo-local play off in /config and no WebSocket actions on
+// its realtime connection, so it plays with HTTP drags. One log line per distinct User-Agent, kind and hour.
+export const LEGACY_UA_TOKENS=/HarmonyOS|OpenHarmony|ArkWeb|HUAWEI|HMSCore/i;
+export function legacyWebView(userAgent,tokens=LEGACY_UA_TOKENS){
+  if(typeof userAgent!=='string'||!userAgent)return false;
+  const chrome=/\b(?:Chrome|Chromium)\/(\d+)\./.exec(userAgent);
+  return !!chrome&&Number(chrome[1])<93||!!tokens&&tokens.test(userAgent);
+}
 export function createH5Gateway(options){
   const target=new URL(options.upstream??'http://127.0.0.1');
   if(!['http:','https:'].includes(target.protocol)||target.username||target.password||target.pathname!=='/')throw Error('Invalid upstream origin');
@@ -79,6 +89,15 @@ export function createH5Gateway(options){
     const peer=(request.socket.remoteAddress||'unknown').replace(/^::ffff:/,'');
     const supplied=request.headers['x-jigsaw-client-ip'];
     return options.trustLoopbackProxy&&['127.0.0.1','::1'].includes(peer)&&typeof supplied==='string'&&isIP(supplied)?supplied:peer;
+  };
+  const legacyGate=options.legacyWebView?.gate!==false,legacyTokens=options.legacyWebView?.tokens===undefined?LEGACY_UA_TOKENS:options.legacyWebView.tokens;
+  let uaHour=-1;const uaSeen=new Set();
+  const clientWebView=(request,kind)=>{
+    const ua=String(request?.headers?.['user-agent']??'').slice(0,300),legacy=legacyGate&&legacyWebView(ua,legacyTokens),hour=Math.floor(Date.now()/3600000);
+    if(hour!==uaHour){uaHour=hour;uaSeen.clear();}
+    const key=kind+'|'+legacy+'|'+ua;
+    if(!uaSeen.has(key)&&uaSeen.size<1000){uaSeen.add(key);console.log(JSON.stringify({event:'client_ua',kind,legacy,probe:!!request?.headers?.['x-jigsaw-artwork-snapshot'],ua}));}
+    return legacy;
   };
   const requestLimit=(request,kind,max)=>{
     const ip=clientAddress(request),key=kind+':'+ip,now=Date.now();
@@ -192,7 +211,8 @@ export function createH5Gateway(options){
         const capabilities=options.mobileService?.capabilities??{energy:true,ads:adsEnabled,albumTarget:'mobile-shared'},available=adsEnabled&&capabilities.ads!==false;
         // 横屏/竖屏激励位为新增字段，旧客户端只读 rewardedAdUnitId。
         const orientationUnits=available?{...(options.rewardedAdUnitIdPortrait?{rewardedAdUnitIdPortrait:options.rewardedAdUnitIdPortrait}:{}),...(options.rewardedAdUnitIdLandscape?{rewardedAdUnitIdLandscape:options.rewardedAdUnitIdLandscape}:{})}:{};
-        json(response,200,{rewardedAdUnitId:available?options.rewardedAdUnitId||'':'',...orientationUnits,adRewardEnabled:available,mobileMode:options.mobileService?.mode??null,...(options.mobileService?.realtime?{realtime:{version:1}}:{}),capabilities:{...capabilities,ads:available}});return;
+        const legacy=clientWebView(request,'config');
+        json(response,200,{rewardedAdUnitId:available?options.rewardedAdUnitId||'':'',...orientationUnits,adRewardEnabled:available,mobileMode:options.mobileService?.mode??null,...(options.mobileService?.realtime?{realtime:{version:1}}:{}),capabilities:{...capabilities,ads:available,...(legacy?{soloLocalPlay:false}:{})}});return;
       }
       if(url.pathname==='/h5/session'&&request.method==='POST'){
         if(!requestLimit(request,'session',30)){json(response,429,{error:'请稍后再试'},{'Retry-After':'60'});return;}
@@ -296,19 +316,21 @@ export function createH5Gateway(options){
       if(!session)throw Object.assign(Error('连接凭证已过期'),{status:401,code:'IDENTITY_REQUIRED'});
       return session;
     };
+    const legacyRealtime=context=>context&&typeof context==='object'?Object.assign(context,{legacyWebView:true}):context;
     realtime=createRoomRealtimeHub({server,path:'/h5/realtime',addressOf:clientAddress,
       allowOrigin:source=>!source||origins.has(source)&&source!=='null',
       subscribe(request,message){
         if(!requestLimit(request,'realtime',60))throw Object.assign(Error('请稍后再试'),{status:429,code:'REALTIME_RATE_LIMIT'});
         const session=requireSession(request,message.session);
-        return service.subscribe({roomId:message.roomId,identity:session.key,authorization:'Bearer '+message.token,artworkSnapshot:true,sessionToken:message.session});
+        const legacy=clientWebView(request,'realtime'),context=service.subscribe({roomId:message.roomId,identity:session.key,authorization:'Bearer '+message.token,artworkSnapshot:true,sessionToken:message.session});
+        return !legacy?context:context&&typeof context.then==='function'?context.then(legacyRealtime):legacyRealtime(context);
       },
       validate(context){requireSession(null,context.sessionToken);return service.validate(context);},
       readRoom(context,since){requireSession(null,context.sessionToken);return service.readRoom(context,since);},
       readCursors:context=>service.readCursors(context),writeCursor:(context,input)=>service.writeCursor(context,input),
       ...(typeof service.readCheers==='function'?{readCheers:(context,after)=>service.readCheers(context,after)}:{}),
       ...(typeof service.writeCheer==='function'?{writeCheer(context,input){requireSession(null,context.sessionToken);return service.writeCheer(context,input);}}:{}),
-      actionCapabilities:context=>service.actionCapabilities?.(context),
+      actionCapabilities:context=>context?.legacyWebView===true&&context.room?.diagnostic!==true?{version:1,diagnosticOnly:true}:service.actionCapabilities?.(context),
       writeAction(context,input){requireSession(null,context.sessionToken);return service.writeAction(context,input);},
       ...options.realtimeOptions,
       onDisconnect(context){service.disconnectActions?.(context);options.realtimeOptions?.onDisconnect?.(context);},
@@ -336,7 +358,12 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
   // Free-text 私信 between mutual friends; MOBILE_PRIVATE_MESSAGES=false turns them off (history and room invites stay).
   // Custom names stay off on mobile (no customNames here, so the service keeps its safe default).
   const mobileService=createMobileService({databasePath:process.env.MOBILE_DB||resolve('data/mobile-v3.sqlite'),runtimeProfile:process.env.MOBILE_RUNTIME_PROFILE==='web'?'web':'mobile',adEnabled:process.env.H5_AD_ASSISTANCE_ENABLED==='true'&&Boolean(process.env.H5_REWARDED_AD_UNIT),tapTap:{appId:process.env.TAPTAP_APP_ID,secret:process.env.TAPTAP_APP_SECRET,endpoint:process.env.TAPTAP_CODE2SESSION_URL},taskRewardConfigurationPath:process.env.MOBILE_TASK_REWARDS_CONFIG,gameConfigurationPath:process.env.MOBILE_GAME_SETTINGS_CONFIG,albumConfigurationPath:process.env.MOBILE_ALBUMS_CONFIG,albumTarget:process.env.MOBILE_ALBUM_TARGET==='pc'?'pc':'mobile-shared',contentDirectory:process.env.JIGSAW_CONTENT_DIR,assetDir:process.env.MOBILE_ASSET_DIR||resolve('public'),dailyAppearanceDir:process.env.MOBILE_DAILY_APPEARANCES||resolve('work/daily-appearances'),dailyContent,deferDailyStart:true,publicTestPolicy:{privateMessages:process.env.MOBILE_PRIVATE_MESSAGES!=='false'}});
+  // MOBILE_LEGACY_WEBVIEW=off stops the old-WebView gate (the User-Agent log stays); MOBILE_LEGACY_UA_TOKENS replaces the
+  // token pattern (empty: Chrome < 93 only).
+  let legacyTokens;
+  if(process.env.MOBILE_LEGACY_UA_TOKENS!==undefined){try{legacyTokens=process.env.MOBILE_LEGACY_UA_TOKENS?new RegExp(process.env.MOBILE_LEGACY_UA_TOKENS,'i'):null;}catch{console.warn(JSON.stringify({event:'legacy_ua_tokens_invalid'}));}}
   const server=createH5Gateway({
+    legacyWebView:{gate:process.env.MOBILE_LEGACY_WEBVIEW!=='off',...(legacyTokens!==undefined?{tokens:legacyTokens}:{})},
     publicApiBase:process.env.H5_PUBLIC_API_BASE,publicGameBase:process.env.H5_PUBLIC_GAME_BASE,
     mobileService,assetDir:process.env.MOBILE_ASSET_DIR||resolve('public'),
     upstream:process.env.H5_UPSTREAM||'https://jigsawnook.online',
