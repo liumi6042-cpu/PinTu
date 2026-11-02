@@ -42,11 +42,12 @@ import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileR
 import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
+import {REDEEM_GROUP_HINT,REDEEM_MAX_LENGTH,redeemAnswered,redeemCells,redeemErrorText,redeemInput,redeemSummary,type RedeemGrant} from './redeem';
 import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
 type Direction='all'|'portrait'|'landscape'|'square';
 type PerformanceMode='smooth'|'power-saving';
-type Modal='orientation'|'weeklyGift'|'welcome'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|null;
+type Modal='orientation'|'weeklyGift'|'welcome'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|'redeem'|null;
 type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
 type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
 type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
@@ -160,6 +161,7 @@ export class GameApp{
  private timers:Array<ReturnType<typeof setInterval>>=[];private cleanups:Array<()=>void>=[];private attempts=new Map<string,string>();
  private handledQueries=new Set<string>();
  // 七日礼 / 每日拼图连续天数 (server capabilities weeklyGift / dailyStreak).
+ private redeemCode='';private redeemError:string|null=null;private redeemGrant:RedeemGrant|null=null;
  private retention:RetentionView|null=null;private retentionLoadedAt=0;private retentionPending:Promise<void>|null=null;private retentionPendingSince=0;private retentionNotes:Set<string>|undefined=new Set();private weeklyGrant:WeeklyGrant|null=null;private breathFrame:number|null=null;
  private historyRooms:MobileOwnedRoom[]|null=null;private historyTab:'drafts'|'finished'='drafts';private historyPreview:MobileOwnedRoom|null=null;private historyLimits={drafts:20,completed:30};private historyLoading=false;private historyError='';private historySerial=0;
  private pendingViews?:ViewRequests;private lastDataOwner='';private lastAidClock='';
@@ -664,6 +666,56 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(data.granted.decorationId)this.collection=null;
    }catch(error){this.attempts.delete(key);void this.loadRetention(true);throw error;}
   });
+ }
+ private openRedeem(){this.redeemCode='';this.redeemError=null;this.redeemGrant=null;this.showModal('redeem');}
+ private async promptRedeemCode(){
+  if(this.busy)return;
+  const value=await this.platform.prompt('输入兑换码',this.redeemCode,{singleLine:true,maxLength:REDEEM_MAX_LENGTH,hint:REDEEM_GROUP_HINT,placeholder:'例如 AB23CD45',confirmLabel:'兑换'});
+  if(value===null||this.modal!=='redeem')return;
+  this.redeemCode=redeemInput(value);this.redeemError=null;this.invalidate();
+  if(this.redeemCode)await this.submitRedeem();
+ }
+ private async submitRedeem(){
+  const code=this.redeemCode;if(!code||this.redeemGrant)return;
+  const key='redeem:'+code;this.redeemError=null;
+  await this.run(async()=>{
+   try{
+    const data=await this.client.post<{redeemed:RedeemGrant}>('/api/mobile/redeem',{code,requestId:this.attempt(key)});this.attempts.delete(key);
+    // Coins, 碎片, energy and packs arrive with the reply's profile; decorations reload with the collection.
+    this.redeemGrant=data.redeemed;this.collection=null;this.note(redeemSummary(data.redeemed));
+    try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}
+   }catch(error){if(redeemAnswered(error))this.attempts.delete(key);this.redeemError=redeemErrorText(error);}
+  });
+ }
+ private drawRedeem(){
+  const s=this.stage,v=this.platform.viewport(),grant=this.redeemGrant,cells=grant?redeemCells(grant):[],gap=8;
+  const w=Math.min(grant&&cells.length>3?520:420,s.w-32),cols=Math.max(1,Math.min(cells.length,4)),rows=Math.ceil(cells.length/4),cellW=Math.min(112,(w-40-gap*(cols-1))/cols),cellH=96;
+  const h=grant?80+rows*cellH+(rows-1)*gap+18+42+18:80+48+(this.redeemError?40:22)+42+18,x=(s.w-w)/2,y=v.top+Math.max(8,(s.h-v.top-v.bottom-h)/2),left=x+20;
+  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
+  this.modalArea={x,y,w,h};this.modalExtent=0;this.modalScroll=0;
+  const centered=(label:string,top:number,size:number,color:string,weight=500)=>s.text(label,x+(w-s.measure(label,size,weight))/2,top,size,color,weight,w-40);
+  s.button({x:x+w-38,y:y+8,w:28,h:28},'',()=>this.closeModal(),{icon:'close'});
+  if(grant){
+   centered('兑换成功',y+18,20,this.colors.ink,700);centered('兑换码 '+grant.code+' · 奖励已到账',y+48,13,this.colors.muted);
+   const rowWidth=(n:number)=>n*cellW+(n-1)*gap;
+   cells.forEach((cell,index)=>{
+    const row=Math.floor(index/4),inRow=Math.min(4,cells.length-row*4),col=index%4,r={x:x+(w-rowWidth(inRow))/2+col*(cellW+gap),y:y+76+row*(cellH+gap),w:cellW,h:cellH};
+    s.frame(r,'panel-gold');
+    const size=Math.min(40,r.h-(cell.extra?56:44)),icon={x:r.x+(r.w-size)/2,y:r.y+12,w:size,h:size};
+    if(cell.decoration)s.decoration(cell.decoration,icon);else s.icon(cell.icon,icon);
+    const fs=Math.min(13,13*(r.w-8)/Math.max(1,s.measure(cell.label,13,700)));s.text(cell.label,r.x+(r.w-s.measure(cell.label,fs,700))/2,r.y+r.h-(cell.extra?38:24),fs,this.colors.ink,700,r.w-4);
+    if(cell.extra){const es=Math.min(11,11*(r.w-8)/Math.max(1,s.measure(cell.extra,11,600)));s.text(cell.extra,r.x+(r.w-s.measure(cell.extra,es,600))/2,r.y+r.h-20,es,this.colors.muted,600,r.w-4);}
+   });
+   s.button({x:left,y:y+76+rows*cellH+(rows-1)*gap+18,w:w-40,h:42},'好的',()=>this.closeModal(),{tone:'berry',fontSize:15});
+   return;
+  }
+  centered('兑换码',y+18,20,this.colors.ink,700);centered(REDEEM_GROUP_HINT,y+48,13,this.colors.muted);
+  const field={x:left,y:y+80,w:w-40,h:48};s.frame(field,'button-cream-normal');
+  if(this.redeemCode)centered(this.redeemCode,field.y+14,20,this.colors.ink,800);else centered('点这里输入兑换码',field.y+16,15,this.colors.muted,600);
+  s.hit(field,()=>void this.promptRedeemCode());
+  let by=field.y+field.h+12;
+  if(this.redeemError){centered(this.redeemError,by+2,13,this.colors.rose,700);by+=28;}else by+=10;
+  s.button({x:left,y:by,w:w-40,h:42},this.busy?'正在兑换…':'兑换',()=>void(this.redeemCode?this.submitRedeem():this.promptRedeemCode()),{tone:'berrydark',fontSize:15,disabled:this.busy});
  }
  private checkStreakToast(){
   if(!this.retentionCapable('dailyStreak')||!this.ready)return;
@@ -1906,7 +1958,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     const mock={x:pad+12,y:y+12,w:wide?w*.42:w-24,h:wide?h-24:120};s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(mock.x,mock.y,mock.w,mock.h);s.text('同桌看到的样子',mock.x+10,mock.y+8,12,this.colors.muted,700);
     const cx=mock.x+mock.w*.42,cy=mock.y+mock.h*.5;s.decoration(selected,{x:cx-34,y:cy-30,w:40,h:44});const tag={x:cx+6,y:cy+6,w:Math.min(150,mock.w*.5),h:34};s.frame(tag,'button-linen-normal');s.icon('avatar',{x:tag.x+4,y:tag.y+3,w:24,h:27});s.text(data.profile.name,tag.x+32,tag.y+4,12,ink,700,tag.w-36);s.text('Lv.'+data.profile.level,tag.x+32,tag.y+18,11,this.colors.muted,600);
     const tx=wide?mock.x+mock.w+16:pad+14,ty=wide?y+16:mock.y+mock.h+12,tw=wide?w-mock.w-40:w-28;s.text(selected.title,tx,ty,18,ink,800,tw);let dy=ty+28+s.wrap(selected.description,tx,ty+28,tw,12,ink,18);for(const hint of hints)dy+=s.wrap(hint,tx,dy,tw,12,this.colors.muted,17);
-    const label=selected.equipped?'使用中':selected.owned?'使用这个装饰':selected.source==='gift'?(selected.id==='cat-paw'?'论坛或评论区反馈获得':selected.description||'限定礼物'):selected.source==='album'?'集齐图集获得':data.wallet.fragments<selected.cost?'碎片不足 · '+data.wallet.fragments+'/'+selected.cost:'制作 · '+selected.cost+' 碎片',disabled=selected.equipped||(!selected.owned&&(selected.source!=='craft'||selected.enabled===false||data.wallet.fragments<selected.cost));
+    const label=selected.equipped?'使用中':selected.owned?'使用这个装饰':selected.source==='gift'?(selected.id==='cat-paw'?'论坛反馈或群兑换码获得':selected.description||'限定礼物'):selected.source==='album'?'集齐图集获得':data.wallet.fragments<selected.cost?'碎片不足 · '+data.wallet.fragments+'/'+selected.cost:'制作 · '+selected.cost+' 碎片',disabled=selected.equipped||(!selected.owned&&(selected.source!=='craft'||selected.enabled===false||data.wallet.fragments<selected.cost));
     s.button({x:tx,y:y+h-52,w:Math.min(240,tw),h:40},label,()=>void this.collectionAction(selected.owned?'equip':'craft',selected.id),{tone:'berrydark',fontSize:14,disabled:disabled||this.busy});y+=h+12;}
    const tuning=data.tuning;y=this.paragraph('碎片来自拼图：每拼合 '+(tuning?.fragmentContributionStep??10)+' 块得 1 片，拼完一张最多 '+(tuning?.completionFragmentMaximum??10)+' 片 · 现有 '+data.wallet.fragments+' 片',pad+2,y,w,12)+12;
    const chip=(value:typeof filter,label:string):[string,boolean,()=>void]=>[label,filter===value,()=>this.changeListView(()=>{this.decorationFilter=value;})];
@@ -2621,11 +2673,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.modal==='history'){this.drawHistoryWindow();return;}
   if(this.modal==='tasks'){this.drawTaskWindow();return;}
   if(this.modal==='weeklyGift'){this.drawWeeklyGift();return;}
+  if(this.modal==='redeem'){this.drawRedeem();return;}
   if(this.modal==='chat'){this.drawPublicChat();return;}
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
   const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史拼图',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
+  const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',redeem:'兑换码',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史拼图',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
   // A vector cross has the same visible size and center with browser and wx fonts.
   s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
@@ -2688,6 +2741,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     }
     heading('账号与记录');
     this.button(left,cy,width,(this.formalWeb?'好友':'好友与消息')+(this.social.unread?' · '+this.social.unread+' 条未读':''),()=>{if(this.room)this.showModal('social');else this.navigate('friends');},'cream',39);cy+=50;
+    if(!this.formalWeb){s.button({x:left,y:cy,w:width,h:39},'兑换码',()=>this.openRedeem(),{icon:'gift',fontSize:14});cy+=50;}
     if(this.energyEnabled){this.button(left,cy,width,(p?.autoSupply?'✓ ':'')+'体力耗尽自动使用库存包',()=>void this.run(async()=>{await this.client.json('/api/mobile/profile','PATCH',{autoSupply:!p?.autoSupply},{'Content-Type':'application/json'});await this.client.refresh();}));cy+=47;cy=this.paragraph('只消耗已有体力包，不会自动发起分享。',left,cy,width,12)+18;}
     const policyActions=this.formalWeb?[["隐私说明",()=>this.openWeb('privacy')],["服务说明",()=>this.openWeb('terms')]] as const:[["服务与隐私说明",()=>this.navigate('privacy')]] as const;
     if(this.formalWeb){this.button(left,cy,width,'用我的图片开一桌',()=>this.openWeb('uploads'),'berry',42);cy+=52;cy=this.paragraph('上传一张图片，选好片数，开一张自己的公开拼图桌。图片只在房间有效期内保留。',left,cy,width,12)+18;}
