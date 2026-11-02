@@ -2799,7 +2799,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
      ['适配完整桌面',()=>{board?.fit();this.modal=null;this.toolsOpen=false;this.invalidate();}],
      ['放大',()=>{if(!this.completionFx)board?.zoom(1.25);this.invalidate();}],['缩小',()=>{if(!this.completionFx)board?.zoom(.8);this.invalidate();}],
      [this.platform.config.id==='web'?'定位未归位拼块':'定位未拼块 · 全部闪亮标出',()=>{if(this.platform.config.id==='web')board?.find();else this.locateLoose();this.modal=null;this.toolsOpen=false;this.invalidate();}],
-     [board?.trayOpen?'关闭碎片托盘':'打开碎片托盘 · 点选定位',()=>{if(board)board.trayOpen=!board.trayOpen;this.modal=null;this.toolsOpen=false;this.invalidate();}],
+     [board?.trayOpen?'关闭碎片托盘':'打开碎片托盘 · 点选或拖出',()=>{if(board)board.trayOpen=!board.trayOpen;this.modal=null;this.toolsOpen=false;this.invalidate();}],
      ['整理散落拼块',()=>void this.run(async()=>{await room?.organize();this.modal=null;this.toolsOpen=false;this.note('散片已整理');})],
      [this.lockButtonEnabled?'关闭锁定按钮':'启用锁定按钮 · 锁住后单指不移动画面',()=>{this.setLockButtonEnabled(!this.lockButtonEnabled);this.modal=null;this.toolsOpen=false;this.invalidate();}],
      [board?.showPreview?'关闭原图小窗':'原图小窗 · 点小窗可放大',()=>{if(board)board.showPreview=!board.showPreview;this.modal=null;this.invalidate();}],
