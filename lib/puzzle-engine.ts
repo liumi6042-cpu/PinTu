@@ -53,24 +53,33 @@ export function pathFor(piece:Piece,cols:number,rows:number):string {
     out+=` L ${p(.32,0)} C ${p(.4,0)} ${p(.44,0)} ${p(.42,.16)} C ${p(.30,.70)} ${p(.36,1)} ${p(.50,1)} C ${p(.64,1)} ${p(.70,.70)} ${p(.58,.16)} C ${p(.56,0)} ${p(.60,0)} ${p(.68,0)} L ${p(1,0)}`;
   });return out+' Z';
 }
-function slots(cols:number,rows:number,seed:number,centered=false,spacing=1.52) {
-  const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows, rand=random(seed),result:{x:number;y:number}[]=[];
+type Point={x:number;y:number};
+// Lattice cells beside the target, nearest first. One cell keeps the full .23-cell
+// tabs of two neighbors apart, so taking the nearest cells packs a big puzzle into
+// a ring around the target instead of scattering it across the whole table.
+function slots(cols:number,rows:number,seed:number,count=cols*rows,taken:(point:Point,pitch:number)=>boolean=()=>false,centered=false,spacing=1.52):Point[] {
+  const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows, rand=random(seed),result:Point[]=[];
   // Allow for the full .23-cell tabs on both pieces, a small jitter, and air
   // between outlines. Never fall back to a pitch that overlaps the tabs.
   const padX=w*.78,padY=h*.78,stepX=w*spacing,stepY=h*spacing;
   const startX=WORLD.x+(centered?(WORLD.width-Math.floor((WORLD.width-2*padX)/stepX)*stepX)/2:padX),startY=WORLD.y+(centered?(WORLD.height-Math.floor((WORLD.height-2*padY)/stepY)*stepY)/2:padY);
   for(let y=startY;y<=WORLD.y+WORLD.height-padY;y+=stepY) for(let x=startX;x<=WORLD.x+WORLD.width-padX;x+=stepX) {
     if(x>board.x-padX-9&&x<board.x+board.width+padX+9&&y>board.y-padY-9&&y<board.y+board.height+padY+9)continue;
-    result.push({x:x+(rand()-.5)*w*.03,y:y+(rand()-.5)*h*.03});
+    const point={x:x+(rand()-.5)*w*.03,y:y+(rand()-.5)*h*.03};
+    if(!taken(point,Math.max(stepX,stepY)))result.push(point);
   }
   // For a few large-piece grids, centering the same lattice exposes more room
   // above/below the target without reducing the gap between protruding edges.
-  if(result.length<cols*rows&&!centered)return slots(cols,rows,seed,true,spacing);
+  if(result.length<count&&!centered)return slots(cols,rows,seed,count,taken,true,spacing);
   // The retired 12-piece grids need a slightly wider centered row to clear
   // both ends of the target. Keep their prior safe spacing instead of overlap.
-  if(result.length<cols*rows&&spacing<1.56)return slots(cols,rows,seed,true,1.56);
-  for(let i=result.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
-  return result;
+  if(result.length<count&&spacing<1.56)return slots(cols,rows,seed,count,taken,true,1.56);
+  // Keep the cells nearest the target frame. A random allowance of under one
+  // cell leaves the outer edge of the ring ragged instead of a ruled rectangle.
+  const gap=(p:Point)=>Math.hypot(Math.max(board.x-p.x,0,p.x-board.x-board.width),Math.max(board.y-p.y,0,p.y-board.y-board.height));
+  const near=result.map(point=>({point,key:gap(point)+rand()*stepX*.8})).sort((a,b)=>a.key-b.key).slice(0,count).map(entry=>entry.point);
+  for(let i=near.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[near[i],near[j]]=[near[j],near[i]];}
+  return near;
 }
 function scatteredGroups(cols:number,rows:number,seed:number):Group[] {
   const board=boardFor(cols,rows),points=slots(cols,rows,seed),w=board.width/cols,h=board.height/rows;
@@ -139,9 +148,19 @@ export function placedCount(state:PuzzleState) {return state.groups.filter(g=>g.
 export function visibleGroup(group:Group,pieces:Piece[],edgesOnly:boolean) {return group.locked||!edgesOnly||group.pieces.some(id=>pieces[id].border);}
 export function shuffleLoose(state:PuzzleState,seed=Date.now()>>>0,blocked:ReadonlySet<number>=new Set()) {
   if(!knownGrid(state.cols,state.rows)&&!fittedGrid(state.cols,state.rows))throw new Error('不支持的拼图片数');
-  const fresh=scatteredGroups(state.cols,state.rows,seed);let changed=0;
-  for(const g of state.groups) if(!g.locked&&g.pieces.length===1&&!blocked.has(g.id)) {const pos=fresh[g.pieces[0]];g.dx=pos.dx;g.dy=pos.dy;changed++;}
-  return changed;
+  const {cols,rows}=state,loose=state.groups.filter(g=>!g.locked&&g.pieces.length===1&&!blocked.has(g.id));
+  if(!loose.length)return 0;
+  // Gather the loose pieces into the free cells nearest the target, around the
+  // groups that stay where they are (combined groups and pieces someone holds).
+  const board=boardFor(cols,rows),w=board.width/cols,h=board.height/rows,moving=new Set(loose),kept:Point[]=[];
+  for(const g of state.groups)if(!g.locked&&!moving.has(g))for(const id of g.pieces)kept.push({x:board.x+(id%cols+.5)*w+g.dx,y:board.y+(Math.floor(id/cols)+.5)*h+g.dy});
+  const occupied=(point:Point,pitch:number)=>kept.some(k=>Math.abs(k.x-point.x)<pitch&&Math.abs(k.y-point.y)<pitch);
+  let points=slots(cols,rows,seed,loose.length,occupied);
+  // A table crowded with groups still gets organized, as before, ignoring them.
+  if(points.length<loose.length)points=slots(cols,rows,seed,loose.length);
+  if(points.length<loose.length)throw new Error('桌面没有足够的散片位置');
+  loose.forEach((g,i)=>{const id=g.pieces[0],point=points[i];g.dx=point.x-w/2-board.x-(id%cols)*w;g.dy=point.y-h/2-board.y-Math.floor(id/cols)*h;});
+  return loose.length;
 }
 export function restorePuzzle(raw:string,imageIds:string[]):PuzzleState|null {
   try {
