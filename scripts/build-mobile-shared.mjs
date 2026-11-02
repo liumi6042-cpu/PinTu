@@ -1,4 +1,5 @@
 import {build} from 'esbuild';
+import {legacyApiProblems} from './legacy-api-check.mjs';
 import {readFileSync,mkdirSync,copyFileSync,writeFileSync,readdirSync,statSync,existsSync,unlinkSync,realpathSync} from 'node:fs';
 import {resolve,join,dirname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -76,6 +77,7 @@ for(const [platform,out]of Object.entries(outputs)){
  // The WeChat upload parser is older than its simulator runtime.
  const target=platform==='wechat'?'es2017':'es2020';
  await build({absWorkingDir:root,entryPoints:['mobile/entry-'+(platform==='wechat'?'wechat':'web')+'.ts'],outfile:join(out,platform==='wechat'?'game.js':'game.js'),bundle:true,format:'iife',target,platform:'browser',minify:true,legalComments:'eof',define:{__GAME_CONFIG__:JSON.stringify(config)},metafile:true}).then(result=>{
+  const legacy=legacyApiProblems(readFileSync(join(out,'game.js'),'utf8'));if(legacy.length)throw Error('Shared Canvas bundle uses built-ins older WebViews lack: '+legacy.join('; '));
   const prohibited=Object.keys(result.metafile.inputs).filter(path=>/node_modules\/(react|react-dom)\//.test(path));
   if(prohibited.length)throw Error('Shared Canvas bundle must not import React DOM');
   mkdirSync(recordDir,{recursive:true});json(join(recordDir,platform+'-inputs.json'),Object.keys(result.metafile.inputs));

@@ -48,6 +48,8 @@ const DRAG_LIFT_SCALE=.08,DRAG_LIFT_PX=6;
  * matching neighbour is aligned exactly before the drop is sent. The server keeps its own tolerance,
  * and an exact offset always passes it. */
 const DROP_ASSIST=.375;
+/** A drop still unanswered after this long no longer holds back the stranded-piece check. */
+const STRANDED_PENDING_MS=10000;
 /** The nearest offset within reach that the server's drop would snap or join to, or null. */
 export function dropAssistOffset(state:PuzzleState,id:number,reach:number,blocked:ReadonlySet<number>=new Set()):{dx:number;dy:number}|null{
  const active=state.groups.find(g=>g.id===id);if(!active||active.locked)return null;
@@ -136,7 +138,7 @@ export class PuzzleBoard implements RoomTable {
  private minimapCache:{canvas:HTMLCanvasElement;key:string;at:number}|null=null;private minimapTimer:ReturnType<typeof setTimeout>|null=null;private locatedMarks:{ids:number[];until:number}|null=null;
  private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private hintGrant:string|number|null=null;private underlayUntil=0;
  private flashes:SnapFlash[]=[];private locateStartedAt=0;private locateUntil=0;private frame=0;private destroyed=false;private feedbackHidden=false;
- private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();
+ private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();private pendingDropAt=new Map<number,number>();private strandedResynced=new Set<number>();
  private mergeLog=new MergeHolderLog();private teamBursts:TeamBurst[]=[];
  /** The local player's name and room colour for 默契拼合; chimeUrl plays once per burst. */
  selfPlayer:{name:string;color:string}|null=null;chimeUrl='';
@@ -391,25 +393,32 @@ export class PuzzleBoard implements RoomTable {
   * on its spot while the room never hears of it. An unmoved group is only released. */
  private endDrag(){const drag=this.drag;if(!drag)return;this.drag=null;++this.serial;this.mergeLog.release(drag.id,Date.now());const group=this.state.groups.find(g=>g.id===drag.id);if(drag.live&&group&&!this.destroyed)this.commitDrop(group,drag);else{this.network?.release(drag.id);this.queueStrandedCheck();}}
  private commitDrop(group:Group,drag:{serial:number;live:boolean}){
-  const network=this.network;if(!network)return;this.mergeLog.release(group.id,Date.now());if(drag.live)this.assistDrop(group);this.pendingDrops.set(group.id,drag.serial);
-  void network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial)this.pendingDrops.delete(group.id);this.queueStrandedCheck();});
+  const network=this.network;if(!network)return;this.mergeLog.release(group.id,Date.now());if(drag.live)this.assistDrop(group);this.pendingDrops.set(group.id,drag.serial);this.pendingDropAt.set(group.id,Date.now());
+  void network.drop(group.id,group.dx,group.dy).catch(()=>{}).finally(()=>{if(this.pendingDrops.get(group.id)===drag.serial){this.pendingDrops.delete(group.id);this.pendingDropAt.delete(group.id);}this.queueStrandedCheck();});
  }
  /** A loose group left within snap reach of its spot looks placed but never counts (its drop was lost
   * or ignored on the way). Once things are quiet it is dropped on its spot again, at most twice. */
  private queueStrandedCheck(delay=1200){if(this.strandedTimer||this.destroyed)return;this.strandedTimer=setTimeout(()=>{this.strandedTimer=null;void this.settleStranded();},delay);}
  private async settleStranded(){
   const network=this.network;if(this.destroyed||!network||!this.networkReady)return;
-  if(this.drag||this.pendingDrops.size){this.queueStrandedCheck();return;}
+  // A drop whose reply never comes must not hold the check back for good.
+  const now=Date.now();if(this.drag||[...this.pendingDrops.keys()].some(id=>now-(this.pendingDropAt.get(id)??now)<STRANDED_PENDING_MS)){this.queueStrandedCheck();return;}
+  const reach=snapTolerance(this.state),stranded=this.state.groups.filter(g=>!g.locked&&!this.owners[g.id]&&Math.hypot(g.dx,g.dy)<=reach);
+  // Dropped on its spot twice and still not placed: draw the room's own position, so the table never
+  // shows a placement the room did not accept (it looked finished at 0 / 12).
+  if(stranded.some(g=>(this.strandedTries.get(g.id)??0)>=2&&!this.strandedResynced.has(g.id))){for(const g of stranded)this.strandedResynced.add(g.id);network.resync?.();return;}
   // Collect them all first: the room's reply to the first drop redraws the others from its own state.
-  const reach=snapTolerance(this.state),ids=this.state.groups.filter(g=>!g.locked&&!this.owners[g.id]&&(this.strandedTries.get(g.id)??0)<2&&Math.hypot(g.dx,g.dy)<=reach).map(g=>g.id);
+  const ids=stranded.filter(g=>(this.strandedTries.get(g.id)??0)<2).map(g=>g.id);let deferred=false;
   for(const id of ids){
    if(this.destroyed||this.drag||this.network!==network)return;
-   if(network.canAcquire?.(id)===false)continue;
+   if(network.canAcquire?.(id)===false){deferred=true;continue;}
    this.strandedTries.set(id,(this.strandedTries.get(id)??0)+1);
-   const serial=++this.serial;this.pendingDrops.set(id,serial);
+   const serial=++this.serial;this.pendingDrops.set(id,serial);this.pendingDropAt.set(id,Date.now());
    try{if(await network.acquire(id)&&!this.destroyed){moveGroup(this.state,id,0,0);this.changed();await network.drop(id,0,0);}else network.release(id);}
-   catch{}finally{if(this.pendingDrops.get(id)===serial)this.pendingDrops.delete(id);}
+   catch{}finally{if(this.pendingDrops.get(id)===serial){this.pendingDrops.delete(id);this.pendingDropAt.delete(id);}}
   }
+  // Busy now (a reconnect, a save in progress): look again shortly instead of only after the next drop.
+  if(deferred)this.queueStrandedCheck(2400);
  }
  private cancelInput(release:boolean){if(release)this.endDrag();this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.lockedTouch=null;this.previewTouch=null;this.trayTouch=null;this.thumbTouch=null;this.pointers.clear();this.touchStarts.clear();this.gripping.clear();this.publishCursor(null);++this.serial;this.changed();}
  cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;if(this.drag)this.mergeLog.release(this.drag.id,Date.now());this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
@@ -423,6 +432,8 @@ export class PuzzleBoard implements RoomTable {
   const now=Date.now(),merges=detectTeamMerges(before,this.state,this.mergeLog.holders,now);this.mergeLog.syncRemote(owners,now,SELF_HOLDER);
   if(merges.length&&showFeedback&&!this.feedbackHidden)this.addTeamBursts(merges.map(m=>({a:m.a,b:m.b,colors:[m.holders[0].color,m.holders[1].color],names:`${m.holders[0].name} × ${m.holders[1].name}`})),now);
   this.changed();this.animateFeedback();
+  // A room state that arrives with a loose group on its spot (opened again, or redrawn after a lost drop) is checked too.
+  const reach=snapTolerance(this.state);if(this.state.groups.some(g=>!g.locked&&Math.hypot(g.dx,g.dy)<=reach))this.queueStrandedCheck();
  }
  private addTeamBursts(merges:{a:number;b:number;colors:[string,string];names:string}[],now:number){
   const reduced=typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1001,5 +1012,5 @@ export class PuzzleBoard implements RoomTable {
   if(this.tray)this.drawTray(ctx);
   if(this.previewLarge&&this.ready)this.drawPreviewZoom(ctx);
  }
- destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;if(this.minimapTimer)clearTimeout(this.minimapTimer);this.minimapTimer=null;if(this.minimapCache)this.minimapCache.canvas.width=this.minimapCache.canvas.height=1;this.minimapCache=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.teamBursts=[];this.mergeLog.clear();this.pendingDrops.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
+ destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;if(this.minimapTimer)clearTimeout(this.minimapTimer);this.minimapTimer=null;if(this.minimapCache)this.minimapCache.canvas.width=this.minimapCache.canvas.height=1;this.minimapCache=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.teamBursts=[];this.mergeLog.clear();this.pendingDrops.clear();this.pendingDropAt.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
 }

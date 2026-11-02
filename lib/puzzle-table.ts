@@ -9,7 +9,7 @@ import { SnapSound,type SoundPreferences } from './snap-sound';
 import { gestureFrameSample,type GestureFrame } from './puzzle-gesture-cache';
 type Notice = (message:string)=>void;
 type RenderView={width:number;height:number;camera:{x:number;y:number;z:number};dpr:number};
-export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void};
+export type TableNetwork={canAcquire?:(id:number)=>boolean;acquire:(id:number)=>Promise<boolean>;move:(id:number,dx:number,dy:number)=>void;drop:(id:number,dx:number,dy:number)=>Promise<void>;release:(id:number)=>void;resync?:()=>void};
 export class PuzzleTable {
   canvas:HTMLCanvasElement; state:PuzzleState; ctx:CanvasRenderingContext2D; hit:CanvasRenderingContext2D;
   board:ReturnType<typeof boardFor>;

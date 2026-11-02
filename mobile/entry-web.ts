@@ -1,3 +1,5 @@
+// Must stay first: older WebViews need these built-ins before any other module runs.
+import './legacy-runtime';
 import {boot} from './boot';
 import {createWebPlatform} from './platform-web';
 import {requestLaunchOrientation} from './orientation-choice';
