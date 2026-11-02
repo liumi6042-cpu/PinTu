@@ -38,6 +38,7 @@ CODE_PATHS = {
     'lib/tap-platform-id.mjs',
     'server/mobile-events.mjs', 'server/mobile-levels.mjs', 'config/levels.json', 'server/mobile-solo-batch.mjs',
     'server/mobile-tuanzi.mjs', 'config/tuanzi-travel.json', 'config/tuanzi-image-regions.json',
+    'server/mobile-redeem.mjs', 'config/redeem-codes.json', 'scripts/redeem-codes.mjs',
 }
 RELEASE_PATTERN = r'\d{8}-[a-z0-9-]{2,32}'
 SHA_PATTERN = r'[a-f0-9]{64}'
