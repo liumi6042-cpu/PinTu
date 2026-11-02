@@ -102,6 +102,12 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return 0;
   return change(owner,source,coins,0,now)?coins:0;
  }
+ /** Coins and 碎片 under one ledger source (redeem codes); {coins:0,fragments:0} when that source was already paid. */
+ function awardWallet(owner,source,{coins=0,fragments=0},now){
+  if(typeof source!=='string'||!source||source.length>512||!Number.isSafeInteger(coins)||coins<0||!Number.isSafeInteger(fragments)||fragments<0)throw new TypeError('Invalid wallet award');
+  if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return {coins:0,fragments:0};
+  return change(owner,source,coins,fragments,now)?{coins,fragments}:{coins:0,fragments:0};
+ }
  // Task grants use the same wallet, ledger and transaction as all collection rewards.
  function awardTaskCoins(owner,source,coins,now){
   if(typeof source!=='string'||!source||source.length>512||!Number.isSafeInteger(coins)||coins<0)throw new TypeError('Invalid task coin award');
@@ -190,6 +196,14 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   ensureWallet(owner);db.prepare('UPDATE mobile_collection_wallets SET equipped=? WHERE owner=?').run(decorationId,owner);
  }
  function grantDecoration(owner,decorationId,now){return grantRewardDecoration(db,owner,decorationId,now);}
+ /** Redeem codes may give any current decoration, catalogue or gift-only. A retired or removed one is reported, not granted. */
+ function grantCodeDecoration(owner,decorationId,now){
+  const item=decorationById().get(decorationId),view=item?{id:item.id,title:item.title,kind:item.kind,artKey:item.artKey,color:item.color}:{id:decorationId};
+  if(!item||isRetiredDecoration(decorationId))return {...view,status:'unavailable'};
+  if(ownsDecoration(owner,decorationId))return {...view,status:'owned'};
+  db.prepare('INSERT OR IGNORE INTO mobile_collection_owned VALUES(?,?,?,?)').run(owner,'decoration',decorationId,now);
+  return {...view,status:'granted'};
+ }
  function contribution(owner,roomId,requestId,now){
   const source='contribution:'+roomId+':'+requestId;if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return 0;
   const coins=readSettings().collection.contributionCoins;return change(owner,source,coins,0,now)?coins:0;
@@ -229,6 +243,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,playerStats,grantDecoration};
+ return {view,summary,buy,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
 }
 

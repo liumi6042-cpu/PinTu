@@ -2,6 +2,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createMobileTasks} from './mobile-tasks.mjs';
 import {createMobileRetention,readRetentionConfiguration} from './mobile-retention.mjs';
 import {createMobileTuanzi} from './mobile-tuanzi.mjs';
+import {createMobileRedeem} from './mobile-redeem.mjs';
 import {createMobileEvents} from './mobile-events.mjs';
 import {createMobileLevels,readLevelConfiguration} from './mobile-levels.mjs';
 import {createTaskRewardSettings} from './task-reward-settings.mjs';
@@ -80,6 +81,8 @@ export function createMobileService(options={}){
  const retentionConfiguration=retentionEnabled?readRetentionConfiguration():null;
  // 团子去旅行: the /h5/config capability tuanziTravel; MOBILE_TUANZI=false switches the whole feature off.
  const tuanziEnabled=!web&&options.tuanzi!==false&&process.env.MOBILE_TUANZI!=='false';
+ // 兑换码 (POST /api/mobile/redeem); MOBILE_REDEEM=false answers REDEEM_DISABLED. Seeds come from config/redeem-codes.json.
+ const redeemEnabled=!web&&options.redeem!==false&&process.env.MOBILE_REDEEM!=='false';
  // The mobile daily turns over at this Beijing hour (20:00 gathers players in the lobby). The daily clock runs
  // ahead so its Beijing midnight lands on that hour; every package's lobby countdown follows the gallery serverTime.
  const dailyTurnoverHour=web?0:options.dailyTurnoverHour??Number(process.env.MOBILE_DAILY_TURNOVER_HOUR??20);
@@ -246,6 +249,7 @@ export function createMobileService(options={}){
  const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:capabilities.albumTarget});
  const levels=createMobileLevels({db,photos:engine.RESTORABLE_PHOTOS,collection,configuration:levelConfiguration});
  const retention=retentionEnabled?createMobileRetention({db,config:retentionConfiguration,awardCoins:collection.awardCoins,grantDecoration:collection.grantDecoration}):null;
+ const redeem=redeemEnabled?createMobileRedeem({db,seeds:options.redeemSeeds,now:clock,awardWallet:collection.awardWallet,grantDecoration:collection.grantCodeDecoration}):null;
  const storyImageIds=now=>new Set(levelConfiguration.chapters.flatMap(chapter=>collection.albumImages(chapter.albumId,now)?.imageIds??[]));
  const tuanzi=tuanziEnabled?createMobileTuanzi({db,config:options.tuanziConfig,regions:options.tuanziRegions,randomInt,grantDecoration:collection.grantDecoration,
   cleared:owner=>levels.progress(owner).some(row=>row.level_id===(options.tuanziConfig?.unlockLevelId??'ch1-2')&&row.cleared_at!==null),
@@ -514,6 +518,10 @@ export function createMobileService(options={}){
    const granted=retention.claim(p,now);saveProfile(p);return {...retention.view(p.id,now,engine.dailyPuzzleDate(dailyClock(now))),granted,profile:profileView(p,now)};
   });
   if(path==='/api/mobile/tuanzi'||path.startsWith('/api/mobile/tuanzi/'))return tuanziRoute(request,p,input,path,now);
+  if(!web&&path==='/api/mobile/redeem'&&method==='POST'){
+   if(!redeem)fail(503,'REDEEM_DISABLED','兑换功能暂未开放');
+   return replay(p,'redeem-code',input,now,()=>{const redeemed=redeem.claim(p,input.code,now);saveProfile(p);return {redeemed,profile:profileView(p,now)};});
+  }
   if(path==='/api/mobile/tasks'&&method==='GET')return taskView();
   if(path==='/api/mobile/gifts/open'&&method==='POST')return replay(p,'gift-open',input,now,()=>{const opened=tasks.open(p,input,now);return {...taskView(),opened};});
   if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{if(shareRewards&&input.shared!==true)fail(403,'SHARE_REQUIRED','请通过分享面板完成分享，复制链接不计奖励');const shared=tasks.share(p,input,now);return {...taskView(),shared};});
