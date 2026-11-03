@@ -14,7 +14,8 @@ import {collectionDecorationRewardHints} from './collection-copy';
 import {boardThemeColors,isThemeId,landscapeRoomColors as roomColors,type ThemeId} from './theme';
 import {roomRoundPath} from './room-chrome';
 import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-client';
-import {flushStoredSoloOutboxes} from '../lib/solo-play';
+import {flushStoredSoloOutboxes,otherPlayersPresent} from '../lib/solo-play';
+import {storyVariantFor,boardVariant,variantIntroKey,variantIntroSentence,type StoryVariant} from './story-variants';
 import {CursorClient} from '../lib/cursor-client';
 import {CheerClient,CHEER_LABELS} from './cheer-client';
 import {CHEER_EMOTES,type Cheer,type CheerEmote} from '../lib/room-realtime';
@@ -120,7 +121,9 @@ export class GameApp{
  private comicGesture:{id:number;x:number;y:number;lastY:number;lastAt:number;velocity:number;axis?:'x'|'y'}|null=null;
  private comicClosePress:number|null=null;
  private comicDrag=0;private comicSnap?:{started:number;offset:number};private comicHintUntil=0;private comicHintSeen=false;private comicBack?:()=>void;private storyFrame:number|null=null;
- private storyIntro:{text:string;until:number}|null=null;
+ private storyIntro:{text:string;until:number;ms?:number}|null=null;
+ /** The 回忆变奏关 of the open story room, or null (normal play). */
+ private roomVariant:StoryVariant|null=null;
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
  private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
  private previewPack:CollectionPack|null=null;private previewIndex=-1;private previewGridScroll=0;private previewReadOnly=false;
@@ -827,7 +830,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(this.room===room)await network.drop(group.id,0,0);
   });
  }
- private leaveRoom(){this.storyIntro=null;this.stopStoryFrame();this.clearCompletionTransition();this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.setCompletionPhase('idle');this.room=null;this.board=null;this.aid=null;}
+ private leaveRoom(){this.storyIntro=null;this.roomVariant=null;this.stopStoryFrame();this.clearCompletionTransition();this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.setCompletionPhase('idle');this.room=null;this.board=null;this.aid=null;}
  private async attachTicket(ticket:RoomTicket){
   this.clearCompletionTransition();
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
@@ -845,11 +848,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(name==='mobile:gameplay-error')this.note((detail as {message?:string})?.message||'操作暂未完成');
    if(name==='mobile:energy-empty'){if(this.energyEnabled){this.note('体力不足，请使用礼包或补给');this.navigate('supplies');}else this.note('当前游戏规则需要重新连接，请返回大厅后再进入房间');}
   }});this.room=room;this.setCompletionPhase('idle');this.completionLive=!room.snapshot.completedAt;
-  const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
+  const board=new PuzzleBoard(this.platform,room.state,this.invalidate);this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;
+  // 回忆变奏关: set before the room attaches, so a wind room's kept pieces are drawn where the player left them.
+  this.roomVariant=this.storyRoomVariant(ticket,room);if(this.roomVariant)board.setVariant(boardVariant(this.roomVariant,ticket.room.id));board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
   if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
   this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>this.receiveCheer(room,cheer,own)}):null;
   this.cheer?.setActive(this.modal==='completion');
-  this.unsubscribeRoom=room.subscribe(()=>this.syncCompletion(room));
+  this.unsubscribeRoom=room.subscribe(()=>{this.syncCompletion(room);this.checkVariantCompany(room);});
   const photo=activeRoomPhoto(ticket.room,photoMap.get(ticket.room.puzzle.imageId));this.roomImage=this.client.asset(ticket.room.customImage?customPhoto(ticket.room.customImage,ticket.room.id).src:photo?.src??'');
   this.beginStoryIntro((ticket.room as typeof ticket.room&{levelId?:string}).levelId);
   this.invalidate();if(this.nineGridRoom)board.setUnderlay(Date.now()+86400000);else if(!offline)void this.loadAssistance();
@@ -1532,12 +1537,28 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(input.type==='up')this.comicGesture=null;return this.stage.input(input);
  }
  private beginStoryIntro(levelId:string|undefined){
-  this.storyIntro=null;const chapter=this.chapterForLevel(levelId),index=chapter?.levels.findIndex(level=>level.id===levelId)??-1;if(!chapter||index<0)return;
-  const intro=comicFor(chapter,index,chapter.levels[index])?.intro;if(intro){this.storyIntro={text:intro,until:0};this.invalidate();}
+  this.storyIntro=null;const chapter=this.chapterForLevel(levelId),index=chapter?.levels.findIndex(level=>level.id===levelId)??-1;
+  const intro=chapter&&index>=0?comicFor(chapter,index,chapter.levels[index])?.intro:undefined;
+  // The first time a player meets each variant, its intro says what is different.
+  const variant=this.roomVariant,key=variant?variantIntroKey(variant):'';let extra='';
+  if(variant){let seen=false;try{seen=!!this.platform.storage.get(key);}catch{}if(!seen){extra=variantIntroSentence(variant);try{this.platform.storage.set(key,'1');}catch{}}}
+  const text=intro&&extra?intro+'\n'+extra:intro||extra;if(text){this.storyIntro={text,until:0,ms:extra?4200:2000};this.invalidate();}
+ }
+ /** The 回忆变奏关 of a story room this player has to themselves; daily, gallery and shared rooms stay normal. */
+ private storyRoomVariant(ticket:RoomTicket,room:RoomClient):StoryVariant|null{
+  const levelId=(ticket.room as typeof ticket.room&{levelId?:string}).levelId;if(!levelId||this.nineGridRoom||room.snapshot.completedAt)return null;
+  if(otherPlayersPresent(room.snapshot,ticket.playerId))return null;
+  const level=this.chapterForLevel(levelId)?.levels.find(item=>item.id===levelId)??this.offline?.view?.chapters.flatMap(chapter=>chapter.levels).find(item=>item.id===levelId)??null;
+  return storyVariantFor(levelId,level);
+ }
+ /** Someone else came into this story room: the level carries on as a normal one. */
+ private checkVariantCompany(room:RoomClient){
+  if(this.room!==room||!this.roomVariant||!this.board||room.snapshot.completedAt||!otherPlayersPresent(room.snapshot,room.ticket.playerId))return;
+  this.roomVariant=null;this.board.suspendVariant();this.note('有伙伴加入，这一关改为普通玩法');
  }
  private drawStoryIntro(){
   const intro=this.storyIntro;if(!intro||!this.imageReady||this.modal)return;
-  if(!intro.until)intro.until=Date.now()+2000;if(Date.now()>=intro.until){this.storyIntro=null;return;}
+  if(!intro.until)intro.until=Date.now()+(intro.ms??2000);if(Date.now()>=intro.until){this.storyIntro=null;return;}
   const s=this.stage,r=this.roomArea;s.ctx.save();s.ctx.fillStyle='rgba(42,26,31,.48)';s.ctx.fillRect(r.x,r.y,r.w,r.h);drawComicText(s,{kind:'caption',at:'tl',text:intro.text},{x:r.x+16,y:r.y+70,w:Math.min(r.w-32,480),h:120});s.ctx.restore();this.animateStory();
  }
  private get continueRoom(){return this.historyRooms?.find(room=>!room.completed&&!room.unavailable)??null;}

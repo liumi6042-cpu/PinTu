@@ -39,7 +39,7 @@ export async function mobileJson<T>(path:string,init?:RequestInit):Promise<T>{
 }
 export function mobilePost<T>(path:string,body:unknown){return mobileJson<T>(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
 export type MobileLevelStatus='locked'|'unlocked'|'cleared'|'unavailable';
-export type MobileLevel={id:string;imageId:string|null;title:string|null;pieces:number;status:MobileLevelStatus;line?:string|null;timeLabel?:string|null;intro?:string|null;comic?:unknown;comicPage?:unknown;src?:string|null;thumbSrc?:string|null};
+export type MobileLevel={id:string;imageId:string|null;title:string|null;pieces:number;status:MobileLevelStatus;line?:string|null;timeLabel?:string|null;intro?:string|null;comic?:unknown;comicPage?:unknown;/** 回忆变奏关 from the server ('none' turns the bundled default off); older servers omit it. */variant?:string|null;src?:string|null;thumbSrc?:string|null};
 export type MobileChapter={id:string;title:string;albumId:string;coverImageId:string|null;coverSrc:string|null;status:'available'|'unavailable';levels:MobileLevel[];milestones?:{target:number;coins:number;earned:boolean}[]};
 export type MobileLevelsView={chapters:MobileChapter[];current:MobileLevel|null;firstClearEnergy:number;seriesTitle?:string|null};
 export type MobileRoomInput=({mode:'random'|'selected'|'daily';imageId?:string;pieces:48|108|300|500;direction?:'all'|'portrait'|'landscape'|'square'}|{mode:'level';levelId:string;pieces?:never})&{visibility?:'public'|'private';requestId?:string};
