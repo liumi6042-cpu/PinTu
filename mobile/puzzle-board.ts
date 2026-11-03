@@ -26,6 +26,10 @@ const PREVIEW_MAX_ZOOM=8,PREVIEW_DOUBLE_TAP_MS=320;
 const CANVAS_SNAP_FEEDBACK_MS=720;
 /** The locate glow pulses four times, then fades out. */
 const LOCATE_MS=3600,LOCATE_PULSE_MS=900;
+// setTimeout overflows past ~24.8 days and fires at once; lasting tool grants expire far later than that.
+const MAX_TIMER_MS=2147483647;
+// Hints pulse (continuous frames) for their first 30 s only; a lasting hint then stays drawn without animating.
+const HINT_PULSE_MS=30000;
 type SnapFlash={anchor:number;ids:number[];local:boolean;startedAt:number;until:number;reduced:boolean;xp?:number};
 /** 默契拼合: hearts and sparkles in both players' colours at the seam two players just joined. */
 type TeamBurst={a:number;b:number;colors:[string,string];names:string;startedAt:number;until:number;reduced:boolean};
@@ -178,7 +182,7 @@ export class PuzzleBoard implements RoomTable {
  private previewLarge=false;private previewView:PreviewView={z:1,x:0,y:0};private previewTouch:PreviewTouch|null=null;private previewThumb:Rect|null=null;private previewTap:{at:number;x:number;y:number}|null=null;
  private minimap:MinimapLayout|null=null;private minimapTouch:number|null=null;private minimapWorld:{x0:number;y0:number;x1:number;y1:number}|null=null;
  private minimapCache:{canvas:HTMLCanvasElement;key:string;at:number}|null=null;private minimapTimer:ReturnType<typeof setTimeout>|null=null;private locatedMarks:{ids:number[];until:number}|null=null;
- private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private hintGrant:string|number|null=null;private underlayUntil=0;
+ private edges=false;private backing=false;private preview=false;private hintIds:number[]=[];private hintUntil=0;private hintPulseUntil=0;private hintGrant:string|number|null=null;private underlayUntil=0;
  private flashes:SnapFlash[]=[];private locateStartedAt=0;private locateUntil=0;private frame=0;private destroyed=false;private feedbackHidden=false;
  private contributions=new MobileContributionGate();private pendingDrops=new Map<number,number>();private pendingDropAt=new Map<number,number>();private strandedResynced=new Set<number>();
  private mergeLog=new MergeHolderLog();private teamBursts:TeamBurst[]=[];
@@ -725,13 +729,15 @@ export class PuzzleBoard implements RoomTable {
  setHints(ids:number[],until:number,grantId:string|number=until){
   const active=Number.isFinite(until)&&until>Date.now(),activated=active&&this.hintGrant!==grantId;
   if(!active){this.hintIds=[];this.hintGrant=null;this.hintUntil=0;}
-  else{this.hintIds=activated?selectHintPieceIds(this.state,ids,this.owners):selectHintPieceIds(this.state,this.hintIds,this.owners,{topUp:false});this.hintGrant=grantId;this.hintUntil=until;
+  else{this.hintIds=activated?selectHintPieceIds(this.state,ids,this.owners):selectHintPieceIds(this.state,this.hintIds,this.owners,{topUp:false});this.hintGrant=grantId;this.hintUntil=until;if(activated)this.hintPulseUntil=Math.min(until,Date.now()+HINT_PULSE_MS);
    // A hinted piece lying tilted turns upright first, so the hint points at a piece that can go there.
    if(activated)for(const id of this.hintIds)if(this.drag?.id!==id)this.uprightPiece(id);}
   this.scheduleExpiry();this.changed();this.animateFeedback();return activated;
  }
  private pruneHints(){if(this.hintIds.length)this.hintIds=this.hintUntil>Date.now()?selectHintPieceIds(this.state,this.hintIds,this.owners,{topUp:false}):[];}
  private groupVisible(group:Group){return visibleGroup(group,this.pieces,this.edges)||(this.hintUntil>Date.now()&&group.pieces.some(id=>this.hintIds.includes(id)));}
+ /** True while a hint still points at an unplaced piece (lasting hints end this way instead of by time). */
+ get hintsShowing(){this.pruneHints();return this.hintUntil>Date.now()&&this.hintIds.length>0;}
  setUnderlay(until:number){this.underlayUntil=until;this.scheduleExpiry();this.changed();}
  /** Highlighting only: reward/advertising eligibility is handled by the caller. */
  hint(ids?:number[],duration=30000){this.setHints(ids??selectHintPieceIds(this.state,[],this.owners,{count:3}),Date.now()+duration);}
@@ -1003,13 +1009,13 @@ export class PuzzleBoard implements RoomTable {
   const t=this.tile,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,m=Math.min(w,h)*TRAY_TAB_MARGIN,inset=Math.max(0,t.pad-m)*t.scale;
   return{x:(id%t.columns)*t.w+inset,y:Math.floor(id/t.columns)*t.h+inset,w:Math.max(1,t.w-2*inset),h:Math.max(1,t.h-2*inset)};
  }
- private scheduleExpiry(){if(this.timer)clearTimeout(this.timer);const next=[this.hintUntil,this.underlayUntil].filter(t=>t>Date.now()).sort((a,b)=>a-b)[0];if(next)this.timer=setTimeout(()=>{this.changed();this.scheduleExpiry();},Math.max(1,next-Date.now()+1));}
+ private scheduleExpiry(){if(this.timer)clearTimeout(this.timer);const next=[this.hintUntil,this.underlayUntil].filter(t=>t>Date.now()).sort((a,b)=>a-b)[0];if(next&&next-Date.now()<MAX_TIMER_MS)this.timer=setTimeout(()=>{this.changed();this.scheduleExpiry();},Math.max(1,next-Date.now()+1));}
  /** Only transient feedback owns a continuing animation loop. The last tick
   * also invalidates, erasing expired flashes before the room goes idle. */
  private animateFeedback(){
   const moving=[...this.cursors.values()].some(c=>Math.hypot(c.x-c.value.x,c.y-c.value.y)>.08);
   if(this.frame||this.destroyed||this.feedbackHidden)return;
-  if(!this.flashes.length&&!this.teamBursts.length&&!moving&&this.locateUntil<=Date.now()&&!(this.hintIds.length&&this.hintUntil>Date.now())&&!this.variantAnimating(Date.now())){this.frameAt=null;return;}
+  if(!this.flashes.length&&!this.teamBursts.length&&!moving&&this.locateUntil<=Date.now()&&!(this.hintIds.length&&Math.min(this.hintUntil,this.hintPulseUntil)>Date.now())&&!this.variantAnimating(Date.now())){this.frameAt=null;return;}
   const queuedAt=Date.now();
   this.frame=this.platform.frame(timestamp=>{
    this.frame=0;if(this.destroyed||this.feedbackHidden)return;

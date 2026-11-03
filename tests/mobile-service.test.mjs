@@ -100,6 +100,17 @@ void test('isolated HTTP service: authoritative multiplayer, growth, supply, per
   assert.equal((await request(a,actionPath+'/assistance',{kind:'underlay',requestId:rid()},{token:game.token})).data.code,'AD_REQUIRED');
   const toolReq={kind:'underlay',context:'room/'+game.room.id,requestId:rid()},tool=(await call(a,'/h5/rewarded/challenge',toolReq,{token:game.token})).data;assert.ok(tool.rewardToken);
   assert.equal((await request(a,actionPath+'/assistance',{kind:'underlay',requestId:toolReq.requestId,rewardToken:tool.rewardToken,completed:true},{token:game.token})).status,200);
+  // v53.10 lasting tools: no 30-second countdown for clients that ask for it; older clients keep seeing 30-second grants.
+  const lastingHint=await request(a,actionPath+'/assistance',{kind:'hint',requestId:rid(),lasting:true},{token:game.token});assert.equal(lastingHint.status,200);
+  const hintGrant=lastingHint.data.grants.find(g=>g.kind==='hint');assert.equal(hintGrant.lasting,true);assert.ok(hintGrant.expiresAt-now>86400000);assert.equal(hintGrant.pieceIds.length,3);
+  assert.ok((await request(a,actionPath+'/assistance',undefined,{token:game.token})).data.grants.find(g=>g.kind==='hint').expiresAt<=now+30000,'old clients still see a 30-second hint');
+  now+=31000;
+  assert.equal((await request(a,actionPath+'/assistance',undefined,{token:game.token})).data.grants.some(g=>g.kind==='hint'),false,'old clients see the hint end after 30 s');
+  assert.equal((await request(a,actionPath+'/assistance?lasting=1',undefined,{token:game.token})).data.grants.find(g=>g.kind==='hint')?.requestId,hintGrant.requestId,'new clients keep the hint');
+  const nextHint=await request(a,actionPath+'/assistance',{kind:'hint',requestId:rid(),lasting:true},{token:game.token});assert.equal(nextHint.status,200,'a lasting hint can be replaced right away');
+  assert.equal(nextHint.data.grants.filter(g=>g.kind==='hint').length,1);assert.notEqual(nextHint.data.grants.find(g=>g.kind==='hint').requestId,hintGrant.requestId);
+  assert.equal(nextHint.data.freeRemaining.hint,0);
+  const sharedHint=await request(a,actionPath+'/assistance',{kind:'hint',requestId:rid(),lasting:true},{token:game.token});assert.ok(['SHARE_REQUIRED','AD_REQUIRED'].includes(sharedHint.data.code),'free uses still end after two');
   const noasset=await fetch(base+'/h5/assets/missing.webp',{headers:{Origin:'https://ma-h5-al.tapimg.com'}});assert.equal(noasset.status,404);
   const asset=await fetch(base+'/h5/assets/'+photo.thumbSrc.slice(1),{headers:{Origin:'https://ma-h5-al.tapimg.com'}});assert.equal(asset.status,200);await asset.arrayBuffer();assert.equal(pcCalls,0);
  }finally{fixture.close();await close(gateway);await close(upstream);rmSync(dir,{recursive:true,force:true});}
