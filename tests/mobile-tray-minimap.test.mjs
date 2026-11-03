@@ -1,15 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {PuzzleBoard,DRAG_SLOP,TRAY_STRIP_PX,TRAY_PIECE_FILL} from '../mobile/puzzle-board.ts';
-/** v53.9 keeps at most 60 tray pictures; about 4-6.4 MB at dpr 3 (measured 11-03), well under this budget. */
-const TRAY_TILE_CACHE=60,TRAY_TILE_BYTES=8*1024*1024;
+import {PuzzleBoard,DRAG_SLOP,TRAY_STRIP_PX,TRAY_PIECE_FILL,TRAY_TILE_CACHE,TRAY_TILE_BYTES,TRAY_SOURCE_ZOOM} from '../mobile/puzzle-board.ts';
 import {createFittedPuzzle} from '../lib/puzzle-engine.ts';
 
 // Players asked (11-03) for the corner map while the tray is open, and for bigger tray pieces.
 function platform(){
  const commands=[],ctx=new Proxy({isPointInPath:()=>true,measureText:text=>({width:text.length*8})},{get:(target,name)=>name in target?target[name]:(...args)=>commands.push([name,...args]),set:(target,name,value)=>{target[name]=value;return true;}});
  const canvas=()=>({width:1,height:1,getContext:()=>ctx}),noop=()=>()=>{};
- return {commands,ctx,canvas:canvas(),createCanvas:canvas,createImage:()=>({naturalWidth:800,naturalHeight:600,set src(value){queueMicrotask(()=>this.onload());}}),onHide:noop,onShow:noop,frame:()=>1,cancelFrame(){},config:{id:'taptap'}};
+ return {commands,ctx,canvas:canvas(),createCanvas:canvas,createImage:()=>({naturalWidth:4000,naturalHeight:3000,set src(value){queueMicrotask(()=>this.onload());}}),onHide:noop,onShow:noop,frame:()=>1,cancelFrame(){},config:{id:'taptap'}};
 }
 /** The room areas mobile/app.ts gives the board on a 390x844 portrait and an 844x390 landscape phone. */
 const LAYOUTS={
@@ -57,7 +55,7 @@ for(const layout of ['portrait','landscape'])test(`${layout}: a 5 x 4 portrait p
  const {p,board}=await setup(layout),v=board.trayLayout();
  assert.equal(v.columns,layout==='portrait'?5:11);assert.equal(v.rows,layout==='portrait'?4:2);
  assert.ok(v.cellW-5>=44&&v.cellH-5>=44,'each cell at least 44 pt');
- assert.ok(v.r.h<=board.rect.h*(layout==='portrait'?.42:.45)+.01&&v.r.y-board.rect.y>=board.rect.h*.35,'the tray keeps its height cap and leaves the table above it');
+ assert.ok(v.r.h<=board.rect.h*(layout==='portrait'?.48:.45)+.01&&v.r.y-board.rect.y>=board.rect.h*.35,'the tray keeps its height cap and leaves the table above it');
  // Tray pictures are painted once per size; the second draw shows only the tray itself.
  p.ctx.getTransform=()=>({a:3});board.draw(p.ctx);p.commands.length=0;board.draw(p.ctx);
  const cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&a[6]>=v.r.y&&a[6]<=v.r.y+v.r.h);
@@ -93,13 +91,29 @@ test('sharp tray pictures stay within a few pages and 8 MB, keep the page on scr
   const create=p.createCanvas;p.createCanvas=()=>{made++;const canvas=create();released.push(canvas);return canvas;};
   for(let page=0;page<40;page++){
    const v=board.trayLayout();board.draw(p.ctx);
-   assert.ok(board.trayTiles.size<=TRAY_TILE_CACHE,'at most '+TRAY_TILE_CACHE+' pictures');assert.ok(sum()<=TRAY_TILE_BYTES,'at most 8 MB');
+   assert.ok(board.trayTiles.size<=TRAY_TILE_CACHE,'at most '+TRAY_TILE_CACHE+' pictures');const page=v.groups.slice(v.start,v.start+v.pageSize).reduce((n,g)=>{const t=[...board.trayTiles.entries()].find(([k])=>Number(k.split(':')[0])===g.pieces[0]);return n+(t?t[1].width*t[1].height*4:0);},0);
+   assert.ok(board.trayTileBytes<=Math.max(TRAY_TILE_BYTES,page),'at most 8 MB, or one page when a page alone is bigger');assert.equal(board.trayTileBytes,sum(),'the byte count matches the kept pictures');
    const shown=v.groups.slice(v.start,v.start+v.pageSize).map(g=>g.pieces[0]),keys=[...board.trayTiles.keys()].map(k=>Number(k.split(':')[0]));
    for(const id of shown)assert.ok(keys.includes(id),'the page on screen is kept');
    if(v.page>=v.pages-1)break;const n=v.next,at={id:7,x:v.r.x+n.x+n.w/2,y:v.r.y+n.y+n.h/2};board.input({type:'down',points:[at],changed:[at]});board.input({type:'up',points:[],changed:[at]});
   }
   assert.ok(made>TRAY_TILE_CACHE,'paging through every page made more pictures than are kept');
   assert.ok(released.filter(c=>c.width===1&&c.height===1).length>=made-board.trayTiles.size,'dropped pictures give their memory back');
-  board.destroy();assert.equal(board.trayTiles.size,0);
+  board.destroy();assert.equal(board.trayTiles.size,0);assert.equal(board.trayTileBytes,0);
+ }
+});
+
+test('a tray piece is never drawn past 1.15 screen pixels per picture pixel, so a small picture stays sharp',async()=>{
+ for(const [width,cols,rows]of [[800,8,6],[2144,22,22],[4000,8,6]]){
+  const p=platform(),board=new PuzzleBoard({...p,createImage:()=>({naturalWidth:width,naturalHeight:width*.75,set src(value){queueMicrotask(()=>this.onload());}})},createFittedPuzzle('test',cols,rows,123),()=>{});
+  board.setRect({x:0,y:77,w:360,h:702});await board.setImage('t.png');p.ctx.getTransform=()=>({a:3});board.trayOpen=true;board.draw(p.ctx);p.commands.length=0;board.draw(p.ctx);
+  const v=board.trayLayout(),zoom=board.picture.width/board.board.width,pw=board.board.width/board.state.cols,ph=board.board.height/board.state.rows,m=Math.min(pw,ph)*.25;
+  const cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&a[6]>=v.r.y&&a[6]<=v.r.y+v.r.h);assert.ok(cells.length);
+  for(const [,,,,,,,,dw,dh]of cells){
+   const perPicture=dw*3/((pw+2*m)*zoom);assert.ok(perPicture<=TRAY_SOURCE_ZOOM+.01,`${width}px picture: ${perPicture.toFixed(2)} screen px per picture px`);
+   const full=Math.min((v.cellW-5)/(pw+2*m),(v.cellH-5)/(ph+2*m))*(pw+2*m);assert.ok(dw<=full+.01,'never past its cell');
+   if(width===4000)assert.ok(Math.abs(dw-full)<.01,'a large picture fills the cell');
+  }
+  board.destroy();
  }
 });
