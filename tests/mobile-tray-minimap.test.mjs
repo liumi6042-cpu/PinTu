@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PuzzleBoard,DRAG_SLOP,TRAY_STRIP_PX,TRAY_PIECE_FILL} from '../mobile/puzzle-board.ts';
+/** v53.9 keeps at most 60 tray pictures; about 4-6.4 MB at dpr 3 (measured 11-03), well under this budget. */
+const TRAY_TILE_CACHE=60,TRAY_TILE_BYTES=8*1024*1024;
 import {createFittedPuzzle} from '../lib/puzzle-engine.ts';
 
 // Players asked (11-03) for the corner map while the tray is open, and for bigger tray pieces.
@@ -80,5 +82,24 @@ test('a 500-piece room pages through the tray with the arrows in both layouts an
   board.input({type:'up',points:[],changed:[out]});await Promise.resolve();
   assert.equal(board.trayPage,1,'same page after the drop');assert.equal(board.trayLayout().r.h,v.r.h);
   board.destroy();
+ }
+});
+
+test('sharp tray pictures stay within a few pages and 8 MB, keep the page on screen, and go with the board',async()=>{
+ for(const rect of [{x:0,y:77,w:390,h:767},{x:0,y:90,w:1024,h:1276}]){
+  const p=platform(),board=new PuzzleBoard(p,createFittedPuzzle('test',25,20,123),()=>{});board.setRect(rect);await board.setImage('test.png');
+  p.ctx.getTransform=()=>({a:3});board.trayOpen=true;board.draw(p.ctx);
+  const tiles=()=>[...board.trayTiles.values()],sum=()=>tiles().reduce((n,t)=>n+t.width*t.height*4,0),released=[];let made=0;
+  const create=p.createCanvas;p.createCanvas=()=>{made++;const canvas=create();released.push(canvas);return canvas;};
+  for(let page=0;page<40;page++){
+   const v=board.trayLayout();board.draw(p.ctx);
+   assert.ok(board.trayTiles.size<=TRAY_TILE_CACHE,'at most '+TRAY_TILE_CACHE+' pictures');assert.ok(sum()<=TRAY_TILE_BYTES,'at most 8 MB');
+   const shown=v.groups.slice(v.start,v.start+v.pageSize).map(g=>g.pieces[0]),keys=[...board.trayTiles.keys()].map(k=>Number(k.split(':')[0]));
+   for(const id of shown)assert.ok(keys.includes(id),'the page on screen is kept');
+   if(v.page>=v.pages-1)break;const n=v.next,at={id:7,x:v.r.x+n.x+n.w/2,y:v.r.y+n.y+n.h/2};board.input({type:'down',points:[at],changed:[at]});board.input({type:'up',points:[],changed:[at]});
+  }
+  assert.ok(made>TRAY_TILE_CACHE,'paging through every page made more pictures than are kept');
+  assert.ok(released.filter(c=>c.width===1&&c.height===1).length>=made-board.trayTiles.size,'dropped pictures give their memory back');
+  board.destroy();assert.equal(board.trayTiles.size,0);
  }
 });
