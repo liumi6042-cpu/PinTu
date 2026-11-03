@@ -53,10 +53,15 @@ const DROP_ASSIST=.375;
 export const TRAY_STRIP_PX=28;
 /** A finger held still this long on a tray cell lifts its group: any movement after that pulls it out, and lifting the finger does nothing. */
 export const TRAY_LIFT_MS=300;
-/** Tray cells: the column width aimed for in a portrait and a landscape tray, and the smallest row height (a fingertip plus the gap). */
-export const TRAY_CELL_PORTRAIT=70,TRAY_CELL_LANDSCAPE=80,TRAY_CELL_MIN=50;
+/** Tray grid: a portrait page is 5 x 4 (more columns only on wide screens), a landscape row is cut into cells about
+ * as wide as a portrait one; cells are TRAY_CELL_RATIO as tall as they are wide, and never under TRAY_ROW_MIN. */
+export const TRAY_COLUMNS_PORTRAIT=5,TRAY_ROWS_PORTRAIT=4,TRAY_CELL_LANDSCAPE=72,TRAY_CELL_RATIO=.82,TRAY_ROW_MIN=36;
 /** A tray piece, tabs included, fills this much of its cell. */
 export const TRAY_PIECE_FILL=.88;
+/** The margin around a piece that holds its tabs, as a share of the smaller piece side. */
+const TRAY_TAB_MARGIN=.27;
+/** Tray pictures kept for redraws (a page or two). */
+const TRAY_TILE_CACHE=60;
 /** With the tray open on a landscape phone the 原图 thumbnail moves up beside the corner tool toggle, this far from the right edge. */
 const THUMB_TOGGLE_PX=50;
 /** A 32-bit hash of text (FNV-1a with a murmur finaliser): the tray's shuffle key. Math.imul only, for old WebViews. */
@@ -158,6 +163,7 @@ export class PuzzleBoard implements RoomTable {
  private trayOrder:{groups:Group[];length:number;edges:boolean;key:string;list:Group[];rank:Map<Group,number>}|null=null;
  /** The group the current tray page starts with (rank, smallest piece); placing groups before it keeps the page in place. */
  private trayAnchor:{rank:number;min:number}|null=null;
+ private trayTiles=new Map<string,HTMLCanvasElement>();
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null;group?:number;lift?:ReturnType<typeof setTimeout>|null;lifted?:boolean}|null=null;
  /** A group pulled out of the tray: the finger holding it and the spot it came from. */
  private trayDrag:{id:number;pointer:number;ox:number;oy:number}|null=null;
@@ -207,7 +213,7 @@ export class PuzzleBoard implements RoomTable {
   this.preparation={phase:'loading',completed:0,total:this.pieces.length};
   this.picture=platform.createCanvas();const hit=platform.createCanvas();hit.width=1;hit.height=1;const context=hit.getContext('2d');if(!context)throw Error('当前设备的拼图画布暂不可用');this.hit=context;
   if(typeof this.hit.isPointInPath!=='function')this.polygons=this.paths.map(flattenPath);
-  this.removeHide=platform.onHide(()=>{this.feedbackHidden=true;this.flashes=[];this.teamBursts=[];this.locateUntil=0;if(this.frame)this.platform.cancelFrame(this.frame);this.frame=0;this.frameAt=null;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.changed();});
+  this.removeHide=platform.onHide(()=>{this.feedbackHidden=true;this.flashes=[];this.teamBursts=[];this.locateUntil=0;if(this.frame)this.platform.cancelFrame(this.frame);this.frame=0;this.frameAt=null;this.cancelInput(true);this.releaseSurfaceBuffer();this.releasePaperSurface();this.releaseTrayTiles();this.changed();});
   this.removeShow=platform.onShow?.(()=>{this.feedbackHidden=false;this.frameAt=null;this.changed();this.animateFeedback();})??(()=>{});
  }
  get theme(){return this.currentTheme;}
@@ -263,7 +269,7 @@ export class PuzzleBoard implements RoomTable {
    this.preparation={phase:'preparing',completed:0,total:this.pieces.length};this.changed();await yieldPreparation();checkCurrent();
    const prepared=await this.makeAtlas(picture,checkCurrent,yieldPreparation);checkCurrent();
    const gray=this.variant?.kind==='fade'?await this.makeGrayAtlas(prepared.atlas,checkCurrent,yieldPreparation):null;checkCurrent();
-   const previous=this.picture;this.picture=picture;this.atlas=prepared.atlas;this.grayAtlas=gray;this.tile=prepared.tile;this.ready=true;committed=true;
+   const previous=this.picture;this.releaseTrayTiles();this.picture=picture;this.atlas=prepared.atlas;this.grayAtlas=gray;this.tile=prepared.tile;this.ready=true;committed=true;
    previous.width=previous.height=1;this.preparation={phase:'ready',completed:this.pieces.length,total:this.pieces.length};this.changed();
   }finally{
    if(this.cancelImage===cancel)this.cancelImage=null;
@@ -282,10 +288,7 @@ export class PuzzleBoard implements RoomTable {
   while(completed<this.pieces.length){
    checkCurrent();const started=Date.now();let batch=0;
    do{const piece=this.pieces[completed];
-   c.save();c.translate((piece.id%columns)*tileW,Math.floor(piece.id/columns)*tileH);c.beginPath();c.rect(0,0,tileW,tileH);c.clip();c.scale(scale,scale);c.translate(pad,pad);tracePuzzlePath(c,this.paths[piece.id]);
-   c.save();c.fillStyle='#b89573';c.shadowColor='#5a321f80';c.shadowBlur=blur*scale;c.shadowOffsetX=offsetX*scale;c.shadowOffsetY=offsetY*scale;c.fill();c.restore();
-   c.save();c.clip();drawPiecePicture(c,picture,piece,this.state.cols,this.state.rows,this.board.width,this.board.height);c.lineJoin='round';c.strokeStyle='#855348bd';c.lineWidth=edge*2.4;c.stroke();
-   const light=c.createLinearGradient(0,-h*.2,w*.35,h*1.15);if(typeof light?.addColorStop==='function'){light.addColorStop(0,'#fffbe8e8');light.addColorStop(.3,'#fff8dec2');light.addColorStop(.58,'#fff8de32');light.addColorStop(1,'#77513f4d');c.strokeStyle=light;}else c.strokeStyle='#fff8dec2';c.lineWidth=edge*1.2;c.stroke();c.restore();c.restore();
+   c.save();c.translate((piece.id%columns)*tileW,Math.floor(piece.id/columns)*tileH);c.beginPath();c.rect(0,0,tileW,tileH);c.clip();c.scale(scale,scale);c.translate(pad,pad);this.paintPiece(c,piece.id,picture,scale);c.restore();
    completed++;batch++;
    }while(completed<this.pieces.length&&batch<16&&Date.now()-started<6);
    checkCurrent();this.preparation={phase:'preparing',completed,total:this.pieces.length};this.changed();
@@ -294,6 +297,27 @@ export class PuzzleBoard implements RoomTable {
   checkCurrent();return{atlas,tile:{w:tileW,h:tileH,pad,columns,scale}};
   }catch(error){atlas.width=atlas.height=1;throw error;}
  }
+ /** Paints one piece with its paper finish (contact shadow, picture, inner edge) on a context already scaled by `scale`
+  * and moved to the piece's corner. The atlas and the tray pictures share it. */
+ private paintPiece(c:CanvasRenderingContext2D,id:number,picture:HTMLCanvasElement,scale:number){
+  const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,unit=Math.min(w,h),edge=Math.max(.45,Math.min(1.25,unit*.012)),blur=Math.max(2,Math.min(5,unit*.055)),offsetX=Math.max(.35,Math.min(1,unit*.01)),offsetY=Math.max(1,Math.min(3,unit*.028));
+  tracePuzzlePath(c,this.paths[id]);
+  c.save();c.fillStyle='#b89573';c.shadowColor='#5a321f80';c.shadowBlur=blur*scale;c.shadowOffsetX=offsetX*scale;c.shadowOffsetY=offsetY*scale;c.fill();c.restore();
+  c.save();c.clip();drawPiecePicture(c,picture,this.pieces[id],this.state.cols,this.state.rows,this.board.width,this.board.height);c.lineJoin='round';c.strokeStyle='#855348bd';c.lineWidth=edge*2.4;c.stroke();
+  const light=c.createLinearGradient(0,-h*.2,w*.35,h*1.15);if(typeof light?.addColorStop==='function'){light.addColorStop(0,'#fffbe8e8');light.addColorStop(.3,'#fff8dec2');light.addColorStop(.58,'#fff8de32');light.addColorStop(1,'#77513f4d');c.strokeStyle=light;}else c.strokeStyle='#fff8dec2';c.lineWidth=edge*1.2;c.stroke();c.restore();
+ }
+ /** A tray picture of one piece with its tabs, `width` device pixels wide, painted from the full picture. Atlas tiles of
+  * big puzzles are small, and the tray enlarged them into a blur. Kept per size; the oldest are dropped first. */
+ private trayTile(id:number,width:number){
+  const key=id+':'+width,cached=this.trayTiles.get(key);if(cached)return cached;if(!this.ready)return null;
+  const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,m=Math.min(w,h)*TRAY_TAB_MARGIN,k=width/(w+2*m),canvas=this.platform.createCanvas();
+  canvas.width=Math.max(1,width);canvas.height=Math.max(1,Math.round((h+2*m)*k));const c=canvas.getContext('2d');if(!c)return null;
+  c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.scale(k,k);c.translate(m,m);this.paintPiece(c,id,this.picture,k);
+  this.trayTiles.set(key,canvas);
+  while(this.trayTiles.size>TRAY_TILE_CACHE){const oldest=this.trayTiles.keys().next().value as string,tile=this.trayTiles.get(oldest);if(tile)tile.width=tile.height=1;this.trayTiles.delete(oldest);}
+  return canvas;
+ }
+ private releaseTrayTiles(){for(const tile of this.trayTiles.values())tile.width=tile.height=1;this.trayTiles.clear();}
  /** The faded copy of the piece atlas, made once in bands of pixels so a low-end phone keeps answering (no ctx.filter:
   * older Android WebViews ignore it). Null when the pixels cannot be read: the level then plays in colour. */
  private async makeGrayAtlas(atlas:HTMLCanvasElement,checkCurrent:()=>void,yieldPreparation:()=>Promise<void>){
@@ -748,9 +772,10 @@ export class PuzzleBoard implements RoomTable {
   * header row and it has no footer. full=true ignores the strip a drag-out shrinks it to, so what sits above it stays put. */
  private trayLayout(full=false){
   const rect=this.rect,compact=rect.w>rect.h,w=Math.max(1,rect.w-10),inner=Math.max(1,w-16),chrome=compact?34:55;
-  const columns=Math.max(1,Math.min(12,Math.floor(inner/(compact?TRAY_CELL_LANDSCAPE:TRAY_CELL_PORTRAIT)))),cellW=inner/columns;
-  const limit=Math.min(Math.max(1,rect.h-76),Math.max(100,rect.h*(compact?.45:.42))),rows=Math.max(1,Math.min(compact?2:3,Math.floor((limit-chrome)/TRAY_CELL_MIN)));
-  const cellH=Math.max(1,Math.min(cellW*.9,(limit-chrome)/rows)),tall=chrome+rows*cellH,height=this.trayDrag&&!full?Math.min(tall,TRAY_STRIP_PX):tall;
+  const columns=compact?Math.max(1,Math.min(16,Math.floor(inner/TRAY_CELL_LANDSCAPE))):Math.max(TRAY_COLUMNS_PORTRAIT,Math.floor(inner/80)),cellW=inner/columns;
+  const limit=Math.min(Math.max(1,rect.h-76),Math.max(100,rect.h*(compact?.45:.42))),room=Math.max(1,limit-chrome);
+  const rows=Math.max(1,Math.min(compact?3:TRAY_ROWS_PORTRAIT,compact?Math.floor(room/Math.max(TRAY_ROW_MIN,cellW*TRAY_CELL_RATIO)):Math.floor(room/TRAY_ROW_MIN)));
+  const cellH=Math.max(1,Math.min(cellW*TRAY_CELL_RATIO,room/rows)),tall=chrome+rows*cellH,height=this.trayDrag&&!full?Math.min(tall,TRAY_STRIP_PX):tall;
   const r={x:rect.x+5,y:rect.y+rect.h-height-75,w,h:height},row=compact?0:tall-27,next={x:w-(compact?79:45),y:row,w:45,h:27},prev={x:next.x-65,y:row,w:45,h:27},close={x:w-34,y:0,w:34,h:27};
   const pageSize=Math.max(1,columns*rows),groups=this.trayGroups(),start=this.trayStart(groups,pageSize),page=Math.ceil(start/pageSize),pages=Math.max(1,page+Math.ceil((groups.length-start)/pageSize));
   return{r,columns,rows,pageSize,groups,start,page,pages,cellW,cellH,compact,close,prev,next};
@@ -958,20 +983,24 @@ export class PuzzleBoard implements RoomTable {
  }
  private stopTrayLift(touch:NonNullable<PuzzleBoard['trayTouch']>){if(touch.lift)clearTimeout(touch.lift);touch.lift=null;}
  private endTrayTouch(){const touch=this.trayTouch;if(touch)this.stopTrayLift(touch);this.trayTouch=null;}
- private drawTray(ctx:CanvasRenderingContext2D){const v=this.trayLayout(),r=v.r,colors=boardThemeColors(this.currentTheme),now=Date.now();ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+ private drawTray(ctx:CanvasRenderingContext2D){const v=this.trayLayout(),r=v.r,colors=boardThemeColors(this.currentTheme),now=Date.now(),transform=typeof ctx.getTransform==='function'?ctx.getTransform():null,density=Math.max(1,Math.min(3,transform?Math.abs(transform.a):1));ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
   const tray=this.trayDrag,held=tray&&this.pointers.get(tray.pointer);ctx.fillStyle=held&&inside(held,r)?colors.traySelected:colors.tray;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.strokeStyle=colors.trayLine;ctx.lineWidth=1;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.textBaseline='top';
   if(tray){const text='放回这里 = 回到原位';ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(text,r.x+(r.w-ctx.measureText(text).width)/2,r.y+(r.h-12)/2);ctx.restore();return;}
   ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`碎片托盘 · ${v.groups.length}组`,r.x+10,r.y+8);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayMuted;const hint='点选定位 · 拖出放置';ctx.fillText(hint,r.x+(v.compact?v.prev.x-12:r.w-36)-ctx.measureText(hint).width,r.y+9);ctx.font='18px sans-serif';ctx.fillText('×',r.x+r.w-25,r.y+4);
-  const visible=v.groups.slice(v.start,v.start+v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+28+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;ctx.fillStyle=lifted||group.pieces.includes(this.focusedPiece??-1)?colors.traySelected:colors.trayCell;ctx.fillRect(x,y,cw,ch);ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const s=this.trayPieceSource(id),scale=Math.min(cw*TRAY_PIECE_FILL/s.w,ch*TRAY_PIECE_FILL/s.h)*(lifted?1.1:1),angle=group.pieces.length===1?this.angleOf(id,now):0,source=this.grayAtlas&&this.fadeOf(group,id,now)>=.5?this.grayAtlas:this.atlas;
-   // The tray shows a piece as it lies: grey while faded, turned while tilted.
-   if(angle){ctx.save();ctx.translate(x+cw/2,y+ch/2);ctx.rotate(angle*Math.PI/180);ctx.drawImage(source,s.x,s.y,s.w,s.h,-s.w*scale/2,-s.h*scale/2,s.w*scale,s.h*scale);ctx.restore();}
-   else ctx.drawImage(source,s.x,s.y,s.w,s.h,x+(cw-s.w*scale)/2,y+(ch-s.h*scale)/2,s.w*scale,s.h*scale);}ctx.globalAlpha=1;if(group.pieces.length>1){ctx.fillStyle=colors.trayCountInk;ctx.font='10px sans-serif';ctx.fillText('×'+group.pieces.length,x+2,y+ch-11);}}
+  const visible=v.groups.slice(v.start,v.start+v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+28+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;
+   // Pieces lie straight on the tray. A soft spot behind one marks it lifted by a long press or just located.
+   if(lifted||group.pieces.includes(this.focusedPiece??-1)){ctx.fillStyle=colors.traySelected;ctx.beginPath();ctx.arc(x+cw/2,y+ch/2,Math.min(cw,ch)*.52,0,Math.PI*2);ctx.fill();}
+   ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const pw=this.board.width/this.state.cols,ph=this.board.height/this.state.rows,m=Math.min(pw,ph)*TRAY_TAB_MARGIN,fit=Math.min(cw*TRAY_PIECE_FILL/(pw+2*m),ch*TRAY_PIECE_FILL/(ph+2*m))*(lifted?1.12:1),dw=(pw+2*m)*fit,dh=(ph+2*m)*fit,angle=group.pieces.length===1?this.angleOf(id,now):0;
+   // The tray shows a piece as it lies: grey while faded (from the faded atlas), turned while tilted; otherwise sharp at the screen's pixel size.
+   const faded=!!this.grayAtlas&&this.fadeOf(group,id,now)>=.5,tile=faded?null:this.trayTile(id,Math.ceil(dw*density)),source=tile??(faded?this.grayAtlas!:this.atlas),s=tile?{x:0,y:0,w:tile.width,h:tile.height}:this.trayPieceSource(id);
+   if(angle){ctx.save();ctx.translate(x+cw/2,y+ch/2);ctx.rotate(angle*Math.PI/180);ctx.drawImage(source,s.x,s.y,s.w,s.h,-dw/2,-dh/2,dw,dh);ctx.restore();}
+   else ctx.drawImage(source,s.x,s.y,s.w,s.h,x+(cw-dw)/2,y+(ch-dh)/2,dw,dh);}ctx.globalAlpha=1;if(group.pieces.length>1){ctx.fillStyle=colors.trayCountInk;ctx.font='10px sans-serif';ctx.fillText('×'+group.pieces.length,x+2,y+ch-11);}}
   ctx.font='10px sans-serif';ctx.fillStyle=colors.trayMuted;if(!v.compact)ctx.fillText(v.groups.length?'散片保持原位':'所有拼块都已归位',r.x+10,r.y+r.h-18);else if(!v.groups.length)ctx.fillText('所有拼块都已归位',r.x+10,r.y+36);
   const py=r.y+v.prev.y;ctx.font='16px sans-serif';ctx.fillStyle=v.start>0?colors.trayInk:colors.trayDisabled;ctx.fillText('‹',r.x+v.prev.x+12,py+5);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`${v.page+1}/${v.pages}`,r.x+v.prev.x+39,py+9);ctx.font='16px sans-serif';ctx.fillStyle=v.page<v.pages-1?colors.trayInk:colors.trayDisabled;ctx.fillText('›',r.x+v.next.x+18,py+5);ctx.restore();
  }
  /** The atlas area of one piece with its tabs: the tile without the shadow margin around them. */
  private trayPieceSource(id:number){
-  const t=this.tile,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,m=Math.min(w,h)*.27,inset=Math.max(0,t.pad-m)*t.scale;
+  const t=this.tile,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,m=Math.min(w,h)*TRAY_TAB_MARGIN,inset=Math.max(0,t.pad-m)*t.scale;
   return{x:(id%t.columns)*t.w+inset,y:Math.floor(id/t.columns)*t.h+inset,w:Math.max(1,t.w-2*inset),h:Math.max(1,t.h-2*inset)};
  }
  private scheduleExpiry(){if(this.timer)clearTimeout(this.timer);const next=[this.hintUntil,this.underlayUntil].filter(t=>t>Date.now()).sort((a,b)=>a-b)[0];if(next)this.timer=setTimeout(()=>{this.changed();this.scheduleExpiry();},Math.max(1,next-Date.now()+1));}
@@ -1383,5 +1412,5 @@ export class PuzzleBoard implements RoomTable {
   if(this.tray)this.drawTray(ctx);
   if(this.previewLarge&&this.ready)this.drawPreviewZoom(ctx);
  }
- destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);this.clearSettles();this.releaseGrayAtlas();if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;if(this.minimapTimer)clearTimeout(this.minimapTimer);this.minimapTimer=null;if(this.minimapCache)this.minimapCache.canvas.width=this.minimapCache.canvas.height=1;this.minimapCache=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.teamBursts=[];this.mergeLog.clear();this.pendingDrops.clear();this.pendingDropAt.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
+ destroy(){if(this.destroyed)return;if(this.drag)this.drag.live=false;this.cancelInput(true);this.clearSettles();this.releaseGrayAtlas();this.releaseTrayTiles();if(this.strandedTimer)clearTimeout(this.strandedTimer);this.strandedTimer=null;if(this.minimapTimer)clearTimeout(this.minimapTimer);this.minimapTimer=null;if(this.minimapCache)this.minimapCache.canvas.width=this.minimapCache.canvas.height=1;this.minimapCache=null;this.releaseSurfaceBuffer();this.releasePaperSurface();this.releasePlacedSurface();this.ownPoint=null;this.onCursor?.(null);this.destroyed=true;this.onCursor=null;this.cursors.clear();this.cancelImage?.();this.removeHide();this.removeShow();this.flashes=[];this.teamBursts=[];this.mergeLog.clear();this.pendingDrops.clear();this.pendingDropAt.clear();this.contributions.clear();if(this.frame)this.platform.cancelFrame(this.frame);if(this.timer)clearTimeout(this.timer);this.imageSerial++;if(this.atlas)this.atlas.width=this.atlas.height=1;this.atlas=null;this.picture.width=1;this.picture.height=1;}
 }

@@ -51,15 +51,21 @@ test('the map keeps its place through a tray drag-out, a map tap pans the view a
  board.destroy();
 });
 
-for(const layout of ['portrait','landscape'])test(`${layout}: tray cells are fingertip-sized and pieces fill most of them`,async()=>{
+for(const layout of ['portrait','landscape'])test(`${layout}: a 5 x 4 portrait page, landscape cells as wide, pieces straight on the tray and sharp`,async()=>{
  const {p,board}=await setup(layout),v=board.trayLayout();
- assert.equal(v.columns,layout==='portrait'?5:10);assert.equal(v.rows,layout==='portrait'?3:2);
+ assert.equal(v.columns,layout==='portrait'?5:11);assert.equal(v.rows,layout==='portrait'?4:2);
  assert.ok(v.cellW-5>=44&&v.cellH-5>=44,'each cell at least 44 pt');
  assert.ok(v.r.h<=board.rect.h*(layout==='portrait'?.42:.45)+.01&&v.r.y-board.rect.y>=board.rect.h*.35,'the tray keeps its height cap and leaves the table above it');
- p.commands.length=0;board.draw(p.ctx);
+ // Tray pictures are painted once per size; the second draw shows only the tray itself.
+ p.ctx.getTransform=()=>({a:3});board.draw(p.ctx);p.commands.length=0;board.draw(p.ctx);
  const cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&a[6]>=v.r.y&&a[6]<=v.r.y+v.r.h);
  assert.equal(cells.length,Math.min(v.pageSize,v.groups.length));
- for(const [,,,,,,dx,dy,dw,dh]of cells){const fill=Math.max(dw/(v.cellW-5),dh/(v.cellH-5));assert.ok(Math.abs(fill-TRAY_PIECE_FILL)<.001,'fills '+TRAY_PIECE_FILL+' of the cell, got '+fill.toFixed(3));}
+ for(const [,source,,,sw,,dx,dy,dw,dh]of cells){
+  const fill=Math.max(dw/(v.cellW-5),dh/(v.cellH-5));assert.ok(Math.abs(fill-TRAY_PIECE_FILL)<.001,'fills '+TRAY_PIECE_FILL+' of the cell, got '+fill.toFixed(3));
+  assert.notEqual(source,board.atlas,'drawn from its own picture, not the atlas');assert.equal(sw,Math.ceil(dw*3),'at the screen pixel size (dpr 3)');
+ }
+ const grid={x:v.r.x+8,y:v.r.y+28,w:v.columns*v.cellW,h:v.rows*v.cellH},frames=p.commands.filter(([name,x,y,w,h])=>name==='fillRect'&&x>=grid.x-.01&&y>=grid.y-.01&&x+w<=grid.x+grid.w+.01&&y+h<=grid.y+grid.h+.01);
+ assert.deepEqual(frames,[],'no cell frames under the pieces');
  board.destroy();
 });
 
