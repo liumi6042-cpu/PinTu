@@ -59,6 +59,11 @@ export const TRAY_CELL_PORTRAIT=70,TRAY_CELL_LANDSCAPE=80,TRAY_CELL_MIN=50;
 export const TRAY_PIECE_FILL=.88;
 /** With the tray open on a landscape phone the 原图 thumbnail moves up beside the corner tool toggle, this far from the right edge. */
 const THUMB_TOGGLE_PX=50;
+/** A 32-bit hash of text (FNV-1a with a murmur finaliser): the tray's shuffle key. Math.imul only, for old WebViews. */
+export function trayHash(text:string){
+ let h=0x811c9dc5;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,0x01000193);}
+ h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h^=h>>>16;return h>>>0;
+}
 /** A drop still unanswered after this long no longer holds back the stranded-piece check. */
 const STRANDED_PENDING_MS=10000;
 /** 回忆变奏关: a faded piece regains its colour over FADE_IN_MS; one press of the rotate button turns a piece in TURN_MS. */
@@ -146,7 +151,13 @@ export class PuzzleBoard implements RoomTable {
  private preparation:ImagePreparation={phase:'loading',completed:0,total:0};
  private owners:Record<string,Owner>={};private pointers=new Map<number,Point>();
  private cursors=new Map<string,{value:SharedCursor;x:number;y:number}>();private ownPoint:CursorPoint|null=null;private frameAt:number|null=null;
- private tray=false;private trayPage=0;private focusedPiece:number|null=null;
+ private tray=false;private focusedPiece:number|null=null;
+ /** The tray lists groups in a shuffled order that is fixed per room (players placed them one by one in solved order).
+  * A group's place comes from its smallest piece, so a merge only moves the merged group. trayKey is the room id. */
+ trayKey='';
+ private trayOrder:{groups:Group[];length:number;edges:boolean;key:string;list:Group[];rank:Map<Group,number>}|null=null;
+ /** The group the current tray page starts with (rank, smallest piece); placing groups before it keeps the page in place. */
+ private trayAnchor:{rank:number;min:number}|null=null;
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null;group?:number;lift?:ReturnType<typeof setTimeout>|null;lifted?:boolean}|null=null;
  /** A group pulled out of the tray: the finger holding it and the spot it came from. */
  private trayDrag:{id:number;pointer:number;ox:number;oy:number}|null=null;
@@ -741,9 +752,31 @@ export class PuzzleBoard implements RoomTable {
   const limit=Math.min(Math.max(1,rect.h-76),Math.max(100,rect.h*(compact?.45:.42))),rows=Math.max(1,Math.min(compact?2:3,Math.floor((limit-chrome)/TRAY_CELL_MIN)));
   const cellH=Math.max(1,Math.min(cellW*.9,(limit-chrome)/rows)),tall=chrome+rows*cellH,height=this.trayDrag&&!full?Math.min(tall,TRAY_STRIP_PX):tall;
   const r={x:rect.x+5,y:rect.y+rect.h-height-75,w,h:height},row=compact?0:tall-27,next={x:w-(compact?79:45),y:row,w:45,h:27},prev={x:next.x-65,y:row,w:45,h:27},close={x:w-34,y:0,w:34,h:27};
-  const pageSize=Math.max(1,columns*rows),groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),pages=Math.max(1,Math.ceil(groups.length/pageSize));if(!this.trayDrag)this.trayPage=Math.min(this.trayPage,pages-1);
-  return{r,columns,rows,pageSize,groups,pages,cellW,cellH,compact,close,prev,next};
+  const pageSize=Math.max(1,columns*rows),groups=this.trayGroups(),start=this.trayStart(groups,pageSize),page=Math.ceil(start/pageSize),pages=Math.max(1,page+Math.ceil((groups.length-start)/pageSize));
+  return{r,columns,rows,pageSize,groups,start,page,pages,cellW,cellH,compact,close,prev,next};
  }
+ /** Loose visible groups in this room's tray order. Cached until the room state or the edge filter changes. */
+ private trayGroups(){
+  const key=this.trayKey||'seed:'+this.state.seed,order=this.trayOrder,all=this.state.groups;
+  if(order&&order.groups===all&&order.length===all.length&&order.edges===this.edges&&order.key===key&&order.list.every(g=>!g.locked))return order.list;
+  const rank=new Map<Group,number>(),list:Group[]=[];
+  for(const group of all){if(group.locked||!visibleGroup(group,this.pieces,this.edges))continue;let min=Infinity;for(const id of group.pieces)if(id<min)min=id;rank.set(group,min);list.push(group);}
+  const keys=new Map<Group,{rank:number;min:number}>();for(const [group,min]of rank)keys.set(group,{rank:trayHash(key+'|'+min),min});
+  list.sort((a,b)=>{const x=keys.get(a)!,y=keys.get(b)!;return x.rank-y.rank||x.min-y.min;});
+  for(const [group,k]of keys)rank.set(group,k.rank);
+  this.trayOrder={groups:all,length:all.length,edges:this.edges,key,list,rank};return list;
+ }
+ private trayKeyOf(group:Group){let min=Infinity;for(const id of group.pieces)if(id<min)min=id;return{rank:this.trayOrder?.rank.get(group)??trayHash((this.trayKey||'seed:'+this.state.seed)+'|'+min),min};}
+ /** Index of the first group on the current page: the anchor group, or the one that now follows it. */
+ private trayStart(list:Group[],pageSize:number){
+  const a=this.trayAnchor;if(!a||!list.length)return 0;let i=0;
+  while(i<list.length){const k=this.trayKeyOf(list[i]);if(k.rank>a.rank||k.rank===a.rank&&k.min>=a.min)break;i++;}
+  return i<list.length?i:Math.max(0,Math.floor((list.length-1)/pageSize)*pageSize);
+ }
+ /** The tray page number; setting it starts that page at a multiple of the page size. */
+ get trayPage(){return this.trayLayout().page;}
+ set trayPage(page:number){const v=this.trayLayout(),group=v.groups[Math.max(0,Math.floor(page))*v.pageSize];this.trayAnchor=page>0&&group?this.trayKeyOf(group):null;}
+ private turnTrayPage(delta:number){const v=this.trayLayout(),start=Math.max(0,Math.min(v.start+delta*v.pageSize,v.groups.length-1)),group=v.groups[start];this.trayAnchor=start>0&&group?this.trayKeyOf(group):null;}
  /** Screen y where the table stops being visible: the top of an open tray (at full height), else the bottom of the board. */
  private viewBottom(){return this.tray?this.trayLayout(true).r.y:this.rect.y+this.rect.h;}
  private gripFinger(id:number,now:number){const s=this.touchStarts.get(id),r=this.rect;if(!s||s.moved)return false;return now-s.at>=GRIP_MS||s.x-r.x<=GRIP_EDGE_PX||r.x+r.w-s.x<=GRIP_EDGE_PX||r.y+r.h-s.y<=GRIP_EDGE_PX;}
@@ -912,9 +945,9 @@ export class PuzzleBoard implements RoomTable {
   if(!this.tray||input.type!=='down'||this.pointers.size)return false;const p=input.changed[0],v=this.trayLayout();if(!p||!inside(p,v.r))return false;
   let action:(()=>void)|null=null,drag:number|undefined;const lx=p.x-v.r.x,ly=p.y-v.r.y,on=(b:Rect)=>lx>=b.x&&lx<=b.x+b.w&&ly>=b.y&&ly<=b.y+b.h;
   if(on(v.close))action=()=>{this.trayOpen=false;};
-  else if(on(v.next)){if(this.trayPage<v.pages-1)action=()=>{this.trayPage++;};}
-  else if(on(v.prev)){if(this.trayPage>0)action=()=>{this.trayPage--;};}
-  else if(ly>=28&&ly<28+v.rows*v.cellH){const col=Math.floor((lx-8)/v.cellW),row=Math.floor((ly-28)/v.cellH);if(col>=0&&col<v.columns&&row>=0&&row<v.rows){const group=v.groups[this.trayPage*v.pageSize+row*v.columns+col];
+  else if(on(v.next)){if(v.page<v.pages-1)action=()=>{this.turnTrayPage(1);};}
+  else if(on(v.prev)){if(v.start>0)action=()=>{this.turnTrayPage(-1);};}
+  else if(ly>=28&&ly<28+v.rows*v.cellH){const col=Math.floor((lx-8)/v.cellW),row=Math.floor((ly-28)/v.cellH);if(col>=0&&col<v.columns&&row>=0&&row<v.rows){const group=v.groups[v.start+row*v.columns+col];
    // A group another player holds can still be located, but not pulled out.
    if(group&&this.owners[group.id]){this.tell(`${this.owners[group.id].name} 正在移动这组拼块`);action=()=>{this.focusMobilePiece(group.pieces[0]);};}
    else if(group){drag=group.id;action=()=>{if(this.variant?.kind==='wind'&&group.pieces.length===1)this.selected=group.id;if(this.focusMobilePiece(group.pieces[0])){this.locatedMarks={ids:[group.pieces[0]],until:Date.now()+MINIMAP_MARK_MS};this.tell('已定位，直接拖动画布中的拼块');}else this.tell('这块刚被拼好，请选择其他碎片');};}}}
@@ -929,12 +962,12 @@ export class PuzzleBoard implements RoomTable {
   const tray=this.trayDrag,held=tray&&this.pointers.get(tray.pointer);ctx.fillStyle=held&&inside(held,r)?colors.traySelected:colors.tray;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.strokeStyle=colors.trayLine;ctx.lineWidth=1;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.textBaseline='top';
   if(tray){const text='放回这里 = 回到原位';ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(text,r.x+(r.w-ctx.measureText(text).width)/2,r.y+(r.h-12)/2);ctx.restore();return;}
   ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`碎片托盘 · ${v.groups.length}组`,r.x+10,r.y+8);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayMuted;const hint='点选定位 · 拖出放置';ctx.fillText(hint,r.x+(v.compact?v.prev.x-12:r.w-36)-ctx.measureText(hint).width,r.y+9);ctx.font='18px sans-serif';ctx.fillText('×',r.x+r.w-25,r.y+4);
-  const visible=v.groups.slice(this.trayPage*v.pageSize,(this.trayPage+1)*v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+28+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;ctx.fillStyle=lifted||group.pieces.includes(this.focusedPiece??-1)?colors.traySelected:colors.trayCell;ctx.fillRect(x,y,cw,ch);ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const s=this.trayPieceSource(id),scale=Math.min(cw*TRAY_PIECE_FILL/s.w,ch*TRAY_PIECE_FILL/s.h)*(lifted?1.1:1),angle=group.pieces.length===1?this.angleOf(id,now):0,source=this.grayAtlas&&this.fadeOf(group,id,now)>=.5?this.grayAtlas:this.atlas;
+  const visible=v.groups.slice(v.start,v.start+v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+28+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;ctx.fillStyle=lifted||group.pieces.includes(this.focusedPiece??-1)?colors.traySelected:colors.trayCell;ctx.fillRect(x,y,cw,ch);ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const s=this.trayPieceSource(id),scale=Math.min(cw*TRAY_PIECE_FILL/s.w,ch*TRAY_PIECE_FILL/s.h)*(lifted?1.1:1),angle=group.pieces.length===1?this.angleOf(id,now):0,source=this.grayAtlas&&this.fadeOf(group,id,now)>=.5?this.grayAtlas:this.atlas;
    // The tray shows a piece as it lies: grey while faded, turned while tilted.
    if(angle){ctx.save();ctx.translate(x+cw/2,y+ch/2);ctx.rotate(angle*Math.PI/180);ctx.drawImage(source,s.x,s.y,s.w,s.h,-s.w*scale/2,-s.h*scale/2,s.w*scale,s.h*scale);ctx.restore();}
    else ctx.drawImage(source,s.x,s.y,s.w,s.h,x+(cw-s.w*scale)/2,y+(ch-s.h*scale)/2,s.w*scale,s.h*scale);}ctx.globalAlpha=1;if(group.pieces.length>1){ctx.fillStyle=colors.trayCountInk;ctx.font='10px sans-serif';ctx.fillText('×'+group.pieces.length,x+2,y+ch-11);}}
   ctx.font='10px sans-serif';ctx.fillStyle=colors.trayMuted;if(!v.compact)ctx.fillText(v.groups.length?'散片保持原位':'所有拼块都已归位',r.x+10,r.y+r.h-18);else if(!v.groups.length)ctx.fillText('所有拼块都已归位',r.x+10,r.y+36);
-  const py=r.y+v.prev.y;ctx.font='16px sans-serif';ctx.fillStyle=this.trayPage>0?colors.trayInk:colors.trayDisabled;ctx.fillText('‹',r.x+v.prev.x+12,py+5);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`${this.trayPage+1}/${v.pages}`,r.x+v.prev.x+39,py+9);ctx.font='16px sans-serif';ctx.fillStyle=this.trayPage<v.pages-1?colors.trayInk:colors.trayDisabled;ctx.fillText('›',r.x+v.next.x+18,py+5);ctx.restore();
+  const py=r.y+v.prev.y;ctx.font='16px sans-serif';ctx.fillStyle=v.start>0?colors.trayInk:colors.trayDisabled;ctx.fillText('‹',r.x+v.prev.x+12,py+5);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`${v.page+1}/${v.pages}`,r.x+v.prev.x+39,py+9);ctx.font='16px sans-serif';ctx.fillStyle=v.page<v.pages-1?colors.trayInk:colors.trayDisabled;ctx.fillText('›',r.x+v.next.x+18,py+5);ctx.restore();
  }
  /** The atlas area of one piece with its tabs: the tile without the shadow margin around them. */
  private trayPieceSource(id:number){

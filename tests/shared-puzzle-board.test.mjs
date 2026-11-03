@@ -221,7 +221,7 @@ test('native contexts without isPointInPath can still hit true shared puzzle geo
 test('optional tray locates pieces without changing state or acquiring a lease',async()=>{
  const {board,state,p}=setup();await board.setImage('test.png');const before=JSON.stringify(state);board.network={acquire:async()=>assert.fail('finder must not claim'),move:()=>assert.fail('finder must not move'),drop:async()=>assert.fail('finder must not drop'),release(){}};
  assert.equal(board.trayOpen,false);board.trayOpen=true;board.draw(p.ctx);const tray=board.trayLayout(),point={id:1,x:tray.r.x+tray.cellW/2+8,y:tray.r.y+28+tray.cellH/2};board.input({type:'down',points:[point],changed:[point]});board.input({type:'up',points:[],changed:[point]});
- assert.equal(JSON.stringify(state),before);assert.equal(board.focusedPiece,state.groups[0].pieces[0]);assert.ok(board.camera.z*board.board.width/state.cols>=54);board.destroy();
+ assert.equal(JSON.stringify(state),before);assert.equal(board.focusedPiece,tray.groups[0].pieces[0]);assert.ok(board.camera.z*board.board.width/state.cols>=54);board.destroy();
 });
 
 test('opening camera shows the full target and all scattered pieces above floating controls',async()=>{
