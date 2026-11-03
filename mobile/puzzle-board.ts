@@ -52,6 +52,12 @@ const DROP_ASSIST=.375;
 export const TRAY_STRIP_PX=28;
 /** A finger held still this long on a tray cell lifts its group: any movement after that pulls it out, and lifting the finger does nothing. */
 export const TRAY_LIFT_MS=300;
+/** Tray cells: the column width aimed for in a portrait and a landscape tray, and the smallest row height (a fingertip plus the gap). */
+export const TRAY_CELL_PORTRAIT=70,TRAY_CELL_LANDSCAPE=80,TRAY_CELL_MIN=50;
+/** A tray piece, tabs included, fills this much of its cell. */
+export const TRAY_PIECE_FILL=.88;
+/** With the tray open on a landscape phone the 原图 thumbnail moves up beside the corner tool toggle, this far from the right edge. */
+const THUMB_TOGGLE_PX=50;
 /** A drop still unanswered after this long no longer holds back the stranded-piece check. */
 const STRANDED_PENDING_MS=10000;
 /** The nearest offset within reach that the server's drop would snap or join to, or null. */
@@ -533,10 +539,32 @@ export class PuzzleBoard implements RoomTable {
  }
  get locating(){return this.locateUntil>Date.now();}
  find(){const group=this.state.groups.find(g=>!g.locked&&!this.owners[g.id]&&visibleGroup(g,this.pieces,this.edges));return group?this.focusMobilePiece(group.pieces[0]):false;}
- private trayLayout(){const full=Math.min(Math.max(1,this.rect.h-76),210,Math.max(100,this.rect.h*.45)),height=this.trayDrag?Math.min(full,TRAY_STRIP_PX):full,r={x:this.rect.x+5,y:this.rect.y+this.rect.h-height-75,w:Math.max(1,this.rect.w-10),h:height},columns=Math.max(1,Math.min(12,Math.floor((r.w-16)/51))),rows=Math.max(1,Math.min(Math.floor((height-55)/48),Math.floor(24/columns))),pageSize=Math.max(1,columns*rows),groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),pages=Math.max(1,Math.ceil(groups.length/pageSize));if(!this.trayDrag)this.trayPage=Math.min(this.trayPage,pages-1);return{r,columns,rows,pageSize,groups,pages,cellW:(r.w-16)/columns,cellH:(height-55)/rows};}
+ /** The tray and its controls (close/prev/next are relative to r). A landscape tray is compact: its page arrows sit in the
+  * header row and it has no footer. full=true ignores the strip a drag-out shrinks it to, so what sits above it stays put. */
+ private trayLayout(full=false){
+  const rect=this.rect,compact=rect.w>rect.h,w=Math.max(1,rect.w-10),inner=Math.max(1,w-16),chrome=compact?34:55;
+  const columns=Math.max(1,Math.min(12,Math.floor(inner/(compact?TRAY_CELL_LANDSCAPE:TRAY_CELL_PORTRAIT)))),cellW=inner/columns;
+  const limit=Math.min(Math.max(1,rect.h-76),Math.max(100,rect.h*(compact?.45:.42))),rows=Math.max(1,Math.min(compact?2:3,Math.floor((limit-chrome)/TRAY_CELL_MIN)));
+  const cellH=Math.max(1,Math.min(cellW*.9,(limit-chrome)/rows)),tall=chrome+rows*cellH,height=this.trayDrag&&!full?Math.min(tall,TRAY_STRIP_PX):tall;
+  const r={x:rect.x+5,y:rect.y+rect.h-height-75,w,h:height},row=compact?0:tall-27,next={x:w-(compact?79:45),y:row,w:45,h:27},prev={x:next.x-65,y:row,w:45,h:27},close={x:w-34,y:0,w:34,h:27};
+  const pageSize=Math.max(1,columns*rows),groups=this.state.groups.filter(g=>!g.locked&&visibleGroup(g,this.pieces,this.edges)),pages=Math.max(1,Math.ceil(groups.length/pageSize));if(!this.trayDrag)this.trayPage=Math.min(this.trayPage,pages-1);
+  return{r,columns,rows,pageSize,groups,pages,cellW,cellH,compact,close,prev,next};
+ }
+ /** Screen y where the table stops being visible: the top of an open tray (at full height), else the bottom of the board. */
+ private viewBottom(){return this.tray?this.trayLayout(true).r.y:this.rect.y+this.rect.h;}
  private gripFinger(id:number,now:number){const s=this.touchStarts.get(id),r=this.rect;if(!s||s.moved)return false;return now-s.at>=GRIP_MS||s.x-r.x<=GRIP_EDGE_PX||r.x+r.w-s.x<=GRIP_EDGE_PX||r.y+r.h-s.y<=GRIP_EDGE_PX;}
  /** A locked table forgives a near miss: the touch picks up a loose piece within a fingertip of it. */
  private groupNear(p:Point){for(const r of [6,12,18])for(let i=0;i<8;i++){const a=i*Math.PI/4,group=this.groupAt({id:p.id,x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r});if(group)return group;}return null;}
+ /** The 原图 thumbnail in the top-right corner: its picture size, top and right edge. Above an open tray it shrinks to fit;
+  * when it would start below the corner tool toggle and not fit there, it moves up beside the toggle instead. Null: no room. */
+ private thumbLayout(){
+  const r=this.rect,ratio=this.board.height/this.board.width;let w=Math.min(r.w*.35,150),h=w*ratio,inset=this.previewThumbInset??this.previewTopInset,shift=0;
+  if(this.tray){
+   const bottom=this.viewBottom()-r.y-8;if(this.previewThumbInset!==null&&Math.max(6,inset)+Math.min(h,48)+6>bottom){inset=this.previewTopInset;shift=THUMB_TOGGLE_PX;}
+   const room=bottom-Math.max(6,inset)-6;if(h>room){h=Math.max(0,room);w=h/ratio;}if(h<30)return null;
+  }
+  return{w,h,top:r.y+Math.max(6,Math.min(inset,r.h-h-12)),right:r.x+r.w-6-shift};
+ }
  /** The large reference fills the table below any floating header; the picture is fitted inside a margin. */
  private previewLayout(){
   const r=this.rect,top=r.y+Math.max(12,Math.min(this.previewTopInset,r.h*.4)),area={x:r.x+12,y:top+40,w:r.w-24,h:r.y+r.h-top-40-34},scale=Math.max(.01,Math.min(area.w/this.board.width,area.h/this.board.height)),w=this.board.width*scale,h=this.board.height*scale;
@@ -609,10 +637,12 @@ export class PuzzleBoard implements RoomTable {
  /** Top-left on phones, opposite the 原图 thumbnail, and only while the view no longer holds the whole table. */
  private minimapLayout():MinimapLayout|null{
   const r=this.rect,cam=this.camera;
-  if(!this.minimapEnabled||!this.ready||this.previewLarge||this.tray||this.completionReveal>0||r.w<160||r.h<160||this.state.groups.every(g=>g.locked))return null;
-  const m=this.minimapBounds(),slack=Math.min(m.x1-m.x0,m.y1-m.y0)*.03,vx0=-cam.x/cam.z,vy0=-cam.y/cam.z,vx1=(r.w-cam.x)/cam.z,vy1=(r.h-cam.y)/cam.z;
+  if(!this.minimapEnabled||!this.ready||this.previewLarge||this.completionReveal>0||r.w<160||r.h<160||this.state.groups.every(g=>g.locked))return null;
+  // An open tray covers the bottom of the table: the view, and the room for the map, end at its top.
+  const bottom=this.viewBottom()-r.y,m=this.minimapBounds(),slack=Math.min(m.x1-m.x0,m.y1-m.y0)*.03,vx0=-cam.x/cam.z,vy0=-cam.y/cam.z,vx1=(r.w-cam.x)/cam.z,vy1=(bottom-cam.y)/cam.z;
   if(this.minimapTouch===null&&vx0<=m.x0+slack&&vy0<=m.y0+slack&&vx1>=m.x1-slack&&vy1>=m.y1-slack)return null;
-  const maxW=Math.min(r.w*.34,this.phoneLandscapeRoom?134:120),maxH=Math.min(r.h*.3,this.phoneLandscapeRoom?96:100),scale=Math.min(maxW/(m.x1-m.x0),maxH/(m.y1-m.y0)),w=(m.x1-m.x0)*scale,h=(m.y1-m.y0)*scale,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-h-14));
+  const room=this.tray?bottom-Math.max(6,this.previewTopInset)-14:Infinity;if(room<34)return null;
+  const maxW=Math.min(r.w*.34,this.phoneLandscapeRoom?134:120),maxH=Math.min(r.h*.3,this.phoneLandscapeRoom?96:100,room),scale=Math.min(maxW/(m.x1-m.x0),maxH/(m.y1-m.y0)),w=(m.x1-m.x0)*scale,h=(m.y1-m.y0)*scale,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-h-14));
   return{frame:{x:r.x+12,y:top,w:w+6,h:h+6},inner:{x:r.x+15,y:top+3,w,h},x:m.x0,y:m.y0,scale};
  }
  /** Table artwork for the map. While pieces move it is redrawn at most every MINIMAP_REDRAW_MS. */
@@ -643,7 +673,7 @@ export class PuzzleBoard implements RoomTable {
   ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(f.x,f.y,f.w,f.h);if(map)ctx.drawImage(map,i.x,i.y,i.w,i.h);
   ctx.beginPath();ctx.rect(i.x,i.y,i.w,i.h);ctx.clip();
   // The current view stays clear and framed; the rest of the table is dimmed a little.
-  const v=at(-cam.x/cam.z,-cam.y/cam.z),vw=Math.max(6,r.w/cam.z*m.scale),vh=Math.max(6,r.h/cam.z*m.scale),l=Math.min(i.x+i.w,Math.max(i.x,v.x)),t=Math.min(i.y+i.h,Math.max(i.y,v.y)),rr=Math.min(i.x+i.w,Math.max(l,v.x+vw)),bb=Math.min(i.y+i.h,Math.max(t,v.y+vh));
+  const v=at(-cam.x/cam.z,-cam.y/cam.z),vw=Math.max(6,r.w/cam.z*m.scale),vh=Math.max(6,(this.viewBottom()-r.y)/cam.z*m.scale),l=Math.min(i.x+i.w,Math.max(i.x,v.x)),t=Math.min(i.y+i.h,Math.max(i.y,v.y)),rr=Math.min(i.x+i.w,Math.max(l,v.x+vw)),bb=Math.min(i.y+i.h,Math.max(t,v.y+vh));
   ctx.fillStyle='rgba(60,40,34,.22)';ctx.fillRect(i.x,i.y,i.w,t-i.y);ctx.fillRect(i.x,bb,i.w,i.y+i.h-bb);ctx.fillRect(i.x,t,l-i.x,bb-t);ctx.fillRect(rr,t,i.x+i.w-rr,bb-t);
   // Rings follow the piece size on the map so many marks do not bury it; the view frame is drawn over them.
   const marks=this.minimapMarks(now);if(marks.length){const ring=Math.max(2.5,Math.min(5,Math.min(this.board.width/this.state.cols,this.board.height/this.state.rows)*m.scale*.6)),line=ring/5;ctx.beginPath();for(const mark of marks){const p=at(mark.x,mark.y);ctx.moveTo(p.x+ring,p.y);ctx.arc(p.x,p.y,ring,0,Math.PI*2);}ctx.strokeStyle='#3d1d0cb3';ctx.lineWidth=3.2*line;ctx.stroke();ctx.strokeStyle='#ffd447';ctx.lineWidth=1.8*line;ctx.stroke();}
@@ -666,7 +696,7 @@ export class PuzzleBoard implements RoomTable {
  }
  private minimapJump(p:Point){
   const m=this.minimap;if(!m)return;const i=m.inner,x=m.x+(Math.min(i.x+i.w,Math.max(i.x,p.x))-i.x)/m.scale,y=m.y+(Math.min(i.y+i.h,Math.max(i.y,p.y))-i.y)/m.scale,z=this.camera.z;
-  this.camera={x:this.rect.w/2-x*z,y:this.rect.h/2-y*z,z};this.changed();
+  this.camera={x:this.rect.w/2-x*z,y:(this.viewBottom()-this.rect.y)/2-y*z,z};this.changed();
  }
  private drawPreviewZoom(ctx:CanvasRenderingContext2D){
   const r=this.rect,{area,close}=this.previewLayout(),image=this.previewImageRect();
@@ -686,13 +716,14 @@ export class PuzzleBoard implements RoomTable {
    if(input.type==='move'&&p&&touch.group!==undefined&&(moved>=DRAG_SLOP||touch.lifted&&moved>0)){this.endTrayTouch();this.beginTrayDrag(touch.group,p);this.changed();return true;}
    if(moved>9){touch.action=null;this.stopTrayLift(touch);}if(input.type==='up'&&input.changed.some(p=>p.id===touch.id)){this.endTrayTouch();touch.action?.();this.changed();}return true;}
   if(!this.tray||input.type!=='down'||this.pointers.size)return false;const p=input.changed[0],v=this.trayLayout();if(!p||!inside(p,v.r))return false;
-  let action:(()=>void)|null=null,drag:number|undefined;const lx=p.x-v.r.x,ly=p.y-v.r.y;
-  if(ly<27&&lx>v.r.w-34)action=()=>{this.trayOpen=false;};
-  else if(ly>=v.r.h-27){if(lx>v.r.w-45&&this.trayPage<v.pages-1)action=()=>{this.trayPage++;};else if(lx>v.r.w-110&&lx<v.r.w-65&&this.trayPage>0)action=()=>{this.trayPage--;};}
-  else if(ly>=28){const col=Math.floor((lx-8)/v.cellW),row=Math.floor((ly-28)/v.cellH);if(col>=0&&col<v.columns&&row>=0&&row<v.rows){const group=v.groups[this.trayPage*v.pageSize+row*v.columns+col];
+  let action:(()=>void)|null=null,drag:number|undefined;const lx=p.x-v.r.x,ly=p.y-v.r.y,on=(b:Rect)=>lx>=b.x&&lx<=b.x+b.w&&ly>=b.y&&ly<=b.y+b.h;
+  if(on(v.close))action=()=>{this.trayOpen=false;};
+  else if(on(v.next)){if(this.trayPage<v.pages-1)action=()=>{this.trayPage++;};}
+  else if(on(v.prev)){if(this.trayPage>0)action=()=>{this.trayPage--;};}
+  else if(ly>=28&&ly<28+v.rows*v.cellH){const col=Math.floor((lx-8)/v.cellW),row=Math.floor((ly-28)/v.cellH);if(col>=0&&col<v.columns&&row>=0&&row<v.rows){const group=v.groups[this.trayPage*v.pageSize+row*v.columns+col];
    // A group another player holds can still be located, but not pulled out.
    if(group&&this.owners[group.id]){this.tell(`${this.owners[group.id].name} 正在移动这组拼块`);action=()=>{this.focusMobilePiece(group.pieces[0]);};}
-   else if(group){drag=group.id;action=()=>{if(this.focusMobilePiece(group.pieces[0]))this.tell('已定位，直接拖动画布中的拼块');else this.tell('这块刚被拼好，请选择其他碎片');};}}}
+   else if(group){drag=group.id;action=()=>{if(this.focusMobilePiece(group.pieces[0])){this.locatedMarks={ids:[group.pieces[0]],until:Date.now()+MINIMAP_MARK_MS};this.tell('已定位，直接拖动画布中的拼块');}else this.tell('这块刚被拼好，请选择其他碎片');};}}}
   const touch:NonNullable<PuzzleBoard['trayTouch']>=this.trayTouch={id:p.id,x:p.x,y:p.y,action,group:drag};
   // Held still: the group lifts (the cell pops) and the lift replaces the tap's locate.
   if(drag!==undefined)touch.lift=setTimeout(()=>{touch.lift=null;if(this.trayTouch!==touch||this.destroyed)return;touch.lifted=true;touch.action=null;this.changed();},TRAY_LIFT_MS);
@@ -703,9 +734,15 @@ export class PuzzleBoard implements RoomTable {
  private drawTray(ctx:CanvasRenderingContext2D){const v=this.trayLayout(),r=v.r,colors=boardThemeColors(this.currentTheme);ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
   const tray=this.trayDrag,held=tray&&this.pointers.get(tray.pointer);ctx.fillStyle=held&&inside(held,r)?colors.traySelected:colors.tray;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.strokeStyle=colors.trayLine;ctx.lineWidth=1;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.textBaseline='top';
   if(tray){const text='放回这里 = 回到原位';ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(text,r.x+(r.w-ctx.measureText(text).width)/2,r.y+(r.h-12)/2);ctx.restore();return;}
-  ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`碎片托盘 · ${v.groups.length}组`,r.x+10,r.y+8);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayMuted;const hint='点选定位 · 拖出放置';ctx.fillText(hint,r.x+r.w-36-ctx.measureText(hint).width,r.y+9);ctx.font='18px sans-serif';ctx.fillText('×',r.x+r.w-25,r.y+4);
-  const visible=v.groups.slice(this.trayPage*v.pageSize,(this.trayPage+1)*v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+28+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;ctx.fillStyle=lifted||group.pieces.includes(this.focusedPiece??-1)?colors.traySelected:colors.trayCell;ctx.fillRect(x,y,cw,ch);ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const t=this.tile,scale=Math.min((cw-5)/t.w,(ch-5)/t.h)*(lifted?1.18:1);ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,x+(cw-t.w*scale)/2,y+(ch-t.h*scale)/2,t.w*scale,t.h*scale);}ctx.globalAlpha=1;if(group.pieces.length>1){ctx.fillStyle=colors.trayCountInk;ctx.font='10px sans-serif';ctx.fillText('×'+group.pieces.length,x+2,y+ch-11);}}
-  ctx.font='10px sans-serif';ctx.fillStyle=colors.trayMuted;ctx.fillText(v.groups.length?'散片保持原位':'所有拼块都已归位',r.x+10,r.y+r.h-18);ctx.font='16px sans-serif';ctx.fillStyle=this.trayPage>0?colors.trayInk:colors.trayDisabled;ctx.fillText('‹',r.x+r.w-98,r.y+r.h-22);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`${this.trayPage+1}/${v.pages}`,r.x+r.w-71,r.y+r.h-18);ctx.font='16px sans-serif';ctx.fillStyle=this.trayPage<v.pages-1?colors.trayInk:colors.trayDisabled;ctx.fillText('›',r.x+r.w-27,r.y+r.h-22);ctx.restore();
+  ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`碎片托盘 · ${v.groups.length}组`,r.x+10,r.y+8);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayMuted;const hint='点选定位 · 拖出放置';ctx.fillText(hint,r.x+(v.compact?v.prev.x-12:r.w-36)-ctx.measureText(hint).width,r.y+9);ctx.font='18px sans-serif';ctx.fillText('×',r.x+r.w-25,r.y+4);
+  const visible=v.groups.slice(this.trayPage*v.pageSize,(this.trayPage+1)*v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+28+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;ctx.fillStyle=lifted||group.pieces.includes(this.focusedPiece??-1)?colors.traySelected:colors.trayCell;ctx.fillRect(x,y,cw,ch);ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const s=this.trayPieceSource(id),scale=Math.min(cw*TRAY_PIECE_FILL/s.w,ch*TRAY_PIECE_FILL/s.h)*(lifted?1.1:1);ctx.drawImage(this.atlas,s.x,s.y,s.w,s.h,x+(cw-s.w*scale)/2,y+(ch-s.h*scale)/2,s.w*scale,s.h*scale);}ctx.globalAlpha=1;if(group.pieces.length>1){ctx.fillStyle=colors.trayCountInk;ctx.font='10px sans-serif';ctx.fillText('×'+group.pieces.length,x+2,y+ch-11);}}
+  ctx.font='10px sans-serif';ctx.fillStyle=colors.trayMuted;if(!v.compact)ctx.fillText(v.groups.length?'散片保持原位':'所有拼块都已归位',r.x+10,r.y+r.h-18);else if(!v.groups.length)ctx.fillText('所有拼块都已归位',r.x+10,r.y+36);
+  const py=r.y+v.prev.y;ctx.font='16px sans-serif';ctx.fillStyle=this.trayPage>0?colors.trayInk:colors.trayDisabled;ctx.fillText('‹',r.x+v.prev.x+12,py+5);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`${this.trayPage+1}/${v.pages}`,r.x+v.prev.x+39,py+9);ctx.font='16px sans-serif';ctx.fillStyle=this.trayPage<v.pages-1?colors.trayInk:colors.trayDisabled;ctx.fillText('›',r.x+v.next.x+18,py+5);ctx.restore();
+ }
+ /** The atlas area of one piece with its tabs: the tile without the shadow margin around them. */
+ private trayPieceSource(id:number){
+  const t=this.tile,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,m=Math.min(w,h)*.27,inset=Math.max(0,t.pad-m)*t.scale;
+  return{x:(id%t.columns)*t.w+inset,y:Math.floor(id/t.columns)*t.h+inset,w:Math.max(1,t.w-2*inset),h:Math.max(1,t.h-2*inset)};
  }
  private scheduleExpiry(){if(this.timer)clearTimeout(this.timer);const next=[this.hintUntil,this.underlayUntil].filter(t=>t>Date.now()).sort((a,b)=>a-b)[0];if(next)this.timer=setTimeout(()=>{this.changed();this.scheduleExpiry();},Math.max(1,next-Date.now()+1));}
  /** Only transient feedback owns a continuing animation loop. The last tick
@@ -1050,10 +1087,11 @@ export class PuzzleBoard implements RoomTable {
   this.drawHintFeedback(ctx,now);
   ctx.restore();
   this.previewThumb=null;
-  if(this.preview&&this.ready&&!this.previewLarge){const maxW=Math.min(r.w*.35,150),height=maxW*this.board.height/this.board.width,top=r.y+Math.max(6,Math.min(this.previewThumbInset??this.previewTopInset,r.h-height-12));ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(r.x+r.w-maxW-12,top,maxW+6,height+6);ctx.drawImage(this.picture,r.x+r.w-maxW-9,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(r.x+r.w-maxW-12,top,maxW+6,height+6);
+  const thumb=this.preview&&this.ready&&!this.previewLarge?this.thumbLayout():null;
+  if(thumb){const maxW=thumb.w,height=thumb.h,top=thumb.top,right=thumb.right;ctx.save();ctx.fillStyle=colors.preview;ctx.fillRect(right-maxW-6,top,maxW+6,height+6);ctx.drawImage(this.picture,right-maxW-3,top+3,maxW,height);ctx.strokeStyle=colors.previewLine;ctx.lineWidth=1;ctx.strokeRect(right-maxW-6,top,maxW+6,height+6);
    // A magnifier in the corner says the thumbnail opens a large, zoomable view.
-   const mx=r.x+r.w-maxW-9+11,my=top+height-8;ctx.fillStyle='rgba(255,250,243,.92)';ctx.beginPath();ctx.arc(mx,my,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#5b4337';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(mx-1.5,my-1.5,4,0,Math.PI*2);ctx.moveTo(mx+1.5,my+1.5);ctx.lineTo(mx+5,my+5);ctx.stroke();
-   ctx.restore();this.previewThumb={x:r.x+r.w-maxW-12,y:top,w:maxW+6,h:height+6};}
+   const mx=right-maxW-3+11,my=top+height-8;ctx.fillStyle='rgba(255,250,243,.92)';ctx.beginPath();ctx.arc(mx,my,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#5b4337';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(mx-1.5,my-1.5,4,0,Math.PI*2);ctx.moveTo(mx+1.5,my+1.5);ctx.lineTo(mx+5,my+5);ctx.stroke();
+   ctx.restore();this.previewThumb={x:right-maxW-6,y:top,w:maxW+6,h:height+6};}
   ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const cursor of this.cursors.values()){const p=this.worldToScreen(cursor),value=cursor.value;if(p.x<r.x||p.y<r.y||p.x>r.x+r.w||p.y>r.y+r.h)continue;ctx.save();ctx.translate(p.x,p.y);ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=value.color;ctx.fill();ctx.strokeStyle=colors.cursorLine;ctx.lineWidth=1;ctx.stroke();ctx.font='bold 11px sans-serif';const label=`${value.name} · Lv.${value.level??0}`,width=Math.min(190,ctx.measureText(label).width+12);if(this.phoneLandscapeRoom){roomRoundPath(ctx,{x:19,y:12,w:width,h:21},8);ctx.fillStyle=value.color;ctx.fill();}else{ctx.fillStyle=colors.cursorLabel;ctx.fillRect(19,12,width,21);}ctx.fillStyle=this.phoneLandscapeRoom?'#ffffff':colors.labelInk;ctx.textBaseline='top';ctx.fillText(label,25,17,width-12);ctx.restore();if(value.decoration)decorations.push({value:value.decoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}ctx.restore();
   if(this.selfDecoration&&this.ownPoint){const p=this.worldToScreen(this.ownPoint);decorations.push({value:this.selfDecoration,rect:{x:p.x-12.5,y:p.y-12.5,w:25,h:25}});}
   if(this.drawDecoration&&decorations.length){ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();for(const d of decorations)this.drawDecoration(d.value,d.rect);ctx.restore();}
