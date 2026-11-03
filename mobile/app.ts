@@ -2070,7 +2070,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    c.fillStyle=this.colors.cream;c.fillRect(0,0,s.w,headerBottom);c.fillStyle=this.colors.line;c.fillRect(0,headerBottom,s.w,1);
    this.drawRoomTopBar({x:0,y:headerTop,w:s.w,h:76},'portrait');
    // The large reference covers the board like a dialog; its own close button and backdrop dismiss it.
-   if(!board.previewZoomed){const map=board.minimapFrame;this.drawChatBubble(map?Math.max(headerBottom+8,map.y+map.h+8):headerBottom+8);this.drawRoomGift(10,safeBottom-62,true);if(!this.toolsOpen)this.drawBoardQuickTools(s.w-61,safeBottom-67);this.drawRoomTools({x:s.w-63,y:safeBottom-65,w:50,h:50},false);}
+   if(!board.previewZoomed){const map=board.minimapFrame;this.drawChatBubble(map?Math.max(headerBottom+8,map.y+map.h+8):headerBottom+8);this.drawRoomGift(10,safeBottom-62,true);if(!this.toolsOpen){const slot=this.portraitQuickSlot(s.w,safeBottom);this.drawBoardQuickTools(slot.x,slot.bottom);}this.drawRoomTools({x:s.w-63,y:safeBottom-65,w:50,h:50},false);}
   }
   if(!this.imageReady){const preparation=board.imagePreparation??{phase:'loading',completed:0,total:0},label=preparation.phase==='preparing'?'正在准备碎片 '+preparation.completed+'/'+preparation.total+'…':preparation.phase==='loading'?'正在加载图片…':'正在铺开拼图…',r=this.roomArea,w=Math.min(r.w-36,420);s.panel({x:r.x+(r.w-w)/2,y:r.y+20,w,h:74});this.paragraph(this.imageError||label,r.x+(r.w-w)/2+12,r.y+37,w-24,14);if(this.imageError)this.button(r.x+(r.w-w)/2+7,r.y+104,w-14,'重新加载图片',()=>void this.run(()=>this.retryRoomImage(board)));}
   if(this.platform.config.previewTestRoom){
@@ -2252,11 +2252,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   this.note(this.viewLocked?'画面已锁定：单指只拖拼块，双指移动和缩放':'已解锁：单指拖空白处可移动画面');this.invalidate();
  }
  /** Once enabled under 更多, phones keep the view lock one tap away, above the room tools. */
+ /** Portrait quick tools (锁定) sit in the bottom bar between 任务 (its tap area ends at x 151) and the ⊞ button,
+  * about 57% across and level with ⊞, so they never cover the table or the tray above the bar. */
+ private portraitQuickSlot(width:number,safeBottom:number){return{x:Math.round(Math.max(151+12,Math.min(width*.57-23,width-63-12-46))),bottom:safeBottom-9};}
  private drawBoardQuickTools(x:number,bottom:number){
   const board=this.board,room=this.room;if(!this.lockButtonEnabled||!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
   const s=this.stage,size=46,items=[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
-  // Where the open tray (or its drag-out strip) lies under the buttons and its pager, stack them just above it instead.
-  const tray=board.trayFrame,top=bottom-items.length*(size+8);if(tray&&x<tray.x+tray.w&&x+size>tray.x&&top<tray.y+tray.h&&bottom-8>tray.y)bottom=tray.y;
   items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-gold-normal':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
  }
  private drawChatBubble(y:number){
