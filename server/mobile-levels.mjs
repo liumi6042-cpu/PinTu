@@ -4,6 +4,8 @@ const invalid=()=>{throw new TypeError('Invalid levels configuration');};
 const identifier=value=>typeof value==='string'&&/^[a-z0-9][a-z0-9-]{0,99}$/.test(value);
 function shape(value,fields,optional=[]){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!fields.includes(key)&&!optional.includes(key))||fields.some(key=>!Object.hasOwn(value,key)))invalid();}
 const storyText=(value,max)=>{if(typeof value!=='string'||!value.trim()||value.length>max)invalid();};
+/** 回忆变奏关 of a story level; clients from v53.7 also carry the same placement built in, and 'none' turns it off. */
+const STORY_VARIANTS=['fade','wind','wind-light','wind-water','none'];
 function readComic(comic){
  shape(comic,['panels']);if(!Array.isArray(comic.panels)||comic.panels.length!==4)invalid();
  return {panels:Array.from(comic.panels,panel=>{
@@ -17,8 +19,9 @@ function readComic(comic){
 function readStory(story,length){
  if(!Array.isArray(story)||story.length>length)invalid();
  return Array.from(story,item=>{
-  if(item===null)return null;shape(item,[],['timeLabel','intro','comic','comicPage']);
+  if(item===null)return null;shape(item,[],['timeLabel','intro','comic','comicPage','variant']);
   if(Object.hasOwn(item,'timeLabel'))storyText(item.timeLabel,8);
+  if(Object.hasOwn(item,'variant')&&!STORY_VARIANTS.includes(item.variant))invalid();
   if(Object.hasOwn(item,'intro'))storyText(item.intro,60);
   return {...item,...(Object.hasOwn(item,'comic')?{comic:readComic(item.comic)}:{}),...(Object.hasOwn(item,'comicPage')?{comicPage:readComicPage(item.comicPage)}:{})};
  });
@@ -69,7 +72,7 @@ export function createMobileLevels({db,photos,collection,configuration}){
     const status=!available?'unavailable':cleared.has(id)?'cleared':previous===null||previous.available&&cleared.has(previous.id)?'unlocked':'locked';
     const level={id,imageId,title:photo?.title??null,pieces,status,line:chapter.lines?.[index]??null};previous={id,available};
     const story=chapter.story?.[index];
-    for(const key of ['timeLabel','intro','comic','comicPage'])if(story&&Object.hasOwn(story,key))level[key]=key==='comic'||key==='comicPage'?structuredClone(story[key]):story[key];
+    for(const key of ['timeLabel','intro','comic','comicPage','variant'])if(story&&Object.hasOwn(story,key))level[key]=key==='comic'||key==='comicPage'?structuredClone(story[key]):story[key];
     for(const key of ['src','thumbSrc'])if(typeof photo?.[key]==='string')level[key]=photo[key];
     if(status==='unlocked'&&current===null)current=level;return level;
    });return {id:chapter.id,title:chapter.title,albumId:chapter.albumId,coverImageId:cover?.id??null,coverSrc:cover?.thumbSrc??null,status:available?'available':'unavailable',levels,milestones:collection.albumMilestones?.(owner,chapter.albumId,now)??[]};
