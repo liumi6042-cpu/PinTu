@@ -2255,6 +2255,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawBoardQuickTools(x:number,bottom:number){
   const board=this.board,room=this.room;if(!this.lockButtonEnabled||!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
   const s=this.stage,size=46,items=[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
+  // Where the open tray (or its drag-out strip) lies under the buttons and its pager, stack them just above it instead.
+  const tray=board.trayFrame,top=bottom-items.length*(size+8);if(tray&&x<tray.x+tray.w&&x+size>tray.x&&top<tray.y+tray.h&&bottom-8>tray.y)bottom=tray.y;
   items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-gold-normal':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
  }
  private drawChatBubble(y:number){

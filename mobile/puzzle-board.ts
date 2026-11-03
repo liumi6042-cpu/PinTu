@@ -808,6 +808,8 @@ export class PuzzleBoard implements RoomTable {
  get trayPage(){return this.trayLayout().page;}
  set trayPage(page:number){const v=this.trayLayout(),group=v.groups[Math.max(0,Math.floor(page))*v.pageSize];this.trayAnchor=page>0&&group?this.trayKeyOf(group):null;}
  private turnTrayPage(delta:number){const v=this.trayLayout(),start=Math.max(0,Math.min(v.start+delta*v.pageSize,v.groups.length-1)),group=v.groups[start];this.trayAnchor=start>0&&group?this.trayKeyOf(group):null;}
+ /** The open tray's screen rect as drawn now (the strip during a drag-out), or null while it is closed. */
+ get trayFrame():Rect|null{return this.tray?this.trayLayout().r:null;}
  /** Screen y where the table stops being visible: the top of an open tray (at full height), else the bottom of the board. */
  private viewBottom(){return this.tray?this.trayLayout(true).r.y:this.rect.y+this.rect.h;}
  private gripFinger(id:number,now:number){const s=this.touchStarts.get(id),r=this.rect;if(!s||s.moved)return false;return now-s.at>=GRIP_MS||s.x-r.x<=GRIP_EDGE_PX||r.x+r.w-s.x<=GRIP_EDGE_PX||r.y+r.h-s.y<=GRIP_EDGE_PX;}
