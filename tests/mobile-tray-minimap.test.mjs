@@ -63,9 +63,9 @@ for(const layout of ['portrait','landscape'])test(`${layout}: a 5 x 4 portrait p
  assert.equal(cells.length,Math.min(v.pageSize,v.groups.length));
  for(const [,source,,,sw,,dx,dy,dw,dh]of cells){
   // Width up to the cell (5 pt gap between columns); height up to the row plus TRAY_ROW_POKE above and below.
-  const room={w:v.cellW-5,h:Math.max(v.cellH-5,v.cellH+2*TRAY_ROW_POKE)},fill=Math.max(dw/room.w,dh/room.h);assert.ok(Math.abs(fill-TRAY_PIECE_FILL)<.001,'fills '+TRAY_PIECE_FILL+' of its room, got '+fill.toFixed(3));
-  assert.ok(dh<=v.cellH+2*TRAY_ROW_POKE+.01,'reaches at most '+TRAY_ROW_POKE+' pt into the next row');
-  assert.notEqual(source,board.atlas,'drawn from its own picture, not the atlas');assert.equal(sw,Math.ceil(dw*3),'at the screen pixel size (dpr 3)');
+  const room={w:v.cellW-5,h:Math.max(v.cellH-5,v.cellH+2*TRAY_ROW_POKE)},fill=Math.max(dw/room.w,dh/room.h);assert.ok(Math.abs(fill-TRAY_PIECE_FILL)<.01,'fills '+TRAY_PIECE_FILL+' of its room, got '+fill.toFixed(3));
+  assert.ok(dh<=v.cellH+2*TRAY_ROW_POKE+.34,'reaches at most '+TRAY_ROW_POKE+' pt (and one screen pixel) into the next row');
+  assert.notEqual(source,board.atlas,'drawn from its own picture, not the atlas');assert.ok(Math.abs(dw*3-sw)<1e-9,'drawn at its own pixel size (dpr 3)');assert.ok(Math.abs(dx*3-Math.round(dx*3))<1e-6&&Math.abs(dy*3-Math.round(dy*3))<1e-6,'on whole screen pixels');
  }
  const grid={x:v.r.x+8,y:v.r.y+v.top,w:v.columns*v.cellW,h:v.rows*v.cellH},frames=p.commands.filter(([name,x,y,w,h])=>name==='fillRect'&&x>=grid.x-.01&&y>=grid.y-.01&&x+w<=grid.x+grid.w+.01&&y+h<=grid.y+grid.h+.01);
  assert.deepEqual(frames,[],'no cell frames under the pieces');
@@ -113,9 +113,9 @@ test('a tray piece is never drawn past 1.15 screen pixels per picture pixel, so 
   const v=board.trayLayout(),zoom=board.picture.width/board.board.width,pw=board.board.width/board.state.cols,ph=board.board.height/board.state.rows,m=Math.min(pw,ph)*.25;
   const cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&a[6]>=v.r.y&&a[6]<=v.r.y+v.r.h);assert.ok(cells.length);
   for(const [,,,,,,,,dw,dh]of cells){
-   const perPicture=dw*3/((pw+2*m)*zoom);assert.ok(perPicture<=TRAY_SOURCE_ZOOM+.01,`${width}px picture: ${perPicture.toFixed(2)} screen px per picture px`);
-   const full=Math.min((v.cellW-5)/(pw+2*m),Math.max(v.cellH-5,v.cellH+2*TRAY_ROW_POKE)/(ph+2*m))*(pw+2*m);assert.ok(dw<=full+.01,'never past its cell');
-   if(width===4000)assert.ok(Math.abs(dw-full)<.01,'a large picture fills the cell');
+   const perPicture=dw*3/((pw+2*m)*zoom);assert.ok(perPicture<=TRAY_SOURCE_ZOOM+.02,`${width}px picture: ${perPicture.toFixed(2)} screen px per picture px`);
+   const full=Math.min((v.cellW-5)/(pw+2*m),Math.max(v.cellH-5,v.cellH+2*TRAY_ROW_POKE)/(ph+2*m))*(pw+2*m);assert.ok(dw<=full+.34,'never past its cell (bar the last screen pixel)');
+   if(width===4000)assert.ok(Math.abs(dw-full)<.34,'a large picture fills the cell');
   }
   board.destroy();
  }
@@ -135,5 +135,12 @@ for(const layout of ['portrait','landscape'])test(`${layout}: one control row â€
  tap({id:5,x:v.r.x+v.next.x+v.next.w/2,y:v.r.y-10});assert.equal(board.trayPage,1);
  assert.ok(v.next.h+12>=44&&v.prev.w>=44&&v.next.w>=44,'arrow targets at least 44 pt');
  tap({id:6,x:v.r.x+v.prev.x+v.prev.w/2,y:v.r.y+v.top/2});assert.equal(board.trayPage,0);
+ board.destroy();
+});
+
+test('on a dpr 3.5 screen tray pictures are painted at 3.5x and land on whole screen pixels',async()=>{
+ const {p,board}=await setup('portrait');p.ctx.getTransform=()=>({a:3.5,e:0,f:0});board.draw(p.ctx);p.commands.length=0;board.draw(p.ctx);
+ const tiles=new Set(board.trayTiles.values()),cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&tiles.has(a[0]));assert.ok(cells.length);
+ for(const [,,,,sw,sh,dx,dy,dw,dh]of cells){assert.ok(Math.abs(dw*3.5-sw)<1e-9&&Math.abs(dh*3.5-sh)<1e-9,'one picture pixel per screen pixel');assert.ok(Math.abs(dx*3.5-Math.round(dx*3.5))<1e-6&&Math.abs(dy*3.5-Math.round(dy*3.5))<1e-6);}
  board.destroy();
 });
