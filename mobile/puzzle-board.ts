@@ -60,7 +60,11 @@ export const TRAY_LIFT_MS=300;
 /** Tray grid: a portrait page is 5 x 4 (more columns only on wide screens), a landscape row is cut into cells about
  * as wide as a portrait one. Cells are at most square (pieces are), rows never under TRAY_ROW_MIN, and the tray takes at
  * most TRAY_HEIGHT_PORTRAIT / TRAY_HEIGHT_LANDSCAPE of the table's height. */
-export const TRAY_COLUMNS_PORTRAIT=5,TRAY_ROWS_PORTRAIT=4,TRAY_CELL_LANDSCAPE=72,TRAY_ROW_MIN=36,TRAY_HEIGHT_PORTRAIT=.48,TRAY_HEIGHT_LANDSCAPE=.45;
+export const TRAY_COLUMNS_PORTRAIT=5,TRAY_ROWS_PORTRAIT=4,TRAY_CELL_LANDSCAPE=72,TRAY_ROW_MIN=36,TRAY_HEIGHT_PORTRAIT=.37,TRAY_HEIGHT_LANDSCAPE=.45;
+/** The tray's one control row (pager left, hint, × right) and the padding under the grid. A portrait row is wider than tall,
+ * so a piece may reach TRAY_ROW_POKE past its cell's top and bottom: opposite tabs of neighbouring rows at most just touch.
+ * The pager arrows also take taps TRAY_PAGER_REACH above the tray, so they are 44 pt tall. */
+export const TRAY_HEAD_PX=32,TRAY_FOOT_PX=6,TRAY_ROW_POKE=2,TRAY_PAGER_REACH=12;
 /** A tray piece, tabs included, fills its cell (the cells keep a 5 pt gap between them). */
 export const TRAY_PIECE_FILL=1;
 /** A tray piece is never drawn larger than this many screen pixels per pixel of the picture, so it stays sharp:
@@ -784,15 +788,15 @@ export class PuzzleBoard implements RoomTable {
  /** The tray and its controls (close/prev/next are relative to r). A landscape tray is compact: its page arrows sit in the
   * header row and it has no footer. full=true ignores the strip a drag-out shrinks it to, so what sits above it stays put. */
  private trayLayout(full=false){
-  const rect=this.rect,compact=rect.w>rect.h,w=Math.max(1,rect.w-10),inner=Math.max(1,w-16),chrome=compact?34:55;
+  const rect=this.rect,compact=rect.w>rect.h,w=Math.max(1,rect.w-10),inner=Math.max(1,w-16),top=TRAY_HEAD_PX,chrome=top+TRAY_FOOT_PX;
   const columns=compact?Math.max(1,Math.min(16,Math.floor(inner/TRAY_CELL_LANDSCAPE))):Math.max(TRAY_COLUMNS_PORTRAIT,Math.floor(inner/80)),cellW=inner/columns;
   const limit=Math.min(Math.max(1,rect.h-76),Math.max(100,rect.h*(compact?TRAY_HEIGHT_LANDSCAPE:TRAY_HEIGHT_PORTRAIT))),room=Math.max(1,limit-chrome);
   // Portrait keeps 4 rows; landscape takes the row count whose cells come closest to square.
   const rows=Math.max(1,Math.min(compact?3:TRAY_ROWS_PORTRAIT,Math.floor(room/TRAY_ROW_MIN),compact?Math.round(room/cellW):TRAY_ROWS_PORTRAIT));
   const cellH=Math.max(1,Math.min(cellW,room/rows)),tall=chrome+rows*cellH,height=this.trayDrag&&!full?Math.min(tall,TRAY_STRIP_PX):tall;
-  const r={x:rect.x+5,y:rect.y+rect.h-height-75,w,h:height},row=compact?0:tall-27,next={x:w-(compact?79:45),y:row,w:45,h:27},prev={x:next.x-65,y:row,w:45,h:27},close={x:w-34,y:0,w:34,h:27};
+  const r={x:rect.x+5,y:rect.y+rect.h-height-75,w,h:height},prev={x:4,y:0,w:48,h:top},next={x:92,y:0,w:48,h:top},close={x:w-38,y:0,w:38,h:top};
   const pageSize=Math.max(1,columns*rows),groups=this.trayGroups(),start=this.trayStart(groups,pageSize),page=Math.ceil(start/pageSize),pages=Math.max(1,page+Math.ceil((groups.length-start)/pageSize));
-  return{r,columns,rows,pageSize,groups,start,page,pages,cellW,cellH,compact,close,prev,next};
+  return{r,top,columns,rows,pageSize,groups,start,page,pages,cellW,cellH,compact,close,prev,next};
  }
  /** Loose visible groups in this room's tray order. Cached until the room state or the edge filter changes. */
  private trayGroups(){
@@ -983,12 +987,13 @@ export class PuzzleBoard implements RoomTable {
    // A finger that slides off a cell, or moves at all once a long press lifted it, pulls that group out onto the table.
    if(input.type==='move'&&p&&touch.group!==undefined&&(moved>=DRAG_SLOP||touch.lifted&&moved>0)){this.endTrayTouch();this.beginTrayDrag(touch.group,p);this.changed();return true;}
    if(moved>9){touch.action=null;this.stopTrayLift(touch);}if(input.type==='up'&&input.changed.some(p=>p.id===touch.id)){this.endTrayTouch();touch.action?.();this.changed();}return true;}
-  if(!this.tray||input.type!=='down'||this.pointers.size)return false;const p=input.changed[0],v=this.trayLayout();if(!p||!inside(p,v.r))return false;
-  let action:(()=>void)|null=null,drag:number|undefined;const lx=p.x-v.r.x,ly=p.y-v.r.y,on=(b:Rect)=>lx>=b.x&&lx<=b.x+b.w&&ly>=b.y&&ly<=b.y+b.h;
+  if(!this.tray||input.type!=='down'||this.pointers.size)return false;const p=input.changed[0],v=this.trayLayout();if(!p)return false;
+  const reach=(b:Rect)=>!this.trayDrag&&inside(p,{x:v.r.x+b.x,y:v.r.y+b.y-TRAY_PAGER_REACH,w:b.w,h:b.h+TRAY_PAGER_REACH});if(!inside(p,v.r)&&!reach(v.prev)&&!reach(v.next))return false;
+  let action:(()=>void)|null=null,drag:number|undefined;const lx=p.x-v.r.x,ly=p.y-v.r.y,on=(b:Rect)=>lx>=b.x&&lx<=b.x+b.w&&ly>=b.y-(b===v.close?0:TRAY_PAGER_REACH)&&ly<=b.y+b.h;
   if(on(v.close))action=()=>{this.trayOpen=false;};
   else if(on(v.next)){if(v.page<v.pages-1)action=()=>{this.turnTrayPage(1);};}
   else if(on(v.prev)){if(v.start>0)action=()=>{this.turnTrayPage(-1);};}
-  else if(ly>=28&&ly<28+v.rows*v.cellH){const col=Math.floor((lx-8)/v.cellW),row=Math.floor((ly-28)/v.cellH);if(col>=0&&col<v.columns&&row>=0&&row<v.rows){const group=v.groups[v.start+row*v.columns+col];
+  else if(ly>=v.top&&ly<v.top+v.rows*v.cellH){const col=Math.floor((lx-8)/v.cellW),row=Math.floor((ly-v.top)/v.cellH);if(col>=0&&col<v.columns&&row>=0&&row<v.rows){const group=v.groups[v.start+row*v.columns+col];
    // A group another player holds can still be located, but not pulled out.
    if(group&&this.owners[group.id]){this.tell(`${this.owners[group.id].name} 正在移动这组拼块`);action=()=>{this.focusMobilePiece(group.pieces[0]);};}
    else if(group){drag=group.id;action=()=>{if(this.variant?.kind==='wind'&&group.pieces.length===1)this.selected=group.id;if(this.focusMobilePiece(group.pieces[0])){this.locatedMarks={ids:[group.pieces[0]],until:Date.now()+MINIMAP_MARK_MS};this.tell('已定位，直接拖动画布中的拼块');}else this.tell('这块刚被拼好，请选择其他碎片');};}}}
@@ -1002,17 +1007,17 @@ export class PuzzleBoard implements RoomTable {
  private drawTray(ctx:CanvasRenderingContext2D){this.trayDraws++;const v=this.trayLayout(),r=v.r,colors=boardThemeColors(this.currentTheme),now=Date.now(),transform=typeof ctx.getTransform==='function'?ctx.getTransform():null,density=Math.max(1,Math.min(3,transform?Math.abs(transform.a):1));ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
   const tray=this.trayDrag,held=tray&&this.pointers.get(tray.pointer);ctx.fillStyle=held&&inside(held,r)?colors.traySelected:colors.tray;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.strokeStyle=colors.trayLine;ctx.lineWidth=1;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.textBaseline='top';
   if(tray){const text='放回这里 = 回到原位';ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(text,r.x+(r.w-ctx.measureText(text).width)/2,r.y+(r.h-12)/2);ctx.restore();return;}
-  ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`碎片托盘 · ${v.groups.length}组`,r.x+10,r.y+8);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayMuted;const hint='点选定位 · 拖出放置';ctx.fillText(hint,r.x+(v.compact?v.prev.x-12:r.w-36)-ctx.measureText(hint).width,r.y+9);ctx.font='18px sans-serif';ctx.fillText('×',r.x+r.w-25,r.y+4);
-  const visible=v.groups.slice(v.start,v.start+v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+28+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;
+  ctx.font='11px sans-serif';ctx.fillStyle=colors.trayMuted;const hint='点选定位 · 拖出放置';ctx.fillText(hint,r.x+v.close.x-4-ctx.measureText(hint).width,r.y+v.top/2-6);ctx.font='18px sans-serif';ctx.fillText('×',r.x+r.w-25,r.y+v.top/2-10);
+  const visible=v.groups.slice(v.start,v.start+v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+v.top+Math.floor(index/v.columns)*v.cellH,cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;
    // Pieces lie straight on the tray. A soft spot behind one marks it lifted by a long press or just located.
    if(lifted||group.pieces.includes(this.focusedPiece??-1)){ctx.fillStyle=colors.traySelected;ctx.beginPath();ctx.arc(x+cw/2,y+ch/2,Math.min(cw,ch)*.52,0,Math.PI*2);ctx.fill();}
-   ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const pw=this.board.width/this.state.cols,ph=this.board.height/this.state.rows,m=Math.min(pw,ph)*TRAY_TAB_MARGIN,fit=Math.min(cw*TRAY_PIECE_FILL/(pw+2*m),ch*TRAY_PIECE_FILL/(ph+2*m),TRAY_SOURCE_ZOOM*this.picture.width/this.board.width/density)*(lifted?1.06:1),dw=(pw+2*m)*fit,dh=(ph+2*m)*fit,angle=group.pieces.length===1?this.angleOf(id,now):0;
+   ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const pw=this.board.width/this.state.cols,ph=this.board.height/this.state.rows,m=Math.min(pw,ph)*TRAY_TAB_MARGIN,fit=Math.min(cw*TRAY_PIECE_FILL/(pw+2*m),Math.max(ch,v.cellH+2*TRAY_ROW_POKE)*TRAY_PIECE_FILL/(ph+2*m),TRAY_SOURCE_ZOOM*this.picture.width/this.board.width/density)*(lifted?1.06:1),dw=(pw+2*m)*fit,dh=(ph+2*m)*fit,angle=group.pieces.length===1?this.angleOf(id,now):0;
    // The tray shows a piece as it lies: grey while faded (from the faded atlas), turned while tilted; otherwise sharp at the screen's pixel size.
    const faded=!!this.grayAtlas&&this.fadeOf(group,id,now)>=.5,tile=faded?null:this.trayTile(id,Math.ceil(dw*density)),source=tile??(faded?this.grayAtlas!:this.atlas),s=tile?{x:0,y:0,w:tile.width,h:tile.height}:this.trayPieceSource(id);
    if(angle){ctx.save();ctx.translate(x+cw/2,y+ch/2);ctx.rotate(angle*Math.PI/180);ctx.drawImage(source,s.x,s.y,s.w,s.h,-dw/2,-dh/2,dw,dh);ctx.restore();}
    else ctx.drawImage(source,s.x,s.y,s.w,s.h,x+(cw-dw)/2,y+(ch-dh)/2,dw,dh);}ctx.globalAlpha=1;if(group.pieces.length>1){ctx.fillStyle=colors.trayCountInk;ctx.font='10px sans-serif';ctx.fillText('×'+group.pieces.length,x+2,y+ch-11);}}
-  ctx.font='10px sans-serif';ctx.fillStyle=colors.trayMuted;if(!v.compact)ctx.fillText(v.groups.length?'散片保持原位':'所有拼块都已归位',r.x+10,r.y+r.h-18);else if(!v.groups.length)ctx.fillText('所有拼块都已归位',r.x+10,r.y+36);
-  const py=r.y+v.prev.y;ctx.font='16px sans-serif';ctx.fillStyle=v.start>0?colors.trayInk:colors.trayDisabled;ctx.fillText('‹',r.x+v.prev.x+12,py+5);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(`${v.page+1}/${v.pages}`,r.x+v.prev.x+39,py+9);ctx.font='16px sans-serif';ctx.fillStyle=v.page<v.pages-1?colors.trayInk:colors.trayDisabled;ctx.fillText('›',r.x+v.next.x+18,py+5);ctx.restore();
+  if(!v.groups.length){ctx.font='12px sans-serif';ctx.fillStyle=colors.trayMuted;const done='所有拼块都已归位';ctx.fillText(done,r.x+(r.w-ctx.measureText(done).width)/2,r.y+v.top+(v.rows*v.cellH)/2-6);}
+  const py=r.y+v.prev.y;ctx.font='16px sans-serif';ctx.fillStyle=v.start>0?colors.trayInk:colors.trayDisabled;ctx.fillText('‹',r.x+v.prev.x+19,py+v.prev.h/2-8);ctx.font='11px sans-serif';ctx.fillStyle=colors.trayInk;const label=`${v.page+1}/${v.pages}`;ctx.fillText(label,r.x+(v.prev.x+v.prev.w+v.next.x-ctx.measureText(label).width)/2,py+v.prev.h/2-6);ctx.font='16px sans-serif';ctx.fillStyle=v.page<v.pages-1?colors.trayInk:colors.trayDisabled;ctx.fillText('›',r.x+v.next.x+19,py+v.next.h/2-8);ctx.restore();
  }
  /** The atlas area of one piece with its tabs: the tile without the shadow margin around them. */
  private trayPieceSource(id:number){

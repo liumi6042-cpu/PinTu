@@ -23,7 +23,7 @@ const unit=board=>({w:board.board.width/board.state.cols,h:board.board.height/bo
 /** Screen point of a tray cell (page-relative index) and the group it shows. */
 function cell(board,index=0,id=1){
  const v=board.trayLayout(),group=v.groups[board.trayPage*v.pageSize+index];
- return {group,point:{id,x:v.r.x+8+(index%v.columns+.5)*v.cellW,y:v.r.y+28+(Math.floor(index/v.columns)+.5)*v.cellH}};
+ return {group,point:{id,x:v.r.x+8+(index%v.columns+.5)*v.cellW,y:v.r.y+v.top+(Math.floor(index/v.columns)+.5)*v.cellH}};
 }
 /** Screen point of the centre of piece `piece`, placed at offset dx/dy. */
 function screenOf(board,piece,dx=0,dy=0,id=1){

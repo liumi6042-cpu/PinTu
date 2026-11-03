@@ -47,7 +47,7 @@ for(const l of LAYOUTS)test(`${l.name}: the 锁定 button keeps one place clear 
  // Taps on the pager reach the tray, not the button.
  for(const b of [v.next,v.prev]){const x=tray.x+b.x+b.w/2,y=tray.y+b.y+b.h/2;assert.equal(stage.hasHit?.(x,y)??false,false,'the pager is free');}
  // During a drag-out the tray is a strip at the same bottom; the button stays where it was.
- const cell={id:1,x:tray.x+8+v.cellW/2,y:tray.y+28+v.cellH/2};board.input({type:'down',points:[cell],changed:[cell]});const out={...cell,y:cell.y-40};board.input({type:'move',points:[out],changed:[out]});
+ const cell={id:1,x:tray.x+8+v.cellW/2,y:tray.y+v.top+v.cellH/2};board.input({type:'down',points:[cell],changed:[cell]});const out={...cell,y:cell.y-40};board.input({type:'move',points:[out],changed:[out]});
  const strip=board.trayFrame;assert.equal(strip.h,28);const during=lock();assert.deepEqual(during,closed);assert.equal(overlap(during,strip),false,'clear of the strip');
  board.input({type:'up',points:[],changed:[out]});board.destroy();
 });

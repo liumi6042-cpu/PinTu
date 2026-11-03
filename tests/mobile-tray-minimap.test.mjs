@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {PuzzleBoard,DRAG_SLOP,TRAY_STRIP_PX,TRAY_PIECE_FILL,TRAY_TILE_CACHE,TRAY_TILE_BYTES,TRAY_SOURCE_ZOOM} from '../mobile/puzzle-board.ts';
+import {PuzzleBoard,DRAG_SLOP,TRAY_STRIP_PX,TRAY_PIECE_FILL,TRAY_TILE_CACHE,TRAY_TILE_BYTES,TRAY_SOURCE_ZOOM,TRAY_ROW_POKE} from '../mobile/puzzle-board.ts';
 import {createFittedPuzzle} from '../lib/puzzle-engine.ts';
 
 // Players asked (11-03) for the corner map while the tray is open, and for bigger tray pieces.
@@ -25,7 +25,7 @@ async function setup(layout,{cols=8,rows=6}={}){
 }
 const overlap=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
 const within=(a,r)=>a.x>=r.x-.01&&a.y>=r.y-.01&&a.x+a.w<=r.x+r.w+.01&&a.y+a.h<=r.y+r.h+.01;
-function cell(board,index=0,id=1){const v=board.trayLayout();return{group:v.groups[board.trayPage*v.pageSize+index],point:{id,x:v.r.x+8+(index%v.columns+.5)*v.cellW,y:v.r.y+28+(Math.floor(index/v.columns)+.5)*v.cellH}};}
+function cell(board,index=0,id=1){const v=board.trayLayout();return{group:v.groups[board.trayPage*v.pageSize+index],point:{id,x:v.r.x+8+(index%v.columns+.5)*v.cellW,y:v.r.y+v.top+(Math.floor(index/v.columns)+.5)*v.cellH}};}
 const tap=(board,point)=>{board.input({type:'down',points:[point],changed:[point]});board.input({type:'up',points:[],changed:[point]});};
 
 for(const layout of ['portrait','landscape'])test(`${layout}: the corner map stays with the tray open and nothing overlaps`,async()=>{
@@ -55,16 +55,19 @@ for(const layout of ['portrait','landscape'])test(`${layout}: a 5 x 4 portrait p
  const {p,board}=await setup(layout),v=board.trayLayout();
  assert.equal(v.columns,layout==='portrait'?5:11);assert.equal(v.rows,layout==='portrait'?4:2);
  assert.ok(v.cellW-5>=44&&v.cellH-5>=44,'each cell at least 44 pt');
- assert.ok(v.r.h<=board.rect.h*(layout==='portrait'?.48:.45)+.01&&v.r.y-board.rect.y>=board.rect.h*.35,'the tray keeps its height cap and leaves the table above it');
+ assert.ok(v.r.h<=board.rect.h*(layout==='portrait'?.37:.45)+.01&&v.r.y-board.rect.y>=board.rect.h*.35,'the tray keeps its height cap and leaves the table above it');
+ if(layout==='portrait')assert.ok(v.r.h>=board.rect.h*.34&&v.cellW>v.cellH,'a short portrait tray with rows wider than tall');
  // Tray pictures are painted once per size; the second draw shows only the tray itself.
  p.ctx.getTransform=()=>({a:3});board.draw(p.ctx);p.commands.length=0;board.draw(p.ctx);
  const cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&a[6]>=v.r.y&&a[6]<=v.r.y+v.r.h);
  assert.equal(cells.length,Math.min(v.pageSize,v.groups.length));
  for(const [,source,,,sw,,dx,dy,dw,dh]of cells){
-  const fill=Math.max(dw/(v.cellW-5),dh/(v.cellH-5));assert.ok(Math.abs(fill-TRAY_PIECE_FILL)<.001,'fills '+TRAY_PIECE_FILL+' of the cell, got '+fill.toFixed(3));
+  // Width up to the cell (5 pt gap between columns); height up to the row plus TRAY_ROW_POKE above and below.
+  const room={w:v.cellW-5,h:Math.max(v.cellH-5,v.cellH+2*TRAY_ROW_POKE)},fill=Math.max(dw/room.w,dh/room.h);assert.ok(Math.abs(fill-TRAY_PIECE_FILL)<.001,'fills '+TRAY_PIECE_FILL+' of its room, got '+fill.toFixed(3));
+  assert.ok(dh<=v.cellH+2*TRAY_ROW_POKE+.01,'reaches at most '+TRAY_ROW_POKE+' pt into the next row');
   assert.notEqual(source,board.atlas,'drawn from its own picture, not the atlas');assert.equal(sw,Math.ceil(dw*3),'at the screen pixel size (dpr 3)');
  }
- const grid={x:v.r.x+8,y:v.r.y+28,w:v.columns*v.cellW,h:v.rows*v.cellH},frames=p.commands.filter(([name,x,y,w,h])=>name==='fillRect'&&x>=grid.x-.01&&y>=grid.y-.01&&x+w<=grid.x+grid.w+.01&&y+h<=grid.y+grid.h+.01);
+ const grid={x:v.r.x+8,y:v.r.y+v.top,w:v.columns*v.cellW,h:v.rows*v.cellH},frames=p.commands.filter(([name,x,y,w,h])=>name==='fillRect'&&x>=grid.x-.01&&y>=grid.y-.01&&x+w<=grid.x+grid.w+.01&&y+h<=grid.y+grid.h+.01);
  assert.deepEqual(frames,[],'no cell frames under the pieces');
  board.destroy();
 });
@@ -111,9 +114,26 @@ test('a tray piece is never drawn past 1.15 screen pixels per picture pixel, so 
   const cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&a[6]>=v.r.y&&a[6]<=v.r.y+v.r.h);assert.ok(cells.length);
   for(const [,,,,,,,,dw,dh]of cells){
    const perPicture=dw*3/((pw+2*m)*zoom);assert.ok(perPicture<=TRAY_SOURCE_ZOOM+.01,`${width}px picture: ${perPicture.toFixed(2)} screen px per picture px`);
-   const full=Math.min((v.cellW-5)/(pw+2*m),(v.cellH-5)/(ph+2*m))*(pw+2*m);assert.ok(dw<=full+.01,'never past its cell');
+   const full=Math.min((v.cellW-5)/(pw+2*m),Math.max(v.cellH-5,v.cellH+2*TRAY_ROW_POKE)/(ph+2*m))*(pw+2*m);assert.ok(dw<=full+.01,'never past its cell');
    if(width===4000)assert.ok(Math.abs(dw-full)<.01,'a large picture fills the cell');
   }
   board.destroy();
  }
+});
+
+for(const layout of ['portrait','landscape'])test(`${layout}: one control row — pager left, hint and × right — and no title or footer text`,async()=>{
+ const {p,board}=await setup(layout,{cols:25,rows:20}),v=board.trayLayout();
+ p.commands.length=0;board.draw(p.ctx);const texts=p.commands.filter(([name])=>name==='fillText').map(([,text,x,y])=>({text,x,y}));
+ assert.ok(!texts.some(t=>/碎片托盘|散片保持原位/.test(t.text)),'the title and footer words are gone');
+ const hint=texts.find(t=>t.text==='点选定位 · 拖出放置'),page=texts.find(t=>t.text===`1/${v.pages}`);assert.ok(hint&&page);
+ assert.ok(page.y<v.r.y+v.top&&hint.y<v.r.y+v.top,'pager and hint share the top row');assert.ok(page.x<v.r.x+v.next.x&&page.x>v.r.x+v.prev.x,'page number between the arrows');
+ assert.ok(v.next.x+v.next.w<hint.x-v.r.x-8,'the pager stays clear of the hint');assert.ok(hint.x-v.r.x+8*hint.text.length<=v.close.x,'and the hint of ×');
+ assert.equal(v.r.h,v.top+v.rows*v.cellH+6,'no footer row');
+ if(layout==='portrait')assert.ok(v.r.h/board.rect.h>=.34&&v.r.h/board.rect.h<=.371,'portrait tray about 37% of the table');
+ // The arrows answer 44 pt tall: a tap 10 pt above the tray still turns the page.
+ const tap=pt=>{board.input({type:'down',points:[pt],changed:[pt]});board.input({type:'up',points:[],changed:[pt]});};
+ tap({id:5,x:v.r.x+v.next.x+v.next.w/2,y:v.r.y-10});assert.equal(board.trayPage,1);
+ assert.ok(v.next.h+12>=44&&v.prev.w>=44&&v.next.w>=44,'arrow targets at least 44 pt');
+ tap({id:6,x:v.r.x+v.prev.x+v.prev.w/2,y:v.r.y+v.top/2});assert.equal(board.trayPage,0);
+ board.destroy();
 });
