@@ -99,3 +99,37 @@ test('the settings entry is TapTap-only and the package says v53.13',()=>{
  assert.match(settings,/if\(!this\.formalWeb\)\{s\.button\(\{x:left,y:cy,w:width,h:39\},'兑换码',\(\)=>this\.openRedeem\(\)/);
  assert.ok(settings.indexOf("'兑换码'")>settings.indexOf("heading('账号与记录')"),'listed under 账号与记录');
 });
+
+function decorationFixture(reply){
+ const buttons=[],posts=[],notes=[];let refreshed=0;
+ const stage={w:390,h:844,palette:{ink:'#111',muted:'#666',placeholder:'#eee'},ctx:{fillRect(){},set fillStyle(_v){}},measure:text=>String(text).length*12,
+  panel(){},frame(){},icon(){},decoration(){},meter(){},hit(){},text(){},wrap:()=>18,button(r,label,fn,options){buttons.push({label,fn,tone:options?.tone,disabled:options?.disabled===true});}};
+ const app=Object.create(GameApp.prototype);let id=0;
+ for(const [key,value] of Object.entries({stage,colors:stage.palette,bodyTop:80,bodyBottom:800}))Object.defineProperty(app,key,{value,configurable:true,writable:true});
+ Object.assign(app,{attempts:new Map(),busy:false,modal:null,scroll:0,decorationFilter:'all',decorationId:null,
+  platform:{randomId:()=>'r'+(++id),playSound(){}},
+  client:{post:async(path,body)=>{posts.push({path,body});return reply(body);},refresh:async()=>{refreshed++;}},
+  scrolled(draw){draw();},paragraph:(_t,_x,y)=>y+20,drawChips:(_x,y)=>y+32,applyCollection(data){this.collection=data;},
+  invalidate(){},note:text=>notes.push(text)});
+ const draw=data=>{buttons.length=0;app.drawDecorations(data);return buttons[0];};
+ return {app,posts,notes,draw,refreshed:()=>refreshed};
+}
+const settle=()=>new Promise(resolve=>setTimeout(resolve,0));
+const view=equipped=>({wallet:{coins:0,fragments:0},albums:[],packs:[],tuning:null,profile:{name:'拼友',level:3},equipped:equipped?{...paw,source:'gift'}:null,
+ decorations:[{...paw,source:'gift',cost:0,owned:true,equipped},{id:'cream-bow',title:'奶油蝴蝶结',description:'',kind:'cursor',artKey:'bow',color:'#d98b9d',cost:30,source:'craft',owned:true,equipped:false}]});
+
+test('收藏 → 装饰: the equipped pointer offers 取下装饰, which equips null; then 使用这个装饰 puts it back',async()=>{
+ const f=decorationFixture(body=>view(body.decorationId==='cat-paw'));
+ const worn=f.draw(view(true));
+ assert.deepEqual([worn.label,worn.disabled,worn.tone],['取下装饰',false,'cream']);
+ worn.fn();await settle();
+ assert.deepEqual(f.posts.map(p=>[p.path,p.body.decorationId]),[['/api/mobile/collection/equip',null]]);
+ assert.equal(typeof f.posts[0].body.requestId,'string');
+ assert.deepEqual(f.notes,['装饰已取下']);assert.equal(f.refreshed(),1);assert.equal(f.app.attempts.size,0);
+ f.app.decorationId='cat-paw';
+ const bare=f.draw(f.app.collection);
+ assert.deepEqual([bare.label,bare.disabled,bare.tone],['使用这个装饰',false,'berrydark']);
+ bare.fn();await settle();
+ assert.deepEqual(f.posts.at(-1).body.decorationId,'cat-paw');assert.equal(f.notes.at(-1),'装饰已装备');
+ assert.equal(f.draw(f.app.collection).label,'取下装饰');
+});
