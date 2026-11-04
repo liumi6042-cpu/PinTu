@@ -101,7 +101,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
  const storageMemory=new Map<string,string>();
  // Every pointer, touch and wheel position is divided by the same zoom used for the viewport.
  let uiSize=readUiSize(),scale=uiScale(uiSize);const resizeListeners=new Set<()=>void>();
- let shareDiagnostic='尚未尝试分享';
+ let shareDiagnostic='尚未尝试分享',shareLog:string[]=[],shareStarted=Date.now();
  let shareController:AbortController|undefined;
  const tap=()=>config.id==='taptap'?(window as unknown as {tap?:TapHost}).tap:undefined;
  const loginLog=createLoginLog();
@@ -329,7 +329,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   async share(input){const url=new URL(config.gameBase||location.href,document.baseURI),params=new URLSearchParams(input.query);if(input.roomId)params.set('room',input.roomId);if(input.inviteCode)params.set('ref',input.inviteCode);for(const [key,value]of params)url.searchParams.set(key,value);
    if(config.id==='taptap'){
     if(shareController)return 'unavailable';const controller=new AbortController();shareController=controller;
-    try{return await shareOnTapTap(tap(),Object.fromEntries(params),45000,detail=>{shareDiagnostic=detail;},{signal:controller.signal,subscribeReturn:returned=>subscribeTapShareReturn(tap(),{window,document,canvas},returned)});}finally{if(shareController===controller)shareController=undefined;}
+    try{return await shareOnTapTap(tap(),Object.fromEntries(params),45000,detail=>{const at=Date.now();if(detail.startsWith('开始分享')){shareLog=[];shareStarted=at;}shareLog=[...shareLog,'+'+((at-shareStarted)/1000).toFixed(1)+'s '+detail].slice(-10);shareDiagnostic=shareLog.join('\n');},{signal:controller.signal,subscribeReturn:returned=>subscribeTapShareReturn(tap(),{window,document,canvas},returned)});}finally{if(shareController===controller)shareController=undefined;}
    }
    try{if(navigator.share){await navigator.share({title:input.title,url:url.href});return 'shared';}if(navigator.clipboard){await navigator.clipboard.writeText(url.href);return 'copied';}return 'unavailable';}
    catch(error){return (error as {name?:string}).name==='AbortError'?'cancelled':'unavailable';}
