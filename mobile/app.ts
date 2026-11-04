@@ -77,7 +77,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.12';
+const CLIENT_PACKAGE_VERSION='v53.13';
 /** A chat bubble that just popped up under a finger reaching for a piece does not open the chat until it has shown this long. */
 const CHAT_BUBBLE_ARM_MS=600;
 /** 整理 reshuffles every loose piece, so its first tap only arms it for this long. */
