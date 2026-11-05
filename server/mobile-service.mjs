@@ -88,6 +88,9 @@ export function createMobileService(options={}){
  const dailyTurnoverHour=web?0:options.dailyTurnoverHour??Number(process.env.MOBILE_DAILY_TURNOVER_HOUR??20);
  if(!Number.isInteger(dailyTurnoverHour)||dailyTurnoverHour<0||dailyTurnoverHour>23)throw new Error('MOBILE_DAILY_TURNOVER_HOUR must be an hour 0-23');
  const dailyShift=dailyTurnoverHour?(24-dailyTurnoverHour)*3600000:0,dailyClock=now=>now+dailyShift;
+ // 分享领体力包: once per game day (the same day as the daily puzzle, which flips at dailyTurnoverHour Beijing time).
+ const SHARE_ENERGY_DAILY_TEXT='今天已经分享领过体力包了，每天限 1 次，北京时间 '+dailyTurnoverHour+' 点后可以再领';
+ const shareEnergyDay=now=>new Date(dailyClock(now)+8*3600000).toISOString().slice(0,10);
  // Receipts keep the real time, but never before their own Beijing date, so the web service (midnight turnover) reads them as valid.
  const dailyActivation=clock=>Math.max(Date.parse(new Date(clock+8*3600000).toISOString().slice(0,10)+'T00:00:00+08:00'),clock-dailyShift);
  const onDailyClock=content=>content&&dailyShift?{...content,...Object.fromEntries(['tick','select','albumEntries','managedImageIds','releasedImageIds','galleryPhotos'].filter(name=>typeof content[name]==='function').map(name=>[name,(now=clock(),...rest)=>content[name](dailyClock(now),...rest)]))}:content;
@@ -303,7 +306,7 @@ export function createMobileService(options={}){
   value=identity?{contribution:room.achievements?.contributors?.[identity]?.count??0,code:social.person(identity,now).code,level:readProfile(identity,now).level,decoration:collection.equipped(identity)}:{contribution:0,code:null,level:0,decoration:null};
   cards.set(member.id,value);return value;
  };
- const profileView=(p,now)=>({capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id)}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)});
+ const profileView=(p,now)=>({capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id)}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,shareEnergyClaimedToday:p.shareEnergyDay===shareEnergyDay(now),autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)});
  const photoOf=room=>engine.roomArtworkPhoto(room,engine.RESTORABLE_PHOTOS);
  const displayPhoto=(photo,request)=>photo&&request.artworkSnapshot===true?engine.activeArtworkPhoto(photo):photo;
  const creationArtwork=(photo,pieces,request)=>engine.currentRoomArtwork(engine.RESTORABLE_PHOTOS.find(item=>item.id===photo.id)??photo,pieces,request.artworkSnapshot!==true);
@@ -540,7 +543,7 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/invitations/accept'&&method==='POST')return replay(p,'invitation-accept',input,now,()=>{const accepted=tasks.accept(p,input,now);return {...taskView(),accepted};});
   if(path==='/api/mobile/share/challenge'&&method==='POST'){
    if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
-   if(input.context==='supply'){if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');}
+   if(input.context==='supply'){if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');if(input.kind==='energy'&&p.shareEnergyDay===shareEnergyDay(now))fail(409,'SHARE_DAILY_LIMIT',SHARE_ENERGY_DAILY_TEXT);}
    else if(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)){
     if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','分享工具无效');const room=readRoom(input.context.slice(5));authorize(room,request,now);
     const uses=Number(db.prepare('SELECT uses FROM mobile_tool_uses WHERE room_id=? AND owner=? AND kind=?').get(room.id,p.id,input.kind)?.uses??0);
@@ -557,7 +560,7 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/share/redeem'&&method==='POST')return replay(p,'share-supply',input,now,()=>{
    if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
    if(input.context!=='supply'||!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
-   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');consumeChallenge(p,input,'share:supply','',now);p.supply[input.kind]++;saveProfile(p);return profileView(p,now);
+   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');if(input.kind==='energy'&&p.shareEnergyDay===shareEnergyDay(now))fail(409,'SHARE_DAILY_LIMIT',SHARE_ENERGY_DAILY_TEXT);consumeChallenge(p,input,'share:supply','',now);p.supply[input.kind]++;if(input.kind==='energy')p.shareEnergyDay=shareEnergyDay(now);saveProfile(p);return profileView(p,now);
   });
   if(path==='/api/mobile/supply/challenge'&&method==='POST')return challenge(p,{kind:input.kind,requestId:input.requestId},now);
   if(path==='/api/mobile/supply/redeem'&&method==='POST')return replay(p,'supply-redeem',input,now,()=>{
