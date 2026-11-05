@@ -123,3 +123,10 @@ test('v53.15: the WeChat policy only mentions rewarded video once a WeChat aduni
  assert.match(text('wechat',true),/微信提供的激励视频广告/);assert.doesNotMatch(text('wechat',true),/没有广告/);
  assert.match(text('taptap',true),/TapTap提供的激励视频广告/);assert.doesNotMatch(text('taptap',true),/停止通过广告/);
 });
+test('v53.16: once the server says 分享领体力包 was used today, sharing for energy stops before any request; 建房券 and video are untouched',async()=>{
+ const {app,profile,events}=fixture();app.platform.config.id='taptap';profile.shareEnergyClaimedToday=true;
+ await assert.rejects(()=>app.claimSupply('energy','share'),/每天限 1 次/);assert.equal(events.length,0);
+ await app.claimSupply('create','share');assert.equal(profile.supply.create,1);
+ app.client.config.adRewardEnabled=true;app.client.config.rewardedAdUnitId='1054324';app.platform.watchAd=async()=> 'completed';await app.claimSupply('energy');assert.equal(profile.supply.energy,1);
+ profile.shareEnergyClaimedToday=false;profile.supply.energy=0;await app.claimSupply('energy','share');assert.equal(profile.supply.energy,1);
+});

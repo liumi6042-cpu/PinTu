@@ -77,7 +77,9 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.15';
+const CLIENT_PACKAGE_VERSION='v53.16';
+/** Shown when 分享领体力包 was already used this game day (the day flips at 20:00 Beijing, like the daily puzzle). */
+const SHARE_ENERGY_DONE_TEXT='今天已经分享领过体力包了，每天限 1 次，晚上 8 点后可以再领';
 /** The WeChat mini-game numbers its own uploads (the devtools version field). */
 const WECHAT_PACKAGE_VERSION='0.53.15';
 /** A chat bubble that just popped up under a finger reaching for a piece does not open the chat until it has shown this long. */
@@ -934,7 +936,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');if(!this.shareAvailable)throw Error('当前平台暂未开放分享领取');
    const storageKey='jigsaw:shared:supply-share:v1:'+this.platform.config.apiBase+':'+profile.code;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
    if(pending?.completed&&pending.kind!==kind)throw Error('上次分享奖励待到账，请先重试领取原来的补给');
-   if(!pending?.completed){if(profile.supply[kind]>=3)throw Error('库存已满，使用后再领取');const requestId=this.platform.randomId(),context='supply',challenge=await this.client.post<{rewardToken:string}>('/api/mobile/share/challenge',{kind,requestId,context});pending={kind,requestId,context,rewardToken:challenge.rewardToken,completed:false};
+   if(!pending?.completed){if(profile.supply[kind]>=3)throw Error('库存已满，使用后再领取');if(kind==='energy'&&this.shareEnergyDone)throw Error(SHARE_ENERGY_DONE_TEXT);const requestId=this.platform.randomId(),context='supply',challenge=await this.client.post<{rewardToken:string}>('/api/mobile/share/challenge',{kind,requestId,context});pending={kind,requestId,context,rewardToken:challenge.rewardToken,completed:false};
     try{await this.shareForReward();}catch(failure){await this.releaseShareReservation(()=>this.client.post('/api/mobile/share/cancel',pending));throw failure;}
     pending.completed=true;this.platform.storage.set(storageKey,JSON.stringify(pending));
    }
@@ -946,6 +948,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private get supplyAdAvailable(){const id=this.platform.config?.id;return (id==='taptap'||id==='wechat')&&this.energyAdAvailable;}
  /** 建房券 come from a rewarded video (which refills them to 3); sharing is only the fallback while ads are switched off. */
  private get ticketClaimAvailable(){return this.supplyAdAvailable||this.shareAvailable;}
+ /** 分享领体力包 is once per game day (server rule from 20261105-share-energy-daily; older servers never send the flag). */
+ private get shareEnergyDone(){return (this.client.profile as {shareEnergyClaimedToday?:boolean}|null)?.shareEnergyClaimedToday===true;}
  private get adTestingAllowed(){return this.platform.config.id==='taptap'&&this.client.profile?.taptap?.bound===true&&this.client.profile.taptap.diagnostics===true;}
  /** 当前画面方向对应的激励广告位；服务端未分横竖屏时沿用 rewardedAdUnitId。 */
  private rewardedSlot(){const v=typeof this.platform.viewport==='function'?this.platform.viewport():undefined,orientation:'portrait'|'landscape'=v&&v.width>v.height?'landscape':'portrait',c=this.client.config;return {orientation,unit:(orientation==='landscape'?c.rewardedAdUnitIdLandscape:c.rewardedAdUnitIdPortrait)||c.rewardedAdUnitId};}
@@ -1808,10 +1812,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
      const useOptions={fontSize:13,disabled:this.busy||!p||stock===0||(p?.energy??0)>=(p?.energyCap??0)};
      if(energyStacked){const n=1+(this.shareAvailable?1:0)+(ad?1:0),bw=(cw-8*(n-1))/n,by=ry+50;let bx=x;
       if(ad){this.prepareRewardedAd();s.button({x:bx,y:by,w:bw,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});bx+=bw+8;}
-      if(this.shareAvailable){s.button({x:bx,y:by,w:bw,h:34},'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});bx+=bw+8;}
+      if(this.shareAvailable){s.button({x:bx,y:by,w:bw,h:34},this.shareEnergyDone?'今日已领':'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3||this.shareEnergyDone});bx+=bw+8;}
       s.button({x:bx,y:by,w:bw,h:34},'使用',()=>void this.useEnergy(),useOptions);ry+=106;}
      else{const bw=72;let bx=x+cw-bw;s.button({x:bx,y:ry+4,w:bw,h:34},'使用',()=>void this.useEnergy(),useOptions);
-      if(this.shareAvailable){bx-=bw+6;s.button({x:bx,y:ry+4,w:bw,h:34},'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}
+      if(this.shareAvailable){bx-=bw+6;s.button({x:bx,y:ry+4,w:bw,h:34},this.shareEnergyDone?'今日已领':'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3||this.shareEnergyDone});}
       if(ad){this.prepareRewardedAd();bx-=bw+14;s.button({x:bx,y:ry+4,w:bw+8,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}ry+=70;}}
     if(tickets){const stock=p?.supply.create??0;s.icon('ticket',{x,y:ry,w:34,h:36});s.text('建房券 '+stock+'/3',x+44,ry+2,15,ink,800,cw-170);s.text('私人房或指定图片时使用',x+44,ry+24,12,muted,600,cw-170);
      if(this.supplyAdAvailable)this.prepareRewardedAd();
@@ -1839,10 +1843,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     s.icon(smallArt,{x:dx,y:cy+15,w:22,h:26});s.text(title,dx+28,cy+20,small?16:19,this.colors.ink,700,dw-28);
     this.paragraph(description,dx,cy+52,dw,12,this.colors.ink);
     s.ctx.fillStyle=s.color('#f8e8d8');s.ctx.fillRect(dx,cy+103,dw,28);s.text('库存 '+stock+'/3',dx+8,cy+109,14,this.colors.ink,700,dw-16);
-    const ad=this.supplyAdAvailable,available=ad||this.shareAvailable;if(ad)this.prepareRewardedAd();
-    s.button({x:x+12,y:cy+150,w:cw-24,h:43},stock>=3?'库存已满':ad?(kind==='create'?'看广告补满':'看广告领1个'):this.shareAvailable?(kind==='create'?'分享领1张':'分享领1个'):'暂未开放',()=>void this.claimSupply(kind),{tone:'berry',fontSize:14,disabled:this.busy||stock>=3||!available});
+    const ad=this.supplyAdAvailable,shareDone=kind==='energy'&&this.shareEnergyDone,available=ad||this.shareAvailable&&!shareDone;if(ad)this.prepareRewardedAd();
+    s.button({x:x+12,y:cy+150,w:cw-24,h:43},stock>=3?'库存已满':ad?(kind==='create'?'看广告补满':'看广告领1个'):shareDone?'今日已分享领取':this.shareAvailable?(kind==='create'?'分享领1张':'分享领1个'):'暂未开放',()=>void this.claimSupply(kind),{tone:'berry',fontSize:14,disabled:this.busy||stock>=3||!available});
     // 体力包 keeps sharing as a second way; 建房券 only come from the video while ads are on.
-    if(ad&&kind==='energy'&&this.shareAvailable)s.button({x:x+12,y:cy+201,w:cw-24,h:36},stock>=3?'库存已满':'分享领1个',()=>void this.claimSupply('energy','share'),{fontSize:14,disabled:this.busy||stock>=3});
+    if(ad&&kind==='energy'&&this.shareAvailable)s.button({x:x+12,y:cy+201,w:cw-24,h:36},stock>=3?'库存已满':this.shareEnergyDone?'今日已分享领取':'分享领1个（每天1次）',()=>void this.claimSupply('energy','share'),{fontSize:14,disabled:this.busy||stock>=3||this.shareEnergyDone});
    }y=start+(landscape?ch:2*ch+12)+12;
    s.panel({x:pad,y,w,h:40},'linen');s.icon('store',{x:pad+10,y:y+5,w:31,h:28});s.text('已购图包可免费创建公开房间。',pad+49,y+14,11,this.colors.ink,700,w-92);s.icon('sprig',{x:s.w-pad-31,y:y+11,w:22,h:20});y+=52;
    const inventory={x:pad,y,w,h:100};s.panel(inventory);s.icon('bag',{x:pad+13,y:y+11,w:17,h:18},this.colors.ink);s.text('我的库存',pad+37,y+12,18,this.colors.ink,700);s.ctx.fillStyle=s.color('#dfbdad');s.ctx.fillRect(pad+9,y+38,w-18,1);
