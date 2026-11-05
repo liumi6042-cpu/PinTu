@@ -77,7 +77,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.16';
+const CLIENT_PACKAGE_VERSION='v53.17';
 /** Shown when 分享领体力包 was already used this game day (the day flips at 20:00 Beijing, like the daily puzzle). */
 const SHARE_ENERGY_DONE_TEXT='今天已经分享领过体力包了，每天限 1 次，晚上 8 点后可以再领';
 /** The WeChat mini-game numbers its own uploads (the devtools version field). */
@@ -979,6 +979,27 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.note(pending.kind==='create'?'建房券已补满，可以开桌了':'体力包 +1，已存入库存');
   });
  }
+ /** One completed rewarded ad unlocks one picture of an ad album (server: /api/mobile/collection/unlock/*).
+  * A finished ad is kept in storage until the server confirms, so a dropped redeem retries without a second video. */
+ private async unlockAdImage(imageId:string){
+  await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');
+   const storageKey='jigsaw:shared:unlock-ad:v1:'+this.platform.config.apiBase+':'+profile.code;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
+   if(!pending?.completed||typeof pending.imageId!=='string'){
+    if(!this.energyAdAvailable)throw Error('广告暂未开放，暂时无法解锁这张图');
+    const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/collection/unlock/challenge',{imageId,requestId},5000);pending={imageId,requestId,rewardToken:challenge.rewardToken,completed:false};
+    let outcome:string;try{outcome=await this.platform.watchAd(this.rewardedSlot().unit);}catch{outcome='failed';}
+    if(outcome!=='completed'){void this.client.post('/api/mobile/collection/unlock/cancel',pending).catch(()=>{});const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，这张图还没有解锁':'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+'，请稍后再试');}
+    pending.completed=true;this.platform.storage.set(storageKey,JSON.stringify(pending));
+   }
+   let data:MobileCollectionView&{unlocked?:{imageId:string}};
+   try{data=await this.client.post<MobileCollectionView&{unlocked?:{imageId:string}}>('/api/mobile/collection/unlock/redeem',pending);}catch(error){if([400,401,403,409,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}
+   this.platform.storage.remove(storageKey);this.applyCollection(data);
+   if(this.previewPack)this.previewPack=data.packs.find(pack=>pack.id===this.previewPack?.id)??this.previewPack;
+   await this.client.refresh();void this.loadGallery();
+   const title=photoMap.get(pending.imageId)?.title??data.packs.flatMap(pack=>pack.images).find(image=>image.id===pending.imageId)?.title??'这张图';
+   this.note('「'+title+'」已解锁'+(pending.imageId===imageId?'，可以开拼了':'（上次看完的广告已补发）'));
+  });
+ }
  private async useEnergy(){await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
  private async openGift(kind:string,quantity=1){await this.run(async()=>{const key='gift:'+kind;const data=await this.client.post<MobileGiftOpenResult>('/api/mobile/gifts/open',{kind,quantity,requestId:this.attempt(key)});this.attempts.delete(key);this.applyTasks(data);if((data.opened.coins??0)>0){try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}}await this.client.refresh();this.note(this.rewardText(data.opened.energy,data.opened.xp,data.opened.coins??0));});}
  private async shareInvitation(){await this.run(async()=>{
@@ -1711,14 +1732,15 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   else if(selected)this.drawCreatePanel({x:left-2,y:s.h-v.bottom-sheetH-4,w:width+4,h:sheetH},selected,owned,true);
  }
  private galleryPack(id:string){return this.collection?.packs.find(pack=>pack.imageIds.includes(id))??collectionCatalog.packs.find(pack=>pack.imageIds.includes(id))??null;}
- private photoTag(id:string,owned:Set<string>){if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
+ private photoTag(id:string,owned:Set<string>){if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack&&(pack as CollectionPack).unlock==='ad')return {label:'看广告解锁',tone:'locked',ad:true,price:0};if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
  private drawPhotoCard(photo:SharedPhoto,r:Rect,imageHeight:number,owned:Set<string>){
   const s=this.stage,selected=this.selected===photo.id,art={x:r.x+6,y:r.y+6,w:r.w-12,h:imageHeight},tag=this.photoTag(photo.id,owned),small=r.w<170;
   s.frame(r,selected?'panel-gold':'button-linen-normal');s.ctx.fillStyle=selected?s.color('#fff3e7'):this.colors.cream;s.ctx.fillRect(r.x+6,r.y+6,r.w-12,r.h-12);s.image(this.client.asset(photo.thumbSrc),art);
   if(selected){s.frame({x:art.x+5,y:art.y+5,w:27,h:27},'segment-berry-selected');s.icon('check',{x:art.x+10,y:art.y+10,w:17,h:17},'#fff9ed');}
   const ty=art.y+art.h+7;s.text(photo.title,r.x+10,ty,small?14:15,this.colors.ink,800,r.w-20);
   const tagY=ty+(small?21:23);
-  if(tag.tone==='locked'){s.icon('lock',{x:r.x+9,y:tagY,w:13,h:14},this.colors.muted);const price=String(tag.price)+' 金币',pw=s.measure(price,12,700);s.text(tag.label,r.x+25,tagY+1,12,this.colors.muted,600,r.w-pw-46);s.icon('coin',{x:r.x+r.w-pw-27,y:tagY,w:14,h:15});s.text(price,r.x+r.w-pw-10,tagY+1,12,this.colors.ink,700);}
+  if(tag.tone==='locked'&&'ad' in tag){s.icon('lock',{x:r.x+9,y:tagY,w:13,h:14},this.colors.berry);s.text(tag.label,r.x+25,tagY+1,12,this.colors.berry,700,r.w-35);}
+  else if(tag.tone==='locked'){s.icon('lock',{x:r.x+9,y:tagY,w:13,h:14},this.colors.muted);const price=String(tag.price)+' 金币',pw=s.measure(price,12,700);s.text(tag.label,r.x+25,tagY+1,12,this.colors.muted,600,r.w-pw-46);s.icon('coin',{x:r.x+r.w-pw-27,y:tagY,w:14,h:15});s.text(price,r.x+r.w-pw-10,tagY+1,12,this.colors.ink,700);}
   else{const tw=s.measure(tag.label,12,700)+12;s.ctx.fillStyle=s.color(tag.tone==='owned'?'#cc8996':'#f2d5ad');s.ctx.fillRect(r.x+10,tagY-1,tw,18);s.text(tag.label,r.x+16,tagY+1,12,tag.tone==='owned'?'#fff8ec':'#674625',700);}
   s.hit(r,()=>{this.selected=photo.id;this.invalidate();});
  }
@@ -1729,11 +1751,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   // Creation rules are unchanged: owned public rooms are free, otherwise the first choice or a ticket.
   const freeOwned=!!this.selected&&owned.has(this.selected)&&this.visibility==='public',freeFirst=!!p?.firstSelectionAvailable,available=(p?.supply.create??0)>0,roomCount=this.ownedRoomCount;
   const lockedPack=!this.formalWeb&&photo&&this.photoTag(photo.id,owned).tone==='locked'?this.galleryPack(photo.id):null;
-  const createLabel=lockedPack?'解锁图包':!this.usesCreationTickets?'开一桌':roomCount>=this.ownRoomLimit?'管理房间':freeOwned||freeFirst||available?'开一桌':this.supplyAdAvailable?'看广告领建房券':this.shareAvailable?'分享领建房券':'暂无建房券',createAction=()=>{if(lockedPack){const full=this.collection?.packs.find(item=>item.id===lockedPack.id);if(full)this.openPackPreview(full);else this.navigate('collection');return;}if(!this.formalWeb&&roomCount>=this.ownRoomLimit){this.showModal('manage');return;}if(!this.selected){this.note('先选择一张图片');return;}if(!this.usesCreationTickets||freeOwned||freeFirst||available)void this.launch({mode:'selected',pieces:this.pieces,visibility:this.visibility,imageId:this.selected});else void this.claimSupply('create');};
+  const adLocked=!!lockedPack&&(lockedPack as CollectionPack).unlock==='ad';
+  const createLabel=adLocked?'看广告解锁这张图':lockedPack?'解锁图包':!this.usesCreationTickets?'开一桌':roomCount>=this.ownRoomLimit?'管理房间':freeOwned||freeFirst||available?'开一桌':this.supplyAdAvailable?'看广告领建房券':this.shareAvailable?'分享领建房券':'暂无建房券',createAction=()=>{if(adLocked&&photo){void this.unlockAdImage(photo.id);return;}if(lockedPack){const full=this.collection?.packs.find(item=>item.id===lockedPack.id);if(full)this.openPackPreview(full);else this.navigate('collection');return;}if(!this.formalWeb&&roomCount>=this.ownRoomLimit){this.showModal('manage');return;}if(!this.selected){this.note('先选择一张图片');return;}if(!this.usesCreationTickets||freeOwned||freeFirst||available)void this.launch({mode:'selected',pieces:this.pieces,visibility:this.visibility,imageId:this.selected});else void this.claimSupply('create');};
   const disabled=this.busy||!p||(!lockedPack&&this.usesCreationTickets&&!freeOwned&&!freeFirst&&!available&&!this.ticketClaimAvailable&&roomCount<3);
   const thumb=compact?52:64;
   if(photo){s.frame({x,y,w:Math.round(thumb*1.3),h:thumb},'plus-cream-normal');s.image(this.client.asset(photo.thumbSrc),{x:x+3,y:y+3,w:Math.round(thumb*1.3)-6,h:thumb-6});const tx=x+thumb*1.3+10,tw=w-thumb*1.3-(sheet?44:10);s.text(photo.title,tx,y+4,compact?15:17,ink,800,tw);s.text(photo.category,tx,y+(compact?26:30),12,this.colors.muted,600,tw);
-   const tag=this.photoTag(photo.id,owned),pack=tag.tone==='locked'?this.galleryPack(photo.id):null;if(pack){const label='解锁图包 ›';s.text(label,tx,y+thumb-16,12,this.colors.berry,700);s.hit({x:tx-4,y:y+thumb-22,w:s.measure(label,12,700)+8,h:24},()=>{const full=this.collection?.packs.find(item=>item.id===pack.id);if(full)this.openPackPreview(full);else this.navigate('collection');});}}
+   const tag=this.photoTag(photo.id,owned),pack=tag.tone==='locked'?this.galleryPack(photo.id):null;if(pack){const label=(pack as CollectionPack).unlock==='ad'?'看整本「'+pack.title+'」 ›':'解锁图包 ›';s.text(label,tx,y+thumb-16,12,this.colors.berry,700);s.hit({x:tx-4,y:y+thumb-22,w:s.measure(label,12,700)+8,h:24},()=>{const full=this.collection?.packs.find(item=>item.id===pack.id);if(full)this.openPackPreview(full);else this.navigate('collection');});}}
   else{s.icon('piece',{x,y:y+8,w:26,h:29});this.paragraph('点选一张喜欢的图片',x+34,y+10,w-34,13);}
   if(sheet){s.button({x:r.x+r.w-46,y:r.y+10,w:34,h:34},'',()=>{this.selected=null;this.invalidate();});s.icon('close',{x:r.x+r.w-41,y:r.y+15,w:24,h:24},ink);}
   y+=thumb+12;
@@ -1926,19 +1949,19 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(pack)s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||''),{x:r.x+5,y:r.y+5,w:r.w-10,h:65},'cover');else s.icon('book',{x:r.x+12,y:r.y+12,w:46,h:46});
    s.text(album.title,r.x+10,r.y+77,15,ink,800,r.w-20);s.text('已收集 '+album.collected+'/'+album.total,r.x+10,r.y+100,12,this.colors.muted,700,r.w-20);
    s.meter({x:r.x+10,y:r.y+121,w:r.w-20,h:8},album.collected/Math.max(1,album.total));
-   if(pack&&!pack.owned)s.button({x:r.x+8,y:r.y+133,w:r.w-16,h:26},pack.price+' 解锁',()=>{this.purchase=pack;this.showModal('purchase');},{icon:'coin',fontSize:12,disabled:this.busy});
+   if(pack&&!pack.owned)s.button({x:r.x+8,y:r.y+133,w:r.w-16,h:26},this.packOfferLabel(pack),()=>this.openPackOffer(pack),{icon:pack.unlock==='ad'?'lock':'coin',fontSize:12,disabled:this.busy});
    else s.text(this.nextMilestoneText(data,album),r.x+10,r.y+140,11,this.colors.muted,600,r.w-20);
    s.hit({...card,h:130},()=>this.openAlbum(album.id));return r.y+h;
   }
   if(!pack){const h=100,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');s.icon('book',{x:r.x+14,y:r.y+18,w:44,h:40});s.text(album.title,r.x+68,r.y+14,17,ink,800,r.w-170);s.text('每日拼图自动收进来',r.x+68,r.y+38,12,this.colors.muted,600,r.w-170);
    const count=album.collected+' / '+album.total;s.text(count,r.x+r.w-14-s.measure(count,15,800),r.y+16,15,ink,800);s.meter({x:r.x+68,y:r.y+60,w:r.w-84,h:9},album.collected/Math.max(1,album.total));s.text(this.nextMilestoneText(data,album),r.x+68,r.y+76,12,this.colors.muted,600,r.w-84);s.hit(card,()=>this.openAlbum(album.id));return r.y+h;}
-  const coverH=Math.min(170,r.w*.42),h=coverH+52,card={...r,h},cover={x:r.x+6,y:r.y+6,w:r.w-12,h:coverH},locked=!pack.owned&&album.collected===0;
+  const coverH=Math.min(170,r.w*.42),h=coverH+52,card={...r,h},cover={x:r.x+6,y:r.y+6,w:r.w-12,h:coverH},adPack=pack.unlock==='ad',locked=!pack.owned&&album.collected===0&&!(adPack&&(pack.unlocked??0)>0);
   s.frame(card,selected?'panel-gold':'button-linen-normal');s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||album.images[0]?.thumbSrc||''),cover,'cover');
   const c=s.ctx,shade=c.createLinearGradient(0,cover.y+coverH*.35,0,cover.y+coverH);shade.addColorStop(0,'#2a142000');shade.addColorStop(1,'#2a1420d9');c.fillStyle=shade;c.fillRect(cover.x,cover.y,cover.w,cover.h);
   s.text(album.title,cover.x+14,cover.y+coverH-52,20,'#fff8ec',800,cover.w-130);s.text(album.description,cover.x+14,cover.y+coverH-24,12,'#fff3e2',500,cover.w-28);
-  const badge=locked?'未解锁':album.collected>=album.total?album.collected+' / '+album.total+' ✓':album.collected+' / '+album.total,bw=s.measure(badge,13,800)+18;c.fillStyle=s.color(locked?'#573b40':'#a85567');c.fillRect(cover.x+cover.w-bw-10,cover.y+10,bw,24);s.text(badge,cover.x+cover.w-bw+(-1),cover.y+15,13,'#fffaf0',800);
+  const badge=adPack&&!pack.owned?'已解锁 '+(pack.unlocked??0)+'/'+album.total:locked?'未解锁':album.collected>=album.total?album.collected+' / '+album.total+' ✓':album.collected+' / '+album.total,bw=s.measure(badge,13,800)+18;c.fillStyle=s.color(locked?'#573b40':'#a85567');c.fillRect(cover.x+cover.w-bw-10,cover.y+10,bw,24);s.text(badge,cover.x+cover.w-bw+(-1),cover.y+15,13,'#fffaf0',800);
   const fy=r.y+coverH+16;s.text(this.nextMilestoneText(data,album),r.x+14,fy+2,13,ink,600,r.w-140);
-  if(!pack.owned){s.button({x:r.x+r.w-116,y:fy-6,w:104,h:34},pack.price+' 解锁',()=>{this.purchase=pack;this.showModal('purchase');},{tone:'berrydark',icon:'coin',fontSize:13,disabled:this.busy});s.hit({x:r.x,y:r.y,w:r.w-120,h},()=>this.openAlbum(album.id));}
+  if(!pack.owned){const bw=adPack?124:104;s.button({x:r.x+r.w-bw-12,y:fy-6,w:bw,h:34},this.packOfferLabel(pack),()=>this.openPackOffer(pack),{tone:'berrydark',icon:adPack?'lock':'coin',fontSize:13,disabled:this.busy});s.hit({x:r.x,y:r.y,w:r.w-120,h},()=>this.openAlbum(album.id));}
   else{s.text('查看 ›',r.x+r.w-60,fy+2,13,this.colors.berry,700);s.hit(card,()=>this.openAlbum(album.id));}
   return r.y+h;
  }
@@ -1951,7 +1974,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   // Stage.meter clamps the fraction and paints its rounded fill inside the track.
   s.meter({x:px,y:py+27,w:progressW,h:9},album.collected/Math.max(1,album.total));
   let bottom=Math.max(descriptionY+descriptionH,py+36)+12;const pack=this.packFor(data,album.id);
-  if(pack&&!pack.owned){s.button({x,y:bottom,w:Math.min(w,210),h:compact?28:34},pack.price+' 金币 · 解锁图包',()=>{this.purchase=pack;this.showModal('purchase');},{icon:'coin',tone:'berrydark',fontSize:12,disabled:this.busy});bottom+=compact?34:42;}
+  if(pack&&!pack.owned){s.button({x,y:bottom,w:Math.min(w,210),h:compact?28:34},pack.unlock==='ad'?'每张看一次广告解锁':pack.price+' 金币 · 解锁图包',()=>this.openPackOffer(pack),{icon:pack.unlock==='ad'?'lock':'coin',tone:'berrydark',fontSize:12,disabled:this.busy});bottom+=compact?34:42;}
   return bottom;
  }
  private drawAlbumRewards(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,compact=false){
@@ -2020,6 +2043,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    y=base+Math.ceil(decorations.length/columns)*(h+gap)+8;
   });this.extent=y-(this.bodyTop-this.scroll);
  }
+ /** 治愈时光-style albums unlock picture by picture after a rewarded ad; coin packs keep the purchase modal. */
+ private packOfferLabel(pack:CollectionPack){return pack.unlock==='ad'?'看广告解锁':pack.price+' 解锁';}
+ private openPackOffer(pack:CollectionPack){if(pack.unlock==='ad')this.openPackPreview(pack);else{this.purchase=pack;this.showModal('purchase');}}
  private openPackPreview(pack:CollectionPack){if(!pack.images.length)return;this.previewReadOnly=false;this.previewPack=pack;this.previewIndex=-1;this.previewGridScroll=0;this.stage.retryImages();this.showModal('packPreview');}
  private returnToPackGrid(){if(this.previewReadOnly){this.showModal(null);return;}this.previewIndex=-1;this.modalScroll=this.previewGridScroll;this.invalidate();}
  private stepPackPreview(delta:number){if(!this.previewPack)return;this.previewIndex=clamp(this.previewIndex+delta,0,this.previewPack.images.length-1);this.modalScroll=0;this.invalidate();}
@@ -2030,12 +2056,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   s.text(pack.title,x+20,y+18,21,this.colors.ink,800,w-80);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>this.showModal(null));s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
   this.modalStart=y+80;this.modalArea={x:x+14,y:this.modalStart,w:w-28,h:Math.max(20,footerY-this.modalStart-14)};
   if(this.previewIndex<0){
-   s.text(pack.images.length+' 张主题图片 · 点击缩略图查看大图',x+20,y+51,w<400?11:13,this.colors.muted,500,w-40);
+   s.text(pack.unlock==='ad'?'已解锁 '+pack.images.filter(image=>image.owned).length+'/'+pack.images.length+' · 点图片看大图，看一次广告解锁一张':pack.images.length+' 张主题图片 · 点击缩略图查看大图',x+20,y+51,w<400?11:13,this.colors.muted,500,w-40);
    this.modalExtent=rows*(rowH+gap)-gap+8;this.modalScroll=clamp(this.modalScroll,0,Math.max(0,this.modalExtent-this.modalArea.h));
    s.clip(this.modalArea,()=>{pack.images.forEach((image,index)=>{
     const cx=x+pad+index%columns*(cw+gap),cy=this.modalStart+4+Math.floor(index/columns)*(rowH+gap)-this.modalScroll;if(cy+rowH<this.modalArea.y||cy>this.modalArea.y+this.modalArea.h)return;
     const art={x:cx,y:cy,w:cw,h:cw};s.frame(art,'panel-cream');s.image(this.client.asset(image.thumbSrc||image.src),{x:cx+5,y:cy+5,w:cw-10,h:cw-10},'contain');
     s.text(image.title,cx+3,cy+cw+12,w<400?12:14,this.colors.ink,700,cw-6);
+    if(pack.unlock==='ad'){s.frame({x:cx+9,y:cy+9,w:27,h:27},image.owned?'segment-berry-selected':'plus-cream-normal');s.icon(image.owned?'check':'lock',{x:cx+14,y:cy+14,w:17,h:17},image.owned?'#fff9ed':this.colors.muted);}
     s.hit({x:cx,y:cy,w:cw,h:rowH},()=>{this.previewGridScroll=this.modalScroll;this.previewIndex=index;this.modalScroll=0;this.stage.retryImages();this.invalidate();});
    });});
    if(this.modalExtent>this.modalArea.h){const track=this.modalArea,thumbH=Math.max(24,track.h*track.h/this.modalExtent),thumbY=track.y+(track.h-thumbH)*this.modalScroll/(this.modalExtent-track.h);s.ctx.fillStyle=this.colors.rose;s.ctx.fillRect(x+w-9,thumbY,3,thumbH);}
@@ -2050,6 +2077,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.previewReadOnly)return;
   s.ctx.fillStyle=this.colors.rose;s.ctx.fillRect(x+20,footerY, w-40,1);
   const buttonW=Math.min(245,w-40),buttonX=x+(w-buttonW)/2;
+  if(pack.unlock==='ad'){
+   const image=this.previewIndex>=0?pack.images[this.previewIndex]:null,firstLocked=pack.images.findIndex(item=>!item.owned);
+   const label=image?(image.owned?'已解锁 · 去建房':'看广告解锁这张图'):firstLocked<0?'已全部解锁 · 去建房':'挑一张看广告解锁';
+   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},label,()=>{if(image&&!image.owned)void this.unlockAdImage(image.id);else if(image||firstLocked<0)this.openPackGallery(pack.id);else{this.previewGridScroll=this.modalScroll;this.previewIndex=firstLocked;this.modalScroll=0;this.stage.retryImages();this.invalidate();}},{tone:'berry',icon:image?(image.owned?'check':'lock'):firstLocked<0?'check':'lock',fontSize:14,disabled:this.busy});
+   const hint='每张图看一次广告永久解锁 · 解锁的图可免费开公开房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);return;
+  }
   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},pack.owned?'已拥有 · 去建房':pack.price+' 金币 · 解锁图包',()=>{if(pack.owned)this.openPackGallery(pack.id);else{this.purchase=pack;this.showModal('purchase');}},{tone:'berry',icon:pack.owned?'check':'coin',fontSize:14,disabled:this.busy});
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
