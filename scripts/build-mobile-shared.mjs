@@ -57,6 +57,9 @@ const outputs=Object.fromEntries(platforms.map(id=>[id,join(isolatedRoot??join(r
 const recordDir=isolatedRoot?join(isolatedRoot,'records'):join(root,'outputs/shared-build'),records=[];
 const commonArt=['b2-card-icons1023.png','b2-core-icons23.png','b2-task-icons23.png','b2-reward-cursors.png'];
 const extraArt=['b2-supply-scenes.png','b2-pixel-atlas.png'];
+// WeChat caps the main package at 4 MiB; the two big icon atlases ride in the art subpackage,
+// which entry-wechat.ts loads before boot (mobile/ui.ts maps them to art/ there).
+const wechatArt=['b2-core-icons23.png','b2-task-icons23.png'];
 const fonts=['OFL-NotoSansSC.txt','FONT-NOTICES.md'];
 // Original synthesized piano pieces; sources and manifest live in content/music/bgm.
 const BACKGROUND_MUSIC_FILES=['bgm-morning.mp3','bgm-rain.mp3','bgm-starlight.mp3'];
@@ -67,7 +70,7 @@ for(const [platform,out]of Object.entries(outputs)){
  copy(join(root,'public/audio/mobile-snap.wav'),join(out,'assets/audio/mobile-snap.wav'));
  copy(join(root,'public/audio/mobile-coin.wav'),join(out,'assets/audio/mobile-coin.wav'));
  if(platform!=='wechat')for(const file of BACKGROUND_MUSIC_FILES)copy(join(root,'content/music/bgm',file),join(out,'assets/audio',file));
- for(const file of commonArt)copy(join(root,'public/mobile-icons',file),join(out,'assets/ui',file));
+ for(const file of commonArt)copy(join(root,'public/mobile-icons',file),join(out,platform==='wechat'&&wechatArt.includes(file)?'art':'assets/ui',file));
  if(platform==='taptap')copy(join(root,'public/mobile-icons/taptap-nickname-authorize.png'),join(out,'assets/ui/taptap-nickname-authorize.png'));
  for(const file of extraArt)copy(join(root,'public/mobile-icons',file),join(out,'art',file));
  for(const file of [...fonts,'jigsaw-ui-sc.'+(platform==='wechat'?'ttf':'woff2')])copy(join(root,'public/fonts',file),join(out,'assets/fonts',file));
