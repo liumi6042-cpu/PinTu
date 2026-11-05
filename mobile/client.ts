@@ -72,7 +72,7 @@ export class GameClient{
    const unit=web?'':wechat?wechatUnit:String(reply.data.rewardedAdUnitId||portraitUnit||landscapeUnit||this.platform.config.rewardedAdUnitId||'');
    const capabilities:GameCapabilities={energy:this.cookieIdentity?false:reply.data.capabilities?.energy!==false,shareRewards:!web&&!wechat&&reply.data.capabilities?.shareRewards===true,ads:!web&&reply.data.capabilities?.ads!==false&&reply.data.adRewardEnabled===true&&!!unit,albumTarget:this.cookieIdentity||reply.data.capabilities?.albumTarget==='pc'?'pc':'mobile-shared',createTickets:this.cookieIdentity?false:reply.data.capabilities?.createTickets??!web,
     tapMultiplayer:!web&&reply.data.capabilities?.tapMultiplayer===true,
-    customNames:this.cookieIdentity?reply.data.capabilities?.customNames!==false:reply.data.capabilities?.customNames===true,
+    customNames:this.cookieIdentity?reply.data.capabilities?.customNames!==false:!wechat&&reply.data.capabilities?.customNames===true,
     cheers:this.cookieIdentity?reply.data.capabilities?.cheers===true:reply.data.capabilities?.cheers!==false,
     privacyRequests:!this.cookieIdentity&&reply.data.capabilities?.privacyRequests===true,
     roomActionRevisionBody:!this.cookieIdentity&&reply.data.capabilities?.roomActionRevisionBody===true,
