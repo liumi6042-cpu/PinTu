@@ -34,7 +34,7 @@ import {activeRoomPhoto} from './room-photo';
 import {ViewRequests} from './view-requests';
 import {AudioSettings} from './audio-settings';
 import {orientationPreferenceKey,readOrientationPreference,saveOrientationPreference,type ScreenOrientation} from './orientation-choice';
-import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT,mobilePrivacySections,mobileTermsSections} from './privacy-policy';
+import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT,privacySectionsFor,termsSectionsFor} from './privacy-policy';
 import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import {HAIRPIN_ID,STREAK_SEEN_KEY,WEEKLY_GIFT_KEY,beijingDay,breathScale,chapterProgress,completionFooter,completionPrimary,readShownDay,readStreakSeen,streakBadge,streakHint,streakToast,teaserLine,weeklyCell,weeklyGiftAutoShow,weeklyGrantText,weeklyTaskRow,type RetentionSummary,type RetentionView,type WeeklyGrant} from './retention';
@@ -43,7 +43,7 @@ import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileR
 import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
-import {REDEEM_GROUP_HINT,REDEEM_MAX_LENGTH,redeemAnswered,redeemCells,redeemErrorText,redeemInput,redeemSummary,type RedeemGrant} from './redeem';
+import {REDEEM_GROUP_HINT,REDEEM_WECHAT_HINT,CAT_PAW_WECHAT_TEXT,REDEEM_MAX_LENGTH,redeemAnswered,redeemCells,redeemErrorText,redeemInput,redeemSummary,type RedeemGrant} from './redeem';
 import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
 type Direction='all'|'portrait'|'landscape'|'square';
@@ -78,6 +78,8 @@ const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
 const CLIENT_PACKAGE_VERSION='v53.14';
+/** The WeChat mini-game numbers its own uploads (the devtools version field). */
+const WECHAT_PACKAGE_VERSION='0.53.15';
 /** A chat bubble that just popped up under a finger reaching for a piece does not open the chat until it has shown this long. */
 const CHAT_BUBBLE_ARM_MS=600;
 /** 整理 reshuffles every loose piece, so its first tap only arms it for this long. */
@@ -247,7 +249,7 @@ export class GameApp{
  private async toggleFullscreen(){await this.run(async()=>{if(this.platform.config.id!=='web'||!this.platform.fullscreen?.available())return;try{await this.platform.fullscreen.toggle();this.showModal(null);this.invalidate();}catch{this.note('浏览器暂时无法切换全屏，请检查全屏权限后重试');}});}
  private toggleEffectsMute(){const key='jigsaw:shared:audio:last-effects',volume=this.audioSettings.levels.effects;if(volume>0){try{this.platform.storage.set(key,String(volume));}catch{}this.audioSettings.set('effects',0);}else{let previous=1;try{const saved=Number(this.platform.storage.get(key));if(Number.isFinite(saved)&&saved>0)previous=Math.min(1,saved);}catch{}this.audioSettings.set('effects',previous);}this.invalidate();}
  private get formalWeb(){return this.client.cookieIdentity;}
- private get needsPrivacyChoice(){return (this.platform.config.id==='taptap'||this.platform.config.id==='wechat')&&!this.privacyAccepted;}
+ private get needsPrivacyChoice(){return (this.platform.config.id==='taptap'||this.platform.config?.id==='wechat')&&!this.privacyAccepted;}
  private get usesCreationTickets(){return this.client.config.capabilities.createTickets??(this.platform.config.id!=='web'&&!this.formalWeb);}
  // Level still needed to open a table of this size (0 = open). The server sends the rule; 500 pieces need level 10 on TapTap.
  private pieceLevel(n:number){const p=this.client.profile,need=(p as {pieceLevels?:Record<string,number>}|null)?.pieceLevels?.[n]??(!this.formalWeb&&n>=500?10:0);return (p?.level??0)<need?need:0;}
@@ -291,6 +293,9 @@ export class GameApp{
  private get boardInputBlocked(){return this.modalBlocksInput||!!this.completionFx;}
  private modalContains(x:number,y:number){return this.modalBlocksInput||(this.modal==='tasks'&&inside(this.taskWindowArea,x,y))||(this.modal==='chat'&&inside(this.chatWindowArea,x,y));}
  private get energyEnabled(){return !this.offlineRoom&&!(this.offline?.active&&!this.ready)&&!this.formalWeb&&this.client.config.capabilities?.energy!==false;}
+ /** WeChat builds name no outside group or platform (review copy). */
+ private get redeemHint(){return this.platform.config?.id==='wechat'?REDEEM_WECHAT_HINT:REDEEM_GROUP_HINT;}
+ private decorationText(item:{id:string;description?:string}){return this.platform.config?.id==='wechat'&&item.id==='cat-paw'?CAT_PAW_WECHAT_TEXT:item.description??'';}
  private get shareAvailable(){return this.client.config.capabilities.shareRewards===true;}
  private get cheersEnabled(){return !this.offlineRoom&&this.client.config.capabilities.cheers!==false;}
  private rewardText(energy:number,xp:number,coins=0){return [this.energyEnabled&&energy>0?'体力 +'+energy:'',xp>0?'经验 +'+xp:'',coins>0?'金币 +'+coins:''].filter(Boolean).join(' · ')||'暂无可领取奖励';}
@@ -674,7 +679,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private openRedeem(){this.redeemCode='';this.redeemError=null;this.redeemGrant=null;this.showModal('redeem');}
  private async promptRedeemCode(){
   if(this.busy)return;
-  const value=await this.platform.prompt('输入兑换码',this.redeemCode,{singleLine:true,maxLength:REDEEM_MAX_LENGTH,hint:REDEEM_GROUP_HINT,placeholder:'例如 AB23CD45',confirmLabel:'兑换'});
+  const value=await this.platform.prompt('输入兑换码',this.redeemCode,{singleLine:true,maxLength:REDEEM_MAX_LENGTH,hint:this.redeemHint,placeholder:'例如 AB23CD45',confirmLabel:'兑换'});
   if(value===null||this.modal!=='redeem')return;
   this.redeemCode=redeemInput(value);this.redeemError=null;this.invalidate();
   if(this.redeemCode)await this.submitRedeem();
@@ -713,7 +718,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    s.button({x:left,y:y+76+rows*cellH+(rows-1)*gap+18,w:w-40,h:42},'好的',()=>this.closeModal(),{tone:'berry',fontSize:15});
    return;
   }
-  centered('兑换码',y+18,20,this.colors.ink,700);centered(REDEEM_GROUP_HINT,y+48,13,this.colors.muted);
+  centered('兑换码',y+18,20,this.colors.ink,700);centered(this.redeemHint,y+48,13,this.colors.muted);
   const field={x:left,y:y+80,w:w-40,h:48};s.frame(field,'button-cream-normal');
   if(this.redeemCode)centered(this.redeemCode,field.y+14,20,this.colors.ink,800);else centered('点这里输入兑换码',field.y+16,15,this.colors.muted,600);
   s.hit(field,()=>void this.promptRedeemCode());
@@ -1054,7 +1059,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(detail){
    s.text('服务与隐私协议',x+16,top+16,19,this.colors.ink,800,w-32);
    this.bodyTop=top+54;this.bodyBottom=bottom-70;this.listArea={x:x+15,y:this.bodyTop,w:w-30,h:Math.max(30,this.bodyBottom-this.bodyTop)};this.sceneArea={...this.listArea};
-   const sections=[...mobilePrivacySections,...mobileTermsSections];let y=this.bodyTop-this.scroll;
+   const sections=[...privacySectionsFor(this.platform.config?.id),...termsSectionsFor(this.platform.config?.id)];let y=this.bodyTop-this.scroll;
    s.clip(this.listArea,()=>{for(const[title,text]of sections){s.text(title,x+18,y,14,this.colors.ink,750,w-36);y=this.paragraph(text,x+18,y+25,w-36,12)+17;}});
    this.extent=y-(this.bodyTop-this.scroll);this.scroll=clamp(this.scroll,0,Math.max(0,this.extent-this.listArea.h));
   }else{
@@ -1242,7 +1247,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawHeader(){
   const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.platform.viewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360,reserve=this.menuReserve({x:0,y:top,w:s.w,h:wide?74:56});
   if(this.formalWeb){s.text('测试版',13,safe+7,10,this.colors.muted);this.drawWebLinks(Math.max(75,s.w-224),safe+7,Math.min(212,s.w-87));}
-  if(this.platform.config.id==='wechat'&&safe>=30)s.text(this.platform.config.gameName,14,safe-26,13,this.colors.ink,700,Math.max(100,s.w-160));
+  if(this.platform.config?.id==='wechat'&&safe>=30)s.text(this.platform.config.gameName,14,safe-26,13,this.colors.ink,700,Math.max(100,s.w-160));
   const line=(y:number)=>{s.ctx.fillStyle=s.color('#c99586');s.ctx.fillRect(12,Math.round(y),s.w-24,1);};
   const energy=(x:number,y:number,width:number,size=16)=>{if(!this.energyEnabled){s.icon('coin',{x,y:y+7,w:24,h:26});s.text(p?(p.collection?.coins??0):'—',x+29,y+13,size,this.colors.ink,800,Math.max(24,width-30));s.hit({x:x-3,y,w:Math.max(24,width+3),h:42},()=>this.showModal('coins'));return;}const compact=width<90;if(compact)size=Math.min(size,12);s.icon('lightning',{x,y:y+(compact?7:3),w:compact?17:22,h:compact?24:31});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=Math.min(s.measure(label,size,800),Math.max(24,width-(compact?40:49)));s.text(label,x+(compact?20:25),y+12,size,this.colors.ink,800,tw+1);s.frame({x:x+(compact?24:29)+tw,y:y+10,w:compact?16:19,h:21},'plus-gold-normal');s.text('+',x+(compact?27:33)+tw,y+11,17,'#fffaf0',700);s.hit({x,y,w:width,h:42},()=>this.navigate('supplies'));};
   if(this.route==='lobby'||this.route==='gallery'||this.route==='chapter'){
@@ -1845,7 +1850,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawWebSupplies(){
   const s=this.stage,p=this.client.profile,w=Math.min(650,s.w-24),x=(s.w-w)/2;let y=this.bodyTop-this.scroll;
   if(this.formalWeb){this.scrolled(()=>{s.icon('coin',{x:x+12,y:y+8,w:42,h:44});s.text('我的金币 '+(p?.collection?.coins??0),x+67,y+17,22,this.colors.ink,750,w-80);y+=76;y=this.paragraph('金币、相册和已拥有内容继续保留。建房条件以当前账号与会员权限为准。',x+8,y,w-16,14)+24;s.button({x:x+8,y,w:w-16,h:40},'账号与会员',()=>this.openWeb('membership'),{fontSize:14});y+=52;});this.extent=y-(this.bodyTop-this.scroll)+12;return;}
-  this.scrolled(()=>{s.panel({x,y,w,h:225});s.icon('supplyTicket',{x:x+14,y:y+22,w:140,h:140});s.text('建房券',x+166,y+24,23,this.colors.ink,750,w-183);s.text('指定图片或创建私人房间',x+167,y+64,12,this.colors.muted,500,w-184);s.text('当前库存 '+(p?.supply.create??0)+' / 3',x+167,y+100,17,this.colors.ink,750,w-184);s.button({x:x+17,y:y+169,w:w-34,h:39},(p?.supply.create??0)>=3?'库存已满':this.shareAvailable?'分享领取1张':'当前浏览器尚未开放分享领取',()=>void this.claimSupply('create'),{tone:'berry',fontSize:13,disabled:this.busy||!this.shareAvailable||(p?.supply.create??0)>=3});y+=247;y=this.paragraph('随机公开房免费创建；已拥有的图包图片，也可免费创建公开房。已有建房券可以正常使用。',x+8,y,w-16,14)+23;s.button({x:x+8,y,w:w-16,h:41},'去挑选图片',()=>this.navigate('gallery'),{icon:'underlay',fontSize:14});y+=55;});this.extent=y-(this.bodyTop-this.scroll)+12;
+  this.scrolled(()=>{s.panel({x,y,w,h:225});s.icon('supplyTicket',{x:x+14,y:y+22,w:140,h:140});s.text('建房券',x+166,y+24,23,this.colors.ink,750,w-183);s.text('指定图片或创建私人房间',x+167,y+64,12,this.colors.muted,500,w-184);s.text('当前库存 '+(p?.supply.create??0)+' / 3',x+167,y+100,17,this.colors.ink,750,w-184);s.button({x:x+17,y:y+169,w:w-34,h:39},(p?.supply.create??0)>=3?'库存已满':this.shareAvailable?'分享领取1张':(this.platform.config?.id==='wechat'?'暂未开放':'当前浏览器尚未开放分享领取'),()=>void this.claimSupply('create'),{tone:'berry',fontSize:13,disabled:this.busy||!this.shareAvailable||(p?.supply.create??0)>=3});y+=247;y=this.paragraph('随机公开房免费创建；已拥有的图包图片，也可免费创建公开房。已有建房券可以正常使用。',x+8,y,w-16,14)+23;s.button({x:x+8,y,w:w-16,h:41},'去挑选图片',()=>this.navigate('gallery'),{icon:'underlay',fontSize:14});y+=55;});this.extent=y-(this.bodyTop-this.scroll)+12;
  }
  private albumDetailOpen=false;private decorationFilter:'all'|'owned'|'craft'|'album'='all';
  private drawCollection(){
@@ -1986,8 +1991,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(selected){const wide=w>=560,h=wide?190:280,r={x:pad,y,w,h};s.panel(r);
     const mock={x:pad+12,y:y+12,w:wide?w*.42:w-24,h:wide?h-24:120};s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(mock.x,mock.y,mock.w,mock.h);s.text('同桌看到的样子',mock.x+10,mock.y+8,12,this.colors.muted,700);
     const cx=mock.x+mock.w*.42,cy=mock.y+mock.h*.5;s.decoration(selected,{x:cx-34,y:cy-30,w:40,h:44});const tag={x:cx+6,y:cy+6,w:Math.min(150,mock.w*.5),h:34};s.frame(tag,'button-linen-normal');s.icon('avatar',{x:tag.x+4,y:tag.y+3,w:24,h:27});s.text(data.profile.name,tag.x+32,tag.y+4,12,ink,700,tag.w-36);s.text('Lv.'+data.profile.level,tag.x+32,tag.y+18,11,this.colors.muted,600);
-    const tx=wide?mock.x+mock.w+16:pad+14,ty=wide?y+16:mock.y+mock.h+12,tw=wide?w-mock.w-40:w-28;s.text(selected.title,tx,ty,18,ink,800,tw);let dy=ty+28+s.wrap(selected.description,tx,ty+28,tw,12,ink,18);for(const hint of hints)dy+=s.wrap(hint,tx,dy,tw,12,this.colors.muted,17);
-    const label=selected.equipped?'取下装饰':selected.owned?'使用这个装饰':selected.source==='gift'?(selected.id==='cat-paw'?'论坛反馈或群兑换码获得':selected.description||'限定礼物'):selected.source==='album'?'集齐图集获得':data.wallet.fragments<selected.cost?'碎片不足 · '+data.wallet.fragments+'/'+selected.cost:'制作 · '+selected.cost+' 碎片',disabled=!selected.owned&&(selected.source!=='craft'||selected.enabled===false||data.wallet.fragments<selected.cost);
+    const tx=wide?mock.x+mock.w+16:pad+14,ty=wide?y+16:mock.y+mock.h+12,tw=wide?w-mock.w-40:w-28;s.text(selected.title,tx,ty,18,ink,800,tw);let dy=ty+28+s.wrap(this.decorationText(selected),tx,ty+28,tw,12,ink,18);for(const hint of hints)dy+=s.wrap(hint,tx,dy,tw,12,this.colors.muted,17);
+    const label=selected.equipped?'取下装饰':selected.owned?'使用这个装饰':selected.source==='gift'?(selected.id==='cat-paw'?(this.platform.config?.id==='wechat'?'活动或兑换码获得':'论坛反馈或群兑换码获得'):selected.description||'限定礼物'):selected.source==='album'?'集齐图集获得':data.wallet.fragments<selected.cost?'碎片不足 · '+data.wallet.fragments+'/'+selected.cost:'制作 · '+selected.cost+' 碎片',disabled=!selected.owned&&(selected.source!=='craft'||selected.enabled===false||data.wallet.fragments<selected.cost);
     s.button({x:tx,y:y+h-52,w:Math.min(240,tw),h:40},label,()=>void this.collectionAction(selected.owned?'equip':'craft',selected.equipped?null:selected.id),{tone:selected.equipped?'cream':'berrydark',fontSize:14,disabled:disabled||this.busy});y+=h+12;}
    const tuning=data.tuning;y=this.paragraph('碎片来自拼图：每拼合 '+(tuning?.fragmentContributionStep??10)+' 块得 1 片，拼完一张最多 '+(tuning?.completionFragmentMaximum??10)+' 片 · 现有 '+data.wallet.fragments+' 片',pad+2,y,w,12)+12;
    const chip=(value:typeof filter,label:string):[string,boolean,()=>void]=>[label,filter===value,()=>this.changeListView(()=>{this.decorationFilter=value;})];
@@ -1997,7 +2002,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     s.frame(r,selected?.id===item.id?'panel-gold':'button-linen-normal');s.decoration(item,{x:x+10,y:cy+12,w:44,h:50});s.text(item.title,x+62,cy+14,14,ink,800,cw-70);
     let status=item.equipped?'使用中':item.owned?'已拥有':'',tone=item.equipped?'#a85567':'#879864';
     if(!status&&item.source==='craft'){s.icon('fragment',{x:x+62,y:cy+38,w:16,h:18});s.text(item.cost+' 碎片',x+82,cy+40,13,ink,700);}
-    else if(!status&&item.source==='gift')s.wrap(item.id==='cat-paw'?'论坛/评论区\n反馈获得':item.id===HAIRPIN_ID?'七日礼\n第 7 天获得':item.description||'限定礼物',x+62,cy+40,cw-70,12,'#8a5a5f',17);
+    else if(!status&&item.source==='gift')s.wrap(item.id==='cat-paw'?(this.platform.config?.id==='wechat'?'活动或\n兑换码获得':'论坛/评论区\n反馈获得'):item.id===HAIRPIN_ID?'七日礼\n第 7 天获得':item.description||'限定礼物',x+62,cy+40,cw-70,12,'#8a5a5f',17);
     else if(!status){const album=data.albums.find(a=>a.id===item.albumId);status='集齐「'+(album?.title??'图集')+'」获得';tone='#8a5a5f';if(album){s.meter({x:x+62,y:cy+64,w:cw-74,h:7},album.collected/Math.max(1,album.total));s.text(album.collected+'/'+album.total,x+62,cy+76,12,this.colors.muted,700);}}
     if(status)s.text(status,x+62,cy+40,13,tone,700,cw-70);
     s.hit(r,()=>{this.decorationId=item.id;this.scroll=0;this.invalidate();});});
@@ -2037,7 +2042,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},pack.owned?'已拥有 · 去建房':pack.price+' 金币 · 解锁图包',()=>{if(pack.owned)this.openPackGallery(pack.id);else{this.purchase=pack;this.showModal('purchase');}},{tone:'berry',icon:pack.owned?'check':'coin',fontSize:14,disabled:this.busy});
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
- private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...mobilePrivacySections,...mobileTermsSections]:[
+ private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...privacySectionsFor(this.platform.config?.id),...termsSectionsFor(this.platform.config?.id)]:[
   ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可打开小地图，放大时点小地图直接跳到那里；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留'+this.ownRoomLimit+'个未结束的自建房间。'],
@@ -2785,7 +2790,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     const policyActions=this.formalWeb?[["隐私说明",()=>this.openWeb('privacy')],["服务说明",()=>this.openWeb('terms')]] as const:[["服务与隐私说明",()=>this.navigate('privacy')]] as const;
     if(this.formalWeb){this.button(left,cy,width,'用我的图片开一桌',()=>this.openWeb('uploads'),'berry',42);cy+=52;cy=this.paragraph('上传一张图片，选好片数，开一张自己的公开拼图桌。图片只在房间有效期内保留。',left,cy,width,12)+18;}
     for(const [label,action]of [['历史拼图',()=>this.showModal('history')],['玩法帮助',()=>this.navigate('help')],...policyActions] as const){this.button(left,cy,width,label,action);cy+=48;}
-    s.text('当前版本 '+CLIENT_PACKAGE_VERSION+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy+4,12,this.colors.muted,600,width);cy+=30;
+    s.text('当前版本 '+(this.platform.config?.id==='wechat'?WECHAT_PACKAGE_VERSION:CLIENT_PACKAGE_VERSION)+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy+4,12,this.colors.muted,600,width);cy+=30;
     if(this.formalWeb){this.button(left,cy,width,'问题反馈',()=>this.openWeb('feedback'));cy+=48;cy=this.paragraph('账号、进度与收藏会持续保存在当前网站。',left,cy+4,width,12)+10;}else{this.button(left,cy,width,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));cy+=48;cy=this.paragraph('当前为本机游客身份，尚未绑定平台账号存档。清除本机数据可能丢失进度。',left,cy+4,width,12)+10;}
     if(this.platform.config.id==='taptap'&&this.platform.loginLog){this.button(left,cy,width,'登录日志',()=>this.openLoginLog());cy+=48;}
     if(this.adTestingAllowed||this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest||this.platform.config.previewTestRoom||this.nineGridAvailable||this.platform.config.id==='taptap'&&p?.taptap?.diagnostics===true||this.diagnosticsAvailable){cy+=10;heading('测试与诊断');}
@@ -2844,7 +2849,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
      [this.minimapEnabled?'关闭小地图':'打开小地图 · 放大时左上角显示全桌',()=>{this.setMinimapEnabled(!this.minimapEnabled);this.modal=null;this.toolsOpen=false;this.invalidate();}],
     ] as const){if(label==='整理散落拼块'&&!this.soloRoom)continue;if(label.includes('小地图')&&this.layout==='desktop')continue;this.button(left,cy,width,label,action,'cream',40);cy+=51;}
     this.button(left,cy,width,'打开设置 · 声音、画面等',()=>this.showModal('settings'),'cream',40);cy+=51;
-    s.text('当前版本 '+CLIENT_PACKAGE_VERSION+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy,12,this.colors.muted,600,width);cy+=28;break;
+    s.text('当前版本 '+(this.platform.config?.id==='wechat'?WECHAT_PACKAGE_VERSION:CLIENT_PACKAGE_VERSION)+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy,12,this.colors.muted,600,width);cy+=28;break;
    }
    case'chat':{
     const room=this.room;s.text('同桌 '+(room?.snapshot.members.length??0)+'人',left,cy,15,this.colors.ink,700);cy+=29;for(const member of room?.snapshot.members??[]){s.text(member.name+' · Lv.'+((member as typeof member&{level?:number}).level??1),left,cy,13,member.color);cy+=25;}cy+=10;

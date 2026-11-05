@@ -74,7 +74,7 @@ export function createWechatPlatform(input:PlatformConfig):Platform{
   async watchAd(unit){
    // A TapTap placement must never be passed into the WeChat SDK. This platform
    // has no configured placement until one is created for its own public AppID.
-   if(!config.rewardedAdUnitId||unit!==config.rewardedAdUnitId||!/^adunit-[a-z0-9]+$/i.test(unit)||!wx.createRewardedVideoAd||watching)return 'unavailable';watching=true;audioPlayback.setAdPlaying(true);
+   if(!/^adunit-[a-z0-9]+$/i.test(unit)||!wx.createRewardedVideoAd||watching)return 'unavailable';watching=true;audioPlayback.setAdPlaying(true);
    try{if(!rewardAd||rewardUnit!==unit){rewardAd?.destroy?.();rewardAd=wx.createRewardedVideoAd({adUnitId:unit});rewardUnit=unit;}const ad=rewardAd!;
     return await new Promise<'completed'|'closed'|'failed'>(resolve=>{let done=false;const finish=(value:'completed'|'closed'|'failed')=>{if(done)return;done=true;clearTimeout(timer);ad.offClose?.(close);ad.offError?.(error);resolve(value);};const close=(result:{isEnded?:boolean})=>finish(result?.isEnded===true?'completed':'closed'),error=()=>finish('failed');const timer=setTimeout(error,180000);ad.onClose(close);ad.onError(error);void Promise.resolve(ad.load()).then(()=>{if(!done)return ad.show();}).catch(error);});
    }catch{return 'failed';}finally{watching=false;audioPlayback.setAdPlaying(false);}

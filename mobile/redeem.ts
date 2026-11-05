@@ -3,6 +3,8 @@ export type RedeemDecoration={id:string;title?:string;kind?:string;artKey?:strin
 export type RedeemGrant={code:string;coins:number;fragments?:number;energy:number;energyPacks:number;energyPacksSkipped:number;decorations:RedeemDecoration[]};
 export type RedeemCell={icon:string;label:string;extra:string|null;decoration?:{id:string;artKey:string;color:string}};
 
+export const REDEEM_WECHAT_HINT='兑换码由游戏活动发放';
+export const CAT_PAW_WECHAT_TEXT='参与游戏活动或使用兑换码获得。';
 export const REDEEM_GROUP_HINT='兑换码可在玩家 QQ 群 397229653 领取';
 export const REDEEM_SOON='兑换功能即将开放';
 export const REDEEM_MAX_LENGTH=32;
