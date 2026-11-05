@@ -89,7 +89,7 @@ for(const [platform,out]of Object.entries(outputs)){
   const plugins=sharedPlatformPlugins(config);
   json(join(out,'game.json'),{deviceOrientation:'portrait',showStatusBar:false,networkTimeout:{request:15000,downloadFile:20000},subpackages:[{name:'art',root:'art/'}],...(plugins?{plugins}:{})});
   writeFileSync(join(out,'art/game.js'),'// Shared supplemental artwork package.\n');
-  json(join(out,'project.config.json'),{appid:config.appId,projectname:config.gameName,description:'拼图小窝：TapTap/微信共用内容与Canvas界面的开发测试版',compileType:'game',libVersion:'latest',setting:{es6:false,enhance:false,minified:false,urlCheck:true,coverView:true},packOptions:{ignore:[]},condition:{}});
+  json(join(out,'project.config.json'),{appid:config.appId,projectname:config.gameName,description:'拼图小窝：多人合作拼图小游戏',compileType:'game',libVersion:'latest',setting:{es6:false,enhance:false,minified:false,urlCheck:true,coverView:true},packOptions:{ignore:[]},condition:{}});
  }else{
   // No game.json for TapTap: it makes the console parse the H5 zip as a native mini-game and reject it.
   // Landscape is requested at startup by mobile/entry-web.ts instead.
