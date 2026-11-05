@@ -53,9 +53,9 @@ test('the map keeps its place through a tray drag-out, a map tap pans the view a
 
 for(const layout of ['portrait','landscape'])test(`${layout}: a 5 x 4 portrait page, landscape cells as wide, pieces straight on the tray and sharp`,async()=>{
  const {p,board}=await setup(layout),v=board.trayLayout();
- assert.equal(v.columns,layout==='portrait'?5:11);assert.equal(v.rows,layout==='portrait'?4:2);
- assert.ok(v.cellW-5>=44&&v.cellH-5>=44,'each cell at least 44 pt');
- assert.ok(v.r.h<=board.rect.h*(layout==='portrait'?.37:.45)+.01&&v.r.y-board.rect.y>=board.rect.h*.35,'the tray keeps its height cap and leaves the table above it');
+ assert.equal(v.columns,layout==='portrait'?5:14);assert.equal(v.rows,layout==='portrait'?4:2);
+ assert.ok(layout==='portrait'?v.cellW-5>=44&&v.cellH-5>=44:v.cellW>=44&&v.cellH>=40,'cells big enough to hit (landscape rows at least 40 pt)');
+ assert.ok(v.r.h<=board.rect.h*(layout==='portrait'?.37:.31)+.01&&v.r.y-board.rect.y>=board.rect.h*.35,'the tray keeps its height cap and leaves the table above it');
  if(layout==='portrait')assert.ok(v.r.h>=board.rect.h*.34&&v.cellW>v.cellH,'a short portrait tray with rows wider than tall');
  // Tray pictures are painted once per size; the second draw shows only the tray itself.
  p.ctx.getTransform=()=>({a:3});board.draw(p.ctx);p.commands.length=0;board.draw(p.ctx);
@@ -128,12 +128,12 @@ for(const layout of ['portrait','landscape'])test(`${layout}: one control row �
  const hint=texts.find(t=>t.text==='点选定位 · 拖出放置'),page=texts.find(t=>t.text===`1/${v.pages}`);assert.ok(hint&&page);
  assert.ok(page.y<v.r.y+v.top&&hint.y<v.r.y+v.top,'pager and hint share the top row');assert.ok(page.x<v.r.x+v.next.x&&page.x>v.r.x+v.prev.x,'page number between the arrows');
  assert.ok(v.next.x+v.next.w<hint.x-v.r.x-8,'the pager stays clear of the hint');assert.ok(hint.x-v.r.x+8*hint.text.length<=v.close.x,'and the hint of ×');
- assert.equal(v.r.h,v.top+v.rows*v.cellH+6,'no footer row');
+ assert.equal(v.r.h,v.top+v.rows*v.cellH+(layout==='portrait'?6:4),'no footer row');
  if(layout==='portrait')assert.ok(v.r.h/board.rect.h>=.34&&v.r.h/board.rect.h<=.371,'portrait tray about 37% of the table');
  // The arrows answer 44 pt tall: a tap 10 pt above the tray still turns the page.
  const tap=pt=>{board.input({type:'down',points:[pt],changed:[pt]});board.input({type:'up',points:[],changed:[pt]});};
  tap({id:5,x:v.r.x+v.next.x+v.next.w/2,y:v.r.y-10});assert.equal(board.trayPage,1);
- assert.ok(v.next.h+12>=44&&v.prev.w>=44&&v.next.w>=44,'arrow targets at least 44 pt');
+ assert.ok(v.next.h+v.reach>=44&&v.prev.w>=44&&v.next.w>=44,'arrow targets at least 44 pt');
  tap({id:6,x:v.r.x+v.prev.x+v.prev.w/2,y:v.r.y+v.top/2});assert.equal(board.trayPage,0);
  board.destroy();
 });
@@ -143,4 +143,24 @@ test('on a dpr 3.5 screen tray pictures are painted at 3.5x and land on whole sc
  const tiles=new Set(board.trayTiles.values()),cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&tiles.has(a[0]));assert.ok(cells.length);
  for(const [,,,,sw,sh,dx,dy,dw,dh]of cells){assert.ok(Math.abs(dw*3.5-sw)<1e-9&&Math.abs(dh*3.5-sh)<1e-9,'one picture pixel per screen pixel');assert.ok(Math.abs(dx*3.5-Math.round(dx*3.5))<1e-6&&Math.abs(dy*3.5-Math.round(dy*3.5))<1e-6);}
  board.destroy();
+});
+
+test('landscape: a compact tray — slim control row, 2 short rows, ~31% of the table, pager still easy to hit',async()=>{
+ for(const [w,h,dpr] of [[844,390,2],[915,412,2.6]]){
+  const p=platform(),board=new PuzzleBoard(p,createFittedPuzzle('test',10,10,123),()=>{});board.setRect({x:0,y:0,w,h});await board.setImage('t.png');board.trayOpen=true;p.ctx.getTransform=()=>({a:dpr,e:0,f:0});board.draw(p.ctx);
+  const v=board.trayLayout();assert.equal(v.top,24,'a 24 pt control row');assert.equal(v.rows,2);assert.ok(v.r.h/h<=.32,`tray ${(v.r.h/h*100).toFixed(1)}% of the table`);
+  assert.ok(v.cellH>=36&&v.cellW>=40,'cells stay tappable');assert.ok(v.prev.w>=44&&v.next.w>=44,'pager arrows 44 pt wide');
+  p.commands.length=0;board.draw(p.ctx);const tiles=new Set(board.trayTiles.values()),cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&tiles.has(a[0]));
+  for(const [,,,,,,dx,dy,dw,dh]of cells){assert.ok(dw<=56&&dw>=48,`landscape pieces about a quarter smaller than v53.18's 69 pt, got ${dw.toFixed(1)}`);assert.ok(dy>=v.r.y+v.top-TRAY_ROW_POKE-.5,'the first row starts right under the control row');}
+  board.destroy();
+ }
+});
+
+test('landscape: pieces kept small by a low-resolution picture get narrower cells, so a page holds more of them',async()=>{
+ const run=async(w,h,dpr,iw,ih,cols,rows)=>{const p=platform(),board=new PuzzleBoard({...p,createImage:()=>({naturalWidth:iw,naturalHeight:ih,set src(value){queueMicrotask(()=>this.onload());}})},createFittedPuzzle('test',cols,rows,123),()=>{});
+  board.setRect({x:0,y:0,w,h});await board.setImage('t.png');board.trayOpen=true;p.ctx.getTransform=()=>({a:dpr,e:0,f:0});board.draw(p.ctx);board.draw(p.ctx);const v=board.trayLayout();board.destroy();return v;};
+ const low844=await run(844,390,2,1536,1024,27,18),high844=await run(844,390,2,2560,2560,22,22),low915=await run(915,412,2.6,1536,1024,27,18),high915=await run(915,412,2.6,2560,2560,22,22);
+ assert.ok(low844.columns>=14,`844x390: ${low844.columns} columns`);assert.equal(high844.columns,14,'a sharp picture keeps the standard cells');
+ assert.ok(low915.columns>=18,`915x412 dpr 2.6: ${low915.columns} columns`);assert.ok(low915.pages<high915.pages,'fewer pages for the same piece count');
+ assert.ok(low915.cellH>=36&&low915.cellW>=40,'small cells stay tappable');assert.ok(low915.r.h<=high915.r.h,'and the tray is no taller');
 });
