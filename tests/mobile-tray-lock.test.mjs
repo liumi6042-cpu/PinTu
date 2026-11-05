@@ -16,7 +16,7 @@ function boardPlatform(){const ctx=proxy(),canvas=()=>({width:1,height:1,getCont
 const LAYOUTS=[
  {name:'portrait 360x780',layout:'phonePortrait',w:360,h:780,area:{x:0,y:77,w:360,h:702},anchor:(game,w,h)=>{const slot=game.portraitQuickSlot(w,h);return [slot.x,slot.bottom];}},
  {name:'portrait 390x844',layout:'phonePortrait',w:390,h:844,area:{x:0,y:77,w:390,h:766},anchor:(game,w,h)=>{const slot=game.portraitQuickSlot(w,h);return [slot.x,slot.bottom];}},
- {name:'landscape 844x390',layout:'phoneLandscape',w:844,h:390,area:{x:0,y:0,w:844,h:390},anchor:(game,w,h)=>[w-58,h-4]},
+ {name:'landscape 844x390',layout:'phoneLandscape',w:844,h:390,area:{x:0,y:0,w:844,h:390},anchor:(game,w,h)=>{game.drawToolColumn({x:w-72,y:0,w:72,h});const t=game.landscapeToggle;return [t.x+t.w/2-23,t.y+t.h+8+54];}},
 ];
 const overlap=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
 async function room(l){
@@ -37,7 +37,7 @@ for(const l of LAYOUTS)test(`${l.name}: the 锁定 button keeps one place clear 
  const {stage,board,lock,gift,bp}=await room(l),portrait=l.layout==='phonePortrait';
  board.trayOpen=false;const closed=lock();assert.ok(closed,'the button is drawn');
  board.trayOpen=true;board.draw(bp.ctx);const open=lock(),tray=board.trayFrame,v=board.trayLayout();
- assert.deepEqual(open,closed,'the tray does not move it');assert.equal(overlap(open,tray),false,'clear of the tray');assert.ok(open.y>=tray.y+tray.h,'below the tray');
+ assert.deepEqual(open,closed,'the tray does not move it');assert.equal(overlap(open,tray),false,'clear of the tray');assert.ok(portrait?open.y>=tray.y+tray.h:open.y+open.h<=tray.y,portrait?'below the tray, in the bottom bar':'above the bottom tray, under the tool toggle');
  if(portrait){
   const tasks=gift(),tools={x:l.w-63,y:l.h-65,w:50,h:50};
   assert.equal(overlap(open,tasks),false,'clear of 任务 10/10 and its gift');assert.equal(overlap(open,tools),false,'clear of ⊞');

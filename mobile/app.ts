@@ -154,7 +154,7 @@ export class GameApp{
  private realtime:ManagedRoomRealtime|null=null;
  private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;private desktopToolsOpen=true;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
- private roomArea:Rect={x:0,y:0,w:0,h:0};private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';
+ private roomArea:Rect={x:0,y:0,w:0,h:0};private landscapeToggle:Rect|null=null;private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';
  private underlayHiddenRoom:string|null=null;
  private aid:{grants:AssistanceGrant[];freeRemaining?:{hint:number;underlay:number};newcomerProtected?:boolean;serverTime:number}|null=null;
  private messages:PublicMessage[]=[];private chatCursor=0;private chatSeen=0;private chatLoading=false;private chatDraft='';
@@ -2113,7 +2113,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.drawRoomTopBar({x:0,y:headerTop,w:s.w-column,h:52},'landscape');
    if(web){c.fillStyle=this.colors.cream;c.fillRect(s.w-column,0,column,s.h);c.fillStyle=this.colors.line;c.fillRect(s.w-column,0,2,s.h);this.drawToolColumn({x:s.w-column+2,y:headerTop+6,w:column-2,h:safeBottom-headerTop-6});}
    else this.drawToolColumn({x:s.w-72,y:0,w:72,h:s.h});
-   if(web)this.drawRoomGift(8,safeBottom-50,false);else if(!board.previewZoomed){this.drawChatBubble(0);this.drawRoomGift(12,safeBottom-(this.landscapeChatVisible?88:50),false);this.drawBoardQuickTools(this.roomArea.x+this.roomArea.w-58,safeBottom-4);}
+   if(web)this.drawRoomGift(8,safeBottom-50,false);else if(!board.previewZoomed)this.drawLandscapeRoomControls(board,headerTop,safeBottom);
   }else{
    const headerBottom=headerTop+76;this.roomArea={x:0,y:headerBottom+1,w:s.w,h:Math.max(90,safeBottom-headerBottom-1)};
    this.placeBoard(board,6,()=>this.phoneFit(board,'width'));
@@ -2150,7 +2150,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   board.phoneLandscapeRoom=this.platform.config.id!=='web'&&this.layout==='phoneLandscape';
   board.selfDecoration=this.client.profile?.collection?.equipped??null;board.previewTopInset=topInset;
   // The closed landscape tool toggle sits in the top-right corner, so the thumbnail starts below it.
-  board.previewThumbInset=board.phoneLandscapeRoom&&!this.landscapeToolsOpen?this.roomHeaderTop()+101:null;board.minimapEnabled=this.minimapEnabled&&this.layout!=='desktop';board.setRect(this.roomArea);
+  // Landscape keeps 锁定 under the corner tool toggle; the 原图 thumbnail then moves up, left of that column.
+  const lockColumn=board.phoneLandscapeRoom&&this.lockButtonEnabled;board.previewThumbShift=lockColumn?54:0;board.minimapBelowReserve=board.phoneLandscapeRoom?60:0;
+  board.previewThumbInset=board.phoneLandscapeRoom&&!this.landscapeToolsOpen&&!lockColumn?this.roomHeaderTop()+101:null;board.minimapEnabled=this.minimapEnabled&&this.layout!=='desktop';board.setRect(this.roomArea);
   if(this.roomViewPending){fit();this.roomZoomBase=board.camera.z;this.roomViewPending=false;}board.draw(this.stage.ctx);
  }
  private desktopFit(board:PuzzleBoard){board.fit(false,{bottom:56,left:this.desktopToolsOpen?104:72});}
@@ -2212,7 +2214,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   }
   const s=this.stage,c=s.ctx,menu=this.platform.viewport().menu;
   if(menu){const y=Math.max(r.y,menu.y+menu.h+8);r={...r,y,h:Math.max(0,r.y+r.h-y)};}
-  const toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};toggle.x-=this.menuReserve(toggle);this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
+  const toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};toggle.x-=this.menuReserve(toggle);this.landscapeToggle=toggle;this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
   if(this.landscapeToolsOpen){
    c.fillStyle=roomColors.cream;c.fillRect(r.x,0,r.w,s.h);c.fillStyle=roomColors.line;c.fillRect(r.x,0,2,s.h);s.hit(r,()=>{});
    const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['locate','定位'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),height=Math.min(58,Math.floor(r.h/items.length)),gap=Math.min(4,Math.max(0,(r.h-items.length*height)/(items.length-1))),top=r.y+(r.h-(items.length*height+(items.length-1)*gap))/2;
@@ -2305,6 +2307,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  /** Portrait quick tools (锁定) sit in the bottom bar between 任务 (its tap area ends at x 151) and the ⊞ button,
   * about 57% across and level with ⊞, so they never cover the table or the tray above the bar. */
  private portraitQuickSlot(width:number,safeBottom:number){return{x:Math.round(Math.max(151+12,Math.min(width*.57-23,width-63-12-46))),bottom:safeBottom-9};}
+ /** Landscape phone room: the tray lies along the bottom, so the gift goes up under the corner map (or the back button)
+  * and 锁定 under the corner tool toggle; the chat bubble sits above an open tray. */
+ private drawLandscapeRoomControls(board:PuzzleBoard,headerTop:number,safeBottom:number){
+  const map=board.minimapFrame,toggle=this.landscapeToggle;this.drawChatBubble(0);this.drawRoomGift(12,map?map.y+map.h+8:headerTop+58,false);
+  if(toggle)this.drawBoardQuickTools(toggle.x+toggle.w/2-23,toggle.y+toggle.h+8+54);else this.drawBoardQuickTools(this.roomArea.x+this.roomArea.w-58,safeBottom-4);
+ }
  private drawBoardQuickTools(x:number,bottom:number){
   const board=this.board,room=this.room;if(!this.lockButtonEnabled||!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
   const s=this.stage,size=46,items=[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
@@ -2316,7 +2324,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(latest){if(this.bubbleSeen<0)this.bubbleSeen=latest.id;else if(latest.id>this.bubbleSeen){this.bubbleSeen=latest.id;if(latest.code!==this.client.profile?.code||this.platform.config.id!=='web'&&this.layout==='phoneLandscape')this.chatBubble={message:latest,until:Date.now()+5000};}}
   const bubble=this.chatBubble;if(!bubble||Date.now()>bubble.until||this.modal)return;
   if(this.platform.config.id!=='web'&&this.layout==='phoneLandscape'){
-   const c=s.ctx,name=bubble.message.name,text='：'+bubble.message.text,nameW=Math.min(s.measure(name,12,700),this.roomArea.w*.35),w=Math.min(this.roomArea.w-78,this.room?.snapshot.completedAt&&!this.completionFx?(this.roomArea.w-112)/2-20:Infinity,nameW+s.measure(text,12,500)+20),r={x:12,y:this.roomArea.h-32,w,h:20},member=this.room?.snapshot.members.find(member=>member.id===bubble.message.playerId);
+   const c=s.ctx,name=bubble.message.name,text='：'+bubble.message.text,nameW=Math.min(s.measure(name,12,700),this.roomArea.w*.35),w=Math.min(this.roomArea.w-78,this.room?.snapshot.completedAt&&!this.completionFx?(this.roomArea.w-112)/2-20:Infinity,nameW+s.measure(text,12,500)+20),tray=this.board?.trayFrame,r={x:tray?64:12,y:tray?tray.y-26:this.roomArea.h-32,w:tray?Math.max(1,w-52):w,h:20},member=this.room?.snapshot.members.find(member=>member.id===bubble.message.playerId);
    const remaining=bubble.until-Date.now();c.save();c.globalAlpha=Math.min(1,remaining/1000);this.drawLandscapeSurface(r,14,'rgba(255,250,243,.95)',roomColors.lineD,1.5);if(remaining<1000)this.invalidate();
    s.text(name,r.x+10,r.y+4,12,member?.color||roomColors.ink,700,nameW);s.text(text,r.x+10+nameW,r.y+4,12,roomColors.ink,500,w-nameW-20);c.restore();this.bubbleHit(bubble,r);this.landscapeChatVisible=true;return;
   }

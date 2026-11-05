@@ -34,7 +34,7 @@ for(const layout of ['portrait','landscape'])test(`${layout}: the corner map sta
  for(const [name,rect]of [['map',map],['thumbnail',thumb],['tray',tray]])assert.ok(within(rect,r),name+' inside the table');
  assert.equal(overlap(map,tray),false,'map clear of the tray');assert.equal(overlap(thumb,tray),false,'thumbnail clear of the tray');assert.equal(overlap(map,thumb),false,'map clear of the thumbnail');
  assert.ok(map.y>=r.y+LAYOUTS[layout].topInset-.01&&thumb.y>=r.y+LAYOUTS[layout].topInset-.01,'both below the room header');
- if(layout==='landscape')assert.ok(thumb.x+thumb.w<=r.x+r.w-50,'the thumbnail leaves the corner tool toggle free');
+ if(layout==='landscape')assert.equal(overlap(thumb,{x:r.x+r.w-48,y:57,w:36,h:36}),false,'the thumbnail leaves the corner tool toggle free');
  assert.ok(map.h>=40,'the map keeps a usable size');
  board.destroy();
 });

@@ -64,6 +64,8 @@ export const TRAY_COLUMNS_PORTRAIT=5,TRAY_ROWS_PORTRAIT=4,TRAY_CELL_LANDSCAPE=72
 /** The tray's one control row (pager left, hint, × right) and the padding under the grid. A portrait row is wider than tall,
  * so a piece may reach TRAY_ROW_POKE past its cell's top and bottom: opposite tabs of neighbouring rows at most just touch.
  * The pager arrows also take taps TRAY_PAGER_REACH above the tray, so they are 44 pt tall. */
+/** A landscape tray sits this close to the bottom of the table (portrait keeps 75 pt for its bottom bar). */
+export const TRAY_LANDSCAPE_BOTTOM=6;
 export const TRAY_HEAD_PX=32,TRAY_FOOT_PX=6,TRAY_ROW_POKE=2,TRAY_PAGER_REACH=12;
 /** A tray piece, tabs included, fills its cell (the cells keep a 5 pt gap between them). */
 export const TRAY_PIECE_FILL=1;
@@ -158,8 +160,12 @@ export class PuzzleBoard implements RoomTable {
  previewTopInset=6;
  /** Thumbnail top when a floating control sits in the top-right corner; null keeps previewTopInset. */
  previewThumbInset:number|null=null;
+ /** Points kept free at the board's right edge for the 原图 thumbnail (a landscape column of the tool toggle and 锁定). */
+ previewThumbShift=0;
  /** Corner map of the whole table while zoomed in. Opt-in under 更多; phones only. */
  minimapEnabled=false;
+ /** Room kept under the corner map when an open tray limits its height (the landscape gift button sits there). */
+ minimapBelowReserve=0;
  selfDecoration:RoomDecoration|null=null;drawDecoration:((value:RoomDecoration,rect:Rect)=>void)|null=null;
  onCursor:((point:CursorPoint|null)=>void)|null=null;
  private pieces;private paths:Command[][];private polygons:{x:number;y:number}[][]|null=null;private hit:CanvasRenderingContext2D;
@@ -376,7 +382,7 @@ export class PuzzleBoard implements RoomTable {
   const margin=Math.min(12,this.rect.w*.05,availableHeight*.05),width=right-left,height=bottomEdge-top,z=Math.max(.001,Math.min(5,(this.rect.w-2*margin)/width,(availableHeight-2*margin)/height));
   this.camera={x:(this.rect.w-width*z)/2-left*z,y:(availableHeight-height*z)/2-top*z,z};this.changed();
  }
- focusMobilePiece(pieceId:number,bottomInset=this.tray?this.trayLayout().r.h+72:72){const group=this.state.groups.find(g=>!g.locked&&g.pieces.includes(pieceId)),piece=this.pieces[pieceId];if(!group||!piece)return false;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,z=Math.min(5,Math.max(this.camera.z,54/Math.min(w,h)));this.focusedPiece=pieceId;this.camera={x:this.rect.w/2-(this.board.x+(piece.col+.5)*w+group.dx)*z,y:Math.max(48,this.rect.h-bottomInset)/2-(this.board.y+(piece.row+.5)*h+group.dy)*z,z};this.changed();return true;}
+ focusMobilePiece(pieceId:number,bottomInset=this.tray?this.rect.y+this.rect.h-this.viewBottom():72){const group=this.state.groups.find(g=>!g.locked&&g.pieces.includes(pieceId)),piece=this.pieces[pieceId];if(!group||!piece)return false;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,z=Math.min(5,Math.max(this.camera.z,54/Math.min(w,h)));this.focusedPiece=pieceId;this.camera={x:this.rect.w/2-(this.board.x+(piece.col+.5)*w+group.dx)*z,y:Math.max(48,this.rect.h-bottomInset)/2-(this.board.y+(piece.row+.5)*h+group.dy)*z,z};this.changed();return true;}
  zoom(factor:number){if(!Number.isFinite(factor)||factor<=0)return;const center={x:this.rect.w/2,y:this.rect.h/2};this.zoomAt(center,Math.min(5,Math.max(.08,this.camera.z*factor)));this.changed();}
  private zoomAt(center:{x:number;y:number},z:number){const wx=(center.x-this.camera.x)/this.camera.z,wy=(center.y-this.camera.y)/this.camera.z;this.camera={x:center.x-wx*z,y:center.y-wy*z,z};}
  private local(p:Point){return{x:p.x-this.rect.x,y:p.y-this.rect.y};}
@@ -776,7 +782,7 @@ export class PuzzleBoard implements RoomTable {
   this.locatedMarks={ids:groups.map(group=>group.pieces[0]),until:Date.now()+MINIMAP_MARK_MS};
   const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,pad=Math.min(w,h)*.27,cam=this.camera;let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity,count=0;
   for(const group of groups)for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+group.dx,y=this.board.y+p.row*h+group.dy;left=Math.min(left,x-pad);top=Math.min(top,y-pad);right=Math.max(right,x+w+pad);bottom=Math.max(bottom,y+h+pad);count++;}
-  const l=Math.max(0,insets.left??0),t=Math.max(0,insets.top??0),vw=Math.max(1,this.rect.w-l-Math.max(0,insets.right??0)),vh=Math.max(1,this.rect.h-t-Math.max(0,insets.bottom??0));
+  const l=Math.max(0,insets.left??0),t=Math.max(0,insets.top??0),vw=Math.max(1,this.rect.w-l-Math.max(0,insets.right??0)),vh=Math.max(1,this.rect.h-t-Math.max(0,insets.bottom??0,this.rect.y+this.rect.h-this.viewBottom()));
   if(cam.x+left*cam.z<l||cam.y+top*cam.z<t||cam.x+right*cam.z>l+vw||cam.y+bottom*cam.z>t+vh){
    this.cancelInput(true);const bw=right-left,bh=bottom-top,z=Math.max(.08,Math.min(cam.z,vw*.94/bw,vh*.94/bh));
    this.camera={x:l+vw/2-(left+bw/2)*z,y:t+vh/2-(top+bh/2)*z,z};
@@ -794,7 +800,7 @@ export class PuzzleBoard implements RoomTable {
   // Portrait keeps 4 rows; landscape takes the row count whose cells come closest to square.
   const rows=Math.max(1,Math.min(compact?3:TRAY_ROWS_PORTRAIT,Math.floor(room/TRAY_ROW_MIN),compact?Math.round(room/cellW):TRAY_ROWS_PORTRAIT));
   const cellH=Math.max(1,Math.min(cellW,room/rows)),tall=chrome+rows*cellH,height=this.trayDrag&&!full?Math.min(tall,TRAY_STRIP_PX):tall;
-  const r={x:rect.x+5,y:rect.y+rect.h-height-75,w,h:height},prev={x:4,y:0,w:48,h:top},next={x:92,y:0,w:48,h:top},close={x:w-38,y:0,w:38,h:top};
+  const r={x:rect.x+5,y:rect.y+rect.h-height-(compact?TRAY_LANDSCAPE_BOTTOM:75),w,h:height},prev={x:4,y:0,w:48,h:top},next={x:92,y:0,w:48,h:top},close={x:w-38,y:0,w:38,h:top};
   const pageSize=Math.max(1,columns*rows),groups=this.trayGroups(),start=this.trayStart(groups,pageSize),page=Math.ceil(start/pageSize),pages=Math.max(1,page+Math.ceil((groups.length-start)/pageSize));
   return{r,top,columns,rows,pageSize,groups,start,page,pages,cellW,cellH,compact,close,prev,next};
  }
@@ -835,7 +841,7 @@ export class PuzzleBoard implements RoomTable {
    const bottom=this.viewBottom()-r.y-8;if(this.previewThumbInset!==null&&Math.max(6,inset)+Math.min(h,48)+6>bottom){inset=this.previewTopInset;shift=THUMB_TOGGLE_PX;}
    const room=bottom-Math.max(6,inset)-6;if(h>room){h=Math.max(0,room);w=h/ratio;}if(h<30)return null;
   }
-  return{w,h,top:r.y+Math.max(6,Math.min(inset,r.h-h-12)),right:r.x+r.w-6-shift};
+  return{w,h,top:r.y+Math.max(6,Math.min(inset,r.h-h-12)),right:r.x+r.w-6-Math.max(shift,this.previewThumbShift)};
  }
  /** The large reference fills the table below any floating header; the picture is fitted inside a margin. */
  private previewLayout(){
@@ -913,7 +919,7 @@ export class PuzzleBoard implements RoomTable {
   // An open tray covers the bottom of the table: the view, and the room for the map, end at its top.
   const bottom=this.viewBottom()-r.y,m=this.minimapBounds(),slack=Math.min(m.x1-m.x0,m.y1-m.y0)*.03,vx0=-cam.x/cam.z,vy0=-cam.y/cam.z,vx1=(r.w-cam.x)/cam.z,vy1=(bottom-cam.y)/cam.z;
   if(this.minimapTouch===null&&vx0<=m.x0+slack&&vy0<=m.y0+slack&&vx1>=m.x1-slack&&vy1>=m.y1-slack)return null;
-  const room=this.tray?bottom-Math.max(6,this.previewTopInset)-14:Infinity;if(room<34)return null;
+  const room=this.tray?bottom-Math.max(6,this.previewTopInset)-14-this.minimapBelowReserve:Infinity;if(room<34)return null;
   const maxW=Math.min(r.w*.34,this.phoneLandscapeRoom?134:120),maxH=Math.min(r.h*.3,this.phoneLandscapeRoom?96:100,room),scale=Math.min(maxW/(m.x1-m.x0),maxH/(m.y1-m.y0)),w=(m.x1-m.x0)*scale,h=(m.y1-m.y0)*scale,top=r.y+Math.max(6,Math.min(this.previewTopInset,r.h-h-14));
   return{frame:{x:r.x+12,y:top,w:w+6,h:h+6},inner:{x:r.x+15,y:top+3,w,h},x:m.x0,y:m.y0,scale};
  }
