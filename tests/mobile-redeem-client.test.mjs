@@ -92,9 +92,9 @@ test('an old backend without the endpoint shows 兑换功能即将开放',async(
  assert.equal(f.app.redeemError,REDEEM_SOON);assert.ok(f.draw().texts.includes(REDEEM_SOON));
 });
 
-test('the settings entry is TapTap-only and the package says v53.14',()=>{
+test('the settings entry is TapTap-only and the package says v53.15',()=>{
  const source=readFileSync(new URL('../mobile/app.ts',import.meta.url),'utf8');
- assert.match(source,/const CLIENT_PACKAGE_VERSION='v53\.14';/);
+ assert.match(source,/const CLIENT_PACKAGE_VERSION='v53\.15';/);
  const settings=source.slice(source.indexOf("case'settings':{"),source.indexOf("heading('测试与诊断')"));
  assert.match(settings,/if\(!this\.formalWeb\)\{s\.button\(\{x:left,y:cy,w:width,h:39\},'兑换码',\(\)=>this\.openRedeem\(\)/);
  assert.ok(settings.indexOf("'兑换码'")>settings.indexOf("heading('账号与记录')"),'listed under 账号与记录');

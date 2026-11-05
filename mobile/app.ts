@@ -77,7 +77,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.14';
+const CLIENT_PACKAGE_VERSION='v53.15';
 /** The WeChat mini-game numbers its own uploads (the devtools version field). */
 const WECHAT_PACKAGE_VERSION='0.53.15';
 /** A chat bubble that just popped up under a finger reaching for a piece does not open the chat until it has shown this long. */
@@ -930,7 +930,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   });
  }
  private async claimSupply(kind:'energy'|'create',method:'auto'|'share'='auto'){
-  if(kind==='energy'&&this.platform.config.id==='taptap'&&method!=='share'&&this.energyAdAvailable){await this.claimEnergyAd();return;}
+  if(method!=='share'&&this.supplyAdAvailable){await this.claimSupplyAd(kind);return;}
   await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');if(!this.shareAvailable)throw Error('当前平台暂未开放分享领取');
    const storageKey='jigsaw:shared:supply-share:v1:'+this.platform.config.apiBase+':'+profile.code;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
    if(pending?.completed&&pending.kind!==kind)throw Error('上次分享奖励待到账，请先重试领取原来的补给');
@@ -942,11 +942,15 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   });
  }
  private get energyAdAvailable(){return this.client.config.adRewardEnabled===true&&!!this.client.config.rewardedAdUnitId;}
+ /** Rewarded video pays out supplies on TapTap and, once it has its own adunit placement, on WeChat. */
+ private get supplyAdAvailable(){const id=this.platform.config?.id;return (id==='taptap'||id==='wechat')&&this.energyAdAvailable;}
+ /** 建房券 come from a rewarded video (which refills them to 3); sharing is only the fallback while ads are switched off. */
+ private get ticketClaimAvailable(){return this.supplyAdAvailable||this.shareAvailable;}
  private get adTestingAllowed(){return this.platform.config.id==='taptap'&&this.client.profile?.taptap?.bound===true&&this.client.profile.taptap.diagnostics===true;}
  /** 当前画面方向对应的激励广告位；服务端未分横竖屏时沿用 rewardedAdUnitId。 */
  private rewardedSlot(){const v=typeof this.platform.viewport==='function'?this.platform.viewport():undefined,orientation:'portrait'|'landscape'=v&&v.width>v.height?'landscape':'portrait',c=this.client.config;return {orientation,unit:(orientation==='landscape'?c.rewardedAdUnitIdLandscape:c.rewardedAdUnitIdPortrait)||c.rewardedAdUnitId};}
  /** 官方做法：广告实例提前创建并预加载，点击时直接展示。重复调用只查表。 */
- private prepareRewardedAd(){if(this.platform.config.id==='taptap'&&this.energyAdAvailable)this.platform.prepareAd?.(this.rewardedSlot().unit);}
+ private prepareRewardedAd(){if(this.supplyAdAvailable)this.platform.prepareAd?.(this.rewardedSlot().unit);}
  private async testRewardedAd(){
   if(!this.adTestingAllowed)return;
   // 优先使用服务端按方向下发的广告位；暂停广告时，诊断入口使用官方H5匹配且已真机验证的广告位。
@@ -957,17 +961,18 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.platform.alert(result+'\n广告位 '+unit+' · '+(slot.orientation==='landscape'?'横屏':'竖屏')+' · 用时 '+Math.round((Date.now()-started)/1000)+' 秒'+(outcome==='failed'||outcome==='unavailable'?'\n原因：'+(this.platform.adFailure?.()||'未知'):'')+'\n本入口仅测试观看，不发放奖励。\n'+(this.platform.adDiagnostics?.()??'未返回广告诊断'));this.note(result);
   });
  }
- private async claimEnergyAd(){
-  await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');if(!this.energyAdAvailable)throw Error('广告暂未开放，已有体力包可以正常使用');
+ private async claimSupplyAd(kind:'energy'|'create'){
+  await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');if(!this.supplyAdAvailable)throw Error('广告暂未开放，已有库存可以正常使用');
    const storageKey='jigsaw:shared:supply-ad:v1:'+this.platform.config.apiBase+':'+profile.code;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
-   if(!pending?.completed){if(profile.supply.energy>=3)throw Error('库存已满，使用后再领取');const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/supply/challenge',{kind:'energy',requestId},5000);pending={kind:'energy',requestId,rewardToken:challenge.rewardToken,completed:false};
+   // A video already watched is redeemed first, whichever supply it was for.
+   if(!pending?.completed){const name=kind==='energy'?'体力包':'建房券';if(profile.supply[kind]>=3)throw Error('库存已满，使用后再领取');const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/supply/challenge',{kind,requestId},5000);pending={kind,requestId,rewardToken:challenge.rewardToken,completed:false};
     let outcome:string;try{outcome=await this.platform.watchAd(this.rewardedSlot().unit);}catch{outcome='failed';}
     // 取消票据不阻塞界面：失败后立刻解除按钮锁定。
     if(outcome!=='completed'){void this.client.post('/api/mobile/supply/cancel',pending).catch(()=>{});if(outcome!=='closed'&&this.platform.config.id==='taptap'&&this.client.profile?.taptap?.diagnostics===true)this.platform.alert('广告诊断（仅测试账号）\n'+(this.platform.adDiagnostics?.()??'未获取到平台错误'));
-     const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，本次未领取体力包':'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+'，可以先用分享领取');}
+     const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，本次未领取'+name:'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+(kind==='energy'&&this.shareAvailable?'，可以先用分享领取':'，请稍后再试'));}
     pending.completed=true;this.platform.storage.set(storageKey,JSON.stringify(pending));
    }
-   try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.note('体力包 +1，已存入库存');
+   try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.note(pending.kind==='create'?'建房券已补满，可以开桌了':'体力包 +1，已存入库存');
   });
  }
  private async useEnergy(){await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
@@ -1059,7 +1064,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(detail){
    s.text('服务与隐私协议',x+16,top+16,19,this.colors.ink,800,w-32);
    this.bodyTop=top+54;this.bodyBottom=bottom-70;this.listArea={x:x+15,y:this.bodyTop,w:w-30,h:Math.max(30,this.bodyBottom-this.bodyTop)};this.sceneArea={...this.listArea};
-   const sections=[...privacySectionsFor(this.platform.config?.id),...termsSectionsFor(this.platform.config?.id)];let y=this.bodyTop-this.scroll;
+   const sections=[...privacySectionsFor(this.platform.config?.id,this.supplyAdAvailable),...termsSectionsFor(this.platform.config?.id)];let y=this.bodyTop-this.scroll;
    s.clip(this.listArea,()=>{for(const[title,text]of sections){s.text(title,x+18,y,14,this.colors.ink,750,w-36);y=this.paragraph(text,x+18,y+25,w-36,12)+17;}});
    this.extent=y-(this.bodyTop-this.scroll);this.scroll=clamp(this.scroll,0,Math.max(0,this.extent-this.listArea.h));
   }else{
@@ -1720,8 +1725,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   // Creation rules are unchanged: owned public rooms are free, otherwise the first choice or a ticket.
   const freeOwned=!!this.selected&&owned.has(this.selected)&&this.visibility==='public',freeFirst=!!p?.firstSelectionAvailable,available=(p?.supply.create??0)>0,roomCount=this.ownedRoomCount;
   const lockedPack=!this.formalWeb&&photo&&this.photoTag(photo.id,owned).tone==='locked'?this.galleryPack(photo.id):null;
-  const createLabel=lockedPack?'解锁图包':!this.usesCreationTickets?'开一桌':roomCount>=this.ownRoomLimit?'管理房间':freeOwned||freeFirst||available?'开一桌':this.shareAvailable?'分享领建房券':'暂无建房券',createAction=()=>{if(lockedPack){const full=this.collection?.packs.find(item=>item.id===lockedPack.id);if(full)this.openPackPreview(full);else this.navigate('collection');return;}if(!this.formalWeb&&roomCount>=this.ownRoomLimit){this.showModal('manage');return;}if(!this.selected){this.note('先选择一张图片');return;}if(!this.usesCreationTickets||freeOwned||freeFirst||available)void this.launch({mode:'selected',pieces:this.pieces,visibility:this.visibility,imageId:this.selected});else void this.claimSupply('create');};
-  const disabled=this.busy||!p||(!lockedPack&&this.usesCreationTickets&&!freeOwned&&!freeFirst&&!available&&!this.shareAvailable&&roomCount<3);
+  const createLabel=lockedPack?'解锁图包':!this.usesCreationTickets?'开一桌':roomCount>=this.ownRoomLimit?'管理房间':freeOwned||freeFirst||available?'开一桌':this.supplyAdAvailable?'看广告领建房券':this.shareAvailable?'分享领建房券':'暂无建房券',createAction=()=>{if(lockedPack){const full=this.collection?.packs.find(item=>item.id===lockedPack.id);if(full)this.openPackPreview(full);else this.navigate('collection');return;}if(!this.formalWeb&&roomCount>=this.ownRoomLimit){this.showModal('manage');return;}if(!this.selected){this.note('先选择一张图片');return;}if(!this.usesCreationTickets||freeOwned||freeFirst||available)void this.launch({mode:'selected',pieces:this.pieces,visibility:this.visibility,imageId:this.selected});else void this.claimSupply('create');};
+  const disabled=this.busy||!p||(!lockedPack&&this.usesCreationTickets&&!freeOwned&&!freeFirst&&!available&&!this.ticketClaimAvailable&&roomCount<3);
   const thumb=compact?52:64;
   if(photo){s.frame({x,y,w:Math.round(thumb*1.3),h:thumb},'plus-cream-normal');s.image(this.client.asset(photo.thumbSrc),{x:x+3,y:y+3,w:Math.round(thumb*1.3)-6,h:thumb-6});const tx=x+thumb*1.3+10,tw=w-thumb*1.3-(sheet?44:10);s.text(photo.title,tx,y+4,compact?15:17,ink,800,tw);s.text(photo.category,tx,y+(compact?26:30),12,this.colors.muted,600,tw);
    const tag=this.photoTag(photo.id,owned),pack=tag.tone==='locked'?this.galleryPack(photo.id):null;if(pack){const label='解锁图包 ›';s.text(label,tx,y+thumb-16,12,this.colors.berry,700);s.hit({x:tx-4,y:y+thumb-22,w:s.measure(label,12,700)+8,h:24},()=>{const full=this.collection?.packs.find(item=>item.id===pack.id);if(full)this.openPackPreview(full);else this.navigate('collection');});}}
@@ -1733,7 +1738,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   row('谁能加入',rr=>s.segments(rr,[['public','公开'],['private','私人']] as const,this.visibility,v=>{this.visibility=v;this.invalidate();}));
   const tables=this.selected?this.rooms.filter(room=>room.imageId===this.selected&&room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed):[];
   if(tables.length){const label='这张图有 '+tables.length+' 桌公开房正在拼 · 去加入 ›';s.text(label,x,y,12,this.colors.berry,700,w);s.hit({x:x-4,y:y-6,w,h:26},()=>{const best=[...tables].sort((a,b)=>b.placed/Math.max(1,b.actualPieces??b.pieces)-a.placed/Math.max(1,a.actualPieces??a.pieces))[0];if(best)void this.enterRoom(best.id);});y+=26;}
-  if(this.usesCreationTickets){const cost=freeOwned?'这张图的公开房免费':freeFirst?'首次开桌免费':'需要 1 张建房券';s.text(cost+' · 私人房或其他图用 1 张建房券',x,y,12,this.colors.ink,600,w);y+=19;const stock='建房券 '+(p?.supply.create??0)+'/3';s.text(stock,x,y,12,this.colors.muted,700);if(this.shareAvailable){const lx=x+s.measure(stock,12,700)+8,label='· 分享领取';s.text(label,lx,y,12,this.colors.berry,700);s.hit({x:lx-4,y:y-6,w:s.measure(label,12,700)+8,h:26},()=>void this.claimSupply('create','share'));}y+=23;}
+  if(this.usesCreationTickets){const cost=freeOwned?'这张图的公开房免费':freeFirst?'首次开桌免费':'需要 1 张建房券';s.text(cost+' · 私人房或其他图用 1 张建房券',x,y,12,this.colors.ink,600,w);y+=19;const stock='建房券 '+(p?.supply.create??0)+'/3';s.text(stock,x,y,12,this.colors.muted,700);if(this.ticketClaimAvailable){const lx=x+s.measure(stock,12,700)+8,label=this.supplyAdAvailable?'· 看广告补满':'· 分享领取';s.text(label,lx,y,12,this.colors.berry,700);s.hit({x:lx-4,y:y-6,w:s.measure(label,12,700)+8,h:26},()=>void this.claimSupply('create'));}y+=23;}
   this.drawPictureButton({x,y,w,h:44},createLabel,createAction,'berrydark','players',16,19,disabled);y+=54;
   if(!sheet)this.drawPictureButton({x,y,w,h:38},'随机开一桌（公开 · 免费）',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),'cream','dice',compact?12:13,16,this.busy||!p);
  }
@@ -1797,7 +1802,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    // 5. 补给
    const tickets=this.usesCreationTickets,energy=this.energyEnabled;
    // Narrow portrait: the three energy buttons no longer fit beside the title, so they move to their own row.
-   const energyAd=energy&&this.platform.config.id==='taptap'&&this.energyAdAvailable,energyTitle='补满体力包 '+(p?.supply.energy??0)+'/3',energyLine='体力 '+(p?.energy??0)+'/'+(p?.energyCap??0),energyButtonsW=72+(this.shareAvailable?78:0)+(energyAd?94:0),energyStacked=energy&&38+Math.max(s.measure(energyTitle,15,800),s.measure(energyLine,12,600))+12+energyButtonsW>colW-32;
+   const energyAd=energy&&this.supplyAdAvailable,energyTitle='补满体力包 '+(p?.supply.energy??0)+'/3',energyLine='体力 '+(p?.energy??0)+'/'+(p?.energyCap??0),energyButtonsW=72+(this.shareAvailable?78:0)+(energyAd?94:0),energyStacked=energy&&38+Math.max(s.measure(energyTitle,15,800),s.measure(energyLine,12,600))+12+energyButtonsW>colW-32;
    if(tickets||energy){supplyY=section(1,'补给',44+(tickets?70:0)+(energy?(energyStacked?106:70):0)+10,(x,y,cw)=>{let ry=y;
     if(energy){const stock=p?.supply.energy??0,ad=energyAd,textW=energyStacked?cw-38:cw-50-energyButtonsW;s.icon('lightning',{x,y:ry,w:28,h:38});s.text(energyTitle,x+38,ry+2,15,ink,800,textW);s.text(energyLine,x+38,ry+24,12,muted,600,textW);
      const useOptions={fontSize:13,disabled:this.busy||!p||stock===0||(p?.energy??0)>=(p?.energyCap??0)};
@@ -1809,7 +1814,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
       if(this.shareAvailable){bx-=bw+6;s.button({x:bx,y:ry+4,w:bw,h:34},'分享领',()=>void this.claimSupply('energy','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}
       if(ad){this.prepareRewardedAd();bx-=bw+14;s.button({x:bx,y:ry+4,w:bw+8,h:34},'看广告领',()=>void this.claimSupply('energy'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3});}ry+=70;}}
     if(tickets){const stock=p?.supply.create??0;s.icon('ticket',{x,y:ry,w:34,h:36});s.text('建房券 '+stock+'/3',x+44,ry+2,15,ink,800,cw-170);s.text('私人房或指定图片时使用',x+44,ry+24,12,muted,600,cw-170);
-     s.button({x:x+cw-112,y:ry+4,w:112,h:34},stock>=3?'库存已满':this.shareAvailable?'分享领 1 张':'分享暂未开放',()=>void this.claimSupply('create','share'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3||!this.shareAvailable});}
+     if(this.supplyAdAvailable)this.prepareRewardedAd();
+     s.button({x:x+cw-112,y:ry+4,w:112,h:34},stock>=3?'库存已满':this.supplyAdAvailable?'看广告补满':this.shareAvailable?'分享领 1 张':'暂未开放',()=>void this.claimSupply('create'),{tone:'berry',fontSize:13,disabled:this.busy||stock>=3||!this.ticketClaimAvailable});}
    });}
    // 6. 邀请好友
    const invitation=data.invitation,invitationTask=data.tasks.find(task=>task.group==='invitation');
@@ -1826,16 +1832,17 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawSupplies(){
   if(!this.energyEnabled){this.drawWebSupplies();return;}
   const s=this.stage,p=this.client.profile,pad=12,w=s.w-pad*2,landscape=s.w>650&&s.w>s.h;let y=this.bodyTop-this.scroll+4;
-  this.scrolled(()=>{const cw=landscape?(w-12)/2:w,ch=218+(this.platform.config.id==='taptap'&&this.energyAdAvailable?44:0),start=y;
+  this.scrolled(()=>{const cw=landscape?(w-12)/2:w,ch=218+(this.supplyAdAvailable&&this.shareAvailable?44:0),start=y;
    for(const [index,[kind,title,description,art,smallArt]]of ([['energy','补满体力包','需要时再开启','supplyEnergy','lightning'],['create','建房券','指定图片或私人房间','supplyTicket','ticket']] as const).entries()){
     const x=pad+(landscape?index*(cw+12):0),cy=start+(landscape?0:index*(ch+12)),r={x,y:cy,w:cw,h:ch},imageW=Math.min(110,Math.floor(cw*.32)),imageR={x:x+10,y:cy+10,w:imageW,h:126};s.panel(r);s.clip(imageR,()=>{const edge=Math.max(imageR.w,imageR.h);s.icon(art,{x:imageR.x+(imageR.w-edge)/2,y:imageR.y+(imageR.h-edge)/2,w:edge,h:edge});});
     const dx=x+imageW+20,dw=cw-imageW-32,small=cw<330,stock=p?.supply[kind]??0;
     s.icon(smallArt,{x:dx,y:cy+15,w:22,h:26});s.text(title,dx+28,cy+20,small?16:19,this.colors.ink,700,dw-28);
     this.paragraph(description,dx,cy+52,dw,12,this.colors.ink);
     s.ctx.fillStyle=s.color('#f8e8d8');s.ctx.fillRect(dx,cy+103,dw,28);s.text('库存 '+stock+'/3',dx+8,cy+109,14,this.colors.ink,700,dw-16);
-    const energyAd=kind==='energy'&&this.platform.config.id==='taptap'&&this.energyAdAvailable,available=energyAd?this.energyAdAvailable:this.shareAvailable;
-    s.button({x:x+12,y:cy+150,w:cw-24,h:43},stock>=3?'库存已满':energyAd?'看广告领1个':this.shareAvailable?(kind==='create'?'分享领1张':'分享领1个'):'分享暂未开放',()=>void this.claimSupply(kind),{tone:'berry',fontSize:14,disabled:this.busy||stock>=3||!available});
-    if(energyAd){this.prepareRewardedAd();s.button({x:x+12,y:cy+201,w:cw-24,h:36},stock>=3?'库存已满':'分享领1个',()=>void this.claimSupply('energy','share'),{fontSize:14,disabled:this.busy||stock>=3||!this.shareAvailable});}
+    const ad=this.supplyAdAvailable,available=ad||this.shareAvailable;if(ad)this.prepareRewardedAd();
+    s.button({x:x+12,y:cy+150,w:cw-24,h:43},stock>=3?'库存已满':ad?(kind==='create'?'看广告补满':'看广告领1个'):this.shareAvailable?(kind==='create'?'分享领1张':'分享领1个'):'暂未开放',()=>void this.claimSupply(kind),{tone:'berry',fontSize:14,disabled:this.busy||stock>=3||!available});
+    // 体力包 keeps sharing as a second way; 建房券 only come from the video while ads are on.
+    if(ad&&kind==='energy'&&this.shareAvailable)s.button({x:x+12,y:cy+201,w:cw-24,h:36},stock>=3?'库存已满':'分享领1个',()=>void this.claimSupply('energy','share'),{fontSize:14,disabled:this.busy||stock>=3});
    }y=start+(landscape?ch:2*ch+12)+12;
    s.panel({x:pad,y,w,h:40},'linen');s.icon('store',{x:pad+10,y:y+5,w:31,h:28});s.text('已购图包可免费创建公开房间。',pad+49,y+14,11,this.colors.ink,700,w-92);s.icon('sprig',{x:s.w-pad-31,y:y+11,w:22,h:20});y+=52;
    const inventory={x:pad,y,w,h:100};s.panel(inventory);s.icon('bag',{x:pad+13,y:y+11,w:17,h:18},this.colors.ink);s.text('我的库存',pad+37,y+12,18,this.colors.ink,700);s.ctx.fillStyle=s.color('#dfbdad');s.ctx.fillRect(pad+9,y+38,w-18,1);
@@ -1843,14 +1850,14 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    for(const[index,[kind,label,art]]of ([['energy','体力包','energy'],['create','建房券','ticket']] as const).entries()){const sx=pad+12+index*slotW;s.icon(art,{x:sx,y:y+48,w:31,h:38});s.text(label,sx+35,y+47,10,this.colors.ink,700);s.ctx.fillStyle=s.color('#f8e8d8');s.ctx.fillRect(sx+35,y+64,33,21);s.text(p?.supply[kind]??0,sx+44,y+65,17,this.colors.ink,700);if(index===0){s.ctx.fillStyle=s.color('#dfbdad');s.ctx.fillRect(sx+slotW-4,y+45,1,43);}}
    this.button(bx,y+48,bw,p&&p.energy>=p.energyCap?'体力已满':'使用体力包',()=>void this.useEnergy(),'berry',42,!p||p.supply.energy===0||p.energy>=p.energyCap);y+=115;
    const note='提前准备，拼图时随用随取';s.text(note,(s.w-s.measure(note,11))/2,y,11,this.colors.muted);y+=28;
-   if(!this.shareAvailable)y=this.paragraph('分享功能暂未开放，已有库存可以正常使用。',pad+7,y,w-14,11)+12;
+   if(!this.shareAvailable&&!this.supplyAdAvailable)y=this.paragraph('补给领取暂未开放，已有库存可以正常使用。',pad+7,y,w-14,11)+12;
    s.text('回去拼图  →',(s.w-80)/2,y+4,12,this.colors.muted);s.hit({x:pad,y:y-4,w,h:36},()=>this.back());y+=46;
   });this.extent=y-(this.bodyTop-this.scroll)+12;
  }
  private drawWebSupplies(){
   const s=this.stage,p=this.client.profile,w=Math.min(650,s.w-24),x=(s.w-w)/2;let y=this.bodyTop-this.scroll;
   if(this.formalWeb){this.scrolled(()=>{s.icon('coin',{x:x+12,y:y+8,w:42,h:44});s.text('我的金币 '+(p?.collection?.coins??0),x+67,y+17,22,this.colors.ink,750,w-80);y+=76;y=this.paragraph('金币、相册和已拥有内容继续保留。建房条件以当前账号与会员权限为准。',x+8,y,w-16,14)+24;s.button({x:x+8,y,w:w-16,h:40},'账号与会员',()=>this.openWeb('membership'),{fontSize:14});y+=52;});this.extent=y-(this.bodyTop-this.scroll)+12;return;}
-  this.scrolled(()=>{s.panel({x,y,w,h:225});s.icon('supplyTicket',{x:x+14,y:y+22,w:140,h:140});s.text('建房券',x+166,y+24,23,this.colors.ink,750,w-183);s.text('指定图片或创建私人房间',x+167,y+64,12,this.colors.muted,500,w-184);s.text('当前库存 '+(p?.supply.create??0)+' / 3',x+167,y+100,17,this.colors.ink,750,w-184);s.button({x:x+17,y:y+169,w:w-34,h:39},(p?.supply.create??0)>=3?'库存已满':this.shareAvailable?'分享领取1张':(this.platform.config?.id==='wechat'?'暂未开放':'当前浏览器尚未开放分享领取'),()=>void this.claimSupply('create'),{tone:'berry',fontSize:13,disabled:this.busy||!this.shareAvailable||(p?.supply.create??0)>=3});y+=247;y=this.paragraph('随机公开房免费创建；已拥有的图包图片，也可免费创建公开房。已有建房券可以正常使用。',x+8,y,w-16,14)+23;s.button({x:x+8,y,w:w-16,h:41},'去挑选图片',()=>this.navigate('gallery'),{icon:'underlay',fontSize:14});y+=55;});this.extent=y-(this.bodyTop-this.scroll)+12;
+  this.scrolled(()=>{s.panel({x,y,w,h:225});s.icon('supplyTicket',{x:x+14,y:y+22,w:140,h:140});s.text('建房券',x+166,y+24,23,this.colors.ink,750,w-183);s.text('指定图片或创建私人房间',x+167,y+64,12,this.colors.muted,500,w-184);s.text('当前库存 '+(p?.supply.create??0)+' / 3',x+167,y+100,17,this.colors.ink,750,w-184);s.button({x:x+17,y:y+169,w:w-34,h:39},(p?.supply.create??0)>=3?'库存已满':this.supplyAdAvailable?'看广告补满建房券':this.shareAvailable?'分享领取1张':(this.platform.config?.id==='wechat'?'暂未开放':'当前浏览器尚未开放分享领取'),()=>void this.claimSupply('create'),{tone:'berry',fontSize:13,disabled:this.busy||!this.ticketClaimAvailable||(p?.supply.create??0)>=3});if(this.supplyAdAvailable)this.prepareRewardedAd();y+=247;y=this.paragraph('随机公开房免费创建；已拥有的图包图片，也可免费创建公开房。已有建房券可以正常使用。',x+8,y,w-16,14)+23;s.button({x:x+8,y,w:w-16,h:41},'去挑选图片',()=>this.navigate('gallery'),{icon:'underlay',fontSize:14});y+=55;});this.extent=y-(this.bodyTop-this.scroll)+12;
  }
  private albumDetailOpen=false;private decorationFilter:'all'|'owned'|'craft'|'album'='all';
  private drawCollection(){
@@ -2042,7 +2049,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},pack.owned?'已拥有 · 去建房':pack.price+' 金币 · 解锁图包',()=>{if(pack.owned)this.openPackGallery(pack.id);else{this.purchase=pack;this.showModal('purchase');}},{tone:'berry',icon:pack.owned?'check':'coin',fontSize:14,disabled:this.busy});
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
  }
- private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...privacySectionsFor(this.platform.config?.id),...termsSectionsFor(this.platform.config?.id)]:[
+ private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...privacySectionsFor(this.platform.config?.id,this.supplyAdAvailable),...termsSectionsFor(this.platform.config?.id)]:[
   ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可打开小地图，放大时点小地图直接跳到那里；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留'+this.ownRoomLimit+'个未结束的自建房间。'],
