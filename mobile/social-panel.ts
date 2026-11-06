@@ -5,7 +5,7 @@ import type {SocialPlayer,SocialMessage,SocialSnapshot,SocialSearchResult,Social
 
 export type SocialTab='friends'|'messages'|'requests';
 export type SocialMode=SocialTab|'search'|'peers'|'conversation'|'options'|'report'|'blocked'|'confirm';
-export type SocialPanelOptions={invalidate:()=>void;note:(text:string)=>void;joinRoom:(roomId:string,inviteCode?:string)=>Promise<void>;room:()=>SocialRoomContext|null};
+export type SocialPanelOptions={invalidate:()=>void;note:(text:string)=>void;joinRoom:(roomId:string,inviteCode?:string)=>Promise<void>;room:()=>SocialRoomContext|null;snapshot?:(state:SocialSnapshot)=>void};
 const inside=(r:Rect,x:number,y:number)=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(n,max));
 const reportLabels:ReadonlyArray<readonly[SocialReportReason,string]>=[['harassment','辱骂或骚扰'],['advertising','广告或引流'],['inappropriate','不当内容'],['other','其他问题']];
@@ -63,11 +63,11 @@ export class SocialPanel{
  private async action(key:string,run:(requestId:string)=>Promise<void>):Promise<boolean>{if(this.busy||this.destroyed)return false;this.busy=true;this.changed();try{await run(this.attempt(key));this.requests.delete(key);return true;}catch(error){if(!this.destroyed)this.options.note(errorText(error));return false;}finally{this.busy=false;this.changed();}}
  /** Refresh can be called while closed to update the application's unread badge. */
  async refresh(){if(this.destroyed)return;if(this.refreshPending)return this.refreshPending;
-  this.refreshPending=(async()=>{try{const state=await this.client.json<SocialSnapshot>('/api/mobile/social');if(this.destroyed)return;const previous=this.snapshot;this.snapshot=state;
+  this.refreshPending=(async()=>{try{const state=await this.client.json<SocialSnapshot>('/api/mobile/social');if(this.destroyed)return;const previous=this.snapshot;this.snapshot=state;this.options.snapshot?.(state);
    if(this.active&&this.mode==='conversation'&&this.thread)await this.loadConversation(this.thread.peer.code,false);if(this.snapshotView(previous)!==this.snapshotView(this.snapshot))this.changed();
   }catch(error){if(this.active&&!this.destroyed)this.options.note(errorText(error));}finally{this.refreshPending=null;}})();return this.refreshPending;
  }
- private async mutate(path:string,body:Record<string,unknown>,label:string){return this.action(path+':'+String(body.code??''),async(requestId)=>{const state=await this.client.post<SocialSnapshot>('/api/mobile/social/'+path,{...body,requestId});if(!this.destroyed)this.snapshot=state;this.options.note(label);});}
+ private async mutate(path:string,body:Record<string,unknown>,label:string){return this.action(path+':'+String(body.code??''),async(requestId)=>{const state=await this.client.post<SocialSnapshot>('/api/mobile/social/'+path,{...body,requestId});if(!this.destroyed){this.snapshot=state;this.options.snapshot?.(state);}this.options.note(label);});}
  private async openNativePrivate(){const nativeSocial=this.client.platform.nativeSocial,openPrivate=nativeSocial?.openPrivate;if(!nativeSocial||typeof openPrivate!=='function'||this.busy||this.destroyed)return;this.busy=true;this.changed();try{const result=await openPrivate.call(nativeSocial);if(this.destroyed)return;if(result==='unsupported')this.options.note('请在手机微信中使用微信好友');else if(result==='unavailable')this.options.note('微信好友暂不可用，请稍后再试');else if(result==='failed')this.options.note('微信好友打开失败，请稍后再试');}catch{if(!this.destroyed)this.options.note('微信好友打开失败，请稍后再试');}finally{this.busy=false;this.changed();}}
  private async openNativeFriends(){const nativeSocial=this.client.platform.nativeSocial,openFriends=nativeSocial?.openFriends;if(!nativeSocial||typeof openFriends!=='function'||this.busy||this.destroyed)return;this.busy=true;this.changed();try{const result=await openFriends.call(nativeSocial);if(this.destroyed)return;if(result==='unavailable')this.options.note('TapTap好友功能暂不可用，请在TapTap内重试');else if(result==='failed')this.options.note('TapTap好友面板打开失败，请稍后再试');}catch{if(!this.destroyed)this.options.note('TapTap好友面板打开失败，请稍后再试');}finally{this.busy=false;this.changed();}}
  private back(){if(this.mode==='conversation'){this.threadSerial++;this.change('messages');}else if(this.mode==='options'||this.mode==='report'||this.mode==='confirm'){this.change(this.mode==='report'?this.reportReturn:this.mode==='confirm'?this.confirmReturn:this.selectedSource==='room'?this.tab:'conversation');}else this.change(this.tab);}

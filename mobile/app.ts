@@ -8,6 +8,8 @@ import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {PuzzleBoard,DRAG_SLOP} from './puzzle-board';
 import {SocialPanel} from './social-panel';
+import {RoomInviteQueue,InviteSeenStore,pickIncomingInvite,inviteOrder,type IncomingInvite,type InviteJob} from './friend-invite';
+import type {SocialPlayer,SocialSnapshot} from './social-types';
 import {TaskShareReward} from './task-share-reward';
 import {contributionCopy,recoveryCopy} from './economy-copy';
 import {collectionDecorationRewardHints} from './collection-copy';
@@ -200,9 +202,9 @@ export class GameApp{
   try{this.lockButtonEnabled=platform.storage.get(LOCK_BUTTON_KEY)==='1';this.viewLocked=this.lockButtonEnabled&&platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
   try{this.minimapEnabled=platform.storage.get(MINIMAP_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
-  this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>{
-   const room=this.room;if(!room||this.offlineRoom)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
-  }});
+  this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>this.socialRoom(),snapshot:state=>this.socialSnapshot(state)});
+  this.inviteSeen=new InviteSeenStore(platform.storage);
+  this.inviteQueue=new RoomInviteQueue({send:job=>this.sendRoomInvite(job),randomId:()=>this.platform.randomId(),changed:()=>this.invalidate(),sent:job=>this.roomInviteSent(job),failed:error=>{if((error as {code?:string})?.code!=='ROOM_LEFT')this.note(errorText(error));}});
  }
  private get colors(){return this.stage.palette;}
  private drawAudioLevel(kind:'music'|'effects',label:string,x:number,y:number,width:number){
@@ -323,6 +325,7 @@ export class GameApp{
   if(clock&&clock!==this.lastAidClock)changed=true;this.lastAidClock=clock;
   if(this.route==='room'&&this.room&&!this.room.connected)changed=true;
   if(this.chatBubble&&now>this.chatBubble.until){this.chatBubble=null;changed=true;}
+  if(this.inviteBanner&&now>this.inviteBanner.until){this.inviteBanner=null;changed=true;}
   else if(this.chatBubble&&this.chatBubble.until-now<=1000&&this.route==='room'&&this.platform.config.id!=='web'&&this.layout==='phoneLandscape')changed=true;
   if(this.route==='lobby'){const minute=String(Math.floor(this.dailyNow()/60000));if(minute!==this.lobbyMinute){this.lobbyMinute=minute;changed=true;}}
   // 七日礼 first; 欢迎回家 waits for it (weeklyGiftHolds).
@@ -359,7 +362,7 @@ export class GameApp{
   catch(error){if(!this.destroyed){this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
-  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.modal==='social'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat'||this.route==='room'&&this.layout==='desktop')void this.loadChat();},3000));
+  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.modal==='social'||this.modal==='invite'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat'||this.route==='room'&&this.layout==='desktop')void this.loadChat();},3000));
   this.timers.push(setInterval(()=>this.tickVisibleTime(),1000));
   this.invalidate();
   })().finally(()=>{if(epoch===this.privacyEpoch){this.startupPending=null;this.loginDialogActive=false;if(!this.destroyed)this.invalidate();}});
@@ -457,7 +460,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const origin={id:point.id,x:p.x,y:p.y};this.board.input({type:'down',points:[origin],changed:[origin]});return true;
  }
  private clearRoomPointer(){this.cursor?.point(null);this.board?.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.cursorVisible=false;}
- private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if(modal==='completion'&&this.modal!=='completion'){void this.loadRetention(true);if(!this.collection&&!this.offlineRoom&&this.room?.snapshot.levelId)void this.loadCollection();}if(modal!=='weeklyGift')this.weeklyGrant=null;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history'){if(previous!=='history'&&previous!=='manage')this.historyTab='drafts';this.historyPreview=null;void this.loadRoomHistory();}if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
+ private showModal(modal:Modal){if(this.orientationEntryPending&&modal!=='orientation')return;if(modal==='completion'&&this.modal!=='completion'){void this.loadRetention(true);if(!this.collection&&!this.offlineRoom&&this.room?.snapshot.levelId)void this.loadCollection();}if(modal!=='weeklyGift')this.weeklyGrant=null;if((this.offlineRoom||this.offline?.active&&!this.ready)&&modal&&!['orientation','completion','levelComic','tools','packPreview'].includes(modal)){this.note(OFFLINE_REQUIRED);return;}const previous=this.modal;if(modal!=='levelComic'){this.releaseComicBack();this.comicClosePress=null;this.comicGesture=null;this.comicPage=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;this.stopStoryFrame();}if(this.modal==='playerCard'&&modal!=='playerCard'){this.cardCode='';this.cardCache.clear();}this.cancelChatPress();this.stage.input({type:'cancel',points:[],changed:[]});if(modal)this.clearRoomPointer();if(this.modal==='social'&&modal!=='social')this.social.close();if(this.modal==='filters'&&modal!=='filters')this.finishFilters();if(modal==='filters'&&this.modal!=='filters')this.filterView=this.saveListView();if(this.modal==='packPreview'&&modal!=='packPreview')this.previewReadOnly=false;this.modal=modal;if(modal==='levelComic'&&previous!=='levelComic')this.comicBack=this.platform.onBack?.(()=>{if(this.modal!=='levelComic')return false;this.closeModal();return true;});this.cheer?.setActive(modal==='completion'||!!this.completionFx);if(modal!=='completion')this.stopCheers();this.modalScroll=modal==='chat'?Number.MAX_SAFE_INTEGER:0;this.modalExtent=0;if(modal==='social')this.social.open();if(modal==='invite'){void this.social.refresh();void this.loadRecentPlayers();}if(modal==='chat'){this.chatSeen=this.chatCursor;void this.loadChat();}if(modal==='privacyRequests')void this.loadPrivacyRequests();if(modal==='history'){if(previous!=='history'&&previous!=='manage')this.historyTab='drafts';this.historyPreview=null;void this.loadRoomHistory();}if(modal==='manage')void this.client.refresh().catch(error=>this.note(errorText(error)));this.invalidate();if(modal==='invite'||modal==='tasks')void this.loadTasks();if(modal==='completion')this.setCompletionPhase('popup');else if(previous==='completion')this.setCompletionPhase('closed');}
  private get ownRoomLimit(){return this.formalWeb?3:5;}
  private get ownedRoomCount(){return (this.client.profile?.ownedRooms??[]).filter(room=>!room.completed).length;}
  private async loadRoomHistory(){
@@ -821,7 +824,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(input.mode==='level'&&this.offline.server&&!this.offline.isRoom(ticket.room.id)&&preferOfflineLevelRoom(placedCount(ticket.room.puzzle),this.offline.server.rooms(),input.levelId!)){
     ticket=this.offline.createRoom({kind:'level',levelId:input.levelId!});this.note('继续你离线时拼的进度');
    }
-   this.attempts.delete(key);await this.attachTicket(ticket);
+   this.attempts.delete(key);await this.attachTicket(ticket);if(this.room?.ticket.room.id===ticket.room.id)this.sendTableInvite(input);
   });
  }
  private async enterRoom(id:string,invite?:string){if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}await this.run(async()=>{const ticket=await this.client.joinRoom(id,invite);await this.attachTicket(ticket);});}
@@ -838,7 +841,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(this.room===room)await network.drop(group.id,0,0);
   });
  }
- private leaveRoom(){this.storyIntro=null;this.roomVariant=null;this.stopStoryFrame();this.clearCompletionTransition();this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.setCompletionPhase('idle');this.room=null;this.board=null;this.aid=null;}
+ private leaveRoom(){if(this.room)this.inviteQueue?.cancel(this.room.ticket.room.id);this.storyIntro=null;this.roomVariant=null;this.stopStoryFrame();this.clearCompletionTransition();this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.setCompletionPhase('idle');this.room=null;this.board=null;this.aid=null;}
  private async attachTicket(ticket:RoomTicket){
   this.clearCompletionTransition();
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
@@ -1149,7 +1152,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   }
   this.drawSettingsTip();
   if(this.modal)this.drawModal();
-  if(this.message&&Date.now()<=this.messageUntil)this.drawNotice();
+  this.noticeBottom=0;if(this.message&&Date.now()<=this.messageUntil)this.drawNotice();
+  this.drawInviteBanner();
   if(this.busy){const cancel=this.sharing&&!!this.platform.cancelShare,label=cancel?'等待分享 · 取消等待':'正在处理…',width=cancel?184:144,r={x:(s.w-width)/2,y:Math.max(this.platform.viewport().top+6,this.platform.config.id==='taptap'?44:0),w:width,h:28};s.panel(r,'cream');s.text(label,r.x+(width-s.measure(label,12))/2,r.y+6,12,this.colors.ink);if(cancel)s.hit(r,()=>this.platform.cancelShare?.());}
  }
  private drawScene(){if(!this.ready){this.drawLobbyStartup();return;}switch(this.route){case'lobby':this.drawLobby();break;case'chapter':this.drawChapter();break;case'gallery':this.drawGallery();break;case'tasks':this.drawTasksPage();break;case'supplies':this.drawSupplies();break;case'collection':this.drawCollection();break;case'friends':this.drawFriends();break;default:this.drawPolicy();}this.clampListScroll();}
@@ -1175,6 +1179,85 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,header-4,w,1);this.sceneArea={x,y:header,w,h:s.h-header-12};this.listArea={x,y:header,w,h:s.h-header-12};
  }
  private get pageSubtitle(){switch(this.route){case'lobby':{const count=this.lobbyRooms.length,online=this.lobbyOnline?' · '+this.lobbyOnline+' 位拼友在线':'';return (count?(this.lobbyCursor?count+'+':count)+' 桌正在拼':'今天，拼一会儿')+online;}case'gallery':return '选好图片和片数，就能开一桌';case'collection':return '拼完一张图就收进图集，集满有奖励';case'tasks':return '拼合攒礼包，邀请得奖励';case'friends':return '加好友、私聊、一起拼';case'supplies':return '体力与建房券';default:return '慢慢拼，慢慢了解';}}
+ // 站内邀请: the room's 「＋ 邀请」 window lists game friends; invites go out as room-invite messages, one every 3.2 s.
+ private inviteQueue!:RoomInviteQueue;private inviteSeen!:InviteSeenStore;private inviteNames=new Map<string,string>();
+ private incomingInvite:IncomingInvite|null=null;private inviteBanner:(IncomingInvite&{until:number})|null=null;private noticeBottom=0;
+ /** 「开一桌邀请TA」: the friend is invited automatically once the player's next table is open. */
+ private tableInvite:{code:string;name:string;until:number}|null=null;
+ private socialRoom(){
+  const room=this.room;if(!room||this.offlineRoom)return null;return {id:room.ticket.room.id,title:room.snapshot.title||'一起拼图',pieces:room.state.cols*room.state.rows,visibility:room.snapshot.visibility,inviteCode:(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode||(room.snapshot as unknown as {inviteCode?:string}).inviteCode,authorization:'Bearer '+room.ticket.token,members:room.snapshot.members.map(member=>({...member,code:(member as unknown as {code?:string}).code,level:(member as unknown as {level?:number}).level}))};
+ }
+ private get roomInvitesEnabled(){const social=this.client.config?.capabilities?.social;return social?.friends!==false&&(social?.roomInvites===true||social?.privateMessages===true);}
+ private get inviteFriendsAvailable(){return this.roomInvitesEnabled&&!this.offlineRoom&&!(this.offline?.active&&!this.ready)&&(!this.room||this.room.snapshot.visibility!=='solo');}
+ private async sendRoomInvite(job:InviteJob){
+  const room=this.socialRoom();if(!room||room.id!==job.roomId)throw Object.assign(Error('已离开房间'),{code:'ROOM_LEFT'});
+  await this.client.json('/api/mobile/social/messages','POST',{peer:job.code,kind:'room-invite',roomId:room.id,...(room.inviteCode?{inviteCode:room.inviteCode}:{}),requestId:job.requestId},{Authorization:room.authorization,'Content-Type':'application/json'});
+ }
+ private roomInviteSent(job:InviteJob){const key=job.roomId+':'+job.code,name=this.inviteNames.get(key);if(name){this.inviteNames.delete(key);this.note('已邀请 '+name+'，等TA来一起拼');}if(!this.inviteQueue.pending)void this.social.refresh();}
+ private inviteFriend(friend:SocialPlayer){const room=this.socialRoom();if(!room)return;if(room.visibility==='private'&&!room.inviteCode){this.note('当前私人房间没有可用邀请凭证');return;}this.inviteQueue.enqueue(room.id,friend.code);}
+ private startTableInvite(friend:SocialPlayer){
+  this.tableInvite={code:friend.code,name:friend.name,until:Date.now()+600000};if(this.modal)this.closeModal();
+  if(this.route!=='gallery')this.navigate('gallery');this.note('选一张图开一桌，开好后自动邀请 '+friend.name);
+ }
+ private sendTableInvite(input:MobileRoomInput){
+  const pending=this.tableInvite;if(!pending)return;this.tableInvite=null;if(input.mode==='level'||Date.now()>pending.until)return;
+  const room=this.socialRoom();if(!room||room.visibility==='solo')return;this.inviteNames.set(room.id+':'+pending.code,pending.name);this.inviteQueue.enqueue(room.id,pending.code);
+ }
+ private socialSnapshot(state:SocialSnapshot){if(this.inviteBanner)return;const before=this.incomingInvite?.message.id;this.incomingInvite=pickIncomingInvite(state,this.inviteSeen.seen,this.room&&!this.offlineRoom?this.room.ticket.room.id:null);if(this.incomingInvite?.message.id!==before)this.invalidate();}
+ private get inviteBannerAllowed(){return this.ready&&!this.offlineRoom&&!this.needsPrivacyChoice&&!this.loginLogOpen&&this.modal!=='levelComic'&&this.modal!=='orientation'&&this.modal!=='welcome';}
+ private async joinInvite(invite:IncomingInvite){
+  this.inviteBanner=null;this.invalidate();const message=invite.message;if(!message.roomId)return;
+  void this.client.post('/api/mobile/social/messages/read',{peer:invite.peer.code,through:message.id,requestId:this.platform.randomId()}).then(()=>this.social.refresh()).catch(()=>{});
+  if(this.room?.ticket.room.id===message.roomId){this.note('你已经在这桌了');return;}
+  await this.enterRoom(message.roomId,message.inviteCode);
+ }
+ private drawInviteBanner(){
+  if(!this.inviteBanner&&this.incomingInvite&&this.inviteBannerAllowed){const next=this.incomingInvite;this.incomingInvite=null;if(!this.inviteSeen.has(next.message.id)&&next.message.roomId!==this.room?.ticket.room.id){this.inviteSeen.add(next.message.id);this.inviteBanner={...next,until:Date.now()+60000};}}
+  const banner=this.inviteBanner;if(!banner)return;if(Date.now()>banner.until){this.inviteBanner=null;return;}if(!this.inviteBannerAllowed)return;
+  const s=this.stage,view=this.platform.viewport(),w=Math.min(s.w-24,400),h=62,x=(s.w-w)/2,top=Math.max(view.top+10,this.platform.config.id==='taptap'?44:0)+(this.busy?34:0),y=Math.max(top,this.noticeBottom?this.noticeBottom+6:0),r={x,y,w,h};
+  s.panel(r,'gold');s.hit(r,()=>{});const joinW=58,laterW=52,joinX=x+w-10-joinW,laterX=joinX-6-laterW,tx=x+46,tw=Math.max(40,laterX-8-tx);
+  s.icon('invite',{x:x+10,y:y+16,w:28,h:28});s.text(banner.peer.name+' 邀请你一起拼',tx,y+11,13,this.colors.ink,800,tw);
+  s.text('「'+(banner.message.title??'一起拼图')+'」',tx,y+33,12,this.colors.muted,600,tw);
+  s.button({x:laterX,y:y+15,w:laterW,h:32},'稍后',()=>{this.inviteBanner=null;this.invalidate();},{fontSize:12});
+  s.button({x:joinX,y:y+15,w:joinW,h:32},'加入',()=>void this.joinInvite(banner),{tone:'berry',fontSize:12,disabled:this.busy});
+ }
+ private openSocialInbox(){this.showModal('social');this.social.open(this.social.unread?'messages':this.social.requestCount?'requests':'friends');}
+ /** Friend messages and requests, on the room's member avatars (the room hides the tab bar that normally shows them). */
+ private drawRoomFriendBadge(){
+  const count=this.social.unread+this.social.requestCount,a=this.roomMembersArea;if(!count||this.offlineRoom||a.w<=0)return;
+  const s=this.stage,label=count>99?'99+':String(count),w=Math.max(18,s.measure(label,10,700)+9),x=a.x-w/2+2,y=a.y-4;
+  s.frame({x,y,w,h:18},'segment-berry-selected');s.text(label,x+(w-s.measure(label,10,700))/2,y+3,10,this.colors.onAccent,700);s.hit({x:x-8,y:y-6,w:w+16,h:30},()=>this.openSocialInbox());
+ }
+ /** Top of the 「邀请好友」 window: the game friend list (or, with no friends yet, ways to add one). Returns the next y. */
+ private drawInviteFriends(left:number,cy:number,width:number){
+  const s=this.stage,ink=this.colors.ink,muted=this.colors.muted,data=this.social.state,room=this.socialRoom();
+  s.text('邀请游戏好友',left,cy,16,ink,800,width);cy+=26;
+  cy=this.paragraph(room?'好友会在游戏里收到邀请，点一下就能加入':'开一桌后自动邀请好友，不用分享',left,cy,width,12)+10;
+  if(!data){s.text('正在读取好友…',left,cy+4,13,muted,600,width);return cy+36;}
+  const friends=inviteOrder(data.friends),members=new Set((room?.members??[]).map(member=>member.code).filter(Boolean));
+  if(!friends.length){
+   s.text('还没有游戏好友',left,cy+2,14,ink,700,width);cy+=28;
+   s.button({x:left,y:cy,w:width,h:38},'按玩家 ID 添加',()=>{this.showModal('social');this.social.startSearch();},{tone:'berry',icon:'plus',fontSize:13});cy+=50;
+   const recent=this.recentPlayers.slice(0,5);
+   if(recent.length){s.text('最近同桌',left,cy,13,muted,700);cy+=24;
+    for(const peer of recent){s.icon('avatar',{x:left,y:cy,w:30,h:34});s.text(peer.name,left+40,cy+1,14,ink,800,width-130);s.text('一起拼过「'+peer.roomTitle+'」',left+40,cy+20,11,muted,600,width-130);s.button({x:left+width-74,y:cy+2,w:74,h:30},peer.requested?'已申请':'加好友',()=>void this.requestFriend(peer.code),{fontSize:12,disabled:peer.requested||this.busy});cy+=46;}}
+   return cy+4;
+  }
+  for(const friend of friends){
+   const r={x:left,y:cy,w:width,h:54},bw=86;s.frame(r,'button-linen-normal');s.icon('avatar',{x:left+8,y:cy+9,w:32,h:36});
+   if(friend.online){s.ctx.fillStyle=s.color('#879864');s.ctx.fillRect(left+34,cy+38,7,7);}
+   const status=members.has(friend.code)?'在这桌':friend.online?friend.room?'正在拼「'+friend.room.title+'」':'在线':friend.lastSeenAt?this.ago(friend.lastSeenAt)+'在线':'离线';
+   s.text(friend.name,left+50,cy+8,14,ink,800,width-bw-64);s.text(status,left+50,cy+29,11,friend.online?ink:muted,600,width-bw-64);
+   const b={x:left+width-bw-8,y:cy+11,w:bw,h:32};
+   if(!room)s.button(b,'开一桌邀请',()=>this.startTableInvite(friend),{tone:'berry',fontSize:12,disabled:this.busy});
+   else if(members.has(friend.code))s.button(b,'已在桌上',()=>{},{fontSize:12,disabled:true});
+   else{const state=this.inviteQueue.state(room.id,friend.code),label=state==='queued'?'排队中':state==='sending'?'发送中':state==='sent'?'已邀请':state==='failed'?'重试':'邀请';
+    s.button(b,label,()=>this.inviteFriend(friend),{tone:state==='sent'?'cream':'berry',icon:state?undefined:'invite',fontSize:12,disabled:state==='queued'||state==='sending'||state==='sent'});}
+   cy+=60;
+  }
+  s.text('＋ 添加更多好友',left,cy+4,12,this.colors.berry,700);s.hit({x:left-4,y:cy-4,w:130,h:30},()=>{this.showModal('social');this.social.startSearch();});
+  return cy+34;
+ }
  private friendsTab:'friends'|'messages'|'requests'='friends';private recentPlayers:RecentPlayer[]=[];
  private async loadRecentPlayers(){try{const data=await this.client.json<{players:RecentPlayer[]}>('/api/mobile/social/recent');this.recentPlayers=Array.isArray(data.players)?data.players:[];this.invalidate();}catch{}}
  private ago(at:number){const minutes=Math.max(1,Math.round((Date.now()-at)/60000));return minutes<60?minutes+' 分钟前':minutes<1440?Math.round(minutes/60)+' 小时前':Math.round(minutes/1440)+' 天前';}
@@ -1198,7 +1281,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     for(const friend of friends){const r={x:pad,y,w:listW,h:72};row(r);s.icon('avatar',{x:pad+10,y:y+12,w:44,h:48});s.text(friend.name,pad+64,y+12,15,ink,800,listW-260);s.text('Lv.'+friend.level,pad+64+Math.min(listW-260,s.measure(friend.name,15,800))+8,y+15,12,muted,700);
      const room=friend.room,status=friend.online?room?'正在拼「'+room.title+'」'+(typeof room.players==='number'?' · '+room.players+'/'+seatLimit(room):''):'在大厅':friend.lastSeenAt?this.ago(friend.lastSeenAt)+'在线':'很久没上线';if(friend.online){s.ctx.fillStyle=s.color('#879864');s.ctx.fillRect(pad+50,y+52,8,8);}
      s.text(status,pad+64,y+38,12,friend.online?ink:muted,600,listW-260);let bx=pad+listW-82;s.button({x:bx,y:y+19,w:72,h:34},'私信',()=>this.openConversation(friend.code),{fontSize:13});
-     if(friend.online&&room&&room.visibility!=='private'){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'加入这桌',()=>void this.enterRoom(room.id),{tone:'berry',fontSize:13,disabled:this.busy});}else if(friend.online){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'邀请来拼',()=>this.openConversation(friend.code),{tone:'berry',fontSize:13});}
+     if(friend.online&&room&&room.visibility!=='private'){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'加入这桌',()=>void this.enterRoom(room.id),{tone:'berry',fontSize:13,disabled:this.busy});}else if(friend.online&&this.roomInvitesEnabled){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'开一桌邀请TA',()=>this.startTableInvite(friend),{tone:'berry',fontSize:12,disabled:this.busy});}
      y+=80;}
    }else if(this.friendsTab==='messages'){
     if(!conversations.length){s.text('还没有私聊，点好友的“私信”开始',pad+8,y+12,14,muted,600,listW);y+=50;}
@@ -1306,7 +1389,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const s=this.stage,view=this.platform.viewport(),size=13,w=Math.min(s.w-24,340,Math.max(136,s.measure(this.message.replace(/\n/g,' '),size,600)+52)),textWidth=w-52,lines:string[]=[];
   let line='';for(const char of this.message){if(char==='\n'||s.measure(line+char,size,600)>textWidth){lines.push(line);line=char==='\n'?'':char;}else line+=char;}if(line)lines.push(line);
   const shown=lines.slice(0,3);if(lines.length>3){let last=shown[2];while(last&&s.measure(last+'…',size,600)>textWidth)last=last.slice(0,-1);shown[2]=last+'…';}
-  const h=Math.max(35,shown.length*19+16),x=(s.w-w)/2,y=Math.max(view.top+10,this.platform.config.id==='taptap'?44:0)+(this.busy?34:0);s.ctx.save();s.ctx.globalAlpha=.94;s.ctx.fillStyle='#573b40';s.ctx.fillRect(x,y,w,h);s.ctx.restore();
+  const h=Math.max(35,shown.length*19+16),x=(s.w-w)/2,y=Math.max(view.top+10,this.platform.config.id==='taptap'?44:0)+(this.busy?34:0);this.noticeBottom=y+h;s.ctx.save();s.ctx.globalAlpha=.94;s.ctx.fillStyle='#573b40';s.ctx.fillRect(x,y,w,h);s.ctx.restore();
   shown.forEach((text,index)=>s.text(text,x+12,y+9+index*19,size,'#fff8ed',600,textWidth));s.text('×',x+w-25,y+8,17,'#fff8ed',600,20);
   s.hit({x:x+w-35,y,w:35,h},()=>{this.message='';this.messageUntil=0;this.invalidate();});
  }
@@ -2283,6 +2366,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    members.forEach((_member,index)=>s.icon('avatar',{x:avatarX+index*step,y:r.y+4,w:size,h:size}));
    this.roomMembersArea={x:avatarX,y:r.y,w:avatarW,h:34};s.hit(this.roomMembersArea,()=>this.showModal('chat'));this.drawLandscapeButton(invite,'＋ 邀请',()=>this.showModal('invite'),roomColors.roseD,13);
   }
+  this.drawRoomFriendBadge();
  }
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;private bubbleArmTimer:ReturnType<typeof setTimeout>|null=null;private organizeArmedUntil=0;
  private landscapeChatVisible=false;
@@ -2485,7 +2569,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    x=landscape?s.w-w-74:12,y=landscape?Math.max(view.top+8,chatTop):s.h-view.bottom-h-10;
   this.chatWindowArea={x,y,w,h};s.panel(this.chatWindowArea);s.hit(this.chatWindowArea,()=>{});
   s.text('同桌交流',x+15,y+17,18,this.colors.ink,800,w-180);
-  s.segments({x:x+w-165,y:y+12,w:116,h:32},[['room','房间'],['friends','好友']],'room',value=>{if(value==='friends')this.showModal('social');});
+  s.segments({x:x+w-165,y:y+12,w:116,h:32},[['room','房间'],['friends','好友']],'room',value=>{if(value==='friends')this.openSocialInbox();});
+  {const count=this.social.unread+this.social.requestCount;if(count){const label=count>99?'99+':String(count),bw=Math.max(17,s.measure(label,9,700)+8),bx=x+w-165+116-bw/2,by=y+6;s.frame({x:bx,y:by,w:bw,h:17},'segment-berry-selected');s.text(label,bx+(bw-s.measure(label,9,700))/2,by+2,9,this.colors.onAccent,700);}}
   const strip=this.room?.snapshot.members??[],memberColumns=Math.max(1,Math.floor((w-110)/78)),memberWidth=78,memberBottom=84;
   strip.slice(0,memberColumns).forEach((member,index)=>{const sx=x+14+index*memberWidth,sy=y+50;s.icon('avatar',{x:sx,y:sy,w:24,h:26});s.text(member.name,sx+27,sy+1,12,this.colors.ink,700,46);s.text('Lv.'+((member as {level?:number}).level??0),sx+27,sy+16,10,this.colors.muted,600);s.hit({x:sx,y:sy,w:75,h:34},()=>void this.openPlayerCard(member));});
   s.button({x:x+w-86,y:y+50,w:72,h:30},'同桌 '+strip.length+' ›',()=>this.showModal('members'),{fontSize:12});
@@ -2876,7 +2961,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(!this.client.profile?.ownedRooms.length){s.text('还没有自创房间',left,cy+15,14,this.colors.muted);cy+=65;}break;
    }
    case'invite':{
-    s.icon('invitationArt',{x:left+width/2-46,y:cy,w:92,h:89});cy+=102;s.text('邀请好友，一起攒礼包',left,cy,20,this.colors.ink,700,width);cy+=40;const invitation=this.tasks?.invitation,sharingTask=this.tasks?.tasks.find(task=>task.group==='sharing'),invitationTask=this.tasks?.tasks.find(task=>task.group==='invitation');
+    if(this.inviteFriendsAvailable){cy=this.drawInviteFriends(left,cy,width);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(left,cy,width,1);cy+=16;s.text('分享到微信 / QQ · 一起攒礼包',left,cy,16,this.colors.ink,800,width);cy+=32;}
+    else{s.icon('invitationArt',{x:left+width/2-46,y:cy,w:92,h:89});cy+=102;s.text('邀请好友，一起攒礼包',left,cy,20,this.colors.ink,700,width);cy+=40;}const invitation=this.tasks?.invitation,sharingTask=this.tasks?.tasks.find(task=>task.group==='sharing'),invitationTask=this.tasks?.tasks.find(task=>task.group==='invitation');
     if(this.energyEnabled){cy=this.paragraph('每位有效好友体力上限 +1（最多 +5），并送补满体力包'+(invitationTask?.xp?'及 '+invitationTask.xp+' 经验':'')+taskCoinsText(invitationTask?.coins??0),left,cy,width,14)+12;s.text('已加成 '+(invitation?.capBonus??0)+'/'+(invitation?.capBonusMaximum??5),left,cy,14,this.colors.berry,700);cy+=30;cy=this.paragraph('好友接受首次邀请并完成'+(invitation?.requiredContributions??3)+'次有效拼合后生效。补满包每日最多'+(invitation?.dailyLimit??3)+'份；新老玩家都可参与。',left,cy,width,12)+19;}else{cy=this.paragraph('好友接受首次邀请并完成'+(invitation?.requiredContributions??3)+'次有效拼合后，任务奖励为：'+this.rewardText(0,invitationTask?.xp??0,invitationTask?.coins??0)+'。每日最多'+(invitation?.dailyLimit??3)+'位；新老玩家都可参与。',left,cy,width,14)+19;}
     if(sharingTask){cy=this.paragraph('分享邀请奖励：'+this.rewardText(sharingTask.energy,sharingTask.xp,sharingTask.coins??0)+'，每日最多 '+sharingTask.target+' 次。',left,cy,width,12)+15;}
     s.text('我的邀请码（点击复制）',left,cy,12,this.colors.muted);cy+=26;s.text(this.tasks?.invitation.code??'正在读取…',left,cy,20,this.colors.ink,700,width);{const code=this.tasks?.invitation.code;if(code)s.hit({x:left-6,y:cy-8,w:Math.min(width,s.measure(code,20,700)+24),h:38},()=>this.copyInvitationCode(code));}cy+=40;this.button(left,cy,width,'邀请好友',()=>void this.shareInvitation(),'berry',42);cy+=56;
