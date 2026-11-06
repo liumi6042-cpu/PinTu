@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {fileURLToPath} from 'node:url';
+import {readFileSync} from 'node:fs';
 
 // 11-06 player feedback: 「游戏内加好友为什么找不到在游戏里邀请的选项，每次还需要分享到微信才行」.
 // The room's 「＋ 邀请」 window now lists game friends (room-invite messages, queued 3.2 s apart),
@@ -91,20 +92,21 @@ test('friends are listed online first, then by last seen',()=>{
 // ---- App level: the invite window and the banner, drawn with a real Stage.
 const gradient={addColorStop(){}};
 const proxy=()=>new Proxy({measureText:value=>({width:String(value).length*7}),isPointInPath:()=>true},{get:(target,key)=>target[key]??(()=>gradient),set:(target,key,value)=>(target[key]=value,true)});
-function app({w=390,h=844,friends=[],members=[{code:self.code,name:'我'}],inRoom=true,visibility='public'}={}){
+function app({w=390,h=844,friends=[],members=[{code:self.code,name:'我'}],inRoom=true,visibility='public',platformId='taptap',history=true}={}){
  const storage=new Map([['jigsaw:room-guide:v1','done']]),viewport={width:w,height:h,top:0,bottom:0,dpr:1},ctx=proxy(),calls=[];let id=0;
- const platform={config:{id:'taptap',apiBase:'/api'},createImage:()=>({}),createCanvas:()=>({width:1,height:1,getContext:()=>ctx}),canvas:{style:{},getContext:()=>ctx},viewport:()=>viewport,randomId:()=>'id'+(++id),storage:{get:key=>storage.get(key)??null,set:(key,value)=>storage.set(key,value)}};
+ const platform={config:{id:platformId,apiBase:'/api',gameName:'拼图小窝'},createImage:()=>({}),createCanvas:()=>({width:1,height:1,getContext:()=>ctx}),canvas:{style:{},getContext:()=>ctx},viewport:()=>viewport,randomId:()=>'id'+(++id),storage:{get:key=>storage.get(key)??null,set:(key,value)=>storage.set(key,value)}};
  const state=snapshot([],10_000_000,friends);
- const client={config:{capabilities:{social:{friends:true,roomInvites:true,privateMessageHistory:true}}},profile:{code:self.code,collection:{},giftProgress:0,giftCount:0},asset:value=>value,
+ const client={config:{capabilities:{social:{friends:true,roomInvites:true,privateMessageHistory:history}}},profile:{code:self.code,collection:{},giftProgress:0,giftCount:0},asset:value=>value,
   json:async(path,method='GET',body,headers)=>{calls.push({path,method,body,headers});return path==='/api/mobile/social'?state:{};},post:async(path,body)=>{calls.push({path,method:'POST',body});return {};}};
  const stage=new Stage(platform,value=>value),game=new GameApp(platform,client,stage);
  globalThis.matchMedia=()=>({matches:false});
+ const texts=[],text=stage.text.bind(stage);stage.text=(value,...rest)=>{texts.push(String(value));return text(value,...rest);};
  const buttons=[],button=stage.button.bind(stage);stage.button=(r,label,fn,opts={})=>{buttons.push({r:{...r},label,fn,opts});return button(r,label,fn,opts);};
  game.social.snapshot=state;
  Object.assign(game,{ready:true,privacyAccepted:true,route:inRoom?'room':'lobby'});
  if(inRoom)game.room={ticket:{room:{id:room},token:'f'.repeat(32),playerId:'p'},snapshot:{id:room,title:'春日花园',visibility,members},state:{cols:12,rows:9}};
- const frame=draw=>{buttons.length=0;stage.begin?.();draw();return buttons.map(b=>({...b}));};
- return {game,stage,calls,storage,state,frame,buttons};
+ const frame=draw=>{buttons.length=0;texts.length=0;stage.begin?.();draw();return buttons.map(b=>({...b}));};
+ return {game,stage,calls,storage,state,frame,buttons,texts,platform};
 }
 
 test('the room invite window starts with the game friends; 邀请 sends a room invite and the row turns 已邀请',async()=>{
@@ -172,4 +174,29 @@ test('the room shows the friend badge on the member avatars and the chat window 
   let opened=null;t.game.showModal=modal=>{opened=modal;};t.game.social.open=tab=>{opened+=':'+tab;};hits[0].f();
   assert.equal(opened,'social:messages');
  }
+});
+
+// WeChat 0.53.20: no free-text conversations; invites (fixed-format room cards) stay; sharing grants and advertises nothing.
+test('WeChat keeps the friend invite list but its share section has no QQ, reward or invite-code copy',async()=>{
+ const t=app({platformId:'wechat',history:false,friends:[peer('222222222','小满')]});t.game.modal='invite';
+ const shown=t.frame(()=>t.game.drawModal()),labels=shown.map(b=>b.label),all=[...labels,...t.texts].join('|');
+ assert.ok(labels.includes('邀请'),'in-game invite stays');assert.ok(labels.includes('分享给微信好友'));
+ for(const banned of ['QQ','礼包','邀请码','奖励','TapTap'])assert.equal(all.includes(banned),false,banned+' in '+all);
+ const lobby=app({platformId:'wechat',history:false,friends:[peer('222222222','小满')],inRoom:false});lobby.game.modal='invite';
+ const lobbyText=[...lobby.frame(()=>lobby.game.drawModal()).map(b=>b.label),...lobby.texts].join('|');
+ assert.ok(lobbyText.includes('开一桌邀请'));for(const banned of ['QQ','礼包','邀请码','奖励'])assert.equal(lobbyText.includes(banned),false,banned);
+ // The WeChat share button opens WeChat sharing and never claims the share reward.
+ t.platform.share=async()=>'opened';const claims=[];t.game.shareReward={pending:()=>null,claim:async()=>{claims.push(1);},complete:async()=>{claims.push(2);return null;}};
+ await t.game.shareInvitation();assert.deepEqual(claims,[]);assert.equal(t.calls.some(call=>call.path.includes('/invitations/share')),false);
+});
+
+test('WeChat hides private conversations: no 私信, no unread count, invites still arrive as a banner',()=>{
+ const t=app({platformId:'wechat',history:false,inRoom:false,friends:[peer('222222222','小满')]}),now=Date.now(),from=peer('222222222','小满');
+ const state=snapshot([{peer:from,lastMessage:invite(51,from.code,now-1000),unread:3}],now,[from]);t.game.social.snapshot=state;
+ assert.equal(t.game.social.unread,0,'nothing to read where conversations are hidden');
+ t.game.route='friends';const labels=t.frame(()=>t.game.drawFriends()).map(b=>b.label);
+ assert.equal(labels.includes('私信'),false);assert.equal(labels.includes('消息'),false);assert.ok(labels.includes('开一桌邀请TA'));
+ t.game.socialSnapshot(state);assert.deepEqual(t.frame(()=>t.game.drawInviteBanner()).map(b=>b.label),['稍后','加入']);
+ const source=readFileSync(new URL('../mobile/client.ts',import.meta.url),'utf8');
+ assert.match(source,/\.\.\.\(wechat\?\{privateMessageHistory:false\}:\{\}\)/,'WeChat forces conversation history off');
 });

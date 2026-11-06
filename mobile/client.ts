@@ -78,7 +78,7 @@ export class GameClient{
     roomActionRevisionBody:!this.cookieIdentity&&reply.data.capabilities?.roomActionRevisionBody===true,
     soloLocalPlay:!this.cookieIdentity&&reply.data.capabilities?.soloLocalPlay===true,
     offlineLevelClears:!this.cookieIdentity&&reply.data.capabilities?.offlineLevelClears===true,
-    social:this.cookieIdentity?reply.data.capabilities?.social??{friends:false,privateMessages:false,reports:false,blocking:false,search:false,codeFormat:'hex12'}:{friends:true,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9',...reply.data.capabilities?.social,privateMessages:!wechat&&reply.data.capabilities?.social?.privateMessages===true},
+    social:this.cookieIdentity?reply.data.capabilities?.social??{friends:false,privateMessages:false,reports:false,blocking:false,search:false,codeFormat:'hex12'}:{friends:true,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9',...reply.data.capabilities?.social,privateMessages:!wechat&&reply.data.capabilities?.social?.privateMessages===true,...(wechat?{privateMessageHistory:false}:{})},
     ...(this.cookieIdentity?{supportedPieces:reply.data.capabilities?.supportedPieces??[108,300,500]}:{})};
    this.config={...reply.data,rewardedAdUnitId:unit,rewardedAdUnitIdPortrait:portraitUnit||undefined,rewardedAdUnitIdLandscape:landscapeUnit||undefined,adRewardEnabled:capabilities.ads,identityMode:this.platform.config.id==='taptap'?'taptap':this.cookieIdentity?'web-cookie':'guest-device',wechatLoginConfigured:false,capabilities};
    if(this.cookieIdentity){await this.platform.restoreWebIdentity?.();await this.refresh();}

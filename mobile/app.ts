@@ -83,7 +83,7 @@ const CLIENT_PACKAGE_VERSION='v53.20';
 /** Shown when 分享领体力包 was already used this game day (the day flips at 20:00 Beijing, like the daily puzzle). */
 const SHARE_ENERGY_DONE_TEXT='今天已经分享领过体力包了，每天限 1 次，晚上 8 点后可以再领';
 /** The WeChat mini-game numbers its own uploads (the devtools version field). */
-const WECHAT_PACKAGE_VERSION='0.53.15';
+const WECHAT_PACKAGE_VERSION='0.53.20';
 /** A chat bubble that just popped up under a finger reaching for a piece does not open the chat until it has shown this long. */
 const CHAT_BUBBLE_ARM_MS=600;
 /** 整理 reshuffles every loose piece, so its first tap only arms it for this long. */
@@ -1009,6 +1009,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.platform.config.id==='web'){const result=await this.platform.share({title:'来'+this.platform.config.gameName+'一起拼图',roomId:this.room?.ticket.room.id,inviteCode:this.tasks?.invitation.code});this.note(result==='copied'?'邀请链接已复制，可以粘贴给好友':result==='shared'?'已分享邀请链接':result==='cancelled'?'本次分享已取消':'浏览器暂不支持分享或复制，请使用邀请码');return;}
 
   const apply=async(data:MobileInviteShareResult)=>{this.applyTasks(data);await this.client.refresh();this.note(data.shared.alreadyRewarded?'今天的分享奖励已领完，仍可邀请好友':'分享奖励已到账：'+this.rewardText(data.shared.energy,data.shared.xp,data.shared.coins??0));};
+  if(!this.shareAvailable&&this.platform.config?.id==='wechat'){const privateCode=(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode,result=await this.shareFromGame({title:'来'+this.platform.config.gameName+'一起拼图',roomId:this.room?.ticket.room.id,query:privateCode&&this.room?{roomInvite:privateCode}:undefined});this.note(result==='opened'||result==='shared'?'已打开分享，请选择微信好友':result==='cancelled'?'本次分享已取消':'当前环境无法分享');return;}
   if(this.shareReward.pending()){await apply(await this.shareReward.claim());return;}
   if(!this.tasks)await this.loadTasks();if(!this.tasks)throw Error('邀请码暂时无法加载');const privateCode=(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode;
   const result=await this.shareFromGame({title:'来'+this.platform.config.gameName+'一起拼图',roomId:this.room?.ticket.room.id,inviteCode:this.tasks.invitation.code,query:privateCode?{roomInvite:privateCode}:undefined});
@@ -1280,7 +1281,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(!friends.length){s.icon('friendArt',{x:pad+(listW-70)/2,y,w:70,h:66});const t='认识一位拼友吧';s.text(t,pad+(listW-s.measure(t,16,800))/2,y+76,16,ink,800);const h='按玩家 ID 添加，或在最近同桌里加好友';s.text(h,pad+(listW-s.measure(h,12,600))/2,y+102,12,muted,600,listW);y+=136;}
     for(const friend of friends){const r={x:pad,y,w:listW,h:72};row(r);s.icon('avatar',{x:pad+10,y:y+12,w:44,h:48});s.text(friend.name,pad+64,y+12,15,ink,800,listW-260);s.text('Lv.'+friend.level,pad+64+Math.min(listW-260,s.measure(friend.name,15,800))+8,y+15,12,muted,700);
      const room=friend.room,status=friend.online?room?'正在拼「'+room.title+'」'+(typeof room.players==='number'?' · '+room.players+'/'+seatLimit(room):''):'在大厅':friend.lastSeenAt?this.ago(friend.lastSeenAt)+'在线':'很久没上线';if(friend.online){s.ctx.fillStyle=s.color('#879864');s.ctx.fillRect(pad+50,y+52,8,8);}
-     s.text(status,pad+64,y+38,12,friend.online?ink:muted,600,listW-260);let bx=pad+listW-82;s.button({x:bx,y:y+19,w:72,h:34},'私信',()=>this.openConversation(friend.code),{fontSize:13});
+     s.text(status,pad+64,y+38,12,friend.online?ink:muted,600,listW-260);let bx=messages?pad+listW-82:pad+listW;if(messages)s.button({x:bx,y:y+19,w:72,h:34},'私信',()=>this.openConversation(friend.code),{fontSize:13});
      if(friend.online&&room&&room.visibility!=='private'){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'加入这桌',()=>void this.enterRoom(room.id),{tone:'berry',fontSize:13,disabled:this.busy});}else if(friend.online&&this.roomInvitesEnabled){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'开一桌邀请TA',()=>this.startTableInvite(friend),{tone:'berry',fontSize:12,disabled:this.busy});}
      y+=80;}
    }else if(this.friendsTab==='messages'){
@@ -2961,8 +2962,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(!this.client.profile?.ownedRooms.length){s.text('还没有自创房间',left,cy+15,14,this.colors.muted);cy+=65;}break;
    }
    case'invite':{
-    if(this.inviteFriendsAvailable){cy=this.drawInviteFriends(left,cy,width);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(left,cy,width,1);cy+=16;s.text('分享到微信 / QQ · 一起攒礼包',left,cy,16,this.colors.ink,800,width);cy+=32;}
-    else{s.icon('invitationArt',{x:left+width/2-46,y:cy,w:92,h:89});cy+=102;s.text('邀请好友，一起攒礼包',left,cy,20,this.colors.ink,700,width);cy+=40;}const invitation=this.tasks?.invitation,sharingTask=this.tasks?.tasks.find(task=>task.group==='sharing'),invitationTask=this.tasks?.tasks.find(task=>task.group==='invitation');
+    const wechat=this.platform.config?.id==='wechat';
+    if(this.inviteFriendsAvailable){cy=this.drawInviteFriends(left,cy,width);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(left,cy,width,1);cy+=16;s.text(wechat?'分享给微信好友':'分享到微信 / QQ · 一起攒礼包',left,cy,16,this.colors.ink,800,width);cy+=32;}
+    else{s.icon('invitationArt',{x:left+width/2-46,y:cy,w:92,h:89});cy+=102;s.text(wechat?'邀请微信好友一起拼':'邀请好友，一起攒礼包',left,cy,20,this.colors.ink,700,width);cy+=40;}
+    // WeChat: sharing is only a way in; no reward copy, no referral code (the review build grants nothing for sharing or inviting).
+    if(wechat){cy=this.paragraph(this.room?'把这一桌分享给微信好友，点开就能一起拼。':'把小窝分享给微信好友，一起来拼图。',left,cy,width,13)+16;this.button(left,cy,width,'分享给微信好友',()=>void this.shareInvitation(),'berry',42);cy+=56;break;}const invitation=this.tasks?.invitation,sharingTask=this.tasks?.tasks.find(task=>task.group==='sharing'),invitationTask=this.tasks?.tasks.find(task=>task.group==='invitation');
     if(this.energyEnabled){cy=this.paragraph('每位有效好友体力上限 +1（最多 +5），并送补满体力包'+(invitationTask?.xp?'及 '+invitationTask.xp+' 经验':'')+taskCoinsText(invitationTask?.coins??0),left,cy,width,14)+12;s.text('已加成 '+(invitation?.capBonus??0)+'/'+(invitation?.capBonusMaximum??5),left,cy,14,this.colors.berry,700);cy+=30;cy=this.paragraph('好友接受首次邀请并完成'+(invitation?.requiredContributions??3)+'次有效拼合后生效。补满包每日最多'+(invitation?.dailyLimit??3)+'份；新老玩家都可参与。',left,cy,width,12)+19;}else{cy=this.paragraph('好友接受首次邀请并完成'+(invitation?.requiredContributions??3)+'次有效拼合后，任务奖励为：'+this.rewardText(0,invitationTask?.xp??0,invitationTask?.coins??0)+'。每日最多'+(invitation?.dailyLimit??3)+'位；新老玩家都可参与。',left,cy,width,14)+19;}
     if(sharingTask){cy=this.paragraph('分享邀请奖励：'+this.rewardText(sharingTask.energy,sharingTask.xp,sharingTask.coins??0)+'，每日最多 '+sharingTask.target+' 次。',left,cy,width,12)+15;}
     s.text('我的邀请码（点击复制）',left,cy,12,this.colors.muted);cy+=26;s.text(this.tasks?.invitation.code??'正在读取…',left,cy,20,this.colors.ink,700,width);{const code=this.tasks?.invitation.code;if(code)s.hit({x:left-6,y:cy-8,w:Math.min(width,s.measure(code,20,700)+24),h:38},()=>this.copyInvitationCode(code));}cy+=40;this.button(left,cy,width,'邀请好友',()=>void this.shareInvitation(),'berry',42);cy+=56;

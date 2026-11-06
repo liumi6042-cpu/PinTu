@@ -39,7 +39,8 @@ export class SocialPanel{
  private get presenceEnabled(){return !this.cookieIdentity||this.client.config.capabilities.social?.presence===true;}
  private get codeLabel(){return this.cookieIdentity?'12 位玩家 ID':'9 位玩家 ID';}
  get title(){return this.mode==='conversation'?this.thread?.peer.name??'好友私聊':this.mode==='search'?'添加好友':this.mode==='peers'?'同桌玩家':this.mode==='report'?'举报消息':this.mode==='blocked'?'屏蔽的玩家':this.mode==='options'?'会话操作':this.mode==='confirm'?'确认操作':'好友';}
- get unread(){return this.snapshot?.unread??0;}
+ /** Unread private messages; nothing to count where conversations are not shown (WeChat). */
+ get unread(){return this.privateHistory?this.snapshot?.unread??0:0;}
  get requestCount(){return this.snapshot?.requests.incoming.length??0;}
  get playerCode(){return this.snapshot?.self.code??'';}
  get blockedCodes(){return this.snapshot?.blocked.map(player=>player.code)??[];}
