@@ -200,3 +200,27 @@ test('WeChat hides private conversations: no 私信, no unread count, invites st
  const source=readFileSync(new URL('../mobile/client.ts',import.meta.url),'utf8');
  assert.match(source,/\.\.\.\(wechat\?\{privateMessageHistory:false\}:\{\}\)/,'WeChat forces conversation history off');
 });
+
+// WeChat review treats share/invite rewards as 诱导分享: on WeChat no task asks for sharing or inviting, and no reward copy for it shows.
+test('WeChat lists no share or invite reward tasks; TapTap keeps them',async()=>{
+ const {TASK_REWARDS}=await import('../server/mobile-tasks.mjs');
+ const serverTasks=[{id:'beginner-10',kind:'beginner-10',group:'beginner',title:'累计拼合10次',target:10,progress:0,earned:false,energy:0,xp:0,coins:10},...TASK_REWARDS.map(task=>({...task,kind:task.id,progress:0,earned:false})),
+  {id:'share-invitation',kind:'share-invitation',group:'sharing',title:'分享邀请',target:6,progress:0,earned:false,energy:20,xp:10,coins:10},
+  {id:'invite-friend',kind:'invite-refill',effect:'full-energy',group:'invitation',title:'邀请好友加入',target:3,progress:0,earned:false,energy:0,xp:0,coins:0}];
+ const view={giftProgress:0,giftMaximum:5,giftCount:0,tasks:serverTasks,inventory:[],invitation:{code:'ABC123',bound:false,boundToName:null,requiredContributions:3,dailyLimit:3,capBonus:0,capBonusMaximum:5},serverTime:1};
+ const draw=(id,energy)=>{
+  const texts=[],labels=[],ctx=new Proxy({measureText:text=>({width:String(text).length*7})},{get:(target,key)=>key in target?target[key]:()=>gradient});
+  const stage={w:390,h:844,ctx,palette:{ink:'#642238',muted:'#a17878',line:'#d4a399',rose:'#c8798c'},text:value=>texts.push(String(value)),icon(){},panel(){},frame(){},button:(_r,label)=>labels.push(String(label)),meter(){},hit(){},clip:(_r,fn)=>fn(),measure:text=>String(text).length*7,wrap:(value)=>{texts.push(String(value));return 18;},color:value=>value,segments(){}};
+  const game=Object.create(GameApp.prototype);Object.assign(game,{stage,invalidate(){},client:{profile:{level:10,energy:20,energyCap:60,supply:{energy:0,create:0}},config:{capabilities:{energy,ads:false,albumTarget:'mobile-shared'}}},platform:{config:{id},viewport:()=>({top:0,bottom:0})},taskTab:'tasks',bodyTop:100,bodyBottom:10000,scroll:0,extent:0,busy:false});
+  game.applyTasks(structuredClone(view));const groups=game.tasks.tasks.map(task=>task.group);
+  for(const method of ['drawTasksPage','drawTasks'])game[method]();
+  return {groups,all:[...texts,...labels].join('|')};
+ };
+ for(const energy of [true,false]){
+  const wechat=draw('wechat',energy);
+  assert.deepEqual([...new Set(wechat.groups)].sort(),['beginner','cooperation','friend']);
+  for(const banned of ['分享邀请','邀请好友','邀请码','分享领','邀请礼包'])assert.equal(wechat.all.includes(banned),false,banned+' on WeChat');
+  const taptap=draw('taptap',energy);
+  assert.ok(taptap.groups.includes('sharing')&&taptap.groups.includes('invitation'));assert.ok(taptap.all.includes('分享邀请'),'TapTap unchanged');
+ }
+});

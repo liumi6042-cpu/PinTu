@@ -313,7 +313,10 @@ export class GameApp{
  private loadView<T>(key:string,read:()=>Promise<T>,apply:(value:T)=>void){
   const owner=this.ownerKey();return this.viewRequests.run(key+':'+owner,read,value=>{apply(value);this.invalidate();},()=>!this.destroyed&&owner===this.ownerKey()).catch(error=>{if(!this.destroyed&&owner===this.ownerKey())throw error;});
  }
- private applyTasks(value:MobileTaskView){this.pendingViews?.invalidate();this.tasks=value;this.invalidate();}
+ /** WeChat review (诱导分享): no task there asks for sharing or inviting, so those reward tasks are never listed. */
+ private get inviteRewardsHidden(){return this.platform.config?.id==='wechat';}
+ private platformTasks(value:MobileTaskView):MobileTaskView{return this.inviteRewardsHidden&&value?{...value,tasks:value.tasks.filter(task=>task.group!=='sharing'&&task.group!=='invitation')}:value;}
+ private applyTasks(value:MobileTaskView){this.pendingViews?.invalidate();this.tasks=this.platformTasks(value);this.invalidate();}
  private applyCollection(value:MobileCollectionView){this.pendingViews?.invalidate();this.collection=value;this.invalidate();}
  private tickVisibleTime(){
   if(this.hidden||this.destroyed)return;
@@ -802,7 +805,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const k=breathScale(Date.now(),reducedComicMotion()),c=this.stage.ctx;if(k===1||typeof c.strokeRect!=='function')return;
   const t=(k-1)/.035,pad=Math.round(2+3*t);c.save();c.globalAlpha=.25+.5*t;c.strokeStyle=this.colors.gold;c.lineWidth=2;c.strokeRect(Math.round(r.x)-pad,Math.round(r.y)-pad,Math.round(r.w)+2*pad,Math.round(r.h)+2*pad);c.restore();this.animateBreath();
  }
- private async loadTasks(){try{await this.loadView('tasks',()=>this.client.json<MobileTaskView>('/api/mobile/tasks'),data=>{this.tasks=data;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
+ private async loadTasks(){try{await this.loadView('tasks',()=>this.client.json<MobileTaskView>('/api/mobile/tasks'),data=>{this.tasks=this.platformTasks(data);});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private async loadCollection(){try{await this.loadView('collection',()=>this.client.json<MobileCollectionView>('/api/mobile/collection'),data=>{this.collection=data;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private async loadGallery(){try{await this.loadView('gallery',()=>this.client.json<{imageIds?:string[];accessibleImageIds?:string[];freeImageIds?:string[];packedImageIds:string[];photos?:SharedPhoto[];daily?:SharedPhoto|null;serverTime?:number}>('/api/mobile/gallery'),data=>{if(typeof data.serverTime==='number')this.serverOffset=data.serverTime-Date.now();if(data.daily?.id)this.dailyPhoto=data.daily;this.galleryIds=new Set(data.imageIds??data.accessibleImageIds??[]);this.packedIds=new Set(data.packedImageIds);this.freeGalleryIds=Array.isArray(data.freeImageIds)?new Set(data.freeImageIds):new Set([...this.galleryIds].filter(id=>!this.packedIds.has(id)));if(Array.isArray(data.photos)){this.sharedPhotos=data.photos.filter(photo=>!!photo&&typeof photo.id==='string'&&typeof photo.src==='string'&&typeof photo.thumbSrc==='string').map(photo=>({...photo,title:photo.title||photo.id,category:photo.category||'其他'}));for(const photo of this.sharedPhotos)photoMap.set(photo.id,photo);if(data.daily?.id)photoMap.set(data.daily.id,data.daily);}if(this.selected&&!this.galleryIds.has(this.selected))this.selected=null;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private availableGallery():SharedPhoto[]{if(this.sharedPhotos)return this.sharedPhotos.filter(photo=>!this.galleryIds||this.galleryIds.has(photo.id));if(!this.galleryIds)return GALLERY_PHOTOS;const baseIds=new Set(GALLERY_PHOTOS.map(photo=>photo.id));return [...GALLERY_PHOTOS,...RESTORABLE_PHOTOS.filter(photo=>!baseIds.has(photo.id))].filter(photo=>this.galleryIds!.has(photo.id));}
@@ -1179,7 +1182,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.route==='lobby')this.drawLobbyTasks({x:x+w-64,y:20,w:64,h:40});
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,header-4,w,1);this.sceneArea={x,y:header,w,h:s.h-header-12};this.listArea={x,y:header,w,h:s.h-header-12};
  }
- private get pageSubtitle(){switch(this.route){case'lobby':{const count=this.lobbyRooms.length,online=this.lobbyOnline?' · '+this.lobbyOnline+' 位拼友在线':'';return (count?(this.lobbyCursor?count+'+':count)+' 桌正在拼':'今天，拼一会儿')+online;}case'gallery':return '选好图片和片数，就能开一桌';case'collection':return '拼完一张图就收进图集，集满有奖励';case'tasks':return '拼合攒礼包，邀请得奖励';case'friends':return '加好友、私聊、一起拼';case'supplies':return '体力与建房券';default:return '慢慢拼，慢慢了解';}}
+ private get pageSubtitle(){switch(this.route){case'lobby':{const count=this.lobbyRooms.length,online=this.lobbyOnline?' · '+this.lobbyOnline+' 位拼友在线':'';return (count?(this.lobbyCursor?count+'+':count)+' 桌正在拼':'今天，拼一会儿')+online;}case'gallery':return '选好图片和片数，就能开一桌';case'collection':return '拼完一张图就收进图集，集满有奖励';case'tasks':return (this.inviteRewardsHidden?'拼合攒礼包':'拼合攒礼包，邀请得奖励');case'friends':return '加好友、私聊、一起拼';case'supplies':return '体力与建房券';default:return '慢慢拼，慢慢了解';}}
  // 站内邀请: the room's 「＋ 邀请」 window lists game friends; invites go out as room-invite messages, one every 3.2 s.
  private inviteQueue!:RoomInviteQueue;private inviteSeen!:InviteSeenStore;private inviteNames=new Map<string,string>();
  private incomingInvite:IncomingInvite|null=null;private inviteBanner:(IncomingInvite&{until:number})|null=null;private noticeBottom=0;
@@ -1930,7 +1933,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    });}
    // 6. 邀请好友
    const invitation=data.invitation,invitationTask=data.tasks.find(task=>task.group==='invitation');
-   section(1,'邀请好友',this.energyEnabled?292:222,(x,y,cw)=>{s.icon('invitationArt',{x,y,w:70,h:66});const copy=this.energyEnabled?'每位有效好友体力上限 +1（最多 +5），并送补满体力包'+(invitationTask?.xp?'及 '+invitationTask.xp+' 经验':'')+taskCoinsText(invitationTask?.coins??0):'好友接受邀请并完成 '+(invitation?.requiredContributions??3)+' 次有效拼合，你可获得 '+this.rewardText(0,invitationTask?.xp??0,invitationTask?.coins??0)+'，每日最多 '+(invitation?.dailyLimit??3)+' 位。';this.paragraph(copy,x+82,y,cw-82,12,muted);
+   if(!this.inviteRewardsHidden)section(1,'邀请好友',this.energyEnabled?292:222,(x,y,cw)=>{s.icon('invitationArt',{x,y,w:70,h:66});const copy=this.energyEnabled?'每位有效好友体力上限 +1（最多 +5），并送补满体力包'+(invitationTask?.xp?'及 '+invitationTask.xp+' 经验':'')+taskCoinsText(invitationTask?.coins??0):'好友接受邀请并完成 '+(invitation?.requiredContributions??3)+' 次有效拼合，你可获得 '+this.rewardText(0,invitationTask?.xp??0,invitationTask?.coins??0)+'，每日最多 '+(invitation?.dailyLimit??3)+' 位。';this.paragraph(copy,x+82,y,cw-82,12,muted);
     if(this.energyEnabled){this.paragraph('好友绑定邀请码并完成 '+(invitation?.requiredContributions??3)+' 次有效拼合；补满包每日最多 '+(invitation?.dailyLimit??3)+' 份。',x,y+76,cw,12,muted);s.text('已加成 '+(invitation?.capBonus??0)+'/'+(invitation?.capBonusMaximum??5),x,y+120,13,this.colors.berry,700);y+=70;}
     s.text('我的邀请码',x,y+84,12,muted,700);s.text(invitation?.code??'正在读取…',x+76,y+80,18,ink,800,cw-76);if(invitation?.code)s.hit({x:x+70,y:y+72,w:Math.min(cw-70,s.measure(invitation.code,18,800)+20),h:34},()=>this.copyInvitationCode(invitation.code));const bw=(cw-10)/2;
     s.button({x,y:y+114,w:bw,h:38},'分享邀请',()=>void this.shareInvitation(),{tone:'berry',icon:'invite',fontSize:14,disabled:this.busy});
@@ -2174,7 +2177,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可打开小地图，放大时点小地图直接跳到那里；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留'+this.ownRoomLimit+'个未结束的自建房间。'],
-  ['邀请与礼包',this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
+  ['邀请与礼包',this.inviteRewardsHidden?'和好友一起拼图，可以积累每日任务礼包；邀请好友不发放奖励。':this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
  ];this.scrolled(()=>{for(const[title,text]of sections){s.text(title,20,y,18,this.colors.ink,700);y=this.paragraph(text,20,y+31,s.w-40,14)+24;}if(!this.formalWeb){this.button(20,y,s.w-40,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));y+=48;}this.button(20,y,s.w-40,'服务与隐私说明',()=>this.navigate('privacy'));y+=52;});this.extent=y-(this.bodyTop-this.scroll);}
 
  private drawRoom(){
