@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {PuzzleBoard,DRAG_SLOP,TRAY_STRIP_PX,TRAY_PIECE_FILL,TRAY_TILE_CACHE,TRAY_TILE_BYTES,TRAY_SOURCE_ZOOM,TRAY_ROW_POKE} from '../mobile/puzzle-board.ts';
+import {PuzzleBoard,DRAG_SLOP,TRAY_STRIP_PX,TRAY_PIECE_FILL,TRAY_TILE_CACHE,TRAY_TILE_BYTES,TRAY_SOURCE_ZOOM,TRAY_ROW_POKE,TRAY_MIN_PIECE_PT,TRAY_FLOOR_ZOOM_MAX,TRAY_BIG_ROOM_PIECES} from '../mobile/puzzle-board.ts';
 import {createFittedPuzzle} from '../lib/puzzle-engine.ts';
 
 // Players asked (11-03) for the corner map while the tray is open, and for bigger tray pieces.
@@ -106,14 +106,15 @@ test('sharp tray pictures stay within a few pages and 8 MB, keep the page on scr
  }
 });
 
-test('a tray piece is never drawn past 1.15 screen pixels per picture pixel, so a small picture stays sharp',async()=>{
+test('a tray piece stays within 1.15 screen pixels per picture pixel; a 300+ room goes past it only as far as the minimum size needs',async()=>{
  for(const [width,cols,rows]of [[800,8,6],[2144,22,22],[4000,8,6]]){
   const p=platform(),board=new PuzzleBoard({...p,createImage:()=>({naturalWidth:width,naturalHeight:width*.75,set src(value){queueMicrotask(()=>this.onload());}})},createFittedPuzzle('test',cols,rows,123),()=>{});
   board.setRect({x:0,y:77,w:360,h:702});await board.setImage('t.png');p.ctx.getTransform=()=>({a:3});board.trayOpen=true;board.draw(p.ctx);p.commands.length=0;board.draw(p.ctx);
   const v=board.trayLayout(),zoom=board.picture.width/board.board.width,pw=board.board.width/board.state.cols,ph=board.board.height/board.state.rows,m=Math.min(pw,ph)*.25;
   const cells=p.commands.filter(([name,...a])=>name==='drawImage'&&a.length===9&&a[6]>=v.r.y&&a[6]<=v.r.y+v.r.h);assert.ok(cells.length);
   for(const [,,,,,,,,dw,dh]of cells){
-   const perPicture=dw*3/((pw+2*m)*zoom);assert.ok(perPicture<=TRAY_SOURCE_ZOOM+.02,`${width}px picture: ${perPicture.toFixed(2)} screen px per picture px`);
+   const limit=cols*rows>=TRAY_BIG_ROOM_PIECES?Math.max(TRAY_SOURCE_ZOOM,Math.min(TRAY_FLOOR_ZOOM_MAX,TRAY_MIN_PIECE_PT*3/((Math.max(pw,ph)+2*m)*zoom))):TRAY_SOURCE_ZOOM;
+   const perPicture=dw*3/((pw+2*m)*zoom);assert.ok(perPicture<=limit+.02,`${width}px picture: ${perPicture.toFixed(2)} screen px per picture px`);
    const full=Math.min((v.cellW-5)/(pw+2*m),Math.max(v.cellH-5,v.cellH+2*TRAY_ROW_POKE)/(ph+2*m))*(pw+2*m);assert.ok(dw<=full+.34,'never past its cell (bar the last screen pixel)');
    if(width===4000)assert.ok(Math.abs(dw-full)<.34,'a large picture fills the cell');
   }
@@ -159,8 +160,11 @@ test('landscape: a compact tray — slim control row, 2 short rows, ~31% of the 
 test('landscape: pieces kept small by a low-resolution picture get narrower cells, so a page holds more of them',async()=>{
  const run=async(w,h,dpr,iw,ih,cols,rows)=>{const p=platform(),board=new PuzzleBoard({...p,createImage:()=>({naturalWidth:iw,naturalHeight:ih,set src(value){queueMicrotask(()=>this.onload());}})},createFittedPuzzle('test',cols,rows,123),()=>{});
   board.setRect({x:0,y:0,w,h});await board.setImage('t.png');board.trayOpen=true;p.ctx.getTransform=()=>({a:dpr,e:0,f:0});board.draw(p.ctx);board.draw(p.ctx);const v=board.trayLayout();board.destroy();return v;};
- const low844=await run(844,390,2,1536,1024,27,18),high844=await run(844,390,2,2560,2560,22,22),low915=await run(915,412,2.6,1536,1024,27,18),high915=await run(915,412,2.6,2560,2560,22,22);
- assert.ok(low844.columns>=14,`844x390: ${low844.columns} columns`);assert.equal(high844.columns,14,'a sharp picture keeps the standard cells');
+ // Under about 300 pieces, where the minimum tray piece size does not apply.
+ const low844=await run(844,390,3,800,533,16,12),high844=await run(844,390,3,2560,2560,16,12),low915=await run(915,412,2.6,800,533,16,12),high915=await run(915,412,2.6,2560,2560,16,12);
+ assert.ok(low844.columns>=18,`844x390: ${low844.columns} columns`);assert.equal(high844.columns,14,'a sharp picture keeps the standard cells');
  assert.ok(low915.columns>=18,`915x412 dpr 2.6: ${low915.columns} columns`);assert.ok(low915.pages<high915.pages,'fewer pages for the same piece count');
  assert.ok(low915.cellH>=36&&low915.cellW>=40,'small cells stay tappable');assert.ok(low915.r.h<=high915.r.h,'and the tray is no taller');
+ // A low-resolution 500-piece room is raised to the minimum size: standard-width cells, still two rows.
+ const big915=await run(915,412,2.6,1536,1024,27,18);assert.equal(big915.columns,15,'915x412 big room');assert.equal(big915.rows,2,'two rows');assert.ok(big915.r.h<=412*.31+.5,'tray '+big915.r.h);
 });
