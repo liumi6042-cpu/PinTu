@@ -75,6 +75,11 @@ export const TRAY_PIECE_FILL=1;
 /** A tray piece is never drawn larger than this many screen pixels per pixel of the picture, so it stays sharp:
  * in 300+ piece rooms the picture, not the cell, sets the size. */
 export const TRAY_SOURCE_ZOOM=1.15;
+/** Rooms of about 300 pieces and up: a tray piece (tabs included) is raised to this many pt when the sharpness cap would leave
+ * it smaller, up to TRAY_FLOOR_ZOOM_MAX screen px per picture px. A = no floor (v53.20). TEMPORARY dev switch, ?traysize=B or
+ * localStorage jigsaw:tray-size; the package hardcodes the chosen size. */
+export const TRAY_SIZE_FLOORS:Record<string,number>={A:0,B:43,C:53,D:66},TRAY_BIG_ROOM_PIECES=250,TRAY_FLOOR_ZOOM_MAX=2.6;
+function devTraySize(){try{const g=globalThis as {location?:{search?:string};localStorage?:{getItem(key:string):string|null}};const value=(new URLSearchParams(g.location?.search??'').get('traysize')||g.localStorage?.getItem('jigsaw:tray-size')||'A').toUpperCase();return value in TRAY_SIZE_FLOORS?value:'A';}catch{return 'A';}}
 /** The margin around a piece that holds its tabs (.23 deep) and their edge line, as a share of the smaller piece side. */
 const TRAY_TAB_MARGIN=.25;
 /** Tray pictures kept for redraws: about three pages, and never more than TRAY_TILE_BYTES of pixels (RGBA). */
@@ -186,7 +191,7 @@ export class PuzzleBoard implements RoomTable {
  private trayAnchor:{rank:number;min:number}|null=null;
  private trayTiles=new Map<string,HTMLCanvasElement>();
  /** The pixel density of the last tray drawing (0 before the first): sizes landscape cells to the capped pieces. */
- private trayDensity=0;private trayTileBytes=0;
+ traySize=devTraySize();private trayDensity=0;private trayTileBytes=0;
  /** The tray draw each picture was last used in: pictures on screen now are never dropped, even past the byte budget. */
  private trayTileUsed=new Map<string,number>();private trayDraws=0;
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null;group?:number;lift?:ReturnType<typeof setTimeout>|null;lifted?:boolean}|null=null;
@@ -802,9 +807,10 @@ export class PuzzleBoard implements RoomTable {
   const rect=this.rect,compact=rect.w>rect.h,w=Math.max(1,rect.w-10),inner=Math.max(1,w-16),top=compact?TRAY_HEAD_LANDSCAPE:TRAY_HEAD_PX,chrome=top+(compact?TRAY_FOOT_LANDSCAPE:TRAY_FOOT_PX);
   const limit=Math.min(Math.max(1,rect.h-76),Math.max(compact?80:100,rect.h*(compact?TRAY_HEIGHT_LANDSCAPE:TRAY_HEIGHT_PORTRAIT))),room=Math.max(1,limit-chrome);
   // Landscape: 2 rows; a piece the sharpness cap keeps small gets a narrower, shorter cell, so a page holds more of them.
-  const capped=compact?this.trayCappedExtent():Infinity,target=Math.min(TRAY_CELL_LANDSCAPE,Math.max(TRAY_CELL_MIN_W,capped+TRAY_CELL_GAP));
+  const raised=compact&&this.trayZoom()>TRAY_SOURCE_ZOOM,capped=compact?this.trayCappedExtent():Infinity,fitted=Math.max(TRAY_CELL_MIN_W,capped+TRAY_CELL_GAP),target=raised?fitted:Math.min(TRAY_CELL_LANDSCAPE,fitted);
   const columns=compact?Math.max(1,Math.min(24,Math.floor(inner/target))):Math.max(TRAY_COLUMNS_PORTRAIT,Math.floor(inner/80)),cellW=inner/columns;
-  const rows=compact?Math.max(1,Math.min(2,Math.floor(room/TRAY_ROW_MIN))):Math.max(1,Math.min(TRAY_ROWS_PORTRAIT,Math.floor(room/TRAY_ROW_MIN)));
+  // A raised piece too tall for two rows gets one row: the tray stays no taller than before.
+  const rows=compact?raised&&capped>(room/2+2*TRAY_ROW_POKE)*1.15?1:Math.max(1,Math.min(2,Math.floor(room/TRAY_ROW_MIN))):Math.max(1,Math.min(TRAY_ROWS_PORTRAIT,Math.floor(room/TRAY_ROW_MIN)));
   const cellH=Math.max(1,compact?Math.min(room/rows,Math.max(TRAY_ROW_MIN,capped+TRAY_CELL_GAP-2*TRAY_ROW_POKE)):Math.min(cellW,room/rows)),tall=chrome+rows*cellH,height=this.trayDrag&&!full?Math.min(tall,TRAY_STRIP_PX):tall;
   const r={x:rect.x+5,y:rect.y+rect.h-height-(compact?TRAY_LANDSCAPE_BOTTOM:75),w,h:height},prev={x:4,y:0,w:48,h:top},next={x:92,y:0,w:48,h:top},close={x:w-38,y:0,w:38,h:top};
   const pageSize=Math.max(1,columns*rows),groups=this.trayGroups(),start=this.trayStart(groups,pageSize),page=Math.ceil(start/pageSize),pages=Math.max(1,page+Math.ceil((groups.length-start)/pageSize));
@@ -838,8 +844,14 @@ export class PuzzleBoard implements RoomTable {
  /** The largest a tray piece (tabs included, in pt) may be drawn on this screen under TRAY_SOURCE_ZOOM, or Infinity. */
  private trayCappedExtent(){
   if(!this.ready)return Infinity;const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,m=Math.min(w,h)*TRAY_TAB_MARGIN;
-  const viewport=typeof this.platform.viewport==='function'?this.platform.viewport():null,density=this.trayDensity||Math.max(1,Math.min(4,viewport?.dpr||1));
-  return (Math.max(w,h)+2*m)*TRAY_SOURCE_ZOOM*this.picture.width/this.board.width/density;
+  return (Math.max(w,h)+2*m)*this.trayZoom()*this.picture.width/this.board.width/this.trayScreenDensity();
+ }
+ private trayScreenDensity(){const viewport=typeof this.platform.viewport==='function'?this.platform.viewport():null;return this.trayDensity||Math.max(1,Math.min(4,viewport?.dpr||1));}
+ /** Screen px per picture px a tray piece may use: TRAY_SOURCE_ZOOM, or more where a big room's floor asks for it. */
+ private trayZoom(){
+  const floor=TRAY_SIZE_FLOORS[this.traySize]||0;if(!floor||!this.ready||this.state.cols*this.state.rows<TRAY_BIG_ROOM_PIECES)return TRAY_SOURCE_ZOOM;
+  const w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,m=Math.min(w,h)*TRAY_TAB_MARGIN,pixels=(Math.max(w,h)+2*m)*this.picture.width/this.board.width;
+  return Math.max(TRAY_SOURCE_ZOOM,Math.min(TRAY_FLOOR_ZOOM_MAX,floor*this.trayScreenDensity()/pixels));
  }
  /** Screen y where the table stops being visible: the top of an open tray (at full height), else the bottom of the board. */
  private viewBottom(){return this.tray?this.trayLayout(true).r.y:this.rect.y+this.rect.h;}
@@ -1023,14 +1035,14 @@ export class PuzzleBoard implements RoomTable {
  }
  private stopTrayLift(touch:NonNullable<PuzzleBoard['trayTouch']>){if(touch.lift)clearTimeout(touch.lift);touch.lift=null;}
  private endTrayTouch(){const touch=this.trayTouch;if(touch)this.stopTrayLift(touch);this.trayTouch=null;}
- private drawTray(ctx:CanvasRenderingContext2D){this.trayDraws++;const transform=typeof ctx.getTransform==='function'?ctx.getTransform():null,density=Math.max(1,Math.min(4,transform?Math.abs(transform.a):1));this.trayDensity=density;const v=this.trayLayout(),r=v.r,colors=boardThemeColors(this.currentTheme),now=Date.now(),ox=transform&&Number.isFinite(transform.e)?transform.e:0,oy=transform&&Number.isFinite(transform.f)?transform.f:0;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+ private drawTray(ctx:CanvasRenderingContext2D){this.trayDraws++;const transform=typeof ctx.getTransform==='function'?ctx.getTransform():null,density=Math.max(1,Math.min(4,transform?Math.abs(transform.a):1));this.trayDensity=density;const v=this.trayLayout(),r=v.r,zoom=this.trayZoom(),colors=boardThemeColors(this.currentTheme),now=Date.now(),ox=transform&&Number.isFinite(transform.e)?transform.e:0,oy=transform&&Number.isFinite(transform.f)?transform.f:0;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
   const tray=this.trayDrag,held=tray&&this.pointers.get(tray.pointer);ctx.fillStyle=held&&inside(held,r)?colors.traySelected:colors.tray;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.strokeStyle=colors.trayLine;ctx.lineWidth=1;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.textBaseline='top';
   if(tray){const text='放回这里 = 回到原位';ctx.font='bold 12px sans-serif';ctx.fillStyle=colors.trayInk;ctx.fillText(text,r.x+(r.w-ctx.measureText(text).width)/2,r.y+(r.h-12)/2);ctx.restore();return;}
   ctx.font='11px sans-serif';ctx.fillStyle=colors.trayMuted;const hint='点选定位 · 拖出放置';ctx.fillText(hint,r.x+v.close.x-4-ctx.measureText(hint).width,r.y+v.top/2-6);ctx.font='18px sans-serif';ctx.fillText('×',r.x+r.w-25,r.y+v.top/2-10);
   const visible=v.groups.slice(v.start,v.start+v.pageSize);for(let index=0;index<visible.length;index++){const group=visible[index],id=group.pieces[0],x=r.x+8+index%v.columns*v.cellW,y=r.y+v.top+Math.floor(index/v.columns)*v.cellH+(v.compact?2.5:0),cw=v.cellW-5,ch=v.cellH-5;const lifted=!!this.trayTouch?.lifted&&this.trayTouch.group===group.id;
    // Pieces lie straight on the tray. A soft spot behind one marks it lifted by a long press or just located.
    if(lifted||group.pieces.includes(this.focusedPiece??-1)){ctx.fillStyle=colors.traySelected;ctx.beginPath();ctx.arc(x+cw/2,y+ch/2,Math.min(cw,ch)*.52,0,Math.PI*2);ctx.fill();}
-   ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const pw=this.board.width/this.state.cols,ph=this.board.height/this.state.rows,m=Math.min(pw,ph)*TRAY_TAB_MARGIN,fit=Math.min(cw*TRAY_PIECE_FILL/(pw+2*m),Math.max(ch,v.cellH+2*TRAY_ROW_POKE)*TRAY_PIECE_FILL/(ph+2*m),TRAY_SOURCE_ZOOM*this.picture.width/this.board.width/density)*(lifted?1.06:1),dw=(pw+2*m)*fit,dh=(ph+2*m)*fit,angle=group.pieces.length===1?this.angleOf(id,now):0;
+   ctx.globalAlpha=this.owners[group.id]?.35:1;if(this.atlas){const pw=this.board.width/this.state.cols,ph=this.board.height/this.state.rows,m=Math.min(pw,ph)*TRAY_TAB_MARGIN,fit=Math.min(cw*TRAY_PIECE_FILL/(pw+2*m),Math.max(ch,v.cellH+2*TRAY_ROW_POKE)*TRAY_PIECE_FILL/(ph+2*m),zoom*this.picture.width/this.board.width/density)*(lifted?1.06:1),dw=(pw+2*m)*fit,dh=(ph+2*m)*fit,angle=group.pieces.length===1?this.angleOf(id,now):0;
    // The tray shows a piece as it lies: grey while faded (from the faded atlas), turned while tilted; otherwise sharp at the screen's pixel size.
    const faded=!!this.grayAtlas&&this.fadeOf(group,id,now)>=.5,tile=faded?null:this.trayTile(id,Math.ceil(dw*density)),source=tile??(faded?this.grayAtlas!:this.atlas),s=tile?{x:0,y:0,w:tile.width,h:tile.height}:this.trayPieceSource(id);
    if(angle){ctx.save();ctx.translate(x+cw/2,y+ch/2);ctx.rotate(angle*Math.PI/180);ctx.drawImage(source,s.x,s.y,s.w,s.h,-dw/2,-dh/2,dw,dh);ctx.restore();}
