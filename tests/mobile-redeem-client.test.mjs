@@ -92,7 +92,7 @@ test('an old backend without the endpoint shows 兑换功能即将开放',async(
  assert.equal(f.app.redeemError,REDEEM_SOON);assert.ok(f.draw().texts.includes(REDEEM_SOON));
 });
 
-test('the settings entry is TapTap-only and the package says v53.20',()=>{
+test('the settings entry is TapTap-only and the package says v53.21',()=>{
  const source=readFileSync(new URL('../mobile/app.ts',import.meta.url),'utf8');
  assert.match(source,/const CLIENT_PACKAGE_VERSION='v53\.20';/);
  const settings=source.slice(source.indexOf("case'settings':{"),source.indexOf("heading('测试与诊断')"));

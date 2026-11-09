@@ -79,7 +79,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.20';
+const CLIENT_PACKAGE_VERSION='v53.21';
 /** Shown when 分享领体力包 was already used this game day (the day flips at 20:00 Beijing, like the daily puzzle). */
 const SHARE_ENERGY_DONE_TEXT='今天已经分享领过体力包了，每天限 1 次，晚上 8 点后可以再领';
 /** The WeChat mini-game numbers its own uploads (the devtools version field). */
