@@ -102,10 +102,20 @@ test('a first-time guest starts the daily puzzle and enters with the same persis
   assert.equal(created.data.room.puzzle.imageId,f.photos[1].id);
   assert.match(created.headers.get('set-cookie'),new RegExp(`^puzzle_guest=${guestSecret};`));
   const path='/api/rooms/'+created.data.room.id;
-  const joined=await f.request(path+'/join',{method:'POST',headers:{...headers,Cookie:`puzzle_guest=${guestSecret}`}});
+  const delivered={...f.photos[1],id:'delivered-after-web-build'};
+  f.snapshot.photos.push(delivered);
+  const saved=JSON.parse(f.db.sql.prepare('SELECT data FROM puzzle_rooms WHERE id=?').get(created.data.room.id).data);
+  saved.puzzle.imageId=delivered.id;
+  f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=revision+1 WHERE id=?').run(JSON.stringify(saved),saved.id);
+  const join=()=>f.request(path+'/join',{method:'POST',headers:{...headers,Cookie:`puzzle_guest=${guestSecret}`}});
+  const joined=await join();
   assert.equal(joined.status,200,JSON.stringify(joined.data));
   assert.equal(joined.data.playerId,created.data.playerId);
+  assert.equal(joined.data.room.puzzle.imageId,delivered.id);
   assert.equal(f.db.sql.prepare('SELECT owner_id FROM puzzle_room_directory').get().owner_id,'guest:'+hash(guestSecret));
+  saved.puzzle.imageId='unregistered-image';
+  f.db.sql.prepare('UPDATE puzzle_rooms SET data=?,revision=revision+1 WHERE id=?').run(JSON.stringify(saved),saved.id);
+  assert.equal((await join()).status,410);
  }finally{f.close();}
 });
 
