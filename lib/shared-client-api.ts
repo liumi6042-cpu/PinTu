@@ -37,9 +37,9 @@ const unsupported=(message='这项功能目前尚未接入网页版',url?:string
 const compatibilityRoom=(room:Data)=>room.visibility==='solo'||(pieceBand(room.puzzle?.cols*room.puzzle?.rows)||0)>500;
 const roomLink=(id:string)=>'/play?room='+id;
 async function playerState(owner:string){const row=await localDb().prepare('SELECT data FROM puzzle_managed_players WHERE owner=?').bind(owner).first<{data:string}>();return row?JSON.parse(row.data):{};}
-async function context(request:Request){
+async function context(request:Request,guestSecret?:string){
  const content=readManagedContent(supportsArtworkSnapshot(request.headers));if(!content)throw new RoomError('正式内容暂未发布，暂时不能读取玩家奖励',503);
- const player=(await currentPlayer(request,true))!,account=await currentAccount(request),guest=await currentGuest(request),origin=new URL(request.url).origin;
+ const player=(await currentPlayer(request,true,guestSecret))!,account=await currentAccount(request),guest=await currentGuest(request),origin=new URL(request.url).origin;
  const view=await managedPlayerView(player.id,content,origin) as Data;
  const owners=[...new Set([player.id,guest?.id].filter((id):id is string=>!!id))];
  const owned=await webOwnedRooms(localDb(),owners,(room:Data)=>({photo:roomPhoto(room,origin),thumbSrc:roomPhoto(room,origin)?.thumbSrc,compatUrl:roomLink(room.id),canClose:false}));
@@ -167,7 +167,7 @@ async function sharedRoom(request:Request,path:string,input:Data){
  return replaceResponse(response,data);
 }
 async function createSharedRoom(request:Request,input:Data){
- const ctx=await context(request),mode=input.mode??'selected',pieces=input.pieces;
+ const ctx=await context(request,typeof input.guestSecret==='string'?input.guestSecret:undefined),mode=input.mode??'selected',pieces=input.pieces;
  if(mode==='level'){
   let levelRequest=forwarded(request,'/api/rooms',{});
   if(ctx.player.cookie){const headers=new Headers(levelRequest.headers);headers.set('Cookie',[(headers.get('Cookie')??''),ctx.player.cookie.split(';')[0]].filter(Boolean).join('; '));levelRequest=new Request(levelRequest,{headers});}

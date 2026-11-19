@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { searchPaths, englishSearchPaths, isPublicSearchPage, pageMetadata, zhPageMetadata, zhPuzzleMetadata, publicMetadata, jsonLd, englishCopy, hasChineseVersion, zhPath, englishPath, SITE_URL } from '../lib/seo.ts';
-import { PHOTOS, RESTORABLE_PHOTOS } from '../lib/puzzle-catalog.ts';
+import { GALLERY_VISIBLE_PHOTOS, PHOTOS, RESTORABLE_PHOTOS } from '../lib/puzzle-catalog.ts';
 
-test('search catalog contains only stable public pages and published artwork', () => {
+test('search catalog lists the home and help pages, excluding retired game URLs', () => {
   const paths=searchPaths(),english=englishSearchPaths();
-  assert.equal(english.length,PHOTOS.length+4);
+  assert.deepEqual(english,['/','/help']);
   assert.equal(paths.length,english.length*2,'every public page has an English and a Chinese address');
   assert.equal(new Set(paths).size,paths.length);
   for(const path of paths)assert.equal(isPublicSearchPage(path),true,path);
+  for(const path of ['/play','/lobby','/gallery','/zh/lobby','/zh/gallery',...PHOTOS.map(photo=>'/puzzle/'+photo.id)])assert.equal(isPublicSearchPage(path),false,path);
   for(const path of ['/room/ea1b7d4200fa440dab3ac195e47aaa29','/personal','/personal/images','/account','/account/recover','/admin','/feedback','/membership/manage','/api/user-images','/puzzle/not-real','/puzzle/../room/private','/zh/room/ea1b7d4200fa440dab3ac195e47aaa29','/zh/personal','/zh/personal/images','/zh/admin','/zh/feedback','/zh/puzzle/not-real','/zh/../room/private','/zhx'])assert.equal(isPublicSearchPage(path),false,path);
   for(const photo of RESTORABLE_PHOTOS.filter(p=>p.status!=='published'))assert.equal(isPublicSearchPage('/puzzle/'+photo.id),false);
   assert.deepEqual(englishPath(zhPath('/gallery')),'/gallery');
@@ -29,7 +30,7 @@ test('English public pages keep English titles and point at their Chinese twin',
     assert.deepEqual(m.alternates.languages,{en:SITE_URL+path,'zh-CN':SITE_URL+zhPath(path),'x-default':SITE_URL+path});
     assert.match(m.openGraph.images[0].url,/^https:\/\/jigsawnook\.online\/puzzles\/.+thumbnail-.+\.webp$/);
   }
-  for(const photo of PHOTOS){assert.notEqual(englishCopy(photo.title),photo.title);const m=publicMetadata('/puzzle/'+photo.id,englishCopy(photo.title),englishCopy(photo.subtitle),photo.thumbSrc);assert.equal(m.openGraph.url,m.alternates.canonical);}
+  for(const photo of PHOTOS){const m=publicMetadata('/puzzle/'+photo.id,englishCopy(photo.title),englishCopy(photo.subtitle),photo.thumbSrc);assert.equal(m.openGraph.url,m.alternates.canonical);}
 });
 
 test('Chinese public pages carry Chinese titles and point back at the English twin', () => {
@@ -57,7 +58,7 @@ test('Chinese public pages carry Chinese titles and point back at the English tw
 
 test('only routes with a real Chinese page advertise one',()=>{
   for(const path of ['/','/lobby','/gallery','/help'])assert.equal(hasChineseVersion(path),true,path);
-  for(const photo of PHOTOS)assert.equal(hasChineseVersion('/puzzle/'+photo.id),true,photo.id);
+  for(const photo of GALLERY_VISIBLE_PHOTOS)assert.equal(hasChineseVersion('/puzzle/'+photo.id),true,photo.id);
   for(const path of ['/personal','/account','/membership','/room/ea1b7d4200fa440dab3ac195e47aaa29','/privacy','/feedback'])assert.equal(hasChineseVersion(path),false,path);
 });
 

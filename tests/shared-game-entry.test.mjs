@@ -4,8 +4,8 @@ import {sharedGameEntry} from '../lib/shared-game-entry.ts';
 import {languageRedirect} from '../lib/entrance-preference.ts';
 
 test('retired game views go directly to the shared UI in either language',()=>{
- for(const path of ['/', '/lobby','/gallery','/albums','/tasks','/decorations','/personal','/personal/images','/achievements','/leaderboard','/courtyard','/wardrobe','/puzzle/lake']){
-  for(const localized of [path,path==='/'?'/zh':'/zh'+path]){
+ for(const path of ['/lobby','/gallery','/albums','/tasks','/decorations','/personal','/personal/images','/achievements','/leaderboard','/courtyard','/wardrobe','/puzzle/lake']){
+  for(const localized of [path,'/zh'+path]){
    for(const language of [null,'zh','en']){
     const destination=sharedGameEntry(localized,'?invite=abc&friend=def&ref=ghi')??languageRedirect(localized,language);
     assert.equal(destination,'/play?invite=abc&friend=def&ref=ghi',localized);
@@ -16,6 +16,14 @@ test('retired game views go directly to the shared UI in either language',()=>{
  }
  assert.equal(sharedGameEntry('/zh/gallery/'),'/play');
  assert.equal(sharedGameEntry('/gallery','','HEAD'),'/play');
+});
+test('public home pages render unless a link carries a game invitation',()=>{
+ for(const path of ['/','/zh']){
+  assert.equal(sharedGameEntry(path),null);
+  assert.equal(sharedGameEntry(path,'?utm_source=post'),null);
+  assert.equal(sharedGameEntry(path,'?invite=friend-code&utm_source=post'),'/play?invite=friend-code&utm_source=post');
+  assert.equal(sharedGameEntry(path,'?room=abc&roomInvite=code'),'/play?room=abc&roomInvite=code');
+ }
 });
 test('old room bookmarks preserve invitation data and select their actual room',()=>{
  assert.equal(sharedGameEntry('/room/abc_123','?room=wrong&roomId=wrong&roomInvite=token&code=code'),'/play?room=abc_123&roomInvite=token&code=code');
