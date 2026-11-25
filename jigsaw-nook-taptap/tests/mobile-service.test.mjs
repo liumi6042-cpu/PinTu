@@ -200,7 +200,7 @@ void test('disconnected TapTap ad skips automatically for supplies and tools whi
   const redeemed=call('/api/mobile/supply/redeem',{...req,rewardToken:ch.data.rewardToken,completed:true});
   assert.equal(redeemed.status,200);assert.equal(redeemed.data.supply.energy,1);
 
-  // Room assistance (underlay after 2 free uses in non-newcomer room) skips ad when disconnected and still lasts 30s.
+  // Room assistance (underlay after 2 newcomer free uses) skips ad when disconnected and still lasts 30s.
   call('/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});
   const room2=call('/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
   assert.equal(call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid()},room2.token).status,200);
@@ -219,5 +219,77 @@ void test('disconnected TapTap ad skips automatically for supplies and tools whi
   assert.equal(shareReject.status,403);assert.equal(shareReject.data.code,'SHARE_REQUIRED');
   const shareOk=call('/api/mobile/invitations/share',{requestId:rid(),shared:true});
   assert.equal(shareOk.status,200);assert.equal(shareOk.data.shared.energy,20);
+ }finally{service.close();}
+});
+
+void test('in-room tools grant 2 newcomer lifetime free uses per kind across rooms without first-room unlimited protection',()=>{
+ let now=1800000000000;
+ const service=createMobileService({shareRewards:true,adEnabled:true,now:()=>now,randomInt:min=>min});
+ const owner='1'.repeat(64),peer='2'.repeat(64);
+ const call=(who,url,body,token)=>service.handle({identity:who,method:body===undefined?'GET':'POST',url,body,authorization:token?'Bearer '+token:undefined});
+ try{
+  // Room 1 is owner's first room: energy is still free, but tools have no unlimited newcomerProtected bypass.
+  const room1=call(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
+  const groups1=room1.room.puzzle.groups.filter(g=>!g.locked);
+  assert.equal(call(owner,'/api/rooms/'+room1.room.id,{type:'claim',groupId:groups1[0].id,requestId:rid()},room1.token).status,200);
+  const drop1=call(owner,'/api/rooms/'+room1.room.id,{type:'drop',groupId:groups1[0].id,dx:0,dy:0,seq:1,requestId:rid()},room1.token);
+  assert.equal(drop1.status,200);
+  assert.equal(drop1.data.profile.lastReward.energySpent,0,'first-room energy exemption remains intact');
+  const afterLv1Energy=drop1.data.profile.energy;
+  assert.equal(call(owner,'/api/rooms/'+room1.room.id,{type:'claim',groupId:groups1[1].id,requestId:rid()},room1.token).status,200);
+  const drop2=call(owner,'/api/rooms/'+room1.room.id,{type:'drop',groupId:groups1[1].id,dx:0,dy:0,seq:2,requestId:rid()},room1.token);
+  assert.equal(drop2.status,200);
+  assert.equal(drop2.data.profile.lastReward.energySpent,0);
+  assert.equal(drop2.data.profile.energy,afterLv1Energy,'second drop in first room still spends zero energy');
+
+  const init1=call(owner,'/api/rooms/'+room1.room.id+'/assistance?lasting=1',undefined,room1.token);
+  assert.equal(init1.status,200);
+  assert.equal(init1.data.newcomerProtected,false);
+  assert.deepEqual(init1.data.freeRemaining,{hint:2,underlay:2});
+
+  // Use 1st free underlay and 1st free hint in room 1 (replay must not double-count).
+  const u1Req={kind:'underlay',requestId:rid()};
+  const u1=call(owner,'/api/rooms/'+room1.room.id+'/assistance',u1Req,room1.token);
+  assert.equal(u1.status,200);assert.deepEqual(u1.data.freeRemaining,{hint:2,underlay:1});
+  assert.equal(call(owner,'/api/rooms/'+room1.room.id+'/assistance',u1Req,room1.token).data.freeRemaining.underlay,1);
+  const h1=call(owner,'/api/rooms/'+room1.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room1.token);
+  assert.equal(h1.status,200);assert.deepEqual(h1.data.freeRemaining,{hint:1,underlay:1});
+
+  // Room 2 inherits remaining counts (1 each) instead of resetting to 2 per room.
+  const room2=call(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
+  const init2=call(owner,'/api/rooms/'+room2.room.id+'/assistance?lasting=1',undefined,room2.token);
+  assert.equal(init2.data.newcomerProtected,false);
+  assert.deepEqual(init2.data.freeRemaining,{hint:1,underlay:1});
+  assert.equal(call(owner,'/api/rewarded/challenge',{kind:'underlay',context:'room/'+room2.room.id,requestId:rid()},room2.token).data.code,'FREE_TOOL_AVAILABLE');
+
+  // Exhaust 2nd free underlay in room 2; hint remains at 1.
+  const u2=call(owner,'/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid()},room2.token);
+  assert.equal(u2.status,200);assert.deepEqual(u2.data.freeRemaining,{hint:1,underlay:0});
+
+  // Room 3 has 0 free underlay (must watch ad) and 1 free hint left.
+  const room3=call(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
+  const init3=call(owner,'/api/rooms/'+room3.room.id+'/assistance?lasting=1',undefined,room3.token);
+  assert.deepEqual(init3.data.freeRemaining,{hint:1,underlay:0});
+
+  const u3NeedAd=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',requestId:rid()},room3.token);
+  assert.equal(u3NeedAd.status,402);assert.equal(u3NeedAd.data.code,'AD_REQUIRED');
+  assert.deepEqual(u3NeedAd.data.freeRemaining,{hint:1,underlay:0});
+  const u3Rid=rid(),u3Ch=call(owner,'/api/rewarded/challenge',{kind:'underlay',context:'room/'+room3.room.id,requestId:u3Rid},room3.token);
+  assert.equal(u3Ch.status,200);
+  const u3Paid=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',requestId:u3Rid,rewardToken:u3Ch.data.rewardToken,completed:true},room3.token);
+  assert.equal(u3Paid.status,200);assert.deepEqual(u3Paid.data.freeRemaining,{hint:1,underlay:0});
+
+  // Exhaust 2nd free hint in room 3; a 3rd hint in room 4 requires an ad.
+  const h2=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room3.token);
+  assert.equal(h2.status,200);assert.deepEqual(h2.data.freeRemaining,{hint:0,underlay:0});
+  const room4=call(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
+  const h3NeedAd=call(owner,'/api/rooms/'+room4.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room4.token);
+  assert.equal(h3NeedAd.status,402);assert.equal(h3NeedAd.data.code,'AD_REQUIRED');
+
+  // Another player joining room 3 still has their own 2 free uses per tool.
+  const peerTicket=call(peer,'/api/rooms/'+room3.room.id+'/join',{}).data;
+  const peerInit=call(peer,'/api/rooms/'+room3.room.id+'/assistance?lasting=1',undefined,peerTicket.token);
+  assert.equal(peerInit.data.newcomerProtected,false);
+  assert.deepEqual(peerInit.data.freeRemaining,{hint:2,underlay:2});
  }finally{service.close();}
 });
