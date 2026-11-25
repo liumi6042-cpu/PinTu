@@ -3,6 +3,7 @@ import {basename,dirname,isAbsolute,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {readManagedRelease} from '../server/content-release.mjs';
 import {validateWebContentRelease} from '../server/managed-content.node.mjs';
+import {resolveMediaDir} from './media-paths.mjs';
 
 /** CMS preflight is deliberately read-only, including daily content. */
 export function checkContentRelease(environment=process.env){
@@ -13,7 +14,8 @@ export function checkContentRelease(environment=process.env){
  const release=readManagedRelease(dirname(dirname(target)),{releaseId,strict:true});
  if(release.releaseDir!==target||release.manifestSha256!==digest)throw new Error('待验收版本与清单摘要不一致。');
  const root=fileURLToPath(new URL('..',import.meta.url)),packaged=resolve(root,'dist/client');
- const snapshot=validateWebContentRelease(release,{assetDir:existsSync(resolve(packaged,'puzzles'))?packaged:resolve(root,'public')});
+ const assetDir=existsSync(resolve(packaged,'puzzles'))?packaged:existsSync(resolve(root,'public/puzzles'))?resolve(root,'public'):dirname(resolveMediaDir(root,'puzzles'));
+ const snapshot=validateWebContentRelease(release,{assetDir});
  return {ok:true,contentReleaseId:snapshot.releaseId,...snapshot.summary};
 }
 
