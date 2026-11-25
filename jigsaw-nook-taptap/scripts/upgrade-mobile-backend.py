@@ -29,7 +29,7 @@ CODE_PATHS = {
     'server/game-settings.mjs', 'config/game-settings-defaults.json',
     'server/album-content.mjs',
     'server/content-release.mjs', 'server/mobile-managed-content.mjs',
-    'server/managed-daily-content.mjs', 'scripts/check-content-release.mjs',
+    'server/managed-daily-content.mjs', 'scripts/check-content-release.mjs', 'scripts/media-paths.mjs',
     'lib/mobile-collection-catalog.json', 'outputs/mobile/engine.mjs', 'h5/asset-manifest.json',
     'lib/decoration-policy.mjs', 'scripts/check-artwork-revisions.mjs',
     'content/artwork-revisions.json', 'content/puzzle-catalog.json',

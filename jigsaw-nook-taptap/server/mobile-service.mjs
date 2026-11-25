@@ -454,9 +454,15 @@ export function createMobileService(options={}){
    // A lasting hint may be replaced by a fresh one (its pieces may have been moved by teammates).
    if(grants().some(g=>g.kind===input.kind&&!grantLasting))fail(409,'TOOL_ACTIVE','该功能正在生效');
    const free=used(input.kind)<NEWCOMER_FREE_TOOL_USES;
-   if(!free&&!input.rewardToken)fail(402,'AD_REQUIRED',grantLasting?'免费次数已用完，观看 TapTap 广告后可开启':'免费次数已用完，观看 TapTap 广告后可开启30秒',{freeRemaining:view().freeRemaining});
+   // Option A compatibility: new clients pass toolAd=true (expecting AD_REQUIRED + /api/rewarded/challenge);
+   // legacy TapTap/WeChat clients omit toolAd and only handle SHARE_REQUIRED + /api/mobile/share/challenge.
+   const adToolClient=input.toolAd===true||!shareRewards;
+   if(!free&&!input.rewardToken)fail(402,adToolClient?'AD_REQUIRED':'SHARE_REQUIRED',adToolClient?(grantLasting?'免费次数已用完，观看 TapTap 广告后可开启':'免费次数已用完，观看 TapTap 广告后可开启30秒'):(grantLasting?'免费次数已用完，分享后可开启':'免费次数已用完，分享后可开启30秒'),{freeRemaining:view().freeRemaining});
    let pieceIds=[];if(input.kind==='hint'){const held=new Set(Object.keys(room.leases).map(Number));pieceIds=room.puzzle.groups.filter(g=>!g.locked&&!held.has(g.id)).flatMap(g=>g.pieces).slice(0,3);if(!pieceIds.length)fail(409,'NO_HINT_AVAILABLE','暂时没有可提示的拼块');}
-   if(!free)consumeChallenge(p,input,'room/'+room.id,request.authorization,now);
+   if(!free){
+    const tokenContext=shareRewards&&typeof input.rewardToken==='string'&&db.prepare('SELECT context FROM mobile_ad_challenges WHERE token=?').get(input.rewardToken)?.context==='share:room/'+room.id?'share:room/'+room.id:'room/'+room.id;
+    consumeChallenge(p,input,tokenContext,request.authorization,now);
+   }
    if(free)db.prepare('INSERT INTO mobile_tool_uses VALUES(?,?,?,1) ON CONFLICT(room_id,owner,kind) DO UPDATE SET uses=uses+1').run(room.id,p.id,input.kind);
    const grant={requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+(grantLasting?LASTING_TOOL_MS:LEGACY_TOOL_MS),...(grantLasting?{lasting:true,startedAt:now}:{})};db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
   });
@@ -570,12 +576,13 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/invitations/accept'&&method==='POST')return replay(p,'invitation-accept',input,now,()=>{const accepted=tasks.accept(p,input,now);return {...taskView(),accepted};});
   if(path==='/api/mobile/share/challenge'&&method==='POST'){
    if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
-   if(input.context==='supply')fail(403,'AD_REQUIRED','建房券与体力包仅可通过观看广告获取');
+   // Keep legacy supply share endpoints working for older TapTap/WeChat clients; new TapTap UI only calls /api/mobile/supply/*.
+   if(input.context==='supply'){if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');if(input.kind==='energy'&&p.shareEnergyDay===shareEnergyDay(now))fail(409,'SHARE_DAILY_LIMIT',SHARE_ENERGY_DAILY_TEXT);}
    else if(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)){
     if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','分享工具无效');const room=readRoom(input.context.slice(5));authorize(room,request,now);
     if(toolFreeUses(p.id,input.kind)<NEWCOMER_FREE_TOOL_USES)fail(409,'FREE_TOOL_AVAILABLE','请先使用新手免费次数');
    }else fail(400,'INVALID_SHARE','分享用途无效');
-   return challenge(p,{...input,context:'share:'+input.context,authorization:request.authorization??''},now);
+   return challenge(p,{...input,context:'share:'+input.context,authorization:input.context==='supply'?'':request.authorization??''},now);
   }
   if(path==='/api/mobile/share/cancel'&&method==='POST'){
    if(!requestKey(input.requestId)||input.context!=='supply'&&!(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)))fail(400,'INVALID_SHARE','分享请求无效');
@@ -583,7 +590,11 @@ export function createMobileService(options={}){
    if(!row||row.auth_hash!==hash(input.context==='supply'?'':request.authorization??''))fail(403,'SHARE_REQUIRED','分享请求不属于当前身份');
    if(row.used===0)db.prepare('UPDATE mobile_ad_challenges SET used=2 WHERE token=? AND used=0').run(row.token);return profileView(p,now);
   }
-  if(path==='/api/mobile/share/redeem'&&method==='POST')fail(403,'AD_REQUIRED','建房券与体力包仅可通过观看广告获取');
+  if(path==='/api/mobile/share/redeem'&&method==='POST')return replay(p,'share-supply',input,now,()=>{
+   if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
+   if(input.context!=='supply'||!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
+   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');if(input.kind==='energy'&&p.shareEnergyDay===shareEnergyDay(now))fail(409,'SHARE_DAILY_LIMIT',SHARE_ENERGY_DAILY_TEXT);consumeChallenge(p,input,'share:supply','',now);p.supply[input.kind]++;if(input.kind==='energy')p.shareEnergyDay=shareEnergyDay(now);saveProfile(p);return profileView(p,now);
+  });
   if(path==='/api/mobile/supply/challenge'&&method==='POST')return challenge(p,{kind:input.kind,requestId:input.requestId,allowSkip:input.adSkipped===true},now);
   if(path==='/api/mobile/supply/redeem'&&method==='POST')return replay(p,'supply-redeem',input,now,()=>{
    if(!adsEnabled&&!(!web&&input.adSkipped===true))fail(503,'ADS_UNAVAILABLE','当前平台暂未开放广告，请稍后再试');
