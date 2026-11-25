@@ -17,7 +17,7 @@ const photo=PHOTOS.find(p=>{const d=photoGuidance(p.id),g=gridForDimensions(d.wi
 void test('V3 economy boundaries, overflow, zero energy and exact contribution allocation',()=>{
  assert.equal(Array.from({length:29},(_,i)=>xpForLevel(i+1)).reduce((a,b)=>a+b,0),4417);assert.equal(xpForLevel(29),300);assert.equal(xpForLevel(1000),300);
  const p=newProfile('a',0);p.level=50;p.xp=298;p.totalXp=11015;p.energy=1;p.giftProgress=9;
- const first=applyContribution(p,{now:1,randomInt:(_min,max)=>max-1});assert.equal(first.gift,0);assert.equal(first.pendingGift.energy,5);assert.equal(first.pendingGift.maximum,7);assert.equal(p.energy,0);assert.equal(p.xp,299);p.energy=1;
+ const first=applyContribution(p,{now:1,randomInt:(_min,max)=>max-1});assert.equal(first.gift,0);assert.equal(first.pendingGift.energy,7);assert.equal(first.pendingGift.maximum,7);assert.equal(p.energy,0);assert.equal(p.xp,299);p.energy=1;
  applyContribution(p,{now:2,randomInt:()=>1});assert.equal(p.level,51);assert.equal(p.energy,100);assert.equal(p.xp,0);
  p.energy=112;restoreEnergy(p,300002);assert.equal(p.energy,112);
  p.energy=0;p.energyAt=0;p.autoSupply=true;p.supply.energy=2;p.xp=0;
@@ -143,12 +143,15 @@ void test('every published mobile grid stays between 48 and 500 actual pieces',(
  assert.equal(mobileGridForPhoto(photo,1000),null);
 });
 
-void test('supplies require rewarded ads, underlay expires in 30s, and tightened tasks still cover a puzzle',()=>{
+void test('supplies require rewarded ads, underlay expires in 30s, base energy cap is 50, and task rewards stay at original defaults',()=>{
  let now=1800000000000;
  const service=createMobileService({shareRewards:true,adEnabled:true,now:()=>now,randomInt:min=>min});
  const owner='e'.repeat(64);
  const call=(url,body,token)=>service.handle({identity:owner,method:body===undefined?'GET':'POST',url,body,authorization:token?'Bearer '+token:undefined});
  try{
+  // 0. Base energy cap is 50 (only this default changed).
+  assert.equal(call('/api/mobile/profile').data.energyCap,50);
+
   // 1. Supplies (energy pack & creation ticket) reject sharing and only work via rewarded ads.
   for(const kind of ['energy','create']){
    const shareChallenge=call('/api/mobile/share/challenge',{kind,context:'supply',requestId:rid()});
@@ -173,14 +176,14 @@ void test('supplies require rewarded ads, underlay expires in 30s, and tightened
   const hint=call('/api/rooms/'+room.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room.token);
   assert.equal(hint.status,200);assert.equal(hint.data.grants.find(g=>g.kind==='hint')?.lasting,true);
 
-  // 3. Tightened task rewards: cooperation 3/5/7, friend 5/10, daily ad 10x2, tenGrid max 3..5.
+  // 3. Original task rewards restored: cooperation 10/15/20, friend 5/10, daily ad 20x3, tenGrid max 5..7.
   const tasks=call('/api/mobile/tasks').data;
   const byId=Object.fromEntries(tasks.tasks.map(t=>[t.id,t]));
-  assert.equal(byId['cooperation-10'].energy,3);assert.equal(byId['cooperation-30'].energy,5);assert.equal(byId['cooperation-60'].energy,7);
+  assert.equal(byId['cooperation-10'].energy,10);assert.equal(byId['cooperation-30'].energy,15);assert.equal(byId['cooperation-60'].energy,20);
   assert.equal(byId['friend-10'].energy,5);assert.equal(byId['friend-30'].energy,10);
-  assert.equal(byId['share-invitation'].energy,10);assert.equal(byId['share-invitation'].target,2);
+  assert.equal(byId['share-invitation'].energy,20);assert.equal(byId['share-invitation'].target,3);
   assert.equal(byId['share-invitation'].title,'观看 TapTap 广告');
-  assert.equal(tasks.giftMaximum,3);
+  assert.equal(tasks.giftMaximum,5);
  }finally{service.close();}
 });
 
@@ -199,6 +202,6 @@ void test('disconnected TapTap ad skips automatically without blocking supplies,
 
   // Daily ad reward succeeds with adSkipped:true.
   const daily=call('/api/mobile/invitations/share',{requestId:rid(),adSkipped:true});
-  assert.equal(daily.status,200);assert.equal(daily.data.shared.energy,10);
+  assert.equal(daily.status,200);assert.equal(daily.data.shared.energy,20);
  }finally{service.close();}
 });

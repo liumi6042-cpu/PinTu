@@ -36,10 +36,23 @@ test('a 30-second hint still counts down as before',async t=>{
  assert.equal(board.setHints(ids,Date.now()-1,'grant-2'),false);assert.equal(board.hintsShowing,false);
 });
 
-test('the room asks for lasting tools and shows 已开启 / 已隐藏 instead of seconds',()=>{
+test('hints stay lasting while room underlay always expires after 30 seconds',async t=>{
+ const {board}=await setup(),realNow=Date.now;
+ let now=1800000000000;
+ Date.now=()=>now;
+ t.after(()=>{Date.now=realNow;board.destroy?.();});
+ board.setUnderlay(now+30000);
+ assert.equal(board.underlay,true);
+ now+=29999;
+ assert.equal(board.underlay,true);
+ now+=1;
+ assert.equal(board.underlay,false,'underlay stops showing once 30 seconds elapse');
+
  const source=readFileSync(new URL('../mobile/app.ts',import.meta.url),'utf8');
  assert.match(source,/\/assistance\?lasting=1'/);
- assert.match(source,/\{kind,requestId,lasting:true\}/);
- assert.match(source,/grant\.lasting\?\(kind==='underlay'&&this\.underlayHidden\?'已隐藏':'已开启'\)/);
- assert.match(source,/if\(grant\?\.lasting\)this\.useLastingAid\(kind\)/,'tapping an open lasting tool is free');
+ assert.match(source,/wantLasting=kind==='hint'/);
+ assert.match(source,/wantLasting\?\{kind,requestId,lasting:true\}:\{kind,requestId\}/);
+ assert.match(source,/normalizeAssistance/);
+ assert.match(source,/kind==='hint'&&grant\.lasting\?'已开启'/);
+ assert.match(source,/if\(kind==='hint'&&grant\?\.lasting\)this\.useLastingAid\(kind\)/,'only lasting hints reuse without paying again');
 });

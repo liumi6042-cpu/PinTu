@@ -157,7 +157,6 @@ export class GameApp{
  private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;private desktopToolsOpen=true;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
  private roomArea:Rect={x:0,y:0,w:0,h:0};private landscapeToggle:Rect|null=null;private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';
- private underlayHiddenRoom:string|null=null;
  private aid:{grants:AssistanceGrant[];freeRemaining?:{hint:number;underlay:number};newcomerProtected?:boolean;serverTime:number}|null=null;
  private messages:PublicMessage[]=[];private chatCursor=0;private chatSeen=0;private chatLoading=false;private chatDraft='';
  private phraseGroup:0|1|2|3=0;
@@ -326,8 +325,8 @@ export class GameApp{
   if(this.modal==='completion'&&this.cheerEffects.alive())this.animateCheers();
   const now=Date.now();let changed=false;
   if(this.messageUntil&&now>this.messageUntil){this.message='';this.messageUntil=0;changed=true;}
-  const clock=this.route==='room'&&(this.toolsOpen||this.platform.config.id!=='web'&&this.layout==='phoneLandscape'&&this.landscapeToolsOpen)?(['hint','underlay'] as const).map(kind=>{const grant=this.activeAid(kind);return grant?grant.lasting?this.aidBadge(kind):Math.max(0,Math.ceil((grant.expiresAt-now)/1000)):0;}).join(':'):'';
-  if(clock&&clock!==this.lastAidClock)changed=true;this.lastAidClock=clock;
+  const clock=this.route==='room'?(['hint','underlay'] as const).map(kind=>{const grant=this.activeAid(kind);return grant?kind==='hint'&&grant.lasting?'已开启':Math.max(0,Math.ceil((grant.expiresAt-now)/1000)):0;}).join(':'):'';
+  if(clock!==this.lastAidClock){this.lastAidClock=clock;changed=true;}
   if(this.route==='room'&&this.room&&!this.room.connected)changed=true;
   if(this.chatBubble&&now>this.chatBubble.until){this.chatBubble=null;changed=true;}
   if(this.inviteBanner&&now>this.inviteBanner.until){this.inviteBanner=null;changed=true;}
@@ -929,13 +928,25 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const fx=this.completionFx,board=this.board;if(!fx||!board)return;const now=Date.now(),camera=fx.cameraDropped?null:fx.to;if(camera)board.camera={...camera};board.completionReveal=1;board.completionSweep=null;if(this.completionFxFrame!==null)this.platform.cancelFrame(this.completionFxFrame);this.completionFxFrame=null;this.completionFx=null;this.completionFxRect=null;this.showModal('completion');for(const item of this.completionCheerQueue)if(now-item.at<2700)this.cheerEffects.receive(item.cheer,item.own,item.at);this.completionCheerQueue=[];if(this.cheerEffects.alive())this.animateCheers();
  }
  private receiveCheer(room:RoomClient,cheer:Cheer,own:boolean){if(this.room!==room)return;if(this.completionFx){this.completionCheerQueue.push({cheer,own,at:Date.now()});this.completionCheerQueue=this.completionCheerQueue.slice(-60);return;}if(this.modal!=='completion')return;this.cheerEffects.receive(cheer,own);this.animateCheers();}
- private async loadAssistance(){if(!this.room||this.offlineRoom)return;try{const room=this.room;const data=await this.client.json<typeof this.aid>('/api/rooms/'+room.ticket.room.id+'/assistance?lasting=1','GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(this.room!==room)return;if(data){const offset=Date.now()-data.serverTime;data.grants=data.grants.map(grant=>({...grant,expiresAt:grant.expiresAt+offset}));this.aid=data;this.applyAssistance();}}catch(error){this.note(errorText(error));}}
+ private normalizeAssistance(data:NonNullable<typeof this.aid>,activatedKind?:'hint'|'underlay'):NonNullable<typeof this.aid>{
+  const now=Date.now(),offset=now-data.serverTime;
+  const grants=data.grants.flatMap((grant:AssistanceGrant)=>{
+   if(grant.kind==='underlay'){
+    const {lasting,_startedAt,...rest}=grant as AssistanceGrant&{_startedAt?:unknown};
+    const raw=grant.expiresAt+offset,base=typeof grant.startedAt==='number'?grant.startedAt+offset:now;
+    const expiresAt=lasting?Math.min(raw,base+30000):activatedKind==='underlay'?Math.min(raw,now+30000):raw;
+    return expiresAt>now?[{...rest,expiresAt}]:[];
+   }
+   return [{...grant,expiresAt:grant.expiresAt+offset}];
+  });
+  return {...data,grants};
+ }
+ private async loadAssistance(){if(!this.room||this.offlineRoom)return;try{const room=this.room;const data=await this.client.json<typeof this.aid>('/api/rooms/'+room.ticket.room.id+'/assistance?lasting=1','GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(this.room!==room)return;if(data){this.aid=this.normalizeAssistance(data);this.applyAssistance();}}catch(error){this.note(errorText(error));}}
  private latestAid(kind:'hint'|'underlay'){const grants=this.aid?.grants??[],now=Date.now();for(let i=grants.length-1;i>=0;i--)if(grants[i].kind===kind&&grants[i].expiresAt>now)return grants[i];return undefined;}
  /** A lasting 提示 (v53.10, no countdown) ends once the board has no hinted piece left to place. */
  private activeAid(kind:'hint'|'underlay'){const grant=this.latestAid(kind);if(grant?.lasting&&kind==='hint'&&this.board&&!this.board.hintsShowing)return undefined;return grant;}
- private get underlayHidden(){return !!this.room&&this.underlayHiddenRoom===this.room.ticket.room.id;}
  private applyAssistance(){
-  const board=this.board;if(!board)return;const underlay=this.latestAid('underlay'),hint=this.latestAid('hint');board.setUnderlay?.(underlay&&!(underlay.lasting&&this.underlayHidden)?underlay.expiresAt:0);
+  const board=this.board;if(!board)return;const underlay=this.latestAid('underlay'),hint=this.latestAid('hint');board.setUnderlay?.(underlay?underlay.expiresAt:0);
   // Lasting hints never top up with new pieces: drop the ones already placed before handing them to the board.
   const placed=hint?.lasting?new Set(board.state.groups.filter(g=>g.locked).flatMap(g=>g.pieces)):null,hintIds=(hint?.pieceIds??[]).filter(id=>!placed?.has(id));
   const activated=board.setHints?.(hintIds,hintIds.length?hint?.expiresAt??0:0,hint?.requestId);
@@ -971,7 +982,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(!this.room||!this.aid)return;if(this.activeAid(kind))return;
   await this.run(async()=>{const room=this.room!,key='aid-ad:'+room.ticket.room.id+':'+kind,headers={Authorization:'Bearer '+room.ticket.token,'Content-Type':'application/json'},path='/api/rooms/'+room.ticket.room.id+'/assistance',context='room/'+room.ticket.room.id,storageKey='jigsaw:ad:'+this.platform.config.apiBase+':'+(this.client.profile?.code??'')+':'+key;
    let pending:any=null;try{const stored=JSON.parse(this.platform.storage.get(storageKey)||'null');if(stored?.kind===kind&&stored.context===context&&stored.completed===true)pending=stored;}catch{}
-   const requestId=pending?.requestId??this.attempt(key),wantLasting=kind==='hint';let usedAd=!!pending,data:any;
+   const requestId=pending?.requestId??this.attempt(key),wantLasting=kind==='hint';if(pending&&!wantLasting)delete pending.lasting;let usedAd=!!pending,data:any;
    try{data=await this.client.json(path,'POST',pending??(wantLasting?{kind,requestId,lasting:true}:{kind,requestId}),headers);}catch(error){
     if(pending&&[400,401,403,410].includes((error as{status?:number}).status??0)){this.platform.storage.remove(storageKey);this.attempts.delete(key);throw error;}
     const code=(error as{code?:string}).code;if(code!=='AD_REQUIRED'&&code!=='SHARE_REQUIRED')throw error;
@@ -981,7 +992,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     this.platform.storage.set(storageKey,JSON.stringify(pending));usedAd=true;
     data=await this.client.json(path,'POST',pending,headers);
    }
-   this.platform.storage.remove(storageKey);this.attempts.delete(key);if(this.room!==room)return;const offset=Date.now()-data.serverTime;this.aid={...data,grants:data.grants.map((grant:AssistanceGrant)=>({...grant,expiresAt:grant.expiresAt+offset}))};if(kind==='underlay')this.underlayHiddenRoom=null;this.applyAssistance();if(usedAd)this.telemetry?.milestone('new_user','使用补给或看广告');const lasting=data.grants.some((grant:AssistanceGrant)=>grant.kind===kind&&grant.lasting);this.note(kind==='hint'?(lasting?'提示已开启，拼好这几块前一直有效':'提示已开启30秒'):'底图已开启30秒');
+   this.platform.storage.remove(storageKey);this.attempts.delete(key);if(this.room!==room)return;this.aid=this.normalizeAssistance(data,kind);this.applyAssistance();if(usedAd)this.telemetry?.milestone('new_user','使用补给或看广告');const lasting=kind==='hint'&&this.activeAid(kind)?.lasting;this.note(kind==='hint'?(lasting?'提示已开启，拼好这几块前一直有效':'提示已开启30秒'):'底图已开启30秒');
   });
  }
  private async claimSupply(kind:'energy'|'create'){
@@ -2281,7 +2292,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.completionFx&&['edge','fit','locate','hint','underlay','organize'].includes(kind))return;
   const board=this.board;if(!board)return;
   if(this.offlineRoom&&['hint','underlay','chat'].includes(kind)){this.note(OFFLINE_REQUIRED);return;}
-  if(kind==='edge')board.edgeOnly=!board.edgeOnly;else if(kind==='hint'||kind==='underlay'){const grant=this.activeAid(kind);if(grant?.lasting)this.useLastingAid(kind);else if(!this.assistanceUnavailable(kind))void this.activateAssistance(kind);}else if(kind==='fit')this.fitRoom();else if(kind==='locate')this.locateLoose();
+  if(kind==='edge')board.edgeOnly=!board.edgeOnly;else if(kind==='hint'||kind==='underlay'){const grant=this.activeAid(kind);if(kind==='hint'&&grant?.lasting)this.useLastingAid(kind);else if(!this.assistanceUnavailable(kind))void this.activateAssistance(kind);}else if(kind==='fit')this.fitRoom();else if(kind==='locate')this.locateLoose();
   else if(kind==='orientation')void this.toggleOrientation();else if(kind==='organize'&&this.soloRoom){
    // The first tap (or R) only arms it: the tools stay open with 整理 lit, and a second tap within 3 s reshuffles.
    if(Date.now()>this.organizeArmedUntil){this.organizeArmedUntil=Date.now()+ORGANIZE_CONFIRM_MS;this.note('再点一次「整理」，会把所有散片重新铺开');setTimeout(()=>{if(!this.destroyed)this.invalidate();},ORGANIZE_CONFIRM_MS+16);this.invalidate();return;}
@@ -2289,13 +2300,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   }else if(kind==='chat')this.showModal('chat');else if(kind==='more')this.showModal('tools');
   this.toolsOpen=false;this.invalidate();
  }
- /** Tapping an open lasting tool costs nothing: 提示 shows its pieces again, 底图 hides or shows. */
- private useLastingAid(kind:'hint'|'underlay'){
-  const board=this.board,room=this.room;if(!board||!room)return;
-  if(kind==='hint'){board.locateHints(this.roomLocateInsets());this.note('提示的拼块已标出，拼好后可以再要新的提示');return;}
-  this.underlayHiddenRoom=this.underlayHidden?null:room.ticket.room.id;this.applyAssistance();this.note(this.underlayHidden?'底图已隐藏，再点「底图」显示':'底图已显示');
+ /** Tapping an open lasting hint costs nothing and highlights its pieces again. */
+ private useLastingAid(kind:'hint'){
+  const board=this.board;if(!board||!this.room)return;
+  if(kind==='hint'){board.locateHints(this.roomLocateInsets());this.note('提示的拼块已标出，拼好后可以再要新的提示');}
  }
- private aidBadge(kind:'hint'|'underlay'){const grant=this.activeAid(kind);return !grant?'':grant.lasting?(kind==='underlay'&&this.underlayHidden?'已隐藏':'已开启'):Math.ceil((grant.expiresAt-Date.now())/1000)+'秒';}
+ private aidBadge(kind:'hint'|'underlay'){const grant=this.activeAid(kind);return !grant?'':kind==='hint'&&grant.lasting?'已开启':Math.max(1,Math.ceil((grant.expiresAt-Date.now())/1000))+'秒';}
  private get soloRoom(){return this.room?.snapshot.visibility==='solo';}
  /** Outside Web the fit slot locates loose pieces; fitting the whole table stays under 更多. */
  private get roomTools(){return ([['edge','边缘','E'],['hint','提示','H'],['underlay','底图','B'],this.platform.config.id==='web'?['fit','适配','F']:['locate','定位','L'],['organize','整理','R']] as const).filter(([kind])=>kind!=='organize'||this.soloRoom);}
@@ -2305,7 +2315,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   this.note(count?'已标出 '+count+' 块未拼的拼块'+(board.edgeOnly?'（边缘筛选中）':''):board.edgeOnly?'边缘拼块都已归位，关闭边缘筛选可找其余拼块':'所有拼块都已归位');
  }
  private roomLocateInsets(){const layout=this.layout;return layout==='desktop'?{bottom:56,left:this.desktopToolsOpen?104:72}:layout==='phoneLandscape'?{top:this.roomHeaderTop()+56-this.roomArea.y,bottom:8}:{bottom:72};}
- private toolActive(kind:string){return kind==='organize'?Date.now()<=this.organizeArmedUntil:kind==='edge'?!!this.board?.edgeOnly:kind==='locate'?!!this.board?.locating:kind==='hint'||kind==='underlay'?!!this.activeAid(kind)&&!(kind==='underlay'&&this.underlayHidden):false;}
+ private toolActive(kind:string){return kind==='organize'?Date.now()<=this.organizeArmedUntil:kind==='edge'?!!this.board?.edgeOnly:kind==='locate'?!!this.board?.locating:kind==='hint'||kind==='underlay'?!!this.activeAid(kind):false;}
  private drawAidBadge(kind:string,right:number,y:number){
   if(kind!=='hint'&&kind!=='underlay')return;const s=this.stage,c=s.ctx,active=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,pending=!this.aid||this.busy;
   const badge=active?this.aidBadge(kind):pending?'读取中':this.aid?.newcomerProtected?'新手免费':free>0?'免费'+free+'次':'看广告',ad=!active&&!pending&&!this.aid?.newcomerProtected&&free===0,bw=s.measure(badge,10,600)+8,bx=right-bw;
