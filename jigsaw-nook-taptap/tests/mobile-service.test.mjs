@@ -17,7 +17,7 @@ const photo=PHOTOS.find(p=>{const d=photoGuidance(p.id),g=gridForDimensions(d.wi
 void test('V3 economy boundaries, overflow, zero energy and exact contribution allocation',()=>{
  assert.equal(Array.from({length:29},(_,i)=>xpForLevel(i+1)).reduce((a,b)=>a+b,0),4417);assert.equal(xpForLevel(29),300);assert.equal(xpForLevel(1000),300);
  const p=newProfile('a',0);p.level=50;p.xp=298;p.totalXp=11015;p.energy=1;p.giftProgress=9;
- const first=applyContribution(p,{now:1,randomInt:(_min,max)=>max-1});assert.equal(first.gift,0);assert.equal(first.pendingGift.energy,7);assert.equal(first.pendingGift.maximum,7);assert.equal(p.energy,0);assert.equal(p.xp,299);p.energy=1;
+ const first=applyContribution(p,{now:1,randomInt:(_min,max)=>max-1});assert.equal(first.gift,0);assert.equal(first.pendingGift.energy,5);assert.equal(first.pendingGift.maximum,7);assert.equal(p.energy,0);assert.equal(p.xp,299);p.energy=1;
  applyContribution(p,{now:2,randomInt:()=>1});assert.equal(p.level,51);assert.equal(p.energy,100);assert.equal(p.xp,0);
  p.energy=112;restoreEnergy(p,300002);assert.equal(p.energy,112);
  p.energy=0;p.energyAt=0;p.autoSupply=true;p.supply.energy=2;p.xp=0;
@@ -141,4 +141,44 @@ void test('every published mobile grid stays between 48 and 500 actual pieces',(
   const grid=mobileGridForPhoto(picture,count);assert.ok(grid,`${picture.id} ${count}`);assert.ok(grid.count>=48&&grid.count<=500,`${picture.id} ${count}: ${grid.count}`);assert.equal(grid.cols*grid.rows,grid.count);assert.ok(Math.abs(grid.count-count)<=count*.15);assert.ok(grid.pixels>=(count<=108?20:30));
  }
  assert.equal(mobileGridForPhoto(photo,1000),null);
+});
+
+void test('supplies require rewarded ads, underlay expires in 30s, and tightened tasks still cover a puzzle',()=>{
+ let now=1800000000000;
+ const service=createMobileService({shareRewards:true,adEnabled:true,now:()=>now,randomInt:min=>min});
+ const owner='e'.repeat(64);
+ const call=(url,body,token)=>service.handle({identity:owner,method:body===undefined?'GET':'POST',url,body,authorization:token?'Bearer '+token:undefined});
+ try{
+  // 1. Supplies (energy pack & creation ticket) reject sharing and only work via rewarded ads.
+  for(const kind of ['energy','create']){
+   const shareChallenge=call('/api/mobile/share/challenge',{kind,context:'supply',requestId:rid()});
+   assert.equal(shareChallenge.status,403);assert.equal(shareChallenge.data.code,'AD_REQUIRED');
+   const shareRedeem=call('/api/mobile/share/redeem',{kind,context:'supply',requestId:rid(),rewardToken:'x',completed:true});
+   assert.equal(shareRedeem.status,403);assert.equal(shareRedeem.data.code,'AD_REQUIRED');
+  }
+  const adReq={kind:'energy',requestId:rid()},ch=call('/api/mobile/supply/challenge',adReq);
+  assert.equal(ch.status,200);
+  const redeemed=call('/api/mobile/supply/redeem',{...adReq,rewardToken:ch.data.rewardToken,completed:true});
+  assert.equal(redeemed.status,200);assert.equal(redeemed.data.supply.energy,1);
+
+  // 2. Underlay lasts exactly 30s and disappears after 30s even when lasting:true is requested; hint remains lasting.
+  const room=call('/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
+  const underlay=call('/api/rooms/'+room.room.id+'/assistance',{kind:'underlay',requestId:rid(),lasting:true},room.token);
+  assert.equal(underlay.status,200);
+  const uGrant=underlay.data.grants.find(g=>g.kind==='underlay');
+  assert.ok(uGrant);assert.equal(uGrant.lasting,undefined);assert.equal(uGrant.expiresAt,now+30000);
+  now+=30001;
+  const after30s=call('/api/rooms/'+room.room.id+'/assistance?lasting=1',undefined,room.token);
+  assert.equal(after30s.data.grants.some(g=>g.kind==='underlay'),false,'underlay disappears after 30s');
+  const hint=call('/api/rooms/'+room.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room.token);
+  assert.equal(hint.status,200);assert.equal(hint.data.grants.find(g=>g.kind==='hint')?.lasting,true);
+
+  // 3. Tightened task rewards: cooperation 6/10/14, friend 4/6, share 10x2, tenGrid max 3..5.
+  const tasks=call('/api/mobile/tasks').data;
+  const byId=Object.fromEntries(tasks.tasks.map(t=>[t.id,t]));
+  assert.equal(byId['cooperation-10'].energy,6);assert.equal(byId['cooperation-30'].energy,10);assert.equal(byId['cooperation-60'].energy,14);
+  assert.equal(byId['friend-10'].energy,4);assert.equal(byId['friend-30'].energy,6);
+  assert.equal(byId['share-invitation'].energy,10);assert.equal(byId['share-invitation'].target,2);
+  assert.equal(tasks.giftMaximum,3);
+ }finally{service.close();}
 });

@@ -424,8 +424,8 @@ export function createMobileService(options={}){
   tuanziSide('completion',()=>tuanzi.roomCompleted(room,Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).map(([owner])=>owner),now));
   room.mobileSettled=true;
  }
- // v53.10+ clients send lasting=true (POST body) / ?lasting=1 (GET): 底图 stays on for the rest of the room and a 提示
- // stays until its pieces are placed, with no 30-second countdown. Older clients keep the 30-second grants they understand.
+ // v53.10+ clients send lasting=true (POST body) / ?lasting=1 (GET): 提示 stays until its pieces are placed;
+ // 底图 always lasts 30 seconds (LEGACY_TOOL_MS) per activation and disappears automatically afterwards.
  const LASTING_TOOL_MS=400*86400000,LEGACY_TOOL_MS=30000;
  function help(room,p,request,input,now,url){
   authorize(room,request,now);const protectedRoom=p.firstRoomId===room.id&&!p.firstRoomCompleted;
@@ -435,22 +435,27 @@ export function createMobileService(options={}){
   const grants=()=>{
    const rows=db.prepare('SELECT data FROM mobile_tool_grants WHERE room_id=? AND owner=? AND expires_at>? ORDER BY rowid').all(room.id,p.id,now).map(r=>JSON.parse(r.data));
    // Only the newest lasting hint counts, and only while one of its pieces is still unplaced.
+   // Underlay always expires 30s after activation, including any legacy lasting underlay rows.
    const lastHint=rows.findLast(g=>g.lasting&&g.kind==='hint');
    return rows.filter(g=>!g.lasting||g.kind!=='hint'||g===lastHint&&g.pieceIds.some(id=>!locked.has(id)))
-    .map(g=>g.lasting&&!lastingClient?{...g,expiresAt:Math.min(g.expiresAt,(g.startedAt??now)+LEGACY_TOOL_MS)}:g).filter(g=>g.expiresAt>now);
+    .map(g=>{
+     if(g.lasting&&(g.kind==='underlay'||!lastingClient)){const {lasting:_lasting,...timed}=g;return {...timed,expiresAt:Math.min(g.expiresAt,(g.startedAt??now)+LEGACY_TOOL_MS)};}
+     return g;
+    }).filter(g=>g.expiresAt>now);
   };
   const view=()=>({grants:grants(),serverTime:now,freeRemaining:{hint:Math.max(0,2-used('hint')),underlay:Math.max(0,2-used('underlay'))},newcomerProtected:protectedRoom});
   if(request.method==='GET')return view();if(request.method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
   return replay(p,'help:'+room.id,input,now,()=>{
    if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','工具无效');
-   // A lasting hint may be replaced by a fresh one (its pieces may have been moved by teammates); a lasting 底图 is simply on.
-   if(grants().some(g=>g.kind===input.kind&&!(lastingClient&&input.kind==='hint')))fail(409,'TOOL_ACTIVE','该功能正在生效');
+   const grantLasting=lastingClient&&input.kind==='hint';
+   // A lasting hint may be replaced by a fresh one (its pieces may have been moved by teammates).
+   if(grants().some(g=>g.kind===input.kind&&!grantLasting))fail(409,'TOOL_ACTIVE','该功能正在生效');
    const free=protectedRoom||used(input.kind)<2;
-   if(!free&&!input.rewardToken)fail(402,shareRewards?'SHARE_REQUIRED':'AD_REQUIRED',shareRewards?(lastingClient?'免费次数已用完，分享后可开启':'免费次数已用完，分享后可开启30秒'):'免费次数已用完，请主动观看广告',{freeRemaining:view().freeRemaining});
+   if(!free&&!input.rewardToken)fail(402,shareRewards?'SHARE_REQUIRED':'AD_REQUIRED',shareRewards?(grantLasting?'免费次数已用完，分享后可开启':'免费次数已用完，分享后可开启30秒'):'免费次数已用完，请主动观看广告',{freeRemaining:view().freeRemaining});
    let pieceIds=[];if(input.kind==='hint'){const held=new Set(Object.keys(room.leases).map(Number));pieceIds=room.puzzle.groups.filter(g=>!g.locked&&!held.has(g.id)).flatMap(g=>g.pieces).slice(0,3);if(!pieceIds.length)fail(409,'NO_HINT_AVAILABLE','暂时没有可提示的拼块');}
    if(!free)consumeChallenge(p,input,(shareRewards?'share:':'')+'room/'+room.id,request.authorization,now);
    if(!protectedRoom&&free)db.prepare('INSERT INTO mobile_tool_uses VALUES(?,?,?,1) ON CONFLICT(room_id,owner,kind) DO UPDATE SET uses=uses+1').run(room.id,p.id,input.kind);
-   const grant={requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+(lastingClient?LASTING_TOOL_MS:LEGACY_TOOL_MS),...(lastingClient?{lasting:true,startedAt:now}:{})};db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
+   const grant={requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+(grantLasting?LASTING_TOOL_MS:LEGACY_TOOL_MS),...(grantLasting?{lasting:true,startedAt:now}:{})};db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
   });
  }
  function route(request,p,input,url,now){
@@ -562,13 +567,13 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/invitations/accept'&&method==='POST')return replay(p,'invitation-accept',input,now,()=>{const accepted=tasks.accept(p,input,now);return {...taskView(),accepted};});
   if(path==='/api/mobile/share/challenge'&&method==='POST'){
    if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
-   if(input.context==='supply'){if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');if(input.kind==='energy'&&p.shareEnergyDay===shareEnergyDay(now))fail(409,'SHARE_DAILY_LIMIT',SHARE_ENERGY_DAILY_TEXT);}
+   if(input.context==='supply')fail(403,'AD_REQUIRED','建房券与体力包仅可通过观看广告获取');
    else if(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)){
     if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','分享工具无效');const room=readRoom(input.context.slice(5));authorize(room,request,now);
     const uses=Number(db.prepare('SELECT uses FROM mobile_tool_uses WHERE room_id=? AND owner=? AND kind=?').get(room.id,p.id,input.kind)?.uses??0);
     if(p.firstRoomId===room.id&&!p.firstRoomCompleted||uses<2)fail(409,'FREE_TOOL_AVAILABLE','请先使用本局免费次数');
    }else fail(400,'INVALID_SHARE','分享用途无效');
-   return challenge(p,{...input,context:'share:'+input.context,authorization:input.context==='supply'?'':request.authorization??''},now);
+   return challenge(p,{...input,context:'share:'+input.context,authorization:request.authorization??''},now);
   }
   if(path==='/api/mobile/share/cancel'&&method==='POST'){
    if(!requestKey(input.requestId)||input.context!=='supply'&&!(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)))fail(400,'INVALID_SHARE','分享请求无效');
@@ -576,14 +581,10 @@ export function createMobileService(options={}){
    if(!row||row.auth_hash!==hash(input.context==='supply'?'':request.authorization??''))fail(403,'SHARE_REQUIRED','分享请求不属于当前身份');
    if(row.used===0)db.prepare('UPDATE mobile_ad_challenges SET used=2 WHERE token=? AND used=0').run(row.token);return profileView(p,now);
   }
-  if(path==='/api/mobile/share/redeem'&&method==='POST')return replay(p,'share-supply',input,now,()=>{
-   if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
-   if(input.context!=='supply'||!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
-   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');if(input.kind==='energy'&&p.shareEnergyDay===shareEnergyDay(now))fail(409,'SHARE_DAILY_LIMIT',SHARE_ENERGY_DAILY_TEXT);consumeChallenge(p,input,'share:supply','',now);p.supply[input.kind]++;if(input.kind==='energy')p.shareEnergyDay=shareEnergyDay(now);saveProfile(p);return profileView(p,now);
-  });
+  if(path==='/api/mobile/share/redeem'&&method==='POST')fail(403,'AD_REQUIRED','建房券与体力包仅可通过观看广告获取');
   if(path==='/api/mobile/supply/challenge'&&method==='POST')return challenge(p,{kind:input.kind,requestId:input.requestId},now);
   if(path==='/api/mobile/supply/redeem'&&method==='POST')return replay(p,'supply-redeem',input,now,()=>{
-   if(!adsEnabled)fail(503,'ADS_UNAVAILABLE','广告补给已停用，请使用分享领取');
+   if(!adsEnabled)fail(503,'ADS_UNAVAILABLE','当前平台暂未开放广告，请稍后再试');
    if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
    if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');consumeChallenge(p,input,'supply','',now);p.supply[input.kind]=input.kind==='create'?3:p.supply[input.kind]+1;saveProfile(p);return profileView(p,now);
   });
