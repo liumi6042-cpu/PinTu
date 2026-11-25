@@ -92,7 +92,7 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
    return {...t,...reward,coins:reward.coins??0,kind:t.id,progress:Math.min(t.target,daily[t.group]),earned:!!issued};
   });
   const todayShared=Number(db.prepare('SELECT COUNT(*) n FROM mobile_invitation_shares WHERE owner=? AND day=?').get(p.id,day).n);
-  tasks.push({id:'share-invitation',kind:'share-invitation',group:'sharing',title:'观看 TapTap 广告',target:settings.invitationShare.dailyLimit,progress:Math.min(settings.invitationShare.dailyLimit,todayShared),earned:todayShared>=settings.invitationShare.dailyLimit,energy:settings.invitationShare.energy,xp:settings.invitationShare.xp,coins:settings.invitationShare.coins??0});
+  tasks.push({id:'share-invitation',kind:'share-invitation',group:'sharing',title:'分享邀请',target:settings.invitationShare.dailyLimit,progress:Math.min(settings.invitationShare.dailyLimit,todayShared),earned:todayShared>=settings.invitationShare.dailyLimit,energy:settings.invitationShare.energy,xp:settings.invitationShare.xp,coins:settings.invitationShare.coins??0});
   tasks.push({id:'invite-friend',kind:'invite-refill',effect:'full-energy',group:'invitation',title:'邀请好友加入',target:3,progress:todayRewarded,earned:todayRewarded>=3,energy:0,xp:settings.invitationFriend.xp,coins:settings.invitationFriend.coins??0});
   tasks.unshift(...beginner(p.id,now).tasks);
   const tenReward=tenGridReward(settings,p.level);

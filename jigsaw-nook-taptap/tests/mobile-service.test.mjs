@@ -176,19 +176,19 @@ void test('supplies require rewarded ads, underlay expires in 30s, base energy c
   const hint=call('/api/rooms/'+room.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room.token);
   assert.equal(hint.status,200);assert.equal(hint.data.grants.find(g=>g.kind==='hint')?.lasting,true);
 
-  // 3. Original task rewards restored: cooperation 10/15/20, friend 5/10, daily ad 20x3, tenGrid max 5..7.
+  // 3. Original task rewards restored: cooperation 10/15/20, friend 5/10, share 20x3, tenGrid max 5..7.
   const tasks=call('/api/mobile/tasks').data;
   const byId=Object.fromEntries(tasks.tasks.map(t=>[t.id,t]));
   assert.equal(byId['cooperation-10'].energy,10);assert.equal(byId['cooperation-30'].energy,15);assert.equal(byId['cooperation-60'].energy,20);
   assert.equal(byId['friend-10'].energy,5);assert.equal(byId['friend-30'].energy,10);
   assert.equal(byId['share-invitation'].energy,20);assert.equal(byId['share-invitation'].target,3);
-  assert.equal(byId['share-invitation'].title,'观看 TapTap 广告');
+  assert.equal(byId['share-invitation'].title,'分享邀请');
   assert.equal(tasks.giftMaximum,5);
  }finally{service.close();}
 });
 
-void test('disconnected TapTap ad skips automatically without blocking supplies, tools, or daily ad reward',()=>{
- const now=1800000000000;
+void test('disconnected TapTap ad skips automatically for supplies and tools while invitation share stays shared-only',()=>{
+ let now=1800000000000;
  // adEnabled=false simulates TapTap ad disconnect/unavailable on mobile.
  const service=createMobileService({shareRewards:true,adEnabled:false,now:()=>now,randomInt:min=>min});
  const owner='f'.repeat(64);
@@ -200,8 +200,24 @@ void test('disconnected TapTap ad skips automatically without blocking supplies,
   const redeemed=call('/api/mobile/supply/redeem',{...req,rewardToken:ch.data.rewardToken,completed:true});
   assert.equal(redeemed.status,200);assert.equal(redeemed.data.supply.energy,1);
 
-  // Daily ad reward succeeds with adSkipped:true.
-  const daily=call('/api/mobile/invitations/share',{requestId:rid(),adSkipped:true});
-  assert.equal(daily.status,200);assert.equal(daily.data.shared.energy,20);
+  // Room assistance (underlay after 2 free uses in non-newcomer room) skips ad when disconnected and still lasts 30s.
+  call('/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()});
+  const room2=call('/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
+  assert.equal(call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid()},room2.token).status,200);
+  now+=30001;
+  assert.equal(call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid()},room2.token).status,200);
+  now+=30001;
+  const needAd=call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid()},room2.token);
+  assert.equal(needAd.status,402);assert.equal(needAd.data.code,'AD_REQUIRED');
+  const aidRid=rid(),aidCh=call('/api/rewarded/challenge',{kind:'underlay',requestId:aidRid,context:'room/'+room2.room.id,adSkipped:true},room2.token);
+  assert.equal(aidCh.status,200);
+  const u3=call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:aidRid,context:'room/'+room2.room.id,rewardToken:aidCh.data.rewardToken,completed:true,adSkipped:true},room2.token);
+  assert.equal(u3.status,200);assert.equal(u3.data.grants.find(g=>g.kind==='underlay')?.expiresAt,now+30000);
+
+  // Invitation share requires shared:true and rejects adSkipped-only requests.
+  const shareReject=call('/api/mobile/invitations/share',{requestId:rid(),adSkipped:true});
+  assert.equal(shareReject.status,403);assert.equal(shareReject.data.code,'SHARE_REQUIRED');
+  const shareOk=call('/api/mobile/invitations/share',{requestId:rid(),shared:true});
+  assert.equal(shareOk.status,200);assert.equal(shareOk.data.shared.energy,20);
  }finally{service.close();}
 });

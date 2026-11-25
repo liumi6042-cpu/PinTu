@@ -563,7 +563,7 @@ export function createMobileService(options={}){
   }
   if(path==='/api/mobile/tasks'&&method==='GET')return taskView();
   if(path==='/api/mobile/gifts/open'&&method==='POST')return replay(p,'gift-open',input,now,()=>{const opened=tasks.open(p,input,now);return {...taskView(),opened};});
-  if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{if(shareRewards&&input.shared!==true&&input.adCompleted!==true&&input.adSkipped!==true)fail(403,'AD_REQUIRED','请完整观看 TapTap 广告后领取奖励');const shared=tasks.share(p,input,now);return {...taskView(),shared};});
+  if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{if(shareRewards&&input.shared!==true)fail(403,'SHARE_REQUIRED','请通过分享面板完成分享，复制链接不计奖励');const shared=tasks.share(p,input,now);return {...taskView(),shared};});
   if(path==='/api/mobile/invitations/accept'&&method==='POST')return replay(p,'invitation-accept',input,now,()=>{const accepted=tasks.accept(p,input,now);return {...taskView(),accepted};});
   if(path==='/api/mobile/share/challenge'&&method==='POST'){
    if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');

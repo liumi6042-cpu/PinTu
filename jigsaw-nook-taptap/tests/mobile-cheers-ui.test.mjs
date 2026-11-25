@@ -98,7 +98,7 @@ function fixture(width=844,height=390,count=8,options={}){
 test('844x390 landscape has eight seats, all six cheers and existing actions inside the panel',()=>{
  const {app,calls}=fixture();app.drawModal();assert.equal(app.completionSeatRects.size,8);
  assert.equal(calls.filter(c=>c[0]==='hit'&&c[1].h===44).length,6);
- for(const label of ['去拼今日拼图','观看 TapTap 广告','查看图集','回大厅']){
+ for(const label of ['去拼今日拼图','分享成品','查看图集','回大厅']){
   const button=calls.find(c=>c[0]==='button'&&c[2]===label);assert.ok(button,label);assert.ok(button[1].y+button[1].h<=382,label);
  }
  assert.ok(app.completionBar.y+app.completionBar.h+22<=382);assert.equal(app.modalScroll,0);
