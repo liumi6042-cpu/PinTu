@@ -20,16 +20,7 @@
       "bytes": 9504693,
       "width": 2144,
       "height": 2144,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/redraw-wind-in-room-20261018-04-20261018-v2/native.webp",
-        "sha256": "1ffd44df115a53bc0e1b88ca52a7097a64fd4e4e768547628e2baa9ee21e7434",
-        "bytes": 1600936,
-        "width": 2144,
-        "height": 2144
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/redraw-wind-in-room-20261018-04-20261018-v2.png",
     "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
@@ -89,15 +80,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/redraw-wind-in-room-20261018-04-20261018-v2.webp",
-    "sha256": "1ffd44df115a53bc0e1b88ca52a7097a64fd4e4e768547628e2baa9ee21e7434",
-    "bytes": 1600936,
-    "width": 2144,
-    "height": 2144,
-    "originalPngSha256": "807ae814106d8e6af82bbfa5c2aebcb21f64eb05f4139cf487541c4e11d30a25"
   }
 }

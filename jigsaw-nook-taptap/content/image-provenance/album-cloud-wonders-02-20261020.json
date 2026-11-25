@@ -20,16 +20,7 @@
       "bytes": 3393446,
       "width": 1024,
       "height": 1536,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/album-cloud-wonders-02-20261020/native.webp",
-        "sha256": "11da4b55f9e03f80d50994c73d10581cb61c6ad8b94e5b151f5104bb4c2600b4",
-        "bytes": 625566,
-        "width": 1024,
-        "height": 1536
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/album-cloud-wonders-02-20261020.png",
     "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
@@ -87,15 +78,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/album-cloud-wonders-02-20261020.webp",
-    "sha256": "11da4b55f9e03f80d50994c73d10581cb61c6ad8b94e5b151f5104bb4c2600b4",
-    "bytes": 625566,
-    "width": 1024,
-    "height": 1536,
-    "originalPngSha256": "0afc25d580371c46d74d250ab8e8a34ee14b4fc7a7ff4ff32f04d7181b22c7c9"
   }
 }

@@ -89,15 +89,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/star-observatory.webp",
-    "sha256": "ea173e169fd38944cac1c3d41318dd23a5144aa242bdd97e5dc2f28213867d39",
-    "bytes": 704772,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "ddec724243275b739647e4360745bf90fd343282b17a650cb159b66d8703abe8"
   }
 }

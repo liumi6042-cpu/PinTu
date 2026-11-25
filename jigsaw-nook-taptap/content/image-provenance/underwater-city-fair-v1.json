@@ -66,15 +66,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/underwater-city-fair-v1.webp",
-    "sha256": "94b2fabed60ab0b6c60eeacaa4d960b1f790e414cdd9e62a2ae3969affc6a7f7",
-    "bytes": 784522,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963"
   }
 }

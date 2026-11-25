@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/lavender-evening-fields-v1.webp",
-    "sha256": "d44524c947ddf00a31d22df8c06a15ae58615c598f001cc2ac5f27653853ceb1",
-    "bytes": 695876,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "0b0becf5e09fcfec3736b6bd40bf8652330307ce8ce39e4d173c2a160f57c193"
   }
 }

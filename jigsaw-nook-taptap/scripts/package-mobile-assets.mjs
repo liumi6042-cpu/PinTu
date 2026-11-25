@@ -3,7 +3,6 @@ import {createHash} from 'node:crypto';
 import {dirname,join,relative,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {isPlayableOrigin,isRetained} from './image-origin.mjs';
-import {resolveMediaDir,safeMediaFile} from './media-paths.mjs';
 
 const projectRoot=resolve(import.meta.dirname,'..');
 const schema='jigsaw-mobile-assets/v1';
@@ -51,7 +50,6 @@ export function planMobileAssets(root=projectRoot){
  const collection=json(safePath(root,join(root,'lib/mobile-collection-catalog.json')));
  if(!Array.isArray(catalog)||!Array.isArray(manifest)||!Array.isArray(collection.packs))throw Error('Invalid public asset catalogs');
  const allowed=new Set(manifest.map(safeManifestPath)),photos=[],sources=new Map(),ids=new Set();
- const puzzlesDir=resolveMediaDir(root,'puzzles');
  for(const photo of catalog){
   if(!isPlayableOrigin(photo?.origin))throw Error('Unregistered image origin');
   if(!isRetained(photo))continue;
@@ -63,8 +61,7 @@ export function planMobileAssets(root=projectRoot){
   for(const [kind,url] of [[photo.optimizedSrc?'optimized':'play',runtime.src],['thumbnail',runtime.thumbSrc]]){
    safeManifestPath(url);
    if(!puzzlePath.test(url)||!new RegExp('^/puzzles/'+photo.id+'-'+kind+'(?:-[a-f0-9]{12})?\\.webp$').test(url)||!allowed.has(url))throw Error('Unlisted public puzzle asset: '+photo.id);
-   let source;
-   try{source=safeMediaFile(puzzlesDir,url.slice('/puzzles/'.length));}catch(cause){if(cause?.code==='ENOENT')throw Error('Missing puzzle asset: '+url);throw cause;}
+   const source=safePath(root,join(root,'public',url.slice(1)));
    if(!existsSync(source)||!lstatSync(source).isFile())throw Error('Missing puzzle asset: '+url);
    const bytes=readFileSync(source),sha256=hash(bytes),delivery=record.delivery?.[kind];
    if(bytes.length<20||bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP'||bytes.readUInt32LE(4)+8!==bytes.length)throw Error('Puzzle asset is not a WebP image: '+url);

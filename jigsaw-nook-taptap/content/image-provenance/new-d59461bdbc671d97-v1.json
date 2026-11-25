@@ -20,16 +20,7 @@
       "bytes": 2388676,
       "width": 1672,
       "height": 941,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/new-d59461bdbc671d97-v1/native.webp",
-        "sha256": "4a890130e10223c0de3ecaa9ecbab271ee38ae8e5464f3ca9bfac6a0d3d4a9d5",
-        "bytes": 288002,
-        "width": 1672,
-        "height": 941
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/new-d59461bdbc671d97-v1.png",
     "importedRegistrySha256": "bd1e037e7947148bb43c3201818d1599da1d8791e29c32d5ae820241d9a065e4"
@@ -87,15 +78,5 @@
         "effort": 6
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/new-d59461bdbc671d97-v1.webp",
-    "sha256": "2ab9b5620d085b55dad5c22e225787a894c384eb3efb443919704bf089fe987f",
-    "bytes": 686390,
-    "width": 3840,
-    "height": 2160,
-    "originalPngSha256": "427a99316b616abb8a440038a44e92c8c0c88f81709dee161e303a2fe4b305a4"
   }
 }

@@ -17,58 +17,22 @@
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-left-guide.png",
-        "sha256": "863582db3c9029a3efd32354e2ab216b37ea379cc7e4b4567a4365e5d63797a3",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-left-guide.webp",
-          "sha256": "c70aaba00a8fb499c206d34f810694c76d265baa759176b96f6784d3c0b45285",
-          "bytes": 143434,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "863582db3c9029a3efd32354e2ab216b37ea379cc7e4b4567a4365e5d63797a3"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-right-guide.png",
-        "sha256": "9a75d339099f785d654c594a8f6ec601938000f2e375a3e8a23d75e7932147a2",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-right-guide.webp",
-          "sha256": "b92e44d971ab71fd186ea2a2fab53568c0df8e8153f2f429e2383a4caa7ef457",
-          "bytes": 168726,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "9a75d339099f785d654c594a8f6ec601938000f2e375a3e8a23d75e7932147a2"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-left-guide.png",
-        "sha256": "2bb468fb640a91084f652f53d11ad435bce858760f61c713422dadcfa71d8ab3",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-left-guide.webp",
-          "sha256": "c109f3876f34968515d3122bc05fc51ecf61336d0f2935cfd1e999a75bb7c7fd",
-          "bytes": 234242,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "2bb468fb640a91084f652f53d11ad435bce858760f61c713422dadcfa71d8ab3"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-right-guide.png",
-        "sha256": "65d7f83ebc19b03bef9ceffe705ff380b9b8b738c530bc45f9f9bdabd81a036a",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-right-guide.webp",
-          "sha256": "2a3f2a0d8368f30f1c692fe8bd4a099c3997356c2c69933e4a3c959d6ccae687",
-          "bytes": 203238,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "65d7f83ebc19b03bef9ceffe705ff380b9b8b738c530bc45f9f9bdabd81a036a"
       }
     ],
     "compositionGuide": {
@@ -86,64 +50,28 @@
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-left-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "60bbef3aae0fc9ddef3bd2b73e711d40a00198c19ee18ab7615938dae88c4d34",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-left-native.webp",
-          "sha256": "3493a101e86b77082a5b1bdc030a58719b7d1be841aae54337f6aa1e4114908e",
-          "bytes": 504616,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "60bbef3aae0fc9ddef3bd2b73e711d40a00198c19ee18ab7615938dae88c4d34"
       },
       {
         "id": "top-right",
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-right-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "a83f638b15f5a4ad6979e36b2905f68936f35516e74e70943c7932bf2dbf2b6f",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/top-right-native.webp",
-          "sha256": "72e4d2fb5d08110d0d7e929e5aa8ab82ae9be70ffbd54c08c5e724f173b63eee",
-          "bytes": 538898,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "a83f638b15f5a4ad6979e36b2905f68936f35516e74e70943c7932bf2dbf2b6f"
       },
       {
         "id": "bottom-left",
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-left-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "455ad8dd581f1e338ae7885889cbd14fc4cd2b0b24ad55fca28f4dd5d46537b9",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-left-native.webp",
-          "sha256": "e92e14ed7cc00900e7d9076a1e75eafc72016689db7b904db6f86d5ff3e5275a",
-          "bytes": 829188,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "455ad8dd581f1e338ae7885889cbd14fc4cd2b0b24ad55fca28f4dd5d46537b9"
       },
       {
         "id": "bottom-right",
         "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-right-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "1dadcb36078be947e44b552986b388a963c5a0f346200fb2531f8a975b970886",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/bottom-right-native.webp",
-          "sha256": "4ecac579a245979dec60bedf6c5b5daac3612705c5bcf12bee960f417b5b2d2a",
-          "bytes": 705318,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "1dadcb36078be947e44b552986b388a963c5a0f346200fb2531f8a975b970886"
       }
     ],
     "assemblyRecord": "content/artwork/gallery-hd/clear-sand-bay-hd-v3/manifest.json",
@@ -207,15 +135,5 @@
         "effort": 6
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/clear-sand-bay-hd-v3.webp",
-    "sha256": "dfcfdcc6de2a63aa0a13ea56e8a884a9b62cffe685705ae803da300b0b737480",
-    "bytes": 1996028,
-    "width": 3147,
-    "height": 1574,
-    "originalPngSha256": "93a10fef331db04bd6d5e395b82766cf33d54c017cecdd37528fb2be36bd1c2d"
   }
 }

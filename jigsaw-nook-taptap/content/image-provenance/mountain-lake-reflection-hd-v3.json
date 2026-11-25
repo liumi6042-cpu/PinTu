@@ -17,58 +17,22 @@
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-left-guide.png",
-        "sha256": "bd462c56ce14c382a7cf53274d0648ecef721074cbbe3e6758b62b776c40d7f7",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-left-guide.webp",
-          "sha256": "f9befff4b4bb9c9200ab3e86d4bc8610c03bf9ea4982bf2017624047b064ff71",
-          "bytes": 99032,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "bd462c56ce14c382a7cf53274d0648ecef721074cbbe3e6758b62b776c40d7f7"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-right-guide.png",
-        "sha256": "4f591a8fcee94273ac04e712c403c6c5952e88e7cfd242a6802efe9c9f0a060f",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-right-guide.webp",
-          "sha256": "c2d107cc62e5b1d1384fa3a332a5d85f04819897227d27ef5d1c2d4bdbbcaa51",
-          "bytes": 111728,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "4f591a8fcee94273ac04e712c403c6c5952e88e7cfd242a6802efe9c9f0a060f"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-left-guide.png",
-        "sha256": "7309f6319ba443b6a6da6263a3ba78f12876bac12553dd16d3418c551b3353bf",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-left-guide.webp",
-          "sha256": "5e8b6c5ca88ac8cccd0f5f6cbc6c32d80439ee6e59cea78039c3e3d987033767",
-          "bytes": 182842,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "7309f6319ba443b6a6da6263a3ba78f12876bac12553dd16d3418c551b3353bf"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-right-guide.png",
-        "sha256": "bc769a28899fa46e3a33ce150a3d80426707dc590b73dcb3652135f11baf5c53",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-right-guide.webp",
-          "sha256": "1319033fd69f93d5a9d92b85c6468e6a0767129e76ffd960c2f0689e42e2d2f7",
-          "bytes": 118820,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "bc769a28899fa46e3a33ce150a3d80426707dc590b73dcb3652135f11baf5c53"
       }
     ],
     "compositionGuide": {
@@ -86,64 +50,28 @@
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-left-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "25d0a53a89baab6f4dcf497a9afd6b83185660b3d90f1ee3e0b03ab0b3040f04",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-left-native.webp",
-          "sha256": "525b9f4f0eb0aa0062c75eae023699a7be769b3289a2cedf8c10cf3f29ea5ece",
-          "bytes": 341214,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "25d0a53a89baab6f4dcf497a9afd6b83185660b3d90f1ee3e0b03ab0b3040f04"
       },
       {
         "id": "top-right",
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-right-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "c653d6cc624885d7e7a9bc5e704c77e2b03bbf878c7f4eb993b227f88f524b00",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/top-right-native.webp",
-          "sha256": "43e86a9963a8c84ebe3ede23b949ba62b6f32b147cb34a9629e0a697707272c4",
-          "bytes": 384928,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "c653d6cc624885d7e7a9bc5e704c77e2b03bbf878c7f4eb993b227f88f524b00"
       },
       {
         "id": "bottom-left",
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-left-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "d4cc93dd6b692364cd12d10604228796e680545a1373f2a41174ce7a28813373",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-left-native.webp",
-          "sha256": "10a5cfb846f70f43f2f535ca04afcd690523469873ee2c81cbaf7d25f41d5a04",
-          "bytes": 654074,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "d4cc93dd6b692364cd12d10604228796e680545a1373f2a41174ce7a28813373"
       },
       {
         "id": "bottom-right",
         "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-right-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "07e8c128091e3c0e43ccc2493ae4df85e97f35366f7ecc7a79075523f4a7f37b",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/bottom-right-native.webp",
-          "sha256": "b642d6a63d2450fa8df909d1c273d5edf126620bd69ae4df892103da31593dc6",
-          "bytes": 493006,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "07e8c128091e3c0e43ccc2493ae4df85e97f35366f7ecc7a79075523f4a7f37b"
       }
     ],
     "assemblyRecord": "content/artwork/gallery-hd/mountain-lake-reflection-hd-v3/manifest.json",
@@ -207,15 +135,5 @@
         "effort": 6
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/mountain-lake-reflection-hd-v3.webp",
-    "sha256": "030707fba3b5271fd4fd9a1a6723a380dacb6bf795dd19a3b984550f09301c8d",
-    "bytes": 1482286,
-    "width": 3144,
-    "height": 1572,
-    "originalPngSha256": "38daee16c9461deec186f99058caeab99e6d81c9ddcb84ea7d126bd7fde0c491"
   }
 }

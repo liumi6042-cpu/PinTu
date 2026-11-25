@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/garden-table-native-v2.webp",
-    "sha256": "4395e705ce187554fb6f412b627523a6497be58d065737ec8f26ad3d0daa14e4",
-    "bytes": 410448,
-    "width": 1774,
-    "height": 887,
-    "originalPngSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940"
   }
 }

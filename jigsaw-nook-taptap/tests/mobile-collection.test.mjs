@@ -185,7 +185,7 @@ test('gift decorations stay hidden until granted, cannot be crafted, and equip t
  const {validateGameSettings}=await import('../server/game-settings.mjs');
  const defaults=(await import('../config/game-settings-defaults.json',{with:{type:'json'}})).default;
  const gift=catalog.rewardDecorations.find(item=>item.id==='cat-paw');
- assert.deepEqual(gift,{id:'cat-paw',title:'猫爪',description:'在 TapTap 论坛或评论区反馈，或用玩家群兑换码获得。',kind:'cursor',artKey:'paw',color:'#f0a0a8',cost:0,source:'gift'});
+ assert.deepEqual(gift,{id:'cat-paw',title:'猫爪',description:'在 TapTap 论坛或评论区反馈获得。',kind:'cursor',artKey:'paw',color:'#f0a0a8',cost:0,source:'gift'});
  assert.ok(!catalog.decorations.some(item=>item.id===gift.id),'gift rewards stay out of the game-settings decoration list');
  assert.equal(validateGameSettings(structuredClone(defaults)).decorations.length,defaults.decorations.length,'existing game-settings documents still validate');
  const h=harness(),a=identity('a'),b=identity('b');

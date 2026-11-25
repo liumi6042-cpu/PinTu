@@ -89,15 +89,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/garden-table.webp",
-    "sha256": "221dbdd980bc042f6e42b1ff4dc6b55e5c944c35ea2ce1b5a4895c95a98e91fd",
-    "bytes": 665996,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "8174cf704f4a0fc65012907aec13e997d1590d4b0d629c05b0ab2cdded121dd0"
   }
 }

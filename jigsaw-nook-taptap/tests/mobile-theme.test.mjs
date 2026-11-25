@@ -112,8 +112,7 @@ test('puzzle themes only change UI and keep decoded pictures, atlas and room sta
  board.setRect({x:0,y:80,w:379,h:500});await board.setImage('original-picture.png');board.trayOpen=true;board.showPreview=true;
  const atlas=board.atlas,picture=board.picture,before=JSON.stringify(state);
  const draw=theme=>{board.setTheme(theme);p.commands.length=0;board.draw(p.ctx);return p.commands.filter(c=>c.op==='drawImage');};
- // The first draw also paints the tray's piece pictures (one shared recording context here); compare later draws.
- draw('light');const light=draw('light'),wood=draw('wood'),dark=draw('dark');assert.deepEqual(dark.map(c=>c.args),light.map(c=>c.args));assert.deepEqual(wood.map(c=>c.args),light.map(c=>c.args));
+ const light=draw('light'),wood=draw('wood'),dark=draw('dark');assert.deepEqual(dark.map(c=>c.args),light.map(c=>c.args));assert.deepEqual(wood.map(c=>c.args),light.map(c=>c.args));
  assert.equal(board.atlas,atlas);assert.equal(board.picture,picture);assert.equal(JSON.stringify(state),before);
  assert.ok(dark.some(c=>c.args[0]===atlas));assert.ok(dark.some(c=>c.args[0]===picture));assert.ok(dark.every(c=>c.filter==='none'));
  assert.ok(p.commands.some(c=>c.color==='#332a34f5'),'optional tray receives the dark surface');

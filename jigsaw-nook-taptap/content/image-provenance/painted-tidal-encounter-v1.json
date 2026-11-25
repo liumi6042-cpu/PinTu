@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/painted-tidal-encounter-v1.webp",
-    "sha256": "7235951fb855714fd3ee86e06f5a088f84a349155d09942a7b8b1edc606cbd20",
-    "bytes": 481420,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f"
   }
 }

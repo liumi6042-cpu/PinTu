@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/desert-sun.webp",
-    "sha256": "91e361cb0d5aefb6104b9dfc888d65c45ce1180774e3c76d490d96888e289731",
-    "bytes": 91844,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f"
   }
 }

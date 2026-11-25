@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cat-lantern-market-v1.webp",
-    "sha256": "3859736d2f04d2dc066a0878227d995759da2cfc1e0a7960ee83031775fefc91",
-    "bytes": 649938,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "b78a0a4fe232af7ce9486fb8e05f5c50843abcf252e3e22edc741d25243fe4cd"
   }
 }

@@ -15,7 +15,7 @@
     "apiBase": "https://jigsawnook.online/h5-mobile-v3",
     "assetBase": "https://jigsawnook.online/h5-mobile-v3/assets",
     "rewardedAdUnitId": "",
-    "development": false,
+    "development": true,
     "nativeSocialEnabled": false
   },
   "taptap": {

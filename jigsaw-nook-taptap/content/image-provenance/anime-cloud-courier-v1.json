@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/anime-cloud-courier-v1.webp",
-    "sha256": "034c231af3b7af2b8e6de8d8a5e3ef513f23aae5a0765631ba6a9cfb026bb696",
-    "bytes": 481618,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "3b38b7e12cb5144a768409cc08caaf6f3e57cd9f858b1e7a4cc6ebedbc4fbd32"
   }
 }

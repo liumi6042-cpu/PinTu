@@ -1,5 +1,4 @@
 import {build} from 'esbuild';
-import {legacyApiProblems} from './legacy-api-check.mjs';
 import {readFileSync,mkdirSync,copyFileSync,writeFileSync,readdirSync,statSync,existsSync,unlinkSync,realpathSync} from 'node:fs';
 import {resolve,join,dirname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -55,11 +54,8 @@ if(prepareAssets){await import('./build-mobile-audio.mjs');await import('./build
 const outputNames={wechat:'wechat-game',taptap:'shared-web',web:'shared-desktop-web'};
 const outputs=Object.fromEntries(platforms.map(id=>[id,join(isolatedRoot??join(root,'outputs'),outputNames[id])]));
 const recordDir=isolatedRoot?join(isolatedRoot,'records'):join(root,'outputs/shared-build'),records=[];
-const commonArt=['b2-card-icons1023.png','b2-core-icons23.png','b2-task-icons23.png','b2-reward-cursors.png'];
+const commonArt=['b2-card-icons1023.png','b2-core-icons23.png','b2-task-icons23.png','b2-reward-cursors.png','tuanzi-cat-first.webp','tuanzi-cat-napBare-hd0.webp','tuanzi-cat-napBare-hd1.webp','tuanzi-cat-napBare-hd2.webp','tuanzi-cat-wait-hd0.webp','tuanzi-cat-wait-hd1.webp','tuanzi-cat-tap-hd0.webp','tuanzi-cat-tap-hd1.webp','tuanzi-cat-leave-hd0.webp','tuanzi-cat-leave-hd1.webp','tuanzi-cat-walkBack-hd0.webp','tuanzi-cat-walkBack-hd1.webp','tuanzi-cat-back-hd0.webp','tuanzi-cat-back-hd1.webp','tuanzi-cat-awayBare-hd0.webp','tuanzi-lobby.webp','tuanzi-room.webp','tuanzi-items.webp','tuanzi-stickers.webp'];
 const extraArt=['b2-supply-scenes.png','b2-pixel-atlas.png'];
-// WeChat caps the main package at 4 MiB; the two big icon atlases ride in the art subpackage,
-// which entry-wechat.ts loads before boot (mobile/ui.ts maps them to art/ there).
-const wechatArt=['b2-core-icons23.png','b2-task-icons23.png'];
 const fonts=['OFL-NotoSansSC.txt','FONT-NOTICES.md'];
 // Original synthesized piano pieces; sources and manifest live in content/music/bgm.
 const BACKGROUND_MUSIC_FILES=['bgm-morning.mp3','bgm-rain.mp3','bgm-starlight.mp3'];
@@ -70,7 +66,7 @@ for(const [platform,out]of Object.entries(outputs)){
  copy(join(root,'public/audio/mobile-snap.wav'),join(out,'assets/audio/mobile-snap.wav'));
  copy(join(root,'public/audio/mobile-coin.wav'),join(out,'assets/audio/mobile-coin.wav'));
  if(platform!=='wechat')for(const file of BACKGROUND_MUSIC_FILES)copy(join(root,'content/music/bgm',file),join(out,'assets/audio',file));
- for(const file of commonArt)copy(join(root,'public/mobile-icons',file),join(out,platform==='wechat'&&wechatArt.includes(file)?'art':'assets/ui',file));
+ for(const file of commonArt)copy(join(root,'public/mobile-icons',file),join(out,'assets/ui',file));
  if(platform==='taptap')copy(join(root,'public/mobile-icons/taptap-nickname-authorize.png'),join(out,'assets/ui/taptap-nickname-authorize.png'));
  for(const file of extraArt)copy(join(root,'public/mobile-icons',file),join(out,'art',file));
  for(const file of [...fonts,'jigsaw-ui-sc.'+(platform==='wechat'?'ttf':'woff2')])copy(join(root,'public/fonts',file),join(out,'assets/fonts',file));
@@ -80,7 +76,6 @@ for(const [platform,out]of Object.entries(outputs)){
  // The WeChat upload parser is older than its simulator runtime.
  const target=platform==='wechat'?'es2017':'es2020';
  await build({absWorkingDir:root,entryPoints:['mobile/entry-'+(platform==='wechat'?'wechat':'web')+'.ts'],outfile:join(out,platform==='wechat'?'game.js':'game.js'),bundle:true,format:'iife',target,platform:'browser',minify:true,legalComments:'eof',define:{__GAME_CONFIG__:JSON.stringify(config)},metafile:true}).then(result=>{
-  const legacy=legacyApiProblems(readFileSync(join(out,'game.js'),'utf8'));if(legacy.length)throw Error('Shared Canvas bundle uses built-ins older WebViews lack: '+legacy.join('; '));
   const prohibited=Object.keys(result.metafile.inputs).filter(path=>/node_modules\/(react|react-dom)\//.test(path));
   if(prohibited.length)throw Error('Shared Canvas bundle must not import React DOM');
   mkdirSync(recordDir,{recursive:true});json(join(recordDir,platform+'-inputs.json'),Object.keys(result.metafile.inputs));
@@ -89,7 +84,7 @@ for(const [platform,out]of Object.entries(outputs)){
   const plugins=sharedPlatformPlugins(config);
   json(join(out,'game.json'),{deviceOrientation:'portrait',showStatusBar:false,networkTimeout:{request:15000,downloadFile:20000},subpackages:[{name:'art',root:'art/'}],...(plugins?{plugins}:{})});
   writeFileSync(join(out,'art/game.js'),'// Shared supplemental artwork package.\n');
-  json(join(out,'project.config.json'),{appid:config.appId,projectname:config.gameName,description:'拼图小窝：多人合作拼图小游戏',compileType:'game',libVersion:'latest',setting:{es6:false,enhance:false,minified:false,urlCheck:true,coverView:true},packOptions:{ignore:[]},condition:{}});
+  json(join(out,'project.config.json'),{appid:config.appId,projectname:config.gameName,description:'拼图小窝：TapTap/微信共用内容与Canvas界面的开发测试版',compileType:'game',libVersion:'latest',setting:{es6:false,enhance:false,minified:false,urlCheck:true,coverView:true},packOptions:{ignore:[]},condition:{}});
  }else{
   // No game.json for TapTap: it makes the console parse the H5 zip as a native mini-game and reject it.
   // Landscape is requested at startup by mobile/entry-web.ts instead.

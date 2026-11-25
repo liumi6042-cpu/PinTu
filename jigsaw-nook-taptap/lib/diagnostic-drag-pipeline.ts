@@ -14,7 +14,7 @@ export class DiagnosticDragPipeline{
  private stream:RealtimeRoomStream;private hooks:Hooks;private diagnosticRoom:boolean;
  constructor(stream:RealtimeRoomStream,hooks:Hooks,diagnosticRoom=false){this.stream=stream;this.hooks=hooks;this.diagnosticRoom=diagnosticRoom;this.cleanup=stream.subscribeState(connected=>{
   if(!this.activated)return;
-  if(!connected){if(!this.recovering){this.recovering=true;this.invalidate();}void this.reconcile();}
+  if(!connected){this.recovering=true;this.invalidate();void this.reconcile();}
   else{this.clientId=this.hooks.randomId();this.ordinal=0;void this.reconcile();}
  });}
  get inUse(){return this.activated;}
@@ -26,7 +26,7 @@ export class DiagnosticDragPipeline{
  canAcquire(id:number){return !this.stopped&&!this.recovering&&this.available&&!this.active&&this.gestures.size<24&&(this.stream.pendingActionCount??0)<48&&(!this.latest.has(id)||this.latest.get(id)!.ending);}
  acquire(id:number):Promise<boolean>{
   if(!this.canAcquire(id))return Promise.resolve(false);
-  if(!this.activated){this.activated=true;this.clientId=this.hooks.randomId();this.ordinal=0;}
+  if(!this.activated){this.activated=true;this.clientId=this.hooks.randomId();}
   let grant!:(ok:boolean)=>void,finish!:()=>void;
   const granted=new Promise<boolean>(resolve=>{grant=resolve;}),finished=new Promise<void>(resolve=>{finish=resolve;});
   const gesture:Gesture={id,gestureId:this.hooks.randomId(),seq:0,granted:false,ending:false,canceled:false,latest:null,timer:null,lastMoveAt:-Infinity,movePending:0,generation:this.generation,finished,finish,grant};
@@ -72,10 +72,9 @@ export class DiagnosticDragPipeline{
   }).finally(after);
  }
  private reject(gesture:Gesture,error:Error&{status?:number;code?:string}){
-  const latest=this.latest.get(gesture.id)===gesture;gesture.canceled=true;gesture.grant(false);if(latest)this.hooks.cancel(gesture.id);this.finish(gesture);
+  const latest=this.latest.get(gesture.id)===gesture;gesture.canceled=true;gesture.grant(false);if(latest)this.hooks.cancel(gesture.id);this.finish(gesture);this.hooks.error(error);
   const protocolError=['DIAGNOSTIC_ACTION_ORDER','DIAGNOSTIC_CLIENT_CONFLICT','INVALID_ACTION_INPUT','ACTION_BACKPRESSURE','ACTION_RATE_LIMIT'].includes(error.code??'');
   if(protocolError||error.status===401||error.status===403&&error.code!=='ENERGY_EMPTY'||error.status===410||error.status===429||(error.status??0)>=500){this.recovering=true;this.invalidate();this.stream.resetActions?.();}
-  this.hooks.error(error);
   void this.reconcile();
  }
  private finish(gesture:Gesture){this.end(gesture);if(this.latest.get(gesture.id)===gesture){this.latest.delete(gesture.id);this.stream.preview?.clearMove(gesture.id);}this.gestures.delete(gesture);gesture.grant(false);gesture.finish();}
@@ -83,15 +82,9 @@ export class DiagnosticDragPipeline{
   if(!group||group.locked){this.hooks.cancel(gesture.id);this.release(gesture.id);}
  }
  private invalidate(){this.generation++;for(const gesture of this.gestures){gesture.canceled=true;gesture.grant(false);this.stream.preview?.clearMove(gesture.id);this.end(gesture);gesture.finish();}this.gestures.clear();this.latest.clear();this.active=null;this.hooks.cancel();}
- retryRecovery(){if(this.recovering)void this.reconcile();}
  private reconcile(){
   if(this.stopped)return Promise.resolve();if(this.recovery)return this.recovery;
-  const generation=this.generation;
-  this.recovery=this.hooks.reconcile().then(()=>{
-   if(this.stopped||generation!==this.generation||!this.recovering)return;
-   if(this.available)this.recovering=false;
-   else if(!this.diagnosticRoom){this.activated=false;this.recovering=false;}
-  }).catch(()=>{}).finally(()=>{this.recovery=null;});return this.recovery;
+  this.recovery=this.hooks.reconcile().then(()=>{if(this.available)this.recovering=false;}).catch(()=>{}).finally(()=>{this.recovery=null;});return this.recovery;
  }
  async drain(){await Promise.all([...this.gestures].map(g=>g.finished));}
  hasActive(){return !!this.active;}

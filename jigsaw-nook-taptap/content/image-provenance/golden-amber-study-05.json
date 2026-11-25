@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/golden-amber-study-05.webp",
-    "sha256": "892bdd108be65f0e60624afc77407fb71abf3910f36eb840f0483c34c7887cc2",
-    "bytes": 641364,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d"
   }
 }

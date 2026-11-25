@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/azure-blue-study-04.webp",
-    "sha256": "17d18642225486806762aa7e401f6d1dcd79caf208fe02c3043246d264b03ec5",
-    "bytes": 591384,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "208996e7fd3b875560a43fe5ecb907bb72702b25f7f9b63ae43eadda7d5f78c7"
   }
 }

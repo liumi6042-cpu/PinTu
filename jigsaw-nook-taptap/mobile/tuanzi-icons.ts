@@ -1,0 +1,26 @@
+import type {Rect} from './ports';
+// 团子去旅行 placeholder pixel icons (16×16, same drawing rules as cheer-icons).
+const PAL={O:'#5a2232',R:'#e05a6e',r:'#f49aa8',d:'#b03850',W:'#fff6ea',Y:'#f4c24f',y:'#ffe397',g:'#cf952d',S:'#f7cfae',s:'#e3a07e',P:'#f28aa6',B:'#6fa3d8',b:'#3f5f9a',i:'#a9c8ea',G:'#7fb069',h:'#4f7f45',C:'#d29a68',c:'#a86a3f',K:'#4a2a2a',M:'#fff3e3',N:'#f2a65a',E:'#3a1f25',T:'#c9b6a3',t:'#9a8676',q:'#eef3f6',v:'#b9c6d2',u:'#7f8fa1'} as const;
+export const TRAVEL_ICON={
+ fish:['................','................','................','................','....OOOOOOOO..OO','..OOqqvvvvvvOOuO','.OqEqvvvvvvvvuuO','OvqqvvuvvuvvvuO.','OvvvvvvvvvvvvuO.','.OvvuvvuvvuvvuuO','..OOvvvvvvvvOOuO','....OOOOOOOO..OO','................','................','................','................'],
+ onigiri:['................','.......OO.......','......OWWO......','.....OWWWWO.....','.....OWWWWO.....','....OWWWWWWO....','....OWWTWWWO....','...OWWWWWWWWO...','...OWWWWWWTWO...','..OWWWKKKKWWWO..','..OWWWKKKKWWWO..','.OWWWWKKKKWWWWO.','.OWWWWKKKKWWWWO.','.OOOOOKKKKOOOOO.','......OOOO......','................'],
+ bento:['................','................','................','.OOOOOOOOOOOOOO.','.OddddddddddddO.','.OdWWWWOONNNNdO.','.OdWWRWOONNNNdO.','.OdWWWWOONNcNdO.','.OdWWWWOOOOOOdO.','.OdWWWWOOGGGGdO.','.OdWWWWOOGyGGdO.','.OddddddddddddO.','.OOOOOOOOOOOOOO.','................','................','................'],
+ deluxe:['.......RR.......','......RrrR......','.....OOOOOO.....','..OOOOOOOOOOOO..','..OddddddddddO..','..OdYgYgYgYgdO..','..OOOOOOOOOOOO..','..OKKKKKKKKKKO..','..OKNNNNWWWWKO..','..OOOOOOOOOOOO..','..OddddddddddO..','..OdGGGGRRRRdO..','..OdGyGGRrRRdO..','..OOOOOOOOOOOO..','................','................'],
+ umbrella:['.......OO.......','.....OOBBOO.....','...OOBBBiBBOO...','..OBBBBiBBBBBO..','.OBBBBiBBBBBBBO.','.OBBBiBBBBBBBBO.','OBBBBBBBBBBBBBBO','ObObObObObObObbO','.O.O.O.cO.O.O.O.','.......cO.......','.......cO.......','.......cO.......','.......cO.......','....OO.cO.......','.....OccO.......','......OO........'],
+ ticket:['................','................','................','OOOOOOOOOOOOOOOO','OyyyyyyyOyyyyyyO','OyRRRRyy.yyBByyO','OyyyyyyyOyyyyyyO','OyRRRyyy.yyyyyyO','OyyyyyyyOyBByyyO','OyRRRRRy.yyyyyyO','OyyyyyyyOyyyyyyO','OOOOOOOOOOOOOOOO','................','................','................','................'],
+ tent:['................','.......OO.......','......OGGO......','.....OGGGhO.....','.....OGGGhO.....','....OGGGGGhO....','....OGGGOGhO....','...OGGGOyOGhO...','...OGGOyyyOhO...','..OGGGOyyyOGhO..','..OGGOyyyyyOhO..','.OGGGOyyyyyOGhO.','.OGGOyyyyyyyOhO.','OOOOOOOOOOOOOOOO','.cc..........cc.','................'],
+ bell:['.......RR.......','......R..R......','.......RR.......','......OOOO......','....OOyYYYOO....','...OyYYYYYYgO...','...OYYYYYYYgO...','..OyYYYYYYYYgO..','..OYYYYYYYYYgO..','..OYYYgggYYYgO..','.OYYYYgOgYYYYgO.','.OggggggggggggO.','.OOOOOOOOOOOOOO.','.......OO.......','................','................'],
+ knot:['.......OO.......','.......RO.......','......ORRO......','.....ORRRRO.....','....ORRdRRRO....','...ORRdORdRRO...','....ORRdRRRO....','.....ORRRRO.....','......ORRO......','.....OR..RO.....','....OR....RO....','....OY....YO....','...OYY....YYO...','...OYY....YYO...','....OO....OO....','................'],
+ envelope:['................','................','................','OOOOOOOOOOOOOOOO','OMOMMMMMMMMMMOMO','OMMOMMMMMMMMOMMO','OMMMOMMMMMMOMMMO','OMMMMOOMMOOMMMMO','OMMMMMMORROMMMMO','OMMMMMMRRRRMMMMO','OMMMMMMMRRMMMMMO','OMMMMMMMMMMMMMMO','OOOOOOOOOOOOOOOO','................','................','................'],
+ shell:['................','.......OO.......','......OccO......','.....OOOOOO.....','....OrPrPrPrO...','...OPrPrPrPrPO..','...OrPrPrPrPrO..','..OPrPrPrPrPrPO.','..OrPrPrPrPrPrO.','..OPrPrPrPrPrPO.','...OrPrPrPrPrO..','....OOPrPrPOO...','......OOOOO.....','......OiO.......','.....OiiiO......','......OOO.......'],
+ bag:['................','....OOOOOOOO....','...OcO....OcO...','...Oc......cO...','..OOOOOOOOOOOO..','..ObbbbbbbbbbO..','..ObBBBBBBBBbO..','..ObBBBrBBBBbO..','..ObBBrPrBBBbO..','..ObBBBrBBBBbO..','..ObBBBBBBYBbO..','..ObbbbbbbbbbO..','..ObBBBBBBBBbO..','..ObBBBBBBBBbO..','..OOOOOOOOOOOO..','................'],
+ paw:['................','....OO....OO....','...ORRO..ORRO...','...ORRO..ORRO...','.OO.OO....OO.OO.','ORRO........ORRO','ORRO..OOOO..ORRO','.OO..ORRRRO..OO.','....ORRRRRRO....','....ORRRRRRO....','...ORRRRRRRRO...','...ORRRRRRRRO...','....ORRRRRRO....','.....OOOOOO.....','................','................'],
+} as const;
+export type TravelIcon=keyof typeof TRAVEL_ICON;
+/** Integer pixels only; `fade` draws a locked/empty slot. */
+export function drawTravelIcon(ctx:CanvasRenderingContext2D,id:TravelIcon,rect:Rect,fade=false){
+ const scale=Math.max(1,Math.floor(Math.min(rect.w,rect.h)/16)),x=Math.round(rect.x+(rect.w-16*scale)/2),y=Math.round(rect.y+(rect.h-16*scale)/2);
+ ctx.save();ctx.imageSmoothingEnabled=false;if(fade)ctx.globalAlpha*=.35;
+ TRAVEL_ICON[id].forEach((row,iy)=>{for(let ix=0;ix<row.length;ix++){const color=PAL[row[ix] as keyof typeof PAL];if(color){ctx.fillStyle=color;ctx.fillRect(x+ix*scale,y+iy*scale,scale,scale);}}});
+ ctx.restore();
+}

@@ -20,16 +20,7 @@
       "bytes": 2945954,
       "width": 1024,
       "height": 1536,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/album-cloud-post-office-04-20261020/native.webp",
-        "sha256": "f562078023898c98ac0001faa7963984bfdeca323e26061220c482f34a91c7ad",
-        "bytes": 496612,
-        "width": 1024,
-        "height": 1536
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/album-cloud-post-office-04-20261020.png",
     "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
@@ -87,15 +78,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/album-cloud-post-office-04-20261020.webp",
-    "sha256": "f562078023898c98ac0001faa7963984bfdeca323e26061220c482f34a91c7ad",
-    "bytes": 496612,
-    "width": 1024,
-    "height": 1536,
-    "originalPngSha256": "8ee0f22346d7a5285f3689e2eb36af40a34eb07cbd32246933bf7ccbac70d611"
   }
 }

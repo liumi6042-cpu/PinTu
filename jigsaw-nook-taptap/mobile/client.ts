@@ -7,8 +7,8 @@ import {TapPreviewRealtime} from './tap-preview';
 import type {TapPreviewDescriptor} from '../lib/room-preview';
 import {bundledArtworkPath} from './bundled-artwork';
 
-export type GameCapabilities={energy:boolean;ads:boolean;shareRewards?:boolean;tapMultiplayer?:boolean;albumTarget:'pc'|'mobile-shared';createTickets?:boolean;customNames?:boolean;cheers?:boolean;privacyRequests?:boolean;roomActionRevisionBody?:boolean;soloLocalPlay?:boolean;offlineLevelClears?:boolean;supportedPieces?:number[];social?:{friends?:boolean;privateMessages?:boolean;privateMessageHistory?:boolean;roomInvites?:boolean;reports?:boolean;blocking?:boolean;search?:boolean;presence?:boolean;codeFormat?:'hex12'|'digits9'}};
-export type GameConfig={mobileMode?:string|null;adRewardEnabled:boolean;rewardedAdUnitId:string;rewardedAdUnitIdPortrait?:string;rewardedAdUnitIdLandscape?:string;rewardedAdUnitIdWechat?:string;identityMode:'guest-device'|'web-cookie';wechatLoginConfigured:false;capabilities:GameCapabilities;compatUrls?:WebLinks;realtime?:{version:number};[key:string]:unknown};
+export type GameCapabilities={energy:boolean;ads:boolean;shareRewards?:boolean;tapMultiplayer?:boolean;albumTarget:'pc'|'mobile-shared';createTickets?:boolean;customNames?:boolean;cheers?:boolean;privacyRequests?:boolean;roomActionRevisionBody?:boolean;soloLocalPlay?:boolean;offlineLevelClears?:boolean;tuanziTravel?:boolean;supportedPieces?:number[];social?:{friends?:boolean;privateMessages?:boolean;privateMessageHistory?:boolean;roomInvites?:boolean;reports?:boolean;blocking?:boolean;search?:boolean;presence?:boolean;codeFormat?:'hex12'|'digits9'}};
+export type GameConfig={mobileMode?:string|null;adRewardEnabled:boolean;rewardedAdUnitId:string;rewardedAdUnitIdPortrait?:string;rewardedAdUnitIdLandscape?:string;identityMode:'guest-device'|'web-cookie';wechatLoginConfigured:false;capabilities:GameCapabilities;compatUrls?:WebLinks;realtime?:{version:number};[key:string]:unknown};
 export type FetchLikeInit={method?:string;headers?:HeadersInit;body?:BodyInit|null;signal?:AbortSignal|null;cache?:string;timeout?:number};
 export type FetchLikeReply={status:number;ok:boolean;headers:{get(name:string):string|null};json():Promise<any>};
 const sessionPattern=/^[a-f0-9]{64}$/,roomPattern=/^[a-f0-9]{32}$/;
@@ -67,18 +67,17 @@ export class GameClient{
    const wechat=this.platform.config.id==='wechat',web=this.platform.config.id==='web',slotId=(value:unknown)=>typeof value==='string'&&/^[\w-]{1,64}$/.test(value.trim())?value.trim():'';
    // TapTap 按游戏方向下发横屏/竖屏两个激励位；旧服务只有 rewardedAdUnitId。
    const portraitUnit=taptap?slotId(reply.data.rewardedAdUnitIdPortrait):'',landscapeUnit=taptap?slotId(reply.data.rewardedAdUnitIdLandscape):'';
-   // WeChat takes its own adunit-… placement: from the package config, else from the server's rewardedAdUnitIdWechat (none yet).
-   const wechatUnit=wechat?(this.platform.config.rewardedAdUnitId||(/^adunit-[a-z0-9]+$/i.test(String(reply.data.rewardedAdUnitIdWechat??'').trim())?String(reply.data.rewardedAdUnitIdWechat).trim():'')):'';
-   const unit=web?'':wechat?wechatUnit:String(reply.data.rewardedAdUnitId||portraitUnit||landscapeUnit||this.platform.config.rewardedAdUnitId||'');
-   const capabilities:GameCapabilities={energy:this.cookieIdentity?false:reply.data.capabilities?.energy!==false,shareRewards:!web&&!wechat&&reply.data.capabilities?.shareRewards===true,ads:!web&&reply.data.capabilities?.ads!==false&&reply.data.adRewardEnabled===true&&!!unit,albumTarget:this.cookieIdentity||reply.data.capabilities?.albumTarget==='pc'?'pc':'mobile-shared',createTickets:this.cookieIdentity?false:reply.data.capabilities?.createTickets??!web,
+   const unit=web?'':wechat?(this.platform.config.rewardedAdUnitId||''):String(reply.data.rewardedAdUnitId||portraitUnit||landscapeUnit||this.platform.config.rewardedAdUnitId||'');
+   const capabilities:GameCapabilities={energy:this.cookieIdentity?false:reply.data.capabilities?.energy!==false,shareRewards:!web&&reply.data.capabilities?.shareRewards===true,ads:!web&&reply.data.capabilities?.ads!==false&&reply.data.adRewardEnabled===true&&!!unit,albumTarget:this.cookieIdentity||reply.data.capabilities?.albumTarget==='pc'?'pc':'mobile-shared',createTickets:this.cookieIdentity?false:reply.data.capabilities?.createTickets??!web,
     tapMultiplayer:!web&&reply.data.capabilities?.tapMultiplayer===true,
-    customNames:this.cookieIdentity?reply.data.capabilities?.customNames!==false:!wechat&&reply.data.capabilities?.customNames===true,
+    customNames:this.cookieIdentity?reply.data.capabilities?.customNames!==false:reply.data.capabilities?.customNames===true,
     cheers:this.cookieIdentity?reply.data.capabilities?.cheers===true:reply.data.capabilities?.cheers!==false,
     privacyRequests:!this.cookieIdentity&&reply.data.capabilities?.privacyRequests===true,
     roomActionRevisionBody:!this.cookieIdentity&&reply.data.capabilities?.roomActionRevisionBody===true,
     soloLocalPlay:!this.cookieIdentity&&reply.data.capabilities?.soloLocalPlay===true,
     offlineLevelClears:!this.cookieIdentity&&reply.data.capabilities?.offlineLevelClears===true,
-    social:this.cookieIdentity?reply.data.capabilities?.social??{friends:false,privateMessages:false,reports:false,blocking:false,search:false,codeFormat:'hex12'}:{friends:true,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9',...reply.data.capabilities?.social,privateMessages:!wechat&&reply.data.capabilities?.social?.privateMessages===true,...(wechat?{privateMessageHistory:false}:{})},
+    tuanziTravel:!this.cookieIdentity&&reply.data.capabilities?.tuanziTravel===true,
+    social:this.cookieIdentity?reply.data.capabilities?.social??{friends:false,privateMessages:false,reports:false,blocking:false,search:false,codeFormat:'hex12'}:{friends:true,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9',...reply.data.capabilities?.social,privateMessages:reply.data.capabilities?.social?.privateMessages===true},
     ...(this.cookieIdentity?{supportedPieces:reply.data.capabilities?.supportedPieces??[108,300,500]}:{})};
    this.config={...reply.data,rewardedAdUnitId:unit,rewardedAdUnitIdPortrait:portraitUnit||undefined,rewardedAdUnitIdLandscape:landscapeUnit||undefined,adRewardEnabled:capabilities.ads,identityMode:this.platform.config.id==='taptap'?'taptap':this.cookieIdentity?'web-cookie':'guest-device',wechatLoginConfigured:false,capabilities};
    if(this.cookieIdentity){await this.platform.restoreWebIdentity?.();await this.refresh();}
@@ -115,7 +114,9 @@ export class GameClient{
   return identity;
  }
  private applyProfile(value:any){const profile=profileOf(value?.profile)?value.profile:profileOf(value?.mobileProfile)?value.mobileProfile:profileOf(value)?value:null;if(!profile)return;
-  if(this.profile?.serverTime&&profile.serverTime&&profile.serverTime<this.profile.serverTime)return;const previous=this.ownerIdentity();this.profile=profile;this.authRequired=false;if(this.cookieIdentity){this.account=value?.account??(profile as MobileProfile&{account?:GameClient['account']}).account??null;if(value?.compatUrls)this.config.compatUrls=value.compatUrls;if(previous&&previous!==this.ownerIdentity()){this.ticket=null;this.ticketOwner=null;}}this.onChange?.();
+  if(this.profile?.serverTime&&profile.serverTime&&profile.serverTime<this.profile.serverTime)return;const previous=this.ownerIdentity();this.profile=profile;this.authRequired=false;
+  // A feature switched on while the game stayed open (e.g. 团子去旅行) arrives with the next profile, not only with /config.
+  const offered=(profile as {capabilities?:{tuanziTravel?:unknown}}).capabilities?.tuanziTravel;if(!this.cookieIdentity&&typeof offered==='boolean'&&offered!==this.config.capabilities.tuanziTravel)this.config.capabilities={...this.config.capabilities,tuanziTravel:offered};if(this.cookieIdentity){this.account=value?.account??(profile as MobileProfile&{account?:GameClient['account']}).account??null;if(value?.compatUrls)this.config.compatUrls=value.compatUrls;if(previous&&previous!==this.ownerIdentity()){this.ticket=null;this.ticketOwner=null;}}this.onChange?.();
  }
  private expire(){this.token=null;this.ticket=null;this.platform.storage.remove(this.sessionKey());}
  private async request(path:string,method:string,body:unknown,headers:Record<string,string>,timeout=12000){
@@ -137,7 +138,7 @@ export class GameClient{
   if(this.authRequired||this.ticket?.room.id!==ticket.room.id||this.ticket.token!==ticket.token||this.ticketOwner!==this.ownerIdentity())return;
   this.applyProfile(value);
  }
- roomRealtime(ticket:RoomTicket,revision:()=>number,onTapDisconnect?:()=>void){
+ roomRealtime(ticket:RoomTicket,revision:()=>number){
   if(this.config.realtime?.version!==1||!this.platform.openSocket)return null;
   const base=this.platform.config.apiBase.replace(/\/$/,''),url=base.replace(/^https:/,'wss:').replace(/^http:/,'ws:')+'/realtime',owner=this.ownerIdentity();
   const authority=new RoomRealtime({url,openSocket:(url,handlers)=>this.platform.openSocket!(url,handlers),credentials:async()=>{
@@ -147,7 +148,7 @@ export class GameClient{
   }});
   const preview=(ticket.room as RoomTicket['room']&{tapPreview?:TapPreviewDescriptor}).tapPreview;
   if(this.platform.config.id!=='taptap'||preview?.version!==1||typeof preview.testOnly!=='boolean'||!this.platform.onlineBattleManager)return authority;
-  return new TapPreviewRealtime({authority,onDisconnect:onTapDisconnect,manager:()=>this.platform.onlineBattleManager!(),room:ticket.room,playerId:ticket.playerId,randomId:()=>this.platform.randomId(),sendHz:this.platform.config.previewTestRoom||preview.testOnly===false?10:undefined,request:body=>this.json('/api/rooms/'+ticket.room.id+'/tap-preview','POST',body,{Authorization:'Bearer '+ticket.token,'Content-Type':'application/json'})});
+  return new TapPreviewRealtime({authority,manager:()=>this.platform.onlineBattleManager!(),room:ticket.room,playerId:ticket.playerId,randomId:()=>this.platform.randomId(),sendHz:this.platform.config.previewTestRoom||preview.testOnly===false?10:undefined,request:body=>this.json('/api/rooms/'+ticket.room.id+'/tap-preview','POST',body,{Authorization:'Bearer '+ticket.token,'Content-Type':'application/json'})});
  }
  asset(path:string){
   const bundled=bundledArtworkPath(path,this.platform.config);if(bundled)return bundled;

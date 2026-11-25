@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {shareOnTapTap,subscribeTapShareReturn,TAP_SHARE_AWAY_MS} from '../mobile/taptap-share.ts';
+import {shareOnTapTap,subscribeTapShareReturn} from '../mobile/taptap-share.ts';
 function hostFixture(){let listener,shown,off=0;return {host:{onShareMessage:value=>listener=value,offShareMessage:()=>off++,showShareboard:value=>{shown=value;value.success({errMsg:'showShareboard:ok'});}},get listener(){return listener;},get shown(){return shown;},get off(){return off;}};}
 
 test('cancellation in success, failure or panel completion resolves immediately without a channel',async()=>{
@@ -41,39 +41,10 @@ test('empty registration and successful panel completion do not imply cancellati
 test('the return observer requires a real transition or game touch and removes all subscriptions',()=>{
  const environment={window:new EventTarget(),document:Object.assign(new EventTarget(),{hidden:false}),canvas:new EventTarget()};let hide,show,count=0;const removed=[];
  const host={onHide:fn=>hide=fn,onShow:fn=>show=fn,offHide:fn=>removed.push(fn),offShow:fn=>removed.push(fn)};
- const infos=[];let clock=0;const detach=subscribeTapShareReturn(host,environment,info=>{count++;infos.push(info);},()=>clock);
+ const detach=subscribeTapShareReturn(host,environment,()=>count++);
  show();environment.window.dispatchEvent(new Event('focus'));environment.document.dispatchEvent(new Event('visibilitychange'));assert.equal(count,0);
- hide();clock+=3000;show();assert.equal(count,1);assert.deepEqual(infos[0],{background:true,awayMs:3000});environment.document.hidden=true;environment.document.dispatchEvent(new Event('visibilitychange'));environment.document.hidden=false;environment.document.dispatchEvent(new Event('visibilitychange'));assert.equal(count,2);
+ hide();show();assert.equal(count,1);environment.document.hidden=true;environment.document.dispatchEvent(new Event('visibilitychange'));environment.document.hidden=false;environment.document.dispatchEvent(new Event('visibilitychange'));assert.equal(count,2);
  environment.window.dispatchEvent(new Event('blur'));environment.window.dispatchEvent(new Event('focus'));assert.equal(count,3);
  environment.canvas.dispatchEvent(new Event('pointerdown'));environment.canvas.dispatchEvent(new Event('touchstart'));assert.equal(count,5);
  detach();assert.deepEqual(removed,[hide,show]);environment.canvas.dispatchEvent(new Event('pointerdown'));environment.window.dispatchEvent(new Event('blur'));environment.window.dispatchEvent(new Event('focus'));assert.equal(count,5);
-});
-
-test('a real trip to another app (WeChat sends no result) counts as shared after a short grace',async t=>{
- t.mock.timers.enable({apis:['setTimeout']});
- for(const late of ['none','qq','cancel']){
-  const f=hostFixture();let returned,settled=false;
-  const promise=shareOnTapTap(f.host,{},45000,undefined,{subscribeReturn:fn=>(returned=fn,()=>{})}).then(value=>(settled=true,value));
-  returned({background:true,awayMs:TAP_SHARE_AWAY_MS+500});returned({background:false,awayMs:0});
-  t.mock.timers.tick(1499);await Promise.resolve();assert.equal(settled,false);
-  if(late==='qq')f.listener.success({channel:'qq'});else if(late==='cancel')f.listener.success({errMsg:'share:fail cancel'});else t.mock.timers.tick(1);
-  assert.equal(await promise,late==='cancel'?'cancelled':'shared');
- }
-});
-
-test('a quick round trip or a touch first still resolves as cancelled, but a later real trip upgrades it',async t=>{
- t.mock.timers.enable({apis:['setTimeout']});
- {const f=hostFixture();let returned;const promise=shareOnTapTap(f.host,{},45000,undefined,{subscribeReturn:fn=>(returned=fn,()=>{})});
-  returned({background:true,awayMs:TAP_SHARE_AWAY_MS-1});t.mock.timers.tick(800);assert.equal(await promise,'cancelled');}
- {const f=hostFixture();let returned;const promise=shareOnTapTap(f.host,{},45000,undefined,{subscribeReturn:fn=>(returned=fn,()=>{})});
-  returned({background:false,awayMs:0});t.mock.timers.tick(400);returned({background:true,awayMs:6000});t.mock.timers.tick(800);t.mock.timers.tick(700);assert.equal(await promise,'shared');}
-});
-
-test('the return observer reports background trips from the page visibility and touches after hiding',()=>{
- const environment={window:new EventTarget(),document:Object.assign(new EventTarget(),{hidden:false}),canvas:new EventTarget()};let clock=0;const infos=[];
- const detach=subscribeTapShareReturn(undefined,environment,info=>infos.push(info),()=>clock);
- environment.window.dispatchEvent(new Event('blur'));environment.document.hidden=true;environment.document.dispatchEvent(new Event('visibilitychange'));clock+=4000;
- environment.document.hidden=false;environment.document.dispatchEvent(new Event('visibilitychange'));environment.window.dispatchEvent(new Event('focus'));
- assert.deepEqual(infos,[{background:true,awayMs:4000}]);
- environment.document.hidden=true;environment.document.dispatchEvent(new Event('visibilitychange'));environment.canvas.dispatchEvent(new Event('pointerdown'));assert.deepEqual(infos[1],{background:false,awayMs:0},'a touch never claims a trip');clock+=1000;environment.document.hidden=false;environment.document.dispatchEvent(new Event('visibilitychange'));assert.deepEqual(infos[2],{background:true,awayMs:1000});detach();
 });

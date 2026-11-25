@@ -74,15 +74,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/skate-garden.webp",
-    "sha256": "6d905dfa6a4f7d98dfdf6b67b887bf0944aa0310d6ad2d0f1bbade0dbe8cfa57",
-    "bytes": 654810,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "afd45a616164e6281ee1557d0e3692bdfd473b0ed6fbff5f8c12918c5d2be182"
   }
 }

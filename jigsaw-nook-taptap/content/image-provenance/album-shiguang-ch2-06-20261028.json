@@ -20,16 +20,7 @@
       "bytes": 2706526,
       "width": 1536,
       "height": 1024,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/album-shiguang-ch2-06-20261028/native.webp",
-        "sha256": "56306aeff1b2bd14943dba8d53335fedcbd7617313f20f3a988e6c22d4cf8aba",
-        "bytes": 444304,
-        "width": 1536,
-        "height": 1024
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/album-shiguang-ch2-06-20261028.png",
     "importedRegistrySha256": "b69bd163534da323ae0ae750f1e27931f458dd9862eaa1bbe6be4b87b4c91dc0"
@@ -87,15 +78,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/album-shiguang-ch2-06-20261028.webp",
-    "sha256": "56306aeff1b2bd14943dba8d53335fedcbd7617313f20f3a988e6c22d4cf8aba",
-    "bytes": 444304,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "6f750238ac72ce7df4287d2c1086015ba81dcd7b6124e6b8c16ac377af4ed076"
   }
 }

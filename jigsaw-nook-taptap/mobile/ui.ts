@@ -37,6 +37,8 @@ export class Stage{
  color(value:string){return themeUiColor(this.currentTheme,value);}
  resize(){const v=this.platform.viewport();this.w=v.width;this.h=v.height;const width=Math.round(v.width*v.dpr),height=Math.round(v.height*v.dpr);if(this.platform.canvas.width!==width)this.platform.canvas.width=width;if(this.platform.canvas.height!==height)this.platform.canvas.height=height;this.pixelScaleX=this.platform.canvas.width/Math.max(1,this.w);this.pixelScaleY=this.platform.canvas.height/Math.max(1,this.h);this.dirty=true;}
  invalidate=()=>{this.dirty=true;};
+ /** True when no image is downloading or waiting to (a good moment to fetch something ahead of time). */
+ imagesIdle(){const d=this.images.diagnostics();return d.loading===0&&d.queued===0;}
  begin(){this.images.beginFrame();const c=this.ctx;c.setTransform(this.pixelScaleX,0,0,this.pixelScaleY,0,0);c.globalAlpha=1;c.clearRect(0,0,this.w,this.h);c.fillStyle=this.palette.paper;c.fillRect(0,0,this.w,this.h);this.hits=[];this.clips=[];this.offset={x:0,y:0};this.dirty=false;}
  endFrame(){this.images.endFrame();}
  imageDiagnostics(){return this.images.diagnostics();}
@@ -100,7 +102,7 @@ export class Stage{
  hit(r:Rect,fn:()=>void){if(this.inputSuspended)return;let clipped=intersection({...r,x:r.x+this.offset.x,y:r.y+this.offset.y},{...this.offset,w:this.w,h:this.h});for(const clip of this.clips)clipped=intersection(clipped,clip);if(clipped.w>0&&clipped.h>0)this.hits.push({r:clipped,fn});}
  clip(r:Rect,draw:()=>void){this.ctx.save();this.ctx.beginPath();this.ctx.rect(r.x,r.y,r.w,r.h);this.ctx.clip();this.clips.push({...r,x:r.x+this.offset.x,y:r.y+this.offset.y});try{draw();}finally{this.clips.pop();this.ctx.restore();}}
  retryImages(){this.images.retryFailed();this.invalidate();}
- private load(src:string){const ui=src.startsWith('/mobile-icons/'),extra=(this.platform.config.id==='wechat'?/b2-(supply-scenes|pixel-atlas|core-icons23|task-icons23)\.png$/:/b2-(supply-scenes|pixel-atlas)\.png$/).test(src);const url=ui?(extra?'art/':'assets/ui/')+src.split('/').pop():src.startsWith('/')?this.asset(src):src;return this.images.use(url,ui);}
+ private load(src:string){const ui=src.startsWith('/mobile-icons/'),extra=/b2-(supply-scenes|pixel-atlas)\.png$/.test(src);const url=ui?(extra?'art/':'assets/ui/')+src.split('/').pop():src.startsWith('/')?this.asset(src):src;return this.images.use(url,ui);}
  /** Queue without painting; callers keep their existing artwork until ready. */
  preloadComicImage(src:string,thumb:string){if(src)this.load(src);if(thumb&&thumb!==src)this.load(thumb);}
  /** Reuse either cached resolution; an unavailable image never blocks the page. */

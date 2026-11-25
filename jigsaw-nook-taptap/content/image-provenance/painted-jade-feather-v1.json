@@ -19,16 +19,7 @@
         "imageId": "painted-moonlit-portrait-v1",
         "path": "public/puzzles/painted-moonlit-portrait-v1.png",
         "sha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
-        "purpose": "rendering-style-only",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "public/puzzles/painted-moonlit-portrait-v1.webp",
-          "sha256": "0d31827aad8f2496e8ebea2731a6fb91d23d97c9fa0f82a3d8281440def46aba",
-          "bytes": 346686,
-          "width": 1536,
-          "height": 1024
-        }
+        "purpose": "rendering-style-only"
       }
     ],
     "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-0d17756a-fd90-40e1-8383-1f9c383dd1ec.png",
@@ -93,15 +84,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/painted-jade-feather-v1.webp",
-    "sha256": "6a4ba3618e6672889c0c1c8633d1695eadf22378dfc01ae6555f2e530cd9abd7",
-    "bytes": 424676,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b"
   }
 }

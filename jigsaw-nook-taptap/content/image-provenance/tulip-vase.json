@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/tulip-vase.webp",
-    "sha256": "752a9bab1d437ede2096ea079392bb419142c987f27620af1aeb7228b370a12c",
-    "bytes": 108520,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "509cb41c13a164bd1afe293a0a922d7c12b4b81d8cd5037fba8ae9b9148f8892"
   }
 }

@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/lantern-fox-pair-v1.webp",
-    "sha256": "831e95cb73f21e5f089eb2a2783b9b945c974dbbd38b9f6f73107e666597ff8c",
-    "bytes": 320800,
-    "width": 1672,
-    "height": 941,
-    "originalPngSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404"
   }
 }

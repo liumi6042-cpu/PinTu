@@ -20,16 +20,7 @@
       "bytes": 2753538,
       "width": 1254,
       "height": 1254,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/cat-journey-pixel-nightmarket-v1/native.webp",
-        "sha256": "74da2a4f16bc63568797c52bf1c82d7bc3cb162278e2060a3ae0127b01888ae7",
-        "bytes": 558090,
-        "width": 1254,
-        "height": 1254
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/cat-journey-pixel-nightmarket-v1.png",
     "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
@@ -88,15 +79,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cat-journey-pixel-nightmarket-v1.webp",
-    "sha256": "dde1ae7b75336fedda709c9b25a6d7825576b736ae93a6375e44fdbfa2bb72ad",
-    "bytes": 2344194,
-    "width": 3840,
-    "height": 3840,
-    "originalPngSha256": "b5c4675e486a259fbffea05db6b069f4de54a97cb111e05f8c059cd0c99c736b"
   }
 }

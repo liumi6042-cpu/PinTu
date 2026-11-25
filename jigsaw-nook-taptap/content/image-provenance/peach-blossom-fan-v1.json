@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/peach-blossom-fan-v1.webp",
-    "sha256": "82f45adfbe25cc76e3ea79762b432af7c66f7fecf778362c527af72ec0cbe346",
-    "bytes": 392044,
-    "width": 1672,
-    "height": 941,
-    "originalPngSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3"
   }
 }

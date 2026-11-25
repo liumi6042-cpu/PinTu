@@ -20,16 +20,7 @@
       "bytes": 3556239,
       "width": 1024,
       "height": 1536,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/album-dream-botanical-institute-03-20261020/native.webp",
-        "sha256": "3a90a1d2a2f15e89b25e77622a679885211e81911323a061e90d60996d0c7c8e",
-        "bytes": 638762,
-        "width": 1024,
-        "height": 1536
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/album-dream-botanical-institute-03-20261020.png",
     "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
@@ -87,15 +78,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/album-dream-botanical-institute-03-20261020.webp",
-    "sha256": "3a90a1d2a2f15e89b25e77622a679885211e81911323a061e90d60996d0c7c8e",
-    "bytes": 638762,
-    "width": 1024,
-    "height": 1536,
-    "originalPngSha256": "f2bdd4666424f83259f8d412b99d8189a93bef89312c74e9ebe0df993aaeff0f"
   }
 }

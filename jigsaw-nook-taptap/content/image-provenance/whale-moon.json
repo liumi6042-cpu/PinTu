@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/whale-moon.webp",
-    "sha256": "b5db0f17b371290a2c9df3849753cfe9f83c244b8acc6aa7fdf0a02129ccd4a5",
-    "bytes": 244890,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "ded74b9b188fd00ca3c53959f6fc39d066b7e965ede94b4790e4e19f42ea87bc"
   }
 }

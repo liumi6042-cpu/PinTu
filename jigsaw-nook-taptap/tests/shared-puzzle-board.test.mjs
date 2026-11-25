@@ -74,21 +74,6 @@ test('wechat-style board sends claim/move/drop but never awards or merges before
  board.destroy();
 });
 
-test('a missing lift is recovered on the next touch and an abandoned hold expires',async t=>{
- const {board,state}=setup(),events=[];await board.setImage('local-test.png');board.networkReady=true;
- t.after(()=>board.destroy());
- t.mock.timers.enable({apis:['Date','setTimeout'],now:10000});
- board.network={acquire:async id=>(events.push(['claim',id]),true),move(){},drop:async id=>{events.push(['drop',id]);},release:id=>events.push(['release',id])};
- const group=state.groups.at(-1),start=piecePoint(board,group);
- board.input({type:'down',points:[start],changed:[start]});
- const moved={...start,x:start.x+50};board.input({type:'move',points:[moved],changed:[moved]});
- board.input({type:'down',points:[moved],changed:[moved]});
- assert.deepEqual(events,[['claim',group.id],['drop',group.id],['claim',group.id]]);
- t.mock.timers.tick(15001);
- assert.deepEqual(events.at(-1),['release',group.id]);
- assert.equal(board.drag,null);
-});
-
 test('a release within 3/8 of a piece is aligned before the drop is sent, at any zoom',async()=>{
  const drop=async(z,frac)=>{
   const {board}=setup(),state=board.state,events=[];await board.setImage('local-test.png');board.networkReady=true;
@@ -235,8 +220,8 @@ test('native contexts without isPointInPath can still hit true shared puzzle geo
 
 test('optional tray locates pieces without changing state or acquiring a lease',async()=>{
  const {board,state,p}=setup();await board.setImage('test.png');const before=JSON.stringify(state);board.network={acquire:async()=>assert.fail('finder must not claim'),move:()=>assert.fail('finder must not move'),drop:async()=>assert.fail('finder must not drop'),release(){}};
- assert.equal(board.trayOpen,false);board.trayOpen=true;board.draw(p.ctx);const tray=board.trayLayout(),point={id:1,x:tray.r.x+tray.cellW/2+8,y:tray.r.y+tray.top+tray.cellH/2};board.input({type:'down',points:[point],changed:[point]});board.input({type:'up',points:[],changed:[point]});
- assert.equal(JSON.stringify(state),before);assert.equal(board.focusedPiece,tray.groups[0].pieces[0]);assert.ok(board.camera.z*board.board.width/state.cols>=54);board.destroy();
+ assert.equal(board.trayOpen,false);board.trayOpen=true;board.draw(p.ctx);const tray=board.trayLayout(),point={id:1,x:tray.r.x+tray.cellW/2+8,y:tray.r.y+28+tray.cellH/2};board.input({type:'down',points:[point],changed:[point]});board.input({type:'up',points:[],changed:[point]});
+ assert.equal(JSON.stringify(state),before);assert.equal(board.focusedPiece,state.groups[0].pieces[0]);assert.ok(board.camera.z*board.board.width/state.cols>=54);board.destroy();
 });
 
 test('opening camera shows the full target and all scattered pieces above floating controls',async()=>{

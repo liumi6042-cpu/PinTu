@@ -20,16 +20,7 @@
       "bytes": 3299237,
       "width": 1254,
       "height": 1254,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/cat-journey-spirit-blackcat-v1/native.webp",
-        "sha256": "acd6c0e879cf41cf36fe0c06f556a6d8bfdf2573fe09ed318d912da323de1e5e",
-        "bytes": 559130,
-        "width": 1254,
-        "height": 1254
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/cat-journey-spirit-blackcat-v1.png",
     "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
@@ -88,15 +79,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cat-journey-spirit-blackcat-v1.webp",
-    "sha256": "e0c006d3aefeffd5c248ef0842d27a73e665027911dbd91184da498443d4ca76",
-    "bytes": 1873108,
-    "width": 3840,
-    "height": 3840,
-    "originalPngSha256": "9de014526e57c2f680f45c4bfa0bf081cdd7afaddf5b401aba4661925c4f7cd3"
   }
 }

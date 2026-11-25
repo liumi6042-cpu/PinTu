@@ -20,16 +20,7 @@
       "bytes": 3363566,
       "width": 1672,
       "height": 941,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/album-time-postman-01-20261020/native.webp",
-        "sha256": "950dd541be973084ff78eb6120cdefe31d9d037d9f96bf752d91096cfc07dd19",
-        "bytes": 624332,
-        "width": 1672,
-        "height": 941
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/album-time-postman-01-20261020.png",
     "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
@@ -87,15 +78,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/album-time-postman-01-20261020.webp",
-    "sha256": "950dd541be973084ff78eb6120cdefe31d9d037d9f96bf752d91096cfc07dd19",
-    "bytes": 624332,
-    "width": 1672,
-    "height": 941,
-    "originalPngSha256": "cf68fd9e477048424c0a55ce426a5c506b2b312280b5b868d3df1af6252a6f7e"
   }
 }

@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/sleepy-cat-native-v2.webp",
-    "sha256": "0cd03b6718ce1cca3fd4f379974546742f801468cc3bb88cbc1ad3a643b41287",
-    "bytes": 390712,
-    "width": 1774,
-    "height": 887,
-    "originalPngSha256": "0b4bcddcf8cfc252b269a44841ca402d8ef1d2954acf85870058d9c60ce942c6"
   }
 }

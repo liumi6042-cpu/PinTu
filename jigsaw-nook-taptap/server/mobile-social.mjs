@@ -12,7 +12,7 @@ const PRESENCE_WRITE_MS=10000; // Keep persisted presence substantially fresher 
 /** Social identity is a random public code. All ownership uses the gateway's opaque identity.
  * The enclosing mobile service owns the single transaction and replay receipts.
  */
-export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom,roomCard,blockedWords=DEFAULT_BLOCKED_WORDS,privateMessages=false,openPublicRooms=null}){
+export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom,roomCard,blockedWords=DEFAULT_BLOCKED_WORDS,privateMessages=false}){
  db.exec(`
  CREATE TABLE IF NOT EXISTS mobile_social_players(owner TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE,last_seen INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS mobile_friend_requests(sender TEXT NOT NULL,recipient TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(sender,recipient));
@@ -76,9 +76,8 @@ export function createMobileSocial({db,readProfile,replay,readRoom,authorizeRoom
   // One room scan per snapshot, rather than one full scan for every online friend.
   if(friends.some(player=>player.online)){
    const currentRooms=new Map(),wanted=new Set(friendRows.map(row=>row.peer));
-   // The service shares its parsed open-table list (read-only); standalone use still reads the table.
-   for(const room of openPublicRooms?.()??db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND closed_at IS NULL AND completed_at IS NULL ORDER BY created_at DESC").all().map(row=>JSON.parse(row.data))){
-    if(room.expiresAt<=now)continue;
+   for(const row of db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND closed_at IS NULL AND completed_at IS NULL ORDER BY created_at DESC").all()){
+    const room=JSON.parse(row.data);if(room.expiresAt<=now)continue;
     for(const member of room.members){if(wanted.has(member.guestId)&&now-member.lastSeen<ONLINE_MS&&!currentRooms.has(member.guestId))currentRooms.set(member.guestId,room);}
    }
    friends.forEach((player,index)=>{const room=currentRooms.get(friendRows[index].peer);if(player.online&&room)player.room=roomCard(room,now);});

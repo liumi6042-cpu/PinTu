@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/winter-lake-cabin-glow-v1.webp",
-    "sha256": "6963809b067e8a58bef6331843b0b71b7871e0454ab153d788e8852a01e41c70",
-    "bytes": 620450,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "d97c4724f30bfabb332b0c9027215485a9f8ed21a9c6ece6fdb3e70a792838df"
   }
 }

@@ -20,16 +20,7 @@
       "bytes": 9458297,
       "width": 1824,
       "height": 2432,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/redraw-neon-arcade-street-20261018-04-20261018-v2/native.webp",
-        "sha256": "88836168c3cdcdb2eeae8e9966b5c2668e556c124668fecb0286372c846fcc06",
-        "bytes": 1736618,
-        "width": 1824,
-        "height": 2432
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/redraw-neon-arcade-street-20261018-04-20261018-v2.png",
     "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
@@ -89,15 +80,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/redraw-neon-arcade-street-20261018-04-20261018-v2.webp",
-    "sha256": "88836168c3cdcdb2eeae8e9966b5c2668e556c124668fecb0286372c846fcc06",
-    "bytes": 1736618,
-    "width": 1824,
-    "height": 2432,
-    "originalPngSha256": "8954f7b6fb81dfaeef0ca45bf93cc817edfe01d840b098717c7115848a3ffdea"
   }
 }

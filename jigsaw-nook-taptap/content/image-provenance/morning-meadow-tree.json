@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/morning-meadow-tree.webp",
-    "sha256": "0276f7ae54c55c5822da707766f6b4678fa7c4a97925b46948e3a3b9f54e70b4",
-    "bytes": 450548,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "7cc1d79bc02f8a614cf755170b994ececf4126ed4866f339260202e88814cf01"
   }
 }

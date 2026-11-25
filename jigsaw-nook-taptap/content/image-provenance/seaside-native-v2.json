@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/seaside-native-v2.webp",
-    "sha256": "7f21908d08e91393fd0ae8eae52946fae2977c3029ebd89ee594de7d4d85cb18",
-    "bytes": 564648,
-    "width": 1774,
-    "height": 887,
-    "originalPngSha256": "a6bb2a8e4eb1f0f77451dfa06cac6df3a8a43e412c1fab6226ca702b5a650bc4"
   }
 }

@@ -228,10 +228,6 @@ export class RoomClient {
       this.connected = false; this.failures++;
       for (const task of this.pendingDrags) { task.canceled = true; task.grant(false); task.wake?.(); }
       this.active = null;
-      // HTTP polling can fail while the ordered action stream is still alive.
-      // If the board is about to forget the held piece, end that hold there too.
-      const holdingId=this.diagnosticPipeline?.holdingId;
-      if(holdingId!==undefined)this.diagnosticPipeline?.release(holdingId);
       if (this.table) { this.table.networkReady = false; this.table.cancelNetworkDrag(); }
     }
     this.emit();
@@ -243,11 +239,7 @@ export class RoomClient {
       this.diagnosticPipeline=new DiagnosticDragPipeline(this.deps.realtime,{
         randomId:()=>this.deps.randomId(),now:()=>this.deps.performanceNow(),revision:()=>this.snapshot.revision,
         cancel:id=>this.table?.cancelNetworkDrag(id),error:error=>this.fail(error),timing:(...args)=>this.trace(...args),
-        reconcile:async()=>{
-          if(this.stopped)return;
-          this.receive(await this.request(),true);
-          if(!this.stopped)void this.deps.refreshProfile?.().catch(()=>{});
-        },
+        reconcile:async()=>{if(!this.stopped){this.receive(await this.request(),true);if(!this.stopped)await this.deps.refreshProfile?.();}},
         profile:data=>{this.deps.profile?.(data);if(data?.profile??data?.mobileProfile)this.deps.emit('mobile:profile',data.profile??data.mobileProfile);},
         receive:(reply,input)=>{
           const action=input.action;
@@ -269,7 +261,6 @@ export class RoomClient {
       canAcquire: id => this.localMode?this.canAcquireLocal(id):this.connected && !this.organizing && (this.useDiagnosticPipeline()?this.diagnosticPipeline!.canAcquire(id):this.active === null && this.pendingDrags.size < MAX_PENDING_DRAGS && !this.moving(id)),
       acquire: id => this.acquire(id), move: (id, dx, dy) => this.move(id, dx, dy),
       drop: (id, dx, dy) => this.drop(id, dx, dy), release: id => this.release(id),
-      resync: () => this.resyncTable(),
     };
     for(const cleanup of this.realtimeCleanups)cleanup();this.realtimeCleanups=[];
     if(this.deps.realtime?.preview)this.realtimeCleanups.push(this.deps.realtime.preview.subscribeMoves(moves=>{
@@ -308,7 +299,6 @@ export class RoomClient {
       else data = await this.request();
       this.idlePolls = data.puzzle.groups === this.snapshot.puzzle.groups ? this.idlePolls + 1 : 0;
       this.receive(data);
-      this.diagnosticPipeline?.retryRecovery();
     } catch (error) { this.fail(error); }
     finally {
       this.polling=false;
@@ -419,11 +409,9 @@ export class RoomClient {
     task.latest = { dx, dy }; task.wake?.();
   }
   private drop(id: number, dx: number, dy: number) {
-    if(this.localMode)return this.localDrop(id,dx,dy).catch(error=>this.localPlayFailed(error));
+    if(this.localMode)return this.localDrop(id,dx,dy);
     if(this.diagnosticPipeline?.handles(id))return this.diagnosticPipeline.drop(id,dx,dy);
-    // A drop with no drag behind it (its claim failed or local play ended mid-gesture) must not leave
-    // the piece drawn where the room never put it: show the room's own position again.
-    const task = this.drags.get(id); if (!task) { this.resyncTable(); return Promise.resolve(); }
+    const task = this.drags.get(id); if (!task) return Promise.resolve();
     task.latest = null; task.ending = { type: 'drop', dx, dy };task.droppedAt=this.deps.performanceNow();this.trace('drop-start',task.droppedAt);
     if (this.active === task) this.active = null;
     task.wake?.(); return task.finished;
@@ -467,13 +455,6 @@ export class RoomClient {
     this.soloGroupsKey=JSON.stringify(this.localPuzzle.groups);
     this.table?.syncRemote(this.localPuzzle,{},protect,feedback);
   }
-  /** Draw the room's authoritative state again (local play: the device's puzzle), keeping only a held piece. */
-  resyncTable(){
-    if(this.stopped||!this.table)return;
-    if(this.localMode){if(this.localPuzzle)this.syncSoloPuzzle(false,this.localDrag===null?new Set():new Set([this.localDrag]));return;}
-    const protectedIds=new Set([...this.drags.values()].filter(t=>!t.canceled).map(t=>t.id));for(const id of this.diagnosticPipeline?.protectedIds()??[])protectedIds.add(id);
-    this.table.syncRemote(this.previewPuzzle(),this.pieceOwners,protectedIds,false);
-  }
   private rebaseSoloPuzzle(){
     if(!this.localMode)return;
     this.localPuzzle=replaySoloOps(this.snapshot.puzzle,this.soloOps);
@@ -484,7 +465,7 @@ export class RoomClient {
     this.deps.emit('mobile:gameplay-error',{code:'ENERGY_EMPTY',message});this.deps.emit('mobile:energy-empty');
   }
   private async localDrop(id:number,dx:number,dy:number){
-    if(!this.localPuzzle||this.localDrag!==id){this.resyncTable();return;}
+    if(!this.localPuzzle||this.localDrag!==id)return;
     this.localDrag=null;this.soloDropping=true;
     try{
       let result=applySoloDrop(this.localPuzzle,{groupId:id,dx,dy});
@@ -499,7 +480,7 @@ export class RoomClient {
         if(result.snapped&&!canAfford()){this.syncSoloPuzzle(false);this.energyEmpty();return;}
       }
       const op:SoloOp={requestId:this.deps.randomId(),groupId:id,dx:result.dx,dy:result.dy,snapped:result.snapped};
-      const last=this.soloOps[this.soloOps.length-1];
+      const last=this.soloOps.at(-1);
       if(!op.snapped&&this.soloOps.length-1>=this.soloInflight&&last&&!last.snapped&&last.groupId===id)this.soloOps[this.soloOps.length-1]=op;
       else this.soloOps.push(op);
       this.persistSolo();this.localPuzzle=result.puzzle;this.syncSoloPuzzle(true);
@@ -513,13 +494,6 @@ export class RoomClient {
       this.scheduleSoloFlush(result.completed||unsent>=25?0:Math.max(0,Math.min(800,3000-(now-this.firstUnsentAt))));
       this.emit();
     }finally{this.soloDropping=false;this.exitWake?.();}
-  }
-  /** Local play threw (an old WebView lacking a newer built-in, say). Never leave the piece drawn where the
-   * room did not put it: save what is pending, return to server drags for this room and redraw its state. */
-  private localPlayFailed(error:unknown){
-    this.deps.emit('room:local-play-error',{roomId:this.ticket.room.id,message:error instanceof Error?error.message:String(error)});
-    this.soloRefused=true;this.soloDropping=false;this.localDrag=null;
-    if(this.localMode)this.beginExit();else this.resyncTable();
   }
   private clearSoloTimer(){if(this.flushTimer)clearTimeout(this.flushTimer);this.flushTimer=null;}
   private scheduleSoloFlush(delay:number){

@@ -20,16 +20,7 @@
       "bytes": 3189037,
       "width": 1024,
       "height": 1536,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/album-floating-breakfast-shop-05-20261020/native.webp",
-        "sha256": "5ad88e578c6cf64b56702ae12853142ea23b23f24bb517c7b3c0fc52831e4b66",
-        "bytes": 559222,
-        "width": 1024,
-        "height": 1536
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/album-floating-breakfast-shop-05-20261020.png",
     "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
@@ -87,15 +78,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/album-floating-breakfast-shop-05-20261020.webp",
-    "sha256": "5ad88e578c6cf64b56702ae12853142ea23b23f24bb517c7b3c0fc52831e4b66",
-    "bytes": 559222,
-    "width": 1024,
-    "height": 1536,
-    "originalPngSha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1"
   }
 }

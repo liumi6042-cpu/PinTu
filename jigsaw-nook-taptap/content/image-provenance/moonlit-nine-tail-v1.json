@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/moonlit-nine-tail-v1.webp",
-    "sha256": "95a0493ebcd5801a47cffec61acaf356ea4b3b6e7af37181ceeb205271774051",
-    "bytes": 256304,
-    "width": 1672,
-    "height": 941,
-    "originalPngSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25"
   }
 }

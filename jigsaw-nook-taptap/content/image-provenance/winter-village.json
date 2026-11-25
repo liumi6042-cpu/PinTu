@@ -89,15 +89,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/winter-village.webp",
-    "sha256": "85dee953a9dbf5cc0b7b69b472e1fe8c1a5eeefdd541be2286848c505f881d90",
-    "bytes": 661132,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c"
   }
 }

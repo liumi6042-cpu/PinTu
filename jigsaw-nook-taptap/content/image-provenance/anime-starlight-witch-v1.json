@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/anime-starlight-witch-v1.webp",
-    "sha256": "6b284ac002fc2b9129a14ac8b250996f1109ec67a00712d9723c7ba691934fde",
-    "bytes": 396098,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b"
   }
 }

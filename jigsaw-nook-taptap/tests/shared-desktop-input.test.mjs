@@ -39,7 +39,6 @@ test('explicit desktop panning never acquires a piece; Escape cancels movement a
 
 function browserFixture(t){
  const window=new EventTarget(),document=new EventTarget(),canvas=new EventTarget(),attrs=new Map(),captured=new Set();
- Object.assign(window,{innerWidth:1000,innerHeight:650});
  Object.assign(document,{baseURI:'https://game.example/preview/',body:{},hidden:false});document.activeElement=document.body;
  Object.assign(canvas,{style:{touchAction:'auto'},getAttribute:name=>attrs.get(name)??null,setAttribute:(name,value)=>attrs.set(name,value),removeAttribute:name=>attrs.delete(name),getBoundingClientRect:()=>({left:20,top:30,width:1000,height:650}),focus(){document.activeElement=canvas;},setPointerCapture:id=>captured.add(id),releasePointerCapture:id=>captured.delete(id)});
  Object.defineProperty(canvas,'tabIndex',{get:()=>Number(attrs.get('tabindex')??-1),set:value=>attrs.set('tabindex',String(value))});
@@ -79,21 +78,6 @@ test('lost touch capture cancels all held touches and a fresh drag has no stale 
  b.pointer('pointerdown',{pointerType:'touch',pointerId:9});assert.deepEqual(b.events.at(-1).points.map(p=>p.id),[9]);
  b.pointer('pointerup',{pointerType:'touch',pointerId:9});const count=b.events.length;
  b.pointer('lostpointercapture',{pointerId:9,pointerType:'touch'});assert.equal(b.events.length,count,'normal capture release cannot cancel the next gesture');
-});
-
-test('a new primary touch and a mouse move without a button recover missing pointer-up events',t=>{
- const b=browserFixture(t);
- b.pointer('pointerdown',{pointerType:'touch',pointerId:7,isPrimary:true});
- b.pointer('pointerdown',{pointerType:'touch',pointerId:8,isPrimary:false});
- assert.deepEqual(b.events.at(-1).points.map(p=>p.id),[7,8]);
- b.pointer('pointerdown',{pointerType:'touch',pointerId:9,isPrimary:true});
- assert.equal(b.events.at(-2).type,'cancel');
- assert.deepEqual(b.events.at(-1).points.map(p=>p.id),[9]);
- b.pointer('pointerup',{pointerType:'touch',pointerId:9});
- b.pointer('pointerdown',{isPrimary:true});
- b.pointer('pointermove',{buttons:0,isPrimary:true});
- assert.equal(b.events.at(-1).type,'up');
- assert.equal(b.captured.size,0);
 });
 
 test('native touch diagnostic path forwards both fingers once and switching modes cancels held input',t=>{

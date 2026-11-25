@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/floating-house.webp",
-    "sha256": "e940cf28bc5cb64b88c9aab68e7bc59b9689be282b4e4229a33fa6a2e7481328",
-    "bytes": 83646,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "6b6e41587a7447eb89328d41fbdf2847a6c8dc41545df43b5bc57a13b0e6bf22"
   }
 }

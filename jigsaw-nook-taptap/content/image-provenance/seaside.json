@@ -74,15 +74,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/seaside.webp",
-    "sha256": "43fd45cafe2386d312b6e2e5a95c2e50f9010e3d703915f13a4f1c09edc46bf0",
-    "bytes": 623386,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "57379a8d7ba3bd8fe46aff2477f219030a890b00a0a5ddec93fdb35da532564b"
   }
 }

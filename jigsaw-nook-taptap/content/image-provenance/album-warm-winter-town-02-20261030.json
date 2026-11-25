@@ -20,16 +20,7 @@
       "bytes": 3568627,
       "width": 1536,
       "height": 1024,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/album-warm-winter-town-02-20261030/native.webp",
-        "sha256": "52a8fa47fe314ee68a5b7bc041d66780dc63478df374526e377197cc48fcb939",
-        "bytes": 686718,
-        "width": 1536,
-        "height": 1024
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/album-warm-winter-town-02-20261030.png",
     "importedRegistrySha256": "a94b145e2fa103a42e00523fe711d12be76764f10176883113f9fc13ecbde2b8"
@@ -87,15 +78,5 @@
         "smartSubsample": true
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/album-warm-winter-town-02-20261030.webp",
-    "sha256": "52a8fa47fe314ee68a5b7bc041d66780dc63478df374526e377197cc48fcb939",
-    "bytes": 686718,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "7784ca1d90b4c24e6ac8de113db9cf14dbc06bb5feefa2aeab688368a2ece841"
   }
 }

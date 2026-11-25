@@ -20,16 +20,7 @@
       "bytes": 8886292,
       "width": 2816,
       "height": 1584,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/redraw-plush-escape-plan-20261018-02-20261018-v2/native.webp",
-        "sha256": "30ce1abd76161e04bfc7fb0a88f6ce436df9f44537bbaa093be577da2d86c192",
-        "bytes": 1453220,
-        "width": 2816,
-        "height": 1584
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2.png",
     "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
@@ -89,15 +80,5 @@
         "effort": 6
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2.webp",
-    "sha256": "30ce1abd76161e04bfc7fb0a88f6ce436df9f44537bbaa093be577da2d86c192",
-    "bytes": 1453220,
-    "width": 2816,
-    "height": 1584,
-    "originalPngSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b"
   }
 }

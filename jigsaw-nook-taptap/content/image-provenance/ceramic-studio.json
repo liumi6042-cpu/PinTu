@@ -89,15 +89,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/ceramic-studio.webp",
-    "sha256": "db4635cfdef81b6ae6a566fd659e7b7359d9444b11ff978e697cae9e37a11865",
-    "bytes": 634574,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "99c1ea3e8f2f5c59fe3991bb84af7f2af8c5f36772e0254b8a10d9e18b722b56"
   }
 }

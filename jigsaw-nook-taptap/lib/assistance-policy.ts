@@ -7,7 +7,7 @@ export const ASSISTANCE_POLICY={
 export type AssistanceKind=keyof typeof ASSISTANCE_POLICY;
 export const ASSISTANCE_KINDS:AssistanceKind[]=['underlay','hint'];
 // Historical reference grants stay readable, but can no longer be activated.
-export type AssistanceGrant={requestId:string;kind:AssistanceKind|'reference';expiresAt:number;pieceIds:number[];lasting?:boolean;startedAt?:number};
+export type AssistanceGrant={requestId:string;kind:AssistanceKind|'reference';expiresAt:number;pieceIds:number[]};
 export type AssistanceState={grants:AssistanceGrant[];serverTime:number};
 export function isAssistanceKind(value:unknown):value is AssistanceKind{return typeof value==='string'&&ASSISTANCE_KINDS.includes(value as AssistanceKind);}
 export function assistanceLimit(kind:AssistanceKind,pieces=108){

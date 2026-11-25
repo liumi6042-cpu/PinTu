@@ -89,15 +89,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/autumn-teahouse.webp",
-    "sha256": "494e3a5ca6b15c212c347bde23533666d46f46cf2ad7020de9cb792496842184",
-    "bytes": 778632,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "4aae9d7de6c78cbf798b47ac7e6df4d91031ac7ca62c46de084e689c277c5578"
   }
 }

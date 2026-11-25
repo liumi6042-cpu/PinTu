@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/olive-tone-study-03.webp",
-    "sha256": "4cf26deef530194235c7dbc7df9b7af59e778d1ce6f08ead9e0ada0627cb5084",
-    "bytes": 737436,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad"
   }
 }

@@ -5,7 +5,7 @@ import {createTapRewarded,type TapRewardedHost} from './tap-rewarded';
 import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {isTapPcHost,setTapOrientation,type TapOrientationHost} from './tap-orientation';
 import {webFullscreen} from './web-fullscreen';
-import type {Platform,PlatformConfig,HttpInput,HttpReply,Input,Point,TextPromptOptions,UiSize,Viewport} from './ports';
+import type {Platform,PlatformConfig,HttpInput,HttpReply,Input,Point,UiSize,Viewport} from './ports';
 import {platformSocketUrl} from './ports';
 import {themeColors} from './theme';
 import {AudioPlayback} from './audio-playback';
@@ -101,7 +101,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
  const storageMemory=new Map<string,string>();
  // Every pointer, touch and wheel position is divided by the same zoom used for the viewport.
  let uiSize=readUiSize(),scale=uiScale(uiSize);const resizeListeners=new Set<()=>void>();
- let shareDiagnostic='尚未尝试分享',shareLog:string[]=[],shareStarted=Date.now();
+ let shareDiagnostic='尚未尝试分享';
  let shareController:AbortController|undefined;
  const tap=()=>config.id==='taptap'?(window as unknown as {tap?:TapHost}).tap:undefined;
  const loginLog=createLoginLog();
@@ -132,21 +132,17 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
  for(const type of ['pointerdown','touchend','keydown'])window.addEventListener?.(type,()=>audioPlayback.unlock(),{capture:true,passive:true});
  let textPromptOpen=false;
  let rawPointerMoves=0,rawTouchMoves=0,touchInputMode=false,resetInput:(()=>void)|null=null;
- const textPrompt=(title:string,value:string,maxLength:number,options:TextPromptOptions={})=>new Promise<string|null>(resolve=>{
+ const textPrompt=(title:string,value:string,maxLength:number)=>new Promise<string|null>(resolve=>{
   if(textPromptOpen){resolve(null);return;}textPromptOpen=true;
-  const single=options.singleLine===true,colors=themeColors(canvas.style.colorScheme==='dark'?'dark':'light'),dialog=document.createElement('dialog'),form=document.createElement('form'),heading=document.createElement('h3'),field=document.createElement(single?'input':'textarea'),actions=document.createElement('div'),cancel=document.createElement('button'),send=document.createElement('button');
-  // A one-line field sits near the top so a phone keyboard (landscape too) does not cover it.
-  dialog.setAttribute('aria-label',title);dialog.style.cssText=`position:fixed;${single?'inset:max(12px,env(safe-area-inset-top)) 0 auto 0;margin:0 auto;':'inset:0;margin:auto;'}box-sizing:border-box;width:min(420px,calc(100vw - 30px));max-height:calc(100dvh - 30px);padding:18px;background:${colors.cream};color:${colors.ink};border:3px solid ${colors.line};box-shadow:4px 4px 0 ${colors.muted};font-family:inherit;`;
+  const colors=themeColors(canvas.style.colorScheme==='dark'?'dark':'light'),dialog=document.createElement('dialog'),form=document.createElement('form'),heading=document.createElement('h3'),field=document.createElement('textarea'),actions=document.createElement('div'),cancel=document.createElement('button'),send=document.createElement('button');
+  dialog.setAttribute('aria-label',title);dialog.style.cssText=`position:fixed;inset:0;margin:auto;box-sizing:border-box;width:min(420px,calc(100vw - 30px));max-height:calc(100dvh - 30px);padding:18px;background:${colors.cream};color:${colors.ink};border:3px solid ${colors.line};box-shadow:4px 4px 0 ${colors.muted};font-family:inherit;`;
   form.method='dialog';heading.textContent=title;heading.style.cssText='font-size:18px;margin:0 0 14px';
-  field.value=value;field.maxLength=maxLength;field.placeholder=options.placeholder??'输入消息…';field.setAttribute('aria-label',title);
-  if(field instanceof HTMLTextAreaElement){field.rows=5;field.style.cssText=`box-sizing:border-box;width:100%;min-height:110px;resize:vertical;padding:12px;font:16px sans-serif;line-height:1.55;color:${colors.ink};background:${colors.paper};border:1px solid ${colors.line};`;}
-  else{field.type='text';for(const [name,attribute]of [['autocomplete','off'],['autocapitalize','characters'],['autocorrect','off'],['spellcheck','false'],['enterkeyhint','done']])field.setAttribute(name,attribute);field.style.cssText=`box-sizing:border-box;width:100%;min-height:46px;padding:10px 12px;font:700 20px monospace;letter-spacing:2px;text-transform:uppercase;color:${colors.ink};background:${colors.paper};border:1px solid ${colors.line};`;}
-  const hint=options.hint?document.createElement('p'):null;if(hint){hint.textContent=options.hint!;hint.style.cssText=`font-size:13px;margin:-6px 0 12px;color:${colors.muted};`;}
-  actions.style.cssText='display:flex;justify-content:flex-end;gap:10px;margin-top:14px';cancel.type='button';cancel.textContent='取消';send.type='submit';send.textContent=options.confirmLabel??'发送';
+  field.value=value;field.maxLength=maxLength;field.rows=5;field.placeholder='输入消息…';field.setAttribute('aria-label',title);field.style.cssText=`box-sizing:border-box;width:100%;min-height:110px;resize:vertical;padding:12px;font:16px sans-serif;line-height:1.55;color:${colors.ink};background:${colors.paper};border:1px solid ${colors.line};`;
+  actions.style.cssText='display:flex;justify-content:flex-end;gap:10px;margin-top:14px';cancel.type='button';cancel.textContent='取消';send.type='submit';send.textContent='发送';
   for(const button of[cancel,send])button.style.cssText=`min-width:78px;min-height:40px;border:2px solid ${colors.line};color:${button===send?colors.onAccent:colors.ink};background:${button===send?colors.rose:colors.paper};font:700 15px sans-serif;cursor:pointer;`;
   let settled=false;const finish=(text:string|null)=>{if(settled)return;settled=true;textPromptOpen=false;dialog.close();dialog.remove();resolve(text);};
   cancel.onclick=()=>finish(null);form.onsubmit=event=>{event.preventDefault();finish(field.value);};dialog.oncancel=event=>{event.preventDefault();finish(null);};
-  actions.appendChild(cancel);actions.appendChild(send);form.appendChild(heading);if(hint)form.appendChild(hint);form.appendChild(field);form.appendChild(actions);dialog.appendChild(form);document.body.appendChild(dialog);dialog.showModal();field.focus();
+  actions.appendChild(cancel);actions.appendChild(send);form.appendChild(heading);form.appendChild(field);form.appendChild(actions);dialog.appendChild(form);document.body.appendChild(dialog);dialog.showModal();field.focus();
  });
  const tapPcHost=()=>config.id==='taptap'&&isTapPcHost({host:tap() as {getSystemInfoSync?:()=>unknown}|undefined,userAgent:typeof navigator==='undefined'?'':String(navigator.userAgent??''),bridge:(window as {H5GameAPI?:unknown}).H5GameAPI});
  const orientationChoiceAvailable=()=>{const host=tap() as (TapHost&{getSystemInfoSync?:()=>{platform?:unknown}})|undefined;if(typeof host?.setDeviceOrientation!=='function'||tapPcHost())return false;try{return !['windows','mac','macos','pc'].includes(String(host.getSystemInfoSync?.()?.platform??'').toLowerCase());}catch{return false;}};
@@ -268,25 +264,15 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   frame:fn=>requestAnimationFrame(fn),cancelFrame:id=>cancelAnimationFrame(id),
   inputDiagnostics:()=>({pointerMoves:rawPointerMoves,touchMoves:rawTouchMoves,mode:touchInputMode?'touch':'pointer'}),
   setTouchInputMode(enabled){if(touchInputMode===enabled)return;resetInput?.();touchInputMode=enabled;},
-  onInput(fn){const active=new Map<number,Point>(),panPointers=new Set<number>(),primaryPointers=new Map<string,number>();const restore=canvas.style.touchAction,tabIndex=canvas.getAttribute('tabindex');let space=false;canvas.style.touchAction='none';if(tabIndex===null)canvas.tabIndex=0;
-   const handle=(type:'down'|'move'|'up'|'cancel')=>(event:PointerEvent)=>{
-    if(type==='move')rawPointerMoves++;
-    if(touchInputMode&&event.pointerType==='touch')return;
-    if(type==='down'){
-     if(event.button!==0&&event.button!==1)return;
-     // A new primary contact proves the old primary contact already ended.
-     if(active.has(event.pointerId)||event.isPrimary&&primaryPointers.has(event.pointerType))reset();
-     if(event.isPrimary)primaryPointers.set(event.pointerType,event.pointerId);
-    }
-    if(type==='move'&&event.pointerType==='mouse'&&event.buttons===0&&active.has(event.pointerId)){up(event);return;}
-    const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=canvas.getBoundingClientRect(),point={id:event.pointerId,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale};
+  onInput(fn){const active=new Map<number,Point>(),panPointers=new Set<number>();const restore=canvas.style.touchAction,tabIndex=canvas.getAttribute('tabindex');let space=false;canvas.style.touchAction='none';if(tabIndex===null)canvas.tabIndex=0;
+   const handle=(type:'down'|'move'|'up'|'cancel')=>(event:PointerEvent)=>{if(type==='move')rawPointerMoves++;if(touchInputMode&&event.pointerType==='touch')return;if(type==='down'&&event.button!==0&&event.button!==1)return;const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=canvas.getBoundingClientRect(),point={id:event.pointerId,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale};
     if(hover){fn({type,points:[],changed:[point]});return;}
     if(type==='down'){canvas.focus({preventScroll:true});if(event.button===1||(event.pointerType==='mouse'&&space))panPointers.add(event.pointerId);}
     const pan=panPointers.has(event.pointerId);
     if(type==='down'||type==='move')active.set(event.pointerId,point);else active.delete(event.pointerId);
     if(type==='down')try{canvas.setPointerCapture(event.pointerId);}catch{}
     fn({type,points:[...active.values()],changed:[point],...(pan?{pan:true}:{})});
-    if(type==='up'||type==='cancel'){panPointers.delete(event.pointerId);if(primaryPointers.get(event.pointerType)===event.pointerId)primaryPointers.delete(event.pointerType);try{canvas.releasePointerCapture(event.pointerId);}catch{}}
+    if(type==='up'||type==='cancel'){panPointers.delete(event.pointerId);try{canvas.releasePointerCapture(event.pointerId);}catch{}}
    };
    const down=handle('down'),move=handle('move'),up=handle('up'),cancel=handle('cancel');
    const leave=(event:PointerEvent)=>{if(event.pointerType==='mouse'&&!active.has(event.pointerId))fn({type:'cancel',points:[],changed:[{id:event.pointerId,x:0,y:0}]});};
@@ -302,7 +288,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     event.preventDefault();if(event.code==='Space')space=keyDown;
     fn({type:'key',points:[],changed:[],key:event.code==='Space'?' ':event.code.startsWith('Key')?event.code.slice(3).toLowerCase():event.code.startsWith('Digit')?event.code.slice(5):event.key,keyDown,repeat:event.repeat});
    };
-   const keyDown=key(true),keyUp=key(false),reset=()=>{space=false;const changed=[...active.values()],ids=[...active.keys()];active.clear();panPointers.clear();primaryPointers.clear();for(const id of ids)try{canvas.releasePointerCapture(id);}catch{}if(changed.length)fn({type:'cancel',points:[],changed});};
+   const keyDown=key(true),keyUp=key(false),reset=()=>{space=false;const changed=[...active.values()],ids=[...active.keys()];active.clear();panPointers.clear();for(const id of ids)try{canvas.releasePointerCapture(id);}catch{}if(changed.length)fn({type:'cancel',points:[],changed});};
    const lost=(event:PointerEvent)=>{if(active.has(event.pointerId))reset();};
    resetInput=reset;
    // A diagnostic alternative to the WebView's pointer-event conversion.
@@ -314,11 +300,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     if(type==='cancel'){reset();return;}
     const r=canvas.getBoundingClientRect(),point=(t:Touch)=>({id:-t.identifier-1,x:(t.clientX-r.left)/scale,y:(t.clientY-r.top)/scale});
     const changed=Array.from(event.changedTouches).map(point);
-    if(type==='down'){
-     const present=new Set(Array.from(event.touches,t=>-t.identifier-1));
-     if(changed.some(p=>active.has(p.id))||[...active.keys()].some(id=>id<0&&!present.has(id)))reset();
-     for(const p of changed)active.set(p.id,p);
-    }
+    if(type==='down')for(const p of changed)active.set(p.id,p);
     if(type==='move')for(const t of Array.from(event.touches)){const p=point(t);if(active.has(p.id))active.set(p.id,p);}
     if(type==='up')for(const p of changed)active.delete(p.id);
     if(changed.length)fn({type,points:[...active.values()],changed});
@@ -343,7 +325,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   async share(input){const url=new URL(config.gameBase||location.href,document.baseURI),params=new URLSearchParams(input.query);if(input.roomId)params.set('room',input.roomId);if(input.inviteCode)params.set('ref',input.inviteCode);for(const [key,value]of params)url.searchParams.set(key,value);
    if(config.id==='taptap'){
     if(shareController)return 'unavailable';const controller=new AbortController();shareController=controller;
-    try{return await shareOnTapTap(tap(),Object.fromEntries(params),45000,detail=>{const at=Date.now();if(detail.startsWith('开始分享')){shareLog=[];shareStarted=at;}shareLog=[...shareLog,'+'+((at-shareStarted)/1000).toFixed(1)+'s '+detail].slice(-10);shareDiagnostic=shareLog.join('\n');},{signal:controller.signal,subscribeReturn:returned=>subscribeTapShareReturn(tap(),{window,document,canvas},returned)});}finally{if(shareController===controller)shareController=undefined;}
+    try{return await shareOnTapTap(tap(),Object.fromEntries(params),45000,detail=>{shareDiagnostic=detail;},{signal:controller.signal,subscribeReturn:returned=>subscribeTapShareReturn(tap(),{window,document,canvas},returned)});}finally{if(shareController===controller)shareController=undefined;}
    }
    try{if(navigator.share){await navigator.share({title:input.title,url:url.href});return 'shared';}if(navigator.clipboard){await navigator.clipboard.writeText(url.href);return 'copied';}return 'unavailable';}
    catch(error){return (error as {name?:string}).name==='AbortError'?'cancelled':'unavailable';}
@@ -352,7 +334,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    watching=true;audioPlayback.setAdPlaying(true);
    try{return await rewarded.watch(unit);}finally{watching=false;audioPlayback.setAdPlaying(false);}
   },
-  async prompt(title,value='',options){return options?.multiline||options?.singleLine?textPrompt(title,value,options.maxLength??2000,options):window.prompt(title,value);},alert:message=>window.alert(message),
+  async prompt(title,value='',options){return options?.multiline?textPrompt(title,value,options.maxLength??2000):window.prompt(title,value);},alert:message=>window.alert(message),
   async copyText(text){
    // TapTap first (tt.setClipboardData), then the async clipboard, then a selected textarea.
    const host=(globalThis as unknown as {tt?:{setClipboardData?:(options:{data:string;success:()=>void;fail:()=>void})=>void}}).tt;

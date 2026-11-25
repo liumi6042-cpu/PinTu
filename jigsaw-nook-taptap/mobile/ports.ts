@@ -26,8 +26,7 @@ export function platformSocketUrl(url:string,config:Pick<PlatformConfig,'apiBase
  if(!['http','https'].includes(api.protocol)||target.hostname!==api.hostname||target.port!==api.port)throw Error('实时连接必须使用当前服务器');
  return url;
 }
-/** singleLine uses the same in-game dialog as multiline, with an optional hint line under the title. */
-export type TextPromptOptions={multiline?:boolean;singleLine?:boolean;maxLength?:number;hint?:string;placeholder?:string;confirmLabel?:string};
+export type TextPromptOptions={multiline?:boolean;maxLength?:number};
 export type NativeSocialStatus={state:'idle'|'loading'|'ready'|'unavailable'|'failed';error?:{kind:'plugin-unavailable'|'plugin-load-failed'|'invalid-plugin'|'initialization-error'|'initialization-timeout'|'opening-error'|'opening-timeout';code?:number}};
 export type NativeSocialOpenResult='opened'|'unsupported'|'unavailable'|'failed';
 export type TapTapIdentity={code:string;nickname?:string;/** The host has no nickname API (TapTap PC): bind with the login code only. */nicknameUnavailable?:boolean};
