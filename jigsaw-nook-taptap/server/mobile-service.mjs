@@ -129,6 +129,7 @@ export function createMobileService(options={}){
  CREATE INDEX IF NOT EXISTS mobile_requests_created ON mobile_requests(created_at);
  CREATE TABLE IF NOT EXISTS mobile_ad_challenges(token TEXT PRIMARY KEY,owner TEXT NOT NULL,kind TEXT NOT NULL,request_id TEXT NOT NULL,context TEXT NOT NULL,auth_hash TEXT NOT NULL,expires_at INTEGER NOT NULL,used INTEGER NOT NULL DEFAULT 0,UNIQUE(owner,context,request_id));
  CREATE TABLE IF NOT EXISTS mobile_tool_uses(room_id TEXT NOT NULL,owner TEXT NOT NULL,kind TEXT NOT NULL,uses INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(room_id,owner,kind));
+ CREATE INDEX IF NOT EXISTS mobile_tool_uses_owner_kind ON mobile_tool_uses(owner,kind);
  CREATE TABLE IF NOT EXISTS mobile_tool_grants(room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,kind TEXT NOT NULL,expires_at INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(room_id,owner,request_id));
  CREATE TABLE IF NOT EXISTS mobile_settlements(room_id TEXT NOT NULL,owner TEXT NOT NULL,energy INTEGER NOT NULL,contribution INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(room_id,owner));
  CREATE TABLE IF NOT EXISTS mobile_chat(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,data TEXT NOT NULL,sent_at INTEGER NOT NULL,UNIQUE(room_id,owner,request_id));
@@ -426,11 +427,13 @@ export function createMobileService(options={}){
  }
  // v53.10+ clients send lasting=true (POST body) / ?lasting=1 (GET): 提示 stays until its pieces are placed;
  // 底图 always lasts 30 seconds (LEGACY_TOOL_MS) per activation and disappears automatically afterwards.
- const LASTING_TOOL_MS=400*86400000,LEGACY_TOOL_MS=30000;
+ // Each account gets NEWCOMER_FREE_TOOL_USES lifetime free uses per tool kind (hint / underlay), starting from the first room.
+ const LASTING_TOOL_MS=400*86400000,LEGACY_TOOL_MS=30000,NEWCOMER_FREE_TOOL_USES=2;
+ const toolFreeUses=(owner,kind)=>Number(db.prepare('SELECT COALESCE(SUM(uses),0) n FROM mobile_tool_uses WHERE owner=? AND kind=?').get(owner,kind)?.n??0);
  function help(room,p,request,input,now,url){
-  authorize(room,request,now);const protectedRoom=p.firstRoomId===room.id&&!p.firstRoomCompleted;
+  authorize(room,request,now);
   const lastingClient=request.method==='GET'?url?.searchParams.get('lasting')==='1':input.lasting===true;
-  const used=kind=>Number(db.prepare('SELECT uses FROM mobile_tool_uses WHERE room_id=? AND owner=? AND kind=?').get(room.id,p.id,kind)?.uses??0);
+  const used=kind=>toolFreeUses(p.id,kind);
   const locked=new Set(room.puzzle.groups.filter(g=>g.locked).flatMap(g=>g.pieces));
   const grants=()=>{
    const rows=db.prepare('SELECT data FROM mobile_tool_grants WHERE room_id=? AND owner=? AND expires_at>? ORDER BY rowid').all(room.id,p.id,now).map(r=>JSON.parse(r.data));
@@ -443,18 +446,18 @@ export function createMobileService(options={}){
      return g;
     }).filter(g=>g.expiresAt>now);
   };
-  const view=()=>({grants:grants(),serverTime:now,freeRemaining:{hint:Math.max(0,2-used('hint')),underlay:Math.max(0,2-used('underlay'))},newcomerProtected:protectedRoom});
+  const view=()=>({grants:grants(),serverTime:now,freeRemaining:{hint:Math.max(0,NEWCOMER_FREE_TOOL_USES-used('hint')),underlay:Math.max(0,NEWCOMER_FREE_TOOL_USES-used('underlay'))},newcomerProtected:false});
   if(request.method==='GET')return view();if(request.method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
   return replay(p,'help:'+room.id,input,now,()=>{
    if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','工具无效');
    const grantLasting=lastingClient&&input.kind==='hint';
    // A lasting hint may be replaced by a fresh one (its pieces may have been moved by teammates).
    if(grants().some(g=>g.kind===input.kind&&!grantLasting))fail(409,'TOOL_ACTIVE','该功能正在生效');
-   const free=protectedRoom||used(input.kind)<2;
+   const free=used(input.kind)<NEWCOMER_FREE_TOOL_USES;
    if(!free&&!input.rewardToken)fail(402,'AD_REQUIRED',grantLasting?'免费次数已用完，观看 TapTap 广告后可开启':'免费次数已用完，观看 TapTap 广告后可开启30秒',{freeRemaining:view().freeRemaining});
    let pieceIds=[];if(input.kind==='hint'){const held=new Set(Object.keys(room.leases).map(Number));pieceIds=room.puzzle.groups.filter(g=>!g.locked&&!held.has(g.id)).flatMap(g=>g.pieces).slice(0,3);if(!pieceIds.length)fail(409,'NO_HINT_AVAILABLE','暂时没有可提示的拼块');}
    if(!free)consumeChallenge(p,input,'room/'+room.id,request.authorization,now);
-   if(!protectedRoom&&free)db.prepare('INSERT INTO mobile_tool_uses VALUES(?,?,?,1) ON CONFLICT(room_id,owner,kind) DO UPDATE SET uses=uses+1').run(room.id,p.id,input.kind);
+   if(free)db.prepare('INSERT INTO mobile_tool_uses VALUES(?,?,?,1) ON CONFLICT(room_id,owner,kind) DO UPDATE SET uses=uses+1').run(room.id,p.id,input.kind);
    const grant={requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+(grantLasting?LASTING_TOOL_MS:LEGACY_TOOL_MS),...(grantLasting?{lasting:true,startedAt:now}:{})};db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
   });
  }
@@ -570,8 +573,7 @@ export function createMobileService(options={}){
    if(input.context==='supply')fail(403,'AD_REQUIRED','建房券与体力包仅可通过观看广告获取');
    else if(typeof input.context==='string'&&/^room\/[a-f0-9]{32}$/.test(input.context)){
     if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','分享工具无效');const room=readRoom(input.context.slice(5));authorize(room,request,now);
-    const uses=Number(db.prepare('SELECT uses FROM mobile_tool_uses WHERE room_id=? AND owner=? AND kind=?').get(room.id,p.id,input.kind)?.uses??0);
-    if(p.firstRoomId===room.id&&!p.firstRoomCompleted||uses<2)fail(409,'FREE_TOOL_AVAILABLE','请先使用本局免费次数');
+    if(toolFreeUses(p.id,input.kind)<NEWCOMER_FREE_TOOL_USES)fail(409,'FREE_TOOL_AVAILABLE','请先使用新手免费次数');
    }else fail(400,'INVALID_SHARE','分享用途无效');
    return challenge(p,{...input,context:'share:'+input.context,authorization:request.authorization??''},now);
   }
@@ -601,8 +603,8 @@ export function createMobileService(options={}){
   });
   if(path==='/api/rewarded/challenge'&&method==='POST'){
    if(typeof input.context!=='string'||!/^room\/[a-f0-9]{32}$/.test(input.context)||!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','广告工具请求无效');
-   const room=readRoom(input.context.slice(5));authorize(room,request,now);if(p.firstRoomId===room.id&&!p.firstRoomCompleted)fail(409,'FREE_TOOL_AVAILABLE','新手首局可直接使用工具');
-   const uses=Number(db.prepare('SELECT uses FROM mobile_tool_uses WHERE room_id=? AND owner=? AND kind=?').get(room.id,p.id,input.kind)?.uses??0);if(uses<2)fail(409,'FREE_TOOL_AVAILABLE','请先使用本局免费次数');
+   const room=readRoom(input.context.slice(5));authorize(room,request,now);
+   if(toolFreeUses(p.id,input.kind)<NEWCOMER_FREE_TOOL_USES)fail(409,'FREE_TOOL_AVAILABLE','请先使用新手免费次数');
    return challenge(p,{...input,authorization:request.authorization??'',allowSkip:input.adSkipped===true},now);
   }
   if(path==='/api/auth/me'&&method==='GET')return {account:null};
