@@ -19,7 +19,16 @@
         "path": "content/artwork/painted-cel-20260914/style-references/painted-reference.png",
         "sha256": "f5dbc1c9d360fb4e76f633552ef5d012065e7b6a267354313cb30b79b58c618c",
         "purpose": "rendering-style-only",
-        "authorization": "user-request-2026-09-14"
+        "authorization": "user-request-2026-09-14",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "content/artwork/painted-cel-20260914/style-references/painted-reference.webp",
+          "sha256": "32b7dd3e5769b18e90428fe5bdc3cce3b49e4daee50661cc7a2cd20a6a3fbf78",
+          "bytes": 71770,
+          "width": 1048,
+          "height": 588
+        }
       }
     ],
     "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-633caa23-77db-46f0-ad3b-f533f4ce7aea.png",
@@ -84,5 +93,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/painted-moonlit-portrait-v1.webp",
+    "sha256": "0d31827aad8f2496e8ebea2731a6fb91d23d97c9fa0f82a3d8281440def46aba",
+    "bytes": 346686,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2"
   }
 }

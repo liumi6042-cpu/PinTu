@@ -20,7 +20,16 @@
       "bytes": 9683546,
       "width": 2731,
       "height": 1820,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-places-where-light-lingers-03-20261118/native.webp",
+        "sha256": "30a69820ea64ceb382459bc1a795b56c895b2e8fec747f03558d2b814cabb4da",
+        "bytes": 1689370,
+        "width": 2731,
+        "height": 1820
+      }
     },
     "originalFile": "public/puzzles/album-places-where-light-lingers-03-20261118.png",
     "importedRegistrySha256": "e1f9d8b8ae83fe601ba756daa77a6de996ed4a51aaa130a4736e7a3fe3d6b565"
@@ -78,5 +87,15 @@
         "smartSubsample": true
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-places-where-light-lingers-03-20261118.webp",
+    "sha256": "30a69820ea64ceb382459bc1a795b56c895b2e8fec747f03558d2b814cabb4da",
+    "bytes": 1689370,
+    "width": 2731,
+    "height": 1820,
+    "originalPngSha256": "086168b64dd4a20caff2fac483f628a9453c1d7e17b0e2bc113bd7b37043b0d1"
   }
 }

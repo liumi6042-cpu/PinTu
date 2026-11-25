@@ -84,5 +84,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/blossom-canal.webp",
+    "sha256": "82973e1cf92be1b2a199f9c0bd0b159e34a50d84d58fd0b6f7e93b9d51b3b843",
+    "bytes": 818604,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8"
   }
 }

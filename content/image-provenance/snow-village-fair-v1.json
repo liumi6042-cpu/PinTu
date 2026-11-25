@@ -66,5 +66,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/snow-village-fair-v1.webp",
+    "sha256": "b8d71041542235b0802e7ebb23ac7603a2b4793c24a08f15f52ed062ef84bfd1",
+    "bytes": 689018,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "ab9bcf48d89ac33372f4effb4945ef39eaa4474f7847a32781a07ac4f27e7c10"
   }
 }

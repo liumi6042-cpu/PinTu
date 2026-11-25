@@ -20,7 +20,16 @@
       "bytes": 9685180,
       "width": 2816,
       "height": 1584,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/redraw-after-school-wonder-20261018-05-20261018-v2/native.webp",
+        "sha256": "11717204733103ef2828f9578a347b0a8d73b9346949a18d09931131870b20cd",
+        "bytes": 1809566,
+        "width": 2816,
+        "height": 1584
+      }
     },
     "originalFile": "public/puzzles/redraw-after-school-wonder-20261018-05-20261018-v2.png",
     "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
@@ -80,5 +89,15 @@
         "effort": 6
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/redraw-after-school-wonder-20261018-05-20261018-v2.webp",
+    "sha256": "11717204733103ef2828f9578a347b0a8d73b9346949a18d09931131870b20cd",
+    "bytes": 1809566,
+    "width": 2816,
+    "height": 1584,
+    "originalPngSha256": "e2b5e9c2fc2f2b6abfc205c4e6cfa131093b9f6003d0ced8e8ab088c157aff21"
   }
 }

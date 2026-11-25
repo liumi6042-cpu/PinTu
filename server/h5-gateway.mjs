@@ -8,6 +8,7 @@ import {isIP} from 'node:net';
 import {Readable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {createRoomRealtimeHub} from '../outputs/mobile/room-realtime.mjs';
+import {resolveMediaDir,safeMediaFile} from '../scripts/media-paths.mjs';
 
 // Local-only credentials may be supplied through .env.local during development.
 // This file is ignored by Git and is never bundled into the client package.
@@ -193,8 +194,13 @@ export function createH5Gateway(options){
         if(!options.assetPaths?.includes(asset)){json(response,404,{error:'资源不存在'});return;}
         if(options.mobileService){
           if(!options.assetDir){json(response,404,{error:'独立资源未配置'});return;}
-          const base=resolve(options.assetDir),file=resolve(base,'.'+asset);
-          if(!file.startsWith(base+sep)||!existsSync(file)||!statSync(file).isFile()){json(response,404,{error:'图片不存在'});return;}
+          const base=resolve(options.assetDir);
+          let file=resolve(base,'.'+asset);
+          const localValid=file.startsWith(base+sep)&&existsSync(file)&&statSync(file).isFile();
+          if(!localValid&&asset.startsWith('/puzzles/')&&base===resolve(import.meta.dirname,'../public')){
+            try{file=safeMediaFile(resolveMediaDir(resolve(import.meta.dirname,'..'),'puzzles'),asset.slice('/puzzles/'.length));}catch{file='';}
+          }else if(!localValid){file='';}
+          if(!file){json(response,404,{error:'图片不存在'});return;}
           const type={'.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.wav':'audio/wav','.mp3':'audio/mpeg'}[extname(file)]||'application/octet-stream';
           response.writeHead(200,{'Content-Type':type,'Cache-Control':'public, max-age=86400','Cross-Origin-Resource-Policy':'cross-origin','X-Content-Type-Options':'nosniff'});response.end(readFileSync(file));return;
         }

@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/emerald-river-valley-native-v2.webp",
+    "sha256": "407d04c75e3e7ff91891c695ab410b4f24cfe8ee762f5e7fdbfa7e9f1c449543",
+    "bytes": 699708,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc"
   }
 }

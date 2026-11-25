@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/harbor-houses-native-v2.webp",
+    "sha256": "058ebcbffdec3cc089904b25657a9d240ddbc2b84f364bf9954b64efe61f2571",
+    "bytes": 377454,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236"
   }
 }

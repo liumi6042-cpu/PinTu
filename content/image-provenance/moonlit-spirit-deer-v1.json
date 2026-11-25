@@ -20,7 +20,16 @@
       "bytes": 3309307,
       "width": 1254,
       "height": 1254,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/moonlit-spirit-deer-v1/native.webp",
+        "sha256": "12f8e626f2e0671ceb93972fc45005d40920dcbe166ba2fac16ba243a11fc577",
+        "bytes": 575766,
+        "width": 1254,
+        "height": 1254
+      }
     },
     "originalFile": "public/puzzles/moonlit-spirit-deer-v1.png",
     "importedRegistrySha256": "a71b7293ff4c85c09b084b4203af3a06e944ca301ed5912e14e97f9555cee760"
@@ -79,5 +88,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/moonlit-spirit-deer-v1.webp",
+    "sha256": "12f8e626f2e0671ceb93972fc45005d40920dcbe166ba2fac16ba243a11fc577",
+    "bytes": 575766,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "6b49a6a9a1aebad1bfafe2170711e94be49fa50572c822d1a43b620e31ae72da"
   }
 }

@@ -19,7 +19,16 @@
         "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/reference-original.png",
         "sha256": "ec1a3dba9f2aaafb575eb5120e6e11a876c4594a29885477fa533e2f67a0b509",
         "purpose": "same-artwork-reference-redraw",
-        "resolution": "native-generation"
+        "resolution": "native-generation",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/reference-original.webp",
+          "sha256": "81de88b0b772adaa6d3e6060d8d0586a7bc690215cb9e1b5e8c46397fbd4bf61",
+          "bytes": 660052,
+          "width": 1254,
+          "height": 1254
+        }
       }
     ],
     "native": {
@@ -28,7 +37,16 @@
       "bytes": 9869387,
       "width": 2144,
       "height": 2144,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/native.webp",
+        "sha256": "2cc056aded9a4f9dc350a1e636ac4d7bb42d481f71f65306792e3cb353f5f28e",
+        "bytes": 1764536,
+        "width": 2144,
+        "height": 2144
+      }
     },
     "originalFile": "public/puzzles/blossom-osmanthus-tea-courtyard-v1.png",
     "importedRegistrySha256": "314d0cb168c084ae21951d88765abdf044eeeb09dbdb5ac59507e1d57b03dd85",
@@ -48,7 +66,16 @@
           "bytes": 3530109,
           "width": 1254,
           "height": 1254,
-          "format": "png"
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/reference-original.webp",
+            "sha256": "81de88b0b772adaa6d3e6060d8d0586a7bc690215cb9e1b5e8c46397fbd4bf61",
+            "bytes": 660052,
+            "width": 1254,
+            "height": 1254
+          }
         },
         "evidence": [
           {
@@ -76,7 +103,16 @@
           "bytes": 9869387,
           "width": 2144,
           "height": 2144,
-          "format": "png"
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/native.webp",
+            "sha256": "2cc056aded9a4f9dc350a1e636ac4d7bb42d481f71f65306792e3cb353f5f28e",
+            "bytes": 1764536,
+            "width": 2144,
+            "height": 2144
+          }
         },
         "evidence": [
           {
@@ -155,5 +191,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1.webp",
+    "sha256": "2cc056aded9a4f9dc350a1e636ac4d7bb42d481f71f65306792e3cb353f5f28e",
+    "bytes": 1764536,
+    "width": 2144,
+    "height": 2144,
+    "originalPngSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999"
   }
 }

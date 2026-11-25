@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/grass-green-study-07.webp",
+    "sha256": "31fe59a15c9c7210cd6b884db32338e35b9460f53245ad7fcf8e1ed3a8895405",
+    "bytes": 729188,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b"
   }
 }

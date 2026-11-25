@@ -20,7 +20,16 @@
       "bytes": 3459108,
       "width": 1024,
       "height": 1536,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-moon-aquarium-03-20261020/native.webp",
+        "sha256": "2ca1c1878174805ad0240303bed6592bbb822ad9e9539202488bf92e19c83eab",
+        "bytes": 629838,
+        "width": 1024,
+        "height": 1536
+      }
     },
     "originalFile": "public/puzzles/album-moon-aquarium-03-20261020.png",
     "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
@@ -78,5 +87,15 @@
         "smartSubsample": true
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-moon-aquarium-03-20261020.webp",
+    "sha256": "2ca1c1878174805ad0240303bed6592bbb822ad9e9539202488bf92e19c83eab",
+    "bytes": 629838,
+    "width": 1024,
+    "height": 1536,
+    "originalPngSha256": "0bfa35dc48aa92eac601f2b251bf977953c6fcc5c16cfd6dcf115411cbbd079b"
   }
 }

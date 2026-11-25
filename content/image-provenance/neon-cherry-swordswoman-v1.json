@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/neon-cherry-swordswoman-v1.webp",
+    "sha256": "bd77d9944550f8dfbb3290b43f17009b47e9935cb52d6dfe22075b6884a3342d",
+    "bytes": 572682,
+    "width": 1024,
+    "height": 1536,
+    "originalPngSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3"
   }
 }

@@ -77,4 +77,8 @@ __pycache__/
 /docs/concepts/
 /docs/verification/
 
+# Shared media-store holds puzzle images & artwork masters outside Git.
+/public/puzzles/
+/content/artwork/
+
 .claude/

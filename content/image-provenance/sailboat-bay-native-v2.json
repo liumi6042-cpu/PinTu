@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sailboat-bay-native-v2.webp",
+    "sha256": "ef38351b0a035b72913ac99a8c46b6253be8584dbd03cc7423162752180817ac",
+    "bytes": 440194,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "1eea734d9fba2be254778180d53d8d1105f76f3d0d97bc646e2b4eba9a446a1c"
   }
 }

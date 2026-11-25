@@ -20,7 +20,16 @@
       "bytes": 9293853,
       "width": 2816,
       "height": 1584,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/redraw-miniature-life-lab-20261018-01-20261018-v2/native.webp",
+        "sha256": "942d25c200c2b38ac03b407ffb969a3fa44a19aed9dd20d0e1aed12f3c1b1968",
+        "bytes": 1610164,
+        "width": 2816,
+        "height": 1584
+      }
     },
     "originalFile": "public/puzzles/redraw-miniature-life-lab-20261018-01-20261018-v2.png",
     "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
@@ -80,5 +89,15 @@
         "effort": 6
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/redraw-miniature-life-lab-20261018-01-20261018-v2.webp",
+    "sha256": "942d25c200c2b38ac03b407ffb969a3fa44a19aed9dd20d0e1aed12f3c1b1968",
+    "bytes": 1610164,
+    "width": 2816,
+    "height": 1584,
+    "originalPngSha256": "eea4f5a40775f2e9728c7b5910846d16ae2426918247c576c89dad49e06b0ed9"
   }
 }

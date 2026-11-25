@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/rainbow-grassland-native-v2.webp",
+    "sha256": "01d79ce28b1cc37ccd814ed01cb21689567c42bab9cc8b6141e2da01d3738fd5",
+    "bytes": 453398,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "c10d07c85dda01882fab6d39049420cd7951b7950de8203c09445f5f3a31ae9b"
   }
 }

@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/tulip-vase-native-v2.webp",
+    "sha256": "7808f62c0c56c1d01f767ee9f2bc0d00f376d5b4d35c7498e6bc02a41db12859",
+    "bytes": 220602,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0"
   }
 }

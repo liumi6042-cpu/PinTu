@@ -89,5 +89,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/tropical-aviary.webp",
+    "sha256": "fd4014d199c87da6d1131ce0652254ca9655e64ac4e52a0da8974ae6fb10e072",
+    "bytes": 762062,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "f56f6c745c6eee9ededc7ce637fac6e2a7a2d2baa5867892020b7b5cc3d3b66a"
   }
 }

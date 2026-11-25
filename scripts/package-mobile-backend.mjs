@@ -7,6 +7,7 @@ import {runtimeAssets,mobileStaticAsset,TAR} from './release-files.mjs';
 import {checkImageLibrary} from './check-image-library.mjs';
 import {checkArtworkRevisions} from './check-artwork-revisions.mjs';
 import {buildRoomRealtime} from './build-room-realtime.mjs';
+import {resolveMediaDir,safeMediaFile} from './media-paths.mjs';
 
 // API-only release: does not rebuild or deploy either platform's frontend.
 // Optional: --base <installed release.json> declares the baseline (for a sparse transfer), and
@@ -31,11 +32,16 @@ const kept=keepPath?JSON.parse(readFileSync(keepPath,'utf8')):[];
 for(const url of kept)if(typeof url!=='string'||!/^\/(?:puzzles\/|cosmetics\/(?:assets\/)?)?[a-zA-Z0-9._-]+$/.test(url))throw Error('Unsafe kept asset: '+url);
 const assets=[...new Set([...current,...kept])].sort();
 const files=['server/h5-gateway.mjs','server/mobile-service.mjs','server/mobile-solo-batch.mjs','server/diagnostic-actions.mjs','server/guest-names.mjs','server/room-realtime.LICENSE.txt','server/mobile-room-history.mjs','server/tap-preview.mjs','server/mobile-social.mjs','server/mobile-privacy.mjs','server/mobile-events.mjs','server/mobile-levels.mjs','config/levels.json','server/mobile-tuanzi.mjs','config/tuanzi-travel.json','config/tuanzi-image-regions.json','server/mobile-redeem.mjs','config/redeem-codes.json','scripts/redeem-codes.mjs','config/social-phrases.json','server/daily-content.mjs','server/mobile-collection.mjs','server/mobile-economy.mjs','server/mobile-tasks.mjs','server/mobile-retention.mjs','config/retention-rewards.json','server/task-reward-settings.mjs','config/task-reward-defaults.json','server/game-settings.mjs','config/game-settings-defaults.json','server/album-content.mjs','server/content-release.mjs','server/mobile-managed-content.mjs','server/managed-daily-content.mjs','scripts/check-content-release.mjs','lib/mobile-collection-catalog.json','lib/decoration-policy.mjs','lib/tap-platform-id.mjs','scripts/check-artwork-revisions.mjs','content/artwork-revisions.json','content/puzzle-catalog.json',...catalog.map(photo=>'content/image-provenance/'+photo.id+'.json'),...assets.map(path=>'public'+path)];
+const puzzlesDir=resolveMediaDir(root,'puzzles');
 for(const file of files){
  if(/(?:^|\/)(?:\.env[^/]*|\.git|data|backups|node_modules)(?:\/|$)|\.(?:sqlite(?:-\w+)?|db|pem|key|pfx|p12)$/i.test(file))throw Error('Private data in release');
- const local=resolve(file),fromFallback=fallback&&file.startsWith('public/')&&!existsSync(local);
- const source=realpathSync(fromFallback?resolve(fallback,file):local),target=resolve(stage,file);
- if(!source.startsWith(root+sep)||!target.startsWith(stage+sep))throw Error('Unsafe release path');
+ const isPuzzle=file.startsWith('public/puzzles/');
+ const local=isPuzzle?resolve(puzzlesDir,file.slice('public/puzzles/'.length)):resolve(file);
+ const fromFallback=fallback&&file.startsWith('public/')&&!existsSync(local);
+ const source=fromFallback?realpathSync(resolve(fallback,file)):isPuzzle?safeMediaFile(puzzlesDir,file.slice('public/puzzles/'.length)):realpathSync(local);
+ const target=resolve(stage,file);
+ const allowedBase=fromFallback?realpathSync(resolve(fallback)):isPuzzle?puzzlesDir:root;
+ if(!source.startsWith(allowedBase+sep)||!target.startsWith(stage+sep))throw Error('Unsafe release path');
  mkdirSync(dirname(target),{recursive:true});copyFileSync(source,target);
 }
 mkdirSync(resolve(stage,'h5'),{recursive:true});writeFileSync(resolve(stage,'h5/asset-manifest.json'),JSON.stringify(assets,null,2)+'\n');

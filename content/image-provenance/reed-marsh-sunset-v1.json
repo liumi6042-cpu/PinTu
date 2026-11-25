@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/reed-marsh-sunset-v1.webp",
+    "sha256": "557a850a4de67a28c08d51d55a27e6477c6d3438d7aa9d75e9c88b1889950afa",
+    "bytes": 601002,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "4972b804defb12400116f9602f498df286e2fb9dd1f9cb52ba4fdbfcd0062cf0"
   }
 }

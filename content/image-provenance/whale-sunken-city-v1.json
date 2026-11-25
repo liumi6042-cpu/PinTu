@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/whale-sunken-city-v1.webp",
+    "sha256": "63033e24d173e9b310e3a0dd44db9dea5596b88485ac0969f0cc70231d0818e9",
+    "bytes": 693744,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9"
   }
 }

@@ -66,5 +66,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/autumn-farm-festival-v1.webp",
+    "sha256": "a3c18d9bbebb31c70e67d1d95379a955e73044e7f0376255ef8ec84ee41fb61b",
+    "bytes": 811086,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5"
   }
 }

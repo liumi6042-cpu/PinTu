@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/alpine-village-native-v2.webp",
+    "sha256": "d2981d96b331c619aa6749c6515f7571f1b2f56079d842d6598a1dfd66100bfc",
+    "bytes": 515470,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "02f63878ababc5dfcb7174dfe9edf14e1653285955c1aa16e631fdeff984e42f"
   }
 }

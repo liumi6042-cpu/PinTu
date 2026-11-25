@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/quiet-cliff-falls-native-v2.webp",
+    "sha256": "e1ae199b8d601342823dd3266192ca09a46eea6283cbeb786211d8a2b8977931",
+    "bytes": 612874,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "8cf3a6b436c5124c71d8c52ff48abe310881d61b318257b360afdd5ce48d9e33"
   }
 }

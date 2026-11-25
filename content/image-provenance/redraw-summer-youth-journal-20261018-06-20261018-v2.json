@@ -20,7 +20,16 @@
       "bytes": 9304277,
       "width": 2816,
       "height": 1584,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/redraw-summer-youth-journal-20261018-06-20261018-v2/native.webp",
+        "sha256": "c1eac093704fe586356b9021961bbe55ed9e952470a9e6e29d071ef622025a6a",
+        "bytes": 1601780,
+        "width": 2816,
+        "height": 1584
+      }
     },
     "originalFile": "public/puzzles/redraw-summer-youth-journal-20261018-06-20261018-v2.png",
     "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
@@ -80,5 +89,15 @@
         "effort": 6
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/redraw-summer-youth-journal-20261018-06-20261018-v2.webp",
+    "sha256": "c1eac093704fe586356b9021961bbe55ed9e952470a9e6e29d071ef622025a6a",
+    "bytes": 1601780,
+    "width": 2816,
+    "height": 1584,
+    "originalPngSha256": "8a9a91ef707dba9a32c47f65fc19e7f976cb42dff37f23ecde3a456c881f1d85"
   }
 }

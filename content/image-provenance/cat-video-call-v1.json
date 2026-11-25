@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cat-video-call-v1.webp",
+    "sha256": "d155fbd82a87f109f0960831cdf370186595b31dcc7a495f0e37fc1c261b8996",
+    "bytes": 361056,
+    "width": 1122,
+    "height": 1402,
+    "originalPngSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d"
   }
 }

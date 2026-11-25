@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/golden-alpine-valley-v1.webp",
+    "sha256": "89d81eee31b854509dbfcc5b497ed32b64c2cbab2f70fe1ae6d5e59d5fb87f6d",
+    "bytes": 768908,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "556ce95ed61624db98430b77f6c310ee81dfbd1863318368c06ba25a156991de"
   }
 }

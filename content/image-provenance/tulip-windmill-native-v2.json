@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/tulip-windmill-native-v2.webp",
+    "sha256": "d658f6321d5d0918a8c7daf929f2ba90b534dc0b19fd0bbd764bad89d8ddca9b",
+    "bytes": 469896,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "cc926fa5f54134f8c7634794bf314fcbdb4a1d596769725ac7c58a4366fc1ddc"
   }
 }

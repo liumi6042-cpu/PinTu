@@ -20,7 +20,16 @@
       "bytes": 3607954,
       "width": 1254,
       "height": 1254,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/cat-journey-magic-bookshop-v1/native.webp",
+        "sha256": "8de899bdbefe2f24b4967dfece03c7e5416814b3a55797e09e42dc970b14bc89",
+        "bytes": 663766,
+        "width": 1254,
+        "height": 1254
+      }
     },
     "originalFile": "public/puzzles/cat-journey-magic-bookshop-v1.png",
     "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
@@ -79,5 +88,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cat-journey-magic-bookshop-v1.webp",
+    "sha256": "0df452e717994966405d4e7e521cfd9d6c68c5c18db047db0c8880e01bc26c7d",
+    "bytes": 2207202,
+    "width": 3840,
+    "height": 3840,
+    "originalPngSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e"
   }
 }

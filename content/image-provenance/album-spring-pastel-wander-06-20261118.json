@@ -20,7 +20,16 @@
       "bytes": 9060381,
       "width": 1820,
       "height": 2731,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-spring-pastel-wander-06-20261118/native.webp",
+        "sha256": "5e7b2e3eec82a62a1faaee9710c17bd8826f5990ac2b2d266f4752b42da34d8a",
+        "bytes": 1344592,
+        "width": 1820,
+        "height": 2731
+      }
     },
     "originalFile": "public/puzzles/album-spring-pastel-wander-06-20261118.png",
     "importedRegistrySha256": "e1f9d8b8ae83fe601ba756daa77a6de996ed4a51aaa130a4736e7a3fe3d6b565"
@@ -78,5 +87,15 @@
         "smartSubsample": true
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-spring-pastel-wander-06-20261118.webp",
+    "sha256": "5e7b2e3eec82a62a1faaee9710c17bd8826f5990ac2b2d266f4752b42da34d8a",
+    "bytes": 1344592,
+    "width": 1820,
+    "height": 2731,
+    "originalPngSha256": "ef66872b22b82966766fae8124416559f32ebf8b894f30244a8eb7e5f5d0cab7"
   }
 }

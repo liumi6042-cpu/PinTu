@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sunlit-coastal-headland-native-v2.webp",
+    "sha256": "89b50816f258a80cd2b24e8de17d06a766a705edd6c8ae7318e0ecc8390c823f",
+    "bytes": 596112,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff"
   }
 }

@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/snowy-sunset-train-v1.webp",
+    "sha256": "7977e8e8b2778d8ee1370fed73bf7c47138e8a3a4553c3e863d9bab912b794ee",
+    "bytes": 665514,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8"
   }
 }

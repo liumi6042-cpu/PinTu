@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/bakery-morning-native-v2.webp",
+    "sha256": "8b6f4cbfc226a084fe59b3e144e4bc76a03b24c6d0326521b63365a3f70ab4e9",
+    "bytes": 350696,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "4c4037c2690f1aced4750ea9450892a11b302b61cabfa9481917f634f3f46ca8"
   }
 }

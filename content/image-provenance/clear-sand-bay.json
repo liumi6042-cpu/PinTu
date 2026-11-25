@@ -77,5 +77,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/clear-sand-bay.webp",
+    "sha256": "7c4803f2274f11d4d9170280bcc79278f3fb976a1d5f9fa8b9a40772bd8e3780",
+    "bytes": 419160,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72"
   }
 }

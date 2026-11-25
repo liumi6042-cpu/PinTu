@@ -20,7 +20,16 @@
         "path": "content/artwork/gallery-hd/new-886dff1892b72f2e-v1/native.png",
         "sha256": "886dff1892b72f2ebc4ae7dcc12db47f37b70f66867fa2a25abbbf094e760a91",
         "purpose": "rendering-style-only",
-        "resolution": "native-generation"
+        "resolution": "native-generation",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "content/artwork/gallery-hd/new-886dff1892b72f2e-v1/native.webp",
+          "sha256": "f253de7b2a875f35c59df0a4379064a5307519b0d713c7c0c7130e1cea05146a",
+          "bytes": 678696,
+          "width": 1254,
+          "height": 1254
+        }
       }
     ],
     "native": {
@@ -29,7 +38,16 @@
       "bytes": 3483954,
       "width": 1254,
       "height": 1254,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/new-968c3449978849e1-v1/native.webp",
+        "sha256": "f25ebcb3ffe6fb894e8f231422fbc60842a3c42bde6fabd8d18f3c23500e3703",
+        "bytes": 724754,
+        "width": 1254,
+        "height": 1254
+      }
     },
     "originalFile": "public/puzzles/new-968c3449978849e1-v1.png",
     "importedRegistrySha256": "bd1e037e7947148bb43c3201818d1599da1d8791e29c32d5ae820241d9a065e4"
@@ -88,5 +106,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/new-968c3449978849e1-v1.webp",
+    "sha256": "174fab851de4d17e07eff58c8a38bfcee64478963fcaf6b3c149ee01ff73950b",
+    "bytes": 2280190,
+    "width": 3840,
+    "height": 3840,
+    "originalPngSha256": "5a949c3bcabdcaddf9169c0eba9648fdd2f45c0e8a2250e5ffad5e8dd149f5c2"
   }
 }

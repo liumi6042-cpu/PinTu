@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/warm-sienna-study-01.webp",
+    "sha256": "9bc317ed4b1c94dcfea5f13ab2df001d6572af0d45abe5c4936dc67489cda393",
+    "bytes": 538906,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0"
   }
 }

@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/golden-sand-dunes.webp",
+    "sha256": "9c81017d5de77e5d71b124778726c265078d0bb412c051ce56da9cbb28794ec2",
+    "bytes": 235896,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002"
   }
 }

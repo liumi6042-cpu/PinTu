@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/anime-seaside-platform-v1.webp",
+    "sha256": "8e05fa79fb5e4c53c27bcb23270233d0643b04a1a6e5597e3703a86bda6e8f3b",
+    "bytes": 303478,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "b370456e1acbe894271728ace2b5e86b2c83d1d49b30e579a03e0fedc3849913"
   }
 }

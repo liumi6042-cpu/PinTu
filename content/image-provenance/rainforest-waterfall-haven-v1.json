@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/rainforest-waterfall-haven-v1.webp",
+    "sha256": "5b080a8d3ce47f3a19019573d61226d1aac81a04c221298a56e8c9158cd7d961",
+    "bytes": 684090,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd"
   }
 }

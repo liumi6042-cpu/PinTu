@@ -89,5 +89,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/harbor-houses.webp",
+    "sha256": "c6c247115707c2509a6e23e0d24f0500fba21996126bf0e3c35165f881beb4f5",
+    "bytes": 721734,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6"
   }
 }

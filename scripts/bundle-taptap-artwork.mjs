@@ -2,6 +2,7 @@ import {readFileSync,realpathSync,lstatSync,statSync} from 'node:fs';
 import {resolve,sep} from 'node:path';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
+import {resolveMediaDir,safeMediaFile} from './media-paths.mjs';
 
 // TapTap is a phone client: gallery/album cards render at about 180 CSS px wide in portrait, so 2x is
 // about 360. 400 px stays sharper than the 288 px server thumbnails while keeping the package near
@@ -26,7 +27,7 @@ export const TAPTAP_ARTWORK_BUDGET_BYTES=38*1024*1024;
  * the server.
  */
 export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds,levelAlbumIds=[],roomArtwork=[],cacheAlbumIds=[],budgetBytes=Infinity}){
- const base=realpathSync(resolve(root,'public')),files=new Map(),mapping={};
+ const puzzlesDir=resolveMediaDir(root,'puzzles'),files=new Map(),mapping={};
  // Package theme-album thumbnails, including newly created/hidden albums.
  // Web-gallery-only and daily-only material remains online.
  const themeAlbums=albums.filter(a=>a.id!=='album-bdf936b9'&&a.title!=='网页图库'&&a.id!=='curated-daily-specials');
@@ -41,7 +42,7 @@ export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds,levelA
  const add=(url,kind,imageId)=>{
   const match=typeof url==='string'&&/^\/puzzles\/([a-z0-9-]+)-(?:thumbnail|optimized|play)-([a-f0-9]{12})\.webp$/.exec(url);
   if(!match)throw Error('Bundle requires a public content-addressed WebP: '+imageId);
-  const source=resolve(base,'.'+url);if(!source.startsWith(base+sep)||lstatSync(source).isSymbolicLink()||!realpathSync(source).startsWith(base+sep))throw Error('Unsafe bundled artwork source');
+  const source=safeMediaFile(puzzlesDir,url.slice('/puzzles/'.length));
   const bytes=readFileSync(source),sha256=createHash('sha256').update(bytes).digest('hex');
   if(sha256.slice(0,12)!==match[2]||bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP'||bytes.readUInt32LE(4)+8!==bytes.length)throw Error('Artwork hash or WebP differs: '+url);
   const path='assets'+url;files.set(url,{url,path,source,bytes:bytes.length,sha256,kind,imageId});mapping[url]=path;
@@ -60,7 +61,7 @@ export async function planTapTapArtwork({root,catalog,albums,fullAlbumIds,levelA
  const cached=[],cacheSkipped=[];
  if(cacheAlbumIds.length){
   // Thumbnails are counted at their server size; generated 2x thumbnails are of the same order.
-  const size=url=>{if(!/^\/puzzles\/[a-z0-9-]+-(?:thumbnail|optimized|play)-[a-f0-9]{12}\.webp$/.test(url??''))throw Error('Bundle requires a public content-addressed WebP: '+url);return statSync(resolve(base,'.'+url)).size;};
+  const size=url=>{if(!/^\/puzzles\/[a-z0-9-]+-(?:thumbnail|optimized|play)-[a-f0-9]{12}\.webp$/.test(url??''))throw Error('Bundle requires a public content-addressed WebP: '+url);return statSync(safeMediaFile(puzzlesDir,url.slice('/puzzles/'.length))).size;};
   let used=[...puzzles.values()].reduce((sum,file)=>sum+file.bytes,0)+published.reduce((sum,photo)=>sum+size(photo.thumbSrc),0);
   for(const id of new Set(cacheAlbumIds)){
    if(puzzleAlbumIds.includes(id))continue;

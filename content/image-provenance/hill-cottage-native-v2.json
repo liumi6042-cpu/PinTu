@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/hill-cottage-native-v2.webp",
+    "sha256": "8d1691336ce51bf73bed40b66ef5c6faec1fd0d12ee48c30f682c1d45f0b9725",
+    "bytes": 560240,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "7d68a73bebb4e6842e285b2d1e4ef3b2f06d16191ba1d8ab4dd865837f357fc4"
   }
 }
