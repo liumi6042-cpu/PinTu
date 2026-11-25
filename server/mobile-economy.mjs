@@ -37,10 +37,10 @@ export function applyExperience(profile,xp,now,settings=DEFAULT_GAME_SETTINGS,{e
  }
  return levels;
 }
-export function applyContribution(profile,{protectedRoom=false,now,randomInt,taskRewards=DEFAULT_TASK_REWARD_SETTINGS,gameSettings=DEFAULT_GAME_SETTINGS,energyEnabled=true,inviteBonus=0}){
+export function applyContribution(profile,{protectedRoom=false,freeRoom=false,now,randomInt,taskRewards=DEFAULT_TASK_REWARD_SETTINGS,gameSettings=DEFAULT_GAME_SETTINGS,energyEnabled=true,inviteBonus=0}){
  if(energyEnabled)restoreEnergy(profile,now,gameSettings,{inviteBonus});let autoUsed=false;
  const cap=effectiveEnergyCap(profile.level,gameSettings,inviteBonus);
- const free=!energyEnabled||protectedRoom&&gameSettings.energy.firstRoomFree,cost=free?0:gameSettings.energy.contributionCost;
+ const free=!energyEnabled||freeRoom||protectedRoom&&gameSettings.energy.firstRoomFree,cost=free?0:gameSettings.energy.contributionCost;
  if(profile.energy<cost&&profile.autoSupply&&profile.supply.energy>0&&cap>=cost){profile.supply.energy--;profile.energy=Math.max(profile.energy,cap);profile.energyAt=now;autoUsed=true;}
  if(profile.energy<cost)return null;
  if(cost){if(profile.energy>=cap)profile.energyAt=now;profile.energy-=cost;}

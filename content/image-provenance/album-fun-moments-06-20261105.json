@@ -1,0 +1,82 @@
+{
+  "id": "album-fun-moments-06-20261105",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "9baf89edcb73d80533ed76a9cee7d9f0889c9498ca76e69b6f6981f7453687b9",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-05",
+    "generatedAt": "2026-11-05T13:56:55.315043Z",
+    "threadId": "01a1abfe-5a72-78e1-97c8-bea38faeb5b1",
+    "promptPath": "content/image-prompts/album-fun-moments-06-20261105.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-fun-moments-06-20261105/native.png",
+      "sha256": "9baf89edcb73d80533ed76a9cee7d9f0889c9498ca76e69b6f6981f7453687b9",
+      "bytes": 3645512,
+      "width": 1536,
+      "height": 1024,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/album-fun-moments-06-20261105.png",
+    "importedRegistrySha256": "eb31f29c8ff08ee5228f3357e9cd3f7ce16228c553029c9e9d4c39e8c561d44b"
+  },
+  "resolutionNote": "原始生成 1536×1024；保存成品 1536×1024，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Claude",
+    "reviewedAt": "2026-11-05T14:13:51.857Z",
+    "notes": "每日相册「趣味日常」2026-11-05 生成（日系动画背景风 + 小故事，主人挑选）；逐张检查：无文字、无结构错误、无拼缝。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "9baf89edcb73d80533ed76a9cee7d9f0889c9498ca76e69b6f6981f7453687b9",
+    "thumbnail": {
+      "src": "/puzzles/album-fun-moments-06-20261105-thumbnail-4b531cb852cd.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "4b531cb852cd66a7bb0be519789776e01ccdcd27a92d6b835e985898e1d9736d",
+      "bytes": 40204,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "9baf89edcb73d80533ed76a9cee7d9f0889c9498ca76e69b6f6981f7453687b9",
+      "inputSha256": "9baf89edcb73d80533ed76a9cee7d9f0889c9498ca76e69b6f6981f7453687b9",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-fun-moments-06-20261105-optimized-aad688828601.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "aad688828601ea5ba961480b7296cb1963bee59e5e34c31b6e8b3ec5851ecab8",
+      "bytes": 368838,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "9baf89edcb73d80533ed76a9cee7d9f0889c9498ca76e69b6f6981f7453687b9",
+      "inputSha256": "9baf89edcb73d80533ed76a9cee7d9f0889c9498ca76e69b6f6981f7453687b9",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

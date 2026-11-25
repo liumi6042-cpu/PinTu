@@ -1,0 +1,11 @@
+{
+  "schema": "jigsaw-redeem-codes/v1",
+  "codes": [
+    {
+      "code": "RF87JBT5",
+      "kind": "shared",
+      "rewards": {"energy": 50, "decorations": [{"id": "cat-paw", "ifOwned": {"fragments": 20}}]},
+      "note": "玩家群兑换码（2026-11 首发，永久有效）：50 体力 + 猫爪，已有猫爪换 20 碎片"
+    }
+  ]
+}

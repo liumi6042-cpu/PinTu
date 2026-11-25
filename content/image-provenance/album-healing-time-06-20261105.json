@@ -1,0 +1,82 @@
+{
+  "id": "album-healing-time-06-20261105",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "283e40ad2b9060baaea39c8939f1f8592d19ada8f1931b1e51767a8e62c10191",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-05",
+    "generatedAt": "2026-11-05T12:20:12.196809Z",
+    "threadId": "01a1aba5-f4a1-7231-a103-bb357316cc06",
+    "promptPath": "content/image-prompts/album-healing-time-06-20261105.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-healing-time-06-20261105/native.png",
+      "sha256": "283e40ad2b9060baaea39c8939f1f8592d19ada8f1931b1e51767a8e62c10191",
+      "bytes": 3293254,
+      "width": 1536,
+      "height": 1024,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/album-healing-time-06-20261105.png",
+    "importedRegistrySha256": "f62a86aeaa13dc9bede9d0203606a880e3a1068b627b6142212a89cec47ab360"
+  },
+  "resolutionNote": "原始生成 1536×1024；保存成品 1536×1024，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Claude",
+    "reviewedAt": "2026-11-05T12:51:12.194Z",
+    "notes": "相册「治愈时光」2026-11-05 生成（日系动画背景风，主人按参考图挑选）；逐张检查：无文字、无结构错误、无拼缝。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "283e40ad2b9060baaea39c8939f1f8592d19ada8f1931b1e51767a8e62c10191",
+    "thumbnail": {
+      "src": "/puzzles/album-healing-time-06-20261105-thumbnail-f7ff35cb8737.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "f7ff35cb87371e78a1f90da0ff981595d86827e1bf2d63b3a2da12e44de5f5b8",
+      "bytes": 34960,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "283e40ad2b9060baaea39c8939f1f8592d19ada8f1931b1e51767a8e62c10191",
+      "inputSha256": "283e40ad2b9060baaea39c8939f1f8592d19ada8f1931b1e51767a8e62c10191",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-healing-time-06-20261105-optimized-4b9ff6ed4fd1.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "4b9ff6ed4fd133661392eef4e243ab66c5662707298321a1d60fb3652da6cb8d",
+      "bytes": 297708,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "283e40ad2b9060baaea39c8939f1f8592d19ada8f1931b1e51767a8e62c10191",
+      "inputSha256": "283e40ad2b9060baaea39c8939f1f8592d19ada8f1931b1e51767a8e62c10191",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}
