@@ -16,7 +16,7 @@ import {createRequire} from 'node:module';
 import {copyFileSync, existsSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import {basename, join, resolve} from 'node:path';
 import {deliveryDimensions, MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
-import {defaultProjectRoot, mobileTree, webTree} from './project-layout.mjs';
+import {defaultProjectRoot, mediaPuzzlesDir, mobileTree, webTree} from './project-layout.mjs';
 
 const REQUIRE_FROM = join(mobileTree(defaultProjectRoot()), 'package.json');
 export const DELIVERY_SPEC = {maxPixels: MAX_DELIVERY_PIXELS, quality: 70, thumbBox: 384, thumbQuality: 82, effort: 6};
@@ -54,7 +54,7 @@ function webpFacts(bytes) {
 }
 
 /** Why a catalogue photo's delivery is not acceptable, or null when it is fine. */
-function inspect(root, photo) {
+function inspect(root, photo, puzzlesDir = join(root, 'public/puzzles')) {
   const problems = [];
   if (typeof photo.optimizedSrc !== 'string' || !photo.optimizedSrc.startsWith('/puzzles/')) problems.push('缺少压缩图引用');
   if (typeof photo.thumbSrc !== 'string' || !photo.thumbSrc.startsWith('/puzzles/')) problems.push('缺少缩略图引用');
@@ -73,7 +73,7 @@ function inspect(root, photo) {
 
   for (const [kind, url, entry] of [['optimized', photo.optimizedSrc, optimized], ['thumbnail', photo.thumbSrc, thumbnail]]) {
     if (entry.src !== url) problems.push(kind + ' 引用与来源记录不一致');
-    const file = join(root, 'public', url.slice(1));
+    const file = join(puzzlesDir, url.slice('/puzzles/'.length));
     if (!existsSync(file)) { problems.push(kind + ' 文件缺失'); continue; }
     const bytes = readFileSync(file);
     const facts = webpFacts(bytes);
@@ -125,9 +125,11 @@ export async function healDeliveries({projectRoot = defaultProjectRoot()} = {}) 
   const registryById = new Map((registry?.assets ?? []).map(asset => [asset.id, asset]));
 
   // Any tree can lag behind; the union tells us what the delivery has to be.
+  const webPuzzlesDir = mediaPuzzlesDir(project, web);
+  const puzzleDirs = [...new Set(trees.map(tree => mediaPuzzlesDir(project, tree)))].filter(dir => existsSync(dir));
   const problemsById = new Map();
   for (const photo of catalogue) {
-    const problems = inspect(web, photo);
+    const problems = inspect(web, photo, webPuzzlesDir);
     if (problems) problemsById.set(photo.id, problems);
   }
   if (!problemsById.size) return {checked: catalogue.length, healed: [], skipped: []};
@@ -139,8 +141,13 @@ export async function healDeliveries({projectRoot = defaultProjectRoot()} = {}) 
     if (!problems) continue;
 
     const originalName = photo.id + '.png';
-    const original = [join(web, 'public/puzzles', originalName), join(mobile, 'public/puzzles', originalName)]
-      .find(candidate => existsSync(candidate));
+    const webpMasterName = photo.id + '.webp';
+    const original = [
+      ...puzzleDirs.map(dir => join(dir, webpMasterName)),
+      ...puzzleDirs.map(dir => join(dir, originalName)),
+      join(web, 'public/puzzles', originalName),
+      join(mobile, 'public/puzzles', originalName),
+    ].find(candidate => existsSync(candidate));
     if (!original) { skipped.push({id: photo.id, reason: '找不到原图 ' + originalName + '，无法重新压缩'}); continue; }
 
     const recordFile = join(web, 'content/image-provenance/' + photo.id + '.json');
@@ -166,8 +173,7 @@ export async function healDeliveries({projectRoot = defaultProjectRoot()} = {}) 
 
     const place = (kind, result, quality, extra) => {
       const name = `${photo.id}-${kind}-${result.digest.slice(0, 12)}.webp`;
-      for (const tree of trees) {
-        const dir = join(tree, 'public/puzzles');
+      for (const dir of puzzleDirs) {
         if (!existsSync(dir)) continue;
         writeFileSync(join(dir, name), result.buffer);
       }

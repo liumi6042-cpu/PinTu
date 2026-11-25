@@ -28,8 +28,18 @@ function lossySize(bytes){
  }
  if(offset!==bytes.length||!frame||!frame.width||!frame.height||(canvas&&(canvas.width!==frame.width||canvas.height!==frame.height)))fail('WebP尺寸不符');return frame;
 }
+function resolvePuzzlesBase(root){
+ const local=join(root,'public','puzzles');
+ if(existsSync(local)){if(lstatSync(local).isSymbolicLink())fail('文件路径包含符号链接或目录联接');return realpathSync(local);}
+ const envRoot=process.env.JIGSAW_MEDIA_ROOT;
+ const shared=envRoot?join(isAbsolute(envRoot)?envRoot:resolve(root,envRoot),'puzzles'):resolve(root,'..','media-store','puzzles');
+ if(existsSync(shared)){if(lstatSync(shared).isSymbolicLink())fail('文件路径包含符号链接或目录联接');return realpathSync(shared);}
+ return local;
+}
 function checkedWebp(root,facts){
- const file=fileWithin(root,'public'+facts.src),bytes=readFileSync(file);
+ const rel=facts.src.startsWith('/puzzles/')?facts.src.slice('/puzzles/'.length):null;
+ const file=rel?fileWithin(resolvePuzzlesBase(root),rel):fileWithin(root,'public'+facts.src);
+ const bytes=readFileSync(file);
  if(bytes.length!==facts.bytes||sha(bytes)!==facts.sha256)fail('文件摘要或大小不符');
  const size=lossySize(bytes);if(size.width!==facts.width||size.height!==facts.height)fail('文件尺寸与登记不一致');return file;
 }

@@ -2,7 +2,7 @@ import {spawn} from 'node:child_process';
 import {createHash,randomUUID} from 'node:crypto';
 import {existsSync,lstatSync,mkdirSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from 'node:fs';
 import {basename,isAbsolute,join,relative,resolve,sep} from 'node:path';
-import {webTree} from './project-layout.mjs';
+import {mediaPuzzlesDir,webTree} from './project-layout.mjs';
 
 const ASSET_ROOT='/srv/sites/jigsaw-content/assets';
 const REMOTE_TOOL=ASSET_ROOT+'/tools/apply-assets.py';
@@ -43,9 +43,9 @@ function readTransport(configPath){
  return {host,identityFile:input?.identityFile??null,bindAddress:input?.bindAddress??null};
 }
 
-/** Local artwork directory holding every catalog file; the Web worktree is canonical. */
+/** Local artwork directory holding every catalog file; shared media-store when detached. */
 function puzzleRoot(projectRoot,override){
- const candidate=override??join(webTree(projectRoot),'public/puzzles');
+ const candidate=override??mediaPuzzlesDir(projectRoot,webTree(projectRoot));
  if(!existsSync(candidate))throw failure('本地素材目录不存在：'+candidate,'ASSET_SOURCE_MISSING');
  return realpathSync(candidate);
 }

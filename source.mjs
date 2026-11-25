@@ -8,6 +8,7 @@ import {readPendingAssets, pendingPreviewFile} from './pending.mjs';
 import {normalizeDraft} from './album-model.mjs';
 import {pendingDeliveryFiles,readDeliveredAssets,validatePendingRuntimePhoto} from './delivery-status.mjs';
 import {readActivePreviews,activePreviewFile} from './active-preview.mjs';
+import {mediaPuzzlesDir} from './project-layout.mjs';
 
 export const TARGETS = ['pc', 'mobile-shared'];
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -260,9 +261,9 @@ export function previewFile(source, id, kind = 'thumbnail') {
   if (typeof url !== 'string' || !new RegExp('^/puzzles/' + id + '-' + deliveryKind + '(?:-[a-f0-9]{12})?\\.webp$').test(url) || expected?.src !== url)
     throw error('预览只允许已登记的 WebP 衍生文件。');
   let file;
-  try {file = safeFile(data.roots['mobile-shared'], 'public' + url);}
+  const puzzles = mediaPuzzlesDir(data.root, data.roots['mobile-shared']);
+  try {file = safeFile(puzzles, url.slice('/puzzles/'.length));}
   catch (cause) {if (cause.code === 'ENOENT') throw error('已登记的预览资源缺失，请重新检查交付素材。', 404); throw cause;}
-  const puzzles = realpathSync(join(data.roots['mobile-shared'], 'public/puzzles'));
   if (!inside(puzzles, file)) throw error('预览路径逃逸素材目录。');
   return file;
 }
@@ -279,9 +280,13 @@ export async function verifyDelivery(source) {
   if (latestPending.fingerprint !== data.pending?.fingerprint) throw error('待整理素材登记在校验期间已变化，请重新同步。', 409);
   const pcFiles = [];
   const pendingUrls = new Set(latestPending.assets.flatMap(asset => pendingDeliveryFiles(asset).map(file => file.url)));
+  const pcPuzzles = mediaPuzzlesDir(data.root, data.roots.pc);
   for (const asset of plan.assets) {
     if (pendingUrls.has(asset.url)) continue;
-    const file = safeFile(data.roots.pc, 'public/' + asset.path), bytes = readFileSync(file);
+    const file = asset.path.startsWith('puzzles/')
+      ? safeFile(pcPuzzles, asset.path.slice('puzzles/'.length))
+      : safeFile(data.roots.pc, 'public/' + asset.path);
+    const bytes = readFileSync(file);
     if (bytes.length !== asset.bytes || hash(bytes) !== asset.sha256) throw error('PC 交付文件与已审核记录不一致：' + asset.url, 409);
     pcFiles.push(asset.url);
   }

@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {existsSync,lstatSync,readFileSync,realpathSync} from 'node:fs';
 import {basename,join,relative,resolve,sep} from 'node:path';
-import {webTreeName} from './project-layout.mjs';
+import {webTreeName,mediaPuzzlesDir} from './project-layout.mjs';
 
 const fail=message=>{throw Object.assign(new Error(message),{status:409,code:'INVALID_DELIVERY_RECEIPT'});};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -47,7 +47,8 @@ export function readDeliveredAssets(projectRoot,pending){
   for(let index=0;index<roots.length;index++){
    const root=roots[index],photo=catalogs[index].find(item=>item.id===image.id),record=jsonAt(root,'content/image-provenance/'+image.id+'.json');
    validatePendingRuntimePhoto(asset,photo,record);
-   for(const file of expected){const bytes=readFileSync(fileWithin(root,'public'+file.url));if(bytes.length!==file.bytes||hash(bytes)!==file.sha256)fail('双端已交付文件校验失败：'+image.id);}
+   const puzzlesDir=mediaPuzzlesDir(project,root);
+   for(const file of expected){const rel=file.url.slice('/puzzles/'.length),bytes=readFileSync(fileWithin(puzzlesDir,rel));if(bytes.length!==file.bytes||hash(bytes)!==file.sha256)fail('双端已交付文件校验失败：'+image.id);}
   }
   availableIds.add(image.id);
  }

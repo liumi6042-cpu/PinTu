@@ -6,7 +6,7 @@ import {createHash, randomUUID} from 'node:crypto';
 import {copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync} from 'node:fs';
 import {basename, dirname, isAbsolute, join, relative, resolve, sep} from 'node:path';
 import {readPendingAssets} from '../pending.mjs';
-import {webTree} from '../project-layout.mjs';
+import {mediaArtworkDir, mediaPuzzlesDir, webTree} from '../project-layout.mjs';
 
 const project = realpathSync(resolve(import.meta.dirname, '../..'));
 const allowed = new Map([
@@ -117,8 +117,14 @@ const additions = selected.map(asset => {
     assert.equal(asset.generation.provider,'ByteDance Doubao','Unknown provider for the Ark adapter.');
     assert.match(asset.generation.model,/^doubao-seedream-[a-z0-9.-]+$/);
   }else assert.ok(['image_gen','admin-upload'].includes(asset.generation.tool),'Unknown generation tool requires its own reviewed import adapter.');
-  const sourcePath = copyPlan(join(pending.root, asset.source.path), 'public/puzzles/' + id + '.png', asset.source);
-  const nativePath = copyPlan(join(pending.root, native.path), 'content/artwork/gallery-hd/' + id + '/native.png', native);
+  const sourceMaster = asset.source.master?.format === 'webp' ? asset.source.master : null;
+  const nativeMaster = native.master?.format === 'webp' ? native.master : null;
+  const sourcePath = 'public/puzzles/' + id + '.png';
+  if (sourceMaster) copyPlan(join(pending.root, sourceMaster.path), 'public/puzzles/' + id + '.webp', sourceMaster);
+  else copyPlan(join(pending.root, asset.source.path), sourcePath, asset.source);
+  const nativePath = 'content/artwork/gallery-hd/' + id + '/native.png';
+  if (nativeMaster) copyPlan(join(pending.root, nativeMaster.path), 'content/artwork/gallery-hd/' + id + '/native.webp', nativeMaster);
+  else copyPlan(join(pending.root, native.path), nativePath, native);
   const delivery = {sourceSha256: asset.source.sha256};
   // Two delivery files since 2026-10-17. A legacy `play` entry may still exist on
   // older registrations; it is copied for the rooms that already reference it.
@@ -155,10 +161,11 @@ const additions = selected.map(asset => {
   const catalog = {id, title: asset.title, subtitle: asset.subtitle, category: '插画', src: sourcePath.slice(6), origin: asset.origin,
     status: 'archived', galleryVisible: false, dailyOnly: false, playSrc: (delivery.play ?? delivery.optimized).src, thumbSrc: delivery.thumbnail.src, optimizedSrc: delivery.optimized.src};
   const provenance = {id, origin: asset.origin, width: asset.source.width, height: asset.source.height, sha256: asset.source.sha256,
+    ...(sourceMaster ? {master: {format: 'webp', quality: sourceMaster.quality ?? 90, src: '/puzzles/' + id + '.webp', sha256: sourceMaster.sha256, bytes: sourceMaster.bytes, width: sourceMaster.width, height: sourceMaster.height, originalPngSha256: asset.source.sha256}} : {}),
     nativeResolution: !asset.export.isUpscaled, upscaled: asset.export.isUpscaled,
     generation: {provider: asset.generation.provider, tool: asset.generation.tool, generatedDate: asset.generation.generatedAt.slice(0, 10), generatedAt: asset.generation.generatedAt,
       threadId: asset.generation.threadId, promptPath: 'content/image-prompts/' + id + '.txt', referenceImages,
-      native: {...native, path: nativePath}, originalFile: sourcePath, importedRegistrySha256: pending.fingerprint},
+      native: {...native, path: nativePath, ...(nativeMaster ? {master: {format: 'webp', quality: nativeMaster.quality ?? 90, path: 'content/artwork/gallery-hd/' + id + '/native.webp', sha256: nativeMaster.sha256, bytes: nativeMaster.bytes, width: nativeMaster.width, height: nativeMaster.height}} : {})}, originalFile: sourcePath, importedRegistrySha256: pending.fingerprint},
     resolutionNote: '原始生成 ' + native.width + '×' + native.height + '；保存成品 ' + asset.source.width + '×' + asset.source.height + (asset.export.isUpscaled ? '，已放大，放大尺寸不代表新增原生细节。' : '，未放大。') + (unregisteredReference ? '参考用的概念图由运营者提供，未在图库登记，也未随成品分发。' : ''),
     review: structuredClone(asset.review), commercialUse: {basis: 'provider-output-terms', termsUrl: (hybrid||arkReference) ? DOUBAO_TERMS : OPENAI_TERMS, exclusiveRightsGuaranteed: false}, delivery};
   if(arkReference){
@@ -237,8 +244,15 @@ for (const target of targets) {
     const manifestText = uniqueManifest.length === manifest.length ? metadata.get('h5/asset-manifest.json') : json(uniqueManifest);
     nextMetadata.set('h5/asset-manifest.json', appendArray(manifestText, newUrls));
   }
+  const puzzlesDestRoot = mediaPuzzlesDir(project, target);
+  const artworkDestRoot = mediaArtworkDir(project, target);
   const files = [...sourceFiles.values()].map(item => {
-    const to = child(target, item.to), present = existsSync(to);
+    const to = item.to.startsWith('public/puzzles/')
+      ? child(puzzlesDestRoot, item.to.slice('public/puzzles/'.length))
+      : item.to.startsWith('content/artwork/')
+        ? child(artworkDestRoot, item.to.slice('content/artwork/'.length))
+        : child(target, item.to);
+    const present = existsSync(to);
     if (present) assertBytes(to, item);
     return {...item, destination: to, action: present ? 'keep-identical' : 'copy-new'};
   });

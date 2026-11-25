@@ -59,6 +59,16 @@ function webpSize(bytes) {
 }
 function checkedImage(root, item, kind) {
   if (!dimensions(item) || !digestPattern.test(item.sha256 ?? '') || !Number.isSafeInteger(item.bytes) || item.bytes <= 0) fail('待整理图片尺寸或摘要记录无效。');
+  if (kind === 'png' && item.master?.format === 'webp') {
+    const master = item.master;
+    if (!digestPattern.test(master.sha256 ?? '') || !Number.isSafeInteger(master.bytes) || master.bytes <= 0) fail('待整理母版摘要记录无效。');
+    if (master.quality !== undefined && (!Number.isSafeInteger(master.quality) || master.quality < 80 || master.quality > 100)) fail('待整理母版质量参数无效。');
+    const file = checkedChild(root, master.path), bytes = readFileSync(file);
+    if (bytes.length !== master.bytes || sha(bytes) !== master.sha256) fail('待整理母版与已登记摘要或大小不一致：' + master.path);
+    const size = webpSize(bytes);
+    if (size.width !== item.width || size.height !== item.height) fail('待整理母版尺寸与登记记录不一致：' + master.path);
+    return {file, size};
+  }
   const file = checkedChild(root, item.path), bytes = readFileSync(file);
   if (bytes.length !== item.bytes || sha(bytes) !== item.sha256) fail('待整理图片与已登记摘要或大小不一致：' + item.path);
   const size = kind === 'png' ? pngSize(bytes) : webpSize(bytes);
