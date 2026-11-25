@@ -5,6 +5,7 @@ import {existsSync,mkdirSync,mkdtempSync,readFileSync,readdirSync,realpathSync,r
 import {dirname,join,resolve,sep} from 'node:path';
 import {resolveSharedConfig} from '../scripts/build-mobile-shared.mjs';
 import {cacheControlForAsset,packageMobileAssets,planMobileAssets} from '../scripts/package-mobile-assets.mjs';
+import {resolveMediaDir} from '../scripts/media-paths.mjs';
 
 const root=resolve(import.meta.dirname,'..');
 const readJson=path=>JSON.parse(readFileSync(path,'utf8'));
@@ -12,7 +13,7 @@ const writeJson=(path,value)=>{mkdirSync(dirname(path),{recursive:true});writeFi
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 function fixture(){
  const work=realpathSync(join(root,'work')),dir=mkdtempSync(join(work,'mobile-assets-test-'));
- const first=readJson(join(root,'content/puzzle-catalog.json'))[0],bytes=readFileSync(join(root,'public',first.thumbSrc.slice(1))),sha256=digest(bytes),photos=[],paths=[];
+ const first=readJson(join(root,'content/puzzle-catalog.json'))[0],bytes=readFileSync(join(resolveMediaDir(root,'puzzles'),first.thumbSrc.slice('/puzzles/'.length))),sha256=digest(bytes),photos=[],paths=[];
  for(const [id,status] of [['public-photo','published'],['archived-photo','archived']]){
   const photo={id,status,origin:'project-ai-generated',src:'/puzzles/'+id+'.png'},delivery={};
   for(const [kind,field] of [['optimized','optimizedSrc'],['thumbnail','thumbSrc']]){
@@ -44,7 +45,7 @@ test('actual shared catalog plan includes all public and archived rooms, every p
  assert.ok(plan.photos.some(photo=>photo.status==='published'));assert.ok(plan.photos.some(photo=>photo.status==='archived'));
  assert.equal(plan.assets.length,plan.photos.length*2);
  const urls=new Set(plan.assets.map(file=>file.url));
- for(const photo of catalog.filter(photo=>['published','archived'].includes(photo.status))){assert.ok(urls.has(photo.optimizedSrc??photo.playSrc));assert.ok(urls.has(photo.thumbSrc));assert.ok(!urls.has(photo.src));if(photo.optimizedSrc)assert.ok(!urls.has(photo.playSrc));}
+ for(const photo of catalog.filter(photo=>['published','archived'].includes(photo.status))){assert.ok(urls.has(photo.optimizedSrc??photo.playSrc));assert.ok(urls.has(photo.thumbSrc));assert.ok(!urls.has(photo.src));if(photo.optimizedSrc&&photo.playSrc!==photo.optimizedSrc)assert.ok(!urls.has(photo.playSrc));}
  for(const pack of plan.packs)for(const id of pack.imageIds)assert.ok(plan.photos.some(photo=>photo.id===id));
  assert.ok(plan.assets.every(file=>file.contentType==='image/webp'&&file.cacheControl.endsWith('immutable')));
 });

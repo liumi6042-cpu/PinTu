@@ -63,7 +63,8 @@ export function planMobileAssets(root=projectRoot){
   for(const [kind,url] of [[photo.optimizedSrc?'optimized':'play',runtime.src],['thumbnail',runtime.thumbSrc]]){
    safeManifestPath(url);
    if(!puzzlePath.test(url)||!new RegExp('^/puzzles/'+photo.id+'-'+kind+'(?:-[a-f0-9]{12})?\\.webp$').test(url)||!allowed.has(url))throw Error('Unlisted public puzzle asset: '+photo.id);
-   const source=safeMediaFile(puzzlesDir,url.slice('/puzzles/'.length));
+   let source;
+   try{source=safeMediaFile(puzzlesDir,url.slice('/puzzles/'.length));}catch(cause){if(cause?.code==='ENOENT')throw Error('Missing puzzle asset: '+url);throw cause;}
    if(!existsSync(source)||!lstatSync(source).isFile())throw Error('Missing puzzle asset: '+url);
    const bytes=readFileSync(source),sha256=hash(bytes),delivery=record.delivery?.[kind];
    if(bytes.length<20||bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP'||bytes.readUInt32LE(4)+8!==bytes.length)throw Error('Puzzle asset is not a WebP image: '+url);
