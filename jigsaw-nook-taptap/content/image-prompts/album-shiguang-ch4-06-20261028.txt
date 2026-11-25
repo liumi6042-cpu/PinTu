@@ -1,0 +1,22 @@
+# ch4s-06-moonlight-shop
+
+- Tool: built-in image_gen
+- Reference: ../cast-sheet-final.png (character identity and style)
+- Output: ch4s-06-moonlight-shop.png
+- Requested size: 1536x1024
+- Generated source: C:\Users\Administrator\.codex\generated_images\01a1836d-4046-7221-9554-8b2fcf66a3d3\exec-b9eb1a0f-2621-4370-acbb-25ecc275b5ca.png
+
+## Final prompt
+
+Use case: illustration-story.
+Create ONE landscape 1536x1024 full-bleed picture-book illustration, a single continuous happy final scene for a 50-piece jigsaw puzzle. Do not draw jigsaw cuts.
+Input image: exact character identity and painting-style reference for Xiaohe and Tuanzi, not a layout to reproduce. Same face, hair, flower clip, clothes, bag, fur pattern and neckerchief; do not redesign.
+Scene: Night under a huge luminous full moon. A cozy puzzle shop on a hillside above the sea glows warmly through its round window and open doorway, with strings of warm lights. The main focal action is Xiaohe beside the shop door, joyfully hanging a small framed photo showing ONLY a smiling grey-haired lady with a pink flower hair clip, no writing. Keep Xiaohe large and recognizable, her face visible in three-quarter view. Tuanzi sits on the doorstep. Postmaster Gugu perches on a sturdy shop sign bracket, an owl as tall as Xiaohe's shoulder; any hanging shop sign is blank or has just one puzzle-piece picture. An 8-year-old boy wearing a red scarf and an old man with white hair and round glasses stand on the hillside lane, smiling and waving, holding baozi in their other hands. Down in the moonlit sea below, Manman, a huge gentle old sea turtle, swims with its brass lantern. Through the clear water, the aquarium dome glows moonlight blue, with fish-shaped lights rising. A few glowing golden puzzle pieces float through the sky like fireflies.
+Characters:
+Xiaohe: 17-year-old girl with the EXACT reference's friendly round face, warm brown eyes, short brown bob and small pink flower clip above HER LEFT ear; mustard-yellow short jacket over cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch.
+Tuanzi: chubby fluffy calico shop cat from reference, mostly white; orange left ear and orange around left eye, black right ear and black around right eye (cat's own anatomical sides, match reference); big black back patch, orange rump patch, fluffy black tail, green eyes, pink nose, small sage-green neckerchief tied at side, always visible.
+Postmaster Gugu: big round fluffy grey-and-white owl, shoulder-height relative to Xiaohe, small navy-blue postman cap with plain gold badge, round brass spectacles, navy postal satchel crossing chest.
+Manman: huge gentle old sea turtle, moss-green patterned shell, small brass lantern hanging from a hook on shell, sleepy kind eyes.
+Composition: coherent natural hillside-to-sea vista. Warm amber shop and Xiaohe form the clear focal subject; lane and guests lead toward cool moonlit sea, turtle and underwater dome. Foreground plants and stone lane, middle ground warm wood/shop and people, background blue/violet sky and turquoise water have clearly different colors, shapes and textures. Fill frame edge to edge, including all corners. Make all story elements easy to read without tiny clutter. No large empty flat areas: softly patterned clouds around moon, rippled reflected light and underwater forms in sea, flowering hillside plants and textured stones. A few well-spaced glowing puzzle pieces, no tiny repetitive clutter.
+Style: cozy hand-painted anime illustration, same as character sheet, warm soft light, gentle saturated colors, clean shapes with soft painterly texture, inviting storybook finish, happy tender ending.
+Absolutely no text, letters, numbers, readable writing, UI, watermark, decorative outer border, outer frame or speech bubbles. The only framed object is the requested little portrait by the door. Papers/signs/stamps if any have only blank shapes or simple pictures.

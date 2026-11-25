@@ -1,0 +1,90 @@
+{
+  "id": "morning-meadow-tree-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/morning-meadow-tree-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-444b085e-1929-477b-8d86-7969267c5afb.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+    "optimized": {
+      "src": "/puzzles/morning-meadow-tree-native-v2-optimized-205c9a2521f1.webp",
+      "sha256": "205c9a2521f17f157234fb9538167d4ce9a9e872de2677c38ee7f59207872e6e",
+      "bytes": 343744,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+      "inputSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/morning-meadow-tree-native-v2-thumbnail-d27f2424c000.webp",
+      "sha256": "d27f2424c000c2d0fc664c9138d51cb9cffeda08146eb98af6634bfb8b7f8600",
+      "bytes": 27788,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+      "inputSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/morning-meadow-tree-native-v2.webp",
+    "sha256": "be488c9a0f0d370528139f3ff205ce289bbe7972d505c4a03ec571db839205a4",
+    "bytes": 657202,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559"
+  }
+}

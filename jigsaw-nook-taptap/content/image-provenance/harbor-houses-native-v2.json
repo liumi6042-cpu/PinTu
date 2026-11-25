@@ -1,0 +1,90 @@
+{
+  "id": "harbor-houses-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/harbor-houses-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-52c7f87f-2678-4dbc-9e2a-ec53bec4c284.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+    "optimized": {
+      "src": "/puzzles/harbor-houses-native-v2-optimized-8d3a57025a0b.webp",
+      "sha256": "8d3a57025a0bd1ad2b136f26bb13079e77735ffc6b0d6bfdcb2ec2cf78aec2da",
+      "bytes": 172274,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "inputSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/harbor-houses-native-v2-thumbnail-bc6cda85f6a1.webp",
+      "sha256": "bc6cda85f6a13327dcf710c5d329c05be584efad03ec6a5b178466f76a5902a4",
+      "bytes": 18288,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "inputSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/harbor-houses-native-v2.webp",
+    "sha256": "058ebcbffdec3cc089904b25657a9d240ddbc2b84f364bf9954b64efe61f2571",
+    "bytes": 377454,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "b5ee9f7b5202298e7b7b320e239d793e6f80befe55fef2abb37540dc7e76a236"
+  }
+}

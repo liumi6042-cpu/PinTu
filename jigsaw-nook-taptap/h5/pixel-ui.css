@@ -1,0 +1,162 @@
+@import '../public/pixel-ui/tokens.css';
+/* Button sprites own their bevel; a one-pixel footprint follows the stepped silhouette. */
+/* Production pixel UI: grid-authored assets, fixed corners, repeated edge tiles. */
+:root{
+ --pixel-linen-normal:url('../public/pixel-ui/button-linen-normal.svg');
+ --pixel-linen-pressed:url('../public/pixel-ui/button-linen-pressed.svg');
+ --pixel-linen-selected:url('../public/pixel-ui/button-linen-selected.svg');
+ --pixel-linen-disabled:url('../public/pixel-ui/button-linen-disabled.svg');
+ --pixel-cream-normal:url('../public/pixel-ui/button-cream-normal.svg');
+ --pixel-cream-pressed:url('../public/pixel-ui/button-cream-pressed.svg');
+ --pixel-cream-selected:url('../public/pixel-ui/button-cream-selected.svg');
+ --pixel-cream-disabled:url('../public/pixel-ui/button-cream-disabled.svg');
+ --pixel-berry-normal:url('../public/pixel-ui/button-berry-normal.svg');
+ --pixel-berry-pressed:url('../public/pixel-ui/button-berry-pressed.svg');
+ --pixel-berry-selected:url('../public/pixel-ui/button-berry-selected.svg');
+ --pixel-berry-disabled:url('../public/pixel-ui/button-berry-disabled.svg');
+ --pixel-gold-normal:url('../public/pixel-ui/button-gold-normal.svg');
+ --pixel-gold-pressed:url('../public/pixel-ui/button-gold-pressed.svg');
+ --pixel-gold-selected:url('../public/pixel-ui/button-gold-selected.svg');
+ --pixel-gold-disabled:url('../public/pixel-ui/button-gold-disabled.svg');
+}
+html:root body :is(.pixel-button,[data-pixel-frame="button"],.mobile-button,.mobile-small-button,.mobile-icon-button,.mobile-daily,.mobile-filter-button,.mobile-heading-tickets,.mobile-task-state,.mobile-gift-open,.mobile-task-tabs>button,.mobile-game-back,.mobile-game-invite,.mobile-tool-symbol,.mobile-completion-close,.mobile-completion-actions>button,.collection-button,.collection-back,.collection-tabs>button,.collection-decoration-filter>button,.mobile-piece-picker>button,.mobile-gallery-sources>button,.mobile-create-options .mobile-segments>button,.mobile-supply-owned-note,.mobile-load-more>button,.mobile-game-dialog .primary,.mobile-game-dialog .secondary,.mobile-game-dialog .icon-button,.mobile-category-chips>button,.mobile-game-dialog>[data-slot=dialog-close],.mobile-more-tabs>button,.mobile-more-zoom>button,.mobile-chat-phrases>button){
+ --pixel-button-frame:var(--pixel-current,var(--pixel-normal,var(--pixel-cream-normal)));
+ border:calc(4px * var(--pixel-scale,1)) solid transparent!important;
+ border-image-source:var(--pixel-button-frame)!important;border-image-slice:4!important;
+ border-image-width:1!important;border-image-outset:0!important;border-image-repeat:repeat!important;
+ border-radius:0!important;clip-path:none!important;
+ background:var(--pixel-face,var(--pixel-surface-cream-normal))!important;background-image:var(--pixel-face-sheen,none)!important;background-clip:padding-box!important;
+ color:var(--pixel-text,#601e35)!important;box-shadow:none!important;filter:drop-shadow(0 calc(1px * var(--pixel-scale,1)) 0 var(--pixel-foot-shadow,rgba(117,56,67,.18)))!important;text-shadow:none!important;
+ transform:none!important;translate:none!important;transition:none!important;
+}
+html:root body :is([data-pixel-scale="2"]){--pixel-scale:2}
+html:root body :is([data-pixel-scale="1"]){--pixel-scale:1}
+html:root body :is(.mobile-primary,.mobile-green,.mobile-game-invite,.mobile-task-state,.mobile-gift-open,
+ .collection-button-primary,.mobile-completion-actions>button.is-primary,[data-pixel-frame="button"][data-pixel-tone="berry"]){
+ --pixel-normal:var(--pixel-berry-normal);--pixel-pressed:var(--pixel-berry-pressed);
+ --pixel-selected:var(--pixel-berry-selected);--pixel-disabled:var(--pixel-berry-disabled);
+ --pixel-face:var(--pixel-surface-berry-normal);--pixel-face-pressed:var(--pixel-surface-berry-pressed);--pixel-face-selected:var(--pixel-surface-berry-selected);--pixel-face-disabled:var(--pixel-surface-berry-disabled);--pixel-text:#fffaf0;
+}
+html:root body :is(.mobile-daily,[data-pixel-frame="button"][data-pixel-tone="gold"]){
+ --pixel-normal:var(--pixel-gold-normal);--pixel-pressed:var(--pixel-gold-pressed);
+ --pixel-selected:var(--pixel-gold-selected);--pixel-disabled:var(--pixel-gold-disabled);
+ --pixel-face:var(--pixel-surface-gold-normal);--pixel-face-pressed:var(--pixel-surface-gold-pressed);--pixel-face-selected:var(--pixel-surface-gold-selected);--pixel-face-disabled:var(--pixel-surface-gold-disabled);--pixel-text:#603a30;--pixel-text-selected:#603a30;
+}
+html:root body :is([data-pixel-frame="button"][data-pixel-tone="cream"]){
+ --pixel-normal:var(--pixel-cream-normal);--pixel-pressed:var(--pixel-cream-pressed);
+ --pixel-selected:var(--pixel-cream-selected);--pixel-disabled:var(--pixel-cream-disabled);
+ --pixel-face:var(--pixel-surface-cream-normal);--pixel-face-pressed:var(--pixel-surface-cream-pressed);--pixel-face-selected:var(--pixel-surface-cream-selected);--pixel-face-disabled:var(--pixel-surface-cream-disabled);--pixel-text:#601e35;--pixel-text-selected:#601e35;
+}
+html:root body :is(.pixel-button,[data-pixel-frame="button"],.mobile-button,.mobile-small-button,.mobile-icon-button,.mobile-daily,.mobile-filter-button,.mobile-heading-tickets,.mobile-task-state,.mobile-gift-open,.mobile-task-tabs>button,.mobile-game-back,.mobile-game-invite,.mobile-tool-symbol,.mobile-completion-close,.mobile-completion-actions>button,.collection-button,.collection-back,.collection-tabs>button,.collection-decoration-filter>button,.mobile-piece-picker>button,.mobile-gallery-sources>button,.mobile-create-options .mobile-segments>button,.mobile-supply-owned-note,.mobile-load-more>button,.mobile-game-dialog .primary,.mobile-game-dialog .secondary,.mobile-game-dialog .icon-button,.mobile-category-chips>button,.mobile-game-dialog>[data-slot=dialog-close],.mobile-more-tabs>button,.mobile-more-zoom>button,.mobile-chat-phrases>button):is([aria-pressed="true"],[aria-selected="true"],[aria-current="page"],.is-active,.active){
+ --pixel-current:var(--pixel-selected,var(--pixel-berry-selected));--pixel-face:var(--pixel-face-selected,var(--pixel-surface-berry-selected));--pixel-text:var(--pixel-text-selected,#fffaf0);
+}
+html:root body :is(.pixel-button,[data-pixel-frame="button"],.mobile-button,.mobile-small-button,.mobile-icon-button,.mobile-daily,.mobile-filter-button,.mobile-heading-tickets,.mobile-task-state,.mobile-gift-open,.mobile-task-tabs>button,.mobile-game-back,.mobile-game-invite,.mobile-tool-symbol,.mobile-completion-close,.mobile-completion-actions>button,.collection-button,.collection-back,.collection-tabs>button,.collection-decoration-filter>button,.mobile-piece-picker>button,.mobile-gallery-sources>button,.mobile-create-options .mobile-segments>button,.mobile-supply-owned-note,.mobile-load-more>button,.mobile-game-dialog .primary,.mobile-game-dialog .secondary,.mobile-game-dialog .icon-button,.mobile-category-chips>button,.mobile-game-dialog>[data-slot=dialog-close],.mobile-more-tabs>button,.mobile-more-zoom>button,.mobile-chat-phrases>button):active:not(:disabled){
+ --pixel-top-line:rgba(117,56,67,.16);--pixel-bottom-line:rgba(255,255,255,.32);
+ --pixel-foot-shadow:rgba(117,56,67,.07);
+ --pixel-current:var(--pixel-pressed,var(--pixel-cream-pressed));--pixel-face:var(--pixel-face-pressed,var(--pixel-surface-cream-pressed));
+}
+html:root body :is(.pixel-button,[data-pixel-frame="button"],.mobile-button,.mobile-small-button,.mobile-icon-button,.mobile-daily,.mobile-filter-button,.mobile-heading-tickets,.mobile-task-state,.mobile-gift-open,.mobile-task-tabs>button,.mobile-game-back,.mobile-game-invite,.mobile-tool-symbol,.mobile-completion-close,.mobile-completion-actions>button,.collection-button,.collection-back,.collection-tabs>button,.collection-decoration-filter>button,.mobile-piece-picker>button,.mobile-gallery-sources>button,.mobile-create-options .mobile-segments>button,.mobile-supply-owned-note,.mobile-load-more>button,.mobile-game-dialog .primary,.mobile-game-dialog .secondary,.mobile-game-dialog .icon-button,.mobile-category-chips>button,.mobile-game-dialog>[data-slot=dialog-close],.mobile-more-tabs>button,.mobile-more-zoom>button,.mobile-chat-phrases>button):disabled{
+ --pixel-top-line:rgba(255,255,255,.18);--pixel-bottom-line:rgba(117,56,67,.05);
+ --pixel-foot-shadow:rgba(117,56,67,.04);
+ --pixel-current:var(--pixel-disabled,var(--pixel-cream-disabled));
+ --pixel-face:var(--pixel-face-disabled,var(--pixel-surface-cream-disabled));--pixel-text:#9d7b7b;opacity:1!important;cursor:default;
+}
+html:root body :is(.pixel-button,[data-pixel-frame="button"],.mobile-button,.mobile-small-button,.mobile-icon-button,.mobile-daily,.mobile-filter-button,.mobile-heading-tickets,.mobile-task-state,.mobile-gift-open,.mobile-task-tabs>button,.mobile-game-back,.mobile-game-invite,.mobile-tool-symbol,.mobile-completion-close,.mobile-completion-actions>button,.collection-button,.collection-back,.collection-tabs>button,.collection-decoration-filter>button,.mobile-piece-picker>button,.mobile-gallery-sources>button,.mobile-create-options .mobile-segments>button,.mobile-supply-owned-note,.mobile-load-more>button,.mobile-game-dialog .primary,.mobile-game-dialog .secondary,.mobile-game-dialog .icon-button,.mobile-category-chips>button,.mobile-game-dialog>[data-slot=dialog-close],.mobile-more-tabs>button,.mobile-more-zoom>button,.mobile-chat-phrases>button):focus-visible{outline:2px solid #a55570;outline-offset:3px}
+
+/* Selection rails use one shared frame, keeping individual labels unboxed. */
+html:root body .mobile-segments{
+ border:4px solid transparent!important;border-image-source:var(--pixel-cream-normal)!important;
+ border-image-slice:4!important;border-image-width:1!important;border-image-outset:0!important;border-image-repeat:repeat!important;
+ border-radius:0!important;background:var(--pixel-surface-cream-normal)!important;background-clip:padding-box!important;box-shadow:none!important;filter:none!important;
+}
+html:root body .mobile-segments>button{border-radius:0!important;clip-path:none;box-shadow:none}
+html:root body .mobile-segments>button[aria-pressed=true]{background:#c98596;color:#fffaf0;box-shadow:inset 0 calc(1px * var(--pixel-scale,1)) 0 var(--pixel-top-line,rgba(255,255,255,.5)),inset 0 calc(-1px * var(--pixel-scale,1)) 0 var(--pixel-bottom-line,rgba(117,56,67,.12))}
+html:root body .mobile-create-options .mobile-segments{border:0!important;background:transparent!important}
+/* Direction rails and selected caps are flat, symmetric pixel frames. */
+html:root body .mobile-direction-picker{border-image-source:url('../public/pixel-ui/rail-cream-normal.svg')!important}
+html:root body .mobile-direction-picker>button{position:relative;isolation:isolate}
+html:root body .mobile-direction-picker>button[aria-pressed="true"]{background:transparent!important;box-shadow:none!important}
+html:root body .mobile-direction-picker>button[aria-pressed="true"]::after{
+ content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;box-sizing:border-box;
+ border:3px solid transparent;border-image-source:url('../public/pixel-ui/segment-berry-selected.svg');
+ border-image-slice:3;border-image-width:1;border-image-outset:0;border-image-repeat:repeat;
+ background:var(--pixel-surface-berry-selected);background-clip:padding-box;
+}
+html:root body .mobile-direction-picker>button[aria-pressed="true"]:active::after{
+ border-image-source:url('../public/pixel-ui/segment-berry-pressed.svg');background-color:var(--pixel-surface-berry-pressed);
+}
+html:root body .mobile-direction-picker>button[aria-pressed="true"]:disabled::after{
+ border-image-source:url('../public/pixel-ui/segment-berry-disabled.svg');background-color:var(--pixel-surface-berry-disabled);
+}
+html:root body :is(.mobile-game-dialog,[data-pixel-frame="panel"],.mobile-sheet:not(:has(.mobile-tasks-panel)),.mobile-room-card,.mobile-photo-card,
+ .mobile-reward-toast,.mobile-task-card,.mobile-gift-card,.mobile-stored-preview,.mobile-stored-empty,.mobile-ten-gift,.mobile-create-dock,
+ .mobile-supply-card,.mobile-supply-inventory,.collection-image-card,.collection-pack-card,.collection-decoration-detail,
+ .collection-decoration-preview,.collection-decoration-card,.collection-milestones,.mobile-completion-art,
+ .mobile-completion-rewards>div,.mobile-completion-collection,.mobile-game-tools,.mobile-piece-tray){
+ border:calc(6px * var(--pixel-scale,1)) solid transparent!important;border-image-source:var(--pixel-panel,url('../public/pixel-ui/panel-cream.svg'))!important;
+ border-image-slice:6!important;border-image-width:1!important;border-image-outset:0!important;border-image-repeat:repeat!important;
+ border-radius:0!important;box-shadow:none!important;clip-path:none!important;background-clip:padding-box!important;
+}
+html:root body :is(.mobile-photo-card.is-selected,.collection-decoration-card.is-selected,[data-pixel-frame="panel"][data-pixel-tone="gold"]){
+ --pixel-panel:url('../public/pixel-ui/panel-gold.svg');
+}
+html:root body .mobile-stored-preview>.mobile-gift-card{border:0!important;border-image-source:none!important}
+html:root body :is(.mobile-energy-plus,.mobile-completion-energy-plus,.mobile-task-energy-link>span:not(.mobile-art)){
+ border:3px solid transparent!important;border-image-source:url('../public/pixel-ui/plus-gold-normal.svg')!important;
+ border-image-slice:3!important;border-image-width:1!important;border-image-outset:0!important;border-image-repeat:repeat!important;
+ border-radius:0!important;clip-path:none!important;box-shadow:inset 0 calc(1px * var(--pixel-scale,1)) 0 var(--pixel-top-line,rgba(255,255,255,.5)),inset 0 calc(-1px * var(--pixel-scale,1)) 0 var(--pixel-bottom-line,rgba(117,56,67,.12))!important;filter:none!important;
+ background:var(--pixel-surface-gold-normal)!important;background-clip:padding-box!important;color:#fffaf0!important;
+}
+html:root body :is(.mobile-xp-meter,.mobile-room-progress>span,.mobile-task-meter,.mobile-energy-meter,.collection-progress){
+ border:1px solid #ae7881;border-radius:0!important;clip-path:none;box-shadow:inset 0 1px #f1d5be;background:#fff5e8;
+}
+html:root body :is(.mobile-xp-meter,.mobile-room-progress>span,.mobile-task-meter,.mobile-energy-meter,.collection-progress)>i{
+ border-radius:0!important;background:#c98596;box-shadow:inset 0 1px #e9b5bf;
+}
+/* Picture frames use all four fixed-size corner ornaments from the B2 reference. */
+
+/* Full-screen tasks keep their existing flush outer shell. */
+html:root body .mobile-sheet:has(.mobile-tasks-panel){border:0!important;border-image-source:none!important}
+
+/* Tool controls put interaction state on the native parent button. */
+html:root body .mobile-game-tools>button:is(.active,[aria-pressed="true"]) .mobile-tool-symbol{
+ --pixel-current:var(--pixel-berry-selected);--pixel-face:var(--pixel-surface-berry-selected);--pixel-text:#fffaf0;
+}
+html:root body .mobile-game-tools>button:active:not(:disabled) .mobile-tool-symbol{
+ --pixel-foot-shadow:rgba(117,56,67,.07);
+ --pixel-top-line:rgba(117,56,67,.16);--pixel-bottom-line:rgba(255,255,255,.32);
+ --pixel-current:var(--pixel-cream-pressed);--pixel-face:var(--pixel-surface-cream-pressed);
+}
+html:root body .mobile-game-tools>button:disabled .mobile-tool-symbol{
+ --pixel-foot-shadow:rgba(117,56,67,.04);
+ --pixel-top-line:rgba(255,255,255,.18);--pixel-bottom-line:rgba(117,56,67,.05);
+ --pixel-current:var(--pixel-cream-disabled);--pixel-face:var(--pixel-surface-cream-disabled);--pixel-text:#9d7b7b;opacity:1;
+}
+/* Compact picture labels use the 3px frame, without scaling a larger corner. */
+html:root body :is(.mobile-selected-preview>img,.collection-preview-label,.mobile-completion-art>span:not(.mobile-art),.mobile-completion-divider>h3,.mobile-completion-stamp){
+ border:3px solid transparent!important;border-image-source:url('../public/pixel-ui/plus-cream-normal.svg')!important;
+ border-image-slice:3!important;border-image-width:1!important;border-image-outset:0!important;border-image-repeat:repeat!important;
+ border-radius:0!important;clip-path:none!important;background:var(--pixel-surface-cream-normal)!important;background-clip:padding-box!important;box-shadow:none!important;
+}
+html:root body .mobile-completion-stamp{
+ border-image-source:url('../public/pixel-ui/plus-gold-normal.svg')!important;background:var(--pixel-surface-gold-normal)!important;
+}
+
+/* The small refill controls share the compact sprite and state palette. */
+html:root body :is(.mobile-energy-status,.mobile-supply-energy-status):active .mobile-energy-plus,
+html:root body .mobile-task-energy-link:active>span:not(.mobile-art),
+html:root body .mobile-completion-energy-plus:active{
+ --pixel-top-line:rgba(117,56,67,.16);--pixel-bottom-line:rgba(255,255,255,.32);
+ border-image-source:url('../public/pixel-ui/plus-gold-pressed.svg')!important;
+ background:var(--pixel-surface-gold-pressed)!important;
+}
+html:root body .mobile-completion-energy-plus:disabled{
+ --pixel-top-line:rgba(255,255,255,.18);--pixel-bottom-line:rgba(117,56,67,.05);
+ border-image-source:url('../public/pixel-ui/plus-gold-disabled.svg')!important;
+ background:var(--pixel-surface-gold-disabled)!important;
+}
+
+/* Reusable panel containers include their center fill as well as the frame. */
+html:root body [data-pixel-frame="panel"]{background-color:var(--pixel-surface-cream-normal)!important}
+html:root body [data-pixel-frame="panel"][data-pixel-tone="gold"]{background-color:var(--pixel-surface-gold-normal)!important}
+

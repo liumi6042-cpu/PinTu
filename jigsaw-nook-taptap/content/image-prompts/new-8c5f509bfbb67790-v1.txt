@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime double-character artwork.
+Primary request: two original adult Japanese-anime beast-eared characters, a silver fox-eared woman and a black wolf-eared man, standing side by side on a shrine veranda at dusk, both in elegant modernized kimono outfits, subtle friendly chemistry, looking toward the viewer. They must be the clear focus, each occupying a large part of the frame, with no other people.
+Style/medium: polished Japanese anime illustration, clean expressive linework, refined cel-painterly rendering, detailed hair, ears and fabric.
+Composition/framing: wide horizontal 16:9, balanced two-person composition, waist-up to three-quarter body, both faces and ears fully visible, similar visual prominence.
+Background: minimal softly blurred shrine lanterns, one torii silhouette and maple leaves only; no wide landscape.
+Lighting/mood: warm sunset and lantern glow, calm and affectionate.
+Color palette: ivory, charcoal, vermilion, navy, amber.
+Constraints: two and only two original fully clothed adults, nonsexual, no logos, no readable text, no watermark, no extra characters, no duplicate limbs, no merged bodies, no anatomical errors. Target a finished 4K-quality landscape illustration.

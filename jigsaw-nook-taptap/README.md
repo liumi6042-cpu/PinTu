@@ -1,0 +1,28 @@
+# 独立 TapTap H5 版本
+
+本工程保存在 `D:\chat\拼图\jigsaw-nook-taptap`，以线上正式版 `20261006-05`、提交 `15dbd5670a1d1947003d15d39f095005bdaf41b5` 为基准，包含82张在架图片。原工程和本地机器人试错改动未修改。
+
+- 独立入口：https://jigsawnook.online/taptap-play/#/zh/lobby
+- 原网页：https://jigsawnook.online/zh/lobby
+- 平台包：`releases/jigsaw-nook-taptap-h5.zip`，最外层为 `jigsaw-nook/`，其内含 `index.html`。
+- 自托管运行包：`releases/jigsaw-nook-h5-server.tar.gz`，只含网关与当前静态构建。
+- TapTap 游戏963283，竖屏开发版本281321已上传并绑定主包，保持未发布。
+- 官方试玩二维码：https://www.taptap.cn/qrcode/miniapp?id=tapmcln4cmjeaus1ft&type=develop&version_id=281321
+
+两个前端使用原有HTTP增量同步协议连接同一后端、账号服务和房间数据。网关只保存H5连接凭证与帮助记录，不复制原站房间数据库。134张公共预览图随H5包发布，拼图大图经网关从原站获取；客户端包不含运行数据库、账号、聊天或密钥。
+
+激励广告位1054324已由官方H5工具自动匹配并部署启用。H5每次使用提示或底图必须完整观看一条激励广告，解锁对应功能一次30秒使用；广告播放时长由平台决定。SDK缺失、失败或提前关闭不会解锁。原网站沿用原有帮助规则。
+
+用户已确认TapTap手机端广告播放和进房成功。用户已确认随包预览图显示。新版加入紧凑手机大厅、横竖屏拼图工具布局及屏幕方向选择；自动转屏依赖宿主方向/加速度接口，缺失时给出提示。可用时采用TapTap官方request传输房间API，无该接口时用浏览器fetch，写请求失败不自动重试。手机再次入座报错的兼容改进及真实转屏仍需新版真机确认；完整广告发奖与提前关闭也需明确验收。普通浏览器缺少TapTap广告运行环境，不能播放此广告；真实平台测试尚未通过，不代表审核通过。自有账号可分别在两端登录；TapTap账号自动绑定与付费图片包不在本次实现范围。
+
+```powershell
+npm ci
+npm run build:h5
+npm run test:h5
+npm run release:h5-server
+npm run h5:serve
+```
+
+本地预览默认 `http://127.0.0.1:3211/#/zh/lobby`；房间服务取决于 `H5_UPSTREAM`。不得对正式后端运行隔离测试脚本。
+
+配置、验收、回退与平台测试见[接入说明](docs/taptap-h5-setup.md)。

@@ -1,0 +1,80 @@
+{
+  "id": "riverside-park-festival-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "dfbe974416a2d345",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "dfbe974416a2d345",
+    "originalSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 1 张原图预览：喷泉、餐车与风筝，让河畔公园的午后热闹起来。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+    "optimized": {
+      "src": "/puzzles/riverside-park-festival-v1-optimized-713afd4cfabe.webp",
+      "sha256": "713afd4cfabe72cec78c64fbf7d4e0f591d6335dc3c96b7f76087cd2a7346c6e",
+      "bytes": 487930,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "inputSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/riverside-park-festival-v1-thumbnail-05ca932f90b1.webp",
+      "sha256": "05ca932f90b17f912c00620408bf76d6255347711266152df8cbe8668c03ceb4",
+      "bytes": 76374,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "inputSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/riverside-park-festival-v1.webp",
+    "sha256": "dfdde9ebab1f7dfb986c4ec10d7e52dfce9d062a8f591511e2cef8e65950d6af",
+    "bytes": 804166,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "id": "verdant-green-study-02",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-20 提供的作品：由提供者在 ChatGPT 中生成后交给本站。原始文件即为 PNG（1448×1086），入库时未做任何裁切、缩放或重编码。",
+    "providedOn": "2026-09-20",
+    "originalFile": "C:/Users/Administrator/Desktop/Codex 图像 2026年9月20日 20_11_33-4.png",
+    "originalSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有该图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-20"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-20",
+    "reviewer": "提供者确认（provider confirmation）",
+    "observations": "提供者于 2026-09-20 确认画面中不含水印、签名、网页界面文字或按钮、以及可辨认商标。本条为提供者自述，本站未做逐像素人工复核。"
+  },
+  "delivery": {
+    "sourceSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
+    "optimized": {
+      "src": "/puzzles/verdant-green-study-02-optimized-7c39fa52673b.webp",
+      "sha256": "7c39fa52673b4c466aa5e4aace8ce553940b63652d9778ee57895522132b0285",
+      "bytes": 344676,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
+      "inputSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/verdant-green-study-02-thumbnail-19957e98ef54.webp",
+      "sha256": "19957e98ef546711bcd3d18d93dadf0f7829defe64ce1dc4497b2b42e442c025",
+      "bytes": 54640,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
+      "inputSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/verdant-green-study-02.webp",
+    "sha256": "c4258f3409f46e9fab729a8c465adaa477280061b3ae1f26b9feb27e3bbe197e",
+    "bytes": 627104,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585"
+  }
+}

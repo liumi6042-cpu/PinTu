@@ -1,0 +1,90 @@
+{
+  "id": "whale-moon-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/whale-moon-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-f899ed79-a2c3-46c6-a3a4-b21b11fb9544.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+    "optimized": {
+      "src": "/puzzles/whale-moon-native-v2-optimized-8d8bc6a60c23.webp",
+      "sha256": "8d8bc6a60c236fc3b952f4f6110865f97bf721652b5d07c911c9fe9e2f81db82",
+      "bytes": 129174,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "inputSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/whale-moon-native-v2-thumbnail-6ca0f30aa4cd.webp",
+      "sha256": "6ca0f30aa4cdb8d1edf1f0b1cfc9f891467a564c8c488250405d707e4e8b6b2f",
+      "bytes": 11780,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "inputSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/whale-moon-native-v2.webp",
+    "sha256": "07ef9b7ba50fb1cdd1a99fd7be76dd34a160fce8e2792c3c60abfba9111aa0ea",
+    "bytes": 282038,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "d490cf608b0daea0a190bd935b29baf340cd7915315adf34b97fcbe7541e90b0"
+  }
+}

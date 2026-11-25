@@ -1,0 +1,42 @@
+# 早餐街插画生成记录
+
+- 生成方式：内置 image_gen 工具
+- 角色及画风参考：`../cast-sheet-final.png`
+- 目标文件：`ch2s-01-breakfast-street.png`
+- 目标尺寸：1536 × 1024
+- 原始用户提示词：`ch2s-01-breakfast-street.prompt-in.txt`（保留原文件）
+
+## 最终生成提示词
+
+```text
+Use case: illustration-story.
+Asset type: one full-bleed landscape 1536x1024 picture-book illustration for a 35-piece jigsaw puzzle. This is a NEW narrative scene, not a character sheet. Render exactly one image.
+Input image: the supplied cast-sheet-final.png is the exact character identity and art-style reference for Xiaohe and Tuanzi. Preserve their face, hair, hair clip, clothing, bag, fur pattern and neckerchief. Do not redesign them.
+
+Characters:
+Xiaohe, a 17-year-old girl: short brown bob hair, small pink flower hair clip above her LEFT ear, warm brown eyes, friendly round face. Mustard-yellow short jacket over cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch.
+Tuanzi, a chubby calico shop cat: mostly white fur; its anatomical LEFT ear and area around LEFT eye are orange, RIGHT ear and area around RIGHT eye are black. One large black patch on back, one orange patch on rump, fluffy black tail, green eyes, pink nose; always wears small sage-green neckerchief tied at the side. Match supplied reference closely.
+Afu, an 8-year-old boy: round face, short messy black hair, red scarf tied at neck, white shirt with rolled sleeves and small white baker's apron.
+
+Scene and action:
+Wide shot, early morning just after sunrise, pink-gold sky. Breakfast Street is a narrow old cobblestone street of two-storey wooden shop houses with cloth awnings and red paper lanterns. Chinese breakfast stalls line the street: stacked bamboo steamers of baozi, youtiao frying in a big wok, pots of soy milk, jianbing griddles, wooden benches. Steam drifts into the air.
+In the middle of the street, Afu runs ahead, pointing UP at the sky. Xiaohe stops beside him, looking UP in amazement, one hand shading her eyes. Tuanzi stands ON a wooden bench, tail raised, also looking UP. Give all three readable silhouettes and visible narrative poses.
+High above the rooftops, among pink morning clouds, floats the breakfast shop: a small TWO-STOREY wooden breakfast shop, red-and-white striped awning, round red paper lantern sign WITHOUT LETTERS, steam curling from chimney, sitting on a small island of puffy clouds. It is small but clearly visible and visibly detached from the rooftops. Make the floating shop the clear focal discovery, with the characters' upward gazes and pointing gesture guiding the viewer to it.
+Between two stalls on the RIGHT, show a clear gap where a shop is missing. Distinguish this vacant shop space from the street.
+
+Style:
+Cozy hand-painted anime illustration matching the character sheet, warm soft morning light, gentle saturated cream, honey, sage green, berry pink and sky blue, clean shapes with soft painterly texture, storybook feel.
+
+Jigsaw-friendly composition:
+One clear focal subject recognizable at a glance. Foreground, middle ground and background have clearly different colors and textures. No large empty flat areas: sky has layered soft pink clouds and curling steam, walls have light, wood textures, awnings and plants. Avoid tiny repetitive clutter; favor medium-sized legible objects. Fill the whole frame edge to edge including all corners. Keep the breakfast street visible as a coherent place and keep the flying shop readable high in the sky.
+
+Strict constraints:
+No text, no letters, no numbers, no readable writing. Shop signs, lanterns and paper show only blank shapes or soft non-writing squiggles. No UI, watermark, border, frame or comic speech bubbles. No puzzle-piece grid or cut lines. Opaque background. Exactly 1536x1024 landscape.
+```
+
+## 生成结果
+
+- 实际尺寸：1536 × 1024
+- 原生生成 PNG，直接复制，未缩放。
+- 原始生成文件：C:\Users\Administrator\.codex\generated_images\01a18140-f504-7dd3-909f-91aa878e00c0\exec-cc0aee1c-7faa-410e-8a4a-e0ec359bdf25.png
+- 已检查构图：角色

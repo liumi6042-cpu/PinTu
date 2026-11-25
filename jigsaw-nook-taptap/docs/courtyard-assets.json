@@ -1,0 +1,71 @@
+{
+  "source": "Previously approved generated courtyard playtest assets; raster sprites and backgrounds, not 3D models.",
+  "delivery": "WebP quality 87, original dimensions; originals retained locally",
+  "assets": [
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\eggs.png",
+      "sha256": "52cc076f857f52257f9219c6e029dc8dcc87b85bf9d7daa4da100a8dfe96be19",
+      "bytes": 1820026
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\furniture-country.png",
+      "sha256": "2a553dd495d19da398adb5484e6ffe8303a9440f1d17040dc3f2cc5b9bcca0f8",
+      "bytes": 2275958
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\furniture-mediterranean.png",
+      "sha256": "22cf8550469ef5f8e1907766ef1f8cf3e6b4291dcb3e9ef20650de4feb564b8a",
+      "bytes": 2359246
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\furniture.png",
+      "sha256": "753bdaf7609dd84d90793a3bf7fc2ba528850aa7998a03042c8b9e8240fb31ca",
+      "bytes": 2259632
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\house-country.png",
+      "sha256": "870b016dcae31f66a81804c7ffdd9f684d024ad8b83683178971c7a0dae943f7",
+      "bytes": 2619868
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\house-mediterranean.png",
+      "sha256": "08c9d84cd1e957f7bea3b66b00251c20d5c1bdd2fca5d3fdf6b185aa6a3631bb",
+      "bytes": 2412555
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\house.png",
+      "sha256": "d2d5fab4e0d45c584dbcca625df4b78c68be1a49c17ba654624392f35ff0548f",
+      "bytes": 2190499
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\plant-bamboo.png",
+      "sha256": "ab4aebd61fa05e2b94274fb8c9822de1e43af0cfa14f02482969e62fe8c0150c",
+      "bytes": 956550
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\plant-bougainvillea.png",
+      "sha256": "e19d40c77bd3c3a33fdf27c54620605e2e56b2b6cfecb1811b945f477eb499da",
+      "bytes": 1643195
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\plant-fern.png",
+      "sha256": "e76c5ab98357ad7577b0c8b15b945d4e4ecd6056e1fbfbcc6fa4841bd4196233",
+      "bytes": 2017992
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\plant-hydrangea.png",
+      "sha256": "1ae43becc3cd213a39975c987326b8809292459d442cb7cd66c196720ebbfdb5",
+      "bytes": 1693195
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\plant-lavender.png",
+      "sha256": "01150605ca29c1cfc830c87b4b034feedc7c38e2cb2326bf120bbb9b65ea0e26",
+      "bytes": 1976367
+    },
+    {
+      "source": "..\\design\\courtyard-playtest\\assets\\plant-olive.png",
+      "sha256": "8e551d6197cbefdb9e20616b06e738817b94049820db8fe13bdec2ed1a3f7ddc",
+      "bytes": 1484380
+    }
+  ]
+}

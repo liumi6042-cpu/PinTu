@@ -1,0 +1,107 @@
+{
+  "id": "painted-jade-feather-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/painted-jade-feather-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "painted-moonlit-portrait-v1",
+        "path": "public/puzzles/painted-moonlit-portrait-v1.png",
+        "sha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
+        "purpose": "rendering-style-only",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "public/puzzles/painted-moonlit-portrait-v1.webp",
+          "sha256": "0d31827aad8f2496e8ebea2731a6fb91d23d97c9fa0f82a3d8281440def46aba",
+          "bytes": 346686,
+          "width": 1536,
+          "height": 1024
+        }
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-0d17756a-fd90-40e1-8383-1f9c383dd1ec.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/painted-jade-feather-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
+    "optimized": {
+      "src": "/puzzles/painted-jade-feather-v1-optimized-3b1a9087f8a4.webp",
+      "sha256": "3b1a9087f8a4537314283a0e74b6119606e66a8f34e8346c4de48612a9e3339b",
+      "bytes": 198846,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
+      "inputSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-jade-feather-v1-thumbnail-83c1ac84cfe3.webp",
+      "sha256": "83c1ac84cfe316bc10185d701ee8a548dc385d59e3300bbfaeae522ddc793118",
+      "bytes": 31530,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
+      "inputSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/painted-jade-feather-v1.webp",
+    "sha256": "6a4ba3618e6672889c0c1c8633d1695eadf22378dfc01ae6555f2e530cd9abd7",
+    "bytes": 424676,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "38a0118d97c7763c1151d438419ee7b6e800418187d3b79cf0c9ced93603612b"
+  }
+}

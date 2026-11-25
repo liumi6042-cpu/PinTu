@@ -1,0 +1,98 @@
+{
+  "id": "coral-garden",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "原始内置 image_gen 调用记录",
+    "promptPath": "content/image-prompts/coral-garden.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a080fa-6610-7d90-b30d-90660058d2c0\\exec-9c9aa033-9a5b-4e87-8ab5-e28a2254fd32.png",
+    "sourceMetadata": "../artwork/puzzle-four-samples-2026-09-08/coral-garden.metadata.json"
+  },
+  "crops": {
+    "sourceAspectRatio": "2:1",
+    "threeThousandPieces": "60×50 正方形主体，居中等比裁切为 6:5，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single 2:1 vivid shallow underwater garden with branching and fan corals, patterned tropical fish, anemones, shells, starfish and sunlit surface ripples.",
+      "Strong separated puzzle anchors, well-resolved coral textures and plausible visible animal anatomy at native viewing size.",
+      "No visible text, logo, watermark, border, grid or jigsaw seams observed."
+    ],
+    "minorDeviations": [
+      "Generated scene adds a sea turtle as a prominent subject."
+    ],
+    "scope": "已逐张查看原始生成结果；未发现明显品牌、水印或受保护角色。保留细节偏差记录，视觉筛查不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+    "optimized": {
+      "src": "/puzzles/coral-garden-optimized-b82da2cb823e.webp",
+      "sha256": "b82da2cb823e6a6c466b7a5c4f74df6b197b1c99a76cc2c9183ca377e0b5c5ac",
+      "bytes": 496800,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+      "inputSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/coral-garden-thumbnail-dfd5e55088d1.webp",
+      "sha256": "dfd5e55088d1b5bea96bd4071d12fed6e6fdc6853c5f5bd28c289c4d84b45e02",
+      "bytes": 38198,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+      "inputSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/coral-garden.webp",
+    "sha256": "520d6e0a62d02387638402e723c8b8781ee1f118c56f9f9aad9166c11d443541",
+    "bytes": 858156,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9"
+  }
+}

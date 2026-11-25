@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K mythological beast artwork.
+Primary request: an original non-humanoid Kui Niu inspired by the Shan Hai Jing, a colossal ancient blue-black ox-like thunder beast with one powerful leg, a single short horn, rugged hide, broad muscular body and glowing electric patterns across its skin, charging through shallow water while thunder gathers around it. Clearly a pure animal, not humanoid.
+Style/medium: polished Japanese fantasy anime creature illustration blended with Chinese myth aesthetics, highly detailed hide, horn, hooves and sparks, cinematic painterly rendering.
+Composition/framing: wide horizontal 16:9, the beast dominates about 85% of the frame, dynamic three-quarter full-body pose, head and one leg clearly visible, strong readable silhouette.
+Background: minimal storm clouds, dark sea spray and a few distant bronze ritual stones, no people, no extra creatures, no wide landscape.
+Lighting/mood: electric blue lightning against deep indigo storm light, powerful, ancient and majestic.
+Color palette: blue-black, cobalt, silver-gray, electric cyan, muted bronze.
+Constraints: non-humanoid animal only, exactly one leg, one horn, no human face, no human hands, no rider, no text, no logos, no watermark, no extra creatures, no gore, no anatomical errors. Target a finished 4K-quality landscape illustration.

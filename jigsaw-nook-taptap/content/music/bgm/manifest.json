@@ -1,0 +1,41 @@
+{
+ "origin": "Original composition and procedural synthesis (additive piano, flute, plucks, glockenspiel, shaker, light pad) in light_suite.py. No samples, no recordings, no borrowed melodies.",
+ "created": "2026-10-27",
+ "version": 3,
+ "replaces": "v2 sparse piano set (user feedback: too gloomy; wanted lighter easy-listening music)",
+ "loudness": "-16 LUFS integrated before encoding",
+ "encoding": "MP3 56 kbps, 32 kHz, joint stereo",
+ "playback": "mobile/audio-playback.ts plays one piece, rests 20-45 s, then picks a different piece",
+ "files": [
+  {
+   "file": "bgm-morning.mp3",
+   "title": "阳光午后 · D major",
+   "bpm": 96,
+   "beatsPerBar": 4,
+   "bars": 40,
+   "seconds": 103.54,
+   "bytes": 730851,
+   "sha256": "da4668a59dd1def45ca1f5f0a2d3fe3d125ff855e00121a8ccd9830a802053c0"
+  },
+  {
+   "file": "bgm-rain.mp3",
+   "title": "小花园 · F major",
+   "bpm": 108,
+   "beatsPerBar": 4,
+   "bars": 36,
+   "seconds": 83.56,
+   "bytes": 590991,
+   "sha256": "26f2de6d13f797c5e538064837ecc8eeb3398882d4363e0f145694ece2f5808a"
+  },
+  {
+   "file": "bgm-starlight.mp3",
+   "title": "晴空圆舞曲 · G major, 3/4",
+   "bpm": 138,
+   "beatsPerBar": 3,
+   "bars": 72,
+   "seconds": 97.45,
+   "bytes": 688263,
+   "sha256": "0e166e6f5d3312a51faf6402e15e268bf846ac8550ebb73dcdc689483edb7148"
+  }
+ ]
+}

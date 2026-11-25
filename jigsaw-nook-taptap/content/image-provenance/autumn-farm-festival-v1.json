@@ -1,0 +1,80 @@
+{
+  "id": "autumn-farm-festival-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "b6667cb14a31e556",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "b6667cb14a31e556",
+    "originalSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 8 张原图预览：南瓜、谷仓与乡村乐队，一起庆祝金色的丰收季。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+    "optimized": {
+      "src": "/puzzles/autumn-farm-festival-v1-optimized-a9367e7c25dc.webp",
+      "sha256": "a9367e7c25dcc8a0dbab2db3cafd5e66fc7eb6e0ad04c208ac237041bfada787",
+      "bytes": 487052,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "inputSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/autumn-farm-festival-v1-thumbnail-f844859aa97c.webp",
+      "sha256": "f844859aa97ceb51757b953476843dd4f08bca09aa56dd8ebf79e7510ea9c35c",
+      "bytes": 74334,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "inputSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/autumn-farm-festival-v1.webp",
+    "sha256": "a3c18d9bbebb31c70e67d1d95379a955e73044e7f0376255ef8ec84ee41fb61b",
+    "bytes": 811086,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "9493e2ac28983dff66519946fbbc3a8a02c7a67540546276de6a1c2086e001e5"
+  }
+}

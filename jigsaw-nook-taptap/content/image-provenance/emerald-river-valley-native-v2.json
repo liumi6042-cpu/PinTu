@@ -1,0 +1,90 @@
+{
+  "id": "emerald-river-valley-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/emerald-river-valley-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-ceb1d764-040c-431c-97b6-44c8db769efb.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+    "optimized": {
+      "src": "/puzzles/emerald-river-valley-native-v2-optimized-1a20550f1fba.webp",
+      "sha256": "1a20550f1fba830d2e239d3fa23b12e711fae7c90373cd4c83f113196f72400e",
+      "bytes": 376054,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "inputSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/emerald-river-valley-native-v2-thumbnail-7fc8e0287d32.webp",
+      "sha256": "7fc8e0287d32085a3a655ef8c2fdbe2a01fbf11c18ebfe27900fcba69911c18b",
+      "bytes": 29858,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "inputSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/emerald-river-valley-native-v2.webp",
+    "sha256": "407d04c75e3e7ff91891c695ab410b4f24cfe8ee762f5e7fdbfa7e9f1c449543",
+    "bytes": 699708,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "2cbb84453735553e34f8d1f299a5ed71da96dabf1d660e952f750911556c4adc"
+  }
+}

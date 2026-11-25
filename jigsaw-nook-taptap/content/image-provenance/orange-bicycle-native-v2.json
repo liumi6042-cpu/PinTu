@@ -1,0 +1,90 @@
+{
+  "id": "orange-bicycle-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/orange-bicycle-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-7ff809e9-3082-4cae-ac2a-0f22a40bfc8f.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+    "optimized": {
+      "src": "/puzzles/orange-bicycle-native-v2-optimized-be12037a3349.webp",
+      "sha256": "be12037a3349e0190ff521624008f5f3cd1f0092d30311cdae47a8cb1674aaed",
+      "bytes": 237874,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+      "inputSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/orange-bicycle-native-v2-thumbnail-9d6948b74e1f.webp",
+      "sha256": "9d6948b74e1ff0fd60dc17a512ba2ae11151dce52cb8e4d6a026cd7424825352",
+      "bytes": 23154,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+      "inputSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/orange-bicycle-native-v2.webp",
+    "sha256": "b1cce96930ba262d914c583b3a40a2a0f212afb1a8ab402ceef7bf3d65b7d4eb",
+    "bytes": 526092,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457"
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "id": "album-floating-breakfast-shop-05-20261020",
+  "origin": "project-ai-generated",
+  "width": 1024,
+  "height": 1536,
+  "sha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-19",
+    "generatedAt": "2026-10-19T15:13:46.891Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-floating-breakfast-shop-05-20261020.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-floating-breakfast-shop-05-20261020/native.png",
+      "sha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+      "bytes": 3189037,
+      "width": 1024,
+      "height": 1536,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-floating-breakfast-shop-05-20261020/native.webp",
+        "sha256": "5ad88e578c6cf64b56702ae12853142ea23b23f24bb517c7b3c0fc52831e4b66",
+        "bytes": 559222,
+        "width": 1024,
+        "height": 1536
+      }
+    },
+    "originalFile": "public/puzzles/album-floating-breakfast-shop-05-20261020.png",
+    "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
+  },
+  "resolutionNote": "原始生成 1024×1536；保存成品 1024×1536，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-19T17:48:14.315Z",
+    "notes": "用户授权整册入库；海底音乐会使用腿部修改版。原生概念图，未标注为4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+    "thumbnail": {
+      "src": "/puzzles/album-floating-breakfast-shop-05-20261020-thumbnail-8d25575196dd.webp",
+      "width": 256,
+      "height": 384,
+      "sha256": "8d25575196dd2a95b4b1ede8bd97f6822d587c7bc57edc2f902350e4703a5ffd",
+      "bytes": 39022,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+      "inputSha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-floating-breakfast-shop-05-20261020-optimized-d6d17c2979b1.webp",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "d6d17c2979b10dfc49736a7c5fb54fadae07cdbbed748f2ecfdc1c26fbf79ade",
+      "bytes": 291210,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+      "inputSha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-floating-breakfast-shop-05-20261020.webp",
+    "sha256": "5ad88e578c6cf64b56702ae12853142ea23b23f24bb517c7b3c0fc52831e4b66",
+    "bytes": 559222,
+    "width": 1024,
+    "height": 1536,
+    "originalPngSha256": "63c2d5e4d65e47eed0550988a13b3a699f801aa773545c28f8667b187db4eab1"
+  }
+}

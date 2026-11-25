@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {seriesProgress,dailyStamps,continuationChoices,winningPicture,PUZZLE_SERIES} from '../lib/puzzle-journey.ts';
+import {dailyPuzzle} from '../lib/daily-puzzle.ts';
+import {PHOTOS} from '../lib/puzzle-catalog.ts';
+import {initial} from '../public/flower-garden/engine.mjs';
+import {creditActivity} from '../public/flower-garden/catalog.mjs';
+test('collections use distinct existing completion facts and published pictures',()=>{const pictures=PUZZLE_SERIES[0].pictures;assert.ok(pictures.every(id=>PHOTOS.some(p=>p.id===id)));assert.equal(seriesProgress([{imageId:pictures[0]},{imageId:pictures[0]}])[0].count,1);assert.equal(seriesProgress(pictures.map(imageId=>({imageId})))[0].complete,true);});
+test('daily stamps only credit the featured picture on completion date and deduplicate',()=>{const at=Date.UTC(2026,8,25,12),fact={imageId:dailyPuzzle(at).id,completedAt:at};assert.equal(dailyStamps([fact,fact]).length,1);assert.equal(dailyStamps([{...fact,imageId:'not-today'}]).length,0);});
+test('continuation choices exclude current picture; votes select majority with stable ties',()=>{const choices=continuationChoices(PHOTOS[0].id);assert.equal(new Set(choices).size,3);assert.ok(!choices.includes(PHOTOS[0].id));assert.equal(winningPicture(choices,{a:choices[1],b:choices[1],c:choices[0]}),choices[1]);assert.equal(winningPicture(choices,{}),choices[0]);assert.equal(winningPicture(choices,{a:choices[1],b:choices[0]}),choices[0]);});
+test('activity permits 100 daily connections from completed large puzzles, never retries or small puzzles',()=>{const s=initial(),now=Date.now();s.activity={startedAt:now,days:[],claimed:0};const r={completedAt:now,pieces:300,contribution:40,total:200,roomId:'one'};assert.equal(creditActivity(s,r),false);assert.equal(creditActivity(s,r),false);assert.equal(creditActivity(s,{...r,roomId:'small',pieces:108,contribution:100}),false);assert.equal(creditActivity(s,{...r,roomId:'two'}),false);assert.equal(creditActivity(s,{...r,roomId:'three',contribution:20}),true);assert.equal(s.activity.contributions[new Date(now).toISOString().slice(0,10)],100);assert.equal(s.activity.days.length,1);});

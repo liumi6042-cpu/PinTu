@@ -1,0 +1,80 @@
+{
+  "id": "underwater-city-fair-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "9ba14aa2dbec75d4",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "9ba14aa2dbec75d4",
+    "originalSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 9 张原图预览：穿过透明穹顶，与鱼群一同探索热闹的海底街市。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+    "optimized": {
+      "src": "/puzzles/underwater-city-fair-v1-optimized-257de10dccab.webp",
+      "sha256": "257de10dccabf515aea3b9466aa2747988c3ab4e82d0dd6ae4f6d255ba260292",
+      "bytes": 466132,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "inputSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/underwater-city-fair-v1-thumbnail-f714e57227cf.webp",
+      "sha256": "f714e57227cf9903a6ba4d0185b798a478b8e744567bf5024bd9fe02636227d6",
+      "bytes": 72452,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "inputSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/underwater-city-fair-v1.webp",
+    "sha256": "94b2fabed60ab0b6c60eeacaa4d960b1f790e414cdd9e62a2ae3969affc6a7f7",
+    "bytes": 784522,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "16e34ff7e33832c12073b9a23f12914c22cab01d6a972cf8d7bf5e549b01f963"
+  }
+}

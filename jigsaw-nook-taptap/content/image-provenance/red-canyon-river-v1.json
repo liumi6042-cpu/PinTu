@@ -1,0 +1,78 @@
+{
+  "id": "red-canyon-river-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_29-5.png",
+    "originalSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：碧蓝河流绕过层层红岩，夕照点亮峡谷与仙人掌花。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+    "optimized": {
+      "src": "/puzzles/red-canyon-river-v1-optimized-69c4fab44ce4.webp",
+      "sha256": "69c4fab44ce42d086b73e7c205eeec2563f06581a4ffa094d6f71b0467e27518",
+      "bytes": 337464,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+      "inputSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/red-canyon-river-v1-thumbnail-e5434aed94e7.webp",
+      "sha256": "e5434aed94e7e85bb9f431e88101a2e6b1935a4618cfd058bb81e4f6ff9d40c5",
+      "bytes": 44408,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+      "inputSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/red-canyon-river-v1.webp",
+    "sha256": "37471241d60250591b1c7ff3e61003acfa6d93cf22962568476f06ce6117fe24",
+    "bytes": 631262,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "d126f42cf608c6dcc6ed7001f3c2a8191909bc80120b2c308e5b7b6e7b89f32c"
+  }
+}

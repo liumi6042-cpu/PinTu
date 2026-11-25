@@ -1,0 +1,101 @@
+{
+  "id": "album-antique-toy-shop-04-20261020",
+  "origin": "project-ai-generated",
+  "width": 1024,
+  "height": 1536,
+  "sha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-19",
+    "generatedAt": "2026-10-19T01:50:43.112Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-antique-toy-shop-04-20261020.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-antique-toy-shop-04-20261020/native.png",
+      "sha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+      "bytes": 3044781,
+      "width": 1024,
+      "height": 1536,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-antique-toy-shop-04-20261020/native.webp",
+        "sha256": "5cc8ea817f34670ec669957335848a0cdb8f9fe11837741d0696ebbe9e77ff09",
+        "bytes": 520894,
+        "width": 1024,
+        "height": 1536
+      }
+    },
+    "originalFile": "public/puzzles/album-antique-toy-shop-04-20261020.png",
+    "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
+  },
+  "resolutionNote": "原始生成 1024×1536；保存成品 1024×1536，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-19T17:48:11.583Z",
+    "notes": "用户授权整册入库；海底音乐会使用腿部修改版。原生概念图，未标注为4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+    "thumbnail": {
+      "src": "/puzzles/album-antique-toy-shop-04-20261020-thumbnail-872dd0a10b78.webp",
+      "width": 256,
+      "height": 384,
+      "sha256": "872dd0a10b78cb31a5de83e05c65cd91118316706f68802ce2605d1476fec8d6",
+      "bytes": 37402,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+      "inputSha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-antique-toy-shop-04-20261020-optimized-fd596ae99a8a.webp",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "fd596ae99a8a76243432c9b8810043a9c67a54b91019d99a8bf1a171ad3b104f",
+      "bytes": 266194,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+      "inputSha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-antique-toy-shop-04-20261020.webp",
+    "sha256": "5cc8ea817f34670ec669957335848a0cdb8f9fe11837741d0696ebbe9e77ff09",
+    "bytes": 520894,
+    "width": 1024,
+    "height": 1536,
+    "originalPngSha256": "c914e4902dbe4d7b76c9e83f0cbd7b6bad646e3ba5b6168bb57b18ec936e022b"
+  }
+}

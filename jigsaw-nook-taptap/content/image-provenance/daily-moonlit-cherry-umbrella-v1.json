@@ -1,0 +1,78 @@
+{
+  "id": "daily-moonlit-cherry-umbrella-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入每日一图内容的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-03",
+    "originalFile": "codex-clipboard-d927acde-79ca-421d-8164-84b3e8ab7369.png",
+    "originalSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这三张图片存入图库并作为大厅每日一图公开拼图，授权用于本站宣传与游玩。",
+    "authorizedOn": "2026-10-03"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-03",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：樱花湖畔的夜景人物撑透明伞，画面无网页界面、按钮或文字覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+    "optimized": {
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-optimized-023c8ccf1b4e.webp",
+      "sha256": "023c8ccf1b4e64bbd814ca2fb899dc86ba16c5b5f42454e33493240f9a96567e",
+      "bytes": 254038,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "inputSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/daily-moonlit-cherry-umbrella-v1-thumbnail-4b752e9521cf.webp",
+      "sha256": "4b752e9521cf1284cb7aae99d665fd2c808536642bdae3b77053553c4092070e",
+      "bytes": 52762,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "inputSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/daily-moonlit-cherry-umbrella-v1.webp",
+    "sha256": "4ff1ed93e3c98ad60a6fffa5660041ae7b64171b90d2f1e52882e11ccbb8e157",
+    "bytes": 517358,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941"
+  }
+}

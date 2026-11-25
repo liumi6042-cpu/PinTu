@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone 4K anime character artwork.
+Primary request: an original adult xianxia swordsman standing on a misty mountain cliff above a sea of clouds, long black hair tied with jade ornament, flowing white and teal robes, elegant straight sword, distant waterfalls and ancient peaks.
+Style/medium: Chinese ink-wash fused with polished anime character art, expressive brush textures, delicate linework, detailed cloth folds, cinematic environment.
+Composition/framing: vertical full-body composition with generous negative space, character in profile facing the sunrise.
+Lighting/mood: cool dawn mist with a warm edge of sunrise, tranquil and heroic.
+Color palette: ink black, jade green, white, pale gold.
+Constraints: original character only, fully clothed adult, no logos, no readable text, no watermark, no duplicate character, no anatomical errors. Target a true 4K-quality finished illustration.

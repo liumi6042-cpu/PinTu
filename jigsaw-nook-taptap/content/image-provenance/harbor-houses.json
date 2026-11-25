@@ -1,0 +1,103 @@
+{
+  "id": "harbor-houses",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "内置 image_gen 生成结果与原文件记录",
+    "promptPath": "content/image-prompts/harbor-houses.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a08187-a550-76b0-996a-9013ea47c8bc\\exec-22a26196-aa32-43b4-bf12-52a14035062d.png",
+    "sourceMetadata": "../artwork/gallery-expansion-20260908/manifest.json"
+  },
+  "requestedResolution": {
+    "width": 4096,
+    "height": 3072,
+    "delivered": false
+  },
+  "resolutionNote": "提示词请求高原生分辨率，但工具实际返回 1448×1086；保留真实原件，不插值放大。2000 片时每片主体约有 27×27 个源像素，高倍放大仍受原始细节限制。",
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "twoThousandPieces": "50×40 正方形主体，居中等比裁切为 5:4，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: distinct colorful houses, fishing boats, nets, stone paths and reflections are crisp and coherent. No obvious readable text, logo, watermark, frame or puzzle seam visible in generated original preview.",
+      "主代理逐张查看原始生成图，未发现明显文字、商标、水印、受保护角色或拼图缝线。"
+    ],
+    "minorDeviations": [
+      "实际原生尺寸低于请求值；背景远景的细节比前景更柔和。"
+    ],
+    "scope": "视觉检查与来源记录不构成独占版权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+    "optimized": {
+      "src": "/puzzles/harbor-houses-optimized-0b62f51fd1a5.webp",
+      "sha256": "0b62f51fd1a52e3237b361fdcdfb67c99a75394520fdda457f4a32b7c11d37d3",
+      "bytes": 401146,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+      "inputSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/harbor-houses-thumbnail-bc482de164d0.webp",
+      "sha256": "bc482de164d0da760fe69c4e72a5352fc8fc9139bfe48b5e01ebe2c0d5c47717",
+      "bytes": 48234,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+      "inputSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/harbor-houses.webp",
+    "sha256": "c6c247115707c2509a6e23e0d24f0500fba21996126bf0e3c35165f881beb4f5",
+    "bytes": 721734,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "08987a4444213bb74c51cd2a049f4385ae2f6cde3f1e228bb00087141df8d6e6"
+  }
+}

@@ -1,0 +1,415 @@
+/* B2 pale berry task screens. Rules stay within the mobile task dialogs. */
+.mobile-sheet:has(.mobile-tasks-panel){
+ --task-paper:#fff7ee;--task-ink:#5d203a;--task-muted:#a17878;--task-line:#d4a399;--task-berry:#c8798c;--task-dark:#884753;
+ width:min(760px,calc(100vw - 24px));max-width:760px;max-height:94dvh;border:2px solid var(--task-line);border-radius:2px;background:var(--task-paper);color:var(--task-ink);box-shadow:0 6px 0 #603f4540,0 16px 48px #4f263640;
+}
+.mobile-sheet:has(.mobile-tasks-panel)>header{justify-content:flex-start;gap:9px;padding:9px 12px 8px;border-bottom:1px solid var(--task-line);border-radius:0;background:var(--task-paper)}
+.mobile-sheet:has(.mobile-tasks-panel)>header h2{font-size:23px;letter-spacing:.5px;font-weight:800;color:var(--task-ink);}
+.mobile-sheet:has(.mobile-tasks-panel)>header>.mobile-icon-button{order:-1;width:34px;height:36px;border:5px solid transparent;background:#fffaf4;border-radius:0;box-shadow:none;background-clip:padding-box;}
+.mobile-sheet:has(.mobile-tasks-panel)>header>.mobile-icon-button svg{display:none}
+.mobile-sheet:has(.mobile-tasks-panel)>header>.mobile-icon-button:before{content:'←';font-size:25px;font-weight:800;line-height:1;color:#a76576;}
+.mobile-sheet:has(.mobile-tasks-panel)>.mobile-sheet-content{padding:0 13px calc(18px + env(safe-area-inset-bottom));line-height:1.45}
+.mobile-tasks-panel{color:var(--task-ink,#572637)}
+.mobile-tasks-panel [hidden]{display:none!important}
+.mobile-tasks-panel button,.mobile-tasks-panel select,.mobile-tasks-panel input{font-family:inherit}
+.mobile-task-player-strip{display:flex;align-items:center;gap:8px;padding:7px 0 8px;border-bottom:1px solid #d4a399;margin-bottom:10px;}
+.mobile-task-player-strip>.mobile-art-avatar{width:56px;height:60px;flex-shrink:0}
+.mobile-task-player-level{display:flex;flex-direction:column;gap:3px;min-width:52px;width:66px;}
+.mobile-task-player-level>strong{font-size:18px;font-weight:850;letter-spacing:.5px}
+.mobile-task-player-level>small{font-size:10px;font-variant-numeric:tabular-nums}
+.mobile-task-energy-link,.mobile-task-supply-link{display:flex;align-items:center;justify-content:center;gap:4px;padding:0;border:0;background:none;min-height:44px}
+.mobile-task-energy-link{margin-left:auto;white-space:nowrap}
+.mobile-task-energy-link>.mobile-art{width:23px;height:36px}
+.mobile-task-energy-link>strong{font-size:16px;font-weight:850}
+.mobile-task-energy-link>span:not(.mobile-art){display:grid;place-items:center;width:24px;height:26px;margin-left:2px;border:4px solid transparent;background:#d6ab69;box-shadow:none;color:#fff8ed;font-size:20px;line-height:1;background-clip:padding-box;}
+.mobile-task-supply-link{padding-left:8px;border-left:1px solid #cba59a;font-size:11px;font-weight:700;gap:3px;}
+.mobile-task-supply-link>.mobile-art{width:35px;height:41px;}
+.mobile-task-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 10px;}
+.mobile-task-tabs>button{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:3px 5px;border:6px solid transparent;border-radius:0;background:#fffaf2;box-shadow:none;color:#572637;font-size:18px;font-weight:800;letter-spacing:1px;background-clip:padding-box;}
+.mobile-task-tabs>button[aria-selected=true]{background:linear-gradient(100deg,#bd788b,#d494a0);box-shadow:inset 0 1px #efbec8;color:#fff9f2;border:6px solid transparent;background-clip:padding-box;}
+.mobile-task-tabs>button>.mobile-art{width:24px;height:25px;}
+.mobile-task-count{position:absolute;top:-8px;right:10px;display:grid;place-items:center;min-width:21px;height:21px;padding:0 4px;background:#bf7487;color:#fff8f2;border:2px solid #fff8f2;border-radius:50%;font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:0}
+.mobile-ten-gift{display:flex;align-items:center;gap:5px;padding:3px 5px;border:4px solid transparent;background:#fffaf3;min-height:43px;margin:0 0 10px;background-clip:padding-box;}
+.mobile-ten-gift>strong{font-size:12px;white-space:nowrap}
+.mobile-ten-gift>b{font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mobile-ten-gift>button{flex-shrink:0;width:31px;height:31px;padding:0;border:0;background:none}
+.mobile-ten-gift>button>.mobile-art{width:100%;height:100%}
+.mobile-ten-slots{display:flex;align-items:center;justify-content:space-between;gap:1px;flex:1;min-width:0}
+.mobile-ten-slots>i{display:flex;flex:1;min-width:0;opacity:.28}
+.mobile-ten-slots>i.is-filled{opacity:1}
+.mobile-ten-slots .mobile-art{width:100%;height:18px}
+.mobile-ten-slots .mobile-art-piece{color:#b7667b}
+.mobile-task-list{display:flex;flex-direction:column;gap:9px;}
+.mobile-task-card{position:relative;display:grid;grid-template-columns:68px minmax(0,1fr) 96px;align-items:center;gap:8px;min-height:104px;padding:6px;border:6px solid transparent;background:linear-gradient(110deg,#fff8ee,#fffaf4);border-radius:0;box-shadow:0 2px 0 #b17b7214;background-clip:padding-box;}
+.mobile-task-card>.mobile-task-corner{position:absolute;width:18px;height:19px;top:-8px;pointer-events:none;z-index:1;}
+.mobile-task-card>.mobile-task-corner.is-first{left:-8px;}
+.mobile-task-card>.mobile-task-corner.is-last{right:-8px;transform:scaleX(-1);}
+.mobile-task-card-art{display:grid;place-items:center;min-width:0;width:68px;height:76px;}
+.mobile-task-card-art>.mobile-task-art{width:68px;height:76px;}
+.mobile-task-card-copy{min-width:0}
+.mobile-task-card h4{display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin:0 0 4px;font-size:18px;line-height:1.35;font-weight:800;letter-spacing:.2px}
+.mobile-task-card h4>small{padding:1px 4px;color:#995967;background:#f7dfd0;font-size:9px;font-weight:600;letter-spacing:0;white-space:nowrap}
+.mobile-task-description{font-size:11px;line-height:1.5;margin:0 0 8px;color:#6e4050}
+.mobile-task-progress-line{display:flex;gap:5px;align-items:center;min-width:0}
+.mobile-task-progress-line>span:last-child{font-size:12px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mobile-task-meter{display:block;flex:1;height:11px;min-width:20px;border:2px solid #b28282;background:#f7e9dc;border-radius:0;overflow:hidden;box-shadow:inset 0 1px 0 #ffffff;line-height:1}
+.mobile-task-meter>i{display:block;height:100%;background:linear-gradient(#d69aaa,#b76a80);box-shadow:inset 0 2px #e9b8c1;transition:width .2s}
+.mobile-task-card-reward{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding-left:8px;border-left:1px solid #d3afa4;min-height:0;}
+.mobile-task-reward-values{display:flex;gap:0;flex-direction:column;align-items:center}
+.mobile-task-reward-values>span{display:flex;align-items:center;gap:5px;min-height:23px;white-space:nowrap}
+.mobile-task-reward-values .mobile-art{width:21px;height:24px;}
+.mobile-task-reward-values b{font-size:16px;font-weight:800;min-width:30px}
+.mobile-task-xp-star{display:inline-grid;place-items:center;width:19px;height:21px;color:#d6a052;font-style:normal;font-size:23px;line-height:1;text-shadow:1px 1px #925248}
+.mobile-task-refill-reward{display:flex;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700;line-height:1.35}
+.mobile-task-refill-reward>.mobile-art{width:31px;height:39px;flex-shrink:0}
+.mobile-task-state{display:flex;align-items:center;justify-content:center;gap:3px;min-height:35px;padding:2px 2px;border:5px solid transparent;border-radius:0;background:linear-gradient(#d18c9d,#bd768d);color:#fffaf6!important;font-size:12px!important;font-weight:750;box-shadow:none;white-space:nowrap;background-clip:padding-box;}
+.mobile-task-state>span{font-size:19px;line-height:1;margin-left:2px}
+.mobile-tasks-panel .mobile-task-state:disabled{opacity:1;background:#d6a4af;color:#fff9f2!important;box-shadow:none;cursor:default;border:5px solid transparent;background-clip:padding-box;}
+.mobile-task-state.is-earned{background:#e8d4c0;color:#936c60!important;box-shadow:none;background-clip:padding-box;}
+.mobile-task-section-title{display:flex;align-items:center;gap:7px;margin:12px 0 8px;}
+.mobile-task-section-title>.mobile-art{width:28px;height:30px;flex:none}
+.mobile-task-section-title>h3{margin:0;font-size:19px;font-weight:800;letter-spacing:1px}
+.mobile-task-section-title>span:not(.mobile-art){height:1px;flex:1;background:#cea297}
+.mobile-task-section-title>button{min-height:36px;padding:4px 1px;border:0;background:none;color:#a36376;font-size:11px;font-weight:650;white-space:nowrap}
+.mobile-stored-preview{display:grid;grid-template-columns:repeat(var(--stored-kinds,3),minmax(0,1fr));gap:0;padding:8px 0;border:5px solid transparent;background:#fffaf3;background-clip:padding-box;}
+.mobile-stored-preview>.mobile-gift-card{display:grid;flex-direction:column;gap:5px 3px;padding:0 6px;min-width:0;border:0;border-right:1px solid #dcb9aa;border-radius:0;background:transparent;box-shadow:none;text-align:left;border-image:none;grid-template-columns:43px minmax(0,1fr);}
+.mobile-stored-preview>.mobile-gift-card:last-child{border-right:0}
+.mobile-stored-preview .mobile-gift-card-art{width:43px;min-width:0;height:53px;}
+.mobile-stored-preview .mobile-gift-card-art>.mobile-task-art{width:43px;height:52px;}
+.mobile-stored-preview .mobile-gift-card-copy{flex:1;width:100%}
+.mobile-stored-preview .mobile-gift-card h3{font-size:11px;line-height:1.4;font-weight:750}
+.mobile-stored-preview .mobile-gift-card h3>span{display:block;font-size:13px;font-weight:750}
+.mobile-stored-preview .mobile-gift-card p{font-size:9px;line-height:1.35;display:none;}
+.mobile-stored-preview .mobile-gift-preserve-note{display:none}
+.mobile-stored-preview .mobile-gift-open{width:100%;min-width:0;min-height:32px;padding:4px 1px;font-size:11px!important;grid-column:1/-1;}
+.mobile-stored-preview[data-kinds="1"]{--stored-kinds:1;}
+.mobile-stored-preview[data-kinds="2"]{--stored-kinds:2;}
+.mobile-stored-preview[data-kinds="1"]>.mobile-gift-card{grid-template-columns:64px minmax(0,1fr) 96px;align-items:center;gap:9px;min-height:82px;padding:0 9px;}
+.mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art,.mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art>.mobile-task-art{width:64px;height:72px;}
+.mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3{font-size:16px;}
+.mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3>span{display:inline;font-size:16px;}
+.mobile-stored-preview[data-kinds="1"] .mobile-gift-card p{display:block;margin-top:4px;font-size:11px;}
+.mobile-stored-preview[data-kinds="1"] .mobile-gift-open{grid-column:auto;min-height:38px;font-size:12px!important;}
+.mobile-stored-preview[data-kinds="2"]>.mobile-gift-card{grid-template-columns:54px minmax(0,1fr);gap:5px;}
+.mobile-stored-preview[data-kinds="2"] .mobile-gift-card-art,.mobile-stored-preview[data-kinds="2"] .mobile-gift-card-art>.mobile-task-art{width:54px;height:63px;}
+.mobile-stored-preview[data-kinds="2"] .mobile-gift-card h3{font-size:13px;}
+.mobile-stored-empty{display:flex;align-items:center;gap:9px;padding:7px;border:5px solid transparent;background:#fffaf3;color:#9b7074;font-size:11px;background-clip:padding-box;}
+.mobile-stored-empty>.mobile-task-art{width:36px;height:41px}
+.mobile-stored-empty>b{margin-left:auto;color:#773c50;font-size:13px}
+.mobile-task-details{margin-top:13px;border-top:1px solid #d3afa2}
+.mobile-task-details>summary{display:flex;align-items:center;gap:6px;min-height:47px;padding:8px 0;list-style:none;cursor:pointer;font-size:13px;font-weight:700;color:#9a6974}
+.mobile-task-details>summary::-webkit-details-marker{display:none}
+.mobile-task-details>summary:after{content:'+';margin-left:auto;font-size:20px;color:#b17583}
+.mobile-task-details[open]>summary:after{content:'−'}
+.mobile-task-details>summary>span{margin-left:auto;font-size:11px;font-weight:500}
+.mobile-task-details>summary>span:after{content:''}
+.mobile-task-details .mobile-task-card{min-height:100px}
+.mobile-task-details .mobile-task-card h4{font-size:16px}
+.mobile-task-footnote{margin:10px 1px 12px!important;font-size:10px;line-height:1.7;color:#a07b78}
+.mobile-gift-subtitle{font-size:12px;color:#a1767a;margin:0 0 12px!important}
+.mobile-gift-list{display:flex;flex-direction:column;gap:10px}
+.mobile-gift-card{display:flex;align-items:center;gap:11px;min-height:110px;padding:12px;border:6px solid transparent;background:#fffaf2;border-radius:0;box-shadow:none;background-clip:padding-box;}
+.mobile-gift-card-art{display:grid;place-items:center;position:relative;width:65px;min-width:65px;height:74px}
+.mobile-gift-card-art>.mobile-task-art{width:64px;height:70px}
+.mobile-gift-card-copy{flex:1;min-width:0}
+.mobile-gift-card h3{margin:0 0 4px;font-size:14px;font-weight:750;line-height:1.5}
+.mobile-gift-card h3>span{white-space:nowrap;color:#a6697b;font-size:13px}
+.mobile-gift-card p{font-size:11px;line-height:1.5;margin:0;color:#9d737a}
+.mobile-gift-preserve-note{display:block;font-size:10px;color:#ac8280;margin-top:4px}
+.mobile-gift-open{flex-shrink:0;min-height:44px;min-width:71px;padding:8px 7px;border:5px solid transparent;border-radius:0;background:linear-gradient(#d597a5,#bd758a);box-shadow:none;color:#fffaf6!important;font-size:12px!important;font-weight:700;white-space:nowrap;background-clip:padding-box;}
+.mobile-gift-card.is-refill .mobile-gift-open:disabled{opacity:1;background:#eedbd4;color:#a57e7d!important;box-shadow:none;border:5px solid transparent;background-clip:padding-box;}
+.mobile-gift-quantity{display:flex;gap:5px;align-items:center;font-size:10px;color:#9d7a79;margin-top:5px}
+.mobile-gift-quantity select{min-height:36px;min-width:52px;border:1px solid #c6a296;border-radius:2px;padding:3px 5px;background:#fffbf5;color:#86596a;font:inherit;font-size:12px}
+.mobile-gift-low-energy,.mobile-gift-pending{font-size:12px;line-height:1.6;color:#965b6c;background:#fae8dd;border:1px solid #d6aca0;border-radius:2px;padding:9px 10px;margin:8px 0 12px!important}
+.mobile-gift-pending{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.mobile-gift-pending>button{min-height:40px;border:1px solid #b67f85;background:#fff8ee;padding:5px 8px;color:#8e4f63}
+.mobile-gift-receipt{display:flex;gap:13px;align-items:center;margin:17px 0 12px;border:1px solid #d8b295;padding:11px;background:#fff4da}
+.mobile-gift-receipt>.mobile-task-art{width:59px;height:67px}
+.mobile-gift-receipt strong{font-size:16px;color:#8d5864}
+.mobile-gift-receipt p{margin:5px 0;font-size:13px}
+.mobile-gift-receipt small{font-size:10px;color:#a28464}
+.mobile-task-empty{padding:30px 15px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px}
+.mobile-task-empty>.mobile-task-art{width:85px;height:85px}
+.mobile-task-empty h3{font-size:19px;margin:5px 0 0}
+.mobile-task-empty p{font-size:12px;color:#a17c79;max-width:250px;margin:3px 0 7px}
+.mobile-task-back{margin-top:12px}
+.mobile-tasks-panel .mobile-button,.mobile-tasks-panel .mobile-small-button{border-radius:2px;border-color:#b87888;background:#c98596;box-shadow:inset 0 2px #edb9c2;color:#fffaf5;font-weight:700}
+.mobile-tasks-panel .mobile-small-button{background:#fff8ee;color:#925b6a;box-shadow:inset 0 0 0 1px #fffefa}
+.mobile-tasks-panel .mobile-button.mobile-green{background:linear-gradient(#d293a2,#bd778c);color:#fff8f3}
+.mobile-invite-card{padding:1px 0 8px}
+.mobile-invite-stats{display:flex;align-items:center;justify-content:space-between;gap:5px;margin:3px 0 11px;font-size:10px;color:#a07879}
+.mobile-invite-stats b{color:#794154;font-size:12px;font-weight:700}
+.mobile-invite-actions{display:grid;grid-template-columns:1.1fr 1fr;gap:9px}
+.mobile-invite-actions .mobile-button,.mobile-invite-actions .mobile-small-button{font-size:12px!important}
+.mobile-invite-copy{display:flex;gap:8px;align-items:center;justify-content:center;font-size:11px;color:#a2767a;margin-top:5px}
+.mobile-invite-copy button{display:flex;align-items:center;gap:8px;min-height:44px;border:0;background:none;font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:.8px;padding:0 5px}
+.mobile-invite-link{display:block;font-size:10px;color:#a3837c}
+.mobile-invite-link input{display:block;width:100%;max-width:100%;min-height:44px;border:1px solid #d7b4a5;border-radius:2px;background:#fffcf5;padding:6px 8px;font-size:11px;color:#936b78}
+.mobile-invite-input-toggle{display:block;min-height:44px;border:0;background:none;margin:8px auto 0;padding:8px;font-size:12px;color:#a26479!important;text-decoration:underline;text-underline-offset:3px}
+.mobile-invite-input-form{display:flex;align-items:flex-end;gap:8px;padding:10px;border:1px solid #d6b5a6;border-radius:2px}
+.mobile-invite-input-form label{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;font-size:11px;color:#956b77}
+.mobile-invite-input-form input{width:100%;min-width:0;min-height:44px;padding:6px 8px;background:#fffbf3;border:1px solid #d2aea0;border-radius:2px;font-size:14px}
+.mobile-friend-invitation{text-align:center;color:#6b3c4e}
+.mobile-friend-invitation-art{display:flex;justify-content:center;align-items:center;gap:12px;margin:8px 0 15px}
+.mobile-friend-invitation-art>.mobile-task-art{width:76px;height:84px}
+.mobile-friend-invitation h3{font-size:20px;letter-spacing:.5px;margin:10px 0}
+.mobile-friend-invitation p{font-size:13px;line-height:1.8;margin:10px 0 16px}
+.mobile-friend-invitation p strong{display:block;font-size:18px;letter-spacing:1px;font-family:monospace;font-weight:500}
+.mobile-friend-invitation .mobile-button{margin-top:18px}
+.mobile-task-entry{position:relative}
+.mobile-task-entry-label{font-size:13px;white-space:nowrap}
+.mobile-task-entry .mobile-task-entry-badge{position:absolute;right:-4px;top:1px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fff7ee;border-radius:50%;background:#bd7386;color:#fff8f2;font-size:10px!important;font-weight:650;line-height:1!important;font-variant-numeric:tabular-nums}
+.mobile-task-entry>.mobile-task-art,.mobile-task-entry>.mobile-art-gift{width:32px;height:34px}
+.mobile-gift-float.mobile-task-entry{position:fixed;min-width:74px;padding-left:5px;gap:3px}
+.mobile-gift-float.mobile-task-entry>.mobile-task-art,.mobile-gift-float.mobile-task-entry>.mobile-art-gift{width:38px;height:40px}
+.mobile-gift-float.mobile-task-entry .mobile-task-entry-badge{top:-5px;right:0;height:21px;min-width:21px;font-size:11px!important}
+@media(max-width:600px){
+ .mobile-sheet:has(.mobile-tasks-panel){inset:0;margin:0;transform:none;width:100%;max-width:none;height:100dvh;max-height:100dvh;border:0;border-radius:0;padding-top:env(safe-area-inset-top)}
+ .mobile-sheet:has(.mobile-tasks-panel)>header{padding-top:8px}
+}
+@media(max-width:359px){
+ .mobile-sheet:has(.mobile-tasks-panel)>.mobile-sheet-content{padding-inline:9px}
+ .mobile-task-player-strip{gap:7px}
+ .mobile-task-player-strip>.mobile-art-avatar{width:50px;height:58px}
+ .mobile-task-player-level{min-width:58px;width:67px}
+ .mobile-task-player-level>strong{font-size:16px}
+ .mobile-task-energy-link>strong{font-size:14px}
+ .mobile-task-energy-link>span:not(.mobile-art){display:none}
+ .mobile-task-supply-link{padding-left:6px}
+ .mobile-task-supply-link>span{display:none}
+ .mobile-task-card{grid-template-columns:53px minmax(0,1fr) 86px;gap:6px;padding:8px 5px}
+ .mobile-task-card-art{width:53px;height:70px}
+ .mobile-task-card-art>.mobile-task-art{width:53px;height:68px}
+ .mobile-task-card h4{font-size:17px}
+ .mobile-task-card-reward{padding-left:6px}
+ .mobile-task-description{font-size:10px}
+ .mobile-ten-gift{gap:4px;padding-inline:5px}
+ .mobile-ten-gift>strong{font-size:11px}
+ .mobile-ten-gift>button{width:29px}
+ .mobile-gift-card{gap:8px;padding:10px 8px}
+ .mobile-gift-card-art{width:49px;min-width:49px}
+ .mobile-gift-card-art>.mobile-task-art{width:49px;height:59px}
+}
+@media(max-width:359px){.mobile-stored-preview[data-kinds="1"]>.mobile-gift-card{grid-template-columns:53px minmax(0,1fr) 79px;gap:6px;padding-inline:5px}.mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art,.mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art>.mobile-task-art{width:53px;height:64px}.mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3,.mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3>span{font-size:14px}}
+@media(min-width:601px){
+ .mobile-task-player-strip>.mobile-art-avatar{width:72px;height:78px}
+ .mobile-task-player-level{width:126px}
+ .mobile-task-player-level>strong{font-size:23px}
+ .mobile-task-player-level>small{font-size:12px}
+ .mobile-task-energy-link>strong{font-size:22px}
+ .mobile-task-supply-link{font-size:17px;padding-left:18px;margin-left:10px}
+ .mobile-task-supply-link>.mobile-art{width:56px;height:56px}
+ .mobile-task-card{grid-template-columns:93px minmax(0,1fr) 170px;gap:16px;min-height:150px;padding:15px 17px}
+ .mobile-task-card-art,.mobile-task-card-art>.mobile-task-art{width:89px;height:100px}
+ .mobile-task-card h4{font-size:27px}
+ .mobile-task-card h4>small{font-size:12px}
+ .mobile-task-description{font-size:15px}
+ .mobile-task-progress-line>span:last-child{font-size:16px}
+ .mobile-task-card-reward{padding-left:17px}
+ .mobile-task-refill-reward{font-size:15px}
+ .mobile-task-refill-reward>.mobile-art{width:43px;height:55px}
+ .mobile-task-reward-values{flex-direction:row;gap:15px}
+ .mobile-task-reward-values b{font-size:20px}
+ .mobile-task-state{font-size:17px!important;min-height:43px}
+ .mobile-ten-gift>strong{font-size:17px}
+ .mobile-ten-slots .mobile-art{height:25px}
+ .mobile-ten-gift>b{font-size:17px}
+ .mobile-ten-gift>button{width:43px;height:43px}
+ .mobile-stored-preview>.mobile-gift-card{grid-template-columns:72px minmax(0,1fr)}
+ .mobile-stored-preview .mobile-gift-card-art{width:72px;height:78px}
+ .mobile-stored-preview .mobile-gift-card-art>.mobile-task-art{width:72px;height:78px}
+ .mobile-stored-preview .mobile-gift-card h3{font-size:15px}
+ .mobile-stored-preview .mobile-gift-card p{font-size:11px}
+ .mobile-stored-preview .mobile-gift-open{font-size:14px!important;max-width:150px}
+}
+@media(orientation:landscape) and (max-height:560px){
+ .mobile-sheet:has(.mobile-tasks-panel){inset:0;margin:0;transform:none;width:100%;max-width:none;height:100dvh;max-height:100dvh;border:0}
+ .mobile-sheet:has(.mobile-tasks-panel)>.mobile-sheet-content{max-width:860px;margin:auto;padding-inline:max(15px,env(safe-area-inset-left))}
+ .mobile-task-player-strip{padding-block:7px}
+ .mobile-task-player-strip>.mobile-art-avatar{width:52px;height:55px}
+ .mobile-task-featured{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mobile-task-featured>.mobile-task-card:last-child{grid-column:1/-1}
+ .mobile-task-card{grid-template-columns:52px minmax(0,1fr) 94px;gap:8px;padding:10px;min-height:114px}
+ .mobile-task-card-art,.mobile-task-card-art>.mobile-task-art{width:50px;height:69px}
+ .mobile-task-card h4{font-size:18px}
+ .mobile-task-description{font-size:11px}
+ .mobile-task-progress-line>span:last-child{font-size:12px}
+ .mobile-task-card-reward{padding-left:8px}
+ .mobile-task-refill-reward{font-size:10px}
+ .mobile-task-refill-reward>.mobile-art{width:30px;height:38px}
+ .mobile-task-reward-values{flex-direction:column;gap:2px}
+ .mobile-task-reward-values b{font-size:15px}
+ .mobile-task-state{font-size:12px!important;min-height:35px}
+ .mobile-task-card h4>small{font-size:9px}
+ .mobile-gift-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+
+
+.mobile-ten-slots>i:not(.is-filled){opacity:1}
+.mobile-ten-slots>i:not(.is-filled) .mobile-art-piece path{fill:none;stroke:#bf8f7e;stroke-width:.85}
+.mobile-task-tabs button[aria-selected=true] .mobile-art{color:#fff8ee}
+
+/* Concept20: match concept 05 at phone width; all rules stay inside this sheet. */
+.mobile-sheet:has(.mobile-tasks-panel){--task-paper:var(--b2-paper,#fff6ec);--task-ink:var(--b2-ink,#601e35);background:var(--task-paper);color:var(--task-ink)}
+.mobile-sheet:has(.mobile-tasks-panel)>header{gap:7px;padding:4px 12px 3px;min-height:38px;border-bottom-color:#c99a8b;background:var(--task-paper)}
+.mobile-sheet:has(.mobile-tasks-panel)>header h2{font-size:22px;line-height:1.2;letter-spacing:.4px}
+.mobile-sheet:has(.mobile-tasks-panel)>header>.mobile-icon-button{width:30px;height:30px;min-width:30px;min-height:30px}
+.mobile-sheet:has(.mobile-tasks-panel)>header>.mobile-icon-button:before{font-size:23px}
+.mobile-sheet:has(.mobile-tasks-panel)>header>.mobile-sheet-title-art{width:27px;height:28px}
+.mobile-sheet:has(.mobile-tasks-panel)>.mobile-sheet-content{padding:0 12px calc(18px + env(safe-area-inset-bottom));line-height:1.4}
+.mobile-tasks-panel .mobile-task-player-strip{gap:5px;min-height:56px;padding:5px 0 6px;margin-bottom:9px}
+.mobile-tasks-panel .mobile-task-player-strip>.mobile-art-avatar{width:49px;height:47px}
+.mobile-tasks-panel .mobile-task-player-level{width:59px;min-width:48px;gap:2px}
+.mobile-tasks-panel .mobile-task-player-level>strong{font-size:16px;line-height:1.1;letter-spacing:.35px}
+.mobile-tasks-panel .mobile-task-player-level>small{font-size:9px;line-height:1.2}
+.mobile-tasks-panel .mobile-task-player-level>.mobile-task-meter{flex:none;height:8px;min-height:8px;width:100%}
+.mobile-tasks-panel .mobile-task-energy-link{gap:2px;margin-left:auto;min-height:44px}
+.mobile-tasks-panel .mobile-task-energy-link>.mobile-art{width:21px;height:32px}
+.mobile-tasks-panel .mobile-task-energy-link>strong{font-size:14px;line-height:1.2}
+.mobile-tasks-panel .mobile-task-energy-link>span:not(.mobile-art){width:18px;height:21px;margin-left:1px;font-size:17px}
+.mobile-tasks-panel .mobile-task-current-link,.mobile-tasks-panel .mobile-task-supply-link{display:flex;align-items:center;justify-content:center;gap:3px;min-height:44px;padding:0 0 0 5px;margin:0;border:0;border-left:1px solid #c8a18e;background:transparent;color:var(--task-ink);white-space:nowrap;font-size:11px;font-weight:750}
+.mobile-tasks-panel .mobile-task-current-link>.mobile-art{width:25px;height:31px}
+.mobile-tasks-panel .mobile-task-supply-link>.mobile-art{width:29px;height:30px}
+.mobile-tasks-panel .mobile-task-tabs{position:relative;grid-template-columns:1.04fr 1fr;gap:5px;margin:0 0 7px}
+.mobile-tasks-panel .mobile-task-tabs>button{min-height:40px;padding:2px 5px;gap:7px;font-size:18px;line-height:1.2;letter-spacing:.6px}
+.mobile-tasks-panel .mobile-task-tabs>button>.mobile-art{width:23px;height:25px}
+.mobile-tasks-panel .mobile-task-count{top:-8px;right:21px;min-width:20px;height:20px;padding:0 3px;font-size:12px;border-width:1px}
+.mobile-tasks-panel .mobile-ten-gift{min-height:41px;padding:3px 5px;margin-bottom:8px;gap:3px}
+.mobile-tasks-panel .mobile-ten-gift>strong{font-size:12px;letter-spacing:0}
+.mobile-tasks-panel .mobile-ten-gift>b{font-size:13px}
+.mobile-tasks-panel .mobile-ten-gift>button{width:31px;height:31px}
+.mobile-tasks-panel .mobile-ten-slots{gap:1px}
+.mobile-tasks-panel .mobile-ten-slots .mobile-art{height:19px}
+.mobile-tasks-panel .mobile-task-list{gap:8px}
+.mobile-tasks-panel .mobile-task-card{grid-template-columns:61px minmax(0,1fr) 111px;gap:6px;min-height:98px;padding:4px 5px;background:var(--task-paper)}
+.mobile-tasks-panel .mobile-task-card-art,.mobile-tasks-panel .mobile-task-card-art>.mobile-task-art{width:61px;height:66px}
+.mobile-tasks-panel .mobile-task-card h4{font-size:18px;line-height:1.25;margin-bottom:5px;gap:3px;letter-spacing:0}
+.mobile-tasks-panel .mobile-task-card h4>small{font-size:8px;padding:1px 3px;line-height:1.4;background:#f9e5d7;color:#976154}
+.mobile-tasks-panel .mobile-task-description{font-size:10px;line-height:1.5;margin-bottom:7px;color:var(--task-ink)}
+.mobile-tasks-panel .mobile-task-progress-line{gap:5px}
+.mobile-tasks-panel .mobile-task-progress-line>span:last-child{font-size:12px}
+.mobile-tasks-panel .mobile-task-progress-line>.mobile-task-meter{height:10px;min-height:10px}
+.mobile-tasks-panel .mobile-task-card-reward{min-height:72px;padding-left:8px;gap:3px;border-color:#d9b6a7}
+.mobile-tasks-panel .mobile-task-reward-values{flex-direction:column;gap:0;align-items:flex-start;padding-left:6px}
+.mobile-tasks-panel .mobile-task-reward-values>span{gap:6px;min-height:20px}
+.mobile-tasks-panel .mobile-task-reward-values .mobile-art{width:21px;height:21px}
+.mobile-tasks-panel .mobile-task-reward-values b{font-size:16px;line-height:1.1}
+.mobile-tasks-panel .mobile-task-refill-reward{min-height:36px;justify-content:flex-start;gap:4px;font-size:10px;line-height:1.35}
+.mobile-tasks-panel .mobile-task-refill-reward>.mobile-art{width:30px;height:34px}
+.mobile-tasks-panel .mobile-task-refill-reward br{display:none}
+.mobile-tasks-panel .mobile-task-state{min-height:35px;padding:2px 3px;font-size:13px!important;line-height:1.2;gap:4px}
+.mobile-tasks-panel .mobile-task-state>span{font-size:18px}
+.mobile-tasks-panel .mobile-task-card>.mobile-task-corner{width:17px;height:18px;top:-7px}
+.mobile-tasks-panel .mobile-task-card>.mobile-task-corner.is-first{left:-7px}
+.mobile-tasks-panel .mobile-task-card>.mobile-task-corner.is-last{right:-7px}
+.mobile-tasks-panel .mobile-task-card>.mobile-task-corner.is-bottom-first{left:-7px;top:auto;bottom:-7px;transform:scaleY(-1)}
+.mobile-tasks-panel .mobile-task-card>.mobile-task-corner.is-bottom-last{right:-7px;top:auto;bottom:-7px;transform:scale(-1,-1)}
+.mobile-tasks-panel .mobile-task-section-title{gap:6px;margin:9px 0 5px;min-height:30px}
+.mobile-tasks-panel .mobile-task-section-title>.mobile-art{width:25px;height:27px}
+.mobile-tasks-panel .mobile-task-section-title>h3{font-size:19px;letter-spacing:.7px}
+.mobile-tasks-panel .mobile-task-section-title>button{min-height:30px;font-size:11px}
+.mobile-tasks-panel .mobile-stored-preview{padding:8px 0;min-height:83px;background:var(--task-paper)}
+.mobile-tasks-panel .mobile-stored-preview>.mobile-gift-card{padding-inline:5px;background:transparent;gap:3px 4px;grid-template-columns:44px minmax(0,1fr)}
+.mobile-tasks-panel .mobile-stored-preview .mobile-gift-card-art,.mobile-tasks-panel .mobile-stored-preview .mobile-gift-card-art>.mobile-task-art{width:44px;height:48px}
+.mobile-tasks-panel .mobile-stored-preview .mobile-gift-card h3{font-size:11px;line-height:1.4}
+.mobile-tasks-panel .mobile-stored-preview .mobile-gift-card h3>span{font-size:13px}
+.mobile-tasks-panel .mobile-stored-preview .mobile-gift-open{min-height:31px;font-size:11px!important;padding:3px 1px}
+.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"]>.mobile-gift-card{grid-template-columns:61px minmax(0,1fr) 105px;min-height:64px;gap:7px;padding-inline:7px}
+.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art,.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art>.mobile-task-art{width:59px;height:61px}
+.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3,.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3>span{font-size:15px}
+.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card p{font-size:10px}
+.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-open{min-height:36px;font-size:12px!important}
+.mobile-tasks-panel .mobile-stored-empty{min-height:62px;gap:8px;font-size:11px;background:var(--task-paper)}
+.mobile-tasks-panel .mobile-task-details{margin-top:10px}
+.mobile-tasks-panel .mobile-task-details>summary{min-height:40px;font-size:12px}
+@media(max-width:359px){
+ .mobile-sheet:has(.mobile-tasks-panel)>.mobile-sheet-content{padding-inline:9px}
+ .mobile-tasks-panel .mobile-task-player-strip{gap:4px}
+ .mobile-tasks-panel .mobile-task-player-strip>.mobile-art-avatar{width:43px;height:44px}
+ .mobile-tasks-panel .mobile-task-player-level{width:50px;min-width:43px}
+ .mobile-tasks-panel .mobile-task-energy-link>strong{font-size:13px}
+ .mobile-tasks-panel .mobile-task-energy-link>span:not(.mobile-art){display:none}
+ .mobile-tasks-panel .mobile-task-current-link{padding-left:4px}
+ .mobile-tasks-panel .mobile-task-supply-link>span:not(.mobile-art){display:none}
+ .mobile-tasks-panel .mobile-task-supply-link>.mobile-art{display:block;width:28px;height:29px}
+ .mobile-tasks-panel .mobile-task-card{grid-template-columns:51px minmax(0,1fr) 98px;gap:4px;padding-inline:4px}
+ .mobile-tasks-panel .mobile-task-card-art,.mobile-tasks-panel .mobile-task-card-art>.mobile-task-art{width:51px;height:62px}
+ .mobile-tasks-panel .mobile-task-card h4{font-size:16px}
+ .mobile-tasks-panel .mobile-task-description{font-size:9px}
+ .mobile-tasks-panel .mobile-task-card-reward{padding-left:6px}
+ .mobile-tasks-panel .mobile-task-state{font-size:12px!important}
+}
+@media(min-width:601px) and (min-height:561px){
+ .mobile-sheet:has(.mobile-tasks-panel)>header{padding:8px 18px 7px;gap:10px}
+ .mobile-sheet:has(.mobile-tasks-panel)>header h2{font-size:30px}
+ .mobile-sheet:has(.mobile-tasks-panel)>header>.mobile-icon-button{width:39px;height:39px}
+ .mobile-sheet:has(.mobile-tasks-panel)>.mobile-sheet-content{padding-inline:20px}
+ .mobile-tasks-panel .mobile-task-player-strip{min-height:91px;gap:11px;padding-block:10px;margin-bottom:15px}
+ .mobile-tasks-panel .mobile-task-player-strip>.mobile-art-avatar{width:77px;height:74px}
+ .mobile-tasks-panel .mobile-task-player-level{width:103px;gap:4px}
+ .mobile-tasks-panel .mobile-task-player-level>strong{font-size:25px}
+ .mobile-tasks-panel .mobile-task-player-level>small{font-size:13px}
+ .mobile-tasks-panel .mobile-task-player-level>.mobile-task-meter{height:11px}
+ .mobile-tasks-panel .mobile-task-energy-link{gap:5px}
+ .mobile-tasks-panel .mobile-task-energy-link>strong{font-size:25px}
+ .mobile-tasks-panel .mobile-task-energy-link>.mobile-art{width:34px;height:51px}
+ .mobile-tasks-panel .mobile-task-energy-link>span:not(.mobile-art){width:29px;height:32px;font-size:25px}
+ .mobile-tasks-panel .mobile-task-current-link,.mobile-tasks-panel .mobile-task-supply-link{padding-left:13px;font-size:19px;gap:7px}
+ .mobile-tasks-panel .mobile-task-current-link>.mobile-art{width:42px;height:49px}
+ .mobile-tasks-panel .mobile-task-supply-link>.mobile-art{width:51px;height:51px}
+ .mobile-tasks-panel .mobile-task-tabs{gap:9px;margin-bottom:11px}
+ .mobile-tasks-panel .mobile-task-tabs>button{min-height:59px;font-size:27px;gap:12px}
+ .mobile-tasks-panel .mobile-task-tabs>button>.mobile-art{width:34px;height:36px}
+ .mobile-tasks-panel .mobile-ten-gift{min-height:67px;padding:5px 10px;margin-bottom:13px;gap:7px}
+ .mobile-tasks-panel .mobile-ten-gift>strong,.mobile-tasks-panel .mobile-ten-gift>b{font-size:20px}
+ .mobile-tasks-panel .mobile-ten-gift>button{width:44px;height:47px}
+ .mobile-tasks-panel .mobile-ten-slots .mobile-art{height:29px}
+ .mobile-tasks-panel .mobile-task-list{gap:13px}
+ .mobile-tasks-panel .mobile-task-card{grid-template-columns:109px minmax(0,1fr) 190px;gap:14px;min-height:160px;padding:10px 12px}
+ .mobile-tasks-panel .mobile-task-card-art,.mobile-tasks-panel .mobile-task-card-art>.mobile-task-art{width:108px;height:117px}
+ .mobile-tasks-panel .mobile-task-card h4{font-size:29px;margin-bottom:9px;gap:7px}
+ .mobile-tasks-panel .mobile-task-card h4>small{font-size:13px;padding:2px 6px}
+ .mobile-tasks-panel .mobile-task-description{font-size:17px;margin-bottom:15px}
+ .mobile-tasks-panel .mobile-task-progress-line>span:last-child{font-size:19px}
+ .mobile-tasks-panel .mobile-task-progress-line>.mobile-task-meter{height:15px}
+ .mobile-tasks-panel .mobile-task-card-reward{padding-left:15px;gap:6px}
+ .mobile-tasks-panel .mobile-task-reward-values>span{min-height:32px;gap:10px}
+ .mobile-tasks-panel .mobile-task-reward-values .mobile-art{width:31px;height:34px}
+ .mobile-tasks-panel .mobile-task-reward-values b{font-size:25px}
+ .mobile-tasks-panel .mobile-task-refill-reward{min-height:64px;font-size:16px;gap:7px}
+ .mobile-tasks-panel .mobile-task-refill-reward>.mobile-art{width:48px;height:61px}
+ .mobile-tasks-panel .mobile-task-state{min-height:50px;font-size:22px!important}
+ .mobile-tasks-panel .mobile-task-section-title{margin:15px 0 9px;min-height:41px}
+ .mobile-tasks-panel .mobile-task-section-title>h3{font-size:29px}
+ .mobile-tasks-panel .mobile-task-section-title>.mobile-art{width:36px;height:39px}
+ .mobile-tasks-panel .mobile-task-section-title>button{font-size:16px}
+ .mobile-tasks-panel .mobile-stored-preview{min-height:137px;padding-block:14px}
+ .mobile-tasks-panel .mobile-stored-preview .mobile-gift-card-art,.mobile-tasks-panel .mobile-stored-preview .mobile-gift-card-art>.mobile-task-art{width:69px;height:82px}
+ .mobile-tasks-panel .mobile-stored-preview>.mobile-gift-card{grid-template-columns:69px minmax(0,1fr);padding-inline:10px}
+ .mobile-tasks-panel .mobile-stored-preview .mobile-gift-card h3{font-size:16px}
+ .mobile-tasks-panel .mobile-stored-preview .mobile-gift-card h3>span{font-size:21px}
+ .mobile-tasks-panel .mobile-stored-preview .mobile-gift-open{min-height:42px;font-size:16px!important}
+ .mobile-tasks-panel .mobile-stored-preview[data-kinds="1"]>.mobile-gift-card{grid-template-columns:92px minmax(0,1fr) 171px;min-height:103px}
+ .mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art,.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card-art>.mobile-task-art{width:88px;height:100px}
+ .mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3,.mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card h3>span{font-size:24px}
+ .mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-card p{font-size:14px}
+ .mobile-tasks-panel .mobile-stored-preview[data-kinds="1"] .mobile-gift-open{min-height:47px;font-size:18px!important}
+}
+@media(orientation:landscape) and (max-height:560px){
+ .mobile-sheet:has(.mobile-tasks-panel)>header{padding-inline:max(15px,env(safe-area-inset-left))}
+ .mobile-sheet:has(.mobile-tasks-panel)>.mobile-sheet-content{padding-inline:max(15px,env(safe-area-inset-left));max-width:900px}
+ .mobile-tasks-panel .mobile-task-player-strip{justify-content:flex-start;gap:9px}
+ .mobile-tasks-panel .mobile-task-player-level{width:80px}
+ .mobile-tasks-panel .mobile-task-energy-link{margin-left:12px}
+ .mobile-tasks-panel .mobile-task-current-link{margin-left:auto}
+ .mobile-tasks-panel .mobile-task-current-link,.mobile-tasks-panel .mobile-task-supply-link{font-size:14px;gap:5px;padding-left:12px}
+ .mobile-tasks-panel .mobile-task-tabs{max-width:560px;margin-inline:auto}
+ .mobile-tasks-panel .mobile-task-featured{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .mobile-tasks-panel .mobile-task-featured>.mobile-task-card:last-child{grid-column:1/-1}
+ .mobile-tasks-panel .mobile-task-card{grid-template-columns:58px minmax(0,1fr) 108px;min-height:103px;gap:6px}
+ .mobile-tasks-panel .mobile-task-card-art,.mobile-tasks-panel .mobile-task-card-art>.mobile-task-art{width:58px;height:65px}
+ .mobile-tasks-panel .mobile-task-featured>.mobile-task-card:last-child{grid-template-columns:65px minmax(0,1fr) 170px}
+ .mobile-tasks-panel .mobile-task-featured>.mobile-task-card:last-child .mobile-task-reward-values{flex-direction:row;justify-content:center;gap:10px}
+ .mobile-tasks-panel .mobile-stored-preview{min-height:82px}
+}

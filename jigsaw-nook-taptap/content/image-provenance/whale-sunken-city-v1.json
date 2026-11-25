@@ -1,0 +1,78 @@
+{
+  "id": "whale-sunken-city-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-27",
+    "originalFile": "codex-clipboard-7e3347ac-138f-4f2d-8d5d-ec76a49e8849.png",
+    "originalSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这四张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-27"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-27",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：巨鲸游过海底古城，珊瑚与鱼群簇拥沉睡的石柱。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+    "optimized": {
+      "src": "/puzzles/whale-sunken-city-v1-optimized-6ca410acb6c7.webp",
+      "sha256": "6ca410acb6c79d01e2da45460f7b5f391b1ad80d457403714d7fe2eef9366430",
+      "bytes": 381336,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "inputSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/whale-sunken-city-v1-thumbnail-4882c8b74705.webp",
+      "sha256": "4882c8b747058e6c8375473611b361f64f9eb7e160be60aecf0263303316ee3a",
+      "bytes": 38314,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "inputSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/whale-sunken-city-v1.webp",
+    "sha256": "63033e24d173e9b310e3a0dd44db9dea5596b88485ac0969f0cc70231d0818e9",
+    "bytes": 693744,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "cb60210d3b88a55391c9c423aa682a91f517dfc31de64ea355027d1c02c7b6f9"
+  }
+}

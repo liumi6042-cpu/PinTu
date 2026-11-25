@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K mythological beast artwork.
+Primary request: an original non-humanoid nine-tailed fox inspired by the Shan Hai Jing, enormous elegant white fox with nine flowing tails, crimson markings, luminous amber eyes, standing on a dark rock ledge. The creature must dominate about 80% of the frame; clearly animal anatomy, four legs, fox muzzle, no human body or humanoid posture.
+Style/medium: polished Japanese fantasy anime creature illustration, highly detailed fur, expressive but animal-like face, cinematic painterly rendering.
+Composition/framing: wide horizontal 16:9, side-facing three-quarter full-body creature, head and all nine tails fully visible, strong silhouette.
+Background: minimal moonlit mist, a few ancient stone pillars and distant mountains blurred into atmosphere, no people, no excessive scenery.
+Lighting/mood: cool moonlight with red rim light, mystical and majestic.
+Color palette: ivory, crimson, midnight blue, amber.
+Constraints: non-humanoid animal only, no human face, no human hands, no rider, no text, no logos, no watermark, no extra creatures, no anatomical errors. Target a finished 4K-quality landscape illustration.

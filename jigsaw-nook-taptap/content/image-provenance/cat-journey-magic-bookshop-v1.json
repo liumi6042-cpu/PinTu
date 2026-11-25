@@ -1,0 +1,102 @@
+{
+  "id": "cat-journey-magic-bookshop-v1",
+  "origin": "project-ai-generated",
+  "width": 3840,
+  "height": 3840,
+  "sha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+  "nativeResolution": false,
+  "upscaled": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-17",
+    "generatedAt": "2026-10-17T09:05:34.002Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/cat-journey-magic-bookshop-v1.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/cat-journey-magic-bookshop-v1/native.png",
+      "sha256": "06f5a5afc7089fdf9fe2ef9ea625224d175975c6745ea207a27100c79c1e91b7",
+      "bytes": 3607954,
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/cat-journey-magic-bookshop-v1/native.webp",
+        "sha256": "8de899bdbefe2f24b4967dfece03c7e5416814b3a55797e09e42dc970b14bc89",
+        "bytes": 663766,
+        "width": 1254,
+        "height": 1254
+      }
+    },
+    "originalFile": "public/puzzles/cat-journey-magic-bookshop-v1.png",
+    "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 3840×3840，已放大，放大尺寸不代表新增原生细节。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-17T09:41:09.238Z",
+    "notes": "橘猫戴蓝色巫师帽坐在魔法书上，灰色小猫睡在书堆上；暖色树屋和漂浮书本构成童话场景。 原始生成1254×1254，本批仅放大导出3840×3840；不标记为原生4K或AI高清重绘。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+    "optimized": {
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-optimized-24e847b8f149.webp",
+      "sha256": "24e847b8f14904c6eb7567af7ee0f1d3e29186f7c05e26ce2bc75e24189d410e",
+      "bytes": 672420,
+      "width": 2560,
+      "height": 2560,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "inputSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-magic-bookshop-v1-thumbnail-27cf37e7e4e9.webp",
+      "sha256": "27cf37e7e4e96cc0ff1e5c6004ab1122b66a594de7652b91756099b21f5c0e40",
+      "bytes": 55558,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "inputSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cat-journey-magic-bookshop-v1.webp",
+    "sha256": "0df452e717994966405d4e7e521cfd9d6c68c5c18db047db0c8880e01bc26c7d",
+    "bytes": 2207202,
+    "width": 3840,
+    "height": 3840,
+    "originalPngSha256": "e78403da0038c93bc22dc44ebcf4bee903cf166f936d862411c0bbe202c6002e"
+  }
+}

@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a surreal city turned upside down above a calm sea of clouds, mirrored streets and buildings hanging from the sky, a small sun at the center, no people.
+Style/medium: dreamlike surreal photography-inspired digital art, impossible perspective, reflective symmetry, soft cinematic atmosphere, high visual impact.
+Composition: square, inverted city forming a central vertical axis, clear subject and layered depth.
+Constraints: no text, no logos, no watermark, no people, no photoreal faces, polished high-detail 4K.

@@ -1,0 +1,21 @@
+{
+  "platform": "taptap-h5",
+  "appId": "963283",
+  "developerId": "485306",
+  "apiBase": "https://jigsawnook.online/h5",
+  "auth": {
+    "mode": "jigsaw-session-gateway",
+    "taptapAccountBinding": false
+  },
+  "ads": {
+    "enabled": true,
+    "runtime": "tap.createRewardedVideoAd",
+    "rewardedAdUnitId": "1054324",
+    "placements": [
+      "hint",
+      "underlay"
+    ],
+    "rewardDurationSeconds": 30,
+    "oneCompletedVideoPerUse": true
+  }
+}

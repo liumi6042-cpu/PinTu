@@ -1,0 +1,101 @@
+{
+  "id": "album-time-postman-06-20261020",
+  "origin": "project-ai-generated",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-19",
+    "generatedAt": "2026-10-19T15:22:28.448Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-time-postman-06-20261020.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-time-postman-06-20261020/native.png",
+      "sha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+      "bytes": 2878395,
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-time-postman-06-20261020/native.webp",
+        "sha256": "6622b8cd2d59ae0b4453bfe290aed608c63c2dbeb2ca7987a6b433d0c87db83a",
+        "bytes": 441004,
+        "width": 1254,
+        "height": 1254
+      }
+    },
+    "originalFile": "public/puzzles/album-time-postman-06-20261020.png",
+    "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 1254×1254，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-19T17:48:17.017Z",
+    "notes": "用户授权整册入库；海底音乐会使用腿部修改版。原生概念图，未标注为4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+    "thumbnail": {
+      "src": "/puzzles/album-time-postman-06-20261020-thumbnail-81b04a82d4e8.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "81b04a82d4e841da30db908051d6bb1155079192dd8defa62130a4ad9b17243e",
+      "bytes": 54720,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+      "inputSha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-time-postman-06-20261020-optimized-e5034f9da5d7.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e5034f9da5d76ad366ac94258d8d13b13f4af6abebd1a521db45baf35804441b",
+      "bytes": 234956,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+      "inputSha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-time-postman-06-20261020.webp",
+    "sha256": "6622b8cd2d59ae0b4453bfe290aed608c63c2dbeb2ca7987a6b433d0c87db83a",
+    "bytes": 441004,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "ca77f24dfb307a3eee13dfa3eddcda6362957fe91b04e235eb3228545e64b8b7"
+  }
+}

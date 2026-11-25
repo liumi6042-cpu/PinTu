@@ -1,0 +1,78 @@
+{
+  "id": "magic-treehouse-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-25 提供并要求上传到公开图库的 PNG 图片；原件未裁切、缩放或重编码。",
+    "providedOn": "2026-09-25",
+    "originalFile": "C:/Users/Administrator/Desktop/魔法树屋.png",
+    "originalSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供该图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-25"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-25",
+    "reviewer": "Codex visual review",
+    "observations": "已查看本次附图：画面为插画，无网页界面或按钮；图内招牌文字属于场景内容。"
+  },
+  "delivery": {
+    "sourceSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+    "optimized": {
+      "src": "/puzzles/magic-treehouse-v1-optimized-b6a87f919e14.webp",
+      "sha256": "b6a87f919e148cfc47ca71fb86111197bf0aa901586fce2bcf329cd21a21289e",
+      "bytes": 405074,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+      "inputSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/magic-treehouse-v1-thumbnail-dba3c72eb1ff.webp",
+      "sha256": "dba3c72eb1ff686ee5c798ec5292e4d4eeb9be913fddeb334e0b2939c92de502",
+      "bytes": 62478,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+      "inputSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/magic-treehouse-v1.webp",
+    "sha256": "125aac15eb9a6a2c6f6278fa7dafc460399f490409e1ea4e38a41cb8c0ff0bd7",
+    "bytes": 747078,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990"
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "id": "album-cloud-post-office-02-20261020",
+  "origin": "project-ai-generated",
+  "width": 1672,
+  "height": 941,
+  "sha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T19:59:46.355Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-cloud-post-office-02-20261020.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-cloud-post-office-02-20261020/native.png",
+      "sha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+      "bytes": 3100759,
+      "width": 1672,
+      "height": 941,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-cloud-post-office-02-20261020/native.webp",
+        "sha256": "230c39934bc035aa777f3c9b6e6b569d0bcb2bef3c5c69e6b79c8444213846e2",
+        "bytes": 540786,
+        "width": 1672,
+        "height": 941
+      }
+    },
+    "originalFile": "public/puzzles/album-cloud-post-office-02-20261020.png",
+    "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
+  },
+  "resolutionNote": "原始生成 1672×941；保存成品 1672×941，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-19T17:48:00.786Z",
+    "notes": "用户授权整册入库；海底音乐会使用腿部修改版。原生概念图，未标注为4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+    "thumbnail": {
+      "src": "/puzzles/album-cloud-post-office-02-20261020-thumbnail-8cbf5cdc3f11.webp",
+      "width": 384,
+      "height": 216,
+      "sha256": "8cbf5cdc3f11c543d390f21611772a27824d3b075689e8608b4b39db0d8d7cf7",
+      "bytes": 32774,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+      "inputSha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-cloud-post-office-02-20261020-optimized-f7e00c2fab10.webp",
+      "width": 1672,
+      "height": 941,
+      "sha256": "f7e00c2fab10f73d4ab7ccdc7fc36d77b234c4a6e1dd68971ea1cdddd4b43a43",
+      "bytes": 282656,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+      "inputSha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-cloud-post-office-02-20261020.webp",
+    "sha256": "230c39934bc035aa777f3c9b6e6b569d0bcb2bef3c5c69e6b79c8444213846e2",
+    "bytes": 540786,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "82e6b7171d5cf2ef128b877a646aba4c6f841a47a45bd5af17740dae05cf287a"
+  }
+}

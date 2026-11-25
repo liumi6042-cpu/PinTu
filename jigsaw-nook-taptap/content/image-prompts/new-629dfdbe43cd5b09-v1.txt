@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K mythological beast artwork.
+Primary request: an original non-humanoid Yinglong inspired by the Shan Hai Jing, a colossal eastern dragon with four legs, long serpentine body, broad feathered wings, layered jade scales, antler-like horns and a pearl of light held naturally in its mouth, coiling through mist. Clearly a dragon animal, not a humanoid figure.
+Style/medium: majestic Japanese anime fantasy creature illustration, intricate scale and feather detail, elegant Chinese myth motifs, cinematic painterly rendering.
+Composition/framing: wide horizontal 16:9, dragon fills most of the frame in a sweeping S-curve, head and wings prominent, full silhouette readable.
+Background: minimal pale clouds and a few abstract mountain silhouettes, no people, no cities, no excessive scenery.
+Lighting/mood: sunrise gold through cool mist, ancient, sacred and awe-inspiring.
+Color palette: jade green, pearl white, muted gold, deep teal, warm sunrise.
+Constraints: non-humanoid dragon only, no human face, no human torso, no human hands, no text, no logos, no watermark, no extra creatures, no anatomical errors. Target a finished 4K-quality landscape illustration.

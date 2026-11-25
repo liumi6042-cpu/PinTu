@@ -1,0 +1,205 @@
+{
+  "id": "blossom-osmanthus-tea-courtyard-v1",
+  "origin": "project-ai-generated",
+  "width": 2144,
+  "height": 2144,
+  "sha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "Volcengine Ark",
+    "tool": "images/generations",
+    "generatedDate": "2026-10-15",
+    "generatedAt": "2026-10-15T17:03:12.457Z",
+    "threadId": "01a12be7-0d51-7463-b88f-e9bc859bca9b",
+    "promptPath": "content/image-prompts/blossom-osmanthus-tea-courtyard-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/reference-original.png",
+        "sha256": "ec1a3dba9f2aaafb575eb5120e6e11a876c4594a29885477fa533e2f67a0b509",
+        "purpose": "same-artwork-reference-redraw",
+        "resolution": "native-generation",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/reference-original.webp",
+          "sha256": "81de88b0b772adaa6d3e6060d8d0586a7bc690215cb9e1b5e8c46397fbd4bf61",
+          "bytes": 660052,
+          "width": 1254,
+          "height": 1254
+        }
+      }
+    ],
+    "native": {
+      "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/native.png",
+      "sha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+      "bytes": 9869387,
+      "width": 2144,
+      "height": 2144,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/native.webp",
+        "sha256": "2cc056aded9a4f9dc350a1e636ac4d7bb42d481f71f65306792e3cb353f5f28e",
+        "bytes": 1764536,
+        "width": 2144,
+        "height": 2144
+      }
+    },
+    "originalFile": "public/puzzles/blossom-osmanthus-tea-courtyard-v1.png",
+    "importedRegistrySha256": "314d0cb168c084ae21951d88765abdf044eeeb09dbdb5ac59507e1d57b03dd85",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "builtin-original-reference-redraw",
+    "stages": [
+      {
+        "role": "original-artwork",
+        "provider": "OpenAI",
+        "tool": "image_gen",
+        "model": "not exposed by built-in tool",
+        "promptPath": "content/image-prompts/blossom-osmanthus-tea-courtyard-v1-original.txt",
+        "generatedAt": "2026-10-15T16:43:34.017Z",
+        "native": {
+          "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/reference-original.png",
+          "sha256": "ec1a3dba9f2aaafb575eb5120e6e11a876c4594a29885477fa533e2f67a0b509",
+          "bytes": 3530109,
+          "width": 1254,
+          "height": 1254,
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/reference-original.webp",
+            "sha256": "81de88b0b772adaa6d3e6060d8d0586a7bc690215cb9e1b5e8c46397fbd4bf61",
+            "bytes": 660052,
+            "width": 1254,
+            "height": 1254
+          }
+        },
+        "evidence": [
+          {
+            "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/stage-0-evidence-0.json",
+            "sha256": "cbaf043d0a6abba5d7f34811c353b5a2ac394fa0d9e9bd732bab24795fb20121",
+            "bytes": 2250
+          }
+        ],
+        "commercialUse": {
+          "basis": "provider-output-terms",
+          "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+          "exclusiveRightsGuaranteed": false
+        }
+      },
+      {
+        "role": "reference-hd-redraw",
+        "provider": "Volcengine Ark",
+        "tool": "images/generations",
+        "model": "doubao-seedream-5-0-flash-260915",
+        "promptPath": "content/image-prompts/blossom-osmanthus-tea-courtyard-v1.txt",
+        "generatedAt": "2026-10-15T17:03:12.457Z",
+        "native": {
+          "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/native.png",
+          "sha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+          "bytes": 9869387,
+          "width": 2144,
+          "height": 2144,
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/native.webp",
+            "sha256": "2cc056aded9a4f9dc350a1e636ac4d7bb42d481f71f65306792e3cb353f5f28e",
+            "bytes": 1764536,
+            "width": 2144,
+            "height": 2144
+          }
+        },
+        "evidence": [
+          {
+            "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/stage-1-evidence-0.json",
+            "sha256": "5a57b6b7725b33f6bde970bc7dd7db28db9a21e9dbf29a2abea16beaf47220f5",
+            "bytes": 2253
+          },
+          {
+            "path": "content/artwork/gallery-hd/blossom-osmanthus-tea-courtyard-v1/stage-1-evidence-1.json",
+            "sha256": "f38ce14c61152675518daa014f47dda4a7daf2c2a95c276551a81424f90fcff9",
+            "bytes": 2636
+          }
+        ],
+        "commercialUse": {
+          "basis": "provider-output-terms",
+          "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+          "exclusiveRightsGuaranteed": false
+        }
+      }
+    ]
+  },
+  "resolutionNote": "内置工具原画 1254×1254；豆包 Seedream 参考重绘原生 2144×2144，按原生尺寸保存，未经插值放大；局部纹理可能重绘。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "User approval and Codex visual review",
+    "reviewedAt": "2026-10-15T17:55:27.224Z",
+    "notes": "用户明确批准这三张内置原画经豆包参考高清重绘的版本加入花间灯火相册；已完成全画面对比审阅，保留主要构图、暖亮色彩，局部花叶纹理有重绘变化。实际原生输出2144×2144，未经插值放大，非4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false,
+    "referenceTermsUrls": [
+      "https://openai.com/policies/row-terms-of-use/"
+    ]
+  },
+  "delivery": {
+    "sourceSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+    "optimized": {
+      "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1-optimized-59321e36f1b8.webp",
+      "sha256": "59321e36f1b871f450ec2490a7d6df7c51bbace6ececb1283da0f9fdb8f21f8b",
+      "bytes": 903774,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+      "inputSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1-thumbnail-a53e9edac75b.webp",
+      "sha256": "a53e9edac75bb1c2fe1d901cb534c4470bc14c8c4436f0e2072216482f5e3848",
+      "bytes": 63382,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+      "inputSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/blossom-osmanthus-tea-courtyard-v1.webp",
+    "sha256": "2cc056aded9a4f9dc350a1e636ac4d7bb42d481f71f65306792e3cb353f5f28e",
+    "bytes": 1764536,
+    "width": 2144,
+    "height": 2144,
+    "originalPngSha256": "2e6a40c8dbfb342a105458628fc4dd9e2b01f18b7eaf46df65b22ecf7f6d9999"
+  }
+}

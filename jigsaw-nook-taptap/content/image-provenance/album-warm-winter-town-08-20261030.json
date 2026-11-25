@@ -1,0 +1,101 @@
+{
+  "id": "album-warm-winter-town-08-20261030",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-30",
+    "generatedAt": "2026-10-30T06:32:33.923Z",
+    "threadId": "01a18b80-e16d-7f71-be6d-a57714757149",
+    "promptPath": "content/image-prompts/album-warm-winter-town-08-20261030.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-warm-winter-town-08-20261030/native.png",
+      "sha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+      "bytes": 3361340,
+      "width": 1536,
+      "height": 1024,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-warm-winter-town-08-20261030/native.webp",
+        "sha256": "a0c01caed34f5e293cce4b5c9b158735285c833f7e1112539ef9b59ab3a7ba3e",
+        "bytes": 614388,
+        "width": 1536,
+        "height": 1024
+      }
+    },
+    "originalFile": "public/puzzles/album-warm-winter-town-08-20261030.png",
+    "importedRegistrySha256": "a94b145e2fa103a42e00523fe711d12be76764f10176883113f9fc13ecbde2b8"
+  },
+  "resolutionNote": "原始生成 1536×1024；保存成品 1536×1024，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Claude",
+    "reviewedAt": "2026-10-30T06:35:23.898Z",
+    "notes": "每日相册「暖冬小镇」2026-10-30 生成；逐张 100% 检查：无文字、无结构错误、无拼缝。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+    "thumbnail": {
+      "src": "/puzzles/album-warm-winter-town-08-20261030-thumbnail-59b8f1bc0ef2.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "59b8f1bc0ef2809387a15d72535f5901523e766c114c2928b6f3965504e28e37",
+      "bytes": 37852,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+      "inputSha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-warm-winter-town-08-20261030-optimized-05ce8ea18957.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "05ce8ea1895715ad0655182d3014d113cdab7bd8dbd26edb9be4292c8b1afba1",
+      "bytes": 309962,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+      "inputSha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-warm-winter-town-08-20261030.webp",
+    "sha256": "a0c01caed34f5e293cce4b5c9b158735285c833f7e1112539ef9b59ab3a7ba3e",
+    "bytes": 614388,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "bea21b43c7623ae831c2c9b4896fa624742b16af0caf454b6cbd73f089d0ca64"
+  }
+}

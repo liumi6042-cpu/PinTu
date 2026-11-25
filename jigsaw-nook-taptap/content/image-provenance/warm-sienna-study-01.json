@@ -1,0 +1,78 @@
+{
+  "id": "warm-sienna-study-01",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-20 提供的作品：由提供者在 ChatGPT 中生成后交给本站。原始文件即为 PNG（1448×1086），入库时未做任何裁切、缩放或重编码。",
+    "providedOn": "2026-09-20",
+    "originalFile": "C:/Users/Administrator/Desktop/Codex 图像 2026年9月20日 20_11_20-1.png",
+    "originalSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有该图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-20"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-20",
+    "reviewer": "提供者确认（provider confirmation）",
+    "observations": "提供者于 2026-09-20 确认画面中不含水印、签名、网页界面文字或按钮、以及可辨认商标。本条为提供者自述，本站未做逐像素人工复核。"
+  },
+  "delivery": {
+    "sourceSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
+    "optimized": {
+      "src": "/puzzles/warm-sienna-study-01-optimized-9630fd33799b.webp",
+      "sha256": "9630fd33799b867f1505b9e9f62f466266b87b0eeaea2837f72221a0bd2eaae2",
+      "bytes": 270718,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
+      "inputSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/warm-sienna-study-01-thumbnail-04f6c17d62b5.webp",
+      "sha256": "04f6c17d62b59720bf3bb1d8933b0d1a0d7b7283a7f64f9fec03401bcbdeb47c",
+      "bytes": 46040,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
+      "inputSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/warm-sienna-study-01.webp",
+    "sha256": "9bc317ed4b1c94dcfea5f13ab2df001d6572af0d45abe5c4936dc67489cda393",
+    "bytes": 538906,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "c1470f4af0312700c78121b2835c3ea35001785d63c00a7f87cb20600f9493b0"
+  }
+}

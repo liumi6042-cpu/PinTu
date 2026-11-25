@@ -1,0 +1,101 @@
+{
+  "id": "album-shiguang-ch2-02-20261028",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-28",
+    "generatedAt": "2026-10-28T06:48:48.308Z",
+    "threadId": "01a18140-f500-7bc3-8fd1-c7eb31b10314",
+    "promptPath": "content/image-prompts/album-shiguang-ch2-02-20261028.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-shiguang-ch2-02-20261028/native.png",
+      "sha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+      "bytes": 2465847,
+      "width": 1536,
+      "height": 1024,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-shiguang-ch2-02-20261028/native.webp",
+        "sha256": "f06d089c07c6ef50e8011bb2d47d68d36bf3c93684c36e25c6d7a4ca1d9a859a",
+        "bytes": 354536,
+        "width": 1536,
+        "height": 1024
+      }
+    },
+    "originalFile": "public/puzzles/album-shiguang-ch2-02-20261028.png",
+    "importedRegistrySha256": "b69bd163534da323ae0ae750f1e27931f458dd9862eaa1bbe6be4b87b4c91dc0"
+  },
+  "resolutionNote": "原始生成 1536×1024；保存成品 1536×1024，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Claude",
+    "reviewedAt": "2026-10-28T07:11:58.540Z",
+    "notes": "拾光物语第 2 章关卡图，2026-10-28 批准使用。只给关卡用：相册两端都不显示。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+    "thumbnail": {
+      "src": "/puzzles/album-shiguang-ch2-02-20261028-thumbnail-f3296d06f57d.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "f3296d06f57d90d7f6ce93f35692f0a86e61bcea68bcd76e1fa8ee5fe0342236",
+      "bytes": 30264,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+      "inputSha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-shiguang-ch2-02-20261028-optimized-a044fc343d09.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "a044fc343d094c7c6967cea17da44f984ce15f2cecc8ffda35bf7f97765bcefa",
+      "bytes": 175260,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+      "inputSha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-shiguang-ch2-02-20261028.webp",
+    "sha256": "f06d089c07c6ef50e8011bb2d47d68d36bf3c93684c36e25c6d7a4ca1d9a859a",
+    "bytes": 354536,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "2fbb2e5d009dcdc808539707e243c800ca149ea5936ed0f33e83ff6f0b1c7a8b"
+  }
+}

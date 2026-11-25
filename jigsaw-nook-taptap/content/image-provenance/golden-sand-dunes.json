@@ -1,0 +1,90 @@
+{
+  "id": "golden-sand-dunes",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-11",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/golden-sand-dunes.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-8845a558-7040-42b2-b3c8-338a80abda18.png",
+    "sourceMetadata": "docs/nature-expansion-20260911-assets.json"
+  },
+  "resolutionNote": "Native 1402 x 1122; no upscaling. AI-generated photographic landscape, not a photograph of a verified real location. High piece counts remain limited by original pixels.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-11",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Three dominant sweeping dune shapes with distinct sunlit and shadow planes and coherent wind ripples. Spacious uncluttered photographic composition; repeated sand textures make this more challenging. No visible people, objects, text, logos, watermarks or puzzle seams."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+    "optimized": {
+      "src": "/puzzles/golden-sand-dunes-optimized-c64ace446d54.webp",
+      "sha256": "c64ace446d54528ba58a4d04ccf121236fd8fb7a17b641a8acfec9151a4b0f1d",
+      "bytes": 88052,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+      "inputSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/golden-sand-dunes-thumbnail-0fe66166b880.webp",
+      "sha256": "0fe66166b8806f11ca250fa6b7d17aeeca84d57c8bb0018bd0f044f73ad974b6",
+      "bytes": 14258,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+      "inputSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/golden-sand-dunes.webp",
+    "sha256": "9c81017d5de77e5d71b124778726c265078d0bb412c051ce56da9cbb28794ec2",
+    "bytes": 235896,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "aeac2b28088d48a718e898414104d556698f4b02980f8f9f343f16256aa72002"
+  }
+}

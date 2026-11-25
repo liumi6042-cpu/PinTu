@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-09",
+  "host": "64.90.2.134",
+  "h5Release": "20261009-01",
+  "originalRelease": "20261006-05",
+  "originalCommit": "15dbd5670a1d1947003d15d39f095005bdaf41b5",
+  "h5Url": "https://jigsawnook.online/taptap-play/#/zh/lobby",
+  "originalUnchanged": true,
+  "productionAdsEnabled": false,
+  "testedAt": "2026-10-09T12:31:26.484Z",
+  "production": true,
+  "noRoomOrAccountCreated": true,
+  "roomCount": 1,
+  "roomIdsSha256": "89590e42668e38284dc4003c434a4366796af326e4cf1018af31a6da1ebc8f3c",
+  "checks": [
+    "真实公网H5网关正常且正式广告保持关闭",
+    "真实公网Web与H5大厅房间ID一致",
+    "公网网关拒绝未允许来源",
+    "真实公网390px手机H5大厅正常显示且无横向溢出",
+    "公网广告说明可查看和关闭"
+  ],
+  "passed": 5,
+  "errors": []
+}

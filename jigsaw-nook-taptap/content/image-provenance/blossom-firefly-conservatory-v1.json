@@ -1,0 +1,205 @@
+{
+  "id": "blossom-firefly-conservatory-v1",
+  "origin": "project-ai-generated",
+  "width": 2144,
+  "height": 2144,
+  "sha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "Volcengine Ark",
+    "tool": "images/generations",
+    "generatedDate": "2026-10-15",
+    "generatedAt": "2026-10-15T17:03:32.630Z",
+    "threadId": "01a12be7-0d51-7463-b88f-e9bc859bca9b",
+    "promptPath": "content/image-prompts/blossom-firefly-conservatory-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/reference-original.png",
+        "sha256": "9698e120c98ef58f81bb04274af95235bce9f726fe60c8c060a6bcd12850a8f1",
+        "purpose": "same-artwork-reference-redraw",
+        "resolution": "native-generation",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/reference-original.webp",
+          "sha256": "8d8d3ea3a70951a9a9782bb250830e9a981d1e82b4b53bebde2bd42ad8e2f5e8",
+          "bytes": 531762,
+          "width": 1254,
+          "height": 1254
+        }
+      }
+    ],
+    "native": {
+      "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/native.png",
+      "sha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "bytes": 9334570,
+      "width": 2144,
+      "height": 2144,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/native.webp",
+        "sha256": "b405e6e9887e8b6bb11f7c54e19ec2235711800fc4d26208dc1199b773fc1fee",
+        "bytes": 1526320,
+        "width": 2144,
+        "height": 2144
+      }
+    },
+    "originalFile": "public/puzzles/blossom-firefly-conservatory-v1.png",
+    "importedRegistrySha256": "314d0cb168c084ae21951d88765abdf044eeeb09dbdb5ac59507e1d57b03dd85",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "builtin-original-reference-redraw",
+    "stages": [
+      {
+        "role": "original-artwork",
+        "provider": "OpenAI",
+        "tool": "image_gen",
+        "model": "not exposed by built-in tool",
+        "promptPath": "content/image-prompts/blossom-firefly-conservatory-v1-original.txt",
+        "generatedAt": "2026-10-15T16:44:54.079Z",
+        "native": {
+          "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/reference-original.png",
+          "sha256": "9698e120c98ef58f81bb04274af95235bce9f726fe60c8c060a6bcd12850a8f1",
+          "bytes": 3113239,
+          "width": 1254,
+          "height": 1254,
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/reference-original.webp",
+            "sha256": "8d8d3ea3a70951a9a9782bb250830e9a981d1e82b4b53bebde2bd42ad8e2f5e8",
+            "bytes": 531762,
+            "width": 1254,
+            "height": 1254
+          }
+        },
+        "evidence": [
+          {
+            "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/stage-0-evidence-0.json",
+            "sha256": "1d4d94c3fbedd4c71b2e081db207f2b2f17333466b656e17e989d29abd143cf8",
+            "bytes": 2307
+          }
+        ],
+        "commercialUse": {
+          "basis": "provider-output-terms",
+          "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+          "exclusiveRightsGuaranteed": false
+        }
+      },
+      {
+        "role": "reference-hd-redraw",
+        "provider": "Volcengine Ark",
+        "tool": "images/generations",
+        "model": "doubao-seedream-5-0-flash-260915",
+        "promptPath": "content/image-prompts/blossom-firefly-conservatory-v1.txt",
+        "generatedAt": "2026-10-15T17:03:32.630Z",
+        "native": {
+          "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/native.png",
+          "sha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+          "bytes": 9334570,
+          "width": 2144,
+          "height": 2144,
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/native.webp",
+            "sha256": "b405e6e9887e8b6bb11f7c54e19ec2235711800fc4d26208dc1199b773fc1fee",
+            "bytes": 1526320,
+            "width": 2144,
+            "height": 2144
+          }
+        },
+        "evidence": [
+          {
+            "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/stage-1-evidence-0.json",
+            "sha256": "3af8d0f3929bd90428dbb7a3da1d9c4217f61c87afd980581a7bccf1e2ee5530",
+            "bytes": 2330
+          },
+          {
+            "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/stage-1-evidence-1.json",
+            "sha256": "3398b2cd67f556a45e1500013d51e19252a3b6681809f57687270bb5350946c4",
+            "bytes": 2717
+          }
+        ],
+        "commercialUse": {
+          "basis": "provider-output-terms",
+          "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+          "exclusiveRightsGuaranteed": false
+        }
+      }
+    ]
+  },
+  "resolutionNote": "内置工具原画 1254×1254；豆包 Seedream 参考重绘原生 2144×2144，按原生尺寸保存，未经插值放大；局部纹理可能重绘。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "User approval and Codex visual review",
+    "reviewedAt": "2026-10-15T17:55:27.224Z",
+    "notes": "用户明确批准这三张内置原画经豆包参考高清重绘的版本加入花间灯火相册；已完成全画面对比审阅，保留主要构图、暖亮色彩，局部花叶纹理有重绘变化。实际原生输出2144×2144，未经插值放大，非4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false,
+    "referenceTermsUrls": [
+      "https://openai.com/policies/row-terms-of-use/"
+    ]
+  },
+  "delivery": {
+    "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+    "optimized": {
+      "src": "/puzzles/blossom-firefly-conservatory-v1-optimized-bde5f4d5b3b2.webp",
+      "sha256": "bde5f4d5b3b219c63c99e33c6b2a40297dc7aeaf1e9e40a7ec40b00328d15de9",
+      "bytes": 746536,
+      "width": 2144,
+      "height": 2144,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "inputSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/blossom-firefly-conservatory-v1-thumbnail-d6d20d499bf9.webp",
+      "sha256": "d6d20d499bf954ec87fd2b4507ba2e152493fc21b7663fe7e61dc8c75b28a939",
+      "bytes": 56700,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "inputSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/blossom-firefly-conservatory-v1.webp",
+    "sha256": "b405e6e9887e8b6bb11f7c54e19ec2235711800fc4d26208dc1199b773fc1fee",
+    "bytes": 1526320,
+    "width": 2144,
+    "height": 2144,
+    "originalPngSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b"
+  }
+}

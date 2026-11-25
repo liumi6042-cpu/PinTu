@@ -1,0 +1,78 @@
+{
+  "id": "daily-sky-whale-islands-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入每日一图内容的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-03",
+    "originalFile": "codex-clipboard-a2dc0d5e-ec40-4c4c-9e22-0814cea15613.png",
+    "originalSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这三张图片存入图库并作为大厅每日一图公开拼图，授权用于本站宣传与游玩。",
+    "authorizedOn": "2026-10-03"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-03",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：晚霞云海中的飞鲸与浮岛城堡，画面无网页界面、按钮或文字覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+    "optimized": {
+      "src": "/puzzles/daily-sky-whale-islands-v1-optimized-f8beef49057c.webp",
+      "sha256": "f8beef49057c472d89ad272d5bf61f5072e9e62c4359736aa44891f8a5c44b2e",
+      "bytes": 175632,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "inputSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/daily-sky-whale-islands-v1-thumbnail-242bdb766a70.webp",
+      "sha256": "242bdb766a702eddb9fff973f17efb4bc66057a6f0d2c84eb65c5057b3261694",
+      "bytes": 40614,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "inputSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/daily-sky-whale-islands-v1.webp",
+    "sha256": "539521c0c154c4ea20b68cde4fcf8b5f78ac2c144ed299d864698b0125976a5d",
+    "bytes": 376300,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f"
+  }
+}

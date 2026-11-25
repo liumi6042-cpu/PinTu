@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime character portrait.
+Primary request: an original adult demon-clan warrior, close three-quarter portrait from waist up, elegant dark crimson robe with black lacquer armor accents, subtle curved horns, long dark hair, holding a ceremonial fan-blade, piercing confident gaze. The character must fill about 80% of the image. Background minimal: soft red lantern bokeh, dark palace pillars reduced to abstract shapes, drifting black feathers.
+Style/medium: refined Chinese dark-fantasy anime, sharp linework, rich fabric and metal rendering, sophisticated supernatural character design.
+Composition/framing: wide horizontal 16:9, character centered slightly left, face, horns, hands and costume details prominent.
+Lighting/mood: blue moonlight with crimson edge light, regal and mysterious.
+Color palette: crimson, obsidian, antique gold, indigo.
+Constraints: original fully clothed adult character, nonsexual, no logos, no readable text, no watermark, no excessive scenery, no gore, no duplicate character, no anatomical errors. Target a finished 4K-quality landscape illustration.

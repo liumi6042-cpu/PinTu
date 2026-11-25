@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K cultural festival anime artwork.
+Primary request: two original adult Chinese-anime characters enjoying a Beijing autumn cultural festival during the National Day holiday, a woman in elegant modernized hanfu and a man in a refined long coat, holding warm lanterns while standing beneath golden ginkgo leaves, relaxed joyful expressions, character-focused composition. The image should evoke a contemporary Beijing autumn cultural outing without copying any official poster, landmark logo, or real person.
+Style/medium: polished Chinese-inspired anime illustration, delicate linework, rich fabric texture, warm painterly finish.
+Composition/framing: wide horizontal 16:9, two characters dominate about 80% of the frame, waist-up to three-quarter body, both faces clearly visible, intimate balanced pairing.
+Background: minimal softly blurred courtyard lanterns, subtle suggestion of an exhibition pavilion and city architecture, no crowded scene, no readable text.
+Lighting/mood: golden late-afternoon autumn light with warm lantern glow, festive, elegant and welcoming.
+Color palette: ginkgo gold, cinnabar red, jade green, cream, dusk blue.
+Constraints: exactly two original fully clothed adults, nonsexual, no real-person likeness, no logos, no readable text, no watermark, no extra people, no duplicate limbs, no fused bodies. Target a finished 4K-quality landscape illustration.

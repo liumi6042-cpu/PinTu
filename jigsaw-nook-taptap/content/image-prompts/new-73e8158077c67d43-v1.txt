@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime double-character artwork.
+Primary request: two original adult Japanese-anime beast-eared adventurers, a tall golden tiger-eared man and a graceful deer-eared woman, standing back-to-back in a bamboo forest clearing, both in practical fantasy-japanese travel clothing, one holding a sheathed sword and the other holding a small bow, alert heroic expressions. The characters are the main subject and fill most of the image.
+Style/medium: cinematic Japanese anime character art, strong clean linework, painterly light, detailed fur ears, costumes and accessories.
+Composition/framing: wide horizontal 16:9, full upper bodies and hands visible, back-to-back pose with distinct silhouettes, equal prominence.
+Background: minimal misty bamboo shapes and a few floating fireflies, no expansive scenery.
+Lighting/mood: cool moonlight with a soft green rim light, adventurous and composed.
+Color palette: moss green, gold, cream, dark brown, muted red.
+Constraints: exactly two original fully clothed adults, nonsexual, no logos, no readable text, no watermark, no extra characters, no duplicate limbs, no merged bodies, no gore, no anatomical errors. Target a finished 4K-quality landscape illustration.

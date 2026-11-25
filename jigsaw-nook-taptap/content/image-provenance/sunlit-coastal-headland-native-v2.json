@@ -1,0 +1,90 @@
+{
+  "id": "sunlit-coastal-headland-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/sunlit-coastal-headland-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-d60a76c7-0346-4229-a894-d2fdc8b55bde.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff",
+    "optimized": {
+      "src": "/puzzles/sunlit-coastal-headland-native-v2-optimized-4d66418464ab.webp",
+      "sha256": "4d66418464ab28e2474ace2fb79729d49c762833fe0e682cf64fb51db9f7849b",
+      "bytes": 308906,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff",
+      "inputSha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/sunlit-coastal-headland-native-v2-thumbnail-a10601156a24.webp",
+      "sha256": "a10601156a243a736c2fb190f80e9c43a43de80932923ba44a46ef42752c5bdd",
+      "bytes": 25006,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff",
+      "inputSha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sunlit-coastal-headland-native-v2.webp",
+    "sha256": "89b50816f258a80cd2b24e8de17d06a766a705edd6c8ae7318e0ecc8390c823f",
+    "bytes": 596112,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "350bb23a54f8340ce142839cf97cc562a952108cf80d75471a700119c90779ff"
+  }
+}

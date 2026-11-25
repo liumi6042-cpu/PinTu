@@ -1,0 +1,29 @@
+# Cloud Post Office generation
+
+- Output: `ch3s-02-cloud-post-office.png`
+- Tool: built-in image_gen
+- Size: 1536 × 1024
+- References: `../cast-sheet-final.png`, `ch3s-01-paper-crane.png`
+- Source: `C:\Users\Administrator\.codex\generated_images\01a1838c-f892-7ab1-935b-2cb820fe1644\exec-d0690fb5-0679-490a-88fa-4106095ec7a8.png`
+
+## Final prompt
+
+Use case: illustration-story.
+Create exactly ONE landscape illustration, 1536x1024 pixels, a single full-bleed picture-book story panel used as a 28-piece jigsaw puzzle.
+
+INPUT REFERENCES:
+Image 1 (cast-sheet-final.png): exact character identity and hand-painted anime style reference for Xiaohe and Tuanzi. Preserve their faces, hair, flower clip, clothing, shoulder bag, calico markings and neckerchief, no redesign.
+Image 2 (ch3s-01-paper-crane.png): previous panel in the same story. Continue the SAME giant folded pale-blue paper crane, with the same recognizable long angular neck, pointed beak, folded triangular wings and faceted origami body. It is made from one solid pale-blue sheet: subtle painterly paper texture and lighting only, NO printed motifs, floral patterns, saddle, harness, bags or decoration.
+
+SCENE:
+Wide shot, mid-morning with bright sky and warm soft sunlight. The giant plain pale-blue paper crane glides up beside the landing deck of the Cloud Post Office, a white-and-sky-blue wooden building with a small clock tower, round windows, little balconies, brass mail chutes and paper-crane perches, standing on a large island of puffy clouds. The clock face has plain hands but absolutely NO numbers, letters or numerals. Envelopes flutter around the building like birds; their surfaces contain only blank shapes or simple nonverbal pictures.
+On the landing deck, Postmaster Gugu bows politely, one wing touching its postman's cap, welcoming Xiaohe as she carefully climbs down off the crane onto the deck. Make this arrival and greeting the clear focal story action. Tuanzi is nearby, looking up at the flying envelopes in a playful ready-to-pounce pose. Show clouds beneath the island, and tiny town rooftops far below through a gap in the clouds.
+
+CHARACTERS:
+Xiaohe, 17-year-old girl: EXACT character from image 1, short brown bob, small pink flower hair clip above her LEFT ear, warm brown eyes, friendly round face. Mustard-yellow short jacket over cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots. Beige canvas shoulder bag with teal puzzle-piece patch. Keep facial likeness and natural anatomy.
+Tuanzi: EXACT chubby calico shop cat from image 1, mostly white; its anatomical LEFT ear and around left eye orange, anatomical RIGHT ear and around right eye black. Large black patch on back, orange patch on rump, fluffy black tail, green eyes, pink nose. Small sage-green neckerchief tied at the side. Match the supplied character sheet rather than inventing different markings.
+Postmaster Gugu: big round fluffy grey-and-white owl, its height reaches Xiaohe's shoulder. Small navy-blue postman cap with plain gold badge, round brass spectacles, navy postal satchel across its chest. Bowing politely with one wing on the cap.
+
+STYLE / COMPOSITION:
+Cozy hand-painted anime illustration, same character rendering and storybook art family as the references, gentle saturated colors, warm soft light, clean readable shapes with soft painterly texture. A coherent spacious wide shot, not separate panels or a character sheet. Visually distinct foreground warm wooden deck and brass details, middle-ground pale-blue crane and colorful characters/post office, background luminous layered cloud masses and distant rooftops. Keep the crane visibly large. Clear silhouettes and readable greeting at a glance.
+Jigsaw-friendly: varied broad colors, materials, light and texture throughout; fill the frame edge to edge including corners with meaningful scene elements, cloud forms and building/deck features. No large empty flat-color sky or walls, no tiny repetitive clutter. Keep objects l

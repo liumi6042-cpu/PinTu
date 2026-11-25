@@ -1,0 +1,91 @@
+{
+  "id": "desert-sun",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/desert-sun.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-e110-7e20-9200-852557b81ee0\\exec-0c3f809a-1cbd-4aa5-8659-1adf4f462298.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-b.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: broad flowing terracotta dunes with contrasting shadow planes, one cactus and large sun. Especially sparse composition, softly varied tones with no granular sand clutter. No obvious text, logo, watermark, frame, puzzle seams or recognizable IP.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+    "optimized": {
+      "src": "/puzzles/desert-sun-optimized-e360184c0660.webp",
+      "sha256": "e360184c06602cb47c478e3313caed5c1e607ea91fef5fb1e231adeec7ff14aa",
+      "bytes": 23992,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+      "inputSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/desert-sun-thumbnail-1d46266e2bf1.webp",
+      "sha256": "1d46266e2bf1afac067495c30a3b3e90ca1d3ec58a954c90ae8e8a7d2ce14b7f",
+      "bytes": 5298,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+      "inputSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/desert-sun.webp",
+    "sha256": "91e361cb0d5aefb6104b9dfc888d65c45ce1180774e3c76d490d96888e289731",
+    "bytes": 91844,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "19a8930fbf06ecafd26ce230814702a088c7cf71e1262118ead43b229912c45f"
+  }
+}

@@ -1,0 +1,422 @@
+'use client';
+import DisplayControls from '../h5/display-controls';
+import { MobileArt } from '../h5/mobile-icons';
+import { MobileTray } from '../h5/mobile-tray';
+import { MobileCompletion, type MobileCompletionResult } from '../h5/mobile-completion';
+import '../h5/mobile-snap-feedback.css';
+import type { MobileContributionReceipt } from '../lib/connection-feedback';
+import PictureDiscoveries from './picture-discoveries';
+import CompletionJourney from './completion-journey';
+import { useAddressCopy } from '@/lib/address-copy';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/app/language-switch';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Puzzle, Moon, Sun, ArrowRight, ArrowLeft, Search, Play, Pause, Images, ImagePlus, Shuffle, ZoomIn, ZoomOut, Scan, HelpCircle, RotateCcw, Check, X, Clock3, Expand, Minimize, LockKeyhole, PartyPopper } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import LanguageSwitch from './language-switch';
+import { createPuzzle, createFittedPuzzle, restartPuzzle, placedCount, type PuzzleState } from '@/lib/puzzle-engine';
+import { CompletionGate } from '@/lib/celebration-engine';
+import { CelebrationOverlay, CelebrationPreview } from './celebration';
+import { PuzzleTable } from '@/lib/puzzle-table';
+import { TABLE_THEME_KEY, parseTableTheme, type TableTheme } from '@/lib/table-theme';
+import { registerPuzzleTools } from '@/lib/webmcp';
+import AssistanceTools from './assistance-tools';
+import SoundControl from './sound-control';
+import { apiJson } from '@/lib/community-client';
+import { saveTicket, type RoomTicket } from '@/lib/room-client';
+import RoomToolbar from './room-toolbar';
+import RoomCursors from './room-cursors';
+import RoomChat from './room-chat';
+import AchievementBadge from './achievement-badge';
+import { Trophy, MoreHorizontal, Send } from 'lucide-react';
+import { useAssistance } from '@/lib/use-assistance';
+import { activeAssistance } from '@/lib/assistance-policy';
+import { ChatClient, type ChatState } from '@/lib/chat-client';
+import { SNAP_SOUND_KEY, soundPreferences } from '@/lib/snap-sound';
+import { useGameAchievements,AchievementToast,CompletionAchievements } from './game-achievements';
+import MemberRoomGate from './member-room-gate';
+import { MEMBERSHIP_REQUIRED } from '@/lib/membership-policy';
+import { useMembership } from '@/lib/use-membership';
+import {ReportProblem} from './feedback-widget';
+import HomeNavigation from './home-navigation';
+import {NEW_GAME_LEVELS as LEVELS,DEFAULT_PIECES,PIECE_PREFERENCE_KEY,preferredPieceCount,supportsPieceCount,PIECE_RESOLUTION_ERROR,gridForDimensions} from '@/lib/piece-policy';
+import {photoGuidance} from '@/lib/play-guidance';
+import PiecePicker from './piece-picker';
+import GalleryCard from './gallery-card';
+import PuzzleOpening from './puzzle-opening';
+import { activeKey, saveKey, readLocalProgress, writeLocalProgress } from '@/lib/local-progress';
+import { randomPhoto } from '@/lib/random-photo';
+import type { RoomClient } from '@/lib/room-client';
+import { PHOTOS, GALLERY_PHOTOS, GALLERY_VISIBLE_PHOTOS, RESTORABLE_PHOTOS, CATEGORIES } from '@/lib/puzzle-catalog';
+import { englishCopy } from '@/lib/seo';
+import AccountGate from './account-gate';
+import { useRouter } from 'next/navigation';
+import { preloadPuzzleImage } from '@/lib/puzzle-image-loading';
+import {puzzleImageSource} from '@/lib/puzzle-image-source';
+import {PIECE_LOGIN_REQUIRED} from '@/lib/piece-access';
+import {accountLoginUrl,publicPuzzleReturnTo} from '@/lib/account-return';
+import {USER_IMAGE_UPLOAD_VISIBLE} from '@/lib/feature-visibility';
+export { PHOTOS } from '@/lib/puzzle-catalog';
+
+type Photo = typeof PHOTOS[number];
+const duration = (seconds: number) => { const s = Math.floor(seconds); return `${s >= 3600 ? `${Math.floor(s / 3600)}:` : ''}${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+function Brand() { useLanguage(); const copy=useAddressCopy(); return <span className="brand"><Puzzle size={26}/><span>{copy('一起拼图')}<small>THE PUZZLE COLLECTION</small></span></span>; }
+type PuzzleAppProps = {entryMode?:'solo'|'create'|'public';guestPlay?:boolean;gallery?:boolean;initialQuery?:string;initialPieces?:number};
+export default function PuzzleApp(props: PuzzleAppProps) {
+ return (props.entryMode ?? 'solo') === 'solo' && !props.guestPlay
+  ? <AccountGate requireLogin solo><PuzzleCollection {...props}/></AccountGate>
+  : <PuzzleCollection {...props}/>;
+}
+function PuzzleCollection({entryMode='solo',guestPlay=false,gallery=false,initialQuery='',initialPieces}: PuzzleAppProps) {
+ const router=useRouter();
+ const copy=useAddressCopy();
+ const language=useLanguage(),membership=useMembership(entryMode==='create');
+ const [roomName,setRoomName]=useState('');
+ const [creating,setCreating]=useState(false),[entryError,setEntryError]=useState('');
+ const [opening,setOpening]=useState<{photo:Photo;pieces:number}|null>(null);
+ const launchLock=useRef(false),mounted=useRef(true);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ const [session,setSession]=useState<PuzzleState|null>(null),[query,setQuery]=useState(()=>copy(initialQuery)),[category,setCategory]=useState('全部'),[count,setCount]=useState(DEFAULT_PIECES),[saved,setSaved]=useState<Record<string,PuzzleState>>({}),[ready,setReady]=useState(false),[saveError,setSaveError]=useState(false);
+ useEffect(()=>{if(initialPieces!==undefined){setCount(preferredPieceCount(initialPieces));return;}try{setCount(preferredPieceCount(localStorage.getItem(PIECE_PREFERENCE_KEY)));}catch{/* 300 pieces is also the server-rendered default. */}},[initialPieces]);
+ const chooseCount=(value:number)=>{setCount(value);setEntryError('');try{localStorage.setItem(PIECE_PREFERENCE_KEY,String(value));}catch{/* A preference is optional. */}};
+ useEffect(()=>{
+  if(!guestPlay){setReady(true);return;}
+  try{
+   const entries=readLocalProgress(localStorage);setSaved(Object.fromEntries(entries.map(entry=>[entry.key,entry.state])));
+   const resumeKey=new URLSearchParams(window.location.search).get('resume');
+   if(guestPlay&&resumeKey){const previous=entries.find(entry=>entry.key===resumeKey);if(previous){setSession(structuredClone(previous.state));}else setEntryError('没有找到这份本机进度，请在原来的浏览器中继续。');}
+  }catch{setSaveError(true);}setReady(true);
+ },[guestPlay]);
+ const photos=useMemo(()=>GALLERY_PHOTOS.filter(p=>supportsPieceCount(p.id,count)&&(!gallery||(category==='全部'||p.category===category)&&[p.title,p.category,p.subtitle,englishCopy(p.title),englishCopy(p.category),englishCopy(p.subtitle)].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))),[gallery,category,query,count]);
+ const [paging,setPaging]=useState({filter:'',page:1});
+ const galleryTop=useRef<HTMLDivElement>(null);
+ const pageFilter=JSON.stringify([category,query,count]),pageCount=Math.max(1,Math.ceil(photos.length/12));
+ useEffect(()=>{setPaging({filter:pageFilter,page:1});},[pageFilter]);
+ const currentPage=paging.filter===pageFilter?Math.min(paging.page,pageCount):1;
+ const pagePhotos=photos.slice((currentPage-1)*12,currentPage*12);
+ const changePage=(page:number)=>{setPaging({filter:pageFilter,page:Math.max(1,Math.min(page,pageCount))});galleryTop.current?.scrollIntoView({block:'start',behavior:'instant'});};
+ const persist=useCallback((state:PuzzleState)=>{try{writeLocalProgress(localStorage,state);setSaveError(false);}catch{setSaveError(true);}},[]);
+ // A catalog picture also plays on a board fitted to its own shape, so a 2:1
+ // landscape no longer loses its left and right edges to the fixed 4:3 board.
+ // The requested piece count is still what the player chose; the board lands near
+ // it, while progress and completion continue to use the requested level.
+ const fittedState=useCallback((photo:Photo,pieces:number)=>{const level=LEVELS.find(l=>l.count===pieces),guidance=photoGuidance(photo.id);if(!level)throw new Error('请选择列表内的图片和片数');const grid=guidance?gridForDimensions(guidance.width,guidance.height,level.count):null;return grid?createFittedPuzzle(photo.id,grid.cols,grid.rows):createPuzzle(photo.id,level.cols,level.rows);},[]);
+ const start=useCallback((chosen:Photo,pieces:number)=>{const previous=saved[saveKey(chosen.id,pieces)],state=previous&&placedCount(previous)<pieces?structuredClone(previous):fittedState(chosen,pieces);persist(state);setSession(state);},[saved,persist,fittedState]);
+ const beginPuzzle=useCallback(async(chosen:Photo,pieces:number)=>{
+  if(entryMode==='create'&&(!membership.data?.summary.canCreate||membership.loading||membership.error))throw new Error(MEMBERSHIP_REQUIRED);
+  if(launchLock.current)throw new Error('拼图正在打开，请稍候');
+  if(!LEVELS.some(level=>level.count===pieces))throw new Error('请选择列表内的图片和片数');
+  if(!supportsPieceCount(chosen.id,pieces))throw new Error(PIECE_RESOLUTION_ERROR);
+  launchLock.current=true;const roomVisibility=entryMode==='solo'?'solo':entryMode==='public'?'public':'private';setOpening({photo:chosen,pieces});setCreating(true);setEntryError('');
+  preloadPuzzleImage(puzzleImageSource(chosen,pieces));
+  try{if(guestPlay){start(chosen,pieces);setCreating(false);return;}const ticket=await apiJson<RoomTicket>('/api/rooms',{imageId:chosen.id,pieces,visibility:roomVisibility,...(entryMode!=='solo'?{title:roomName}: {})});if(!mounted.current)return;saveTicket(ticket);router.push('/room/'+ticket.room.id);}
+  catch(error){if(!mounted.current)return;if(error instanceof Error&&error.message===PIECE_LOGIN_REQUIRED){window.location.assign(accountLoginUrl(publicPuzzleReturnTo(chosen.id,pieces)));return;}launchLock.current=false;setEntryError(error instanceof Error?error.message:'暂时无法开始');setCreating(false);throw error;}
+ },[entryMode,guestPlay,start,saved,roomName,membership.data?.summary.canCreate,membership.loading,membership.error,router]);
+ const leave=()=>{launchLock.current=false;setCreating(false);if(session){persist(session);setSaved(s=>({...s,[saveKey(session.imageId,session.cols*session.rows)]:structuredClone(session)}));}try{localStorage.removeItem(activeKey);}catch{}const url=new URL(window.location.href);url.searchParams.delete('resume');window.history.replaceState(null,'',url.pathname+url.search);setSession(null);};
+ const stateRef=useRef({session,count});stateRef.current={session,count};
+ useEffect(()=>registerPuzzleTools({read:()=>({screen:stateRef.current.session?'playing':gallery?'gallery':'collection',puzzles:GALLERY_VISIBLE_PHOTOS.map(({id,title})=>({id,title})),pieceCounts:LEVELS.map(l=>l.count),current:stateRef.current.session?{imageId:stateRef.current.session.imageId,pieces:stateRef.current.session.cols*stateRef.current.session.rows,placed:placedCount(stateRef.current.session),elapsed:stateRef.current.session.elapsed}:null}),start:async(imageId,pieces)=>{const p=GALLERY_VISIBLE_PHOTOS.find(p=>p.id===imageId);if(!p||!LEVELS.some(l=>l.count===pieces))throw new Error('请选择列表内的图片和片数');if(stateRef.current.session)throw new Error('请先从当前拼图返回选图页');await beginPuzzle(p,pieces);return{screen:guestPlay?'playing':'room',imageId,pieces};}}),[beginPuzzle,guestPlay,gallery]);
+ if(entryMode==='create'&&(!membership.data?.summary.canCreate||membership.loading||membership.error))return <main className="collection collection-simple"><header className="site-header"><a href="/" className="collection-brand-link"><Brand/></a><HomeNavigation/></header>{membership.loading?<p className="muted">{copy('正在读取会员状态…')}</p>:<>{membership.error&&<p className="form-error" role="alert">{copy(membership.error)}<button onClick={membership.reload}>{copy('重试')}</button></p>}{membership.data?.summary.status==='active'&&!membership.data.summary.canCreate&&<p className="form-error">{copy('已有 3 个进行中的私人房间，请先完成其中一局')}</p>}<MemberRoomGate/></>}</main>;
+ if(session)return <Game key={`${session.imageId}-${session.cols}-${session.seed}`} state={session} photo={RESTORABLE_PHOTOS.find(p=>p.id===session.imageId)!} persist={persist} leave={leave} saveError={saveError} restart={()=>{const state=restartPuzzle(session);persist(state);setSession(state);}}/>;
+ if(creating&&opening&&!guestPlay)return <PuzzleOpening photo={opening.photo} pieces={opening.pieces}/>;
+ const oldSaves=Object.values(saved).filter(s=>placedCount(s)<s.cols*s.rows);
+ const launchPhoto=(chosen:Photo)=>{void beginPuzzle(chosen,count).catch(error=>{setEntryError(error instanceof Error?error.message:'暂时无法开始');});};
+ const roomOptions=entryMode!=='solo'&&<p className="room-mode-note">{copy(entryMode==='public'?'免费公开房间 · 创建 500 片及以上房间需登录':'会员私人房间 · 仅通过邀请链接加入')}</p>;
+ return <main className={'collection collection-simple'+(gallery?' gallery-collection':'')}>
+  <header className="site-header"><a href="/" className="collection-brand-link"><Brand/></a><HomeNavigation galleryHref={guestPlay?'/gallery':'/gallery?mode='+entryMode}/></header>
+  <section className="collection-intro"><p className="eyebrow">{gallery?'THE PICTURE LIBRARY':'A LITTLE SURPRISE'}</p><h1>{copy(entryMode==='public'?'创建公开房间':gallery?'把喜欢的画面，慢慢拼起来。':entryMode==='solo'?'下一幅，交给一点小运气。':'随机一幅画，准备一起拼。')}</h1><p className="muted">{copy(gallery?'所有画面都在这里，选好片数，点图开拼。':'从整个图库随机挑一张，点一下就开拼。')}</p>
+   {gallery?<>{USER_IMAGE_UPLOAD_VISIBLE&&<a className="gallery-upload-entry" href="/personal/images"><span className="gallery-upload-icon"><ImagePlus size={27}/></span><span className="gallery-upload-copy"><strong>{copy('上传自己的图片制作拼图')}</strong><small>{copy('普通账号免费使用，最多保存 10 张。')}</small></span><span className="gallery-upload-action">{copy('上传新图片')}<ArrowRight size={17}/></span></a>}<div className="gallery-filters"><div className="search-box"><Search size={18}/><input disabled={creating} value={query} onChange={e=>{setQuery(e.target.value);}} placeholder={copy('搜索拼图、风景、艺术…')} aria-label={copy('搜索拼图')}/>{query&&<button disabled={creating} className="clear-search" aria-label={copy('清空搜索')} onClick={()=>{setQuery('');}}><X size={16}/></button>}</div><div className="categories" aria-label={copy('拼图分类')}>{CATEGORIES.map(c=><button key={c} disabled={creating} aria-pressed={category===c} className={category===c?'active':''} onClick={()=>{setCategory(c);}}>{copy(c)}</button>)}</div></div></>:<a className="gallery-entry" href={guestPlay?'/gallery':'/gallery?mode='+entryMode}><Images size={18}/>{copy('去图库挑选更多')}<ArrowRight size={17}/></a>}
+  </section>
+  <div className="collection-settings"><PiecePicker count={count} onChange={chooseCount} disabled={creating} roomCreation={entryMode!=='solo'&&!guestPlay}/>{entryMode!=='solo'&&<label className="member-room-name">{copy('房间名称（可选）')}<input maxLength={40} value={roomName} onChange={e=>setRoomName(e.target.value)} disabled={creating} placeholder={copy('留空使用图片名称')}/><small>{copy(entryMode==='public'?'108、300 片无需登录；创建 500 片及以上房间需登录普通账号。':'最多同时进行 3 个私人房间，每桌最多 8 人。')}</small></label>}{roomOptions}</div>
+  {entryError&&<p className="form-error collection-error" role="alert">{copy(entryError)}</p>}
+  {gallery?<section className="gallery-content" aria-busy={creating}><div className="gallery-results" ref={galleryTop}><span role="status" aria-live="polite">{copy('可选画面')} <strong>{photos.length}</strong></span><span>{copy(count.toLocaleString()+' 片')} · {copy('点击图片，开始拼图')}</span></div>{photos.length?<><div className="gallery-grid">{pagePhotos.map((p,i)=>{const pieces=count,progress=saved[saveKey(p.id,pieces)],resume=guestPlay&&progress&&placedCount(progress)<pieces;return <GalleryCard key={p.id} photo={p} pieces={pieces} progress={resume?placedCount(progress):undefined} eager={i<4} disabled={!ready||creating} onPlay={()=>launchPhoto(p)}/>;})}</div><nav className="gallery-pagination" aria-label={copy('图库分页')}><button disabled={creating||currentPage===1} onClick={()=>changePage(currentPage-1)}>{copy('上一页')}</button>{Array.from({length:pageCount},(_,i)=>i+1).map(page=><button key={page} disabled={creating} aria-current={page===currentPage?'page':undefined} aria-label={copy('页码')+' '+page} onClick={()=>changePage(page)}>{page}</button>)}<button disabled={creating||currentPage===pageCount} onClick={()=>changePage(currentPage+1)}>{copy('下一页')}</button><span role="status" aria-live="polite">{currentPage} / {pageCount} · {copy('每页 12 张')}</span></nav></>:<div className="no-results"><Search size={30}/><p>{copy('没有符合当前片数与筛选条件的图片。')}</p><button className="secondary" onClick={()=>{setQuery('');setCategory('全部');}}>{copy('清除搜索和分类')}</button>{count!==DEFAULT_PIECES&&<button className="secondary" onClick={()=>chooseCount(DEFAULT_PIECES)}>{copy('改为 300 片，查看更多')}</button>}</div>}</section>:<section className="random-start" aria-busy={creating}>
+   <button className="random-play-button" disabled={!ready||creating||!photos.length} onClick={()=>{if(!launchLock.current&&photos.length)launchPhoto(randomPhoto(photos));}}>
+    <span className="random-play-symbol" aria-hidden="true"><Shuffle size={40} strokeWidth={1.4}/></span>
+    <span className="random-play-title">{copy(creating?'正在铺开桌面…':entryMode==='create'?'随机一张，创建房间':'随机一张，开始拼图')}</span>
+    <span className="random-play-caption">{copy('让下一张画，给你一个小惊喜')}<ArrowRight size={17}/></span>
+   </button>
+   <p className="local-note">{copy(saveError?'当前浏览器无法保存进度，仍可直接试玩':guestPlay?'进度保存在当前浏览器':'服务器自动保存进度')}</p>
+  </section>}
+
+  <a className="progress-entry" href="/personal"><Clock3 size={17}/>{copy('继续上次拼图 · 查看我的桌面')}<ArrowRight size={16}/></a>
+  {guestPlay&&oldSaves.length>0&&<details className="legacy-progress"><summary>{copy('继续以前的拼图')} ({oldSaves.length})</summary><div>{oldSaves.map(state=><button className="secondary" key={saveKey(state.imageId,state.cols*state.rows)} disabled={creating} onClick={()=>{persist(state);setSession(structuredClone(state));}}>{copy(RESTORABLE_PHOTOS.find(p=>p.id===state.imageId)!.title)} · {state.cols*state.rows} {copy('片')}<Play size={15}/></button>)}</div></details>}
+  <footer className="collection-footer"><span>{copy('小小一片，刚刚好的片刻。')}</span><span>{copy(gallery?'点击图片，开始拼图':'随心随机，也可以去图库手选')}</span></footer>
+ </main>;
+}
+
+type GameProps = {
+    state: PuzzleState;
+    photo: Pick<Photo,'id'|'title'|'src'>&{standardSrc?:string;optimizedSrc?:string;optimizedStandardSrc?:string};
+    persist: (s: PuzzleState) => void;
+    leave: () => void;
+    restart: () => void;
+    saveError: boolean;
+    collaboration?: RoomClient;
+    onNext?: () => Promise<void>;
+    mobile?: boolean;
+    mobileStatus?: ReactNode;
+    onSupplies?: () => void;
+};
+export function Game(props: GameProps) {
+    return props.mobile ? <MobileGame {...props}/> : <ClassicGame {...props}/>;
+}
+function ClassicGame({ state, photo, persist, leave, restart, saveError, collaboration, onNext }: GameProps) {
+    useLanguage();
+    const achievements=useGameAchievements(state,collaboration);
+    const [celebrating, setCelebrating] = useState(false), [preview, setPreview] = useState(false), completionGate = useRef(new CompletionGate());
+    const [nextBusy, setNextBusy] = useState(false), [nextError, setNextError] = useState('');
+    const canvas = useRef<HTMLCanvasElement>(null), table = useRef<PuzzleTable | null>(null), container = useRef<HTMLElement>(null), [metrics, setMetrics] = useState({ placed: placedCount(state), elapsed: state.elapsed, zoom: 1 }), [loading, setLoading] = useState(true), [imageError, setImageError] = useState(false), [attempt, setAttempt] = useState(0), [edges, setEdges] = useState(false), [paused, setPaused] = useState(false), [help, setHelp] = useState(false), [reset, setReset] = useState(false), [complete, setComplete] = useState(false), [fullscreen, setFullscreen] = useState(false), [message, setMessage] = useState('把拼块拖到相应位置。靠近时，它们会轻轻吸附。');
+    useEffect(()=>{const detail={ready:!loading&&!imageError,pieces:state.cols*state.rows,complete:metrics.placed===state.cols*state.rows};document.documentElement.dataset.puzzleGameStatus=JSON.stringify(detail);window.dispatchEvent(new CustomEvent('puzzle:game-status',{detail}));},[loading,imageError,metrics.placed,state.cols,state.rows]);
+    useEffect(()=>()=>{delete document.documentElement.dataset.puzzleGameStatus;},[]);
+    const [organizing,setOrganizing]=useState(false),organizeLock=useRef(false);
+    const floatingTop = useRef<HTMLDivElement>(null), floatingFooter = useRef<HTMLElement>(null);
+    useLayoutEffect(() => {
+        const root = container.current, top = floatingTop.current, footer = floatingFooter.current;
+        if (!root || !top || !footer) return;
+        // Measure only the controls; the canvas always fills the entire game.
+        const measure = () => {
+            root.style.setProperty('--game-top-height', `${top.getBoundingClientRect().height}px`);
+            root.style.setProperty('--game-footer-height', `${footer.getBoundingClientRect().height}px`);
+        };
+        const observer = new ResizeObserver(measure);
+        observer.observe(top); observer.observe(footer); measure();
+        return () => observer.disconnect();
+    }, []);
+    const [tableTheme,setTableTheme]=useState<TableTheme>('beige'),tableThemeRef=useRef<TableTheme>('beige');
+    const applyTableTheme=useCallback((value:TableTheme)=>{tableThemeRef.current=value;setTableTheme(value);table.current?.setTheme(value);},[]);
+    useEffect(()=>{
+        try{applyTableTheme(parseTableTheme(localStorage.getItem(TABLE_THEME_KEY)));}catch{/* The switch also works without storage. */}
+        const sync=(event:StorageEvent)=>{if(event.key===TABLE_THEME_KEY||event.key===null)applyTableTheme(parseTableTheme(event.newValue));};
+        window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync);
+    },[applyTableTheme]);
+    const switchTableTheme=()=>{const next=tableThemeRef.current==='beige'?'dark':'beige';applyTableTheme(next);try{localStorage.setItem(TABLE_THEME_KEY,next);}catch{/* Keep the selection for this visit. */}};
+    const getTable=useCallback(()=>table.current,[]);
+    const total = state.cols * state.rows, isMultiplayer = !!collaboration && collaboration.snapshot.visibility !== 'solo',imageSource=puzzleImageSource(photo,total);
+    useEffect(() => { let canceled = false; let detach: (() => void) | undefined; const img = new window.Image(); setLoading(true); setImageError(false); img.onload = () => { if (canceled || !canvas.current)
+        return; const engine = new PuzzleTable(canvas.current, state, img, () => { if (canceled)
+        return; setMetrics({ placed: placedCount(state), elapsed: state.elapsed, zoom: table.current?.camera.z ?? 1 }); persist(state); }, setMessage); table.current = engine; engine.setTheme(tableThemeRef.current); if (collaboration)
+        detach = collaboration.attach(engine); setLoading(false); }; img.onerror = () => { if (!canceled) {
+        setImageError(true);
+        setLoading(false);
+    } }; img.crossOrigin = 'anonymous'; img.decoding = 'async'; img.fetchPriority = 'high'; img.src = imageSource; return () => { canceled = true; img.onload=null; img.onerror=null; table.current?.destroy(); detach?.(); table.current = null; persist(state); }; }, [state, imageSource, persist, attempt, collaboration]);
+    const beginCelebration = useCallback(() => { setComplete(false); setPreview(false); setHelp(false); setReset(false); setPaused(false); setEdges(false); table.current?.setEdges(false); table.current?.fit(true); setCelebrating(true); setMessage('每一片，都刚刚好。庆祝这一刻！'); }, []);
+    const finishCelebration = useCallback(() => { setCelebrating(false); setComplete(true); }, []);
+    const discoveryTable = useCallback(()=>table.current,[]);
+    const celebrationBoard = useCallback(() => { const r = canvas.current?.getBoundingClientRect(), camera = table.current?.camera, board = table.current?.board; return r && camera && board ? { x: r.left + camera.x + board.x * camera.z, y: r.top + camera.y + board.y * camera.z, width: board.width * camera.z, height: board.height * camera.z } : null; }, []);
+    useEffect(() => { if (completionGate.current.observe(metrics.placed, total, !loading && !imageError && (table.current?.width ?? 0) > 0))
+        beginCelebration(); }, [metrics, total, loading, imageError, beginCelebration]);
+    useEffect(() => { table.current?.setPaused(paused || help || reset || complete || celebrating || preview); }, [paused, help, reset, complete, celebrating, preview, loading]);
+    useEffect(() => { const change = () => setFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', change); return () => document.removeEventListener('fullscreenchange', change); }, []);
+    useEffect(() => {
+        if (!collaboration) return;
+        const unsubscribe=collaboration.subscribe(()=>{if(!collaboration.connected)setMessage(collaboration.message);});
+        // Keep the visible clock smooth without polling or redrawing the puzzle each second.
+        const timer=setInterval(()=>{const elapsed=collaboration.elapsedNow();setMetrics(previous=>previous.elapsed===elapsed?previous:{...previous,elapsed});},1000);
+        return()=>{unsubscribe();clearInterval(timer);};
+    }, [collaboration]);
+    async function organizeTable() {
+        if(organizeLock.current||loading||imageError)return;
+        organizeLock.current=true;setOrganizing(true);
+        try {
+            if(collaboration){await collaboration.organize();setMessage('整理完成，组合、已归位和正在拖动的拼块保持不动。');}
+            else table.current?.shuffle();
+        }catch(error){setMessage(error instanceof Error?error.message:'暂时无法整理，请重试。');}
+        finally{organizeLock.current=false;setOrganizing(false);}
+    }
+    const switchEdges = () => { setEdges(!edges); table.current?.setEdges(!edges); };
+    const fullscreenAction = async () => { try {
+        if (document.fullscreenElement)
+            await document.exitFullscreen();
+        else if (document.documentElement.requestFullscreen)
+            await document.documentElement.requestFullscreen();
+        else
+            setMessage('当前浏览器不支持全屏，可以用缩放按钮调整视野');
+    }
+    catch {
+        setMessage('当前环境暂不支持全屏，可以用缩放按钮调整视野');
+    } };
+    return <main className="game" data-table-theme={tableTheme} ref={container}><div className="game-floating-top" ref={floatingTop}><header className="game-header"><button className="back-button" onClick={leave}><ArrowLeft size={18}/><span>{t(collaboration?.snapshot.visibility === 'public' ? '返回大厅' : '返回选图')}</span></button><div className="game-title"><h1>{t(photo.title)}</h1></div><div className="game-stats"><DisplayControls/><a className="game-achievement-link" href={achievements.href} target="_blank" rel="noreferrer" aria-label={t("我的拼图纪念册")} title={t("我的拼图纪念册")}>{achievements.book.equipped?<AchievementBadge id={achievements.book.equipped} small/>:<Trophy size={18}/>}</a><LanguageSwitch /><div className="time"><Clock3 size={16}/>{t(duration(metrics.elapsed))}</div><button className="icon-button" aria-label={t(paused ? '继续拼图' : '暂停拼图')} title={t(paused ? '继续' : '暂停')} onClick={() => setPaused(!paused)}>{t(paused ? <Play size={18}/> : <Pause size={18}/>)}</button><button className="icon-button" aria-label={t("游玩帮助")} title={t("游玩帮助")} onClick={() => setHelp(true)}><HelpCircle size={18}/></button></div></header>
+ {t(isMultiplayer && collaboration && <RoomToolbar client={collaboration}/>)}</div>
+ <section className="table-area" aria-label={t("拼图游玩区")}><canvas ref={canvas} className="puzzle-canvas" tabIndex={0} aria-label={t(`${photo.title}拼图桌。拖动拼块拼合；滚轮缩放；空白处拖动桌面。键盘 N 选择下一块，方向键移动，Shift 加方向键微调，Enter 吸附。`)}/>
+ <div className="game-progress"><div><span><strong>{t(metrics.placed)}</strong> / {t(total)}{t(" 片已归位")}</span></div></div>
+ {isMultiplayer&&collaboration&&!loading&&!imageError&&<RoomCursors client={collaboration} canvas={canvas} getTable={getTable} hidden={paused||help||reset||complete||celebrating}/> }
+ {isMultiplayer&&collaboration&&!loading&&!imageError&&<RoomChat client={collaboration} hidden={help||reset||complete||celebrating}/>}
+ {saveError && <div className="table-topline"><span className="save-state" role="status"><X size={13}/>{t("未能保存")}</span></div>}
+ <AssistanceTools key={`${collaboration?.ticket.room.id??state.seed}:${state.imageId}:${state.cols}x${state.rows}`} state={state} client={collaboration} getTable={getTable} loading={loading} disabled={imageError||celebrating||metrics.placed===total} edgesButton={<button className={edges ? 'tool active' : 'tool'} aria-pressed={edges} onClick={switchEdges}><Scan size={20}/><span>{t("边缘")}</span></button>} organizeButton={<button className="tool" disabled={organizing||loading||imageError} aria-busy={organizing} title={t(isMultiplayer ? '整理散片，保留组合、已归位和正在拖动的拼块' : '整理散片')} onClick={() => void organizeTable()}><Shuffle size={20}/><span>{t(organizing?'整理中…':'整理')}</span></button>}/>
+
+
+ <div className="zoom-controls"><button className="icon-button" aria-label={t("缩小")} onClick={() => table.current?.zoom(1 / 1.2)}><ZoomOut size={18}/></button><span>{t(Math.round(metrics.zoom * 100))}%</span><button className="icon-button" aria-label={t("放大")} onClick={() => table.current?.zoom(1.2)}><ZoomIn size={18}/></button><span className="vertical-divider"/><button className="icon-button background-toggle" aria-label={t("暗色背景")} aria-pressed={tableTheme==='dark'} title={t(tableTheme==='beige'?'切换为暗色背景':'切换为米色背景')} onClick={switchTableTheme}>{tableTheme==='beige'?<Moon size={18}/>:<Sun size={18}/>}</button><button className="icon-button" aria-label={t("查看整张拼图桌")} title={t("适应桌面")} onClick={() => table.current?.fit()}><Scan size={18}/></button><button className="icon-button fullscreen-button" aria-label={t(fullscreen ? '退出全屏' : '全屏')} onClick={fullscreenAction}>{t(fullscreen ? <Minimize size={18}/> : <Expand size={18}/>)}</button></div>
+ {t(loading && <div className="table-overlay"><Puzzle className="loading-icon" size={32}/><p>{t("正在铺开拼图\u2026")}</p></div>)}
+ {t(imageError && <div className="table-overlay"><p>{t("这张图片暂时没有加载成功")}</p><button className="primary" onClick={() => setAttempt(n => n + 1)}>{t("重新加载")}</button><button className="secondary" onClick={leave}>{t("返回选图")}</button></div>)}
+ {t(paused && !help && !reset && <div className="table-overlay pause-overlay"><span className="eyebrow">A MOMENT TO BREATHE</span><h2>{t("休息一下也很好。")}</h2><p>{t(collaboration ? '你可以休息一下，房间进度会继续保存。' : '拼图会在这里等你。')}</p><button className="primary" onClick={() => setPaused(false)}><Play size={18}/>{t("继续拼图")}</button></div>)}
+ </section><footer className="game-footer" ref={floatingFooter}><p className="feedback" role="status" aria-live="polite">{t(message)}</p><div><ReportProblem context={{pictureId:photo.id,pieceCount:total,connection:collaboration?(collaboration.connected?"online":"offline"):"local"}}/>{t(metrics.placed === total && <button className="text-button preview-game-button" disabled={celebrating} aria-label={t("预览庆祝")} title={t("预览庆祝")} onClick={() => setPreview(true)}><PartyPopper size={17}/><span>{t("预览庆祝")}</span></button>)}<SoundControl getTable={getTable} loading={loading}/><>{t(!collaboration && <><button className="text-button" onClick={() => setReset(true)}><RotateCcw size={15}/><span>{t("重新开始")}</span></button></>)}</></div></footer>
+ <Dialog open={help} onOpenChange={setHelp}><DialogContent className="help-dialog"><DialogTitle>{t("从一片开始，慢慢来。")}</DialogTitle><DialogDescription>{t("拼块不会旋转。找到相邻的两块，把它们放近一些就能连起来。")}</DialogDescription><div className="help-list"><p><strong>{t("拖动拼块")}</strong><span>{t("在桌面任意位置拼合，连接后可以整组移动。拖到框内正确位置会锁定。")}</span></p><p><strong>{t("调整视野")}</strong><span>{t("鼠标滚轮缩放，拖动空白处平移；按住空格拖动也可以。手机用双指缩放。")}</span></p><p><strong>{t("卡住的时候")}</strong><span>{t("「边缘」只显示含边缘的拼块组。底图/提示次数按片数分档：108片 2/3 次、300片 3/5 次、500片 4/8 次、1000片及以上 6/12 次。每次持续30秒，提示最多标出3片及对应位置。每局每人独立计算，刷新不会重置次数。")}</span></p><p><strong>{t("键盘也能玩")}</strong><span>{t(collaboration ? '计时局用鼠标或触屏拖动，滚轮或双指缩放；按 0 显示整个桌面。' : '先聚焦桌面，按 N 选择拼块，方向键移动，Shift 微调，Enter 吸附；0 显示整个桌面。')}</span></p><p><strong>{t("随时回来")}</strong><span>{t(collaboration ? '房间进度由大家共享；刷新可以重新连接。公开房间从创建起在大厅展示 24 小时（500 片及以上 36 小时），中途继续拼不会延长；到期后从大厅隐藏，仍可从拼图记录回来继续。私人/单人房间自最近游玩起保留 30 天。' : '进度保存在此浏览器，刷新可以继续。换设备不会同步。')}</span></p></div></DialogContent></Dialog>
+ <AlertDialog open={reset} onOpenChange={setReset}><AlertDialogContent><AlertDialogTitle>{t("重新开始这幅拼图？")}</AlertDialogTitle><AlertDialogDescription>{t("当前这幅 ")}{t(total)}{t(" 片拼图的进度会被替换，其他拼图的进度会保留。")}</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>{t("继续当前拼图")}</AlertDialogCancel><AlertDialogAction onClick={() => { setReset(false); restart(); }}>{t("重新开始")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+ <Dialog open={complete} onOpenChange={setComplete}><DialogContent className="complete-dialog"><div className="complete-mark"><Check size={28}/></div><DialogTitle>{t("每一片，都刚刚好。")}</DialogTitle><DialogDescription>{t(isMultiplayer ? '你们一起完成了' : '你完成了')}「{t(photo.title)}」。{t(isMultiplayer ? '谢谢每一位朋友的加入。' : '把这一刻，留给自己。')}</DialogDescription><img src={imageSource} style={{ aspectRatio: state.cols / state.rows }} alt={t("你完成的拼图")}/><div className="complete-stats"><span><strong>{t(total)}</strong>{t("片拼图")}</span><span><strong>{t(duration(metrics.elapsed))}</strong>{t("专注时光")}</span></div><CompletionAchievements ids={achievements.earned}/>{collaboration&&<><CompletionJourney client={collaboration} title={photo.title} image={imageSource} pieces={total}/></>}{onNext&&!collaboration&&<button className="primary" disabled={nextBusy} onClick={()=>{setNextBusy(true);setNextError('');void onNext().catch(()=>{setNextBusy(false);setNextError('暂时无法开始下一幅');});}}><Shuffle size={17}/>{t(nextBusy?'正在开下一幅…':'换一幅，接着拼')}</button>}{nextError&&<p className="form-error" role="alert">{t(nextError)}</p>}<button className={onNext?'secondary':'primary'} disabled={nextBusy} onClick={leave}>{t("再挑一幅 ")}<ArrowRight size={17}/></button><button className="text-button" onClick={() => setComplete(false)}>{t("留在桌面欣赏")}</button></DialogContent></Dialog>
+ {!celebrating&&!complete&&<AchievementToast ids={achievements.toast} onClose={achievements.dismiss} href={achievements.href}/>}
+ <PictureDiscoveries getTable={discoveryTable} state={state} client={collaboration} ready={!loading&&!imageError} hidden={paused||help||reset||complete||celebrating||preview}/><CelebrationPreview photo={photo} open={preview} onOpenChange={setPreview} aspectRatio={state.cols / state.rows}/>{t(celebrating && <CelebrationOverlay getBoard={celebrationBoard} onFinish={finishCelebration}/>)}
+ </main>;
+}
+
+function MobileGame({ state, photo, persist, leave, collaboration, onNext, mobileStatus, onSupplies }: GameProps) {
+    const canvas = useRef<HTMLCanvasElement>(null), table = useRef<PuzzleTable | null>(null);
+    const [metrics, setMetrics] = useState({ placed: placedCount(state), elapsed: state.elapsed, zoom: 1 });
+    const [loading, setLoading] = useState(true), [imageError, setImageError] = useState(false), [attempt, setAttempt] = useState(0);
+    const [edges, setEdges] = useState(false), [more, setMore] = useState(false), [panel, setPanel] = useState<'tools' | 'members' | 'chat'>('tools');
+    const [message, setMessage] = useState('拖空白移动 · 双指缩放 · 适配看全桌'), [energyEmpty, setEnergyEmpty] = useState(false), [complete, setComplete] = useState(false);
+    const [celebrating, setCelebrating] = useState(false), [nextBusy, setNextBusy] = useState(false), [nextError, setNextError] = useState('');
+    const [theme, setTheme] = useState<TableTheme>('beige'), themeRef = useRef<TableTheme>('beige');
+    const [trayOpen,setTrayOpen] = useState(false), trayOpenRef=useRef(false);
+    trayOpenRef.current=trayOpen;
+    const [, refreshRoom] = useState(0), completionGate = useRef(new CompletionGate());
+    useEffect(()=>{try{const saved=parseTableTheme(localStorage.getItem('mobile:table-background'));setTheme(saved);themeRef.current=saved;table.current?.setTheme(saved);}catch{}},[]);
+    const getTable = useCallback(() => table.current, []), total = state.cols * state.rows, imageSource = puzzleImageSource(photo, total);
+    const fitMobile = useCallback(() => {
+        const engine = table.current;
+        if (!engine || !canvas.current) return;
+        // Keep the fitted desk above the two corner controls without reserving a DOM footer.
+        const bottom = trayOpenRef.current ? 220 : 72;
+        canvas.current.dataset.fitBottom = String(bottom);
+        engine.fit(placedCount(state) === state.cols * state.rows, { bottom });
+    }, [state]);
+    useEffect(() => {
+        let canceled = false, detach: (() => void) | undefined, viewObserver: ResizeObserver | undefined;
+        const img = new Image(); setLoading(true); setImageError(false);
+        img.onload = () => {
+            if (canceled || !canvas.current) return;
+            const engine = new PuzzleTable(canvas.current, state, img, () => {
+                if (canceled) return;
+                setMetrics({ placed: placedCount(state), elapsed: state.elapsed, zoom: table.current?.camera.z ?? 1 }); persist(state);
+            }, setMessage, { mobileFeedback: true });
+            table.current = engine; engine.setTheme(themeRef.current);
+            // Begin at a touch-friendly scale. ResizeCanvas preserves the current
+            // world center on rotation; the explicit fit tool still shows all pieces.
+            let initializedView = false;
+            viewObserver = new ResizeObserver(() => {
+                if (canceled || initializedView || engine.width <= 0 || engine.height <= 0) return;
+                const bottom=trayOpenRef.current?220:72;
+                if(canvas.current)canvas.current.dataset.fitBottom=String(bottom);
+                engine.openMobileView({bottom});
+                initializedView = true;
+            });
+            viewObserver.observe(canvas.current);
+            try { engine.setSoundPreferences(soundPreferences(localStorage.getItem(SNAP_SOUND_KEY))); } catch { /* Default sound works without storage. */ }
+            if (collaboration) detach = collaboration.attach(engine);
+            setLoading(false);
+        };
+        img.onerror = () => { if (!canceled) { setLoading(false); setImageError(true); } };
+        img.crossOrigin = 'anonymous'; img.decoding = 'async'; img.fetchPriority = 'high'; img.src = imageSource;
+        return () => { canceled = true; viewObserver?.disconnect(); img.onload = null; img.onerror = null; table.current?.destroy(); detach?.(); table.current = null; persist(state); };
+    }, [state, imageSource, persist, attempt, collaboration, fitMobile]);
+    useEffect(() => {
+        if (!collaboration) return;
+        const unsubscribe = collaboration.subscribe(() => { refreshRoom(n => n + 1); if (!collaboration.connected) setMessage(collaboration.message); });
+        const timer = window.setInterval(() => { const elapsed = collaboration.elapsedNow(); setMetrics(previous => previous.elapsed === elapsed ? previous : { ...previous, elapsed }); }, 1000);
+        return () => { unsubscribe(); clearInterval(timer); };
+    }, [collaboration]);
+    useEffect(() => {
+        if (!collaboration) return;
+        const confirmed = (event: Event) => {
+            const receipt = (event as CustomEvent<MobileContributionReceipt & { roomId?: string }>).detail;
+            if (receipt?.roomId !== collaboration.snapshot.id) return;
+            table.current?.confirmMobileContribution(receipt);
+        };
+        window.addEventListener('puzzle:successful-drop', confirmed);
+        return () => window.removeEventListener('puzzle:successful-drop', confirmed);
+    }, [collaboration]);
+    useEffect(() => {
+        const empty = () => { setEnergyEmpty(true); setMessage('体力不足，可开启礼包或使用补给'); };
+        const profile = (event: Event) => { const next = (event as CustomEvent<{ energy?: number }>).detail; if ((next?.energy ?? 0) > 0) setEnergyEmpty(false); };
+        window.addEventListener('mobile:energy-empty', empty); window.addEventListener('mobile:profile', profile);
+        return () => { window.removeEventListener('mobile:energy-empty', empty); window.removeEventListener('mobile:profile', profile); };
+    }, []);
+    useEffect(() => {
+        const detail = { ready: !loading && !imageError, pieces: total, complete: metrics.placed === total };
+        document.documentElement.dataset.puzzleGameStatus = JSON.stringify(detail);
+        window.dispatchEvent(new CustomEvent('puzzle:game-status', { detail }));
+        return () => { delete document.documentElement.dataset.puzzleGameStatus; };
+    }, [loading, imageError, total, metrics.placed]);
+    useEffect(() => {
+        if (completionGate.current.observe(metrics.placed, total, !loading && !imageError && (table.current?.width ?? 0) > 0)) {
+            setMore(false); setEdges(false); table.current?.setEdges(false); table.current?.fit(true); setCelebrating(true);
+        }
+    }, [metrics.placed, total, loading, imageError]);
+    useEffect(() => { table.current?.setPaused(more || complete || celebrating); }, [more, complete, celebrating, loading]);
+    const celebrationBoard = useCallback(() => {
+        const rect = canvas.current?.getBoundingClientRect(), camera = table.current?.camera, board = table.current?.board;
+        return rect && camera && board ? { x: rect.left + camera.x + board.x * camera.z, y: rect.top + camera.y + board.y * camera.z, width: board.width * camera.z, height: board.height * camera.z } : null;
+    }, []);
+    const finishCelebration = useCallback(() => { setCelebrating(false); setComplete(true); }, []);
+    const openMore = () => { setPanel('tools'); setMore(true); };
+    const next = async () => { if (!onNext || nextBusy) return; setNextBusy(true); setNextError(''); try { await onNext(); } catch (error) { setNextBusy(false); setNextError(error instanceof Error ? error.message : '暂时无法创建下一局'); } };
+    const connectionMessage = collaboration && !collaboration.connected ? collaboration.message : energyEmpty ? '体力不足，可开启任务礼包或使用补给' : message;
+    const result = (collaboration?.snapshot as (RoomClient['snapshot'] & {mobileResult?:MobileCompletionResult}) | undefined)?.mobileResult;
+    return <main className="mobile-game" data-table-theme={theme} data-tray-open={trayOpen}>
+        <header className="mobile-game-header">
+            <div className="mobile-game-header-main">
+                <div className="mobile-game-title-row"><button className="mobile-game-back" onClick={leave} aria-label="返回大厅"><MobileArt kind="back"/></button><MobileArt kind="piece"/><h1 title={photo.title}>{photo.title}</h1></div>
+                <div className="mobile-game-status">{mobileStatus}</div>
+            </div>
+            <div className="mobile-game-header-progress">
+                <div className="mobile-game-progress" aria-label={`已拼合${metrics.placed}片，共${total}片`}><MobileArt kind="piece"/><strong>{metrics.placed}<small>/{total}</small></strong><span className="mobile-game-progress-meter" role="progressbar" aria-valuenow={metrics.placed} aria-valuemin={0} aria-valuemax={total}><i style={{width:(metrics.placed/total*100)+'%'}}/></span></div>
+                <button className="mobile-game-members-count" aria-label={`房间成员 ${collaboration?.snapshot.members.length ?? 1}人`} onClick={() => { setPanel('members'); setMore(true); }}><MobileArt kind="person"/><span>{collaboration?.snapshot.members.length ?? 1}/8</span></button>
+                <button className="mobile-game-invite" disabled={!collaboration} onClick={()=>{setPanel('members');setMore(true);}}><MobileArt kind="invite"/><span>邀请</span></button>
+            </div>
+        </header>
+        <section className="mobile-game-board" aria-label="拼图游玩区">
+            <canvas ref={canvas} className="puzzle-canvas" tabIndex={0} aria-label={`${photo.title}，${total}片。拖动拼块，双指缩放，空白处拖动桌面。`}/>
+            {collaboration && !loading && !imageError && <RoomCursors client={collaboration} canvas={canvas} getTable={getTable} hidden={more || complete || celebrating} mobile/>}
+            {loading && <div className="mobile-game-overlay" role="status"><Puzzle size={30} className="loading-icon"/><p>正在铺开拼图…</p></div>}
+            {imageError && <div className="mobile-game-overlay"><p role="alert">图片暂时未加载成功</p><button className="primary" onClick={() => setAttempt(n => n + 1)}>重新加载</button><button className="secondary" onClick={leave}>返回大厅</button></div>}
+        </section>
+        {trayOpen && !loading && !imageError && !celebrating && !complete && <MobileTray state={state} getTable={getTable} edges={edges} onClose={()=>setTrayOpen(false)}/>}
+        <div className={"mobile-game-notice" + ((energyEmpty || (collaboration && !collaboration.connected)) ? " has-alert" : "")}><span className="mobile-game-time">{duration(metrics.elapsed)}</span><span role="status" aria-live="polite">{connectionMessage}</span></div>
+        <MobileGameTools state={state} client={collaboration} getTable={getTable} loading={loading} disabled={imageError || celebrating || complete} edges={edges} onEdges={() => { setEdges(!edges); table.current?.setEdges(!edges); }} onFit={fitMobile} onMore={openMore}/>
+        <Dialog open={more} onOpenChange={setMore}><DialogContent className="mobile-game-dialog"><DialogTitle>{panel === 'members' ? '房间成员' : panel === 'chat' ? '合作交流' : '更多'}</DialogTitle><DialogDescription className="sr-only">打开此面板时暂停你的画布操作，房间的其他玩家可以继续拼图。</DialogDescription>
+            <div className="mobile-more-tabs"><button className={panel === 'tools' ? 'active' : ''} onClick={() => setPanel('tools')}>工具</button><button className={panel === 'members' ? 'active' : ''} onClick={() => setPanel('members')}>成员</button><button className={panel === 'chat' ? 'active' : ''} disabled={!collaboration} onClick={() => setPanel('chat')}>聊天</button></div>
+            {panel === 'tools' && <div className="mobile-more-tools"><div className="mobile-more-zoom"><button aria-label="缩小" onClick={() => table.current?.zoom(1 / 1.2)}><ZoomOut size={23}/></button><output>{Math.round(metrics.zoom * 100)}%</output><button aria-label="放大" onClick={() => table.current?.zoom(1.2)}><ZoomIn size={23}/></button><button onClick={fitMobile}><MobileArt kind="fit"/>适配</button></div><button className="mobile-more-setting mobile-tray-setting" aria-pressed={trayOpen} onClick={()=>{setTrayOpen(!trayOpen);setMore(false);}}><span><strong>碎片托盘</strong><small>按需打开，点选散片定位</small></span><span className="mobile-setting-pill">{trayOpen?'已开启':'已关闭'}</span></button><div className="mobile-more-setting"><span>拼合音效</span><SoundControl getTable={getTable} loading={loading}/></div><button className="mobile-more-setting" onClick={() => { const nextTheme = theme === 'beige' ? 'dark' : 'beige'; setTheme(nextTheme); themeRef.current = nextTheme; table.current?.setTheme(nextTheme); try{localStorage.setItem('mobile:table-background',nextTheme);}catch{} }}><span>{theme === 'beige' ? '暗色桌面' : '米色桌面'}</span>{theme === 'beige' ? <Moon size={21}/> : <Sun size={21}/>}</button><p className="mobile-game-help">拖动拼块；双指缩放；拖动空白处移动桌面。</p>{onSupplies && <button className="secondary" onClick={onSupplies}>打开补给站</button>}<button className="secondary" onClick={leave}>退出房间 · 回大厅</button></div>}
+            {panel === 'members' && (collaboration ? <RoomToolbar client={collaboration} mobile/> : <p>当前为单人拼图。</p>)}
+            {panel === 'chat' && collaboration && <MobileRoomConversation client={collaboration}/>}
+        </DialogContent></Dialog>
+        <MobileCompletion open={complete} onOpenChange={setComplete} title={photo.title} imageSource={imageSource} total={total} elapsed={metrics.elapsed} result={result} onNext={onNext?()=>void next():undefined} nextBusy={nextBusy} nextError={nextError} onLeave={leave}/>
+        {celebrating && <CelebrationOverlay getBoard={celebrationBoard} onFinish={finishCelebration}/>}
+    </main>;
+}
+
+function MobileGameTools({ state, client, getTable, loading, disabled, edges, onEdges, onFit, onMore }: { state: PuzzleState; client?: RoomClient; getTable: () => PuzzleTable | null; loading: boolean; disabled: boolean; edges: boolean; onEdges: () => void; onFit: () => void; onMore: () => void }) {
+    const aid = useAssistance(state, client);
+    const [expanded, setExpanded] = useState(false);
+    const toggle = useRef<HTMLButtonElement>(null);
+    const enhanced = aid as typeof aid & { freeRemaining?: { hint: number; underlay: number }; newcomerProtected?: boolean };
+    const underlayUntil = aid.underlay?.expiresAt ?? 0, hint = aid.hint;
+    useEffect(() => { if (!loading) getTable()?.setUnderlay(disabled ? 0 : underlayUntil); }, [loading, disabled, underlayUntil, getTable]);
+    useEffect(() => { if (!loading) getTable()?.setHints(disabled ? [] : hint?.pieceIds ?? [], disabled ? 0 : hint?.expiresAt ?? 0); }, [loading, disabled, hint, getTable]);
+    useEffect(() => {
+        if (!expanded) return;
+        const escape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape' || document.querySelector('[role="dialog"],dialog[open]')) return;
+            setExpanded(false); toggle.current?.focus();
+        };
+        window.addEventListener('keydown', escape);
+        return () => window.removeEventListener('keydown', escape);
+    }, [expanded]);
+    useEffect(() => { if (disabled) setExpanded(false); }, [disabled]);
+    const tool = (kind: 'hint' | 'underlay') => {
+        const active = activeAssistance(aid.grants, kind, aid.now), title = kind === 'hint' ? '提示' : '底图';
+        const free = enhanced.freeRemaining?.[kind] ?? Math.max(0, 2 - aid.grants.filter(grant => grant.kind === kind).length);
+        const counter = active ? `${Math.max(0, Math.ceil((active.expiresAt - aid.now) / 1000))}秒` : !aid.ready ? '读取中' : aid.busy ? '准备中' : enhanced.newcomerProtected ? '新手免费' : free > 0 ? `免费${free}次` : '广告';
+        const badge = active ? 'is-active' : !aid.ready || aid.busy ? 'is-pending' : !enhanced.newcomerProtected && free === 0 ? 'is-ad' : 'is-free';
+        return <button disabled={loading || disabled || !aid.ready || aid.busy || !!active} aria-busy={aid.busy} className={active ? 'active' : ''} aria-label={`${title}，${counter === '广告' ? '看广告解锁' : counter}`} onClick={() => void aid.activate(kind)}><span className="mobile-tool-symbol"><MobileArt kind={kind}/></span><span className="mobile-tool-label">{title}</span><small className={'mobile-tool-badge ' + badge}>{counter}</small></button>;
+    };
+    return <><aside className={'mobile-tool-dock' + (expanded ? ' is-open' : '')} aria-label="拼图工具"><div className="mobile-game-tools" id="mobile-game-tool-panel" hidden={!expanded}><button className={edges ? 'active' : ''} aria-pressed={edges} disabled={loading || disabled} onClick={onEdges}><span className="mobile-tool-symbol"><MobileArt kind="edge"/></span><span className="mobile-tool-label">边缘</span></button>{tool('hint')}{tool('underlay')}<button disabled={loading} onClick={() => { setExpanded(false); onFit(); }}><span className="mobile-tool-symbol"><MobileArt kind="fit"/></span><span className="mobile-tool-label">适配</span></button><button onClick={() => { setExpanded(false); onMore(); }}><span className="mobile-tool-symbol"><MoreHorizontal size={26}/></span><span className="mobile-tool-label">更多</span></button></div><button ref={toggle} className="mobile-tool-toggle" aria-label={expanded ? '收起工具' : '展开工具'} aria-expanded={expanded} aria-controls="mobile-game-tool-panel" onClick={() => setExpanded(value => !value)}>{expanded ? <X size={26}/> : <MobileArt kind="tools"/>}</button></aside>{aid.error && <div className="mobile-assistance-notice" role="alert"><span>{aid.error}</span><button onClick={() => void aid.reload()}>重试</button></div>}</>;
+}
+
+const MOBILE_CHAT_PHRASES = ['大家好！', '我来找边缘', '这块放这里', '一起加油！', '谢谢你！', '稍等一下'];
+function MobileRoomConversation({ client }: { client: RoomClient }) {
+    const [state, setState] = useState<ChatState>({ messages: [], loaded: false, error: '', sending: false }), [error, setError] = useState('');
+    const channel = useRef<ChatClient | null>(null), list = useRef<HTMLDivElement>(null);
+    useEffect(() => { const chat = new ChatClient(client.snapshot.id, client.ticket.token, setState, () => client.connected, () => document.hidden); channel.current = chat; chat.start(); chat.setOpen(true); return () => { channel.current = null; chat.stop(); }; }, [client]);
+    useEffect(() => { if (list.current) list.current.scrollTop = list.current.scrollHeight; }, [state.messages]);
+    const send = async (text: string) => { setError(''); try { await channel.current?.send(text); } catch (failure) { setError(failure instanceof Error ? failure.message : '暂时未发送，请重试'); } };
+    return <section className="mobile-room-conversation"><div className="mobile-chat-feed" ref={list} role="log" aria-label="房间消息" aria-live="polite">{!state.messages.length && <p>{state.loaded ? '发一句问候吧' : '正在连接聊天…'}</p>}{state.messages.map(item => { const member = client.snapshot.members.find(person => person.id === item.playerId) as { level?: number } | undefined; return <div className={item.playerId === client.ticket.playerId ? 'is-own' : ''} key={item.id}><b>{item.name}{typeof member?.level === 'number' && <small> · Lv.{member.level}</small>}</b><p>{item.text}</p></div>; })}</div><div className="mobile-chat-phrases" aria-label="合作短语">{MOBILE_CHAT_PHRASES.map(text => <button key={text} disabled={state.sending || !client.connected} onClick={() => void send(text)}><Send size={13}/>{text}</button>)}</div>{(state.error || error) && <p className="form-error" role="alert">{error || state.error}</p>}</section>;
+}

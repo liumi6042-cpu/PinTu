@@ -1,0 +1,78 @@
+{
+  "id": "cloud-dragon-ascension-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-6524fbf8-2be5-48ad-95cc-30580a46a12f.png",
+    "originalSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：云海群峰、古老石柱、执杖旅人与巨大神龙构成东方幻想场景。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+    "optimized": {
+      "src": "/puzzles/cloud-dragon-ascension-v1-optimized-a04f6e3e9043.webp",
+      "sha256": "a04f6e3e9043b5041e960b83d67b38ef021f6b96633edc4244e936fbb3fd12d6",
+      "bytes": 294134,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "inputSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cloud-dragon-ascension-v1-thumbnail-5a681ad1f67b.webp",
+      "sha256": "5a681ad1f67b6edf5aa971949c37783fd86c17bca54df48838f6cda0c2906f61",
+      "bytes": 32130,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "inputSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cloud-dragon-ascension-v1.webp",
+    "sha256": "e7a45e3dc3608ad93ba5e91d1b4fa60a0ba22dcc31a347c8d676c3495ca3d9aa",
+    "bytes": 605610,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663"
+  }
+}

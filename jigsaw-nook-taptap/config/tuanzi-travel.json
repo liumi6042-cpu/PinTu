@@ -1,0 +1,509 @@
+{
+ "schema": "jigsaw-tuanzi/v1",
+ "unlockLevelId": "ch1-2",
+ "regions": [
+  {
+   "id": "water",
+   "title": "水边"
+  },
+  {
+   "id": "street",
+   "title": "街巷"
+  },
+  {
+   "id": "wild",
+   "title": "山野"
+  },
+  {
+   "id": "town",
+   "title": "小镇"
+  }
+ ],
+ "townShare": 0.5,
+ "foods": [
+  {
+   "id": "onigiri",
+   "title": "饭团",
+   "price": 3,
+   "hours": [
+    3,
+    6
+   ],
+   "cards": [
+    1,
+    1
+   ],
+   "pieces": 24,
+   "souvenirChance": 0.3
+  },
+  {
+   "id": "bento",
+   "title": "鱼肉便当",
+   "price": 8,
+   "hours": [
+    6,
+    12
+   ],
+   "cards": [
+    1,
+    2
+   ],
+   "pieces": 35,
+   "souvenirChance": 0.3
+  },
+  {
+   "id": "deluxe",
+   "title": "三层豪华便当",
+   "price": 15,
+   "hours": [
+    10,
+    20
+   ],
+   "cards": [
+    2,
+    2
+   ],
+   "pieces": 40,
+   "souvenirChance": 0.5
+  }
+ ],
+ "tools": [
+  {
+   "id": "umbrella",
+   "title": "小雨伞",
+   "price": 6,
+   "region": "water"
+  },
+  {
+   "id": "ticket",
+   "title": "火车票",
+   "price": 8,
+   "region": "street"
+  },
+  {
+   "id": "tent",
+   "title": "小帐篷",
+   "price": 8,
+   "region": "wild"
+  }
+ ],
+ "charms": [
+  {
+   "id": "bell",
+   "title": "招财铃铛",
+   "price": 6,
+   "effect": "rare-double"
+  },
+  {
+   "id": "knot",
+   "title": "红绳平安结",
+   "price": 6,
+   "effect": "souvenir-sure"
+  }
+ ],
+ "fish": {
+  "daily": 4,
+  "level": 2,
+  "levelDailyCap": 5,
+  "rooms": {
+   "48": 1,
+   "108": 2,
+   "300": 4,
+   "500": 6
+  },
+  "postcard": 2,
+  "sill": {
+   "everyMinutes": 180,
+   "amount": 2,
+   "stack": 2
+  },
+  "welcome": 10,
+  "welcomeItem": "onigiri",
+  "duplicate": 3
+ },
+ "departure": {
+  "idleMinutes": 10,
+  "delayMinutes": [
+   5,
+   30
+  ]
+ },
+ "firstTrip": {
+  "minutes": 20,
+  "cardId": "first-trip",
+  "region": "town"
+ },
+ "firstCard": {
+  "afterMinutes": 60,
+  "beforeShare": 0.6
+ },
+ "nightCardBeijingHour": 7,
+ "rareChance": 0.1,
+ "collectedWeight": 0.2,
+ "storyAlbumPrefix": "shiguang-",
+ "postcardPieces": [
+  24,
+  35,
+  40
+ ],
+ "stickers": [
+  {
+   "id": "wave",
+   "title": "挥手"
+  },
+  {
+   "id": "nap",
+   "title": "打盹"
+  },
+  {
+   "id": "fish",
+   "title": "叼小鱼干"
+  },
+  {
+   "id": "paw",
+   "title": "按爪印"
+  },
+  {
+   "id": "heart",
+   "title": "比心"
+  },
+  {
+   "id": "hop",
+   "title": "跳起来"
+  }
+ ],
+ "places": {
+  "water": [
+   "雾湖码头",
+   "蓝湾灯塔",
+   "贝壳沙滩",
+   "芦苇渡口",
+   "小溪石桥",
+   "海风车站",
+   "月牙泉",
+   "渔火港",
+   "白鹭滩",
+   "柳岸"
+  ],
+  "street": [
+   "早餐街",
+   "旧书巷",
+   "铜铃坡",
+   "灯笼胡同",
+   "风铃街口",
+   "钟楼广场",
+   "糖果小路",
+   "夜市拐角",
+   "裁缝铺门口",
+   "电车站台"
+  ],
+  "wild": [
+   "松果林",
+   "星空营地",
+   "云杉坡",
+   "野花草甸",
+   "瀑布山道",
+   "蘑菇谷",
+   "雾山垭口",
+   "萤火溪谷",
+   "石阶小庙",
+   "高山牧场"
+  ],
+  "town": [
+   "拾光镇车站",
+   "镇口大树",
+   "邮局台阶",
+   "面包房",
+   "花店橱窗",
+   "小学操场",
+   "钟表铺",
+   "旧水塔",
+   "菜市场",
+   "河边长椅"
+  ]
+ },
+ "lines": {
+  "water": [
+   "这里的风有点咸，我的胡子被吹得歪歪的。",
+   "水面亮晶晶的，我差点扑上去捉月亮。",
+   "有只鸭子跟了我一路，它好像也想要小鱼干。",
+   "我把爪子伸进水里，凉得我打了个喷嚏。",
+   "船在晃，我也在晃，今天走路都是摇的。",
+   "雾太大了，我只看得见自己的鼻子尖。",
+   "捡到一颗会唱歌的贝壳，回去唱给你听。",
+   "坐在岸边等日落，等着等着就睡着了。",
+   "钓鱼的爷爷分了我一小块饭团，好香。",
+   "浪一来我就跑，浪一走我又回去，玩了一下午。"
+  ],
+  "street": [
+   "闻着香味走了三条街，原来是刚出锅的包子。",
+   "有家店门口的铃铛和奶奶店里的一模一样。",
+   "下雨了，我在屋檐下数路过的伞，数到了四十二。",
+   "旧书摊的老板让我在书堆上睡了一个午觉。",
+   "路灯一盏一盏亮起来，像在给我指路。",
+   "电车叮叮地开过去，我追了一小段。",
+   "糖画师傅给我画了一条鱼，可惜不能吃。",
+   "巷子太窄了，我和一只大橘猫谁也不让谁。",
+   "夜市好热闹，我的耳朵一直转来转去。",
+   "钟楼敲了十二下，我数着数着就迷糊了。"
+  ],
+  "wild": [
+   "山上的星星好多，比奶奶店里的拼图块还多。",
+   "松鼠和我抢松果，最后我们一人一半。",
+   "帐篷外面有萤火虫，我一晚上都在看它们。",
+   "爬到最高的石头上，风把我的领巾吹起来了。",
+   "草地软软的，我在上面打了好几个滚。",
+   "瀑布的声音好大，我说话都要用喊的。",
+   "踩到一朵蘑菇，它没生气，我也没生气。",
+   "早上的雾把我变成了一团白白的猫。",
+   "在小溪边洗了爪子，石头上留下一串脚印。",
+   "牛在吃草，我在吃饭团，我们都很满足。"
+  ],
+  "town": [
+   "车站的长椅晒得暖暖的，我坐了整整一下午。",
+   "面包房的阿姨给了我一块面包边，脆脆的。",
+   "邮局的台阶上，我替你看了好一会儿天。",
+   "花店的花太香了，我连打了三个喷嚏。",
+   "操场上的小朋友跟我玩了丢沙包。",
+   "钟表铺里滴答滴答的，我差点跟着点头。",
+   "镇口的大树下好凉快，我就不想走了。",
+   "菜市场的鱼摊大叔冲我眨了眨眼。",
+   "河边有人在钓鱼，我陪他等了很久很久。",
+   "绕了一大圈，发现最想念的还是奶奶的小店。"
+  ]
+ },
+ "souvenirs": [
+  {
+   "id": "seashell",
+   "title": "小贝壳",
+   "region": "water"
+  },
+  {
+   "id": "bottle-letter",
+   "title": "玻璃瓶信",
+   "region": "water"
+  },
+  {
+   "id": "wood-boat",
+   "title": "小木船",
+   "region": "water"
+  },
+  {
+   "id": "starfish",
+   "title": "海星",
+   "region": "water"
+  },
+  {
+   "id": "brass-bell",
+   "title": "铜铃铛",
+   "region": "street"
+  },
+  {
+   "id": "old-ticket",
+   "title": "旧车票",
+   "region": "street"
+  },
+  {
+   "id": "sugar-fish",
+   "title": "糖画小鱼",
+   "region": "street"
+  },
+  {
+   "id": "paper-lantern",
+   "title": "纸灯笼",
+   "region": "street"
+  },
+  {
+   "id": "pinecone",
+   "title": "松果",
+   "region": "wild"
+  },
+  {
+   "id": "round-pebble",
+   "title": "圆石头",
+   "region": "wild"
+  },
+  {
+   "id": "pressed-flower",
+   "title": "野花标本",
+   "region": "wild"
+  },
+  {
+   "id": "feather",
+   "title": "羽毛",
+   "region": "wild"
+  },
+  {
+   "id": "station-badge",
+   "title": "车站徽章",
+   "region": "town"
+  },
+  {
+   "id": "little-bread",
+   "title": "小面包",
+   "region": "town"
+  },
+  {
+   "id": "stamp-sheet",
+   "title": "一枚邮票",
+   "region": "town"
+  },
+  {
+   "id": "key-charm",
+   "title": "钥匙扣",
+   "region": "town"
+  }
+ ],
+ "special": [
+  {
+   "id": "first-trip",
+   "title": "第一次出门",
+   "region": "town",
+   "src": "/puzzles/tuanzi-card-first-trip-card-eda5e430694c.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-first-trip-thumb-47bc0df352ae.webp",
+   "width": 1536,
+   "height": 1024,
+   "place": "奶奶的小店门口",
+   "line": "我出门啦！第一张明信片给你，晚上见。"
+  }
+ ],
+ "rare": [
+  {
+   "id": "misty-pier",
+   "title": "雾湖小码头",
+   "region": "water",
+   "src": "/puzzles/tuanzi-card-misty-pier-card-db8cbce15c6a.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-misty-pier-thumb-ad47ccb4694d.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "lighthouse-dusk",
+   "title": "灯塔下的晚霞",
+   "region": "water",
+   "src": "/puzzles/tuanzi-card-lighthouse-dusk-card-a87717ccd679.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-lighthouse-dusk-thumb-fba7042095f2.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "shell-beach",
+   "title": "沙滩上的脚印",
+   "region": "water",
+   "src": "/puzzles/tuanzi-card-shell-beach-card-7f1fab7ee05a.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-shell-beach-thumb-cbdaa7807075.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "steamer-stall",
+   "title": "早餐街的蒸笼",
+   "region": "street",
+   "src": "/puzzles/tuanzi-card-steamer-stall-card-eba532d3a19c.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-steamer-stall-thumb-c2336c869547.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "rainy-books",
+   "title": "雨夜的旧书巷",
+   "region": "street",
+   "src": "/puzzles/tuanzi-card-rainy-books-card-7cc7d58bc87d.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-rainy-books-thumb-ace30d32d9ca.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "clock-tower",
+   "title": "钟楼上的鸽子",
+   "region": "street",
+   "src": "/puzzles/tuanzi-card-clock-tower-card-dd1ce20f9bb9.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-clock-tower-thumb-de564322e322.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "starry-tent",
+   "title": "星空帐篷",
+   "region": "wild",
+   "src": "/puzzles/tuanzi-card-starry-tent-card-2cee2f1ba097.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-starry-tent-thumb-f06d1bd44eaf.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "firefly-creek",
+   "title": "萤火溪谷",
+   "region": "wild",
+   "src": "/puzzles/tuanzi-card-firefly-creek-card-e507469b5bcb.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-firefly-creek-thumb-cd2e40994dae.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "snowy-spruce",
+   "title": "云杉坡的初雪",
+   "region": "wild",
+   "src": "/puzzles/tuanzi-card-snowy-spruce-card-87d92c4a0673.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-snowy-spruce-thumb-96c267632a1d.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "station-platform",
+   "title": "拾光镇的月台",
+   "region": "town",
+   "src": "/puzzles/tuanzi-card-station-platform-card-19e2cf4f8eeb.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-station-platform-thumb-2f0a5b070b5f.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "bakery-morning",
+   "title": "面包房的清晨",
+   "region": "town",
+   "src": "/puzzles/tuanzi-card-bakery-morning-card-d90a5b8e508d.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-bakery-morning-thumb-b1639796a8af.webp",
+   "width": 1536,
+   "height": 1024
+  },
+  {
+   "id": "shop-windowsill",
+   "title": "奶奶小店的窗台",
+   "region": "town",
+   "src": "/puzzles/tuanzi-card-shop-windowsill-card-b83b860ecd74.webp",
+   "thumbSrc": "/puzzles/tuanzi-card-shop-windowsill-thumb-af65e0f0a25f.webp",
+   "width": 1536,
+   "height": 1024
+  }
+ ],
+ "rewards": {
+  "total": [
+   {
+    "at": 5,
+    "fish": 20
+   },
+   {
+    "at": 15,
+    "decorationId": "postman-tuanzi"
+   },
+   {
+    "at": 30,
+    "itemId": "deco-travel-map",
+    "title": "旅行地图（挂在小窝墙上）"
+   }
+  ],
+  "region": {
+   "at": 10,
+   "itemPrefix": "stamp-",
+   "title": "{region}邮票"
+  },
+  "rare": {
+   "itemIds": [
+    "frame-rare",
+    "title-tuanzi-friend"
+   ],
+   "title": "稀有相框 + 称号「团子的知己」"
+  }
+ }
+}

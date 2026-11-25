@@ -1,0 +1,7 @@
+import { currentPlayer,currentGuest } from '@/lib/player-identity';
+import { managedRooms } from '@/lib/lobby-store';
+import { json,failure } from '@/lib/room-store';
+export async function GET(request:Request){try{
+  const player=await currentPlayer(request),guest=await currentGuest(request),owners=[...new Set([player?.id,guest?.id].filter((id):id is string=>!!id))];
+  return json({rooms:(await Promise.all(owners.map(id=>managedRooms(id)))).flat().sort((a,b)=>(b.lastPlayedAt||0)-(a.lastPlayedAt||0))});
+}catch(error){return failure(error);}}

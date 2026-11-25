@@ -1,0 +1,80 @@
+{
+  "id": "orbital-market-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "cca7890e3f59778b",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "cca7890e3f59778b",
+    "originalSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 3 张原图预览：太空港里的面馆、奇妙宠物与飞船维修铺。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+    "optimized": {
+      "src": "/puzzles/orbital-market-v1-optimized-35781554d209.webp",
+      "sha256": "35781554d209fd37d1bb624b2df0ad0a856544eb7f422fd07891c0bddd2587a9",
+      "bytes": 386710,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "inputSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/orbital-market-v1-thumbnail-c546b8c64fac.webp",
+      "sha256": "c546b8c64facc2a2d2457e7304ef38fd5b8ad3da5db03aa09ad4d86ee3a72b69",
+      "bytes": 66292,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "inputSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/orbital-market-v1.webp",
+    "sha256": "cdd791b8e785e222a5175937c6d757f258f19a861666aa82650a83e4e79cbc2c",
+    "bytes": 654286,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241"
+  }
+}

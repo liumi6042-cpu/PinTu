@@ -1,0 +1,107 @@
+{
+  "id": "cel-sunset-train-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/cel-sunset-train-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "user-provided-style-reference",
+        "path": "content/artwork/painted-cel-20260914/style-references/cel-reference.png",
+        "sha256": "ff3f4eaf61cd131ac538996baa5e6ae8798f2d1cb3812d246feb3f8e9c9ca503",
+        "purpose": "rendering-style-only",
+        "authorization": "user-request-2026-09-14",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "content/artwork/painted-cel-20260914/style-references/cel-reference.webp",
+          "sha256": "6536cce02ac9af0edd0526900e3df39ae808228f0231622f06214d569829a348",
+          "bytes": 73502,
+          "width": 871,
+          "height": 520
+        }
+      }
+    ],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-b7b3b65e-2129-49e1-8830-76223c948b0a.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/cel-sunset-train-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+    "optimized": {
+      "src": "/puzzles/cel-sunset-train-v1-optimized-a9c3d13c5c3c.webp",
+      "sha256": "a9c3d13c5c3cb883ddb5c15e2922401371d6d72bed6d6fd5f9bb19762a8deb15",
+      "bytes": 99896,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "inputSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-sunset-train-v1-thumbnail-9a31db7a41a0.webp",
+      "sha256": "9a31db7a41a0d07393b6020c89c751d87ed6e3a767bbc65ac8f8b93fe8425f9d",
+      "bytes": 15974,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "inputSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cel-sunset-train-v1.webp",
+    "sha256": "f308498b8dbc981dd9628b10191940e7b6d7ee3286cdaab7af9866fc1fd74f26",
+    "bytes": 238906,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "web": {
+    "id": "web",
+    "gameName": "拼图小窝",
+    "apiBase": "http://127.0.0.1:3223/h5",
+    "assetBase": "http://127.0.0.1:3223/h5/assets",
+    "gameBase": "http://127.0.0.1:3223/",
+    "rewardedAdUnitId": "",
+    "development": true
+  },
+  "wechat": {
+    "id": "wechat",
+    "gameName": "拼图小窝",
+    "appId": "wx8d8511fdd7dd5c7e",
+    "apiBase": "https://jigsawnook.online/h5-mobile-v3",
+    "assetBase": "https://jigsawnook.online/h5-mobile-v3/assets",
+    "rewardedAdUnitId": "",
+    "development": false,
+    "nativeSocialEnabled": false
+  },
+  "taptap": {
+    "id": "taptap",
+    "gameName": "拼图小窝",
+    "appId": "963283",
+    "apiBase": "https://jigsawnook.online/h5-mobile-v3",
+    "assetBase": "https://jigsawnook.online/h5-mobile-v3/assets",
+    "gameBase": "https://jigsawnook.online/taptap-mobile-v3/",
+    "development": true
+  }
+}

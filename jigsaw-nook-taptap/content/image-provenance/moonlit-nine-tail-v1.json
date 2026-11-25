@@ -1,0 +1,78 @@
+{
+  "id": "moonlit-nine-tail-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-1721808e-8789-482a-a29e-620ff9bdb789.png",
+    "originalSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：白发九尾狐少女手提花灯，背景为蓝色夜幕、竹影与暖色灯笼。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
+    "optimized": {
+      "src": "/puzzles/moonlit-nine-tail-v1-optimized-341a524e5383.webp",
+      "sha256": "341a524e538317600ff670b7a07163fc4656c88dde9e70174c45bd97700cd82c",
+      "bytes": 112914,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
+      "inputSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/moonlit-nine-tail-v1-thumbnail-13e4e56aadf1.webp",
+      "sha256": "13e4e56aadf12feb1019221c7cf188007fe1e7c7d5db7767bff201db49de8df2",
+      "bytes": 19996,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
+      "inputSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/moonlit-nine-tail-v1.webp",
+    "sha256": "95a0493ebcd5801a47cffec61acaf356ea4b3b6e7af37181ceeb205271774051",
+    "bytes": 256304,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "4eeec0fe7e5911c1440e34198ffec20ce974030bf0d0e77219c19b59fc9d6f25"
+  }
+}

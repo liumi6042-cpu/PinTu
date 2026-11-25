@@ -1,0 +1,90 @@
+{
+  "id": "painted-tidal-encounter-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Previous built-in imagegen tool result and saved preview metadata",
+    "promptPath": "content/image-prompts/painted-tidal-encounter-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-2a91c677-5e36-4d53-8532-3142226bf9c7.png",
+    "sourceMetadata": "content/artwork/painted-scenes-20260914/painted-tidal-encounter-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024, no upscaling or compositing; new games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User explicitly requested publication of the four preview images. Inspected primary faces, hands, animal anatomy and distinct compositions.",
+      "No reference-image inputs: web research informed new textual descriptions of subjects and environments. No website image pixels are used in this asset."
+    ],
+    "scope": "Visual review and provenance are not a guarantee of exclusive rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
+    "optimized": {
+      "src": "/puzzles/painted-tidal-encounter-v1-optimized-776080a88787.webp",
+      "sha256": "776080a88787a96f2960aa2cb762fd8e402c4b18ec2f2dcc86f27c13dc7ea1c7",
+      "bytes": 212746,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
+      "inputSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-tidal-encounter-v1-thumbnail-439aa30e36db.webp",
+      "sha256": "439aa30e36db41aee0c90c744763fb16fcf3e62666f5da162aaf6ec0bf52ffda",
+      "bytes": 29710,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
+      "inputSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/painted-tidal-encounter-v1.webp",
+    "sha256": "7235951fb855714fd3ee86e06f5a088f84a349155d09942a7b8b1edc606cbd20",
+    "bytes": 481420,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "719a9cdd381e742ab698b0783bb0eb8922fd64a59263f2917667443834333a0f"
+  }
+}

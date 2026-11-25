@@ -1,0 +1,91 @@
+{
+  "id": "sailboat-bay",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/sailboat-bay.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-2215-7932-b966-9a5070e03827\\exec-85928b4e-c0e8-4fec-84f4-4688f30c8197.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-a.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: one red sailboat with cream sails in turquoise bay; coast forms a broad sweeping curve, rounded hills and cloud provide clear upper landmarks. Water includes readable medium broad painted ripples; no busy tiny object clusters. Image is somewhat more naturalistic than flat editorial but clear and substantially simpler than dense prior scenes. No visible text, logos, watermarks, frames or puzzle seams.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+    "optimized": {
+      "src": "/puzzles/sailboat-bay-optimized-9eee6b548cd9.webp",
+      "sha256": "9eee6b548cd9de35327bcc2bc8a5138d43035e2bdbd5f8d7e9a20b2883307349",
+      "bytes": 107234,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "inputSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/sailboat-bay-thumbnail-ce2dad0e62c8.webp",
+      "sha256": "ce2dad0e62c8c6dce7e344ddcba30e17057b6c0bea25d40ba2be44ab7be9edf8",
+      "bytes": 21658,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "inputSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sailboat-bay.webp",
+    "sha256": "582318c0a6b1e25c8341b18803b2a38c1f83c9732036d3220edf5f7137a7060b",
+    "bytes": 251296,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445"
+  }
+}

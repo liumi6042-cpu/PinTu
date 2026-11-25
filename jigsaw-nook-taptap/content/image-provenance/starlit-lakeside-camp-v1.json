@@ -1,0 +1,78 @@
+{
+  "id": "starlit-lakeside-camp-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-27",
+    "originalFile": "codex-clipboard-29b66fb2-0f82-455e-80a2-877d3784f0ec.png",
+    "originalSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这四张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-27"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-27",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：银河倒映湖面，房车与篝火旁的小狗安然入睡。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+    "optimized": {
+      "src": "/puzzles/starlit-lakeside-camp-v1-optimized-10a1018bcd9a.webp",
+      "sha256": "10a1018bcd9aa4f19de22a952f92374a5c356594a36fb01f35f98be1b402cf38",
+      "bytes": 329084,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "inputSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/starlit-lakeside-camp-v1-thumbnail-5a54e8e14c2e.webp",
+      "sha256": "5a54e8e14c2ef91caab557809f4213e13c93721730faf8be23faefae6f097958",
+      "bytes": 33038,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "inputSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/starlit-lakeside-camp-v1.webp",
+    "sha256": "4b24684c550d988e9a8c9e0c975f215b24dfe24c8ce4bc96a3576c43d86199e7",
+    "bytes": 637492,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da"
+  }
+}
