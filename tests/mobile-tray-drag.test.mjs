@@ -120,7 +120,7 @@ test('a refused claim springs the group back to its spot and restores the tray; 
  assert.ok(board.trayLayout().r.h>TRAY_STRIP_PX);up(board,[],[{...lifted,y:lifted.y-60}]);await turn();
  assert.deepEqual(events,[['claim',group.id]],'nothing is dropped after the refusal');
  network.canAcquire=()=>false;const second=pullOut(board,1);
- assert.equal(notices.at(-1),'这组拼块还在确认位置，请稍候');assert.deepEqual({dx:groupOf(board,second.group.id).dx,dy:groupOf(board,second.group.id).dy},second.origin);
+ assert.equal(notices.at(-1),'正在同步拼块位置，请稍候');assert.deepEqual({dx:groupOf(board,second.group.id).dx,dy:groupOf(board,second.group.id).dy},second.origin);
  assert.equal(events.length,1);board.destroy();
 });
 
