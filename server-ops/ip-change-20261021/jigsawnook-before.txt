@@ -1,0 +1,1049 @@
+- complementary:
+  - link "Cloudflare home":
+    - /url: /
+  - button "Switch Account":
+    - generic "Devourgod@gmail.com's Account"
+  - navigation:
+    - button:
+      - generic: Quick search...
+      - generic: Ctrl K
+    - list:
+      - link:
+        - /url: /f6372d9033756072d6127252df565368/home
+        - generic: Account home
+      - button:
+        - generic: Recents
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/tarotquill.online/dns/records
+          - generic: Records
+          - generic: tarotquill.online
+          - generic: /
+          - generic: DNS
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/fusebeads.online/dns/records
+          - generic: Records
+          - generic: fusebeads.online
+          - generic: /
+          - generic: DNS
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/dns/records
+          - generic: Records
+          - generic: jigsawnook.online
+          - generic: /
+          - generic: DNS
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online
+          - generic: jigsawnook.online
+          - generic: Domains
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/fusebeads.online
+          - generic: fusebeads.online
+          - generic: Domains
+        - button:
+      - button:
+        - generic: Domains
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/domains/overview
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/domains/registrations
+          - generic: Registrations
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/domains/transfers
+          - generic: Transfers
+      - button:
+        - generic: Observability
+        - generic: New
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/observability/logs
+          - generic: Logs
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/traces
+          - generic: Traces
+          - generic: Beta
+        - button:
+          - generic: Analytics
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/analytics
+            - generic: Account analytics
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/web-analytics
+            - generic: Web analytics
+        - button:
+          - generic: Export
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/logs
+            - generic: Logpush
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/observability/destinations
+            - generic: OpenTelemetry
+        - button:
+          - generic: Alerts
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/notifications
+            - generic: Overview
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/notifications/destinations
+            - generic: Destinations
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/notifications/silences
+            - generic: Silences
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/dashboards
+          - generic: Dashboards
+    - generic: Build
+    - list:
+      - button:
+        - generic: Compute
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers-and-pages
+          - generic: Workers & Pages
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/observability
+          - generic: Observability
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers-for-platforms
+          - generic: Workers for Platforms
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/containers
+          - generic: Containers
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/durable-objects
+          - generic: Durable Objects
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/queues
+          - generic: Queues
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/workflows
+          - generic: Workflows
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/browser-run
+          - generic: Browser Run
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/vpc
+          - generic: VPC
+          - generic: Beta
+        - button:
+          - generic: Email Service
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/email-service/sending
+            - generic: Email Sending
+            - generic: Beta
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/email-service/routing
+            - generic: Email Routing
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/plans
+          - generic: Workers plans
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/flagship
+          - generic: Flagship
+          - generic: Beta
+      - button:
+        - generic: AI
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/ai/models
+          - generic: Models
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/ai/workers-ai
+          - generic: Workers AI
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/ai/ai-gateway
+          - generic: AI Gateway
+        - link:
+          - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/ai-controls/mcp-server-portal
+          - generic: MCP Portals
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/ai/vectorize
+          - generic: Vectorize
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/ai/ai-search
+          - generic: AI Search
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/agents
+          - generic: Agent tracing
+      - button:
+        - generic: Storage & databases
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/r2/overview
+          - generic: R2 Object Storage
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/hyperdrive
+          - generic: Postgres & MySQL (Hyperdrive)
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/kv/namespaces
+          - generic: Workers KV
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/d1
+          - generic: D1 SQLite Database
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/workers/analytics-engine
+          - generic: Analytics Engine
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/data-catalog
+          - generic: Basin Catalog
+        - button:
+          - generic: Basin Pipelines
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/pipelines/overview
+            - generic: Pipelines
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/k2
+          - generic: K2 Streams
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/secrets-store
+          - generic: Secrets Store
+          - generic: New
+      - button:
+        - generic: Images & Stream
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/media/transformations
+          - generic: Transformations
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/images/hosted
+          - generic: Hosted images
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/stream/videos
+          - generic: Hosted videos
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/stream/inputs
+          - generic: Live inputs
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/stream/analytics
+          - generic: Stream analytics
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/media/plans
+          - generic: Plans
+      - button:
+        - generic: Realtime
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/realtime/kit
+          - generic: RealtimeKit
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/realtime/turn
+          - generic: TURN Server
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/realtime/sfu
+          - generic: Serverless SFU
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/realtime/moq
+          - generic: MoQ Relay
+          - generic: Beta
+    - generic: Protect & connect
+    - list:
+      - button:
+        - generic: Application security
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/security-center
+          - generic: Security insights
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/application-security/waf
+          - generic: WAF
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/application-security/botbase
+          - generic: BotBase
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/security-center/inventory
+          - generic: Infrastructure
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/turnstile
+          - generic: Turnstile
+      - button:
+        - generic: Zero Trust
+      - list:
+        - link:
+          - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/overview
+          - generic: Overview
+        - button:
+          - generic: Insights & Logs
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/insights/overview
+            - generic: Overview
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/insights/dashboards
+            - generic: Dashboards
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/insights/logs
+            - generic: Logs
+        - button:
+          - generic: Team & Resources
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/team-resources/application-library
+            - generic: Application library
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/team-resources/devices
+            - generic: Devices
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/team-resources/users
+            - generic: Users
+        - button:
+          - generic: Access controls
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/overview
+            - generic: Overview
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/apps
+            - generic: Applications
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/policies
+            - generic: Policies
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/ai-controls
+            - generic: MCP Portals
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/targets
+            - generic: Targets
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/service-credentials
+            - generic: Service credentials
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/access-controls/settings
+            - generic: Access settings
+        - button:
+          - generic: Traffic controls
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/traffic-controls/overview
+            - generic: Overview
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/traffic-controls/resolvers-proxies
+            - generic: Resolvers & Proxies
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/traffic-controls/policies
+            - generic: Firewall policies
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/traffic-controls/resolver-policies
+            - generic: Resolver policies
+            - generic: New
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/traffic-controls/egress-policies
+            - generic: Egress policies
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/traffic-controls/traffic-settings
+            - generic: Traffic settings
+        - button:
+          - generic: Data loss prevention
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/dlp/overview
+            - generic: Overview
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/dlp/profiles
+            - generic: Profiles
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/dlp/data-classification
+            - generic: Data classification
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/dlp/validators
+            - generic: Validators
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/dlp/test-scan
+            - generic: Test scan
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/dlp/settings
+            - generic: DLP settings
+        - button:
+          - generic: Cloud Workload Security
+          - generic: Beta
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/deployments
+            - generic: Deployments
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/policy-sets
+            - generic: Policy sets
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/workloads
+            - generic: Workloads
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/policies
+            - generic: Policies
+          - button:
+            - generic: Policy reference
+          - list:
+            - link:
+              - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/rego-metadata
+              - generic: Rego metadata
+            - link:
+              - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/rego-modules
+              - generic: Rego modules
+            - link:
+              - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/tenant-structures
+              - generic: Tenant structures
+          - button:
+            - generic: Traffic scope
+          - list:
+            - link:
+              - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/credentials
+              - generic: Credentials
+            - link:
+              - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-workload-security/domain-acls
+              - generic: Domain ACLs
+        - button:
+          - generic: Cloud & SaaS findings
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-saas-findings/overview
+            - generic: Overview
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-saas-findings/posture
+            - generic: Posture Findings
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-saas-findings/content
+            - generic: Content Findings
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/cloud-saas-findings/findings-catalog
+            - generic: Finding types library
+            - generic: New
+        - button:
+          - generic: Email security
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/email-security/overview
+            - generic: Overview
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/email-security/monitoring
+            - generic: Monitoring
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/email-security/submissions
+            - generic: Submissions
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/email-security/investigation
+            - generic: Investigation
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/email-security/policies
+            - generic: Policies & rules
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/email-security/phishguard
+            - generic: PhishGuard
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/email-security/settings
+            - generic: Email security settings
+        - button:
+          - generic: Browser isolation
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/browser-isolation/overview
+            - generic: Overview
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/browser-isolation/settings
+            - generic: Browser isolation settings
+        - button:
+          - generic: Reusable components
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/reusable-components/lists
+            - generic: Lists
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/reusable-components/tags
+            - generic: Tags
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/reusable-components/posture-checks
+            - generic: Posture checks
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/reusable-components/custom-pages
+            - generic: Custom pages
+        - button:
+          - generic: Integrations
+        - list:
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/integrations/cloud-and-saas
+            - generic: Cloud & SaaS
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/integrations/identity-providers
+            - generic: Identity providers
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/integrations/service-providers
+            - generic: Service providers
+          - link:
+            - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/integrations/webhooks
+            - generic: Webhooks
+        - link:
+          - /url: https://dash.cloudflare.com/f6372d9033756072d6127252df565368/one/settings
+          - generic: Settings
+      - button:
+        - generic: Networking
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/magic-networks/overview
+          - generic: Overview
+          - generic: New
+        - button:
+          - generic: Insights
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/networking-insights/analytics/network-analytics/flow-analytics
+            - generic: Network flow
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/tunnels
+          - generic: Tunnels
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/mesh
+          - generic: Mesh
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/magic-networks/routes
+          - generic: Routes
+          - generic: New
+        - button:
+          - generic: IP addresses
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/ip-addresses/address-space
+            - generic: Address space
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/ip-addresses/proxy-ips
+            - generic: Address maps
+      - button:
+        - generic: Threats & defense
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/threats-defense
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/threat-intelligence
+          - generic: Threat intelligence
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/threat-intelligence/investigate
+          - generic: Investigate
+      - button:
+        - generic: Monetize
+        - generic: New
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/monetize/monetization-gateway
+          - generic: Monetization Gateway
+          - generic: Beta
+      - button:
+        - generic: Delivery & performance
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/bulk-redirects
+          - generic: Bulk redirects
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/load-balancing
+          - generic: Load Balancing
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/tag-management/zaraz
+          - generic: Web tag management
+    - list:
+      - button:
+        - generic: Manage account
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/members
+          - generic: Members
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/billing
+          - generic: Billing
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/api-tokens
+          - generic: Account API tokens
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/oauth-clients
+          - generic: OAuth clients
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/audit-log
+          - generic: Audit logs
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/blocked-content
+          - generic: Blocked content
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/abuse-reports
+          - generic: Abuse reports
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/carbon
+          - generic: Carbon Impact Report
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/configurations
+          - generic: Configurations
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/tags
+          - generic: Tagged Resources
+          - generic: Beta
+    - button "Quick search...":
+      - generic: Quick search...
+      - generic: Ctrl K
+    - link "Back to Domains":
+      - /url: /f6372d9033756072d6127252df565368/domains/overview
+      - generic: Back to Domains
+    - list:
+      - link "Overview":
+        - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/
+        - generic: Overview
+      - button "Recents":
+        - generic: Recents
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/tarotquill.online/dns/records
+          - generic: Records
+          - generic: tarotquill.online
+          - generic: /
+          - generic: DNS
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/fusebeads.online/dns/records
+          - generic: Records
+          - generic: fusebeads.online
+          - generic: /
+          - generic: DNS
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/dns/records
+          - generic: Records
+          - generic: jigsawnook.online
+          - generic: /
+          - generic: DNS
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online
+          - generic: jigsawnook.online
+          - generic: Domains
+        - button:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/fusebeads.online
+          - generic: fusebeads.online
+          - generic: Domains
+        - button:
+      - button "AI Crawl Control":
+        - generic: AI Crawl Control
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ai/overview
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ai/metrics
+          - generic: Metrics
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ai/security
+          - generic: Security
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ai/optimization
+          - generic: Optimization
+          - generic: New
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ai/signals
+          - generic: Signals
+      - button "Agent Readiness":
+        - generic: Agent Readiness
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/agent-readiness/overview
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/agent-readiness/diagnostics
+          - generic: Diagnostics
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/agent-readiness/ai-playground
+          - generic: AI Playground
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/agent-readiness/webmcp
+          - generic: WebMCP
+          - generic: Beta
+      - link "Analytics":
+        - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/analytics
+        - generic: Analytics
+      - button "Observability New":
+        - generic: Observability
+        - generic: New
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/observability/logs
+          - generic: Logs
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/observability/traces
+          - generic: Traces
+          - generic: Beta
+        - button:
+          - generic: Export
+        - list:
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/analytics/logs
+            - generic: Logpush
+          - link:
+            - /url: /f6372d9033756072d6127252df565368/observability/destinations
+            - generic: OpenTelemetry
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/dashboards
+          - generic: Dashboards
+          - generic: New
+      - button "DNS" [expanded]:
+        - generic: DNS
+      - region:
+        - list:
+          - link "Records":
+            - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/dns/records
+            - generic: Records
+          - link "Analytics":
+            - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/dns/analytics
+            - generic: Analytics
+          - link "Settings":
+            - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/dns/settings
+            - generic: Settings
+      - button "Email":
+        - generic: Email
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/email-service/sending/zone-navigation/f0f8424a70831c368254fb28fdc8f7c5
+          - generic: Email Sending
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/email-service/routing/zone-navigation/f0f8424a70831c368254fb28fdc8f7c5
+          - generic: Email Routing
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/email/dmarc-management
+          - generic: DMARC Management
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/email/security
+          - generic: Email Security
+      - button "SSL/TLS":
+        - generic: SSL/TLS
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ssl-tls
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ssl-tls/edge-certificates
+          - generic: Edge Certificates
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ssl-tls/client-certificates
+          - generic: Client Certificates
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ssl-tls/origin
+          - generic: Origin Server
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/ssl-tls/custom-hostnames
+          - generic: Custom Hostnames
+      - button "Security":
+        - generic: Security
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/security/overview
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/security/analytics
+          - generic: Analytics
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/security/account-abuse-protection
+          - generic: Account Abuse Protection
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/security/web-assets
+          - generic: Web assets
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/security/security-rules
+          - generic: Security rules
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/security/settings
+          - generic: Settings
+      - link "Access":
+        - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/access
+        - generic: Access
+      - button "Speed":
+        - generic: Speed
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/speed
+          - generic: Observatory
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/speed/origin-analytics
+          - generic: Origin Analytics
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/speed/rum
+          - generic: Real user monitoring
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/speed/test
+          - generic: Synthetic monitoring
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/speed/optimization
+          - generic: Settings
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/speed/smart-shield
+          - generic: Smart Shield
+      - button "Caching":
+        - generic: Caching
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/caching
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/caching/configuration
+          - generic: Configuration
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/caching/cache-rules
+          - generic: Cache Rules
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/caching/tiered-cache
+          - generic: Tiered Cache
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/caching/cache-reserve
+          - generic: Cache Reserve
+      - link "Workers Routes":
+        - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/workers
+        - generic: Workers Routes
+      - button "Rules":
+        - generic: Rules
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/rules/overview
+          - generic: Overview
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/rules/redirect-rules
+          - generic: Redirect Rules
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/rules/simulator
+          - generic: Rule simulator
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/rules/snippets
+          - generic: Snippets
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/rules/cloud-connector
+          - generic: Cloud Connector
+          - generic: Beta
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/rules/page-rules
+          - generic: Page Rules
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/rules/settings
+          - generic: Settings
+      - link "Error Pages New":
+        - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/error-pages
+        - generic: Error Pages
+        - generic: New
+      - link "Network":
+        - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/network
+        - generic: Network
+      - button "Traffic":
+        - generic: Traffic
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/traffic
+          - generic: Argo Smart Routing
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/traffic/load-balancing
+          - generic: Load Balancing
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/traffic/load-balancing-analytics
+          - generic: Load Balancing Analytics
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/traffic/health-checks
+          - generic: Health Checks
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/traffic/waiting-rooms
+          - generic: Waiting Room
+      - link "Web3":
+        - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/web3
+        - generic: Web3
+    - list:
+      - button "Manage account":
+        - generic: Manage account
+      - list:
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/members
+          - generic: Members
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/billing
+          - generic: Billing
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/api-tokens
+          - generic: Account API tokens
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/audit-log
+          - generic: Audit logs
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/notifications
+          - generic: Alerts
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/blocked-content
+          - generic: Blocked content
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/abuse-reports
+          - generic: Abuse reports
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/carbon
+          - generic: Carbon Impact Report
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/configurations
+          - generic: Configurations
+        - link:
+          - /url: /f6372d9033756072d6127252df565368/tags
+          - generic: Tagged Resources
+          - generic: Beta
+  - button "Collapse sidebar" [expanded]:
+- banner:
+  - button "Star domain":
+  - paragraph: jigsawnook.online
+  - button "free":
+    - generic: free
+  - button "Ask AI":
+    - generic: Ask AI
+  - link "Support":
+    - /url: /?to=/:account/support
+    - generic: Support
+  - button "User menu":
+- banner:
+  - heading "DNS records for jigsawnook.online" [level=1]
+  - paragraph: Manage how the Internet finds your web content, verifies services, and routes traffic.
+  - text: "DNS Setup:"
+  - generic: Full
+  - link "DNS documentation":
+    - /url: https://developers.cloudflare.com/dns/get-started/
+    - text: DNS documentation
+- paragraph: Proxying is required for most security and performance features
+- text: Set your DNS records to
+- strong: proxied
+- text: by clicking "Edit" in the table below, to benefit from DDoS protection, security rules, caching, and more.
+- button "Dismiss DNS proxy warning":
+- button "Collapse":
+  - paragraph: Recommendations
+  - generic: "1"
+- generic: Email cannot reach @jigsawnook.online addresses and they could be spoofed
+- text: Add an MX record to receive email.
+- link "Set up SPF, DKIM, and DMARC records":
+  - /url: /f6372d9033756072d6127252df565368/jigsawnook.online/dns/settings/wizard/restrictive-records
+- text: to prevent email spoofing.
+- searchbox "Search"
+- button "Filters":
+  - text: Filters
+- button "Display options":
+  - text: Display options
+- button "Import":
+  - text: Import
+- button "Export":
+  - text: Export
+- button "Add record":
+  - text: Add record
+- paragraph:
+  - text: You have used
+  - strong: 2 of 200
+  - text: available DNS records in this domain.
+- table "DNS records":
+  - rowgroup:
+    - row "Select All Name Sort by Name Resize Name column Type Sort by Type Content Sort by Content Resize Content column Proxy status Sort by Proxy status TTL Sort by TTL Tags Resize Tags column Comment Resize Comment column Details Resize Details column":
+      - columnheader "Select All":
+        - checkbox "Select All"
+        - checkbox
+      - columnheader:
+      - columnheader "Name Sort by Name Resize Name column":
+        - generic: Name
+        - button "Sort by Name":
+        - button "Resize Name column"
+      - columnheader "Type Sort by Type":
+        - generic: Type
+        - button "Sort by Type":
+      - columnheader "Content Sort by Content Resize Content column":
+        - generic: Content
+        - button "Sort by Content":
+        - button "Resize Content column"
+      - columnheader "Proxy status Sort by Proxy status":
+        - generic: Proxy status
+        - button "Sort by Proxy status":
+      - columnheader "TTL Sort by TTL":
+        - generic: TTL
+        - button "Sort by TTL":
+      - columnheader "Tags Resize Tags column":
+        - generic: Tags
+        - button "Resize Tags column"
+      - columnheader "Comment Resize Comment column":
+        - generic: Comment
+        - button "Resize Comment column"
+      - columnheader "Details Resize Details column":
+        - generic: Details
+        - button "Resize Details column"
+      - columnheader
+  - rowgroup:
+    - row "Select A record with name jigsawnook.online jigsawnook.online A 162.251.94.145 DNS only Auto — — — Edit A record with name jigsawnook.online":
+      - cell "Select A record with name jigsawnook.online":
+        - checkbox "Select A record with name jigsawnook.online"
+        - checkbox
+      - cell
+      - cell "jigsawnook.online":
+        - generic "jigsawnook.online"
+      - cell "A":
+        - generic "A":
+          - generic: A
+      - cell "162.251.94.145":
+        - generic "162.251.94.145"
+      - cell "DNS only":
+        - generic: DNS only
+      - cell "Auto":
+        - generic: Auto
+      - cell "—":
+        - generic: —
+      - cell "—":
+        - generic: —
+      - cell "—":
+        - generic: —
+      - cell "Edit A record with name jigsawnook.online":
+        - button "Edit A record with name jigsawnook.online": Edit
+    - row "Select A record with name www.jigsawnook.online www.jigsawnook.online A 162.251.94.145 DNS only Auto — — — Edit A record with name www.jigsawnook.online":
+      - cell "Select A record with name www.jigsawnook.online":
+        - checkbox "Select A record with name www.jigsawnook.online"
+        - checkbox
+      - cell
+      - cell "www.jigsawnook.online":
+        - generic "www.jigsawnook.online":
+          - text: www
+          - generic: .jigsawnook.online
+      - cell "A":
+        - generic "A":
+          - generic: A
+      - cell "162.251.94.145":
+        - generic "162.251.94.145"
+      - cell "DNS only":
+        - generic: DNS only
+      - cell "Auto":
+        - generic: Auto
+      - cell "—":
+        - generic: —
+      - cell "—":
+        - generic: —
+      - cell "—":
+        - generic: —
+      - cell "Edit A record with name www.jigsawnook.online":
+        - button "Edit A record with name www.jigsawnook.online": Edit
+- generic: Showing 1-2 of 2
+- contentinfo:
+  - list:
+    - link "Support":
+      - /url: https://support.cloudflare.com
+    - link "System status":
+      - /url: https://www.cloudflarestatus.com
+    - link "Careers":
+      - /url: https://www.cloudflare.com/careers/
+    - link "Terms of Use":
+      - /url: https://www.cloudflare.com/website-terms/
+    - link "Report Security Issues":
+      - /url: https://www.cloudflare.com/disclosure/
+    - link "Privacy Policy":
+      - /url: https://www.cloudflare.com/privacypolicy/
+    - button "Your Privacy Choices"
+    - generic: © 2026 Cloudflare, Inc.
+- region "Notifications"

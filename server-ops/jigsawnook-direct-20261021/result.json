@@ -1,0 +1,159 @@
+{
+  "checkedAt": "2026-10-20T17:15:47.848Z",
+  "changeSaved": true,
+  "records": [
+    {
+      "name": "jigsawnook.online",
+      "value": "162.251.94.145",
+      "proxy": "DNS only"
+    },
+    {
+      "name": "www.jigsawnook.online",
+      "value": "162.251.94.145",
+      "proxy": "DNS only"
+    }
+  ],
+  "dns": [
+    {
+      "name": "jigsawnook.online",
+      "type": "A",
+      "result": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "jigsawnook.online",
+            "type": 1
+          }
+        ],
+        "Answer": [
+          {
+            "name": "jigsawnook.online",
+            "type": 1,
+            "TTL": 300,
+            "data": "162.251.94.145"
+          }
+        ]
+      }
+    },
+    {
+      "name": "jigsawnook.online",
+      "type": "AAAA",
+      "result": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "jigsawnook.online",
+            "type": 28
+          }
+        ],
+        "Authority": [
+          {
+            "name": "jigsawnook.online",
+            "type": 6,
+            "TTL": 1800,
+            "data": "annabel.ns.cloudflare.com. dns.cloudflare.com. 2418002217 10000 2400 604800 1800"
+          }
+        ]
+      }
+    },
+    {
+      "name": "www.jigsawnook.online",
+      "type": "A",
+      "result": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "www.jigsawnook.online",
+            "type": 1
+          }
+        ],
+        "Answer": [
+          {
+            "name": "www.jigsawnook.online",
+            "type": 1,
+            "TTL": 300,
+            "data": "162.251.94.145"
+          }
+        ]
+      }
+    },
+    {
+      "name": "www.jigsawnook.online",
+      "type": "AAAA",
+      "result": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "www.jigsawnook.online",
+            "type": 28
+          }
+        ],
+        "Authority": [
+          {
+            "name": "jigsawnook.online",
+            "type": 6,
+            "TTL": 1800,
+            "data": "annabel.ns.cloudflare.com. dns.cloudflare.com. 2418002217 10000 2400 604800 1800"
+          }
+        ]
+      }
+    }
+  ],
+  "probes": [
+    {
+      "route": "origin",
+      "host": "jigsawnook.online",
+      "ip": "162.251.94.145",
+      "path": "/play",
+      "samples": [
+        "200 0.000928 0.201891 0.273105 0.289423",
+        "200 0.001090 1.169286 1.334186 1.342050",
+        "200 0.000827 1.199787 1.247328 1.255647"
+      ]
+    },
+    {
+      "route": "old-cloudflare",
+      "host": "jigsawnook.online",
+      "ip": "104.21.84.18",
+      "path": "/play",
+      "samples": [
+        "200 0.000849 0.734216 1.389649 1.434610",
+        "200 0.000824 0.779924 1.509841 1.559170",
+        "200 0.000895 1.369112 1.770781 2.808041"
+      ]
+    },
+    {
+      "route": "www-origin",
+      "host": "www.jigsawnook.online",
+      "ip": "162.251.94.145",
+      "path": "/",
+      "samples": [
+        "301 0.000789 0.203296 0.249842 0.249883",
+        "301 0.001075 0.181438 0.216980 0.217028",
+        "301 0.001193 0.217000 0.257308 0.257352"
+      ]
+    }
+  ],
+  "probeColumns": "status connectSeconds tlsSeconds firstByteSeconds totalSeconds",
+  "screenshot": "proxy-disabled.jpg"
+}

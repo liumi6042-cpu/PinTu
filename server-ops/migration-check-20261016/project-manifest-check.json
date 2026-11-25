@@ -1,0 +1,15 @@
+{
+  "manifestEntries": 25658,
+  "missing": [],
+  "differentSize": [
+    "content-admin/start.ps1",
+    "jigsaw-nook-taptap/outputs/mobile/engine.mjs",
+    "jigsaw-nook-taptap/outputs/shared-build/web-inputs.json",
+    "jigsaw-nook-taptap/outputs/shared-desktop-web/game.js"
+  ],
+  "productSourceFilesHashed": 708,
+  "productSourceDifferences": [
+    "content-admin/start.ps1"
+  ],
+  "newDependencyDirectoriesExcludedFromComparison": true
+}

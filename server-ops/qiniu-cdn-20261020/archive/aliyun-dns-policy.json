@@ -1,0 +1,15 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["alidns:AddDomainRecord", "alidns:DeleteDomainRecord"],
+      "Resource": "acs:alidns:*:1318805662630899:domain/ymxc.top"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["alidns:DescribeDomainRecords", "alidns:DescribeDomainRecordInfo"],
+      "Resource": "*"
+    }
+  ]
+}

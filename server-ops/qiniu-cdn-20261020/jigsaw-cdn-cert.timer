@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily renewal and retry of api.ymxc.top Qiniu certificate synchronization
+
+[Timer]
+OnCalendar=*-*-* 03:40:00 UTC
+RandomizedDelaySec=3600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

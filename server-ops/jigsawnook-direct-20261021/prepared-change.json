@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-10-20T17:11:14.890632+00:00",
+  "dnsProvider": "Cloudflare",
+  "records": [
+    {
+      "name": "jigsawnook.online",
+      "type": "A",
+      "value": "162.251.94.145",
+      "proxied": true,
+      "ttl": "Auto"
+    },
+    {
+      "name": "www.jigsawnook.online",
+      "type": "A",
+      "value": "162.251.94.145",
+      "proxied": true,
+      "ttl": "Auto"
+    }
+  ],
+  "proposed": {
+    "proxied": false,
+    "preserveRecordValues": true,
+    "keepNameservers": true
+  },
+  "nameservers": [
+    "cody.ns.cloudflare.com",
+    "annabel.ns.cloudflare.com"
+  ],
+  "aliyunAssignedNameservers": [
+    "dns19.hichina.com",
+    "dns20.hichina.com"
+  ],
+  "aliyunZoneActive": false,
+  "aliyunZoneStaleAddress": "186.241.106.176",
+  "originTlsVerified": true,
+  "originPlayStatus": 200,
+  "originWwwStatus": 301,
+  "changeSaved": false,
+  "confirmationRequiredBy": "browser tool protection-change policy",
+  "screenshot": "pending-proxy-change.jpg"
+}

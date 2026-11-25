@@ -1,0 +1,25 @@
+{
+  "domain": "api.ymxc.top",
+  "fingerprint": "63e139ea4f786fbffae19df4bdfd3b86b0d2f891aa115a74f4cad49407193c95",
+  "expiry": 1800283865,
+  "checks": {
+    "HEAD /cdn-health.txt": {
+      "status": 200,
+      "cache": "no-store",
+      "cors": null,
+      "methods": null
+    },
+    "GET /h5-mobile-v3/config": {
+      "status": 200,
+      "cache": "no-store",
+      "cors": "https://ma-h5-al.tapimg.com",
+      "methods": null
+    },
+    "OPTIONS /h5-mobile-v3/config": {
+      "status": 204,
+      "cache": "no-store",
+      "cors": "https://ma-h5-al.tapimg.com",
+      "methods": "GET, POST, DELETE, PATCH, OPTIONS"
+    }
+  }
+}

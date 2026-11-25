@@ -1,0 +1,26 @@
+{
+  "status": "implemented-locally-not-deployed",
+  "clientTests": 75,
+  "browserChecks": 8,
+  "browserPassed": true,
+  "backendCacheTests": {
+    "mini": 8,
+    "formalWeb": 8
+  },
+  "settingsPreserved": true,
+  "builds": {
+    "web": true,
+    "wechat": true
+  },
+  "typecheck": true,
+  "imageSourceCheck": true,
+  "preview": "http://127.0.0.1:3223/",
+  "hashes": {
+    "mobile/app.ts": "ba6e469660c024a04a2c533f599e279ce7603a35536cfacc9a2763fe3bfe4bff",
+    "mobile/boot.ts": "c44088e76fcdc874c3e39f40f3c2e4eb3e5b3ae724a5e184bc5c4573c6ad1ce9",
+    "mobile/puzzle-board.ts": "33f4d3d7240a700c33380c15f5c9ef572780f5b0df26091654203c05b447e595",
+    "mobile/ui.ts": "31db78d80190653efa1ccbcdf33222a65096ba0b46a8ce5ebf2fdacb096ff072",
+    "mobile/image-cache.ts": "851dc46501782edcaef5829e8a0b20d1504f52e7e298f7631224c23db69c007f",
+    "mobile/view-requests.ts": "68deab7687edca297911f40687af9f995431b1b34a0407e4f83f3ab798e10921"
+  }
+}

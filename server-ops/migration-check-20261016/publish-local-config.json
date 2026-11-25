@@ -1,0 +1,12 @@
+[
+  {
+    "file": "publish-config.json",
+    "bindAddress": "10.0.0.207",
+    "oldConfigBackup": "D:\\chat\\\u62fc\u56fe\\server-ops\\migration-check-20261016\\publish-config.json.before"
+  },
+  {
+    "file": "publish-config.pending.json",
+    "bindAddress": "10.0.0.207",
+    "oldConfigBackup": "D:\\chat\\\u62fc\u56fe\\server-ops\\migration-check-20261016\\publish-config.pending.json.before"
+  }
+]

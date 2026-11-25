@@ -1,0 +1,27 @@
+{
+  "scope": "actual local deployment helper via AST; isolated fixture data only; no deployment or remote edits",
+  "results": [
+    {
+      "check": "retains old script/font by hardlink without changing current hash",
+      "passed": true
+    },
+    {
+      "check": "same bytes are idempotent",
+      "passed": true
+    },
+    {
+      "check": "different bytes at same hash rejected, source untouched",
+      "passed": true
+    },
+    {
+      "check": "non-allowlisted file rejected",
+      "passed": true
+    },
+    {
+      "check": "detected source symlink rejected",
+      "passed": true,
+      "method": "simulated Path.is_symlink result on actual helper; real symlink fixture unavailable",
+      "realSymlinkFixtureSkipped": "[WinError 1314] \u5ba2\u6237\u7aef\u6ca1\u6709\u6240\u9700\u7684\u7279\u6743\u3002: 'D:\\\\chat\\\\\u62fc\u56fe\\\\server-ops\\\\performance-20261017\\\\delivery-audit\\\\retain-fixture-hviu7rn9' -> 'D:\\\\chat\\\\\u62fc\u56fe\\\\server-ops\\\\performance-20261017\\\\delivery-audit\\\\retain-fixture-hviu7rn9\\\\old\\\\dist\\\\client\\\\shared-client\\\\1234567890abcdef\\\\linked'"
+    }
+  ]
+}

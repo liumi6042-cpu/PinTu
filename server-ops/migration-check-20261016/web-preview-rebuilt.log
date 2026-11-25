@@ -1,0 +1,5 @@
+{"platform":"web","directory":"D:\\chat\\拼图\\jigsaw-nook-taptap\\outputs\\shared-desktop-web","mainBytes":3148253,"totalBytes":6872101}
+H5 preview: http://127.0.0.1:3221/#/zh/lobby
+Desktop preview uses isolated local guests and player progress: http://127.0.0.1:3223/
+Saved admin configuration is read only; this preview cannot publish content or migrate accounts.
+Shared game preview: http://127.0.0.1:3223

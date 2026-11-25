@@ -1,0 +1,39 @@
+# Private credentials, SSH keys, and copyright evidence (NEVER commit)
+/_private/
+
+# Non-Git shared media store and large unimported assets (NEVER commit)
+/media-store/
+/assets/
+
+# Dependencies & runtime work directories
+node_modules/
+/content-admin/work/
+
+# Secrets, local env, publish configs, and database files
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+secret.json
+publish-config*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.db
+*.db-*
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Archives & large media bundles
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Python / OS / IDE artifacts
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

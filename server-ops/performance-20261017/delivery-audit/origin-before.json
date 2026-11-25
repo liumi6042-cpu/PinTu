@@ -1,0 +1,84 @@
+{
+  "sitePath": "/etc/nginx/sites-available/jigsawnook.online.conf",
+  "sha256": "fff5c845038e7d44527786aa3372a44bbb5ebb8b611a88742b0161a128969ef9",
+  "content": "include /etc/nginx/snippets/jigsaw-geo.conf;\nlimit_req_zone $binary_remote_addr zone=jigsaw_auth:10m rate=12r/m;\nlimit_req_zone $binary_remote_addr zone=jigsaw_api:10m rate=120r/s;\nlimit_req_zone $binary_remote_addr zone=jigsaw_create:10m rate=6r/m;\nserver {\n    listen 80;\n    listen [::]:80;\n    server_name jigsawnook.online www.jigsawnook.online;\n    location ^~ /.well-known/acme-challenge/ { root /var/www/acme; }\n    location ~ ^/baidu_verify_[A-Za-z0-9._-]+\\.html$ { root /var/www/baidu-verify; }\n    location / { return 301 https://jigsawnook.online$request_uri; }\n}\nserver {\n    listen 443 ssl;\n    listen [::]:443 ssl;\n    server_name www.jigsawnook.online;\n    ssl_certificate /etc/letsencrypt/live/jigsawnook.online/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/jigsawnook.online/privkey.pem;\n    include /etc/letsencrypt/options-ssl-nginx.conf;\n    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;\n    location ~ ^/baidu_verify_[A-Za-z0-9._-]+\\.html$ { root /var/www/baidu-verify; }\n    location / { return 301 https://jigsawnook.online$request_uri; }\n}\nserver {\n    listen 443 ssl;\n    listen [::]:443 ssl;\n    server_name jigsawnook.online;\n    ssl_certificate /etc/letsencrypt/live/jigsawnook.online/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/jigsawnook.online/privkey.pem;\n    include /etc/letsencrypt/options-ssl-nginx.conf;\n    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;\n    include /etc/nginx/snippets/tarotquill-realip.conf;\n    include /etc/nginx/snippets/jigsaw-proxy.conf;\n    client_max_body_size 16k;\n    # Avoid recording room invite links, feedback tokens or account parameters.\n    access_log off;\n    add_header X-Content-Type-Options nosniff always;\n    add_header Referrer-Policy no-referrer always;\n    add_header Strict-Transport-Security \"max-age=31536000\" always;\n    # Application metadata and middleware control public/private indexing.\n    error_page 429 = @jigsaw_rate_limit;\n    location @jigsaw_rate_limit {\n        default_type application/json;\n        add_header Retry-After 60 always;\n        add_header Cache-Control no-store always;\n        add_header X-Content-Type-Options nosniff always;\n        return 429 '{\"error\":\"Too many requests. Please try again shortly.\"}';\n    }\n# Add these locations only to the jigsawnook.online HTTPS server block.\nlocation = /taptap-play { return 302 /taptap-play/; }\nlocation ^~ /taptap-play/ {\n    proxy_pass http://127.0.0.1:3291/;\n    proxy_set_header X-Jigsaw-Client-IP $remote_addr;\n    add_header X-Robots-Tag \"noindex, nofollow\" always;\n}\nlocation ^~ /h5/ {\n    access_log /var/log/nginx/jigsaw-h5-diagnostic.log jigsaw_h5_diagnostic;\n    client_max_body_size 16m;\n    proxy_pass http://127.0.0.1:3291;\n    proxy_set_header X-Jigsaw-Client-IP $remote_addr;\n    proxy_read_timeout 70s;\n    add_header X-Robots-Tag \"noindex, nofollow\" always;\n}\n\n    # Isolated mobile game API; PC and legacy H5 routes remain unchanged.\n    location ^~ /h5-mobile-v3/ {\n        client_max_body_size 3m;\n        proxy_pass http://127.0.0.1:3292/h5/;\n        proxy_set_header X-Jigsaw-Client-IP $remote_addr;\n        proxy_read_timeout 70s;\n        add_header X-Robots-Tag \"noindex, nofollow\" always;\n    }\n\n    location = /healthz { proxy_pass http://127.0.0.1:3103/api/health; }\n    location = /api/feedback { client_max_body_size 16m; proxy_pass http://127.0.0.1:3103; }\n    location ^~ /api/feedback/ { client_max_body_size 16m; proxy_pass http://127.0.0.1:3103; }\n    location ^~ /api/auth/ {\n        limit_req zone=jigsaw_auth burst=12 nodelay;\n        limit_req_status 429;\n        proxy_pass http://127.0.0.1:3103;\n    }\n    location = /api/user-images {\n        client_max_body_size 2m;\n        limit_req zone=jigsaw_create burst=3 nodelay;\n        limit_req_status 429;\n        proxy_pass http://127.0.0.1:3103;\n    }\n    location = /api/rooms {\n        limit_req zone=jigsaw_create burst=6 nodelay;\n        limit_req_status 429;\n        proxy_pass http://127.0.0.1:3103;\n    }\n    location /api/ {\n        limit_req zone=jigsaw_api burst=120 nodelay;\n        limit_req_status 429;\n        proxy_pass http://127.0.0.1:3103;\n    }\n    location ^~ /_next/static/ {\n        root /srv/sites/jigsaw/current/dist/client;\n        try_files $uri =404;\n        add_header Cache-Control \"public, max-age=31536000, immutable\";\n        add_header X-Content-Type-Options nosniff;\n    }\n    location ~ \"^/puzzles/[^/]+-(?:play|standard|thumbnail|optimized|compact)-[a-f0-9]{12}\\.webp$\" {\n        root /srv/sites/jigsaw/current/dist/client;\n        try_files $uri =404;\n        add_header Cache-Control \"public, max-age=31536000, immutable\";\n        add_header X-Content-Type-Options nosniff;\n    }\n    location ~ \"^/intro/hero-paper-coast-[a-f0-9]{12}\\.webp$\" {\n        root /srv/sites/jigsaw/current/dist/client;\n        try_files $uri =404;\n        add_header Cache-Control \"public, max-age=31536000, immutable\";\n        add_header X-Content-Type-Options nosniff;\n    }\n    location ~ ^/baidu_verify_[A-Za-z0-9._-]+\\.html$ { root /var/www/baidu-verify; }\n    location / { proxy_pass http://127.0.0.1:3103; }\n}\n",
+  "origin": [
+    {
+      "path": "/shared-client/c70abf569b573db3/game.js",
+      "acceptEncoding": "identity",
+      "status": 200,
+      "bytes": 402672,
+      "sha256": "b109ec72174758bba08e89d8c4e9b16da70430f7aa4ba465f12740da4693538b",
+      "headers": {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+        "ETag": "W/\"402672-0\"",
+        "Content-Length": "402672"
+      }
+    },
+    {
+      "path": "/shared-client/c70abf569b573db3/game.js",
+      "acceptEncoding": "gzip",
+      "status": 200,
+      "bytes": 402672,
+      "sha256": "b109ec72174758bba08e89d8c4e9b16da70430f7aa4ba465f12740da4693538b",
+      "headers": {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+        "ETag": "W/\"402672-0\"",
+        "Content-Length": "402672"
+      }
+    },
+    {
+      "path": "/shared-client/c70abf569b573db3/assets/fonts/jigsaw-ui-sc.woff2",
+      "acceptEncoding": "identity",
+      "status": 200,
+      "bytes": 357584,
+      "sha256": "344eb10e284902714e243b418344abb71c83c17581d25db52d24dca5e8111a5f",
+      "headers": {
+        "Content-Type": "font/woff2",
+        "Cache-Control": "public, max-age=3600",
+        "ETag": "W/\"357584-0\"",
+        "Content-Length": "357584"
+      }
+    },
+    {
+      "path": "/shared-client/c70abf569b573db3/assets/fonts/jigsaw-ui-sc.woff2",
+      "acceptEncoding": "gzip",
+      "status": 200,
+      "bytes": 357584,
+      "sha256": "344eb10e284902714e243b418344abb71c83c17581d25db52d24dca5e8111a5f",
+      "headers": {
+        "Content-Type": "font/woff2",
+        "Cache-Control": "public, max-age=3600",
+        "ETag": "W/\"357584-0\"",
+        "Content-Length": "357584"
+      }
+    },
+    {
+      "path": "/api/health",
+      "acceptEncoding": "identity",
+      "status": 200,
+      "bytes": 107,
+      "sha256": "bed049ad2c376dfcd89e2c762ac9840a02c363ef041da815b4c45d4576955103",
+      "headers": {
+        "cache-control": "no-store",
+        "content-type": "application/json",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url, X-Vinext-Interception-Context, X-Vinext-Mounted-Slots, X-Vinext-Rsc-Render-Mode, Accept-Encoding"
+      }
+    },
+    {
+      "path": "/api/health",
+      "acceptEncoding": "gzip",
+      "status": 200,
+      "bytes": 122,
+      "sha256": "c7201b80a0747b85434f10fcfc5a9d55e9fb68a727705945d8a458d8c0200ccd",
+      "headers": {
+        "cache-control": "no-store",
+        "content-type": "application/json",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url, X-Vinext-Interception-Context, X-Vinext-Mounted-Slots, X-Vinext-Rsc-Render-Mode, Accept-Encoding",
+        "Content-Encoding": "gzip"
+      }
+    }
+  ]
+}

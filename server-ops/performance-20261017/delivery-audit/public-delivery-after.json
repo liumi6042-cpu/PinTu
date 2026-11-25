@@ -1,0 +1,92 @@
+{
+  "checkedAt": "2026-10-16T17:47:24.772Z",
+  "passed": true,
+  "oldEdgeEntryMayExpireNaturally": true,
+  "results": [
+    {
+      "path": "/shared-client/c70abf569b573db3/game.js",
+      "status": 200,
+      "bytes": 105192,
+      "decodedSha256": "b109ec72174758bba08e89d8c4e9b16da70430f7aa4ba465f12740da4693538b",
+      "headers": {
+        "content-type": "application/javascript; charset=utf-8",
+        "server": "cloudflare",
+        "cache-control": "public, max-age=14400",
+        "etag": "W/\"402672-0\"",
+        "age": "297",
+        "cf-cache-status": "HIT",
+        "content-encoding": "gzip"
+      }
+    },
+    {
+      "path": "/shared-client/c70abf569b573db3/game.js?delivery-check=1792172838581",
+      "status": 200,
+      "bytes": 110699,
+      "decodedSha256": "b109ec72174758bba08e89d8c4e9b16da70430f7aa4ba465f12740da4693538b",
+      "headers": {
+        "content-type": "application/javascript",
+        "server": "cloudflare",
+        "vary": "Accept-Encoding",
+        "etag": "W/\"0-624f0\"",
+        "cache-control": "public, max-age=31536000, immutable",
+        "content-encoding": "gzip",
+        "cf-cache-status": "MISS"
+      }
+    },
+    {
+      "path": "/shared-client/c70abf569b573db3/assets/fonts/jigsaw-ui-sc.woff2?delivery-check=1792172838581",
+      "status": 200,
+      "bytes": 357584,
+      "decodedSha256": "344eb10e284902714e243b418344abb71c83c17581d25db52d24dca5e8111a5f",
+      "headers": {
+        "content-type": "font/woff2",
+        "server": "cloudflare",
+        "etag": "\"0-574d0\"",
+        "cache-control": "public, max-age=31536000, immutable",
+        "cf-cache-status": "MISS"
+      }
+    },
+    {
+      "path": "/play",
+      "status": 200,
+      "bytes": 3217,
+      "decodedSha256": "8928a68826a86f6aac7b1625c38ce410f32d0dc8a2d18e244a0f8678ba19677a",
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "server": "cloudflare",
+        "cache-control": "no-store, must-revalidate",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url, X-Vinext-Interception-Context, X-Vinext-Mounted-Slots, X-Vinext-Rsc-Render-Mode, Accept-Encoding",
+        "cf-cache-status": "DYNAMIC",
+        "content-encoding": "gzip"
+      }
+    },
+    {
+      "path": "/api/health",
+      "status": 200,
+      "bytes": 114,
+      "decodedSha256": "bed049ad2c376dfcd89e2c762ac9840a02c363ef041da815b4c45d4576955103",
+      "headers": {
+        "content-type": "application/json",
+        "server": "cloudflare",
+        "cache-control": "no-store",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url, X-Vinext-Interception-Context, X-Vinext-Mounted-Slots, X-Vinext-Rsc-Render-Mode, Accept-Encoding",
+        "cf-cache-status": "DYNAMIC",
+        "content-encoding": "gzip"
+      }
+    },
+    {
+      "path": "/shared-client/0000000000000000/game.js?delivery-check=1792172838581",
+      "status": 404,
+      "bytes": 399,
+      "decodedSha256": "5e00e2f5f6d1b6cbffffa4d27b89abe21a9f675560e744cacba85194058999b3",
+      "headers": {
+        "content-type": "text/html",
+        "server": "cloudflare",
+        "cache-control": "no-store",
+        "cf-cache-status": "BYPASS",
+        "vary": "accept-encoding",
+        "content-encoding": "gzip"
+      }
+    }
+  ]
+}

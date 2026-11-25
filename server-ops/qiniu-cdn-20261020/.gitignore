@@ -1,0 +1,4 @@
+credentials.json
+*.pem
+*.key
+__pycache__/
