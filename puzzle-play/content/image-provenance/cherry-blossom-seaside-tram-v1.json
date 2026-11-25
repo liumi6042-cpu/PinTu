@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cherry-blossom-seaside-tram-v1.webp",
-    "sha256": "07ff7547f8360781bade9cb0b91244856463b383f2178a2517d6ebe31c809028",
-    "bytes": 741242,
-    "width": 1672,
-    "height": 941,
-    "originalPngSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b"
   }
 }

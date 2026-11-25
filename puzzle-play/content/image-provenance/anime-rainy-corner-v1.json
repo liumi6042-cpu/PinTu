@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/anime-rainy-corner-v1.webp",
-    "sha256": "bfe65f04dfc72df9f9418473573e345697eed48e4f9a7ba22eb9431e3cbb02dc",
-    "bytes": 557742,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "5b1fdb81b7b2902c25ca17416399cf9b75eb7bf77d89685421477bfae27e5ddb"
   }
 }

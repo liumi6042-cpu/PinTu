@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/sage-green-study-06.webp",
-    "sha256": "ecfaf27625bad77bf560d79e622a037e93e7c133fd18baf4c9f123798f89a17a",
-    "bytes": 637560,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d"
   }
 }

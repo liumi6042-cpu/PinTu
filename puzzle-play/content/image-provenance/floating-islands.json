@@ -89,15 +89,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/floating-islands.webp",
-    "sha256": "20c3dcc2ac4393bfead6924c055c6355f1064d385a6d437df5af439a8c12f7bc",
-    "bytes": 762942,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "5bfa21dba8a2d814c6fe592181803562e6543fc235b8ebbc5dd70aea63e57c5e"
   }
 }

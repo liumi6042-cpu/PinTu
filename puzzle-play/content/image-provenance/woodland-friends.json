@@ -89,15 +89,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/woodland-friends.webp",
-    "sha256": "5e7a5a0b9ed5b765569a2e1d9c26ba5f2ce37c739ed88ed09629c1d4e42a847f",
-    "bytes": 799766,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "1199446d03476b2090fcb6fc91a2875c0b76b20b0ba1ed8b009e03e1a84bbd2c"
   }
 }

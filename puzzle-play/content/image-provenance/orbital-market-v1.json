@@ -66,15 +66,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/orbital-market-v1.webp",
-    "sha256": "cdd791b8e785e222a5175937c6d757f258f19a861666aa82650a83e4e79cbc2c",
-    "bytes": 654286,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "2f1036f352ae986437add602112ad0be685730bb79af32700d3de6c946902241"
   }
 }

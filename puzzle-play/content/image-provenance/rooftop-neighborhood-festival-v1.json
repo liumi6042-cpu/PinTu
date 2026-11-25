@@ -66,15 +66,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/rooftop-neighborhood-festival-v1.webp",
-    "sha256": "2c08112842cd1ba19650271b1abb0ae65f5e65066788bce5ed39020b1e80ecd1",
-    "bytes": 724154,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "802826b6d083c6aa30006fdb814e6e8e8e71ef2a9c55bf842394dc74d16eb3d7"
   }
 }

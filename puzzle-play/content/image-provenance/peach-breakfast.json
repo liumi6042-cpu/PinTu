@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/peach-breakfast.webp",
-    "sha256": "71da68bddc39810a9e570f1110f83784226305033952226d295efbd74028fa0c",
-    "bytes": 155538,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "a73ceddd4c7d8110b535db21bf022deb71620aadadde7f80e7343aa09f95a5cd"
   }
 }

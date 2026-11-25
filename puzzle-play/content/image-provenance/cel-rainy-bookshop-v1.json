@@ -19,16 +19,7 @@
         "imageId": "cel-sunset-train-v1",
         "path": "public/puzzles/cel-sunset-train-v1.png",
         "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
-        "purpose": "rendering-style-only",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "public/puzzles/cel-sunset-train-v1.webp",
-          "sha256": "f308498b8dbc981dd9628b10191940e7b6d7ee3286cdaab7af9866fc1fd74f26",
-          "bytes": 238906,
-          "width": 1536,
-          "height": 1024
-        }
+        "purpose": "rendering-style-only"
       }
     ],
     "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-2ebcf461-900c-4bcb-bb34-026efe9a80dd.png",
@@ -93,15 +84,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cel-rainy-bookshop-v1.webp",
-    "sha256": "96d99a3e54d28c90685ff7385b748a3fe62ed69f16bd3214373ba15fe540cf1e",
-    "bytes": 331790,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282"
   }
 }

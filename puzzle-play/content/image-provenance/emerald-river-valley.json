@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/emerald-river-valley.webp",
-    "sha256": "e4d96d2ebc67b68fa26b0de84c9539900b023281198a55b10cfbfb7a91bb2ff0",
-    "bytes": 577446,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0"
   }
 }

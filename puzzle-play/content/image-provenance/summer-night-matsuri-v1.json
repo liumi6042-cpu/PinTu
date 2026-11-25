@@ -66,15 +66,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/summer-night-matsuri-v1.webp",
-    "sha256": "1213205c27f58c9d3a8a22957713b7e3c75f12e69ba2bfa1c14a494bec1e0fb4",
-    "bytes": 749664,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "e163daa82abc2433a8ecac0efb24f417eec847ed827164e65ce82aaf60c7cda1"
   }
 }

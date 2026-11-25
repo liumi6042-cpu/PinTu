@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/spring-stream-stone-bridge-v1.webp",
-    "sha256": "64d130f992b5a6beec1d221008f51361e949ef0ea6811df8e7b09c74f383097c",
-    "bytes": 772948,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f"
   }
 }

@@ -20,16 +20,7 @@
       "bytes": 3295777,
       "width": 1254,
       "height": 1254,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/cat-journey-cloud-roof-v1/native.webp",
-        "sha256": "f06cdc5d22c5eb9c59ca2d83d150b8b8c8e3fb040e86faced8c134cea307dd88",
-        "bytes": 554690,
-        "width": 1254,
-        "height": 1254
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/cat-journey-cloud-roof-v1.png",
     "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
@@ -88,15 +79,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cat-journey-cloud-roof-v1.webp",
-    "sha256": "b00b5334a7884b89f433282853cffadf9acb47f7badd9806c3132d3348cf56ad",
-    "bytes": 1809386,
-    "width": 3840,
-    "height": 3840,
-    "originalPngSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3"
   }
 }

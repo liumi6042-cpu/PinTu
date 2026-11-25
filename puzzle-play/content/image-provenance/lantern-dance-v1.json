@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/lantern-dance-v1.webp",
-    "sha256": "a6775b85ae41414a6410ecc230350f93706f3d29be27dceca346bd8a87118b5f",
-    "bytes": 689956,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "a02c710b67ba33d7e936b0eed5fcb4f5368572b0f28ba671e4704ffdc9a7062d"
   }
 }

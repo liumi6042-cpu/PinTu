@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/daily-moonlit-cherry-umbrella-v1.webp",
-    "sha256": "4ff1ed93e3c98ad60a6fffa5660041ae7b64171b90d2f1e52882e11ccbb8e157",
-    "bytes": 517358,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "b48bcb74de05416623e175ee78bc2a62a15ac4ed8f37a3aebafba51d7cdf9941"
   }
 }

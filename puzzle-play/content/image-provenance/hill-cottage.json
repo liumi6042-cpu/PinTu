@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/hill-cottage.webp",
-    "sha256": "6ad45e1707808e0f599ab6345d7291325d0fe5701b301f3ae4628d2e8e6ad47e",
-    "bytes": 219394,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "2f7958c757930a52bcbf199d07b9ef29f780e1e688a73b7964cd599e7b0d7570"
   }
 }

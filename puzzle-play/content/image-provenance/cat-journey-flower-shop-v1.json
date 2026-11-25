@@ -20,16 +20,7 @@
       "bytes": 3372685,
       "width": 1254,
       "height": 1254,
-      "format": "png",
-      "master": {
-        "format": "webp",
-        "quality": 90,
-        "path": "content/artwork/gallery-hd/cat-journey-flower-shop-v1/native.webp",
-        "sha256": "58bc2f52f7d8d32bd944b9587f0cf3c81b278390a76ce34a0c3b0603bed2d95a",
-        "bytes": 610980,
-        "width": 1254,
-        "height": 1254
-      }
+      "format": "png"
     },
     "originalFile": "public/puzzles/cat-journey-flower-shop-v1.png",
     "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
@@ -88,15 +79,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cat-journey-flower-shop-v1.webp",
-    "sha256": "1abd1041feaa58967b6b0d660600530dfdab7d9e71a9152de05d03a850cb702b",
-    "bytes": 2047316,
-    "width": 3840,
-    "height": 3840,
-    "originalPngSha256": "344408646f4c079bb9482842720b7e6322f9c84f63c74c6cf842f98b11077a34"
   }
 }

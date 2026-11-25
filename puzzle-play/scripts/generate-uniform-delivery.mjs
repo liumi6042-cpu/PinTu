@@ -7,14 +7,12 @@
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {existsSync, readFileSync, writeFileSync} from 'node:fs';
-import {dirname, join, resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {join} from 'node:path';
 
-const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const require = createRequire(join(WORKSPACE_ROOT, 'jigsaw-nook-taptap/package.json'));
+const require = createRequire('D:/chat/拼图/jigsaw-nook-taptap/package.json');
 const sharp = require('sharp');
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = 'D:/chat/拼图/work/dual-managed-release-20261014';
 const PUZZLES = join(ROOT, 'public/puzzles');
 const catalog = JSON.parse(readFileSync(join(ROOT, 'content/puzzle-catalog.json'), 'utf8'));
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -53,5 +51,5 @@ for (const photo of catalog) {
 }
 
 out.done = done; out.failed = failed; out.totalBytes = total;
-writeFileSync(join(WORKSPACE_ROOT, 'content-admin/work/asset-upload-20261017/uniform-delivery.json'), JSON.stringify(out, null, 2) + '\n');
+writeFileSync('D:/chat/拼图/content-admin/work/asset-upload-20261017/uniform-delivery.json', JSON.stringify(out, null, 2) + '\n');
 console.log(JSON.stringify({done, failed: failed.length, totalMB: +(total / 1048576).toFixed(1)}));

@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/sleepy-cat.webp",
-    "sha256": "32fd3b24047680e0ee308c6d04f337047d5d068505029b61ed26acf10c539001",
-    "bytes": 231330,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "014adfd1bf4633f2992dccb954328843a872b9887f8ce23892ce5821772c1279"
   }
 }

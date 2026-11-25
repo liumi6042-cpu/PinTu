@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/daily-sky-whale-islands-v1.webp",
-    "sha256": "539521c0c154c4ea20b68cde4fcf8b5f78ac2c144ed299d864698b0125976a5d",
-    "bytes": 376300,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "cdfb36e9dfd6fb187b371eee0a390680b42df86498ace5b44a538afb0d03ed4f"
   }
 }

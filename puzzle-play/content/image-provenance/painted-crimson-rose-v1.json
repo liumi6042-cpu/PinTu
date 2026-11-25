@@ -19,16 +19,7 @@
         "imageId": "painted-moonlit-portrait-v1",
         "path": "public/puzzles/painted-moonlit-portrait-v1.png",
         "sha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
-        "purpose": "rendering-style-only",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "public/puzzles/painted-moonlit-portrait-v1.webp",
-          "sha256": "0d31827aad8f2496e8ebea2731a6fb91d23d97c9fa0f82a3d8281440def46aba",
-          "bytes": 346686,
-          "width": 1536,
-          "height": 1024
-        }
+        "purpose": "rendering-style-only"
       }
     ],
     "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-e976ff7e-34c9-4053-a9b3-3fca8e442a6d.png",
@@ -93,15 +84,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/painted-crimson-rose-v1.webp",
-    "sha256": "2e8055a934d54481a4da842a07a73095159907ea725e9812970d31098ce977f5",
-    "bytes": 316668,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "4e33aee441f7adc7a4f78adab4dd20b7199852049ca980e0b3a5819808dc0d1f"
   }
 }

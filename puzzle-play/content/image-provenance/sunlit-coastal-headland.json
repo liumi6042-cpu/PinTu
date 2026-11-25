@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/sunlit-coastal-headland.webp",
-    "sha256": "68f8d74fcd7425eb4094331cf7f03d70179b393caa75664d6946370bf403f990",
-    "bytes": 411158,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa"
   }
 }

@@ -47,7 +47,13 @@ const port=await freePort(3137);
   for(const path of ['/','/gallery','/lobby','/help','/api/locale']){const response=await get(path);assert.equal(response.status,200,path);await response.arrayBuffer();}
   const sharedPage=await (await get('/play')).text();assert.ok(sharedPage.includes('id="game"'));assert.ok(sharedPage.includes('shared-game-host'));
   const sharedConfig=await (await get('/api/shared/config')).json();assert.equal(sharedConfig.identityMode,'web-cookie');assert.equal(sharedConfig.capabilities.energy,false);assert.ok(sharedConfig.uiBase.startsWith('/shared-client/'));
-  for(const path of ['/','/zh','/lobby','/zh/lobby','/gallery','/zh/gallery','/albums','/tasks','/decorations','/personal','/personal/images','/achievements','/leaderboard','/courtyard','/wardrobe'])await assertSharedEntry(get,path);
+  for(const [path,lang] of [['/','en'],['/zh','zh-CN']]){
+    const response=await get(path,false);assert.equal(response.status,200,path);
+    assert.match(response.headers.get('x-robots-tag'),/^index, follow/);
+    const html=await response.text();assert.ok(html.includes(`lang="${lang}"`)&&html.includes('web-home-hero')&&html.includes('href="/play"'),path);
+  }
+  for(const path of ['/lobby','/zh/lobby','/gallery','/zh/gallery','/albums','/tasks','/decorations','/personal','/personal/images','/achievements','/leaderboard','/courtyard','/wardrobe'])await assertSharedEntry(get,path);
+  await assertSharedEntry(get,'/zh?invite=qa-code','/play?invite=qa-code');
   await assertSharedEntry(get,'/zh/lobby?invite=qa-code','/play?invite=qa-code');
   for(const path of ['/account','/account/security','/account/recover','/privacy','/terms','/feedback'])assert.equal((await get(path)).status,200,path);
   const post=async(body,cookie='')=>fetch('http://127.0.0.1:'+port+'/api/rooms',{method:'POST',headers:{Host:'jigsawnook.online','X-Forwarded-Host':'jigsawnook.online','X-Forwarded-Proto':'https',Origin:'https://jigsawnook.online','Content-Type':'application/json',Cookie:cookie},body:JSON.stringify(body)});

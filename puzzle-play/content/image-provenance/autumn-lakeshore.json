@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/autumn-lakeshore.webp",
-    "sha256": "f9bdf10b04b8efca24ae54b01f1903a0fcfcc40bcf3ae2d069df96cc3b3ad2c6",
-    "bytes": 456928,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e"
   }
 }

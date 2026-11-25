@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/alpine-turquoise-reflections-v1.webp",
-    "sha256": "fffce1967556474491492c1fc8b5a14a29513092867c0c6694daee40c1160a16",
-    "bytes": 645302,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a"
   }
 }

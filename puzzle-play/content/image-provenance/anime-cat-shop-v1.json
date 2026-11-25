@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/anime-cat-shop-v1.webp",
-    "sha256": "4890690b917b506848cdd17d24fcaf78ce8922943923c0d81a666aa8f70b0136",
-    "bytes": 272382,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "05a89dc381697e6f68c7b9939f23bde898d720cdc5b71f78315c78d0f0e41043"
   }
 }

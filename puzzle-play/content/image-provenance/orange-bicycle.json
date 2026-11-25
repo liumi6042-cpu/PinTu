@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/orange-bicycle.webp",
-    "sha256": "1c814eb20f782ab084567246bc7bfbd3e21da188f7546018518a3fbdb11779ce",
-    "bytes": 228492,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa"
   }
 }

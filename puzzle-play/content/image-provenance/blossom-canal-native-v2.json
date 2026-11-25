@@ -76,15 +76,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/blossom-canal-native-v2.webp",
-    "sha256": "dc2c1f25bb5869f9d7c845475bdf23563bb7acc42aa80895617c1db985145bd5",
-    "bytes": 610346,
-    "width": 1774,
-    "height": 887,
-    "originalPngSha256": "c32a5856c0e7cf153d972116ee9beab6eed6211e09b66e636ec6c22200be9ef1"
   }
 }

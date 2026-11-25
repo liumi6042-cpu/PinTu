@@ -1,6 +1,8 @@
-import { redirect } from 'next/navigation';
 import { pageMetadata } from '@/lib/seo';
+import WebHome from './web-home';
+
 export const metadata = pageMetadata('/');
+
 export default function Home() {
- redirect('/play');
+  return <WebHome locale="en" />;
 }

@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/magic-treehouse-v1.webp",
-    "sha256": "125aac15eb9a6a2c6f6278fa7dafc460399f490409e1ea4e38a41cb8c0ff0bd7",
-    "bytes": 747078,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "190bf68e987041ed369bdd025f386ae714afd92d80060e1b526606d92932f990"
   }
 }

@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/sailboat-bay.webp",
-    "sha256": "582318c0a6b1e25c8341b18803b2a38c1f83c9732036d3220edf5f7137a7060b",
-    "bytes": 251296,
-    "width": 1402,
-    "height": 1122,
-    "originalPngSha256": "05930cf579a607be753c3447876c12f999563185fe431772c5cd2f7234911445"
   }
 }

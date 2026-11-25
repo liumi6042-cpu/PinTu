@@ -85,15 +85,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/alpine-village.webp",
-    "sha256": "1c5a758181d0064f735085bf5edaf43bf391c2231f80b9dc0eeb64989868c437",
-    "bytes": 758630,
-    "width": 1774,
-    "height": 887,
-    "originalPngSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8"
   }
 }

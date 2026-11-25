@@ -74,15 +74,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/vermilion-garden.webp",
-    "sha256": "695febac997509bec1e22ab26c7add84dde7b86b19016403581d337c53b8cb41",
-    "bytes": 715582,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77"
   }
 }

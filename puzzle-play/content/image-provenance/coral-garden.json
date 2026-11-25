@@ -84,15 +84,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/coral-garden.webp",
-    "sha256": "520d6e0a62d02387638402e723c8b8781ee1f118c56f9f9aad9166c11d443541",
-    "bytes": 858156,
-    "width": 1774,
-    "height": 887,
-    "originalPngSha256": "9968f5381ce9efef4905730df29e1303e8e55ec68add3d873a8ab88a633f13f9"
   }
 }

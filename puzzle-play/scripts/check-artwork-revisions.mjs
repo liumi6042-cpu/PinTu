@@ -4,7 +4,6 @@ import {readFile,lstat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {join,relative,resolve,sep,isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {resolveMediaDir,safeMediaFile} from './media-paths.mjs';
 
 const digest=/^[a-f0-9]{64}$/;
 const idPattern=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -80,9 +79,9 @@ export async function checkArtworkRevisions(root){
   }
  }
  if(Object.keys(registry.files).length!==expected.size||Object.keys(registry.files).some(url=>!expected.has(url)))fail('unreferenced or missing overlay file metadata');
- const files=[],puzzlesDir=resolveMediaDir(root,'puzzles');
+ const files=[];
  for(const[url,facts]of expected){
-  const bytes=await readFile(safeMediaFile(puzzlesDir,url.slice('/puzzles/'.length)));
+  const bytes=await readFile(await fileWithin(root,'public'+url));
   if(bytes.length!==facts.bytes||sha(bytes)!==facts.sha256)fail('overlay file hash/size differs: '+url);
   const size=lossySize(bytes);if(size.width!==facts.width||size.height!==facts.height)fail('overlay file dimensions differ: '+url);
   files.push(url.slice('/puzzles/'.length));

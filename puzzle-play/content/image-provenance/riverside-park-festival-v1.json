@@ -66,15 +66,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/riverside-park-festival-v1.webp",
-    "sha256": "dfdde9ebab1f7dfb986c4ec10d7e52dfce9d062a8f591511e2cef8e65950d6af",
-    "bytes": 804166,
-    "width": 1254,
-    "height": 1254,
-    "originalPngSha256": "3384849649bd8e4391d8b8e50ac85e86b0aa624b57d5662fe9f9d2e7f7141ec8"
   }
 }

@@ -74,15 +74,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/amber-cabinet.webp",
-    "sha256": "0bc47d81cffc7d47e61a9613cf50fcee59cff4fef1a13a92ff94e60f1420959e",
-    "bytes": 537478,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "6efa913d5ffa8c37d2df4d8d795f0dea98173429e5ae14ffd05eb23d4874f9c4"
   }
 }

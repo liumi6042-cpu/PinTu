@@ -1,6 +1,8 @@
-import { redirect } from 'next/navigation';
 import { zhPageMetadata } from '@/lib/seo';
+import WebHome from '../web-home';
+
 export const metadata = zhPageMetadata('/');
+
 export default function Page() {
-  redirect('/play');
+  return <WebHome locale="zh" />;
 }

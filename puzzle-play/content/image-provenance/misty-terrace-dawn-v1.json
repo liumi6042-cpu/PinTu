@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/misty-terrace-dawn-v1.webp",
-    "sha256": "56488feb1e196faeee0171029e40fb1911b632b92437e5d098494b28be2549ee",
-    "bytes": 630282,
-    "width": 1448,
-    "height": 1086,
-    "originalPngSha256": "4f99e284f39f7930fc17de574016702aec526b13d6163c7385265592be8eddbf"
   }
 }

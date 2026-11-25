@@ -64,15 +64,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/cloud-dragon-ascension-v1.webp",
-    "sha256": "e7a45e3dc3608ad93ba5e91d1b4fa60a0ba22dcc31a347c8d676c3495ca3d9aa",
-    "bytes": 605610,
-    "width": 1672,
-    "height": 941,
-    "originalPngSha256": "801f479d87b91cb50709b09f61a7a42dfab5afeb07710104771652428c161663"
   }
 }

@@ -77,15 +77,5 @@
         "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/painted-snow-parasol-v1.webp",
-    "sha256": "3f9f80b2b80b81eda5ffd3fbfb19ce81621f3a9366d288a1fd9618d542d9ce65",
-    "bytes": 456278,
-    "width": 1536,
-    "height": 1024,
-    "originalPngSha256": "9c7261f6de02bddb2871887d368d3d34f469c6a4eed42644c19e1200b0c20961"
   }
 }

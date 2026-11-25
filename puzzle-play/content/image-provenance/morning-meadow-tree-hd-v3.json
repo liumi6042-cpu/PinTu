@@ -17,58 +17,22 @@
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-left-guide.png",
-        "sha256": "6fa791630e75abbedf1ecac2326eda816a36bac5aa50f471e2c1a7d38cf74313",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-left-guide.webp",
-          "sha256": "adda2b1fceb6a49c357105bcae6b8022b698940a73ceaaac48bd58341da5a1f2",
-          "bytes": 246170,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "6fa791630e75abbedf1ecac2326eda816a36bac5aa50f471e2c1a7d38cf74313"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-right-guide.png",
-        "sha256": "b6c84bf70b4aecddcf9d42e9dbe7070fbaf8b16b08166e73d94c81a8b8e7fa6b",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-right-guide.webp",
-          "sha256": "cd1e0f6bdf835c56b80af449168a06870796f86d159e49b2a949df60e3e9b94e",
-          "bytes": 147520,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "b6c84bf70b4aecddcf9d42e9dbe7070fbaf8b16b08166e73d94c81a8b8e7fa6b"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-left-guide.png",
-        "sha256": "99b19dd77f737a93c344f2734c1fe5af62f9d7292924de97a25e488d0d319f02",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-left-guide.webp",
-          "sha256": "bc5f9b805bc8e6069d1f6aad0b1132981cc62eedaf16e565edb7a4ad74631edf",
-          "bytes": 231492,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "99b19dd77f737a93c344f2734c1fe5af62f9d7292924de97a25e488d0d319f02"
       },
       {
         "origin": "project-ai-generated",
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-right-guide.png",
-        "sha256": "0f77228bc1ef0646adf811936b9e427d57553b0161f21aa521b16d64e64c8a2f",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-right-guide.webp",
-          "sha256": "1aef97b267e477784351166c42a162674321eba160ab73b81d603f9bcc304987",
-          "bytes": 225568,
-          "width": 1000,
-          "height": 500
-        }
+        "sha256": "0f77228bc1ef0646adf811936b9e427d57553b0161f21aa521b16d64e64c8a2f"
       }
     ],
     "compositionGuide": {
@@ -86,64 +50,28 @@
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-left-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "c7e3aaf9cd3ecea9650b14883b99f974e6c80c803f4ffb962478c2468025d0ad",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-left-native.webp",
-          "sha256": "f0848749fef166fa14b5aa2c59b09c2c872c1ba3d12709849d1a4e1c295d54f1",
-          "bytes": 673740,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "c7e3aaf9cd3ecea9650b14883b99f974e6c80c803f4ffb962478c2468025d0ad"
       },
       {
         "id": "top-right",
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-right-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "27ec124e6c01e71fc33a7e734226b2f3bea535c49233817c2f963f8e769850c7",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/top-right-native.webp",
-          "sha256": "83fb7a83a9f9bb3aaefc8d5e5bed0c01f11ec5110b63aa5c922105f0e8ccdc89",
-          "bytes": 474828,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "27ec124e6c01e71fc33a7e734226b2f3bea535c49233817c2f963f8e769850c7"
       },
       {
         "id": "bottom-left",
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-left-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "dee8abe64421389bcc1becf1382b5511c398e11c18660aa5e875c1e4b37d5db8",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-left-native.webp",
-          "sha256": "b18a85290f8e99c9b37f441df33fc942cecd7f8204a8aaf4f799c4707bef821f",
-          "bytes": 712720,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "dee8abe64421389bcc1becf1382b5511c398e11c18660aa5e875c1e4b37d5db8"
       },
       {
         "id": "bottom-right",
         "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-right-native.png",
         "width": 1774,
         "height": 887,
-        "sha256": "41748270e1ba3245f3b3c7444aaf91a9da0bdce98a449c867368b1abf3f06680",
-        "master": {
-          "format": "webp",
-          "quality": 90,
-          "path": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/bottom-right-native.webp",
-          "sha256": "24933c966d5caff83b8c2dcdb8ab9686e2d33e2927665391cccff7deb84323c2",
-          "bytes": 703536,
-          "width": 1774,
-          "height": 887
-        }
+        "sha256": "41748270e1ba3245f3b3c7444aaf91a9da0bdce98a449c867368b1abf3f06680"
       }
     ],
     "assemblyRecord": "content/artwork/gallery-hd/morning-meadow-tree-hd-v3/manifest.json",
@@ -169,11 +97,11 @@
   "delivery": {
     "sourceSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1",
     "optimized": {
-      "src": "/puzzles/morning-meadow-tree-hd-v3-optimized-c7344d4e5170.webp",
-      "sha256": "c7344d4e51708f8ff34680fc33f27b15d6dbd29d00d9c5cef26e97eb3fb39420",
-      "bytes": 1028242,
-      "width": 3147,
-      "height": 1574,
+      "src": "/puzzles/morning-meadow-tree-hd-v3-optimized-8e5afd7efc6a.webp",
+      "sha256": "8e5afd7efc6af2d5a98a1966dfe3bbaa82aeae3cb114b7eab0fe59819054c3af",
+      "bytes": 766766,
+      "width": 2560,
+      "height": 1280,
       "format": "webp",
       "lossless": false,
       "quality": 70,
@@ -204,18 +132,9 @@
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 6
+        "effort": 6,
+        "smartSubsample": false
       }
     }
-  },
-  "master": {
-    "format": "webp",
-    "quality": 90,
-    "src": "/puzzles/morning-meadow-tree-hd-v3.webp",
-    "sha256": "b03e320bb740c4d35e3142e169f21f80c92bf2b3a4db41ac7430a65ddbbd9e58",
-    "bytes": 1966764,
-    "width": 3147,
-    "height": 1574,
-    "originalPngSha256": "7ead94ad5d3066beb4dc44137a6c8c2defb4e3f6c4ed258bd853945fc83d18b1"
   }
 }

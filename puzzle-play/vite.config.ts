@@ -4,36 +4,8 @@ import vinext from 'vinext';
 import { defineConfig } from 'vite';
 import hostingConfig from './.openai/hosting.json';
 import { checkImageLibrary } from './scripts/check-image-library.mjs';
-import { resolveMediaDir, safeMediaFile } from './scripts/media-paths.mjs';
-import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { deliveredGuidancePlugin } from './server/delivered-guidance-plugin.mjs';
-
-function sharedMediaPuzzlesPlugin() {
-  return {
-    name: 'jigsaw-shared-media-puzzles',
-    configureServer(server: { middlewares: { use: Function } }) {
-      const puzzlesDir = resolveMediaDir(process.cwd(), 'puzzles');
-      server.middlewares.use((req: { url?: string; method?: string }, res: { setHeader: Function; end: Function }, next: Function) => {
-        if ((req.method === 'GET' || req.method === 'HEAD') && req.url?.startsWith('/puzzles/')) {
-          const clean = req.url.split('?')[0].slice('/puzzles/'.length);
-          if (/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(clean)) {
-            try {
-              const file = safeMediaFile(puzzlesDir, clean);
-              if (existsSync(file)) {
-                res.setHeader('Content-Type', 'image/webp');
-                res.setHeader('Cache-Control', 'public, max-age=86400');
-                res.end(req.method === 'HEAD' ? undefined : readFileSync(file));
-                return;
-              }
-            } catch {}
-          }
-        }
-        next();
-      });
-    },
-  };
-}
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   '00000000-0000-4000-8000-000000000000';
@@ -93,7 +65,6 @@ export default defineConfig(async () => {
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,
     plugins: [
-      sharedMediaPuzzlesPlugin(),
       vinext(),
       sites(),
       cloudflare({
