@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
+import { deliveryDimensions, MAX_DELIVERY_PIXELS } from './delivery-spec.mjs';
 import { checkArtworkRevisions } from './check-artwork-revisions.mjs';
 
 const fullHdOptimizedIds=new Set(['mountain-lake-reflection-hd-v3','morning-meadow-tree-hd-v3','clear-sand-bay-hd-v3']);
@@ -85,8 +86,14 @@ export async function checkImageLibrary(root){
     if(record.id!==photo.id||record.origin!==photo.origin||record.review.status!=='reviewed')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
     if(photo.origin==='project-ai-generated'){
       const referenceRedraw=record.generation?.method==='builtin-original-reference-redraw';
+      // A single-stage Doubao redraw is accepted only with its provider, model and
+      // the vendor's own terms; a console import has no generator at all.
+      const doubaoRedraw=record.generation?.tool==='Ark Images Generations API'
+        &&record.generation?.provider==='ByteDance Doubao'
+        &&/^doubao-seedream-[a-z0-9.-]+$/.test(record.generation?.model??'');
+      const consoleImport=record.generation?.tool==='admin-upload';
       if(referenceRedraw)await checkReferenceRedraw(root,photo,record);
-      else if(record.generation.tool!=='image_gen')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
+      else if(!doubaoRedraw&&!consoleImport&&record.generation.tool!=='image_gen')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
       for(const reference of referenceRedraw?[]:record.generation.referenceImages){
         if(!reference||!/^[a-f0-9]{64}$/.test(reference.sha256))throw new Error(`图片参考来源或用途未获登记：${photo.id}`);
         const legacyProject=reference.origin==='project-ai-generated'&&/^content\/artwork\/gallery-hd\/[a-z0-9-]+\/[a-z0-9-]+\.png$/.test(reference.path);
@@ -106,7 +113,9 @@ export async function checkImageLibrary(root){
         if(!/^content\/image-prompts\/[a-z0-9-]+\.txt$/.test(record.generation.promptPath))throw new Error('提示词存档路径无效');
         if(!(await readFile(join(root,record.generation.promptPath),'utf8')).trim())throw new Error('提示词为空');
       }else if(!(photo.id==='seaside'&&record.generation.legacyPromptUnavailable))throw new Error(`缺少原始提示词：${photo.id}`);
-      if(!referenceRedraw&&(record.commercialUse.basis!=='provider-output-terms'||!record.commercialUse.termsUrl.startsWith('https://openai.com/policies/')))throw new Error('缺少服务条款依据');
+      const terms=record.commercialUse?.termsUrl??'';
+      const termsOk=doubaoRedraw?terms.startsWith('https://docs.volcengine.com/docs/ark/'):terms.startsWith('https://openai.com/policies/');
+      if(!referenceRedraw&&(record.commercialUse.basis!=='provider-output-terms'||!termsOk))throw new Error('缺少服务条款依据');
     }else{
       // user-provided: the right to publish must be stated, not assumed.
       if(!record.source?.description?.trim())throw new Error(`缺少图片来源说明：${photo.id}`);
@@ -140,7 +149,9 @@ export async function checkImageLibrary(root){
       files.add(item.src.slice('/puzzles/'.length));
     }
     // Two deliverable files per picture since 2026-10-17 (no separate play file,
-    // no smaller variant): optimized Q70 / longest side 2560, plus a 384 thumbnail.
+    // no smaller variant): optimized Q70 within the total-pixel budget, plus a
+    // 384 thumbnail. The budget follows the aspect ratio, so a wide picture
+    // keeps a longer side than a square one at the same detail cost.
     for(const [kind,field] of [['optimized','optimizedSrc']]){
       const item=record.delivery[kind];
       if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||item.quality!==70)throw new Error(`压缩交付记录无效：${photo.id}`);
@@ -152,7 +163,8 @@ export async function checkImageLibrary(root){
       const size=lossyWebpSize(data);
       if(!size)throw new Error(`压缩交付必须是静态 VP8 有损 WebP：${photo.id}`);
       if(size.width!==item.width||size.height!==item.height)throw new Error(`压缩交付记录尺寸不一致：${photo.id}`);
-      if(Math.max(size.width,size.height)!==Math.min(2560,Math.max(record.width,record.height)))throw new Error(`压缩交付长边必须为 2560 或原生尺寸：${photo.id}`);
+      const budget=deliveryDimensions(record.width,record.height,MAX_DELIVERY_PIXELS);
+      if(size.width!==budget.width||size.height!==budget.height)throw new Error(`压缩交付尺寸必须为 ${budget.width}×${budget.height}（原图 ${record.width}×${record.height}，像素预算 ${MAX_DELIVERY_PIXELS}）：${photo.id}`);
       if(size.width>record.width||size.height>record.height)throw new Error(`压缩交付不得放大：${photo.id}`);
       files.add(item.src.slice('/puzzles/'.length));
     }
