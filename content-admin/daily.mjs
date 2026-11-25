@@ -108,7 +108,8 @@ export function buildDailyConfiguration(document, source) {
   const levelAlbum = album => /^shiguang-ch\d+$/.test(album.id);
   // Pictures of an album unlocked one by one through rewarded ads (mobile backend AD_UNLOCK_ALBUM_IDS) never become a free daily puzzle.
   const adOnly = new Set(document.albums.filter(album => AD_UNLOCK_ALBUM_IDS.has(album.id)).flatMap(album => album.imageIds));
-  const fallbackImageIds = [...new Set(document.albums.filter(album => !levelAlbum(album)).flatMap(album => album.imageIds).filter(id => usableIds.has(id) && !adOnly.has(id)))].sort();
+  // Fallback daily puzzles come only from mobile-visible albums so PC-only or mobile-hidden galleries never enter the mobile daily slot.
+  const fallbackImageIds = [...new Set(document.albums.filter(album => album.showOnMobile && !levelAlbum(album)).flatMap(album => album.imageIds).filter(id => usableIds.has(id) && !adOnly.has(id)))].sort();
   const related = new Set([...entries, ...automaticCandidates].map(entry => entry.albumId));
   const fields = ['id', 'title', 'description', 'showOnPc', 'showOnMobile', 'purchasable', 'price', 'decorationId', 'milestones'];
   const albums = document.albums.filter(album => related.has(album.id)).map(album => Object.fromEntries(fields.map(field => [field, copy(album[field])])))

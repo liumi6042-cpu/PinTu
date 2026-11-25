@@ -38,26 +38,35 @@ test('undated automatic candidates coexist with manual dates and legacy reservat
  assert.throws(()=>validateDraft({...draft,dailyPlans:invalid},source),error=>error.code==='INVALID_DRAFT');
  assert.throws(()=>assertDailyPlanChanges(document(),{...draft,dailyPlans:[plan(dailyImage,'2030-05-01')]},[],Date.parse('2030-05-01T12:00:00+08:00')),error=>error.code==='DAILY_PLAN_DATE_PAST');
 });
-test('v2 bridge includes assigned archived, hidden and purchase albums; omits pending and unassigned',()=>{
- const draft=document(),pending=source.assets.find(asset=>asset.lifecycle==='pending'),archived=source.assets.find(asset=>asset.targets['mobile-shared'].status==='archived'),destination=draft.albums.find(album=>album.id==='daily-destination');
+test('v2 bridge fallback includes mobile-visible archived and purchase albums; omits PC-only, hidden, pending and unassigned',()=>{
+ const draft=document(),archived=source.assets.find(asset=>asset.targets['mobile-shared'].status==='archived');
+ const pending=source.assets.find(asset=>asset.lifecycle==='pending')??source.assets.find(asset=>asset.lifecycle==='retained'&&![dailyImage,secondImage,thirdImage,archived.id].includes(asset.id));
+ const pcOnlyImage=source.assets.find(asset=>asset.lifecycle==='retained'&&![dailyImage,secondImage,thirdImage,archived.id,pending.id].includes(asset.id)).id;
+ const destination=draft.albums.find(album=>album.id==='daily-destination'),pcOnly=draft.albums.find(album=>album.id==='daily-origin');
  const testSource=Object.defineProperty({...source,assets:source.assets.map(asset=>asset.id===pending.id?{...asset,runtimeAvailable:false}:asset)},'_private',{value:source._private});
- destination.purchasable=true;destination.price=250;destination.imageIds=[archived.id];destination.coverImageId=archived.id;
- for(const album of draft.albums)if(album.id!==destination.id){album.imageIds=album.imageIds.filter(id=>![archived.id,thirdImage].includes(id));if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
+ destination.showOnMobile=true;destination.purchasable=true;destination.price=250;destination.imageIds=[archived.id];destination.coverImageId=archived.id;
+ pcOnly.showOnPc=true;pcOnly.showOnMobile=false;pcOnly.imageIds=[pcOnlyImage];pcOnly.coverImageId=pcOnlyImage;
+ for(const album of draft.albums)if(![destination.id,pcOnly.id].includes(album.id)){album.imageIds=album.imageIds.filter(id=>![archived.id,pcOnlyImage,thirdImage].includes(id));if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
  draft.dailyPlans=[plan(),automatic(secondImage),plan(pending.id,'2030-05-03')];
  const validated=validateDraft(draft,testSource),cfg=buildDailyConfiguration(validated,testSource);
  assert.equal(cfg.schema,'jigsaw-daily-content/v2');assert.equal(configurationDigest(cfg),cfg.configDigest);
  assert.deepEqual(cfg.entries,[{date:'2030-05-02',imageId:dailyImage,albumId:destination.id}]);assert.deepEqual(cfg.automaticCandidates,[{imageId:secondImage,albumId:destination.id}]);
- assert.equal(cfg.fallbackImageIds.includes(archived.id),true);assert.equal(cfg.fallbackImageIds.includes(thirdImage),false);assert.equal(cfg.fallbackImageIds.includes(pending.id),false);
- assert.equal(dailyReadiness(validated,testSource)[0].ready,true);assert.equal(dailyReadiness(validated,testSource)[2].ready,false);assert.equal(cfg.albums[0].purchasable,true);assert.equal(cfg.albums[0].showOnMobile,false);
+ assert.equal(cfg.fallbackImageIds.includes(archived.id),true);assert.equal(cfg.fallbackImageIds.includes(pcOnlyImage),false);assert.equal(cfg.fallbackImageIds.includes(thirdImage),false);assert.equal(cfg.fallbackImageIds.includes(pending.id),false);
+ assert.equal(dailyReadiness(validated,testSource)[0].ready,true);assert.equal(dailyReadiness(validated,testSource)[2].ready,false);assert.equal(cfg.albums[0].purchasable,true);assert.equal(cfg.albums[0].showOnMobile,true);
  for(const forbidden of ['sourceFingerprint','_private','password','salt','src','rightsStatement','sourceDescription','imageIds'])assert.equal(Object.hasOwn(cfg,forbidden),false);
 });
-test('story-level albums keep their pictures out of the daily fallback pool',()=>{
- const draft=document(),level=emptyAlbum('shiguang-ch9');draft.albums.push(level);
+test('story-level, ad-unlock and mobile-hidden albums keep their pictures out of the daily fallback pool',()=>{
+ const draft=document(),level={...emptyAlbum('shiguang-ch9'),showOnMobile:true};draft.albums.push(level);
  for(const album of draft.albums){album.imageIds=album.imageIds.filter(id=>id!==thirdImage);if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
  level.imageIds=[thirdImage];level.coverImageId=thirdImage;
  const before=buildDailyConfiguration(validateDraft(draft,source),source);
  assert.equal(before.fallbackImageIds.includes(thirdImage),false);assert.ok(before.fallbackImageIds.length>0);
  level.id='story-extra';assert.equal(buildDailyConfiguration(validateDraft(draft,source),source).fallbackImageIds.includes(thirdImage),true);
+ level.showOnMobile=false;assert.equal(buildDailyConfiguration(validateDraft(draft,source),source).fallbackImageIds.includes(thirdImage),false);
+ level.showOnMobile=true;level.id='healing-time';
+ const existingHealing=draft.albums.find(album=>album.id==='healing-time'&&album!==level);
+ if(existingHealing){existingHealing.showOnMobile=true;existingHealing.imageIds=[...existingHealing.imageIds,thirdImage];draft.albums=draft.albums.filter(album=>album!==level);}
+ assert.equal(buildDailyConfiguration(validateDraft(draft,source),source).fallbackImageIds.includes(thirdImage),false);
 });
 test('automatic receipt freezes undated mode and enrolls once next Beijing day with CAS and no metadata loss',t=>{
  const f=fixture(t),draft=document();draft.dailyPlans=[automatic()];const origin=draft.albums.find(album=>album.id==='daily-origin');origin.imageIds=[dailyImage];origin.coverImageId=dailyImage;

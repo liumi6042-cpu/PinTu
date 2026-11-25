@@ -48,6 +48,8 @@ test('release routes require session and CSRF; preview only uses saved data and 
  writeFileSync(join(directory,'publish-config.json'),'{"private":"C:/private/key","host":');
  const invalidStatus=await request('/api/releases/status');assert.equal(invalidStatus.body.configured,false);assert.doesNotMatch(JSON.stringify(invalidStatus.body),/C:\/private|publish-config\.json/);
  const invalid=await request('/api/releases/confirm','POST',confirmation);assert.equal(invalid.status,503);assert.equal(invalid.body.code,'INVALID_PUBLISH_CONFIG');assert.equal(calls,0);
+ writeFileSync(join(directory,'publish-config.json'),'\uFEFF'+JSON.stringify(configuration));
+ assert.equal((await request('/api/releases/status')).body.configured,true);
  assert.equal(app.releases!==undefined,true);
 });
 

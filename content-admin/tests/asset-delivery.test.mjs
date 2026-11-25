@@ -117,3 +117,16 @@ test('missing local artwork fails before any upload', async () => {
     rmSync(root, {recursive: true, force: true});
   }
 });
+
+test('plan tolerates a UTF-8 BOM in publish-config.json', async () => {
+  const {root, delivery} = fixture({existing: ['alpha-v1-play-aa.webp', 'alpha-v1-thumbnail-bb.webp', 'alpha-v1-optimized-cc.webp']});
+  try {
+    const cfgPath = join(root, 'content-admin/work/publish-config.json');
+    writeFileSync(cfgPath, '\uFEFF' + readFileSync(cfgPath, 'utf8'));
+    const plan = await delivery.plan();
+    assert.equal(plan.reachable, true);
+    assert.equal(plan.missing.length, 0);
+  } finally {
+    rmSync(root, {recursive: true, force: true});
+  }
+});

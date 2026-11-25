@@ -1,6 +1,7 @@
 import { createReleasePanel } from './release-ui.js';
 import { renderImport } from './import-ui.js';
 import { createDragPayload, parseDragPayload } from './album-drag.js';
+import { ALBUM_FILTER_SCOPES, albumDailyStats, filterAlbums, countAlbumScopes } from './album-filters.js';
 import { dailyImageState, tomorrowDate, nextOpenDailyDate, automaticDailyPlan } from './daily-state.js';
 import { renderTaskRewards, readTaskRewardForm, updateTaskRewardInput } from './task-rewards-ui.js';
 import { renderGameSettings, readGameSettingsForm, updateGameSettingInput, addGameMilestone, removeGameMilestone, renderGameLevelPreview, renderGameDecorationPreview } from './game-settings-ui.js';
@@ -31,6 +32,7 @@ const state = {
   session: null, bootstrap: null, draft: null, target: 'shared', exportTarget: 'mobile-shared', page: 'albums',
   dirty: false, busy: false, selected: new Set(), albumId: null,
   filters: { query: '', style: '', tag: '', origin: '', direction: '', review: '', lifecycle: '', daily: '' },
+  albumFilters: { scope: 'all', query: '' },
   analysis: null, picker: null, version: null, fileIndex: 0,
   versionAdvancedOpen: false,
   historyOpen: false, settings: null, dragGesture: null, suppressClickUntil: 0, suppressClickPoint: null,
@@ -454,9 +456,15 @@ function renderBulkBar() {
   return `<section class="batchbar" aria-label="所选图片管理"><div class="batch-head"><strong>已选 ${state.selected.size} 幅</strong><span>${esc(labelTarget(state.target))}</span><button class="quiet small push-right" data-action="clear-selection">取消选择</button></div><div class="actions"><select id="assign-album" aria-label="选择相册">${options((targetDoc().albums || []).map(album => [album.id, album.title]), '', '选择相册')}</select><button class="primary small" data-action="assign-selected">放入相册</button><button class="small danger" data-action="unassign-selected">移出相册</button><button class="small danger" data-action="delete-images">删除所选图片</button></div><details class="batch-extra"><summary>批量设置画风与题材标签</summary><div class="batch-controls"><select id="batch-style" aria-label="批量画风">${styleOptions('')}</select><button class="small" data-action="batch-style">设置画风</button><input id="batch-tags" aria-label="批量题材标签" placeholder="题材标签，用逗号分隔"><button class="small" data-action="batch-tags">追加标签</button><button class="small" data-action="batch-replace-tags">替换标签</button></div></details><small>一张图片只属于一个共用相册。移出后只在后台保留。</small></section>`;
 }
 
+function albumDailyChip(album) {
+  const stats = albumDailyStats(album, { dailyPlans: doc()?.dailyPlans || [], dailyStateFor: dailyFor });
+  if (!stats.total) return '';
+  return `<span class="chip ${stats.pending ? 'daily-automatic' : 'daily-enrolled'}">每日 ${stats.total} 张${stats.pending ? ` · 待出 ${stats.pending}` : ' · 已出完'}</span>`;
+}
+
 function albumCard(album) {
   const cover = album.coverImageId || album.imageIds[0];
-  return `<article class="album-card ${albumShown(album) ? '' : 'is-hidden'}" data-drop-album="${attr(album.id)}" aria-label="拖入相册 ${attr(album.title)}"><button class="album-card-open" data-action="album-open" data-id="${attr(album.id)}" aria-label="打开相册 ${attr(album.title)}"><div class="album-cover">${cover ? `<img draggable="false" loading="lazy" src="${imageUrl(cover)}" alt="${attr(album.title)}">` : '<span>▧</span>'}<span class="album-count">${album.imageIds.length} 幅</span></div><div class="album-card-info"><h2>${esc(album.title)}</h2><div class="chips">${albumDisplayChips(album)}<span class="chip">${album.purchasable ? `${album.price} 金币` : '免费'}</span></div></div></button><div class="album-card-actions"><small class="drop-hint">拖到这里</small><button class="small" data-action="album-settings" data-id="${attr(album.id)}" aria-label="设置相册 ${attr(album.title)}">设置</button></div></article>`;
+  return `<article class="album-card ${albumShown(album) ? '' : 'is-hidden'}" data-drop-album="${attr(album.id)}" aria-label="拖入相册 ${attr(album.title)}"><button class="album-card-open" data-action="album-open" data-id="${attr(album.id)}" aria-label="打开相册 ${attr(album.title)}"><div class="album-cover">${cover ? `<img draggable="false" loading="lazy" src="${imageUrl(cover)}" alt="${attr(album.title)}">` : '<span>▧</span>'}<span class="album-count">${album.imageIds.length} 幅</span></div><div class="album-card-info"><h2>${esc(album.title)}</h2><div class="chips">${albumDisplayChips(album)}<span class="chip">${album.purchasable ? `${album.price} 金币` : '免费'}</span>${albumDailyChip(album)}</div></div></button><div class="album-card-actions"><small class="drop-hint">拖到这里</small><button class="small" data-action="album-settings" data-id="${attr(album.id)}" aria-label="设置相册 ${attr(album.title)}">设置</button></div></article>`;
 }
 
 function renderAlbums() {
@@ -464,15 +472,26 @@ function renderAlbums() {
   const index = list.findIndex(album => album.id === state.albumId);
   if (index >= 0) return renderAlbumEditor(list[index], index);
   state.albumId = null;
+  const filterContext = { dailyPlans: doc()?.dailyPlans || [], dailyStateFor: dailyFor, styleNameFor: styleName };
+  const scopeCounts = countAlbumScopes(list, { ...filterContext, query: state.albumFilters.query });
+  const visible = filterAlbums(list, { ...filterContext, scope: state.albumFilters.scope, query: state.albumFilters.query });
+  const filteredActive = state.albumFilters.scope !== 'all' || Boolean(state.albumFilters.query.trim());
+  const countLabel = filteredActive ? `${visible.length} / ${list.length}` : String(list.length);
+  const filterBar = list.length ? `<div class="album-filters"><input type="search" class="album-search" data-album-filter="query" value="${attr(state.albumFilters.query)}" placeholder="搜索相册名称或画风…" aria-label="搜索相册"><div class="album-filter-pills" role="group" aria-label="筛选相册">${ALBUM_FILTER_SCOPES.map(scope => `<button type="button" class="filter-pill ${state.albumFilters.scope === scope.id ? 'active' : ''}" data-action="album-filter" data-scope="${attr(scope.id)}">${esc(scope.label)} <span>${scopeCounts[scope.id] ?? 0}</span></button>`).join('')}</div></div>` : '';
+  const albumListBody = !list.length
+    ? '<div class="empty"><p>先新建一个相册，再把图片拖进来。</p></div>'
+    : visible.length
+      ? `<div class="album-grid">${visible.map(albumCard).join('')}</div>`
+      : '<div class="empty"><p>当前筛选下没有匹配的相册。</p><button type="button" class="small space-top" data-action="album-filter-reset">显示全部相册</button></div>';
   const unassigned = availableAssets().filter(asset => !albumFor(asset.id)).length;
   return heading('相册与未分配', '拖动图片到相册；多选后可整批拖入。点击相册查看内部图片，设置单独打开。') +
-    `<div class="album-board"><aside class="album-destinations" aria-label="相册拖入区"><div class="section-heading"><h2>我的相册 · ${list.length}</h2><button class="primary small" data-action="new-album">新建相册</button></div>${list.length ? `<div class="album-grid">${list.map(albumCard).join('')}</div>` : '<div class="empty"><p>先新建一个相册，再把图片拖进来。</p></div>'}</aside><section class="unassigned-panel" aria-label="未分配图片"><div class="section-heading"><h2>未分配图片 · ${unassigned}</h2><span class="muted text-small">拖入相册后归入该册</span></div>${renderAssets({ embedded: true })}</section></div><p class="muted workspace-footnote">未分配的图片只在后台保留。整理后点击顶部“保存”；新图的游戏接入提示继续保留。</p>`;
+    `<div class="album-board"><aside class="album-destinations" aria-label="相册拖入区"><div class="section-heading"><h2>我的相册 · ${countLabel}</h2><button class="primary small" data-action="new-album">新建相册</button></div>${filterBar}${albumListBody}</aside><section class="unassigned-panel" aria-label="未分配图片"><div class="section-heading"><h2>未分配图片 · ${unassigned}</h2><span class="muted text-small">拖入相册后归入该册</span></div>${renderAssets({ embedded: true })}</section></div><p class="muted workspace-footnote">未分配的图片只在后台保留。整理后点击顶部“保存”；新图的游戏接入提示继续保留。</p>`;
 }
 
 function renderAlbumEditor(album, index) {
   const selected = album.imageIds.filter(id => state.selected.has(id));
-  return `<div class="album-editor-heading"><button class="quiet" data-action="album-back">← 相册与未分配</button><div class="actions">${albumDisplayChips(album)}<span class="chip">${album.purchasable ? `${album.price} 金币购买包` : '免费相册'}</span><button data-action="album-settings" data-id="${attr(album.id)}">相册设置</button></div></div>` + heading(esc(album.title), `${album.imageIds.length} 幅图片 · ${esc(album.description || '点击图片查看大图与标签。')}`) +
-    `<section class="album-members"><div class="section-heading"><h2>相册图片</h2><button class="primary small" data-action="pick" data-type="albums" data-index="${index}" data-mode="members">添加 / 选择图片</button></div>${album.imageIds.length ? `<div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-album-all" ${selected.length === album.imageIds.length ? 'checked' : ''}> 全选相册图片</label><div class="actions"><button class="small danger" data-action="delete-images" ${selected.length ? '' : 'disabled'}>删除所选</button><button class="small danger" data-action="remove-album-selected" data-index="${index}" ${selected.length ? '' : 'disabled'}>移出所选 · ${selected.length}</button></div></div><div class="asset-grid album-member-grid">${album.imageIds.map((id, order) => `<div class="album-member-tile">${assetCard(assetById(id))}<div class="member-order"><small>第 ${order + 1} 张</small><div class="actions"><button class="small" data-action="move-image" data-type="albums" data-index="${index}" data-order="${order}" data-delta="-1" ${order === 0 ? 'disabled' : ''} aria-label="上移 ${attr(titleFor(id))}">↑</button><button class="small" data-action="move-image" data-type="albums" data-index="${index}" data-order="${order}" data-delta="1" ${order === album.imageIds.length - 1 ? 'disabled' : ''} aria-label="下移 ${attr(titleFor(id))}">↓</button><button class="small danger" data-action="remove-image" data-type="albums" data-index="${index}" data-order="${order}">移出</button></div></div></div>`).join('')}</div>` : '<div class="empty">这个相册还没有图片。<p>返回主页拖入图片，或点击“添加 / 选择图片”。</p></div>'}<p class="muted text-small space-top">箭头调整顺序；移出后回到未分配。封面、显示与购买在“相册设置”中修改。</p></section>`;
+  return `<div class="album-editor-heading"><button class="quiet" data-action="album-back">← 相册与未分配</button><div class="actions">${albumDisplayChips(album)}<span class="chip">${album.purchasable ? `${album.price} 金币购买包` : '免费相册'}</span>${albumDailyChip(album)}<button data-action="album-settings" data-id="${attr(album.id)}">相册设置</button></div></div>` + heading(esc(album.title), `${album.imageIds.length} 幅图片 · ${esc(album.description || '点击图片查看大图与标签。')}`) +
+    `<section class="album-members"><div class="section-heading"><h2>相册图片</h2><button class="primary small" data-action="pick" data-type="albums" data-index="${index}" data-mode="members">添加 / 选择图片</button></div>${album.imageIds.length ? `<div class="toolbar"><label class="check-field"><input type="checkbox" data-action="select-album-all" ${selected.length === album.imageIds.length ? 'checked' : ''}> 全选相册图片</label><div class="actions"><button class="small" data-action="album-daily-auto" data-index="${index}" ${selected.length ? '' : 'disabled'}>所选加入每日自动发布</button><button class="small danger" data-action="delete-images" ${selected.length ? '' : 'disabled'}>删除所选</button><button class="small danger" data-action="remove-album-selected" data-index="${index}" ${selected.length ? '' : 'disabled'}>移出所选 · ${selected.length}</button></div></div><div class="asset-grid album-member-grid">${album.imageIds.map((id, order) => `<div class="album-member-tile">${assetCard(assetById(id))}<div class="member-order"><small>第 ${order + 1} 张</small><div class="actions"><button class="small" data-action="move-image" data-type="albums" data-index="${index}" data-order="${order}" data-delta="-1" ${order === 0 ? 'disabled' : ''} aria-label="上移 ${attr(titleFor(id))}">↑</button><button class="small" data-action="move-image" data-type="albums" data-index="${index}" data-order="${order}" data-delta="1" ${order === album.imageIds.length - 1 ? 'disabled' : ''} aria-label="下移 ${attr(titleFor(id))}">↓</button><button class="small danger" data-action="remove-image" data-type="albums" data-index="${index}" data-order="${order}">移出</button></div></div></div>`).join('')}</div>` : '<div class="empty">这个相册还没有图片。<p>返回主页拖入图片，或点击“添加 / 选择图片”。</p></div>'}<p class="muted text-small space-top">箭头调整顺序；移出后回到未分配。封面、显示与购买在“相册设置”中修改。</p></section>`;
 }
 
 function openAlbumSettings(id) {
@@ -487,7 +506,7 @@ function renderAlbumSettings() {
   const album = state.settings.album, cover = album.coverImageId || album.imageIds[0];
   const field = name => `data-settings-field="${name}"`;
   const rewards = renderAlbumRewards(album, state.gameSettingDocument?.decorations || state.bootstrap?.gameSettings?.document?.decorations || []);
-  openModal('相册设置', `<form id="album-settings-form" class="album-settings-form"><div class="album-settings-cover">${cover ? `<img draggable="false" src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button type="button" class="small" data-action="settings-cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${field('title')} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${field('description')} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${field('styleGroupId')}>${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>在 PC 显示</b><small>控制 PC 端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnPc')} ${album.showOnPc ? 'checked' : ''}></label><label class="setting-switch"><div><b>在小程序显示</b><small>控制小程序端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnMobile')} ${album.showOnMobile ? 'checked' : ''}></label><p class="muted text-small">没有可展示图片的相册会在玩家端自动隐藏。添加图片或每日图片到期收录后，按上方勾选自动显示；后台始终保留相册，方便继续整理。</p><label class="setting-switch"><div><b>设为购买包</b><small>开启后需要金币购买。</small></div><input type="checkbox" ${field('purchasable')} ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${field('price')} type="number" min="1" max="100000000" step="1" value="${album.price}" required></label>` : ''}${rewards}<button type="button" class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">保存相册设置</button></div><p class="muted text-small settings-save-note">点击即保存到后台，同时保存本页已调整的图片归属与顺序。</p></form>`);
+  openModal('相册设置', `<form id="album-settings-form" class="album-settings-form"><div class="album-settings-cover">${cover ? `<img draggable="false" src="${imageUrl(cover)}" alt="${attr(titleFor(cover))}">` : '<span>尚未选择图片</span>'}<button type="button" class="small" data-action="settings-cover" ${album.imageIds.length ? '' : 'disabled'}>更换封面</button></div><div class="stack compact"><label class="field"><b>相册名称</b><input ${field('title')} value="${attr(album.title)}" maxlength="180" required></label><label class="field"><b>相册说明</b><textarea ${field('description')} maxlength="1500">${esc(album.description)}</textarea></label><label class="field"><b>画风</b><select ${field('styleGroupId')}>${styleOptions(album.styleGroupId)}</select></label><label class="setting-switch"><div><b>在 PC 显示</b><small>控制 PC 端的相册与图片展示。</small></div><input type="checkbox" ${field('showOnPc')} ${album.showOnPc ? 'checked' : ''}></label><label class="setting-switch"><div><b>在小程序显示</b><small>控制小程序端的相册与图片展示；每日拼图兜底随机也只从勾选此项的相册选取。</small></div><input type="checkbox" ${field('showOnMobile')} ${album.showOnMobile ? 'checked' : ''}></label><p class="muted text-small">没有可展示图片的相册会在玩家端自动隐藏。添加图片或每日图片到期收录后，按上方勾选自动显示；后台始终保留相册，方便继续整理。</p><label class="setting-switch"><div><b>设为购买包</b><small>开启后需要金币购买。</small></div><input type="checkbox" ${field('purchasable')} ${album.purchasable ? 'checked' : ''}></label>${album.purchasable ? `<label class="field"><b>购买价格 · 金币</b><input ${field('price')} type="number" min="1" max="100000000" step="1" value="${album.price}" required></label>` : ''}${rewards}<button type="button" class="quiet danger small" data-action="delete-album" data-id="${attr(album.id)}">移除相册</button></div><div class="modal-footer"><button type="button" data-action="close-modal">取消</button><button type="submit" class="primary">保存相册设置</button></div><p class="muted text-small settings-save-note">点击即保存到后台，同时保存本页已调整的图片归属与顺序。</p></form>`);
 }
 
 function updateSettingsField(element) {
@@ -631,6 +650,13 @@ confirmation.addEventListener('click', event => {
 confirmation.addEventListener('cancel', event => { event.preventDefault(); finishConfirmation(false); });
 confirmation.addEventListener('close', () => { if (!confirmation.open && resolveConfirmation) finishConfirmation(false); });
 
+function dailyAlbumMobileWarning(albumId, enabled) {
+  if (!enabled || !albumId) return '';
+  const target = doc()?.albums?.find(album => album.id === albumId);
+  if (!target || target.showOnMobile) return '';
+  return '提醒：该相册目前未勾选「在小程序显示」，次日收录后小程序相册列表仍会隐藏它；如需小程序可见，请在相册设置开启「在小程序显示」。';
+}
+
 function renderDailySettings(id) {
   const daily = dailyFor(id), plan = daily.plan, current = albumFor(id);
   const best = current && albumShown(current) ? current : doc().albums.find(album => albumShown(album) && !album.purchasable && album.styleGroupId === managed(id).styleGroupId);
@@ -638,7 +664,8 @@ function renderDailySettings(id) {
   const readiness = dailyReadiness(id);
   const automatic = plan ? automaticDailyPlan(plan) : true;
   const plannedDate = automatic ? '' : plan?.date || nextOpenDailyDate(doc().dailyPlans || [], {excludeId:id});
-  return `<details class="section daily-settings" data-daily-locked="${daily.locked}" ${plan || targetAsset(id).dailyOnly || daily.enrollment ? 'open' : ''}><summary>每日首发${daily.label ? ` · ${esc(daily.label.replace(/^每日 · /,''))}` : ''}</summary><p class="muted text-small">指定日期的首发优先。当天没有指定图片时，随机发布一张尚未出场的自动图片；全部发布后，从所有相册随机选图。通过每日入口创建，无需解锁购买包。</p><label class="check-field"><input type="checkbox" name="dailyEnabled" ${plan ? 'checked' : ''} ${daily.locked ? 'disabled' : ''}> 安排每日首发并自动收录</label><label class="check-field daily-auto-switch"><input type="checkbox" name="dailyAutoPublish" ${automatic ? 'checked' : ''} ${!plan || daily.locked ? 'disabled' : ''}> 自动发布</label><p class="muted text-small daily-mode-hint">${automatic ? '不占日期，等待每日随机选中。' : '手动指定日期；自动发布图片不会占用这些日期。'}</p><div class="daily-fields ${automatic ? 'automatic' : ''}"><label class="field daily-manual-date" ${automatic ? 'hidden' : ''}><b>每日首发日期</b><input type="date" name="dailyDate" aria-label="每日首发日期" value="${attr(plannedDate)}" min="${attr(plan?.date && plan.date < tomorrowDate() ? plan.date : tomorrowDate())}" ${!plan || daily.locked || automatic ? 'disabled' : ''} required><small>从明天起选择日期，每天最多一张指定首发。</small></label><label class="field"><b>收录相册</b><select name="dailyAlbumId" aria-label="收录相册" ${!plan || daily.locked ? 'disabled' : ''} required>${options(doc().albums.map(album => [album.id,`${album.title}${!albumShown(album) ? ' · 两端隐藏' : ''}${album.purchasable ? ' · 购买包' : ''}`]),selected,'选择相册')}</select><small>首发实际出场后，次日北京时间 00:00 自动放入这里。</small></label></div><p class="daily-fact">${esc(daily.detail || '勾选后可预选收录相册。')}</p>${readiness && !readiness.ready ? `<p class="muted text-small">${esc(readiness.reason || '素材待接入游戏，安排先保存在后台。')}</p>` : ''}${daily.locked ? '<p class="muted text-small">已出场记录已锁定。收录后仍可在相册中移动图片。</p>' : '<p class="muted text-small">应用修改后点击顶部“保存”，再通过“提交到双端”让正式游戏采用这份安排。</p>'}</details>`;
+  const mobileWarn = dailyAlbumMobileWarning(selected, Boolean(plan));
+  return `<details class="section daily-settings" data-daily-locked="${daily.locked}" ${plan || targetAsset(id).dailyOnly || daily.enrollment ? 'open' : ''}><summary>每日首发${daily.label ? ` · ${esc(daily.label.replace(/^每日 · /,''))}` : ''}</summary><p class="muted text-small">指定日期的首发优先。当天没有指定图片时，随机发布一张尚未出场的自动图片；全部发布后，从在小程序显示的相册随机选图。通过每日入口创建，无需解锁购买包。</p><label class="check-field"><input type="checkbox" name="dailyEnabled" ${plan ? 'checked' : ''} ${daily.locked ? 'disabled' : ''}> 安排每日首发并自动收录</label><label class="check-field daily-auto-switch"><input type="checkbox" name="dailyAutoPublish" ${automatic ? 'checked' : ''} ${!plan || daily.locked ? 'disabled' : ''}> 自动发布</label><p class="muted text-small daily-mode-hint">${automatic ? '不占日期，等待每日随机选中。' : '手动指定日期；自动发布图片不会占用这些日期。'}</p><div class="daily-fields ${automatic ? 'automatic' : ''}"><label class="field daily-manual-date" ${automatic ? 'hidden' : ''}><b>每日首发日期</b><input type="date" name="dailyDate" aria-label="每日首发日期" value="${attr(plannedDate)}" min="${attr(plan?.date && plan.date < tomorrowDate() ? plan.date : tomorrowDate())}" ${!plan || daily.locked || automatic ? 'disabled' : ''} required><small>从明天起选择日期，每天最多一张指定首发。</small></label><label class="field"><b>收录相册</b><select name="dailyAlbumId" aria-label="收录相册" ${!plan || daily.locked ? 'disabled' : ''} required>${options(doc().albums.map(album => [album.id,`${album.title}${!album.showOnMobile ? (album.showOnPc ? ' · 小程序隐藏' : ' · 两端隐藏') : ''}${album.purchasable ? ' · 购买包' : ''}`]),selected,'选择相册')}</select><small>首发当天在小程序每日拼图可玩；次日北京时间 00:00 自动放入这里。</small></label></div><p class="daily-mobile-warn" ${mobileWarn ? '' : 'hidden'}>${esc(mobileWarn)}</p><p class="daily-fact">${esc(daily.detail || '勾选后可预选收录相册。')}</p>${readiness && !readiness.ready ? `<p class="muted text-small">${esc(readiness.reason || '素材待接入游戏，安排先保存在后台。')}</p>` : ''}${daily.locked ? '<p class="muted text-small">已出场记录已锁定。收录后仍可在相册中移动图片。</p>' : '<p class="muted text-small">应用修改后点击顶部“保存”，再通过“提交到双端”让正式游戏采用这份安排。</p>'}</details>`;
 }
 
 function updateDailyControls(form) {
@@ -654,6 +681,12 @@ function updateDailyControls(form) {
   section.querySelector('.daily-manual-date').hidden = automatic;
   section.querySelector('.daily-fields').classList.toggle('automatic', automatic);
   section.querySelector('.daily-mode-hint').textContent = automatic ? '不占日期，等待每日随机选中。' : '手动指定日期；自动发布图片不会占用这些日期。';
+  const warnNode = section.querySelector('.daily-mobile-warn');
+  if (warnNode) {
+    const warn = dailyAlbumMobileWarning(form.elements.dailyAlbumId.value, enabled);
+    warnNode.textContent = warn;
+    warnNode.hidden = !warn;
+  }
 }
 
 function openAsset(id) {
@@ -832,6 +865,8 @@ document.addEventListener('click', async event => {
   else if (action === 'open-history') { closeModal(); state.historyOpen = true; render(); }
   else if (action === 'close-history') { state.historyOpen = false; render(); }
   else if (action === 'album-open') { state.albumId = button.dataset.id; state.page = 'albums'; state.selected.clear(); render(); }
+  else if (action === 'album-filter') { state.albumFilters.scope = button.dataset.scope || 'all'; render(); }
+  else if (action === 'album-filter-reset') { state.albumFilters = { scope: 'all', query: '' }; render(); }
   else if (action === 'album-settings') openAlbumSettings(button.dataset.id);
   else if (action === 'settings-cover') openPicker('albums', targetDoc().albums.findIndex(album => album.id === state.settings.id), 'cover', true);
   else if (action === 'settings-add-milestone') {
@@ -857,6 +892,20 @@ document.addEventListener('click', async event => {
     if (!await confirmAction(`将所选 ${state.selected.size} 幅图片移出相册？它们将只在后台保留。`)) return;
     for (const album of targetDoc().albums) removeAlbumImages(album, [...state.selected]);
     state.selected.clear(); dirty(); render();
+  }
+  else if (action === 'album-daily-auto') {
+    const album = targetDoc().albums[Number(button.dataset.index)];
+    const ids = (album?.imageIds || []).filter(id => state.selected.has(id));
+    if (!album || !ids.length) return;
+    doc().dailyPlans ||= [];
+    const existing = new Set(doc().dailyPlans.map(plan => plan.imageId));
+    const added = ids.filter(id => !existing.has(id) && !dailyFor(id).locked);
+    if (!added.length) { toast('所选图片已安排每日首发或已出场。'); return; }
+    for (const id of added) doc().dailyPlans.push({ id, imageId: id, date: null, albumId: album.id, autoPublish: true });
+    state.selected.clear(); dirty(); render();
+    toast(album.showOnMobile
+      ? `已将 ${added.length} 幅图片加入「每日自动发布」，请保存后提交到双端。`
+      : `已将 ${added.length} 幅图片加入「每日自动发布」（当前相册未勾选「在小程序显示」，如需小程序可见请在相册设置开启），请保存。`);
   }
   else if (action === 'remove-album-selected') {
     const album = targetDoc().albums[Number(button.dataset.index)];
@@ -968,7 +1017,7 @@ document.addEventListener('change', event => {
 
 });
 
-let searchTimer;
+let searchTimer, albumSearchTimer;
 document.addEventListener('input', event => {
   const element = event.target;
   if (element.form?.id === 'game-settings-form') { updateGameSettingsField(element); return; }
@@ -981,6 +1030,11 @@ document.addEventListener('input', event => {
   }
   if ((element.dataset.settingsField || element.dataset.settingsRow !== undefined) && element.type !== 'checkbox' && element.tagName !== 'SELECT') { updateSettingsField(element); return; }
   if (element.dataset.bind && element.tagName !== 'SELECT' && element.type !== 'checkbox') setBound(element);
+  if (element.dataset.albumFilter === 'query') {
+    clearTimeout(albumSearchTimer);
+    const value = element.value, cursor = element.selectionStart;
+    albumSearchTimer = setTimeout(() => { state.albumFilters.query = value; render(); const search = document.querySelector('[data-album-filter="query"]'); if (search) { search.focus(); search.setSelectionRange(cursor, cursor); } }, 180);
+  }
   if (element.dataset.filter === 'query') {
     clearTimeout(searchTimer);
     const value = element.value, cursor = element.selectionStart;
@@ -1062,7 +1116,7 @@ document.addEventListener('submit', event => {
 modal.addEventListener('click', event => { if (event.target === modal && (event.offsetX < 0 || event.offsetX > modal.clientWidth || event.offsetY < 0 || event.offsetY > modal.clientHeight)) closeModal(); });
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 modal.addEventListener('change', event => {
-  if (!['dailyEnabled','dailyAutoPublish'].includes(event.target.name)) return;
+  if (!['dailyEnabled','dailyAutoPublish','dailyAlbumId'].includes(event.target.name)) return;
   if (event.target.name === 'dailyEnabled' && event.target.checked) event.target.form.elements.dailyAutoPublish.checked = true;
   updateDailyControls(event.target.form);
 });
