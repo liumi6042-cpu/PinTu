@@ -1,7 +1,7 @@
 """Verified isolated mobile API upgrade. Never restores a stale database.
 
-Only the mobile current symlink and mobile service are switched. All resources
-in a code-delta are verified before reusing its original immutable public tree.
+Only the mobile current symlink and mobile service are switched. Immutable
+public resources are verified before being reused from the previous release.
 """
 import argparse
 import hashlib
@@ -201,7 +201,26 @@ def link_verified_resources(resource_tree, target, assets):
         ensure(linked.st_size == item['bytes'] and digest(destination) == item['sha256'], 'Linked resource inventory mismatch: ' + item['path'])
 
 
-def extract_regular_files(archive, target):
+def reuse_public_resource(resource_tree, destination, item):
+    try:
+        source = resource_file(resource_tree, item)
+        info = source.stat()
+        parent = destination.parent.stat()
+        if (info.st_size != item['bytes']
+                or stat.S_IMODE(info.st_mode) != 0o644
+                or (info.st_uid, info.st_gid) != (parent.st_uid, parent.st_gid)
+                or os.listxattr(source)
+                or digest(source) != item['sha256']):
+            return False
+        os.link(source, destination, follow_symlinks=False)
+        return True
+    except (OSError, RuntimeError):
+        # A full package can still install its verified copy if reuse is unavailable.
+        return False
+
+
+def extract_regular_files(archive, target, *, previous_public=None, assets=()):
+    reusable = {item['path']: item for item in assets} if previous_public else {}
     opener = zipfile.ZipFile if zipfile.is_zipfile(archive) else tarfile.open
     with opener(archive) as bundle:
         if isinstance(bundle, zipfile.ZipFile):
@@ -216,6 +235,8 @@ def extract_regular_files(archive, target):
             destination = target / safe_path(name)
             ensure(target in destination.resolve().parents, 'Extraction escapes new release')
             destination.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+            if name in reusable and reuse_public_resource(previous_public, destination, reusable[name]):
+                continue
             with read(item) as source, destination.open('xb') as output:
                 shutil.copyfileobj(source, output)
             destination.chmod(0o644)
@@ -326,9 +347,11 @@ def main():
             print(json.dumps(preview))
             return
         target.mkdir(mode=0o755)
-        extract_regular_files(archive, target)
         if manifest.get('packageKind') == 'code-delta':
+            extract_regular_files(archive, target)
             link_verified_resources(resource_tree, target, assets)
+        else:
+            extract_regular_files(archive, target, previous_public=old / 'public', assets=assets)
         for item in manifest['files']:
             verify_file(target, item)
         if manifest.get('artworkOverlay'):
