@@ -1,0 +1,2403 @@
+{
+  "mountain-lake-reflection": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "倒影与山体轮廓清楚，湖面需要留意细微变化。"
+  },
+  "morning-meadow-tree": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "草坡层次柔和，独树与树影可以作为起点。"
+  },
+  "clear-sand-bay": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "海水颜色相近，建议从弧形沙岸开始。"
+  },
+  "lone-pine-snow": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "大片雪地颜色接近，松树与蓝色树影是线索。"
+  },
+  "quiet-cliff-falls": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "瀑布与岩壁分区明确，石纹提供定位线索。"
+  },
+  "lemon-still-life": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "主体少、颜色分区明显，适合轻松开始。"
+  },
+  "sleepy-cat": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "猫咪轮廓清楚，可以先拼主体。"
+  },
+  "sailboat-bay": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "帆船是清楚的起点，天空与海面需要耐心。"
+  },
+  "tulip-vase": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "花朵与花瓶颜色分明，轮廓容易辨认。"
+  },
+  "hill-cottage": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "草坡色彩相近，先找小屋和坡线。"
+  },
+  "whale-moon": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "大面积背景颜色接近，适合先找月亮和鲸鱼。"
+  },
+  "orange-bicycle": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "橙色车身与背景对比清楚，适合从主体开始。"
+  },
+  "peach-breakfast": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "桌上物品分区清楚，颜色可帮助分类。"
+  },
+  "desert-sun": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "沙丘与天空色调接近，需要观察明暗渐变。"
+  },
+  "floating-house": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "房屋轮廓清楚，天空部分需要更多耐心。"
+  },
+  "blossom-canal": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "花枝与水面细节丰富，适合喜欢寻找线索的玩家。"
+  },
+  "alpine-village": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "山体与房屋分层明显，建筑细节提供线索。"
+  },
+  "seaside": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "海岸与房屋分区清楚，细节较丰富。"
+  },
+  "tulip-windmill": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "花田有重复纹理，风车轮廓可以作为起点。"
+  },
+  "autumn-teahouse": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "秋叶纹理较密，建议先分出房屋与水面。"
+  },
+  "bakery-morning": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "物品较多，先按器皿与食物颜色分类。"
+  },
+  "ceramic-studio": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "器皿边缘与陈列分区提供较多线索。"
+  },
+  "harbor-houses": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "房屋颜色和屋顶线条帮助定位。"
+  },
+  "garden-table": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 500,
+    "reason": "花叶和餐具细节较多，适合慢慢寻找对应。"
+  },
+  "winter-village": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 2,
+    "preferredCount": 500,
+    "reason": "房屋与积雪有明暗对比，先找屋顶轮廓。"
+  },
+  "emerald-river-valley": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "从蜿蜒河岸与山脊开始，再留意水面和草坡的色差。"
+  },
+  "sunlit-coastal-headland": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "海岬轮廓与浪花较容易定位，蓝色海面需要多一点耐心。"
+  },
+  "golden-sand-dunes": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "先拼明暗交界的沙脊，沙纹颜色相近，推荐从少片数开始。"
+  },
+  "autumn-lakeshore": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "金色树冠与倒影分区清楚，可从树干和湖岸开始。"
+  },
+  "rainbow-grassland": {
+    "width": 1402,
+    "height": 1122,
+    "complexity": 2,
+    "preferredCount": 108,
+    "reason": "从彩虹弧线与草坡明暗开始，云层的渐变适合慢慢分辨。"
+  },
+  "emerald-river-valley-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "sunlit-coastal-headland-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "golden-sand-dunes-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "autumn-lakeshore-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "rainbow-grassland-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "mountain-lake-reflection-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "morning-meadow-tree-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "clear-sand-bay-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "lone-pine-snow-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "quiet-cliff-falls-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "lemon-still-life-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "sleepy-cat-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "sailboat-bay-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "tulip-vase-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "hill-cottage-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "whale-moon-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "orange-bicycle-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "peach-breakfast-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 1,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "desert-sun-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "floating-house-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "blossom-canal-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "alpine-village-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "seaside-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "tulip-windmill-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "autumn-teahouse-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "bakery-morning-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "ceramic-studio-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "harbor-houses-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "garden-table-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "winter-village-native-v2": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "mountain-lake-reflection-hd-v3": {
+    "width": 3144,
+    "height": 1572,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "morning-meadow-tree-hd-v3": {
+    "width": 3147,
+    "height": 1574,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "clear-sand-bay-hd-v3": {
+    "width": 3147,
+    "height": 1574,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找主体轮廓，再按颜色与明暗慢慢拼合。"
+  },
+  "anime-seaside-platform-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "从人物、列车与向日葵的轮廓开始，再连接海天的颜色。"
+  },
+  "anime-cat-shop-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "先找橘猫、围裙和面包，再拼暖色的木质柜台。"
+  },
+  "anime-cloud-courier-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "人物与红色邮箱轮廓清楚，云海和石阶可以分区慢慢拼。"
+  },
+  "anime-rainy-corner-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先连接黄雨衣与蓝外套，再寻找路面的灯光倒影。"
+  },
+  "anime-starlight-witch-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "紫色衣裙、白猫和星图是清楚的线索，再连接夜空与远山。"
+  },
+  "painted-moonlit-portrait-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找眼睛、发饰与蓝晶花，再沿发丝连接明暗。"
+  },
+  "cel-sunset-train-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "人物、车窗和橘色尾巴轮廓清楚，可以分别拼合。"
+  },
+  "painted-crimson-rose-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "从红色蔷薇与人物轮廓开始，再拼饰品和发丝。"
+  },
+  "painted-jade-feather-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "翠鸟、信封和羽毛胸针是清楚的定位线索。"
+  },
+  "painted-amber-autumn-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先区分银杏叶、衣领与人物，再连接暖色背景。"
+  },
+  "cel-rainy-bookshop-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "书架、雨窗与猫咪分区明显，可以从大轮廓开始。"
+  },
+  "cel-rooftop-breeze-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 2,
+    "preferredCount": 300,
+    "reason": "人物、白色晾布和蓝色海面各有清晰轮廓。"
+  },
+  "painted-tidal-encounter-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "painted-snow-parasol-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "painted-glasshouse-workbench-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "painted-wolf-oath-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "cel-coastal-family-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "cel-rainy-bridge-v1": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼主体轮廓，再沿光影和场景结构连接。"
+  },
+  "cat-video-call-v1": {
+    "width": 1122,
+    "height": 1402,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "竖版画面，键盘、书架与绿植细节密集。建议先从视频窗口里的三只猫和屏幕边框定位。"
+  },
+  "warm-sienna-study-01": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "画面中央与左上区域细节最密集，建议先从中央偏左处入手。"
+  },
+  "verdant-green-study-02": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "左中到中下一带细节最密集，建议先从画面下方中部开始。"
+  },
+  "olive-tone-study-03": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "中下与右下细节最密集，建议先从画面下方右侧入手。"
+  },
+  "azure-blue-study-04": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "右下与中下细节最密集，建议先从画面右下角开始。"
+  },
+  "golden-amber-study-05": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "右下细节密度最高，建议先从画面右下角入手。"
+  },
+  "sage-green-study-06": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "右侧中部到右下细节较密，建议先从画面右侧入手。"
+  },
+  "grass-green-study-07": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "左半侧细节最密集，建议先从画面左上与左下入手。"
+  },
+  "cat-lantern-market-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先区分暖色灯笼和蓝色水面，再拼人物与建筑。"
+  },
+  "lantern-dance-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼蓝色河道与石桥，再按服饰颜色寻找舞会人物。"
+  },
+  "magic-treehouse-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出树干与晚霞，再沿楼梯、吊桥和灯笼逐步拼合。"
+  },
+  "riverside-park-festival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼河道和大片草地，再沿步道寻找彩色餐车与人物。"
+  },
+  "summer-night-matsuri-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出夜空与红色鸟居，再按灯笼和摊位颜色拼合。"
+  },
+  "orbital-market-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找港口招牌和飞船，再把彩色货摊与人物连接起来。"
+  },
+  "snow-village-fair-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼白色雪地与深绿树林，再沿木屋和滑冰场向内推进。"
+  },
+  "tropical-harbor-carnival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出蓝色海湾与棕榈树，再寻找船只和鲜艳摊位。"
+  },
+  "clockwork-invention-fair-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找飞艇、钟面和拱桥，再区分黄铜机械与人物。"
+  },
+  "enchanted-library-garden-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼书架与拱门的轮廓，再连接花园、楼梯和阅读角。"
+  },
+  "autumn-farm-festival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼红色谷仓和金色田野，再寻找南瓜、舞台与拖拉机。"
+  },
+  "underwater-city-fair-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出蓝色水域与透明穹顶，再拼珊瑚、鱼群和街市。"
+  },
+  "rooftop-neighborhood-festival-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找电影幕布和屋顶边缘，再按不同平台拼合花园与乐队。"
+  },
+  "golden-alpine-valley-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先分出白色雪峰与金黄树林，再沿蓝色河流连接两岸。"
+  },
+  "sunset-cliff-lighthouse-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼灯塔和海岸轮廓，再按天空、海水与花丛分区。"
+  },
+  "lavender-evening-fields-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找紫色花田与黄色向日葵，再连接石墙和弯曲小路。"
+  },
+  "alpine-turquoise-reflections-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼雪山轮廓和岸边花朵，再对照倒影连接湖面。"
+  },
+  "red-canyon-river-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先区分红岩与蓝色河流，再按岩层纹理和仙人掌定位。"
+  },
+  "misty-terrace-dawn-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找竹屋和田埂，再沿梯田水面的弧线逐层拼合。"
+  },
+  "spring-stream-stone-bridge-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼石桥与溪流，再按花朵颜色区分两岸花丛。"
+  },
+  "winter-lake-cabin-glow-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼暖黄色窗户和深色松树，再沿冰面裂纹连接倒影。"
+  },
+  "reed-marsh-sunset-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼木栈道与地平线，再按芦苇和水面倒影分区。"
+  },
+  "rainforest-waterfall-haven-v1": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼白色瀑布和红色花朵，再沿岩石边缘连接碧潭。"
+  },
+  "whale-sunken-city-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼巨鲸和石像，再沿石柱与珊瑚分区连接。"
+  },
+  "snowy-sunset-train-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼红色车厢和站台，再连接雪山轮廓与铁轨。"
+  },
+  "starlit-lakeside-camp-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼房车、篝火和小狗，再按湖面与星空分区。"
+  },
+  "cherry-blossom-seaside-tram-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼绿色电车与长椅上的猫，再沿铁轨连接樱花和海岸。"
+  },
+  "cloud-dragon-ascension-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 4,
+    "preferredCount": 300,
+    "reason": "先拼旅人与神龙，再沿石柱、瀑布和云海分区连接。"
+  },
+  "moonlit-nine-tail-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼白发与花灯，再按九尾、竹影和夜色分区。"
+  },
+  "lantern-fox-pair-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼两位角色和灯笼，再沿街景灯火向四周展开。"
+  },
+  "neon-cherry-swordswoman-v1": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 4,
+    "preferredCount": 300,
+    "reason": "先拼人物轮廓和蓝光长刃，再连接霓虹楼宇、樱花与雨面倒影。"
+  },
+  "peach-blossom-fan-v1": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼人物与团扇，再沿桃花、亭台和远山瀑布分区。"
+  },
+  "daily-moonlit-cherry-umbrella-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼月亮、透明伞与人物轮廓，再沿樱花和湖面倒影分区。"
+  },
+  "daily-lantern-lake-violin-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先找琴手、花灯与小舟，再连接水面倒影和远处灯火。"
+  },
+  "daily-sky-whale-islands-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先拼巨鲸和浮岛城堡，再沿云海与飞鸟分区连接。"
+  },
+  "coral-garden": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "cat-library": {
+    "width": 1774,
+    "height": 887,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "skate-garden": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "amber-cabinet": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "vermilion-garden": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "lantern-market": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "tropical-aviary": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "woodland-friends": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "star-observatory": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "floating-islands": {
+    "width": 1448,
+    "height": 1086,
+    "complexity": 3,
+    "preferredCount": 300,
+    "reason": "先整理边缘，再按画面颜色与纹理连接。"
+  },
+  "new-0d5e19f196b617a4-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-cdcb42ee9dfd5d7e-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-5820571e53d622ca-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-828eeec143c7c6b0-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-9a0dfcaef45b9a0a-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-494d8352a6bf09de-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-32f4a77d2dd8becd-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-cadc3cceade3fdfe-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-8117a394ef1497a7-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-204e0f8d41fefd44-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-721cd6a55b98088c-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-71cf185693ca0bc1-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-886dff1892b72f2e-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-3f0d7bc0dd7a34ad-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-bc35fb2187f9d352-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-d177593d049591db-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-1f5772e32c73b6ac-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-df3130f1f1278398-v1": {
+    "width": 2560,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-7eda4ecbd0894fa8-v1": {
+    "width": 2560,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-81bf859e5fa1c25a-v1": {
+    "width": 2560,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-6560c5fdd52cb95b-v1": {
+    "width": 2560,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-d59461bdbc671d97-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-6ac71846fdac2021-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-99e18f4c84d31022-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-11843900585354d3-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-8c5f509bfbb67790-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-0d69b3080237d458-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-73e8158077c67d43-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-565e548c6fbda865-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-3abe116c803210c5-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-601be8375f771827-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-7f19d62a6727539b-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-cc532d03d405abd6-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-0b10af90a58ce698-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-c9d0f62b9a9536ed-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-35405f4ae5ef618e-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-629dfdbe43cd5b09-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-ef12f1e7d74ee89a-v1": {
+    "width": 3840,
+    "height": 2160,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-9359385b622e8505-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-968c3449978849e1-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-89189e4f7af26f25-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-2b4be6fe98943de7-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-c54eb7fbb3cd0060-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-49cc72d1ec6fb1c8-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-afa7c18454e23349-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-ed33701d9e7980fa-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-645c9cf0cfee91ad-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-f8652afed3c63a86-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-20a4b922bbb578e8-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-79565e08fd397b1e-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-f7194f44e36dc5e3-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-48413157ae051c95-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "new-f8d8189a200835e3-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "blossom-rainy-flower-lane-v1": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "blossom-osmanthus-tea-courtyard-v1": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "blossom-firefly-conservatory-v1": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "cat-journey-magic-bookshop-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-cloud-roof-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-spirit-blackcat-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-flower-shop-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-paper-garden-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "cat-journey-pixel-nightmarket-v1": {
+    "width": 3840,
+    "height": 3840,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。此图保存为放大成品，原生细节以生成尺寸为准。"
+  },
+  "ink-mountain-palace-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "moonlit-spirit-deer-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "wisteria-seaside-station-v1": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-after-school-wonder-20261018-01-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-after-school-wonder-20261018-02-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-after-school-wonder-20261018-03-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-after-school-wonder-20261018-05-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-after-school-wonder-20261018-04-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-after-school-wonder-20261018-06-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-neon-arcade-street-20261018-01-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-neon-arcade-street-20261018-03-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-neon-arcade-street-20261018-02-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-neon-arcade-street-20261018-04-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-neon-arcade-street-20261018-05-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-neon-arcade-street-20261018-06-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-summer-youth-journal-20261018-01-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-summer-youth-journal-20261018-02-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-summer-youth-journal-20261018-03-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-summer-youth-journal-20261018-04-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-summer-youth-journal-20261018-05-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-summer-youth-journal-20261018-06-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-wind-in-room-20261018-02-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-wind-in-room-20261018-04-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-wind-in-room-20261018-03-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-wind-in-room-20261018-05-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-wind-in-room-20261018-06-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-miniature-life-lab-20261018-01-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-wind-in-room-20261018-07-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-miniature-life-lab-20261018-02-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-miniature-life-lab-20261018-03-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-miniature-life-lab-20261018-05-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-miniature-life-lab-20261018-04-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-miniature-life-lab-20261018-06-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-plush-escape-plan-20261018-01-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-plush-escape-plan-20261018-02-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-plush-escape-plan-20261018-03-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-plush-escape-plan-20261018-04-20261018-v2": {
+    "width": 2144,
+    "height": 2144,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-plush-escape-plan-20261018-05-20261018-v2": {
+    "width": 2816,
+    "height": 1584,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "redraw-plush-escape-plan-20261018-06-20261018-v2": {
+    "width": 1824,
+    "height": 2432,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-post-office-01-20261020": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-post-office-02-20261020": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-post-office-03-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-post-office-04-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-post-office-05-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-post-office-06-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-wonders-01-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-wonders-02-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-wonders-03-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-wonders-04-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-wonders-05-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-cloud-wonders-06-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-moon-aquarium-01-20261020": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-moon-aquarium-02-20261020": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-moon-aquarium-03-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-moon-aquarium-04-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-moon-aquarium-05-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-moon-aquarium-06-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-dream-botanical-institute-01-20261020": {
+    "width": 1086,
+    "height": 1448,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-dream-botanical-institute-02-20261020": {
+    "width": 1086,
+    "height": 1448,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-dream-botanical-institute-03-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-dream-botanical-institute-04-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-dream-botanical-institute-05-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-dream-botanical-institute-06-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-antique-toy-shop-01-20261020": {
+    "width": 1086,
+    "height": 1448,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-antique-toy-shop-02-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-antique-toy-shop-03-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-antique-toy-shop-04-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-antique-toy-shop-05-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-antique-toy-shop-06-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-floating-breakfast-shop-01-20261020": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-floating-breakfast-shop-02-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-floating-breakfast-shop-03-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-floating-breakfast-shop-04-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-floating-breakfast-shop-05-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-floating-breakfast-shop-06-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-time-postman-01-20261020": {
+    "width": 1672,
+    "height": 941,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-time-postman-02-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-time-postman-03-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-time-postman-04-20261020": {
+    "width": 1024,
+    "height": 1536,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-time-postman-05-20261020": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-time-postman-06-20261020": {
+    "width": 1254,
+    "height": 1254,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch1-01-20261027": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch1-02-20261027": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch1-03-20261027": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch1-04-20261027": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch1-05-20261027": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch1-06-20261027": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch2-01-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch2-02-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch2-03-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch2-04-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch2-05-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch2-06-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch3-01-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch3-02-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch3-03-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch3-04-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch3-05-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch3-06-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch4-01-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch4-02-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch4-03-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch4-04-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch4-05-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-shiguang-ch4-06-20261028": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-01-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-02-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-03-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-04-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-05-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-06-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-07-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-warm-winter-town-08-20261030": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-01-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-02-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-03-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-04-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-05-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-06-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-07-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-08-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-09-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-healing-time-10-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-fun-moments-01-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-fun-moments-02-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-fun-moments-03-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-fun-moments-04-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-fun-moments-05-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-fun-moments-06-20261105": {
+    "width": 1536,
+    "height": 1024,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-places-where-light-lingers-01-20261118": {
+    "width": 2974,
+    "height": 1674,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-places-where-light-lingers-02-20261118": {
+    "width": 1820,
+    "height": 2731,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-places-where-light-lingers-03-20261118": {
+    "width": 2731,
+    "height": 1820,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-places-where-light-lingers-04-20261118": {
+    "width": 2974,
+    "height": 1674,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-places-where-light-lingers-05-20261118": {
+    "width": 2231,
+    "height": 2231,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-places-where-light-lingers-06-20261118": {
+    "width": 2731,
+    "height": 1820,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-spring-pastel-wander-01-20261118": {
+    "width": 1672,
+    "height": 2974,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-spring-pastel-wander-02-20261118": {
+    "width": 2731,
+    "height": 1820,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-spring-pastel-wander-03-20261118": {
+    "width": 2231,
+    "height": 2231,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-spring-pastel-wander-04-20261118": {
+    "width": 2731,
+    "height": 1820,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-spring-pastel-wander-05-20261118": {
+    "width": 2974,
+    "height": 1674,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-spring-pastel-wander-06-20261118": {
+    "width": 1820,
+    "height": 2731,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-color-block-wander-01-20261118": {
+    "width": 2731,
+    "height": 1820,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-color-block-wander-02-20261118": {
+    "width": 2974,
+    "height": 1674,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-color-block-wander-03-20261118": {
+    "width": 2231,
+    "height": 2231,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-color-block-wander-04-20261118": {
+    "width": 1820,
+    "height": 2731,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-color-block-wander-05-20261118": {
+    "width": 2231,
+    "height": 2231,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  },
+  "album-color-block-wander-06-20261118": {
+    "width": 2731,
+    "height": 1820,
+    "complexity": 3,
+    "preferredCount": 108,
+    "reason": "建议先从清晰轮廓开始，再按颜色分区连接。"
+  }
+}

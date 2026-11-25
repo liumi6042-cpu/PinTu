@@ -1,0 +1,90 @@
+{
+  "id": "cel-coastal-family-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Current built-in imagegen tool result",
+    "promptPath": "content/image-prompts/cel-coastal-family-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-a7042ff9-7064-46b9-bbee-5d54fad6288b.png",
+    "sourceMetadata": "content/artwork/original-family-rain-20260914/cel-coastal-family-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024, no upscaling or compositing; new games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Inspected generated image: distinct original character designs, readable faces and hands, coherent family/umbrella scene, no visible signature or watermark.",
+      "User stated the two supplied anime wallpapers have no publication permission and requested regeneration. Wallpaper files were NOT used as image inputs or published. Only broad family-togetherness and rainy-companionship themes were retained in text prompts."
+    ],
+    "scope": "Visual review and provenance are not a guarantee of exclusive rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+    "optimized": {
+      "src": "/puzzles/cel-coastal-family-v1-optimized-6adf26e946c7.webp",
+      "sha256": "6adf26e946c7c337355a17c083ec53b306d24b41277c99a2130033f4e1a0e16c",
+      "bytes": 268028,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "inputSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-coastal-family-v1-thumbnail-820f758a09c3.webp",
+      "sha256": "820f758a09c3305622bb436f6851d2e7d23770c54e024442b48c746901ccc1b3",
+      "bytes": 36048,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "inputSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cel-coastal-family-v1.webp",
+    "sha256": "84a587d499e1d69491f5554773ae4643c9ac59c065f1d9373398ce49758ffffd",
+    "bytes": 550350,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "id": "clear-sand-bay",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与批次记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/clear-sand-bay.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a084d8-cb18-77c3-bed5-dd5cd77f9fdb\\exec-3b4b199b-856e-489f-82c1-632987c15c93.png",
+    "sourceMetadata": "../artwork/nature-gallery-20260909/manifest.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；未放大。写实摄影感自然风景，非真实地点实拍；高倍放大仍受原生像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "status: pass; review_method: Visual inspection of generated image; subject: Curving white beach, clear shallow turquoise sea and a few prominent broad rocks; no boats.; photorealism: Realistic transparent water, gentle breaking wave lines, sunlit sand and rock.; composition: Strong shoreline curve and distinct color/depth zones with moderate texture.; constraints: No visible people, buildings, boats, text, logos, watermark, frame, or puzzle seams.; notes: Sparse low vegetation on the shore and background headland; no recognized landmark identified.",
+      "主代理复核画面构图、自然光与可辨认轮廓，未发现明显人物、建筑、文字、水印或拼图缝线。"
+    ],
+    "scope": "视觉检查与生成记录不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72",
+    "optimized": {
+      "src": "/puzzles/clear-sand-bay-optimized-7f4551e6195b.webp",
+      "sha256": "7f4551e6195bda8bbd7dd71a82fa776098ba39aa39e55c414f9fed0f5af466fe",
+      "bytes": 186832,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72",
+      "inputSha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/clear-sand-bay-thumbnail-5f55b4f4122b.webp",
+      "sha256": "5f55b4f4122b7860e146904a8998fd0c5a0fbf82fdc771da80e8bb9a98cc436e",
+      "bytes": 24240,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72",
+      "inputSha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/clear-sand-bay.webp",
+    "sha256": "7c4803f2274f11d4d9170280bcc79278f3fb976a1d5f9fa8b9a40772bd8e3780",
+    "bytes": 419160,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "52b12f7fb39414b0676d4f73a8b70157194fa0888b3947f63078e9a56cd4ab72"
+  }
+}

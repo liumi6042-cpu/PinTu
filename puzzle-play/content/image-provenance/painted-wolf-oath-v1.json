@@ -1,0 +1,90 @@
+{
+  "id": "painted-wolf-oath-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Previous built-in imagegen tool result and saved preview metadata",
+    "promptPath": "content/image-prompts/painted-wolf-oath-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-d584657b-ac7d-4980-b500-84ee03055c7c.png",
+    "sourceMetadata": "content/artwork/painted-scenes-20260914/painted-wolf-oath-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024, no upscaling or compositing; new games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User explicitly requested publication of the four preview images. Inspected primary faces, hands, animal anatomy and distinct compositions.",
+      "No reference-image inputs: web research informed new textual descriptions of subjects and environments. No website image pixels are used in this asset."
+    ],
+    "scope": "Visual review and provenance are not a guarantee of exclusive rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
+    "optimized": {
+      "src": "/puzzles/painted-wolf-oath-v1-optimized-0c6e87f7d7c2.webp",
+      "sha256": "0c6e87f7d7c2fba4d9e5f8c27f1d4f7baa9e1ea0f84c9586b1d431a138257d97",
+      "bytes": 187168,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
+      "inputSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/painted-wolf-oath-v1-thumbnail-bfe468a6f1f3.webp",
+      "sha256": "bfe468a6f1f3f83e00b09b826e1d8a779e22c22fd4200e3976414ceb3ccc9a2c",
+      "bytes": 29132,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
+      "inputSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/painted-wolf-oath-v1.webp",
+    "sha256": "6d167f8f8f9b4119b934afacb381529c7c60bb6987b4235c3aaecbcbf0ae22f6",
+    "bytes": 406880,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc"
+  }
+}

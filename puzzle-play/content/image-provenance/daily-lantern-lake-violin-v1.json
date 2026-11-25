@@ -1,0 +1,78 @@
+{
+  "id": "daily-lantern-lake-violin-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入每日一图内容的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-03",
+    "originalFile": "codex-clipboard-76cb794a-67d8-44ce-9242-1c954cfd8d96.png",
+    "originalSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这三张图片存入图库并作为大厅每日一图公开拼图，授权用于本站宣传与游玩。",
+    "authorizedOn": "2026-10-03"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-03",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：花灯水乡中的小舟演奏场景，画面无网页界面、按钮或文字覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+    "optimized": {
+      "src": "/puzzles/daily-lantern-lake-violin-v1-optimized-4b656ff04989.webp",
+      "sha256": "4b656ff0498932a31eee10f5aefc9c08518443c86094778048428869fca746a4",
+      "bytes": 328298,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+      "inputSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/daily-lantern-lake-violin-v1-thumbnail-c255350fd82e.webp",
+      "sha256": "c255350fd82e74bf7794f770c0e054acef062a4fbc8490e13245be30c13c7f07",
+      "bytes": 60790,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+      "inputSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/daily-lantern-lake-violin-v1.webp",
+    "sha256": "7afb17f8d4bcc19ff1733298deeee2028bd6c565a58e725632a243a7500128cf",
+    "bytes": 606056,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31"
+  }
+}

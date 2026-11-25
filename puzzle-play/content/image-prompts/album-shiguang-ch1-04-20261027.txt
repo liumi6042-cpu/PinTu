@@ -1,0 +1,17 @@
+# ch1s-04-first-customer
+
+Mode: built-in image_gen
+Reference: cast-sheet-final.png
+Output: ch1s-04-first-customer.png
+Generated source: C:\Users\Administrator\.codex\generated_images\01a17bce-39eb-7623-b3a9-38191a9ca165\exec-af609494-0bbf-4f6a-90c4-bc776a673bb3.png
+
+## Final prompt
+
+Use case: illustration-story.
+Asset type: one landscape 1536x1024 picture-book story illustration used as a beginner 24-piece jigsaw puzzle. Generate exactly one full-bleed scene, without puzzle cut lines.
+Input image: cast-sheet-final.png is the exact character identity and clothing reference for Xiaohe and Tuanzi, not a layout to reproduce. Do not redesign them.
+Scene: Medium shot at the shop's front door, a brass bell clearly visible above the door. A small boy Afu, about 8, round face, short black hair, red scarf, small white baker's apron, stands in the doorway holding out an old photograph broken into several glowing pieces. Show photographic imagery on the old torn pieces, not just generic glowing objects. His eyes are wet, eyebrows worried, lips trembling, about to cry. Xiaohe kneels down to his height with a kind, reassuring expression, attending to him and the broken photograph. Tuanzi sits beside her looking up at the boy. Their shared interaction with the photograph is the clear focal subject. Behind the boy is the street outside with shop awnings and potted plants.
+Character invariants: Xiaohe is a 17-year-old girl with the exact reference face, short brown bob hair, small pink flower hair clip above her left ear, warm brown eyes, friendly round face; mustard-yellow short jacket over cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch. Tuanzi is the exact chubby calico shop cat in the reference: mostly white fur; left ear and left-eye area orange, right ear and right-eye area black; large black back patch, orange rump patch, fluffy black tail, green eyes, pink nose, small sage-green neckerchief tied at the side of the neck. Preserve the reference fur distribution and character identities in the new poses.
+Style: cozy hand-painted anime illustration, warm soft light, gentle saturated cream, honey, sage green, berry pink and sky blue. Clean readable shapes with soft painterly texture, storybook feel, matching the reference drawing style.
+Composition: medium scene emphasizing faces, gestures, and offered photograph, with kneeling Xiaohe and seated cat recognizable. Foreground, middle ground and background have clearly different colors and textures, making puzzle regions easy to recognize. Fill the entire frame edge to edge including corners with the doorway, warm textured shop details, softly patterned light, street awnings, potted plants and threshold. No large empty flat walls or empty sky. No tiny repetitive clutter. Keep the main emotional interaction readable at a glance.
+Avoid: text, letters, numbers, readable writing, signage writing, UI, watermark, borders, picture frames, panel frames, comic speech bubbles. No extra characters. No character sheet, collage or multiple panels.

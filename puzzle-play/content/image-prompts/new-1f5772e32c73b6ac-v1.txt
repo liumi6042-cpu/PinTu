@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a sleek solar-powered train crossing a vast salt lake at sunset, reflective tracks, orange sun disk, distant mountains and geometric clouds, no people.
+Style/medium: retro-futurist photocopied poster aesthetic, bold orange and teal duotone, coarse print grain, strong graphic shapes and vintage sci-fi mood.
+Composition: square, train sweeping diagonally through the center, bold horizon and clean margins.
+Constraints: no text, no logos, no watermark, no people, polished high-detail 4K.

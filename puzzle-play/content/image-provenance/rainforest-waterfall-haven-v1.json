@@ -1,0 +1,78 @@
+{
+  "id": "rainforest-waterfall-haven-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_39-10.png",
+    "originalSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：层叠飞瀑汇入碧潭，热带繁花与藤蔓环抱林间小屋。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+    "optimized": {
+      "src": "/puzzles/rainforest-waterfall-haven-v1-optimized-e5ed2a21a34e.webp",
+      "sha256": "e5ed2a21a34e41ae98f50845d484b8dda00002c8f97bd503521777873aa8cc51",
+      "bytes": 374906,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "inputSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/rainforest-waterfall-haven-v1-thumbnail-1fab914649c9.webp",
+      "sha256": "1fab914649c93a792d6c1c47ca0f8baf065efd5a6e562d0809ee5a7abf2def31",
+      "bytes": 47570,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "inputSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/rainforest-waterfall-haven-v1.webp",
+    "sha256": "5b080a8d3ce47f3a19019573d61226d1aac81a04c221298a56e8c9158cd7d961",
+    "bytes": 684090,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "072d91ab798b2a57038f739865e88aca06183843fa56acc4fc0ec643ba7725dd"
+  }
+}

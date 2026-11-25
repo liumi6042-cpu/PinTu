@@ -1,0 +1,103 @@
+{
+  "id": "redraw-neon-arcade-street-20261018-06-20261018-v2",
+  "origin": "project-ai-generated",
+  "width": 2816,
+  "height": 1584,
+  "sha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "ByteDance Doubao",
+    "tool": "Ark Images Generations API",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T12:57:17.914Z",
+    "threadId": "recent-albums-redraw-20261018",
+    "promptPath": "content/image-prompts/redraw-neon-arcade-street-20261018-06-20261018-v2.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/redraw-neon-arcade-street-20261018-06-20261018-v2/native.png",
+      "sha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+      "bytes": 9389543,
+      "width": 2816,
+      "height": 1584,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/redraw-neon-arcade-street-20261018-06-20261018-v2/native.webp",
+        "sha256": "785ccd3df43ea496280a24b70d1f52efd9bc88a3b31b39cbd27af647344259c9",
+        "bytes": 1677306,
+        "width": 2816,
+        "height": 1584
+      }
+    },
+    "originalFile": "public/puzzles/redraw-neon-arcade-street-20261018-06-20261018-v2.png",
+    "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "Reference redraw from the original concept image; continuous illustration with detail reconstruction"
+  },
+  "resolutionNote": "原始生成 2816×1584；保存成品 2816×1584，未放大。参考用的概念图由运营者提供，未在图库登记，也未随成品分发。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-18T13:07:41.781Z",
+    "notes": "已抽查修正版：保持原构图与比例，未发现拼图块、接缝或网格；原图保留。来源相册：霓虹电玩街。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+    "optimized": {
+      "src": "/puzzles/redraw-neon-arcade-street-20261018-06-20261018-v2-optimized-fd6be0335a62.webp",
+      "sha256": "fd6be0335a62c90b5402129fefa87f5fa242afbcf6ec04f3238a4575db35058f",
+      "bytes": 840988,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+      "inputSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/redraw-neon-arcade-street-20261018-06-20261018-v2-thumbnail-9b63c58eacb6.webp",
+      "sha256": "9b63c58eacb6df42feedc4bb6d49fe8b7b1d8c223a3beaf16c93533266722430",
+      "bytes": 35710,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+      "inputSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/redraw-neon-arcade-street-20261018-06-20261018-v2.webp",
+    "sha256": "785ccd3df43ea496280a24b70d1f52efd9bc88a3b31b39cbd27af647344259c9",
+    "bytes": 1677306,
+    "width": 2816,
+    "height": 1584,
+    "originalPngSha256": "6861aa498fecbb53ddf73bae4d1357d6459963dbb7ecd31cbd7304bf67db18b3"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "id": "cel-rooftop-breeze-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/cel-rooftop-breeze-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "cel-sunset-train-v1",
+        "path": "public/puzzles/cel-sunset-train-v1.png",
+        "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+        "purpose": "rendering-style-only",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "public/puzzles/cel-sunset-train-v1.webp",
+          "sha256": "f308498b8dbc981dd9628b10191940e7b6d7ee3286cdaab7af9866fc1fd74f26",
+          "bytes": 238906,
+          "width": 1536,
+          "height": 1024
+        }
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-5581d089-d0b1-414d-b19f-c9d79f22f68c.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/cel-rooftop-breeze-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+    "optimized": {
+      "src": "/puzzles/cel-rooftop-breeze-v1-optimized-409f8f380a2c.webp",
+      "sha256": "409f8f380a2c8917725689afcb84d010a8fe499949d99da9515fc935b4ead02b",
+      "bytes": 154382,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "inputSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rooftop-breeze-v1-thumbnail-c4581502ba03.webp",
+      "sha256": "c4581502ba03bec0764c6fe3ac97132dd8fb46b0a8c7fc73a9a91a455faa52ce",
+      "bytes": 24274,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "inputSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cel-rooftop-breeze-v1.webp",
+    "sha256": "7f2911f34267f595efe10fdde6b64599b21aadd4a14af52cb65d60bbe3267f05",
+    "bytes": 340112,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54"
+  }
+}

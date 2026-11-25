@@ -1,0 +1,13 @@
+{
+  "productionDeploymentVerified": false,
+  "trustedIngressAndRateLimitsVerified": false,
+  "offsiteBackupAndRestoreVerified": false,
+  "uptimeAlertsAndRollbackVerified": false,
+  "targetCapacityAndBudgetVerified": false,
+  "overseasNetworkVerified": false,
+  "safariIosAndroidVerified": false,
+  "supportServiceVerified": false,
+  "administratorAccessReviewed": false,
+  "operatorPrivacyAndTermsReviewed": false,
+  "assetRightsReviewed": false
+}

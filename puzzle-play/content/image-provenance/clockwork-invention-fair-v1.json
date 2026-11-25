@@ -1,0 +1,80 @@
+{
+  "id": "clockwork-invention-fair-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "86d76f46462fb146",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "86d76f46462fb146",
+    "originalSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 6 张原图预览：黄铜机械与飞艇之间，藏着奇思妙想的发明摊位。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+    "optimized": {
+      "src": "/puzzles/clockwork-invention-fair-v1-optimized-389b4364ba17.webp",
+      "sha256": "389b4364ba170712e50980f59a1c46bc40f42f5f471c55cc037e624fe6fc7ddf",
+      "bytes": 457172,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "inputSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/clockwork-invention-fair-v1-thumbnail-23282833aa98.webp",
+      "sha256": "23282833aa98c66aaf7033039cce5b1aadf087cc78a48164149c744955dcd7bd",
+      "bytes": 68252,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "inputSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/clockwork-invention-fair-v1.webp",
+    "sha256": "0ccdbd2918506164d22d915a04229af0a4b6b0df35269c089bb1fe8679c4d5df",
+    "bytes": 777804,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000"
+  }
+}

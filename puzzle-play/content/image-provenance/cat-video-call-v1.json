@@ -1,0 +1,78 @@
+{
+  "id": "cat-video-call-v1",
+  "origin": "user-provided",
+  "width": 1122,
+  "height": 1402,
+  "sha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-17 通过剪贴板提供的插画，内容为猫咪视频会议、主人在桌前睡着。原件为 JPEG（1122×1402），入库时转为 PNG 无损保存，未做任何裁切或缩放。",
+    "providedOn": "2026-09-17",
+    "originalFile": "C:/Users/Administrator/.workbuddy/clipboard-images/clipboard-2026-09-17T09-19-55-603Z-f4976125.jpg",
+    "originalSha256": "8da1f492d47a378fe8d4b5377983ecdf04aa774eb5e439c7a6d39810b4ec822c"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有这张图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-17"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-17",
+    "reviewer": "WorkBuddy visual review",
+    "observations": "已查看原图：无网页文字、按钮、水印、签名或可辨认商标；视频通话窗口内的三只猫为通用角色化形象，不指向任何受保护的特定作品或角色；画面结构正常，无异常形体或大面积重复纹理。适合作为拼图素材。"
+  },
+  "delivery": {
+    "sourceSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+    "optimized": {
+      "src": "/puzzles/cat-video-call-v1-optimized-2f1fa05c97f4.webp",
+      "sha256": "2f1fa05c97f450aa64953bc7626291a4ded782b426efde90499fd5364b93cd4d",
+      "bytes": 183866,
+      "width": 1122,
+      "height": 1402,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "inputSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-video-call-v1-thumbnail-b37de33622aa.webp",
+      "sha256": "b37de33622aad00fa499574fb9c76810e0f3207e3759cfb53c319bb842058e2e",
+      "bytes": 38362,
+      "width": 307,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "inputSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cat-video-call-v1.webp",
+    "sha256": "d155fbd82a87f109f0960831cdf370186595b31dcc7a495f0e37fc1c261b8996",
+    "bytes": 361056,
+    "width": 1122,
+    "height": 1402,
+    "originalPngSha256": "c511b45494829a6e65d7b860d5ace10c874d42a4319f93784db85e29adefee4d"
+  }
+}

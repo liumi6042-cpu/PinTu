@@ -1,0 +1,78 @@
+{
+  "id": "lantern-fox-pair-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-96608e3b-f6f2-4fef-8cbd-1a68fc41c50d.png",
+    "originalSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：白狐与棕狐角色共提花灯，背景是热闹的东方夜市灯火。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+    "optimized": {
+      "src": "/puzzles/lantern-fox-pair-v1-optimized-884325e1adcc.webp",
+      "sha256": "884325e1adcc7e58b846a19415a95deb01f73cd3786acc48b502115e8abcde6f",
+      "bytes": 148598,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "inputSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/lantern-fox-pair-v1-thumbnail-6582db178808.webp",
+      "sha256": "6582db1788081c48dbe783629b28e8977c9035ce0fffd0e6c002997ad718d962",
+      "bytes": 22810,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "inputSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/lantern-fox-pair-v1.webp",
+    "sha256": "831e95cb73f21e5f089eb2a2783b9b945c974dbbd38b9f6f73107e666597ff8c",
+    "bytes": 320800,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "c4883ebb3d103ddda45dc73040513bff02dba75310b54a28deac7b5a953d5404"
+  }
+}

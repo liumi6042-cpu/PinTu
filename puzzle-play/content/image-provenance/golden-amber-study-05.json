@@ -1,0 +1,78 @@
+{
+  "id": "golden-amber-study-05",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-20 提供的作品：由提供者在 ChatGPT 中生成后交给本站。原始文件即为 PNG（1448×1086），入库时未做任何裁切、缩放或重编码。",
+    "providedOn": "2026-09-20",
+    "originalFile": "C:/Users/Administrator/Desktop/Codex 图像 2026年9月20日 20_12_18-3.png",
+    "originalSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有该图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-20"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-20",
+    "reviewer": "提供者确认（provider confirmation）",
+    "observations": "提供者于 2026-09-20 确认画面中不含水印、签名、网页界面文字或按钮、以及可辨认商标。本条为提供者自述，本站未做逐像素人工复核。"
+  },
+  "delivery": {
+    "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+    "optimized": {
+      "src": "/puzzles/golden-amber-study-05-optimized-45ddce866d63.webp",
+      "sha256": "45ddce866d63243b69642a1913813ddffa2f9e0252d525fa1357a11033059e99",
+      "bytes": 344766,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "inputSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/golden-amber-study-05-thumbnail-30a54fc9a028.webp",
+      "sha256": "30a54fc9a028c1ed1cf08eed1cd87560e089d80025e8d5fd5efbad8ab2e46615",
+      "bytes": 45946,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "inputSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/golden-amber-study-05.webp",
+    "sha256": "892bdd108be65f0e60624afc77407fb71abf3910f36eb840f0483c34c7887cc2",
+    "bytes": 641364,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "0ab1a681342f7f4230a0b99e272785e4cf17fdc57dff0df7038f6c927df59e1d"
+  }
+}

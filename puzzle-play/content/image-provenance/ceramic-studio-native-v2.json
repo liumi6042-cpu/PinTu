@@ -1,0 +1,90 @@
+{
+  "id": "ceramic-studio-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/ceramic-studio-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-69b83169-8dc6-4dc5-b852-357e3b6c7772.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+    "optimized": {
+      "src": "/puzzles/ceramic-studio-native-v2-optimized-74195ad87b9f.webp",
+      "sha256": "74195ad87b9fad6514298f3a27cb6ab995f52044e55d94463a74a3d3f33b198a",
+      "bytes": 162974,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+      "inputSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/ceramic-studio-native-v2-thumbnail-e899185c70ea.webp",
+      "sha256": "e899185c70eada72d93e33ba4350f56195e1545b27f590c20a74c92d374c5ee3",
+      "bytes": 12152,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+      "inputSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/ceramic-studio-native-v2.webp",
+    "sha256": "0e8b940e59a5cf0a60fcaf4bb25532523876c87f2d28f71a46f93dc89f270752",
+    "bytes": 429324,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616"
+  }
+}

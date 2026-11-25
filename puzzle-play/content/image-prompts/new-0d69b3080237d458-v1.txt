@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime double-character artwork.
+Primary request: two original adult Japanese-anime cat-eared characters, a violet-haired woman and a blue-haired man, sharing a transparent umbrella on a rainy neon street, fashionable modest streetwear with coordinated lilac and cyan accents, playful confident expressions. The two characters must dominate the frame, shoulder-to-thigh framing, no other people.
+Style/medium: vibrant modern Japanese anime, crisp line art, polished color rendering, detailed eyes, wet fabric and reflections.
+Composition/framing: wide horizontal 16:9, characters centered together, clear separation between both silhouettes, both pairs of cat ears fully visible.
+Background: minimal blurred city bokeh and reflective pavement, no readable signs, no scenery overload.
+Lighting/mood: blue-purple night, colorful rain reflections, lively and stylish.
+Color palette: black, lilac, cyan, pink, silver.
+Constraints: exactly two original fully clothed adults, nonsexual, no logos, no readable text, no watermark, no extra people, no duplicate character, no fused hands or bodies, no anatomical errors. Target a finished 4K-quality landscape illustration.

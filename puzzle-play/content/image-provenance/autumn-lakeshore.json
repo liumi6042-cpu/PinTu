@@ -1,0 +1,90 @@
+{
+  "id": "autumn-lakeshore",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-11",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/autumn-lakeshore.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-0adc88df-41fe-4a4a-8f35-ebcfc0f834ed.png",
+    "sourceMetadata": "docs/nature-expansion-20260911-assets.json"
+  },
+  "resolutionNote": "Native 1402 x 1122; no upscaling. AI-generated photographic landscape, not a photograph of a verified real location. High piece counts remain limited by original pixels.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-11",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "A single dominant golden-leaved tree with a visible trunk, curved grassy bank and a physically plausible rippled reflection. Sparse distant hills and clear depth layers. No visible people, buildings, text, logos, watermarks or puzzle seams."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+    "optimized": {
+      "src": "/puzzles/autumn-lakeshore-optimized-3c04b09c5be5.webp",
+      "sha256": "3c04b09c5be5ee10dda3e44fc4ca0a689b7af02b6f13daf1a03944b39f99e024",
+      "bytes": 226466,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+      "inputSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/autumn-lakeshore-thumbnail-e4ed7e2b7610.webp",
+      "sha256": "e4ed7e2b7610714c8511f1e8fecc28c656dc9a845fdd94b307056a2e27bc2c60",
+      "bytes": 29338,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+      "inputSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/autumn-lakeshore.webp",
+    "sha256": "f9bdf10b04b8efca24ae54b01f1903a0fcfcc40bcf3ae2d069df96cc3b3ad2c6",
+    "bytes": 456928,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "62674b72b0b69b41d824d1cf18614ea4e5cfb7a4215e2f7d629bec541792b73e"
+  }
+}

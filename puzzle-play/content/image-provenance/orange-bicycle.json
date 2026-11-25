@@ -1,0 +1,91 @@
+{
+  "id": "orange-bicycle",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与本地生成记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/orange-bicycle.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a081db-e110-7e20-9200-852557b81ee0\\exec-aae45c66-5821-4012-98b2-a0aa7c87479e.png",
+    "sourceMetadata": "../artwork/simple-gallery-20260909/manifest-b.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；不插值放大。画面采用较少主体和清楚色块，高倍放大仍受原始像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: one large orange bicycle with coherent wheels and frame beside cream wall and a single potted plant; readable broad object and shadow regions, natural gouache wall texture. No obvious text, logo, watermark, frame, puzzle seams or recognizable IP.",
+      "主代理复核新图，主体清楚、构图简洁，未发现明显文字、水印、商标或拼图缝线。"
+    ],
+    "scope": "视觉与来源检查，不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+    "optimized": {
+      "src": "/puzzles/orange-bicycle-optimized-e0240b3d9f30.webp",
+      "sha256": "e0240b3d9f301af44d8f8ef1527ed333c552df192fd8c3c86aa2f922161382dc",
+      "bytes": 89498,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+      "inputSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/orange-bicycle-thumbnail-1ef44041f557.webp",
+      "sha256": "1ef44041f5576eee292dcc74a8a210f6cae8cb9869e5c9071ed4098ea6c689fb",
+      "bytes": 20570,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+      "inputSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/orange-bicycle.webp",
+    "sha256": "1c814eb20f782ab084567246bc7bfbd3e21da188f7546018518a3fbdb11779ce",
+    "bytes": 228492,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "fbd31e46f2dc72c1f0e175da9c3862fce62a527b6a3d101b526871c62ae1e9aa"
+  }
+}

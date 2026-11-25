@@ -1,0 +1,105 @@
+import { sites } from '@openai/sites-vite-plugin';
+import tailwindcss from '@tailwindcss/postcss';
+import vinext from 'vinext';
+import { defineConfig } from 'vite';
+import hostingConfig from './.openai/hosting.json';
+import { checkImageLibrary } from './scripts/check-image-library.mjs';
+import { resolveMediaDir, safeMediaFile } from './scripts/media-paths.mjs';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { deliveredGuidancePlugin } from './server/delivered-guidance-plugin.mjs';
+
+function sharedMediaPuzzlesPlugin() {
+  return {
+    name: 'jigsaw-shared-media-puzzles',
+    configureServer(server: { middlewares: { use: Function } }) {
+      const puzzlesDir = resolveMediaDir(process.cwd(), 'puzzles');
+      server.middlewares.use((req: { url?: string; method?: string }, res: { setHeader: Function; end: Function }, next: Function) => {
+        if ((req.method === 'GET' || req.method === 'HEAD') && req.url?.startsWith('/puzzles/')) {
+          const clean = req.url.split('?')[0].slice('/puzzles/'.length);
+          if (/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(clean)) {
+            try {
+              const file = safeMediaFile(puzzlesDir, clean);
+              if (existsSync(file)) {
+                res.setHeader('Content-Type', 'image/webp');
+                res.setHeader('Cache-Control', 'public, max-age=86400');
+                res.end(req.method === 'HEAD' ? undefined : readFileSync(file));
+                return;
+              }
+            } catch {}
+          }
+        }
+        next();
+      });
+    },
+  };
+}
+
+const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
+  '00000000-0000-4000-8000-000000000000';
+
+const { d1, r2 } = hostingConfig;
+
+// macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
+const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
+
+const localBindingConfig = {
+  main: 'vinext/server/fetch-handler',
+  compatibility_flags: ['nodejs_compat'],
+  d1_databases: d1
+    ? [
+        {
+          binding: d1,
+          database_name: 'site-creator-d1',
+          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+        },
+      ]
+    : [],
+  r2_buckets: r2
+    ? [
+        {
+          binding: r2,
+          bucket_name: 'site-creator-r2',
+        },
+      ]
+    : [],
+};
+
+export default defineConfig(async () => {
+  await checkImageLibrary(process.cwd());
+  if (process.env.PUZZLE_TARGET === 'node') return {
+    // Release packaging installs its complete runtime allowlist after compiling.
+    // Validation still sees the original public inputs in the isolated source.
+    build: { copyPublicDir: process.env.PUZZLE_RELEASE_BUILD !== '1' },
+    css: { postcss: { plugins: [tailwindcss()] } },
+    resolve: { alias: { 'cloudflare:workers': fileURLToPath(new URL('./server/runtime.node.mjs', import.meta.url)) } },
+    plugins: [deliveredGuidancePlugin(), vinext()],
+  };
+  // Keep Wrangler and Miniflare state project-local. These are non-secret tool
+  // settings; application environment belongs in ignored `.env*` files.
+  process.env.WRANGLER_WRITE_LOGS ??= 'false';
+  process.env.WRANGLER_LOG_PATH ??= '.wrangler/logs';
+  process.env.MINIFLARE_REGISTRY_PATH ??= '.wrangler/registry';
+
+  // Wrangler snapshots its log path while the Cloudflare plugin is imported.
+  const { cloudflare } = await import('@cloudflare/vite-plugin');
+
+  return {
+    // Local previews share immutable public assets through filesystem links.
+    // Deployable builds still package complete, independent copies.
+    build: { copyPublicDir: process.env.PUZZLE_LOCAL_BUILD !== '1' },
+    css: { postcss: { plugins: [tailwindcss()] } },
+    server: isCodexSeatbeltSandbox
+      ? { watch: { useFsEvents: false, usePolling: true } }
+      : undefined,
+    plugins: [
+      sharedMediaPuzzlesPlugin(),
+      vinext(),
+      sites(),
+      cloudflare({
+        viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
+        config: localBindingConfig,
+      }),
+    ],
+  };
+});

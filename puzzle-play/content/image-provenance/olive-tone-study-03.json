@@ -1,0 +1,78 @@
+{
+  "id": "olive-tone-study-03",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-20 提供的作品：由提供者在 ChatGPT 中生成后交给本站。原始文件即为 PNG（1448×1086），入库时未做任何裁切、缩放或重编码。",
+    "providedOn": "2026-09-20",
+    "originalFile": "C:/Users/Administrator/Desktop/Codex 图像 2026年9月20日 20_12_11-1.png",
+    "originalSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有该图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-20"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-20",
+    "reviewer": "提供者确认（provider confirmation）",
+    "observations": "提供者于 2026-09-20 确认画面中不含水印、签名、网页界面文字或按钮、以及可辨认商标。本条为提供者自述，本站未做逐像素人工复核。"
+  },
+  "delivery": {
+    "sourceSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+    "optimized": {
+      "src": "/puzzles/olive-tone-study-03-optimized-46788f7210c5.webp",
+      "sha256": "46788f7210c5242f82770e028a73d799da658b62b66d64971f65ea099bbf7b99",
+      "bytes": 405648,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "inputSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/olive-tone-study-03-thumbnail-188b7fbee683.webp",
+      "sha256": "188b7fbee6833c355093d849e4563f80ad39453fecb94d4ce58f913d2faaf9cb",
+      "bytes": 52994,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "inputSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/olive-tone-study-03.webp",
+    "sha256": "4cf26deef530194235c7dbc7df9b7af59e778d1ce6f08ead9e0ada0627cb5084",
+    "bytes": 737436,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "97d0dc0ce247c1e7c53f83e9b24a95b2a9b4a272dbf9a5cb230aee61b66302ad"
+  }
+}

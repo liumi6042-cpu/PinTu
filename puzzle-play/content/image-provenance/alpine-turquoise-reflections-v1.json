@@ -1,0 +1,78 @@
+{
+  "id": "alpine-turquoise-reflections-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_27-4.png",
+    "originalSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：清澈湖水倒映雪山与松林，岸边野花迎着晨光盛开。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+    "optimized": {
+      "src": "/puzzles/alpine-turquoise-reflections-v1-optimized-c4a4535b9d22.webp",
+      "sha256": "c4a4535b9d22f294797d1a77abf45337414fa6508bd0301b4cca9501e32f3b3e",
+      "bytes": 363170,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "inputSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/alpine-turquoise-reflections-v1-thumbnail-2635c9c0811b.webp",
+      "sha256": "2635c9c0811b683297b7d7183b0b963273b95cdf5589237b6cb7faf793a68745",
+      "bytes": 47520,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "inputSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/alpine-turquoise-reflections-v1.webp",
+    "sha256": "fffce1967556474491492c1fc8b5a14a29513092867c0c6694daee40c1160a16",
+    "bytes": 645302,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "087c1ecab98156392ab31c0f478e10405a7c1eca7d45ebae79f124c4c6181d0a"
+  }
+}

@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K mythological beast artwork.
+Primary request: an original non-humanoid Qiongqi inspired by the Shan Hai Jing, a massive tiger-like winged beast with black and rust-striped fur, powerful paws, curved horns, broad feathered wings and glowing red eyes, crouching on ancient bronze ruins. The creature must fill about 80% of the frame; clearly animal anatomy, not a humanoid monster.
+Style/medium: dramatic Japanese anime fantasy creature concept art, detailed fur and feathers, sharp claws, ornate bronze accents, polished cinematic rendering.
+Composition/framing: wide horizontal 16:9, dynamic three-quarter full-body pose, wings spread across the frame, head and forequarters prominent.
+Background: minimal storm clouds, broken bronze tablets and sparks, no people, no expansive landscape.
+Lighting/mood: red lightning and dark blue atmospheric light, fierce and ominous.
+Color palette: charcoal, rust red, bronze, electric blue.
+Constraints: non-humanoid beast only, no human face, no human torso, no human hands, no text, no logos, no watermark, no extra creatures, no gore, no anatomical errors. Target a finished 4K-quality landscape illustration.

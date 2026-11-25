@@ -1,0 +1,78 @@
+{
+  "id": "sage-green-study-06",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-20 提供的作品：由提供者在 ChatGPT 中生成后交给本站。原始文件即为 PNG（1448×1086），入库时未做任何裁切、缩放或重编码。",
+    "providedOn": "2026-09-20",
+    "originalFile": "C:/Users/Administrator/Desktop/Codex 图像 2026年9月20日 20_12_19-4.png",
+    "originalSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有该图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-20"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-20",
+    "reviewer": "提供者确认（provider confirmation）",
+    "observations": "提供者于 2026-09-20 确认画面中不含水印、签名、网页界面文字或按钮、以及可辨认商标。本条为提供者自述，本站未做逐像素人工复核。"
+  },
+  "delivery": {
+    "sourceSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+    "optimized": {
+      "src": "/puzzles/sage-green-study-06-optimized-afca9f64c5f5.webp",
+      "sha256": "afca9f64c5f5bb75fe63e5b560ede9dcd62687698ed8619d2a40226a76555a06",
+      "bytes": 338648,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "inputSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/sage-green-study-06-thumbnail-456e206b2137.webp",
+      "sha256": "456e206b213727b7997a56a187bd30d8635eda644a4193cfee71982bcaeb5b73",
+      "bytes": 46630,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "inputSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sage-green-study-06.webp",
+    "sha256": "ecfaf27625bad77bf560d79e622a037e93e7c133fd18baf4c9f123798f89a17a",
+    "bytes": 637560,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "df8483f0dd198cda146b652d8ab5d4e07cb23c5103cbef59285b050dcac86b5d"
+  }
+}

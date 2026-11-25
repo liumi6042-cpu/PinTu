@@ -1,0 +1,80 @@
+{
+  "id": "enchanted-library-garden-v1",
+  "origin": "user-provided",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户通过 ChatGPT 分享相册提供并要求上传的 PNG 原图；未裁切、缩放或重编码。",
+    "providedOn": "2026-09-26",
+    "originalFile": "f4c8ee7398d44558",
+    "shareUrl": "https://chatgpt.com/s/m_6ab69342a8d081918b387622cbae56de",
+    "assetId": "f4c8ee7398d44558",
+    "originalSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户提供图片并明确要求上传到本站图库，授权作为公开拼图素材展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看相册第 7 张原图预览：高高的书架环抱花园，让阅读、茶香与探索相遇。 无网页界面或按钮；图内招牌属于场景。"
+  },
+  "delivery": {
+    "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+    "optimized": {
+      "src": "/puzzles/enchanted-library-garden-v1-optimized-e93098790fa9.webp",
+      "sha256": "e93098790fa9a040625b6b7a6fe38842f3fa78213128fd6884db2588aab16abf",
+      "bytes": 357220,
+      "width": 1254,
+      "height": 1254,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "inputSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/enchanted-library-garden-v1-thumbnail-e9831c82443a.webp",
+      "sha256": "e9831c82443ada841a9fccb9a42db3e8f4cfdb5c1233aae7e1ef290288587b3c",
+      "bytes": 65406,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "inputSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/enchanted-library-garden-v1.webp",
+    "sha256": "52a36303654ed24b3a705d86503f75cc40f721ca39e724ebd2f9b2aa8497dc71",
+    "bytes": 637836,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57"
+  }
+}

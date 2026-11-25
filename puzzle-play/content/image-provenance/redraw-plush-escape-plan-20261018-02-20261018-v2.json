@@ -1,0 +1,103 @@
+{
+  "id": "redraw-plush-escape-plan-20261018-02-20261018-v2",
+  "origin": "project-ai-generated",
+  "width": 2816,
+  "height": 1584,
+  "sha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "ByteDance Doubao",
+    "tool": "Ark Images Generations API",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T13:01:57.133Z",
+    "threadId": "recent-albums-redraw-20261018",
+    "promptPath": "content/image-prompts/redraw-plush-escape-plan-20261018-02-20261018-v2.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/redraw-plush-escape-plan-20261018-02-20261018-v2/native.png",
+      "sha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+      "bytes": 8886292,
+      "width": 2816,
+      "height": 1584,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/redraw-plush-escape-plan-20261018-02-20261018-v2/native.webp",
+        "sha256": "30ce1abd76161e04bfc7fb0a88f6ce436df9f44537bbaa093be577da2d86c192",
+        "bytes": 1453220,
+        "width": 2816,
+        "height": 1584
+      }
+    },
+    "originalFile": "public/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2.png",
+    "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "Reference redraw from the original concept image; continuous illustration with detail reconstruction"
+  },
+  "resolutionNote": "原始生成 2816×1584；保存成品 2816×1584，未放大。参考用的概念图由运营者提供，未在图库登记，也未随成品分发。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-18T13:07:41.784Z",
+    "notes": "已抽查修正版：保持原构图与比例，未发现拼图块、接缝或网格；原图保留。来源相册：玩偶逃脱计划。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+    "optimized": {
+      "src": "/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2-optimized-fa444993a9a4.webp",
+      "sha256": "fa444993a9a4b392fd38052cc7aeac2938bcfae79eaffba833b7bf9489ceb292",
+      "bytes": 671038,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+      "inputSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2-thumbnail-75009f6d1270.webp",
+      "sha256": "75009f6d127067db029e40c2bdcb9f64150ad16fc636e12563a26e39ddb3d261",
+      "bytes": 30220,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+      "inputSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/redraw-plush-escape-plan-20261018-02-20261018-v2.webp",
+    "sha256": "30ce1abd76161e04bfc7fb0a88f6ce436df9f44537bbaa093be577da2d86c192",
+    "bytes": 1453220,
+    "width": 2816,
+    "height": 1584,
+    "originalPngSha256": "49d93ca59017f38dcf667284009388363678c8de21b9d229ee9fc76b75c28a3b"
+  }
+}

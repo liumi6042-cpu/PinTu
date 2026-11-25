@@ -1,0 +1,102 @@
+{
+  "id": "cat-journey-cloud-roof-v1",
+  "origin": "project-ai-generated",
+  "width": 3840,
+  "height": 3840,
+  "sha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+  "nativeResolution": false,
+  "upscaled": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-17",
+    "generatedAt": "2026-10-17T09:06:18.555Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/cat-journey-cloud-roof-v1.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/cat-journey-cloud-roof-v1/native.png",
+      "sha256": "b3a81d8672c0fdbf9eea69c6e3638a0bd734f371072482ddc39d6686cea7ad36",
+      "bytes": 3295777,
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/cat-journey-cloud-roof-v1/native.webp",
+        "sha256": "f06cdc5d22c5eb9c59ca2d83d150b8b8c8e3fb040e86faced8c134cea307dd88",
+        "bytes": 554690,
+        "width": 1254,
+        "height": 1254
+      }
+    },
+    "originalFile": "public/puzzles/cat-journey-cloud-roof-v1.png",
+    "importedRegistrySha256": "07e71a426194c32259dc7a101c2b3ac71a9c0e88f67fcbe55058466fcedb5722"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 3840×3840，已放大，放大尺寸不代表新增原生细节。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-17T09:41:09.926Z",
+    "notes": "白猫卧在青瓦屋脊上，桃花、松枝、云山与瀑布围绕主体，采用暖光与青绿色山水。 原始生成1254×1254，本批仅放大导出3840×3840；不标记为原生4K或AI高清重绘。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+    "optimized": {
+      "src": "/puzzles/cat-journey-cloud-roof-v1-optimized-390a1e773ad6.webp",
+      "sha256": "390a1e773ad6041b84739453f199f8bfb2ccafe937dca9b0d3c2870e41f68438",
+      "bytes": 545348,
+      "width": 2560,
+      "height": 2560,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "inputSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cat-journey-cloud-roof-v1-thumbnail-69392793b4cc.webp",
+      "sha256": "69392793b4cc88fa9facaeb25745c2d3adf24b9d98a572afa0fef8fc50bc22bf",
+      "bytes": 51046,
+      "width": 384,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "inputSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cat-journey-cloud-roof-v1.webp",
+    "sha256": "b00b5334a7884b89f433282853cffadf9acb47f7badd9806c3132d3348cf56ad",
+    "bytes": 1809386,
+    "width": 3840,
+    "height": 3840,
+    "originalPngSha256": "3c25da99a6b05daa98cde38b2b2289a6aa22e7760a62ec12981f7477e8d70ee3"
+  }
+}

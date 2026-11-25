@@ -1,0 +1,90 @@
+{
+  "id": "sunlit-coastal-headland",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-11",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/sunlit-coastal-headland.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-242fe7f6-8fbc-4499-9bf2-60c4aab0b2ef.png",
+    "sourceMetadata": "docs/nature-expansion-20260911-assets.json"
+  },
+  "resolutionNote": "Native 1402 x 1122; no upscaling. AI-generated photographic landscape, not a photograph of a verified real location. High piece counts remain limited by original pixels.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-11",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "One pale limestone headland, curved sandy cove, few large rocks and clear shallow/deep blue water bands. Natural daylight and plausible foam. No visible people, buildings, boats, text, logos, watermarks or puzzle seams."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+    "optimized": {
+      "src": "/puzzles/sunlit-coastal-headland-optimized-ac16cf314fcc.webp",
+      "sha256": "ac16cf314fccd27066e9dccabe5933c4b2bb5180285c8fee49bd3bae1dce2a50",
+      "bytes": 181646,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+      "inputSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/sunlit-coastal-headland-thumbnail-78811139abbf.webp",
+      "sha256": "78811139abbf2644ed90a7691fead67e1c5e7c198edb8e2ea5397ce8d7906bd5",
+      "bytes": 26052,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+      "inputSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sunlit-coastal-headland.webp",
+    "sha256": "68f8d74fcd7425eb4094331cf7f03d70179b393caa75664d6946370bf403f990",
+    "bytes": 411158,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "bc62a7a1b82d5fa79548f9d3f6ee9f381ac112872a7045d34f7d63b09eab6dfa"
+  }
+}

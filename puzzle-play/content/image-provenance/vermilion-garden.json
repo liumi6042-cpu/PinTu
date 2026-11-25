@@ -1,0 +1,88 @@
+{
+  "id": "vermilion-garden",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+  "nativeResolution": true,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "本次 image_gen 调用日期",
+    "promptPath": "content/image-prompts/vermilion-garden.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-bf5402c5-ed24-4dda-aee8-e8c169c742c1.png"
+  },
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "fiveThousandPieces": "居中等比裁切为 2:1；不拉伸"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": "已查看生成原图，未发现明显水印、签名、可读品牌标志或可辨认的受保护角色。此为视觉筛查，不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+    "optimized": {
+      "src": "/puzzles/vermilion-garden-optimized-ba7982ff73f5.webp",
+      "sha256": "ba7982ff73f59e90a1ece4af57c0e05f0cfa5a5d8faf8b77ed5c9fcd379c4db3",
+      "bytes": 380890,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "inputSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/vermilion-garden-thumbnail-ea2d8c812c24.webp",
+      "sha256": "ea2d8c812c24fe810db6d7d9624d82945307c20c5b13eeec631263eaa48e9830",
+      "bytes": 45826,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "inputSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/vermilion-garden.webp",
+    "sha256": "695febac997509bec1e22ab26c7add84dde7b86b19016403581d337c53b8cb41",
+    "bytes": 715582,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "ee9951fb138332a98913f49ab3c289195af38841f042277e30dcba1700190b77"
+  }
+}

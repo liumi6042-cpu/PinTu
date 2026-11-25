@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a magnificent astronomical clock tower with concentric gears, a starry sky, crescent moon and tiny observatory windows.
+Style/medium: colorful stained-glass mosaic art, cobalt blue, sapphire, amber and ruby glass pieces separated by dark lead lines, luminous jewel-like glow.
+Composition: square, centered tower, strong geometric blocks, clear outer border and safe margins for puzzle cropping.
+Constraints: no people, no text, no logos, no watermark, no photorealism, polished high-detail 4K.

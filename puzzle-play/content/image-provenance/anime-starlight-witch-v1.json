@@ -1,0 +1,90 @@
+{
+  "id": "anime-starlight-witch-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/anime-starlight-witch-v1.txt",
+    "referenceImages": [],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a09ef4-e17f-7621-ae85-8162298139d7/exec-f5049cbf-e72a-4f26-a704-7237a152f50d.png",
+    "sourceMetadata": "content/artwork/anime-20260914/anime-starlight-witch-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated image. No interpolation, composite assembly or AI upscaling. New games follow the current 108–1000 piece policy.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Full image inspected: clear original anime characters and scene, no visible lettering, signature, logos or watermarks.",
+      "Faces, hands, limbs and animal or prop shapes inspected; main subjects remain visible in central game crops. Scene detail is moderate, with readable large color shapes."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
+    "optimized": {
+      "src": "/puzzles/anime-starlight-witch-v1-optimized-3cdda911ae57.webp",
+      "sha256": "3cdda911ae57385209b6c06f58210bb4c3ea6d67c7677a489b9fe85b9a0829c6",
+      "bytes": 185054,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
+      "inputSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/anime-starlight-witch-v1-thumbnail-ad12df2080e3.webp",
+      "sha256": "ad12df2080e316e07563b799e0f2bfb5be8f4e1400a74660a9de07ca494f1b41",
+      "bytes": 29850,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
+      "inputSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/anime-starlight-witch-v1.webp",
+    "sha256": "6b284ac002fc2b9129a14ac8b250996f1109ec67a00712d9723c7ba691934fde",
+    "bytes": 396098,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "bbbc04902531f2cd9eae245432ac8549c4ffaa13150077957aa83511db44809b"
+  }
+}

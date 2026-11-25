@@ -1,0 +1,90 @@
+{
+  "id": "lone-pine-snow-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/lone-pine-snow-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-601c3d06-d378-4119-9a0d-60e87dea6984.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+    "optimized": {
+      "src": "/puzzles/lone-pine-snow-native-v2-optimized-7f154ae9128b.webp",
+      "sha256": "7f154ae9128b3f05d78924ba671a266b25280953e57a85a98f89f9e925fb2bc1",
+      "bytes": 159512,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "inputSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/lone-pine-snow-native-v2-thumbnail-717e7bccc8d7.webp",
+      "sha256": "717e7bccc8d7ebf4bc4a284b747767faf6776114681262f8cef7bb95c16c947c",
+      "bytes": 16100,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "inputSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/lone-pine-snow-native-v2.webp",
+    "sha256": "34f2e23d895a28917f2a6badbe84d826f4c9570faacda9e20a3d9a34e640a6ba",
+    "bytes": 351238,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "f52a8714f0f6aa37e759b37e3d809d3724edb3c1e5f089b44fcc5b69a3f2ced3"
+  }
+}

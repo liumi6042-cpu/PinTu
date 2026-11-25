@@ -1,0 +1,99 @@
+{
+  "id": "alpine-village",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "原始内置 image_gen 调用记录",
+    "promptPath": "content/image-prompts/alpine-village.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a080fa-6610-7d90-b30d-90660058d2c0\\exec-4c6b9c57-24fe-4c84-9d75-e456194fc063.png",
+    "sourceMetadata": "../artwork/puzzle-four-samples-2026-09-08/alpine-village.metadata.json"
+  },
+  "crops": {
+    "sourceAspectRatio": "2:1",
+    "threeThousandPieces": "60×50 正方形主体，居中等比裁切为 6:5，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single 2:1 alpine lakeside panorama with wood chalets, geraniums, stone paving, piers, rowboats, conifers and crisp varied snowy mountain features.",
+      "Clear water contains ripples, reflections and visible near-shore stones; narrow upper sky.",
+      "No visible text, logo, watermark, border, grid or jigsaw seams observed."
+    ],
+    "minorDeviations": [
+      "Open lake occupies a larger continuous region than the other artworks, but remains patterned with reflections and anchored by boats and swans.",
+      "Generated scene adds a village church and swans."
+    ],
+    "scope": "已逐张查看原始生成结果；未发现明显品牌、水印或受保护角色。保留细节偏差记录，视觉筛查不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+    "optimized": {
+      "src": "/puzzles/alpine-village-optimized-0ff0107ad6c3.webp",
+      "sha256": "0ff0107ad6c367c6c448c11942c42ec0fcd2e8c650479971ec46f2cc9b7e7a55",
+      "bytes": 425552,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "inputSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/alpine-village-thumbnail-235748013cb4.webp",
+      "sha256": "235748013cb4cce0810cf884049fbd755f58250b7ec9b399e38d2495f87c7fca",
+      "bytes": 33810,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "inputSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/alpine-village.webp",
+    "sha256": "1c5a758181d0064f735085bf5edaf43bf391c2231f80b9dc0eeb64989868c437",
+    "bytes": 758630,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "f5e31fbf92df92e78eff0aa70b4e159986e41ea61863e4562c95c4d9f5b6e4b8"
+  }
+}

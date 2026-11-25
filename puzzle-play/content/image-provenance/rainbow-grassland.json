@@ -1,0 +1,90 @@
+{
+  "id": "rainbow-grassland",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-11",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/rainbow-grassland.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-31302fe5-edbe-4011-a87c-2f8ee0e7c730.png",
+    "sourceMetadata": "docs/nature-expansion-20260911-assets.json"
+  },
+  "resolutionNote": "Native 1402 x 1122; no upscaling. AI-generated photographic landscape, not a photograph of a verified real location. High piece counts remain limited by original pixels.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-11",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "One natural rainbow above two rolling grassy hills, receding rain clouds and a few foreground rocks. Clear light and shadow areas with gentle sky transitions. Crisp grass and stone texture; no visible people, buildings, text, logos, watermarks or puzzle seams."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+    "optimized": {
+      "src": "/puzzles/rainbow-grassland-optimized-c75c50047381.webp",
+      "sha256": "c75c50047381189dad8ca727e7a49a43f32f0748c55fd1a5dc6cdbcfec99b621",
+      "bytes": 242632,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+      "inputSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/rainbow-grassland-thumbnail-1f291b010d2d.webp",
+      "sha256": "1f291b010d2d03796aa4ee6785cd7f2205a61de87c1e45df0d2873fffcc01cb5",
+      "bytes": 29824,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+      "inputSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/rainbow-grassland.webp",
+    "sha256": "afaf7a28d59f94cd04e2c024035cc1e008d60993184f629095bdbb0a6742a188",
+    "bytes": 500718,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4"
+  }
+}

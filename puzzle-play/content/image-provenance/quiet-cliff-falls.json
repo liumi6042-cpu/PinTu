@@ -1,0 +1,91 @@
+{
+  "id": "quiet-cliff-falls",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-09",
+    "dateBasis": "内置生成结果与批次记录（Asia/Shanghai）",
+    "promptPath": "content/image-prompts/quiet-cliff-falls.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a084d8-cb18-77c3-bed5-dd5cd77f9fdb\\exec-9812f2e4-3a84-41ca-b92e-4e0e6270079d.png",
+    "sourceMetadata": "../artwork/nature-gallery-20260909/manifest.json"
+  },
+  "resolutionNote": "实际原生 1402×1122，约 5:4；未放大。写实摄影感自然风景，非真实地点实拍；高倍放大仍受原生像素限制。",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-09",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "status: pass; review_method: Visual inspection of generated image; subject: One waterfall over a broad layered rock face into an emerald pool, with sparse vegetation.; photorealism: Photographic falling water and ripples, believable wet rock texture and diffused daylight.; composition: Clear waterfall column, rock planes and pool outline, without dense jungle.; constraints: No visible people, buildings, boats, text, logos, watermark, frame, or puzzle seams.; notes: Water naturally separates into strands within the single waterfall; no artificial long-exposure blur.",
+      "主代理复核画面构图、自然光与可辨认轮廓，未发现明显人物、建筑、文字、水印或拼图缝线。"
+    ],
+    "scope": "视觉检查与生成记录不构成独占权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+    "optimized": {
+      "src": "/puzzles/quiet-cliff-falls-optimized-078461a18ea1.webp",
+      "sha256": "078461a18ea1240e15b7e4012dd64cd83ddbf00ca9ae946cbd0deb124e5c875b",
+      "bytes": 302230,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+      "inputSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/quiet-cliff-falls-thumbnail-fa99387dea7a.webp",
+      "sha256": "fa99387dea7a5e2c40b59da4a231adeb00050755666f6141930fbe40bbb1d460",
+      "bytes": 39168,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+      "inputSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/quiet-cliff-falls.webp",
+    "sha256": "3432060597d79aa120eeeb2d606a8ec12aaa2f2a1c0c538d1423d03cfc6ebcdf",
+    "bytes": 628836,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c"
+  }
+}

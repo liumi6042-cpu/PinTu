@@ -1,0 +1,78 @@
+{
+  "id": "sunset-cliff-lighthouse-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_21-2.png",
+    "originalSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：海崖上的白色灯塔，守望金色夕阳与翻涌的浪花。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
+    "optimized": {
+      "src": "/puzzles/sunset-cliff-lighthouse-v1-optimized-ea585a96b924.webp",
+      "sha256": "ea585a96b9243669cfc260195cb52c5738456827214699a456329b1f9cd250dd",
+      "bytes": 368778,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
+      "inputSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/sunset-cliff-lighthouse-v1-thumbnail-ad8a2cb8d6bf.webp",
+      "sha256": "ad8a2cb8d6bf40fdf8fddef65fa562835d55f64dd6c52e9e7b42f2fb0c5e6aa6",
+      "bytes": 45156,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
+      "inputSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sunset-cliff-lighthouse-v1.webp",
+    "sha256": "de53635c5f1023a30139501103f0e4c57997f0c82df89bc976e1a53f404b8a32",
+    "bytes": 657284,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545"
+  }
+}

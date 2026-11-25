@@ -1,0 +1,13 @@
+// Upload limits. The source file may be up to 3 MB; it is re-encoded to WebP Q70
+// in the browser before it leaves the visitor, so the stored copy is much smaller.
+export const USER_IMAGE_LIMIT=10,USER_IMAGE_MAX_BYTES=1800*1024,USER_THUMB_MAX_BYTES=96*1024,USER_UPLOAD_MAX_BYTES=3*1024*1024;
+export const USER_SOURCE_MAX_BYTES=3*1024*1024,USER_IMAGE_QUALITY=0.70,USER_THUMB_QUALITY=0.72;
+export const USER_IMAGE_MAX_SIDE=3072;
+export type CustomImage={id:string;title:string;width:number;height:number};
+export type UserImage=CustomImage&{bytes:number;createdAt:number;src:string;thumbSrc:string};
+export const isCustomImageId=(id:unknown):id is string=>typeof id==='string'&&/^custom-[a-f0-9]{32}$/.test(id);
+export function customPhoto(image:CustomImage,roomId?:string){
+ const query=roomId?'?room='+encodeURIComponent(roomId):'';
+ const src='/api/user-images/'+image.id+query;
+ return {...image,src,thumbSrc:src+(query?'&':'?')+'preview=1',subtitle:'玩家上传的图片',category:'玩家上传'};
+}

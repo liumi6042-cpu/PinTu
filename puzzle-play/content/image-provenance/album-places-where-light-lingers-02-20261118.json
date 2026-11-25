@@ -1,0 +1,101 @@
+{
+  "id": "album-places-where-light-lingers-02-20261118",
+  "origin": "project-ai-generated",
+  "width": 1820,
+  "height": 2731,
+  "sha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-18",
+    "generatedAt": "2026-11-18T05:57:24.447Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-places-where-light-lingers-02-20261118.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-places-where-light-lingers-02-20261118/native.png",
+      "sha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e",
+      "bytes": 8139464,
+      "width": 1820,
+      "height": 2731,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-places-where-light-lingers-02-20261118/native.webp",
+        "sha256": "e1b6b393a4ee8e6af9573566648ff15e14a0778abd8e3a22df7f38ab794dd4b9",
+        "bytes": 1098322,
+        "width": 1820,
+        "height": 2731
+      }
+    },
+    "originalFile": "public/puzzles/album-places-where-light-lingers-02-20261118.png",
+    "importedRegistrySha256": "e1f9d8b8ae83fe601ba756daa77a6de996ed4a51aaa130a4736e7a3fe3d6b565"
+  },
+  "resolutionNote": "原始生成 1820×2731；保存成品 1820×2731，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-18T09:03:18.674Z",
+    "notes": "用户确认的四区重绘成图。完整裁片来源及提示词见 D:\\chat\\拼图\\artwork\\微光停留的地方-20261117\\四区重绘升级 的升级清单与提示词.json。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e",
+    "thumbnail": {
+      "src": "/puzzles/album-places-where-light-lingers-02-20261118-thumbnail-d5d6929945ca.webp",
+      "width": 256,
+      "height": 384,
+      "sha256": "d5d6929945ca0f37572ce20aaeade09a89cab2bb2be065e489fe977b52eac59a",
+      "bytes": 22292,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e",
+      "inputSha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-places-where-light-lingers-02-20261118-optimized-4fd17a1d595a.webp",
+      "width": 1820,
+      "height": 2731,
+      "sha256": "4fd17a1d595a675356f6b90cf6c2e3ad561dee029e530c1af585972ac1ca63b9",
+      "bytes": 436126,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e",
+      "inputSha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-places-where-light-lingers-02-20261118.webp",
+    "sha256": "e1b6b393a4ee8e6af9573566648ff15e14a0778abd8e3a22df7f38ab794dd4b9",
+    "bytes": 1098322,
+    "width": 1820,
+    "height": 2731,
+    "originalPngSha256": "ef53f7aa61674ae3210b6285a8e2a7c73a2537e449c40d2c70c32a8dea7a496e"
+  }
+}

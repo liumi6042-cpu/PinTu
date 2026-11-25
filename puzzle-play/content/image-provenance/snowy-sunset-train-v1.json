@@ -1,0 +1,78 @@
+{
+  "id": "snowy-sunset-train-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-27",
+    "originalFile": "codex-clipboard-d5a71ef7-afde-411b-b650-e46f469ed4d4.png",
+    "originalSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这四张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-27"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-27",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：红色列车停靠雪山小站，暖灯照亮晚霞下的站台。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+    "optimized": {
+      "src": "/puzzles/snowy-sunset-train-v1-optimized-7b2220f280d4.webp",
+      "sha256": "7b2220f280d4e82dc50f29288ec34750d310320a39ffa8a1031b3128cb50725d",
+      "bytes": 358040,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+      "inputSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/snowy-sunset-train-v1-thumbnail-40a2f19121a2.webp",
+      "sha256": "40a2f19121a281dda9290c936b848e0c1a8c1bba56bfa65f14ac22816b5d90fd",
+      "bytes": 37782,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+      "inputSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/snowy-sunset-train-v1.webp",
+    "sha256": "7977e8e8b2778d8ee1370fed73bf7c47138e8a3a4553c3e863d9bab912b794ee",
+    "bytes": 665514,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "64b636546b86f02c0c71210f0c0d42991435820ac336dd5cfb5fc280feebf0b8"
+  }
+}

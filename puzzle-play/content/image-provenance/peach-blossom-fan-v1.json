@@ -1,0 +1,78 @@
+{
+  "id": "peach-blossom-fan-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-6f7d3847-1a50-4230-a18c-b9209adad3a5.png",
+    "originalSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：古风少女手持桃花团扇，背景含亭台、湖泊、瀑布与春日山水。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+    "optimized": {
+      "src": "/puzzles/peach-blossom-fan-v1-optimized-bb7406f4c41a.webp",
+      "sha256": "bb7406f4c41a9c8bb8ef182222648b8ff607358f73953414e0ff21bc0ebe9c2e",
+      "bytes": 193026,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "inputSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/peach-blossom-fan-v1-thumbnail-1a4cf87c6ced.webp",
+      "sha256": "1a4cf87c6ced8565fba926caa17621f6da654610111f166abc1a7efb07b1417f",
+      "bytes": 27996,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "inputSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/peach-blossom-fan-v1.webp",
+    "sha256": "82f45adfbe25cc76e3ea79762b432af7c66f7fecf778362c527af72ec0cbe346",
+    "bytes": 392044,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "0f976af6e7abc88a41817bca011570896d0044fefd09f775681af4b1d1b3c2f3"
+  }
+}

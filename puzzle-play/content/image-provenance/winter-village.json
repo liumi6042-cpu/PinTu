@@ -1,0 +1,103 @@
+{
+  "id": "winter-village",
+  "origin": "project-ai-generated",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "内置 image_gen 生成结果与原文件记录",
+    "promptPath": "content/image-prompts/winter-village.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a08187-a550-76b0-996a-9013ea47c8bc\\exec-b7aff5a7-7d02-4eb0-b8ce-11165bcef224.png",
+    "sourceMetadata": "../artwork/gallery-expansion-20260908/manifest.json"
+  },
+  "requestedResolution": {
+    "width": 4096,
+    "height": 3072,
+    "delivered": false
+  },
+  "resolutionNote": "提示词请求高原生分辨率，但工具实际返回 1448×1086；保留真实原件，不插值放大。2000 片时每片主体约有 27×27 个源像素，高倍放大仍受原始细节限制。",
+  "crops": {
+    "sourceAspectRatio": "4:3",
+    "twoThousandPieces": "50×40 正方形主体，居中等比裁切为 5:4，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Pass: snowy alpine houses, amber windows, colorful rooftops, mountain ridges and a winding stone lane provide clear landmarks. Snow has visible contour detail and color shading. No obvious readable text, logo, watermark, frame or puzzle seam visible in generated original preview.",
+      "主代理逐张查看原始生成图，未发现明显文字、商标、水印、受保护角色或拼图缝线。"
+    ],
+    "minorDeviations": [
+      "实际原生尺寸低于请求值；背景远景的细节比前景更柔和。"
+    ],
+    "scope": "视觉检查与来源记录不构成独占版权或不侵权的绝对保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+    "optimized": {
+      "src": "/puzzles/winter-village-optimized-706a54070466.webp",
+      "sha256": "706a54070466c54831e34faa04187b7fea44eecdb7c2f554b2f6a3a2bfd1c622",
+      "bytes": 354424,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+      "inputSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/winter-village-thumbnail-45fa9f4c8ef7.webp",
+      "sha256": "45fa9f4c8ef7fa2fab6fd7efd2c1dc27f991bf56da5bc4368152453ec2490c84",
+      "bytes": 47780,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+      "inputSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/winter-village.webp",
+    "sha256": "85dee953a9dbf5cc0b7b69b472e1fe8c1a5eeefdd541be2286848c505f881d90",
+    "bytes": 661132,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "d51f9f7630413f84b22cbaff145d893ae2e06e5e8c64067e11c945061b2a0c4c"
+  }
+}

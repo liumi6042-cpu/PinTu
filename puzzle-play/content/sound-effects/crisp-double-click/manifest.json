@@ -1,0 +1,51 @@
+{
+  "id": "crisp-double-click",
+  "title": "清脆双击",
+  "titleEn": "Crisp double click",
+  "selectedAudition": "C-clean-click",
+  "source": "Original local algorithmic synthesis for Jigsaw Nook, no external recordings or samples.",
+  "selectedOn": "2026-09-13",
+  "generator": "source.py",
+  "files": [
+    {
+      "file": "click-v1.wav",
+      "sha256": "010b55a91b682c36ca5c1cc3e9505cb6615d9a17718db8e6f939534c9539b6a8",
+      "bytes": 9452,
+      "sampleRate": 48000,
+      "channels": 1,
+      "encoding": "PCM16",
+      "durationSeconds": 0.098,
+      "originalAudition": "single/C-clean-click-v1.wav"
+    },
+    {
+      "file": "click-v2.wav",
+      "sha256": "f7f44a87e5f1a85cb9bd2b29f3447f97e8d5fd1a18ba7c7c3ad94510adcc4fa3",
+      "bytes": 9452,
+      "sampleRate": 48000,
+      "channels": 1,
+      "encoding": "PCM16",
+      "durationSeconds": 0.098,
+      "originalAudition": "single/C-clean-click-v2.wav"
+    },
+    {
+      "file": "click-v3.wav",
+      "sha256": "989480a7008dd5fbd0d83532b746b69cc01b7cb1242adbec34c408bdd68e75fa",
+      "bytes": 9452,
+      "sampleRate": 48000,
+      "channels": 1,
+      "encoding": "PCM16",
+      "durationSeconds": 0.098,
+      "originalAudition": "single/C-clean-click-v3.wav"
+    },
+    {
+      "file": "click-v4.wav",
+      "sha256": "1f600c3b86640e158b8f8ccd1b02e0af83e58e1a4b3816bfe2dcad1cbe149c89",
+      "bytes": 9452,
+      "sampleRate": 48000,
+      "channels": 1,
+      "encoding": "PCM16",
+      "durationSeconds": 0.098,
+      "originalAudition": "single/C-clean-click-v4.wav"
+    }
+  ]
+}

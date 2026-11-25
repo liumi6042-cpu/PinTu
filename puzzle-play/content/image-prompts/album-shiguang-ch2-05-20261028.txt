@@ -1,0 +1,24 @@
+# ch2s-05-opening-day-memory
+
+- Tool: built-in image_gen
+- Reference: ../cast-sheet-final.png
+- Output: ch2s-05-opening-day-memory.png
+- Generated source: C:/Users/Administrator/.codex/generated_images/01a18140-f50c-7613-8335-e724a7af5794/exec-cc61b440-8ffd-4b45-b3e3-71e032f23b30.png
+- Dimensions: 1536 x 1024
+
+## Final prompt
+
+Use case: illustration-story.
+Create ONE landscape 1536x1024 illustration, a single full-bleed picture-book story panel intended to become a 45-piece jigsaw puzzle.
+Input image: the attached cast sheet is the exact character identity and art-style reference for Xiaohe and Tuanzi, not a layout to reproduce. Preserve their face, hair, flower hair clip, clothing, bag, fur pattern and neckerchief. Do not redesign them.
+Scene: a magical moment inside a floating breakfast shop at sunset, warm orange light. In the LOWER part of the illustration at the counter, Xiaohe presses the LAST glowing jigsaw piece into a recipe page, smiling with teary eyes. Show this hand action clearly and anatomically naturally. Tuanzi watches beside her with sparkling green eyes.
+Above the counter, filling the UPPER HALF, floats ONE large radiant memory image made of fitted jigsaw pieces with visible softly glowing interlocking seams. This memory shows the shop's opening day about 50 years ago: young Grandma and young Fu stand side by side at a floury table, laughing while folding baozi together, bamboo steamers piled high, flour drifting in the light, softly glowing paper lanterns. It must read clearly as a magical floating memory within one continuous shop illustration, not a comic layout or a framed inset. The emotional memory and the glowing final-piece action form one clear connected focal story.
+Xiaohe: 17-year-old girl, same as the reference, short brown bob, small pink flower hair clip above her LEFT ear, warm brown eyes, friendly round face; mustard-yellow short jacket over cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch. Frame naturally for the counter interaction while retaining visible identifying clothes and bag.
+Tuanzi: chubby mostly-white calico cat from the reference. Anatomical LEFT ear and area around LEFT eye orange, RIGHT ear and area around RIGHT eye black, large black back patch, orange rump patch, fluffy black tail, green eyes, pink nose. Always a small sage-green neckerchief tied at the side.
+Young Grandma: age about 22, looks like Xiaohe's older sister, not elderly. Long brown hair in ONE loose LOW braid over her RIGHT shoulder, the SAME small pink flower hair clip as Xiaohe, warm brown eyes. Cream blouse with rolled sleeves, mustard-yellow apron with teal puzzle-piece patch on its pocket.
+Young Fu: about 25, short black hair, white baker's cap, white baker's uniform, big proud smile.
+Through the window behind, orange sunset clouds stream UPWARD because the shop slowly sinks back toward the street. Suggest the street below through the window without distracting from the memory.
+Style: match reference's cozy hand-painted anime illustration, warm soft light, gentle saturated cream, honey, sage green, berry pink and sky blue; clean readable shapes, soft painterly texture, storybook feeling.
+Jigsaw-friendly: foreground, middle ground and background have distinctly different colors and textures, memorable medium-size details throughout; objects and atmosphere fill the frame edge to edge and all corners. No large flat empty walls or skies: use softly patterned surfaces, light, curling steam, sunset clouds, plants and shop objects. Avoid tiny repetitive clutter. Only the magical memory has jigsaw seams; do NOT overlay a puzzle-cut grid on the whole illustration.
+Absolutely NO text, letters, numbers or readable writing. Recipe pages, signs and lanterns have only blank shapes or abstract soft squiggles. No UI, watermark, border, frame, comic speech bubbles.
+

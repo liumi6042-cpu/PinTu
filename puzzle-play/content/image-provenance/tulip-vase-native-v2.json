@@ -1,0 +1,90 @@
+{
+  "id": "tulip-vase-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/tulip-vase-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-b70c5e5d-1c43-4f8d-b0dd-46cbbc9ecf1a.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+    "optimized": {
+      "src": "/puzzles/tulip-vase-native-v2-optimized-a66fb4202276.webp",
+      "sha256": "a66fb4202276f24f75c1bb656c929771e7e2e7fe596cf65b380e51df49a97fcf",
+      "bytes": 90776,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+      "inputSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/tulip-vase-native-v2-thumbnail-0cd55a2dadab.webp",
+      "sha256": "0cd55a2dadab6b73d4e51aa36c4bce7f3e714387f323df93702656d67c5b6dad",
+      "bytes": 7984,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+      "inputSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/tulip-vase-native-v2.webp",
+    "sha256": "7808f62c0c56c1d01f767ee9f2bc0d00f376d5b4d35c7498e6bc02a41db12859",
+    "bytes": 220602,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "048cf58f3d52f373abba3c89a0359d355ed08af74dc8faadc23966c93dca9ab0"
+  }
+}

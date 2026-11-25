@@ -1,0 +1,98 @@
+{
+  "id": "blossom-canal",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-08",
+    "dateBasis": "原始内置 image_gen 调用记录",
+    "promptPath": "content/image-prompts/blossom-canal.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a080fa-6610-7d90-b30d-90660058d2c0\\exec-67d0a941-36fa-4616-a4db-f33ea4d966b2.png",
+    "sourceMetadata": "../artwork/puzzle-four-samples-2026-09-08/blossom-canal.metadata.json"
+  },
+  "crops": {
+    "sourceAspectRatio": "2:1",
+    "threeThousandPieces": "60×50 正方形主体，居中等比裁切为 6:5，不拉伸、不预先缩小原件"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-08",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single 2:1 spring-canal panorama with pink blossom trees, intricate wood houses, arched stone bridges, flower pots, boats and tightly patterned reflections.",
+      "Dense crisp detail across most of the scene; no readable lettering, logo, watermark, external border, grid or jigsaw seams observed."
+    ],
+    "minorDeviations": [
+      "A small strip of nearest flowers at the lower-left edge is visibly softer than the rest of the scene.",
+      "Generated scene includes an incidental cat and koi in addition to the requested objects."
+    ],
+    "scope": "已逐张查看原始生成结果；未发现明显品牌、水印或受保护角色。保留细节偏差记录，视觉筛查不是法律清权保证。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-08",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+    "optimized": {
+      "src": "/puzzles/blossom-canal-optimized-f032d232ef14.webp",
+      "sha256": "f032d232ef1483776e1b3c105705e07ef7410dbec1088be2ca38d981db94f8c7",
+      "bytes": 473680,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+      "inputSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/blossom-canal-thumbnail-76a8bba59d15.webp",
+      "sha256": "76a8bba59d15e5c99d3a233c19d3a66677aa3f79f9b9c978d2bc19b496cd81a5",
+      "bytes": 35392,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+      "inputSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/blossom-canal.webp",
+    "sha256": "82973e1cf92be1b2a199f9c0bd0b159e34a50d84d58fd0b6f7e93b9d51b3b843",
+    "bytes": 818604,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "c29ee32f3c5e7fc73bbbdd9be80f0bb8e3f2376533874788548e8f7d875550f8"
+  }
+}

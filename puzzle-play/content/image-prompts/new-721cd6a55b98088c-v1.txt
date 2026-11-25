@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a futuristic deep-space observation station with a luminous ring-shaped telescope, panoramic window showing a nebula and distant planets, no people.
+Style/medium: premium futuristic holographic interface aesthetic, cyan, violet and electric blue light, layered transparent panels and precise technical geometry, cinematic sci-fi.
+Composition: square, ring station centered, radial structure and clear focal point, balanced edges.
+Constraints: no readable text, no logos, no watermark, no characters, polished high-detail 4K.

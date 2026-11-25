@@ -1,0 +1,103 @@
+{
+  "id": "redraw-wind-in-room-20261018-02-20261018-v2",
+  "origin": "project-ai-generated",
+  "width": 2816,
+  "height": 1584,
+  "sha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "ByteDance Doubao",
+    "tool": "Ark Images Generations API",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T12:58:44.624Z",
+    "threadId": "recent-albums-redraw-20261018",
+    "promptPath": "content/image-prompts/redraw-wind-in-room-20261018-02-20261018-v2.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/redraw-wind-in-room-20261018-02-20261018-v2/native.png",
+      "sha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+      "bytes": 9018993,
+      "width": 2816,
+      "height": 1584,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/redraw-wind-in-room-20261018-02-20261018-v2/native.webp",
+        "sha256": "37267a6ee06c6ec4e481ae07f61be9fe971c84240e762b2c0c10425a6fd16b96",
+        "bytes": 1538526,
+        "width": 2816,
+        "height": 1584
+      }
+    },
+    "originalFile": "public/puzzles/redraw-wind-in-room-20261018-02-20261018-v2.png",
+    "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "Reference redraw from the original concept image; continuous illustration with detail reconstruction"
+  },
+  "resolutionNote": "原始生成 2816×1584；保存成品 2816×1584，未放大。参考用的概念图由运营者提供，未在图库登记，也未随成品分发。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-18T13:07:41.782Z",
+    "notes": "已抽查修正版：保持原构图与比例，未发现拼图块、接缝或网格；原图保留。来源相册：风经过的房间。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+    "optimized": {
+      "src": "/puzzles/redraw-wind-in-room-20261018-02-20261018-v2-optimized-60bcafba8769.webp",
+      "sha256": "60bcafba8769386a5173b8d29577173ebce42b33119c182f5bdcd2af48bc3e4b",
+      "bytes": 740056,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+      "inputSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/redraw-wind-in-room-20261018-02-20261018-v2-thumbnail-d976c3b81b96.webp",
+      "sha256": "d976c3b81b9660409c841447531ea24f6c6d89238ff85b12fda389027ce097e6",
+      "bytes": 29554,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+      "inputSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/redraw-wind-in-room-20261018-02-20261018-v2.webp",
+    "sha256": "37267a6ee06c6ec4e481ae07f61be9fe971c84240e762b2c0c10425a6fd16b96",
+    "bytes": 1538526,
+    "width": 2816,
+    "height": 1584,
+    "originalPngSha256": "86577abe9c7c0d54fa85eacc0e5fc102ad6a445822ddcfc1e81095b097592cfd"
+  }
+}

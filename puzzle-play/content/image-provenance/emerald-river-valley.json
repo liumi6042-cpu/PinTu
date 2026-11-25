@@ -1,0 +1,90 @@
+{
+  "id": "emerald-river-valley",
+  "origin": "project-ai-generated",
+  "width": 1402,
+  "height": 1122,
+  "sha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-11",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/emerald-river-valley.txt",
+    "legacyPromptUnavailable": false,
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-097ce025-cd84-4d9f-9cf1-5605971956de.png",
+    "sourceMetadata": "docs/nature-expansion-20260911-assets.json"
+  },
+  "resolutionNote": "Native 1402 x 1122; no upscaling. AI-generated photographic landscape, not a photograph of a verified real location. High piece counts remain limited by original pixels.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-11",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Clear turquoise S-shaped river with grassy valley slopes, mountain ridge and a few foreground rocks. Natural water texture and distinct depth layers. No visible people, buildings, text, logos, watermarks or puzzle seams."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+    "optimized": {
+      "src": "/puzzles/emerald-river-valley-optimized-5caf7803bd81.webp",
+      "sha256": "5caf7803bd811a6023afb0b141197b6b5f582c5244f046215913d65788bfb23c",
+      "bytes": 280330,
+      "width": 1402,
+      "height": 1122,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+      "inputSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/emerald-river-valley-thumbnail-ecf827c557fe.webp",
+      "sha256": "ecf827c557fe9ec2309a0afa75c94ccb6403134df008156898e797f0d9b6e09e",
+      "bytes": 37654,
+      "width": 384,
+      "height": 307,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+      "inputSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/emerald-river-valley.webp",
+    "sha256": "e4d96d2ebc67b68fa26b0de84c9539900b023281198a55b10cfbfb7a91bb2ff0",
+    "bytes": 577446,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "42d70c69371e9bfade141127fb66666d7e994a9feb9fe83dfe0a342816ed28e0"
+  }
+}

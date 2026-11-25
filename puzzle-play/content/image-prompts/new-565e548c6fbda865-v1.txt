@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime character portrait.
+Primary request: an original adult Chinese ancient-style anime swordswoman, three-quarter body portrait, elegant layered hanfu, jade hairpin, one hand resting on a slender sword, poised and calm expression. The person must dominate the frame, occupying about 75% of the image. Background should be minimal: only a softly blurred moonlit pavilion, a few pine branches and pale mist, no large landscape.
+Style/medium: polished Chinese gufeng anime illustration, delicate ink linework, luxurious silk textures, refined painterly rendering.
+Composition/framing: wide horizontal 16:9, character centered slightly right, head and upper body sharply detailed, clear silhouette, portrait-first composition.
+Lighting/mood: cool moonlight with a small warm lantern glow, poetic and elegant.
+Color palette: jade green, ivory, muted crimson, ink black, moonlit blue.
+Constraints: original fully clothed adult character, no logos, no readable text, no watermark, no excessive scenery, no blur on the character, no duplicate character, no anatomical errors. Target a finished 4K-quality landscape illustration.

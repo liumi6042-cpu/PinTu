@@ -1,0 +1,107 @@
+{
+  "id": "cel-rainy-bookshop-v1",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-14",
+    "dateBasis": "Built-in generation results; local Asia/Shanghai date",
+    "promptPath": "content/image-prompts/cel-rainy-bookshop-v1.txt",
+    "referenceImages": [
+      {
+        "origin": "project-ai-generated",
+        "imageId": "cel-sunset-train-v1",
+        "path": "public/puzzles/cel-sunset-train-v1.png",
+        "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
+        "purpose": "rendering-style-only",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "public/puzzles/cel-sunset-train-v1.webp",
+          "sha256": "f308498b8dbc981dd9628b10191940e7b6d7ee3286cdaab7af9866fc1fd74f26",
+          "bytes": 238906,
+          "width": 1536,
+          "height": 1024
+        }
+      }
+    ],
+    "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-2ebcf461-900c-4bcb-bb34-026efe9a80dd.png",
+    "sourceMetadata": "content/artwork/painted-cel-20260914/cel-rainy-bookshop-v1.generation.json"
+  },
+  "resolutionNote": "Native 1536 x 1024 single generated illustration, no upscaling or compositing. New games limited to 108-1000 pieces.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-14",
+    "reviewer": "Codex visual review and user selection",
+    "observations": [
+      "User approved this generated artwork for the website. Inspected face, hair, hands and primary object shapes; no visible logos, signatures or text.",
+      "Style reference use is recorded explicitly. First two references were user supplied; the next five use approved project-generated images. Reference images themselves are not playable or included in the runtime package."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+    "optimized": {
+      "src": "/puzzles/cel-rainy-bookshop-v1-optimized-0e61f71c1b34.webp",
+      "sha256": "0e61f71c1b34496884e534e80260cc56cf22000d88e55e8c0b946e18f0b4d3c3",
+      "bytes": 149072,
+      "width": 1536,
+      "height": 1024,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "inputSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cel-rainy-bookshop-v1-thumbnail-e3905de97d8b.webp",
+      "sha256": "e3905de97d8ba496f8c467a5742f4fd82bfba717ad120f787f0e1f7c31857c68",
+      "bytes": 20856,
+      "width": 384,
+      "height": 256,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "inputSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cel-rainy-bookshop-v1.webp",
+    "sha256": "96d99a3e54d28c90685ff7385b748a3fe62ed69f16bd3214373ba15fe540cf1e",
+    "bytes": 331790,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "255e112d2e59fae59fbedd4825ee9f6e1cff6660b9048691067da8a4dcb7c282"
+  }
+}

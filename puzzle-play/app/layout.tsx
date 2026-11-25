@@ -1,0 +1,56 @@
+import './picture-discoveries.css';
+import './puzzle-journey.css';
+import CourtyardCompanion from './courtyard-companion';
+import type { Metadata } from 'next';
+import './globals.css';
+import './community.css';
+import './paper-theme.css';
+import './paper-entrance.css';
+import './language.css';
+import './lobby-grid.css';
+import './gallery.css';
+import './puzzle-opening.css';
+import './table-theme.css';
+import './room-chat.css';
+import './cosmetics.css';
+import './achievements.css';
+import './membership.css';
+import './ranking-records.css';
+import './service-pages.css';
+import './search-pages.css';
+import './bookmark-site.css';
+import './managed-play.css';
+import { headers } from 'next/headers';
+import { LanguageProvider } from './language-switch';
+import FeedbackWidget from './feedback-widget';
+import { CHECKIN_VISIBLE, HATCHING_VISIBLE } from '@/lib/feature-visibility';
+export const metadata: Metadata = {
+  applicationName: 'Jigsaw Nook',
+  metadataBase: new URL('https://jigsawnook.online'),
+  title: 'Jigsaw Nook — Online Jigsaw Puzzles',
+  description: 'Play online jigsaw puzzles at your own pace, or share a public table with friends.',
+  robots: { index: false, follow: false },
+  verification: {
+    google: 'bfxx-dHZBIwufXXHSwbM8zOC2ofpzlb98bPI89ZCsh0',
+    // Search-engine ownership proofs. Baidu serves Chinese visitors, which is most
+    // of this site's audience, so its token belongs here with the others.
+    other: { 'msvalidate.01': 'EE9AC4E74617F79BFC8A29692C3523D9', 'baidu-site-verification': 'codeva-CaQO2UXiXo' },
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.ico?v=paper-arch-1', sizes: '16x16 32x32 48x48', type: 'image/x-icon' },
+      { url: '/favicon-96.png?v=paper-arch-1', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon.svg?v=paper-arch-1', sizes: 'any', type: 'image/svg+xml' },
+    ],
+    apple: { url: '/apple-touch-icon.png?v=paper-arch-1', sizes: '180x180', type: 'image/png' },
+  },
+};
+// The Chinese pages live under /zh, so the middleware passes the path through and
+// the markup declares zh-CN from the first byte. Without the header (a direct
+// render outside the server, e.g. a prerender pass) this stays English.
+export default async function RootLayout({children}:{children:React.ReactNode}) {
+  const path=(await headers()).get('x-jigsaw-path') ?? '/';
+  const lang=path==='/play'||path==='/zh'||path.startsWith('/zh/')?'zh-CN':'en';
+  const retentionVisible=CHECKIN_VISIBLE||HATCHING_VISIBLE;
+  return <html lang={lang} className="paper-theme"><body><LanguageProvider>{children}{retentionVisible&&path!=='/courtyard'&&path!=='/play'&&<CourtyardCompanion/>}{path!=='/courtyard'&&path!=='/play'&&<FeedbackWidget/>}</LanguageProvider></body></html>;
+}

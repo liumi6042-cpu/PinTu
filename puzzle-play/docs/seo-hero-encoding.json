@@ -1,0 +1,11 @@
+{
+  "source": "public\\intro\\hero-paper-coast-v2.png",
+  "sourceSha256": "658bf4ccb677162d212b90fba4fef7e7bece05dff72a66d30668b8ef9985698f",
+  "sourceBytes": 2388950,
+  "output": "public\\intro\\hero-paper-coast-be03040892f1.webp",
+  "sha256": "be03040892f16df11bbfaf49014f226008b52111c9c421bc8bceff6fa4839572",
+  "bytes": 228258,
+  "width": 1672,
+  "height": 941,
+  "encoding": "WebP quality 88, original dimensions; source PNG preserved"
+}

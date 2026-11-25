@@ -1,0 +1,8 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime character portrait.
+Primary request: an original adult Japanese-anime cat-eared woman, three-quarter body portrait, stylish black and lilac street-fashion jacket over a modest dress, glossy black cat ears, short violet hair, holding a transparent umbrella, playful but mature expression. The character fills about 75% of the frame.
+Style/medium: vibrant modern Japanese anime, crisp line art, polished color rendering, detailed eyes and fabric, tasteful fashion illustration.
+Composition/framing: wide horizontal 16:9, character centered, upper body and one hand prominent, background minimal with blurred rainy city lights and a small neon sign without readable text.
+Lighting/mood: blue-purple rainy night, colorful reflections, lively and stylish.
+Color palette: black, lilac, cyan, pink, silver.
+Constraints: original fully clothed adult character, nonsexual, no logos, no readable text, no watermark, no excessive scenery, no duplicate character, no anatomical errors. Target a finished 4K-quality landscape illustration.

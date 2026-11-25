@@ -1,0 +1,101 @@
+{
+  "id": "album-spring-pastel-wander-04-20261118",
+  "origin": "project-ai-generated",
+  "width": 2731,
+  "height": 1820,
+  "sha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-17",
+    "generatedAt": "2026-11-17T17:06:53.382Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-spring-pastel-wander-04-20261118.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-spring-pastel-wander-04-20261118/native.png",
+      "sha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743",
+      "bytes": 9392029,
+      "width": 2731,
+      "height": 1820,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-spring-pastel-wander-04-20261118/native.webp",
+        "sha256": "92bb7922da911bdfac22c9acf640fe47bb029666a48e275f33ebe98e0f2a7dc9",
+        "bytes": 1535304,
+        "width": 2731,
+        "height": 1820
+      }
+    },
+    "originalFile": "public/puzzles/album-spring-pastel-wander-04-20261118.png",
+    "importedRegistrySha256": "e1f9d8b8ae83fe601ba756daa77a6de996ed4a51aaa130a4736e7a3fe3d6b565"
+  },
+  "resolutionNote": "原始生成 2731×1820；保存成品 2731×1820，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-18T09:03:26.679Z",
+    "notes": "用户确认的四区重绘成图。完整裁片来源及提示词见 D:\\chat\\拼图\\artwork\\春日粉彩漫游-20261117\\四区重绘升级 的升级清单与提示词.json。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743",
+    "thumbnail": {
+      "src": "/puzzles/album-spring-pastel-wander-04-20261118-thumbnail-31a548f02e06.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "31a548f02e061e772b3f494bae8547b9f05382c8c65974fdc391a65f29800fc8",
+      "bytes": 20334,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743",
+      "inputSha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-spring-pastel-wander-04-20261118-optimized-650e8ff73e9b.webp",
+      "width": 2731,
+      "height": 1820,
+      "sha256": "650e8ff73e9bfed8111c994c01064a5171257f4b66191495f29cfedf6b7a5527",
+      "bytes": 581124,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743",
+      "inputSha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-spring-pastel-wander-04-20261118.webp",
+    "sha256": "92bb7922da911bdfac22c9acf640fe47bb029666a48e275f33ebe98e0f2a7dc9",
+    "bytes": 1535304,
+    "width": 2731,
+    "height": 1820,
+    "originalPngSha256": "7b1f2c30f4f4995f83c2762907cb88cdd2ff956c9c2bd545cf73709fe3cf4743"
+  }
+}

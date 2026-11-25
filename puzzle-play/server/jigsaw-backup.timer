@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily Jigsaw Nook backup
+[Timer]
+OnCalendar=*-*-* 04:15:00
+RandomizedDelaySec=1800
+Persistent=true
+[Install]
+WantedBy=timers.target

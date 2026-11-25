@@ -1,0 +1,90 @@
+{
+  "id": "garden-table-native-v2",
+  "origin": "project-ai-generated",
+  "width": 1774,
+  "height": 887,
+  "sha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "model": null,
+    "generatedDate": "2026-09-13",
+    "dateBasis": "Built-in generation result and current Asia/Shanghai date",
+    "promptPath": "content/image-prompts/garden-table-native-v2.txt",
+    "referenceImages": [],
+    "originalFile": "C:\\Users\\Administrator\\.codex\\generated_images\\01a07c42-3960-7ae3-8208-ed401f896166\\exec-58a93ef6-37b7-4a20-80aa-14d753b61a70.png",
+    "sourceMetadata": "content/artwork/gallery-5000/generations.json"
+  },
+  "resolutionNote": "Native 1774 x 887, a single continuous composition, not a collage. No interpolation or AI upscaling. 5000 pieces use 100 x 50 and have approximately 17.74 native pixels per body side; zoomed detail is limited. User explicitly accepted the built-in-tool resolution limit on 2026-09-13.",
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-13",
+    "reviewer": "Codex visual review",
+    "observations": [
+      "Single continuous scene with clear subject shapes, natural light and visible surface texture. No four-panel borders, visible lettering, logos or watermarks.",
+      "Real image dimensions inspected; no upscaling was applied. All sources were reviewed in labeled contact sheets and the nature sources were also inspected individually."
+    ],
+    "scope": "Visual inspection and generation records do not guarantee exclusivity or absence of third-party rights."
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "checkedOn": "2026-09-11",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+    "optimized": {
+      "src": "/puzzles/garden-table-native-v2-optimized-3c77adceafbf.webp",
+      "sha256": "3c77adceafbffd7d8e64667d470239f04a2684c076c81a63899292067eb19537",
+      "bytes": 193174,
+      "width": 1774,
+      "height": 887,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+      "inputSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/garden-table-native-v2-thumbnail-d95e211cb4da.webp",
+      "sha256": "d95e211cb4dabc5e915a1b8efdcd88fafa8717ce01eb2abe62c614f7b22f2b2b",
+      "bytes": 25732,
+      "width": 384,
+      "height": 192,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+      "inputSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/garden-table-native-v2.webp",
+    "sha256": "4395e705ce187554fb6f412b627523a6497be58d065737ec8f26ad3d0daa14e4",
+    "bytes": 410448,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "7788f23be6f8aa4d7fb6072e984acdd0ccb6049465d8910df080ff8b4b704940"
+  }
+}

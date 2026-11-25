@@ -1,0 +1,78 @@
+{
+  "id": "cherry-blossom-seaside-tram-v1",
+  "origin": "user-provided",
+  "width": 1672,
+  "height": 941,
+  "sha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-27",
+    "originalFile": "codex-clipboard-e42343a2-f163-4323-9231-4333632646cf.png",
+    "originalSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这四张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-27"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-27",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：绿电车穿过樱花海岸，长椅上的猫咪伴着春光小憩。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+    "optimized": {
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-optimized-69b940d38e40.webp",
+      "sha256": "69b940d38e403d2d37a5b20b9074c345bebba2c7b1ab121a2adefb175245ba7f",
+      "bytes": 421248,
+      "width": 1672,
+      "height": 941,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "inputSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/cherry-blossom-seaside-tram-v1-thumbnail-01cf19df5676.webp",
+      "sha256": "01cf19df5676f9f9f9c7f22cc9d9ee0be538d4b9bd9a38e370f5454a55642e63",
+      "bytes": 42920,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "inputSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cherry-blossom-seaside-tram-v1.webp",
+    "sha256": "07ff7547f8360781bade9cb0b91244856463b383f2178a2517d6ebe31c809028",
+    "bytes": 741242,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "5ff3e8fb02c4b01917918b8ac3d4da6a77a8226c6742487130b577524872d09b"
+  }
+}

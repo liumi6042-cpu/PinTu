@@ -1,0 +1,62 @@
+{
+  "leaf": {
+    "icon": "/cosmetics/assets/leaf-icon-18c7597a54de.webp",
+    "bubble": "/cosmetics/assets/leaf-bubble-0c71ca4cc8f7.webp",
+    "cursor": "/cosmetics/assets/leaf-cursor-dcddadfdd092.png"
+  },
+  "flower": {
+    "icon": "/cosmetics/assets/flower-icon-fc73bfbcf2c8.webp",
+    "bubble": "/cosmetics/assets/flower-bubble-f8c66e9c5394.webp",
+    "cursor": "/cosmetics/assets/flower-cursor-9dd9275df787.png"
+  },
+  "moon": {
+    "icon": "/cosmetics/assets/moon-icon-84031393dee4.webp",
+    "bubble": "/cosmetics/assets/moon-bubble-f825b0fcd738.webp",
+    "cursor": "/cosmetics/assets/moon-cursor-c8e220cb75c4.png"
+  },
+  "puzzle": {
+    "icon": "/cosmetics/assets/puzzle-icon-fcab17744b73.webp",
+    "bubble": "/cosmetics/assets/puzzle-bubble-b481b4830d1c.webp",
+    "cursor": "/cosmetics/assets/puzzle-cursor-288ec5aac3f6.png"
+  },
+  "wave": {
+    "icon": "/cosmetics/assets/wave-icon-6a759ac8a69e.webp",
+    "bubble": "/cosmetics/assets/wave-bubble-ba816396a642.webp",
+    "cursor": "/cosmetics/assets/wave-cursor-d299f83f5344.png"
+  },
+  "maple": {
+    "icon": "/cosmetics/assets/maple-icon-01ce373e6c1f.webp",
+    "bubble": "/cosmetics/assets/maple-bubble-cf42ca232942.webp",
+    "cursor": "/cosmetics/assets/maple-cursor-49059df5e601.png"
+  },
+  "mushroom": {
+    "icon": "/cosmetics/assets/mushroom-icon-384acbdf24c2.webp",
+    "bubble": "/cosmetics/assets/mushroom-bubble-aad25f9c42a9.webp",
+    "cursor": "/cosmetics/assets/mushroom-cursor-585a73bc18f0.png"
+  },
+  "bee": {
+    "icon": "/cosmetics/assets/bee-icon-7ca8ffb24b45.webp",
+    "bubble": "/cosmetics/assets/bee-bubble-51fe0635c4cb.webp",
+    "cursor": "/cosmetics/assets/bee-cursor-93b62465b200.png"
+  },
+  "ginkgo": {
+    "icon": "/cosmetics/assets/ginkgo-icon-0421f4261238.webp",
+    "bubble": "/cosmetics/assets/ginkgo-bubble-6bc722486fcb.webp",
+    "cursor": "/cosmetics/assets/ginkgo-cursor-d2a0544af60f.png"
+  },
+  "pinecone": {
+    "icon": "/cosmetics/assets/pinecone-icon-687ff73903e3.webp",
+    "bubble": "/cosmetics/assets/pinecone-bubble-737c1a4b3a84.webp",
+    "cursor": "/cosmetics/assets/pinecone-cursor-1356c166b859.png"
+  },
+  "feather": {
+    "icon": "/cosmetics/assets/feather-icon-35df6d2083ec.webp",
+    "bubble": "/cosmetics/assets/feather-bubble-37936e2539d6.webp",
+    "cursor": "/cosmetics/assets/feather-cursor-1166cd396106.png"
+  },
+  "strawberry": {
+    "icon": "/cosmetics/assets/strawberry-icon-e686b59e08ec.webp",
+    "bubble": "/cosmetics/assets/strawberry-bubble-095e72256bcb.webp",
+    "cursor": "/cosmetics/assets/strawberry-cursor-ada622b371e1.png"
+  }
+}

@@ -1,0 +1,76 @@
+/* The preference belongs to the playing surface, not the lobby or artwork. */
+.paper-theme .game{--table-surface:#e0d5bf;--table-dot:#9984651a;--game-top-height:45px;--game-footer-height:40px;position:relative;background:var(--table-surface);background-image:radial-gradient(var(--table-dot) .8px,transparent .8px);background-size:20px 20px;}
+/* Text and controls share one uninterrupted tabletop, in both themes. */
+.paper-theme .game[data-table-theme] :is(.game-header,.room-toolbar,.game-progress,.game-footer,.table-area){background:transparent;border:0;}
+/* Floating controls leave no reserved strip: pieces can move behind all gaps. */
+.paper-theme .game .table-area{position:absolute;inset:0;z-index:0;}
+.paper-theme .game .game-floating-top{position:absolute;inset:0 0 auto;z-index:3;pointer-events:none;padding-top:env(safe-area-inset-top);}
+.paper-theme .game :is(.game-floating-top,.game-footer) :is(button,a,input,select,textarea){pointer-events:auto;}
+.paper-theme .game :is(.game-title,.back-button,.time,.game-progress,.table-topline,.room-count,.room-custom-title,.connection,.room-actions,.feedback){text-shadow:0 1px 2px var(--table-surface),0 -1px 2px var(--table-surface),1px 0 2px var(--table-surface),-1px 0 2px var(--table-surface);}
+.paper-theme .game .game-header{height:auto;min-height:44px;padding:2px 16px;gap:2px 12px;grid-template-columns:minmax(100px,1fr) minmax(0,auto) minmax(max-content,1fr);}
+.paper-theme .game .game-title{min-width:0;display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;gap:0 10px;}
+.paper-theme .game .game-title h1{margin:0;line-height:1.25;overflow-wrap:anywhere;}
+.paper-theme .game .game-title>span{line-height:1.4;white-space:nowrap;}
+/* Progress sits on the canvas instead of reserving another full-width row. */
+.paper-theme .game .game-progress{position:absolute;z-index:2;top:calc(var(--game-top-height) + 6px);left:16px;right:16px;padding:0;pointer-events:none;}
+.paper-theme .game .table-topline{top:calc(var(--game-top-height) + 6px);justify-content:flex-end;}
+.paper-theme .game .game-footer{position:absolute;inset:auto 0 0;z-index:3;pointer-events:none;min-height:40px;padding:2px 24px;gap:8px 16px;}
+.paper-theme .game .table-tools{top:calc(var(--game-top-height) + 34px);}
+.paper-theme .game .zoom-controls{bottom:calc(var(--game-footer-height) + 16px);}
+.paper-theme .game .feedback{min-width:0;overflow-wrap:anywhere;}
+.paper-theme .game .room-toolbar{padding:0 16px;gap:3px 12px;}
+.paper-theme .game .room-actions{width:auto;margin-left:auto;}
+.paper-theme .game .room-actions .text-button{min-height:36px;}
+.paper-theme .game .game-progress>div:first-child{margin-bottom:0;}
+.paper-theme .background-toggle{border:1px solid #b9a38366;}
+.paper-theme .game[data-table-theme=dark]{
+ --paper:#27292d;--paper-raised:#303237;--paper-ink:#f0e7da;--paper-muted:#bfb5a7;
+ --paper-line:#525258;--paper-link:#e3b487;--paper-clay:#d3a073;--paper-sage:#9faf8f;
+ --primary:#d3a073;--foreground:#f0e7da;
+ --table-surface:#212327;--table-dot:#c8b99c14;color:var(--paper-ink);color-scheme:dark;
+}
+.paper-theme .game[data-table-theme=dark] :is(.game-header,.room-toolbar){border-color:#494a50;}
+.paper-theme .game[data-table-theme=dark] :is(.table-tools,.zoom-controls,.reference-card){background:#2c2e33f5;border-color:#55555b;box-shadow:0 7px 22px #0003;}
+.paper-theme .game[data-table-theme=dark] :is(.tool,.tool.locked-tool,.icon-button,.text-button,.table-badge,.save-state,.zoom-controls>span:not(.vertical-divider),.reference-card p){color:#d1c7b9;}
+.paper-theme .game[data-table-theme=dark] :is(.icon-button:hover,.tool:hover){color:#f2d2ad;background:#eed2ac14;}
+.paper-theme .game[data-table-theme=dark] :is(.tool.active,.background-toggle[aria-pressed=true]){background:#d3a07324;color:#f1c898;border-color:#d3a07377;}
+.paper-theme .game[data-table-theme=dark] :is(.tool-divider,.vertical-divider){background:#55555b;}
+.paper-theme .game[data-table-theme=dark] .table-overlay{background:#24262af5;color:#f0e7da;}
+.paper-theme .game[data-table-theme=dark] .table-overlay .primary{background:#d3a073;color:#28221c;}
+.paper-theme .game[data-table-theme=dark] .table-overlay .secondary{background:#34363b;border-color:#626168;color:#f0e7da;}
+.paper-theme .game[data-table-theme=dark] .table-overlay .secondary:hover{background:#414249;border-color:#d3a073;}
+.paper-theme .game[data-table-theme=dark] .puzzle-canvas:focus-visible{outline-color:#e3b48799;}
+.paper-theme .game[data-table-theme=dark] .member-chip{background:#35373b;color:#f0e7da!important;}
+.paper-theme .game[data-table-theme=dark] .connection.online{color:#b2c99d;}
+.paper-theme .game[data-table-theme=dark] :is(.connection.offline,.room-error){color:#ffc0a7;}
+.paper-theme .game[data-table-theme=dark] .language-switch{background:#363438;border-color:#635a50;color:#e6d8c3;}
+.paper-theme .game[data-table-theme=dark] .language-switch button[aria-pressed=true]{background:#b1845c;color:#fff9ee;}
+
+@media(max-width:800px){
+ .paper-theme .game .room-toolbar{padding:2px 12px;}
+ .paper-theme .game .room-actions{gap:3px 12px;}
+}
+@media(max-width:620px){
+ .paper-theme .game{--game-top-height:62px;}
+ .paper-theme .game .game-header{min-height:62px;padding:2px 12px;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;}
+ .paper-theme .game .game-title{justify-content:flex-start;}
+ .paper-theme .game .game-title h1{margin:0;}
+ .paper-theme .game .game-title>span{white-space:nowrap;}
+ .paper-theme .game .back-button{padding:5px 0;min-height:36px;gap:4px;}
+ .paper-theme .game .game-stats{gap:4px;}
+ .paper-theme .game .game-stats .icon-button{height:36px;}
+ .paper-theme .game .game-achievement-link{min-height:36px;}
+ .paper-theme .game .game-progress{left:12px;right:12px;}
+ .paper-theme .game .game-footer{min-height:40px;padding:2px 12px max(2px,env(safe-area-inset-bottom));gap:6px;}
+ .paper-theme .game .game-footer>div{gap:5px;}
+ .paper-theme .game .room-actions{justify-content:flex-start;}
+}
+@media(max-width:460px){
+ .paper-theme .game .table-tools{top:auto;bottom:calc(var(--game-footer-height) + 73px);}
+}
+@media(max-width:360px){
+ .paper-theme .game .game-header{padding-inline:8px;gap:2px 4px;}
+ .paper-theme .game .game-stats{gap:2px;}
+ .paper-theme .game .game-header .language-switch{padding:2px;gap:1px;}
+ .paper-theme .game .game-header .language-switch button{padding-inline:5px;}
+}

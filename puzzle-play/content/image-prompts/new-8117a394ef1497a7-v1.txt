@@ -1,0 +1,6 @@
+Use case: stylized-concept.
+Asset type: standalone square 4K puzzle artwork.
+Primary request: a solitary lighthouse on a rugged Nordic fjord coast, choppy sea, steep cliffs and a small moon above.
+Style/medium: traditional woodcut print, bold carved black linework, textured paper grain, limited black, cream and vermilion palette.
+Composition: square, lighthouse as central focal point, strong foreground rocks and layered distance, clean readable shapes.
+Constraints: no people, no text, no logos, no watermark, no anime, polished high-detail 4K.

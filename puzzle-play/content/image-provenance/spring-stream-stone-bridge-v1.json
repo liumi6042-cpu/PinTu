@@ -1,0 +1,78 @@
+{
+  "id": "spring-stream-stone-bridge-v1",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-09-26",
+    "originalFile": "ChatGPT 图像 2026年9月26日 13_23_32-7.png",
+    "originalSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这十张图片上传到本站图库，并授权命名，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-09-26"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-26",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：繁花簇拥溪边石桥，湖畔村庄与雪山共享春日晴光。 无网页界面、文字覆盖或按钮。"
+  },
+  "delivery": {
+    "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+    "optimized": {
+      "src": "/puzzles/spring-stream-stone-bridge-v1-optimized-88f41336c684.webp",
+      "sha256": "88f41336c684595eadd79a772c57c70b3b3ae8d7284e35004cbfd48b01450099",
+      "bytes": 456950,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "inputSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/spring-stream-stone-bridge-v1-thumbnail-13626c98f017.webp",
+      "sha256": "13626c98f017c4cc1d9699af68c2fed27b901d0325cd610e99301ce9e3de4ce4",
+      "bytes": 53018,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "inputSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/spring-stream-stone-bridge-v1.webp",
+    "sha256": "64d130f992b5a6beec1d221008f51361e949ef0ea6811df8e7b09c74f383097c",
+    "bytes": 772948,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "705bf08080ae2c7bb2ebe767ea517ed042db2186fe494e3713ea61b38558a59f"
+  }
+}

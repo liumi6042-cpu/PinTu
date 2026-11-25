@@ -1,0 +1,78 @@
+{
+  "id": "grass-green-study-07",
+  "origin": "user-provided",
+  "width": 1448,
+  "height": 1086,
+  "sha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户于 2026-09-20 提供的作品：由提供者在 ChatGPT 中生成后交给本站。原始文件即为 PNG（1448×1086），入库时未做任何裁切、缩放或重编码。",
+    "providedOn": "2026-09-20",
+    "originalFile": "C:/Users/Administrator/Desktop/Codex 图像 2026年9月20日 20_12_20-5.png",
+    "originalSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b"
+  },
+  "rights": {
+    "basis": "user-owned",
+    "statement": "提供者确认拥有该图片的使用权，并同意将其作为本站拼图素材公开展示与游玩。",
+    "authorizedOn": "2026-09-20"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-09-20",
+    "reviewer": "提供者确认（provider confirmation）",
+    "observations": "提供者于 2026-09-20 确认画面中不含水印、签名、网页界面文字或按钮、以及可辨认商标。本条为提供者自述，本站未做逐像素人工复核。"
+  },
+  "delivery": {
+    "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+    "optimized": {
+      "src": "/puzzles/grass-green-study-07-optimized-db0313475060.webp",
+      "sha256": "db0313475060a3baf9d1e421907ad1a92f88a07f7c5fc6deff2e7323f6b492b4",
+      "bytes": 404996,
+      "width": 1448,
+      "height": 1086,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "inputSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/grass-green-study-07-thumbnail-b73be271e6c9.webp",
+      "sha256": "b73be271e6c944837173c6ed97f2b7bc705bed9ac809c62f38a3ed5394865aaa",
+      "bytes": 52784,
+      "width": 384,
+      "height": 288,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "inputSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/grass-green-study-07.webp",
+    "sha256": "31fe59a15c9c7210cd6b884db32338e35b9460f53245ad7fcf8e1ed3a8895405",
+    "bytes": 729188,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "c46954413291da65bfdee6095a7d5b4f5afc7db35ea5ed01b4ee7d55af563a3b"
+  }
+}

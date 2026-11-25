@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Asset type: standalone horizontal 4K anime sports artwork.
+Primary request: two original adult anime athletes in a futuristic virtual taekwondo demonstration, one woman and one man in sleek original sports uniforms, captured in a dramatic mid-air sparring pose with glowing cyan and magenta motion trails, both characters clearly visible and anatomically correct. The artwork should evoke the energy of the Aichi-Nagoya Asian Games without copying any official branding, uniforms, logos, medals, mascots, or real athletes.
+Style/medium: polished modern Japanese anime illustration, dynamic clean linework, cinematic lighting, premium game key visual.
+Composition/framing: wide horizontal 16:9, two athletes dominate about 80% of the frame, faces and full upper bodies clearly visible, strong diagonal motion, minimal background.
+Background: simplified futuristic indoor arena, abstract audience lights and a stylized digital scoreboard with no readable text, no official logos.
+Lighting/mood: vivid cyan, magenta and gold light trails, intense, uplifting, celebratory.
+Color palette: electric cyan, magenta, deep navy, white, warm gold.
+Constraints: exactly two original fully clothed adult athletes, nonsexual, no real-person likeness, no official marks, no readable text, no watermark, no extra people, no duplicate limbs, no fused bodies. Target a finished 4K-quality landscape illustration.

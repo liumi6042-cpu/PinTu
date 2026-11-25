@@ -1,0 +1,78 @@
+{
+  "id": "neon-cherry-swordswoman-v1",
+  "origin": "user-provided",
+  "width": 1024,
+  "height": 1536,
+  "sha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+  "nativeResolution": true,
+  "source": {
+    "description": "用户提供并要求加入图库的 PNG 原图，保留原始文件内容。",
+    "providedOn": "2026-10-01",
+    "originalFile": "codex-clipboard-2ce6fa3a-358c-49b2-9aeb-9289f33b01df.png",
+    "originalSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3"
+  },
+  "rights": {
+    "basis": "user-requested-publication",
+    "statement": "用户明确要求将这五张附件上传到本站图库，作为公开拼图展示与游玩。",
+    "authorizedOn": "2026-10-01"
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewedOn": "2026-10-01",
+    "reviewer": "Codex visual review",
+    "observations": "已查看用户附件画面：竖幅赛博都市、雨夜霓虹、樱花与持蓝光长刃的白发角色。 无网页界面或按钮覆盖。"
+  },
+  "delivery": {
+    "sourceSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+    "optimized": {
+      "src": "/puzzles/neon-cherry-swordswoman-v1-optimized-7be2283706b4.webp",
+      "sha256": "7be2283706b4ceb1ffa7cefb569cc27f12df351418f2f5fd40059c1bd58cde35",
+      "bytes": 291204,
+      "width": 1024,
+      "height": 1536,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "inputSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/neon-cherry-swordswoman-v1-thumbnail-537248b946b1.webp",
+      "sha256": "537248b946b17e82171b0ccc06444d959c70ea80c99ad07d6115b4ea4f06de67",
+      "bytes": 35072,
+      "width": 256,
+      "height": 384,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "downsampled": true,
+      "sourceSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "inputSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": false
+      }
+    }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/neon-cherry-swordswoman-v1.webp",
+    "sha256": "bd77d9944550f8dfbb3290b43f17009b47e9935cb52d6dfe22075b6884a3342d",
+    "bytes": 572682,
+    "width": 1024,
+    "height": 1536,
+    "originalPngSha256": "d4b43e5cfcb9e9eebd1a2b5aac41450e92750b932be0e74a463e69881c7832d3"
+  }
+}
