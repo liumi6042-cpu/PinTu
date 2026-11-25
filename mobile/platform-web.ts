@@ -268,15 +268,25 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   frame:fn=>requestAnimationFrame(fn),cancelFrame:id=>cancelAnimationFrame(id),
   inputDiagnostics:()=>({pointerMoves:rawPointerMoves,touchMoves:rawTouchMoves,mode:touchInputMode?'touch':'pointer'}),
   setTouchInputMode(enabled){if(touchInputMode===enabled)return;resetInput?.();touchInputMode=enabled;},
-  onInput(fn){const active=new Map<number,Point>(),panPointers=new Set<number>();const restore=canvas.style.touchAction,tabIndex=canvas.getAttribute('tabindex');let space=false;canvas.style.touchAction='none';if(tabIndex===null)canvas.tabIndex=0;
-   const handle=(type:'down'|'move'|'up'|'cancel')=>(event:PointerEvent)=>{if(type==='move')rawPointerMoves++;if(touchInputMode&&event.pointerType==='touch')return;if(type==='down'&&event.button!==0&&event.button!==1)return;const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=canvas.getBoundingClientRect(),point={id:event.pointerId,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale};
+  onInput(fn){const active=new Map<number,Point>(),panPointers=new Set<number>(),primaryPointers=new Map<string,number>();const restore=canvas.style.touchAction,tabIndex=canvas.getAttribute('tabindex');let space=false;canvas.style.touchAction='none';if(tabIndex===null)canvas.tabIndex=0;
+   const handle=(type:'down'|'move'|'up'|'cancel')=>(event:PointerEvent)=>{
+    if(type==='move')rawPointerMoves++;
+    if(touchInputMode&&event.pointerType==='touch')return;
+    if(type==='down'){
+     if(event.button!==0&&event.button!==1)return;
+     // A new primary contact proves the old primary contact already ended.
+     if(active.has(event.pointerId)||event.isPrimary&&primaryPointers.has(event.pointerType))reset();
+     if(event.isPrimary)primaryPointers.set(event.pointerType,event.pointerId);
+    }
+    if(type==='move'&&event.pointerType==='mouse'&&event.buttons===0&&active.has(event.pointerId)){up(event);return;}
+    const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=canvas.getBoundingClientRect(),point={id:event.pointerId,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale};
     if(hover){fn({type,points:[],changed:[point]});return;}
     if(type==='down'){canvas.focus({preventScroll:true});if(event.button===1||(event.pointerType==='mouse'&&space))panPointers.add(event.pointerId);}
     const pan=panPointers.has(event.pointerId);
     if(type==='down'||type==='move')active.set(event.pointerId,point);else active.delete(event.pointerId);
     if(type==='down')try{canvas.setPointerCapture(event.pointerId);}catch{}
     fn({type,points:[...active.values()],changed:[point],...(pan?{pan:true}:{})});
-    if(type==='up'||type==='cancel'){panPointers.delete(event.pointerId);try{canvas.releasePointerCapture(event.pointerId);}catch{}}
+    if(type==='up'||type==='cancel'){panPointers.delete(event.pointerId);if(primaryPointers.get(event.pointerType)===event.pointerId)primaryPointers.delete(event.pointerType);try{canvas.releasePointerCapture(event.pointerId);}catch{}}
    };
    const down=handle('down'),move=handle('move'),up=handle('up'),cancel=handle('cancel');
    const leave=(event:PointerEvent)=>{if(event.pointerType==='mouse'&&!active.has(event.pointerId))fn({type:'cancel',points:[],changed:[{id:event.pointerId,x:0,y:0}]});};
@@ -292,7 +302,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     event.preventDefault();if(event.code==='Space')space=keyDown;
     fn({type:'key',points:[],changed:[],key:event.code==='Space'?' ':event.code.startsWith('Key')?event.code.slice(3).toLowerCase():event.code.startsWith('Digit')?event.code.slice(5):event.key,keyDown,repeat:event.repeat});
    };
-   const keyDown=key(true),keyUp=key(false),reset=()=>{space=false;const changed=[...active.values()],ids=[...active.keys()];active.clear();panPointers.clear();for(const id of ids)try{canvas.releasePointerCapture(id);}catch{}if(changed.length)fn({type:'cancel',points:[],changed});};
+   const keyDown=key(true),keyUp=key(false),reset=()=>{space=false;const changed=[...active.values()],ids=[...active.keys()];active.clear();panPointers.clear();primaryPointers.clear();for(const id of ids)try{canvas.releasePointerCapture(id);}catch{}if(changed.length)fn({type:'cancel',points:[],changed});};
    const lost=(event:PointerEvent)=>{if(active.has(event.pointerId))reset();};
    resetInput=reset;
    // A diagnostic alternative to the WebView's pointer-event conversion.
@@ -304,7 +314,11 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     if(type==='cancel'){reset();return;}
     const r=canvas.getBoundingClientRect(),point=(t:Touch)=>({id:-t.identifier-1,x:(t.clientX-r.left)/scale,y:(t.clientY-r.top)/scale});
     const changed=Array.from(event.changedTouches).map(point);
-    if(type==='down')for(const p of changed)active.set(p.id,p);
+    if(type==='down'){
+     const present=new Set(Array.from(event.touches,t=>-t.identifier-1));
+     if(changed.some(p=>active.has(p.id))||[...active.keys()].some(id=>id<0&&!present.has(id)))reset();
+     for(const p of changed)active.set(p.id,p);
+    }
     if(type==='move')for(const t of Array.from(event.touches)){const p=point(t);if(active.has(p.id))active.set(p.id,p);}
     if(type==='up')for(const p of changed)active.delete(p.id);
     if(changed.length)fn({type,points:[...active.values()],changed});

@@ -15,7 +15,7 @@ function fixture(t,{diagnostic=true,httpGate=false,ordinaryActions=false,preview
  room.puzzle.groups=Array.from({length:9},(_,id)=>({id,pieces:[id],dx:80+(id%3)*180,dy:80+Math.floor(id/3)*180,locked:false}));
  const member=addMember(room,'me','Test','ticket',time,'test-owner');
  const view=()=>({...snapshot(room,time),...(diagnostic?{diagnostic:true,diagnosticTiming:{serverMs:2}}:{})});
- const calls=[],frames=[],events=[],canceled=[],states=new Set(),previews=[],previewListeners=new Set(),roomListeners=new Set();let profileRefreshes=0;
+ const calls=[],frames=[],events=[],canceled=[],states=new Set(),previews=[],previewListeners=new Set(),roomListeners=new Set();let profileRefreshes=0,failedReads=0;
  const apply=action=>{try{applyAction(room,member,action,++time);room.revision++;return {status:200,data:view()};}catch(error){return {status:error.status??500,data:{error:error.message,code:'ENGINE_REJECTED'}};}};
  const httpPending=[];
  const stream={connected:true,actionsReady:true,actionsDiagnosticOnly:ordinaryActions?false:undefined,
@@ -33,6 +33,7 @@ function fixture(t,{diagnostic=true,httpGate=false,ordinaryActions=false,preview
  const reply=result=>({ok:result.status<300,status:result.status,headers:{get:()=>null},json:async()=>result.data});
  const client=new RoomClient({token:'ticket',playerId:member.id,room:view()},{realtime:stream,randomId:rid,now:()=>1000,performanceNow:()=>measurement,hidden:()=>false,refreshProfile:async()=>{profileRefreshes++;},emit:(name,data)=>events.push({name,data}),fetch:async(url,init={})=>{
   const action=init.body?JSON.parse(init.body):null;calls.push({url,method:init.method??'GET',action});
+  if(!action&&failedReads>0){failedReads--;throw Error('temporary room read failure');}
   if(action&&httpGate&&['claim','move','drop','release'].includes(action.type)){const gate=deferred();httpPending.push({action,...gate});return gate.promise;}
   return reply(action?apply(action):{status:200,data:view()});
  }});
@@ -47,7 +48,7 @@ function fixture(t,{diagnostic=true,httpGate=false,ordinaryActions=false,preview
   const granted=table.network.acquire(id),group=client.state.groups.find(group=>group.id===id);group.dx=dx;group.dy=dy;
   return {granted,finished:table.network.drop(id,dx,dy)};
  };
- return {client,table,stream,room,view,calls,frames,events,canceled,gesture,commit,previews,previewListeners,roomListeners,advance:ms=>{measurement+=ms;},httpPending,reply,apply,get profileRefreshes(){return profileRefreshes;}};
+ return {client,table,stream,room,view,calls,frames,events,canceled,gesture,commit,previews,previewListeners,roomListeners,advance:ms=>{measurement+=ms;},httpPending,reply,apply,failNextRead(){failedReads++;},get profileRefreshes(){return profileRefreshes;}};
 }
 
 test('platform preview avoids authoritative movement writes, preserves contiguous ordinals and still commits the final drop',async t=>{
@@ -122,6 +123,35 @@ test('a real engine business rejection cancels only that gesture while later ges
  assert.equal(f.canceled.includes(0),false);assert.equal(f.canceled.includes(2),false);assert.equal(f.canceled.includes(1),true);
  assert.equal(f.calls.some(call=>call.method==='POST'),false);
  assert.equal(f.calls.some(call=>call.method==='GET'),true,'refused predictions reconcile with the authoritative room');
+});
+
+test('a failed room read releases the hold when the action connection is still alive',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ const f=fixture(t,{diagnostic:false,ordinaryActions:true}),granted=f.table.network.acquire(0);
+ f.commit(f.frames[0]);assert.equal(await granted,true);
+ f.failNextRead();f.client.retryNow();t.mock.timers.tick(0);await settle();
+ assert.deepEqual(f.frames.map(frame=>frame.input.action.type),['claim','release']);
+ assert.ok(f.canceled.includes(undefined));
+ f.commit(f.frames[1]);await settle();
+ assert.equal(f.room.leases[0],undefined);assert.equal(f.table.network.canAcquire(1),true);
+});
+
+test('ordinary room polling recovers after the first resync fails and new gestures can use HTTP',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ const f=fixture(t,{diagnostic:false,ordinaryActions:true}),gesture=f.gesture(0,150,600);
+ f.commit(f.frames[0],{ack:false});f.commit(f.frames[1],{ack:false});
+ f.failNextRead();f.stream.disconnect();await settle();await gesture.finished;
+ assert.equal(f.table.network.canAcquire(1),false);
+ t.mock.timers.tick(0);await settle();
+ assert.equal(f.client.state.groups.find(group=>group.id===0).dx,150);
+ assert.equal(f.table.network.canAcquire(1),true);
+ assert.equal(await f.table.network.acquire(1),true);
+ await f.table.network.drop(1,350,600);
+ assert.equal(f.frames.length,2,'lost stream writes must never be replayed');
+ assert.deepEqual(f.calls.flatMap(call=>call.action?.type??[]),['claim','drop']);
+ f.stream.reconnect();await settle();
+ const grant=f.table.network.acquire(2);assert.equal(f.frames.at(-1).input.ordinal,1);
+ f.commit(f.frames.at(-1));assert.equal(await grant,true);
 });
 
 test('disconnect removes all pending predictions, reads authority, and starts a new stream epoch without replay',async t=>{

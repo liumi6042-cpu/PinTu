@@ -7,7 +7,7 @@ import {validTapPlatformId,normalizeTapPlatformId} from '../lib/tap-platform-id.
 
 export type TapBattleManager={registerListener(listener:Record<string,(data:any)=>void>):void;unregisterListener?(listener:Record<string,(data:any)=>void>):void;[method:string]:unknown};
 type PreviewSnapshot=RoomSnapshot&{tapPreview?:TapPreviewDescriptor};
-type Options={authority:ManagedRoomRealtime;manager:()=>TapBattleManager|undefined;request:(body:Record<string,unknown>)=>Promise<TapPreviewDescriptor&{canCreate?:boolean}>;room:RoomSnapshot;playerId:string;randomId:()=>string;now?:()=>number;sendHz?:number};
+type Options={authority:ManagedRoomRealtime;manager:()=>TapBattleManager|undefined;request:(body:Record<string,unknown>)=>Promise<TapPreviewDescriptor&{canCreate?:boolean}>;room:RoomSnapshot;playerId:string;randomId:()=>string;now?:()=>number;sendHz?:number;onDisconnect?:()=>void};
 const id=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{32}$/.test(v);
 const platformId=(v:unknown):v is string=>validTapPlatformId(v);
 const point=(v:unknown):v is number[]=>Array.isArray(v)&&v.length===2&&v.every(n=>Number.isFinite(n)&&Math.abs(n)<=20000);
@@ -198,9 +198,10 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
   if(managers.has(manager))throw Error('manager-busy');
   this.manager=manager;const released=new Promise<void>(resolve=>{this.releaseManager=resolve;});managers.set(manager,{owner:this,released});
   const custom=(name:string)=>(data:any)=>{if(this.live(generation))this.receiveCustom(data,name);};
-  const service=(reason:string)=>(raw:any)=>{if(this.live(generation))this.fail(reason,failure('service-event','failed',raw));};
-  const peer=(raw:any)=>{if(!this.live(generation))return;const sender=normalizeTapPlatformId(raw?.playerId??raw?.data?.playerId);if(sender===this.tapPlayerId){this.fail('disconnected');return;}for(const p of this.meta?.peers??[])if(p.tapPlayerId===sender){this.heard.delete(p.clientId);this.confirmed.delete(p.clientId);}this.refresh();};
-  this.listeners={onCustomMessageReceived:custom('received'),onCustomMessage:custom('custom'),onDisconnected:service('disconnected'),onBattleServiceError:service('platform-error'),onPlayerOffline:peer,onPlayerLeft:peer,playerLeaveRoom:peer,onPlayerKicked:peer};
+  const disconnected=(raw:any)=>{if(!this.live(generation))return;const joined=this.joined;this.fail('disconnected',failure('service-event','failed',raw));if(joined)this.opts.onDisconnect?.();};
+  const serviceError=(raw:any)=>{if(this.live(generation))this.fail('platform-error',failure('service-event','failed',raw));};
+  const peer=(raw:any)=>{if(!this.live(generation))return;const sender=normalizeTapPlatformId(raw?.playerId??raw?.data?.playerId);if(sender&&sender===this.tapPlayerId){disconnected(raw);return;}for(const p of this.meta?.peers??[])if(p.tapPlayerId===sender){this.heard.delete(p.clientId);this.confirmed.delete(p.clientId);}this.refresh();};
+  this.listeners={onCustomMessageReceived:custom('received'),onCustomMessage:custom('custom'),onDisconnected:disconnected,onBattleServiceError:serviceError,onPlayerOffline:peer,onPlayerLeft:peer,playerLeaveRoom:peer,onPlayerKicked:peer};
   this.phase='listener';if(typeof manager.registerListener!=='function')throw failure('listener','missing-listener');
   manager.registerListener(this.listeners);
   this.phase='connect';

@@ -228,6 +228,10 @@ export class RoomClient {
       this.connected = false; this.failures++;
       for (const task of this.pendingDrags) { task.canceled = true; task.grant(false); task.wake?.(); }
       this.active = null;
+      // HTTP polling can fail while the ordered action stream is still alive.
+      // If the board is about to forget the held piece, end that hold there too.
+      const holdingId=this.diagnosticPipeline?.holdingId;
+      if(holdingId!==undefined)this.diagnosticPipeline?.release(holdingId);
       if (this.table) { this.table.networkReady = false; this.table.cancelNetworkDrag(); }
     }
     this.emit();
@@ -239,7 +243,11 @@ export class RoomClient {
       this.diagnosticPipeline=new DiagnosticDragPipeline(this.deps.realtime,{
         randomId:()=>this.deps.randomId(),now:()=>this.deps.performanceNow(),revision:()=>this.snapshot.revision,
         cancel:id=>this.table?.cancelNetworkDrag(id),error:error=>this.fail(error),timing:(...args)=>this.trace(...args),
-        reconcile:async()=>{if(!this.stopped){this.receive(await this.request(),true);if(!this.stopped)await this.deps.refreshProfile?.();}},
+        reconcile:async()=>{
+          if(this.stopped)return;
+          this.receive(await this.request(),true);
+          if(!this.stopped)void this.deps.refreshProfile?.().catch(()=>{});
+        },
         profile:data=>{this.deps.profile?.(data);if(data?.profile??data?.mobileProfile)this.deps.emit('mobile:profile',data.profile??data.mobileProfile);},
         receive:(reply,input)=>{
           const action=input.action;
@@ -300,6 +308,7 @@ export class RoomClient {
       else data = await this.request();
       this.idlePolls = data.puzzle.groups === this.snapshot.puzzle.groups ? this.idlePolls + 1 : 0;
       this.receive(data);
+      this.diagnosticPipeline?.retryRecovery();
     } catch (error) { this.fail(error); }
     finally {
       this.polling=false;

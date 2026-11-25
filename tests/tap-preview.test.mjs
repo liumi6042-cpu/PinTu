@@ -84,12 +84,12 @@ function transportFixture(t,{missing=false,stallSend=false,dropMessages=false,pl
  for(let n=2;n<players;n++)room.members.push({id:key(2+n),name:'拼友'+(n+1),color:'#123456',lastSeen:100000});
  const coordinatorOptions={enabled:production,roomIds:new Set([room.id]),notify:()=>queueMicrotask(()=>{for(const authority of authorities)authority.emit();})};let coordinator=createTapPreview(coordinatorOptions);
  const view=()=>({...structuredClone(room),tapPreview:coordinator.descriptor(room)});
- function actor(index,{sharedManager,nativeId='tap-'+index,requestGate}={}){
+ function actor(index,{sharedManager,nativeId='tap-'+index,requestGate,onDisconnect}={}){
   const roomListeners=new Set(),cursorListeners=new Set(),states=new Set(),fallback=[],actions=[];
   const authority={connected:true,actionsReady:true,actionsDiagnosticOnly:false,pendingActionCount:0,start(){},close(){this.connected=false;for(const fn of states)fn(false);},setHidden(v){this.connected=!v;for(const fn of states)fn(!v);},diagnostics:()=>({}),subscribeRoom:fn=>(roomListeners.add(fn),()=>roomListeners.delete(fn)),subscribeState:fn=>(states.add(fn),()=>states.delete(fn)),subscribeCursors:fn=>(cursorListeners.add(fn),()=>cursorListeners.delete(fn)),sendCursor:data=>(fallback.push(data),true),sendAction:async input=>(actions.push(input),{status:200,data:view()}),resetActions(){},emit(){for(const fn of roomListeners)fn(view());}};
   authorities.push(authority);let listener=null;
   const manager=sharedManager??{registerListener(fn){listener=fn;listeners[index]=fn;},unregisterListener(fn){assert.equal(fn,listener);listeners[index]=null;},connect(o){records.push(['connect',index]);o.success({playerId:nativeId});},createRoom(o){records.push(['create',index]);o.success({roomInfo:{id:'channel-'+(++channel)}});},joinRoom(o){records.push(['join',index]);o.success({roomInfo:{id:o.data.roomId}});},sendCustomMessage(o){sent.push({index,at:Date.now(),...o.data});if(sendLimit&&sent.filter(s=>Date.now()-s.at<1000&&(roomLimit||s.index===index)).length>sendLimit){o.fail({errno:1234,errMsg:'synthetic frequency limit token=do-not-retain'});return;}if(!dropMessages)for(let n=0;n<listeners.length;n++)if(n!==index){const body=messageForm==='object'?JSON.parse(o.data.msg):o.data.msg;let e={playerId:nativeId,...(bodyKey.startsWith('data.')?{data:{[bodyKey.slice(5)]:body}}:{[bodyKey]:body})};if(eventForm==='data')e={data:e};if(eventForm==='json')e=JSON.stringify(e);listeners[n]?.onCustomMessageReceived(e);listeners[n]?.onCustomMessage(e);}if(stallSend&&JSON.parse(o.data.msg).d)held.push(()=>o.success({}));else o.success({});},leaveRoom(o){records.push(['leave',index]);o.success({});},disconnect(o){records.push(['disconnect',index]);o.success({});}};
-  const adapter=new TapPreviewRealtime({authority,manager:()=>missing?undefined:manager,room:view(),playerId:room.members[index].id,randomId:()=>key(10+index),request:body=>{requestCount++;const response=coordinator.request(room,room.members.find(m=>m.id===key(index+2)),body);return requestGate?requestGate(body,response):Promise.resolve(response);}});adapters.push(adapter);
+  const adapter=new TapPreviewRealtime({authority,onDisconnect,manager:()=>missing?undefined:manager,room:view(),playerId:room.members[index].id,randomId:()=>key(10+index),request:body=>{requestCount++;const response=coordinator.request(room,room.members.find(m=>m.id===key(index+2)),body);return requestGate?requestGate(body,response):Promise.resolve(response);}});adapters.push(adapter);
   return {adapter,authority,manager,fallback,actions,emitCursors:data=>{for(const fn of cursorListeners)fn(data);}};
  }
  t.after(async()=>{for(const adapter of adapters)adapter.close();await settle();});
@@ -112,9 +112,10 @@ test('two platform peers combine latest cursor/drag, bound message rate, ignore 
 });
 
 test('a peer disconnect immediately restores authoritative cursor/move fallback and cleanup does not leave a queue running',async t=>{
- const f=transportFixture(t),a=f.actor(0),b=f.actor(1),moves=[];a.adapter.preview.subscribeMoves(v=>moves.push(v));a.adapter.start();b.adapter.start();await f.ready();
+ const notices=[],f=transportFixture(t),a=f.actor(0,{onDisconnect:()=>notices.push('a')}),b=f.actor(1,{onDisconnect:()=>notices.push('b')}),moves=[];a.adapter.preview.subscribeMoves(v=>moves.push(v));a.adapter.start();b.adapter.start();await f.ready();
  f.listeners[1].onDisconnected({});await settle();assert.equal(b.adapter.preview.connected,false);assert.equal(a.adapter.preview.connected,false);
  assert.equal(a.adapter.preview.sendMove(0,40,50),false);assert.equal(a.adapter.sendCursor({clientId:key(100),seq:1,point:{x:1,y:2}}),true);assert.equal(a.fallback.length,1);
+ assert.deepEqual(notices,['b'],'only the device with a confirmed TapTap disconnect gets the notice');
  const count=f.sent.length;a.adapter.close();b.adapter.close();await settle();await f.advance(10000);assert.equal(f.sent.length,count);assert.ok(f.listeners.every(fn=>fn===null));
 });
 

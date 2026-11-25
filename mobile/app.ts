@@ -79,7 +79,7 @@ function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return 
 const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
 const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.21';
+const CLIENT_PACKAGE_VERSION='v53.22';
 /** Shown when 分享领体力包 was already used this game day (the day flips at 20:00 Beijing, like the daily puzzle). */
 const SHARE_ENERGY_DONE_TEXT='今天已经分享领过体力包了，每天限 1 次，晚上 8 点后可以再领';
 /** The WeChat mini-game numbers its own uploads (the devtools version field). */
@@ -849,7 +849,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   this.social.close();
   const source=this.saveListView();if(source.route!=='room'){this.roomReturn=source;this.roomReturnStack=[...this.routeStack];this.roomReturnFrames=[...this.routeFrames];}
   this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;
-  const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision)??null;this.realtime=realtime;
+  const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision,()=>{
+   if(this.room===room)this.note('与 TapTap 的实时连接已断开，改用游戏服务器同步');
+  })??null;this.realtime=realtime;
   const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:local-play-error'&&this.room===room)this.platform.loginLog?.add('本地拼图出错，改为联网拼 · '+String((detail as {message?:string})?.message??'').slice(0,80));
    if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
@@ -2487,7 +2489,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawReconnectBanner(room:RoomClient){
   const s=this.stage,area=this.roomArea,w=Math.min(area.w-24,440),x=area.x+(area.w-w)/2,y=area.y+(this.layout==='phonePortrait'?44:this.layout==='phoneLandscape'?this.platform.viewport().top+60:10),r={x,y,w,h:58};s.panel(r);
   const t=Math.floor(Date.now()/250)%8;for(let i=0;i<8;i++){const angle=i*Math.PI/4;s.ctx.globalAlpha=i===t?1:.3;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(Math.round(x+24+Math.cos(angle)*8)-2,Math.round(y+29+Math.sin(angle)*8)-2,4,4);}s.ctx.globalAlpha=1;
-  s.text('网络断开，正在重连…',x+44,y+11,14,this.colors.ink,800,w-130);s.text('已拼好的进度都保存在桌上，不会丢',x+44,y+33,12,this.colors.muted,500,w-130);
+  s.text('房间同步中断，正在重连…',x+44,y+11,14,this.colors.ink,800,w-130);s.text('已确认的拼图进度会保留',x+44,y+33,12,this.colors.muted,500,w-130);
   s.button({x:x+w-76,y:y+12,w:64,h:34},'重试',()=>{room.retryNow();this.invalidate();},{fontSize:13});
  }
  private roomGuideStep=0;

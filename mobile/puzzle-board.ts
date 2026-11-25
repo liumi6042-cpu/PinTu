@@ -13,7 +13,8 @@ import {fadePixels,seededTilts,readWindSave,writeWindSave,windStorageKey,dropJoi
 type Command={op:'M'|'L'|'C'|'Z';args:number[]};
 type Owner=RoomPieceOwner;
 /** sx/sy is the finger's screen point at grab; live turns on once the finger passes DRAG_SLOP or another finger moves the camera. */
-type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial:number;sx:number;sy:number;live:boolean;at:number;local?:boolean};
+type Drag={id:number;pointer:number;x:number;y:number;dx:number;dy:number;serial:number;sx:number;sy:number;live:boolean;at:number;lastInputAt:number;local?:boolean};
+const DRAG_IDLE_MS=15000;
 type Pan={pointer:number;x:number;y:number;cx:number;cy:number};
 type Pinch={a:number;b:number;distance:number;zoom:number;worldX:number;worldY:number;held:boolean};
 /** The large reference view: z multiplies the fitted size, x/y move its centre in screen pixels. */
@@ -195,7 +196,7 @@ export class PuzzleBoard implements RoomTable {
  private trayTouch:{id:number;x:number;y:number;action:(()=>void)|null;group?:number;lift?:ReturnType<typeof setTimeout>|null;lifted?:boolean}|null=null;
  /** A group pulled out of the tray: the finger holding it and the spot it came from. */
  private trayDrag:{id:number;pointer:number;ox:number;oy:number}|null=null;
- private drag:Drag|null=null;private pan:Pan|null=null;private pinch:Pinch|null=null;private serial=0;
+ private drag:Drag|null=null;private dragIdleTimer:ReturnType<typeof setTimeout>|null=null;private pan:Pan|null=null;private pinch:Pinch|null=null;private serial=0;
  /** Where and when each board finger landed, and whether it has travelled DRAG_SLOP; gripping fingers are left out of gestures until they lift. */
  private touchStarts=new Map<number,{x:number;y:number;at:number;moved:boolean}>();private gripping=new Set<number>();
  /** A finger on the 原图 thumbnail opens the large view only when it lifts without moving; a drag hands it to the table. */
@@ -542,6 +543,14 @@ export class PuzzleBoard implements RoomTable {
    if(input.key===' '&&input.keyDown&&this.variant?.kind==='wind'&&this.selected!==null&&!this.previewLarge){if(!input.repeat)this.rotateSelected();return true;}
    return false;
   }
+  // Recover a lost lift from the next pointer list, including an ID reused for a new touch.
+  const held=this.drag?.pointer;
+  if(held!==undefined){
+   const changed=input.changed.some(p=>p.id===held),present=input.points.some(p=>p.id===held);
+   if(input.type==='cancel'||input.type==='down'&&(changed||!present)||input.type==='up'&&!changed&&!present){
+    this.cancelInput(true);if(input.type!=='down')return true;
+   }
+  }
   if(this.previewInput(input))return true;
   if(this.minimapInput(input))return true;
   if(this.rotateInput(input))return true;
@@ -587,7 +596,7 @@ export class PuzzleBoard implements RoomTable {
   }
   if(!this.pointers.size){if(input.type==='move'){const p=input.changed[0]??input.points[0];this.publishCursor(p&&inside(p,this.rect)?p:null);this.changed();}return false;}
   if(input.type==='move'){
-   for(const p of input.points)if(this.pointers.has(p.id)){this.pointers.set(p.id,p);const s=this.touchStarts.get(p.id);if(s&&!s.moved&&Math.hypot(p.x-s.x,p.y-s.y)>=DRAG_SLOP)s.moved=true;}
+   for(const p of input.points)if(this.pointers.has(p.id)){this.pointers.set(p.id,p);if(this.drag?.pointer===p.id)this.drag.lastInputAt=Date.now();const s=this.touchStarts.get(p.id);if(s&&!s.moved&&Math.hypot(p.x-s.x,p.y-s.y)>=DRAG_SLOP)s.moved=true;}
    // The first swipe on a locked table explains why the view stays put.
    const held=this.lockedTouch&&this.pointers.get(this.lockedTouch.id);if(held&&!this.lockTold&&Math.hypot(held.x-this.lockedTouch!.x,held.y-this.lockedTouch!.y)>=DRAG_SLOP*2){this.lockTold=true;this.tell('画面已锁定：双指可移动和缩放，点锁可解开');}
    const a=this.pinch&&this.pointers.get(this.pinch.a),b=this.pinch&&this.pointers.get(this.pinch.b);
@@ -601,8 +610,13 @@ export class PuzzleBoard implements RoomTable {
    if(this.drag&&input.changed.some(p=>p.id===this.drag!.pointer)){
     const drag=this.drag,group=this.state.groups.find(g=>g.id===drag.id),tray=this.trayDrag,lift=input.changed.find(p=>p.id===drag.pointer)!;
     // Let go on the tray strip: the group goes back to the spot it was pulled from, without drop assist.
-    const back=!!tray&&tray.id===drag.id&&inside(lift,this.trayLayout().r);this.trayDrag=null;this.drag=null;this.releaseDragSurface();
-    if(group&&back){moveGroup(this.state,group.id,tray!.ox,tray!.oy);this.commitDrop(group,{serial:drag.serial,live:false,local:drag.local});}else if(group)this.commitDrop(group,drag);
+    const back=!!tray&&tray.id===drag.id&&inside(lift,this.trayLayout().r);
+    if(!group||group.locked)this.endDrag();
+    else{
+     this.trayDrag=null;this.clearDrag();
+     if(back){moveGroup(this.state,group.id,tray!.ox,tray!.oy);this.commitDrop(group,{serial:drag.serial,live:false,local:drag.local});}else this.commitDrop(group,drag);
+    }
+    this.releaseDragSurface();
    }
    // A tap on empty table puts the selected piece down (its 「旋转」 button goes away).
    if(this.selected!==null&&!this.pinch&&input.changed.some(p=>(this.pan?.pointer===p.id||this.lockedTouch?.id===p.id)&&this.touchStarts.get(p.id)?.moved===false))this.selected=null;
@@ -618,13 +632,14 @@ export class PuzzleBoard implements RoomTable {
  /** Why this group cannot be picked up right now, or null when it can. */
  private holdRefusal(group:Group){
   if(this.owners[group.id])return `${this.owners[group.id].name} 正在移动这组拼块`;
-  if(!this.tilted(group)&&this.network?.canAcquire?.(group.id)===false)return '这组拼块还在确认位置，请稍候';
+  if(!this.tilted(group)&&this.network?.canAcquire?.(group.id)===false)return '正在同步拼块位置，请稍候';
   return null;
  }
  /** Holds a group under finger p and asks the room for it. A refused claim puts it back where the room has it. */
  private startDrag(group:Group,p:Point,world:{x:number;y:number},now:number,live:boolean){
   // A tilted piece moves on this device only: the room hears of it once it is upright.
-  const network=this.network!,serial=++this.serial,local=this.tilted(group);this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live,at:now,local};raiseGroup(this.state,group.id);
+  const network=this.network!,serial=++this.serial,local=this.tilted(group);this.drag={id:group.id,pointer:p.id,x:world.x,y:world.y,dx:group.dx,dy:group.dy,serial,sx:p.x,sy:p.y,live,at:now,lastInputAt:now,local};raiseGroup(this.state,group.id);
+  this.watchDragInput();
   if(this.variant?.kind==='wind'&&group.pieces.length===1)this.selected=group.id;
   const settle=this.settleTimers.get(group.id);if(settle){clearTimeout(settle);this.settleTimers.delete(group.id);}
   if(local)return;
@@ -648,10 +663,21 @@ export class PuzzleBoard implements RoomTable {
   const[a,b]=[...this.pointers.values()];this.pinch=this.pinchBetween(a,b,false);this.publishCursor(null);this.changed();
  }
  private pinchBetween(a:Point,b:Point,held:boolean):Pinch{const world=this.world({id:-1,x:(a.x+b.x)/2,y:(a.y+b.y)/2});return{a:a.id,b:b.id,distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:this.camera.z,worldX:world.x,worldY:world.y,held};}
+ private watchDragInput(){
+  const drag=this.drag;if(!drag)return;
+  const remaining=DRAG_IDLE_MS-(Date.now()-drag.lastInputAt);
+  if(remaining<=0){this.cancelInput(true);return;}
+  this.dragIdleTimer=setTimeout(()=>{this.dragIdleTimer=null;this.watchDragInput();},remaining);
+ }
+ private clearDrag(){
+  this.drag=null;
+  if(this.dragIdleTimer!==null)clearTimeout(this.dragIdleTimer);
+  this.dragIdleTimer=null;
+ }
  /** Ends the held group. A moved group is dropped where it lies: when the WebView cancels the touch
   * instead of reporting the lift (or a modal, resize or pinch ends it), the piece must not stay drawn
   * on its spot while the room never hears of it. An unmoved group is only released. */
- private endDrag(){const drag=this.drag;if(!drag)return;this.drag=null;this.trayDrag=null;++this.serial;this.mergeLog.release(drag.id,Date.now());const group=this.state.groups.find(g=>g.id===drag.id);if(drag.local){if(drag.live&&group&&!this.destroyed)this.commitDrop(group,drag);return;}if(drag.live&&group&&!this.destroyed)this.commitDrop(group,drag);else{this.network?.release(drag.id);this.queueStrandedCheck();}}
+ private endDrag(){const drag=this.drag;if(!drag)return;this.clearDrag();this.trayDrag=null;++this.serial;this.mergeLog.release(drag.id,Date.now());const group=this.state.groups.find(g=>g.id===drag.id);if(drag.live&&group&&!group.locked&&!this.destroyed)this.commitDrop(group,drag);else if(!drag.local){this.network?.release(drag.id);this.queueStrandedCheck();}}
  private commitDrop(group:Group,drag:{serial:number;live:boolean;local?:boolean}){
   // A tilted piece stays where it was put, on this device only.
   if(drag.local||this.tilted(group)){this.keepLocal(group);if(!this.tilted(group))this.queueSettle(group.id,0);return;}
@@ -693,12 +719,13 @@ export class PuzzleBoard implements RoomTable {
   // Busy now (a reconnect, a save in progress): look again shortly instead of only after the next drop.
   if(deferred)this.queueStrandedCheck(2400);
  }
- private cancelInput(release:boolean){if(release)this.endDrag();this.rotateTouch=null;this.releaseDragSurface();this.releaseGestureSurface();this.drag=null;this.pan=null;this.pinch=null;this.lockedTouch=null;this.previewTouch=null;this.endTrayTouch();this.trayDrag=null;this.thumbTouch=null;this.pointers.clear();this.touchStarts.clear();this.gripping.clear();this.publishCursor(null);++this.serial;this.changed();}
- cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const active=!!this.drag;
+ private cancelInput(release:boolean){if(release)this.endDrag();this.rotateTouch=null;this.minimapTouch=null;this.releaseDragSurface();this.releaseGestureSurface();this.clearDrag();this.pan=null;this.pinch=null;this.lockedTouch=null;this.previewTouch=null;this.endTrayTouch();this.trayDrag=null;this.thumbTouch=null;this.pointers.clear();this.touchStarts.clear();this.gripping.clear();this.publishCursor(null);++this.serial;this.changed();}
+ cancelNetworkDrag(id?:number,reason?:string){if(id!==undefined&&this.drag?.id!==id)return false;const drag=this.drag,tray=this.trayDrag;
   // A tilted piece held on this device only is not the room's to cancel: it stays where it is.
-  if(this.drag?.local){const group=this.state.groups.find(g=>g.id===this.drag!.id);this.drag=null;this.trayDrag=null;if(group)this.keepLocal(group);}
+  if(drag?.local){const group=this.state.groups.find(g=>g.id===drag.id);if(group)this.keepLocal(group);}
   // A group pulled out of the tray springs back to its spot; the room's next state confirms it.
-  const tray=this.trayDrag;this.trayDrag=null;if(tray&&tray.id===this.drag?.id)moveGroup(this.state,tray.id,tray.ox,tray.oy);if(this.drag)this.mergeLog.release(this.drag.id,Date.now());this.releaseDragSurface();this.releaseGestureSurface();if(!this.drag||this.pan?.pointer===this.drag.pointer)this.pan=null;this.drag=null;++this.serial;if(reason)this.tell(reason);this.changed();return active;}
+  else if(tray&&tray.id===drag?.id)moveGroup(this.state,tray.id,tray.ox,tray.oy);
+  this.trayDrag=null;if(drag){this.mergeLog.release(drag.id,Date.now());this.pointers.delete(drag.pointer);this.touchStarts.delete(drag.pointer);this.pinch=null;}this.releaseDragSurface();this.releaseGestureSurface();if(!drag||this.pan?.pointer===drag.pointer)this.pan=null;this.clearDrag();++this.serial;if(reason)this.tell(reason);this.changed();return !!drag;}
  syncRemote(next:PuzzleState,owners:Record<string,Owner>,protectedIds:ReadonlySet<number>,showFeedback=true){
   const before=cloneGroups(this.state.groups),previous=new Map(this.state.groups.map(g=>[g.id,g])),localDrag=this.drag?.local?this.drag.id:null;let keptChanged=false;
   this.roomOffsets=new Map(next.groups.map(g=>[g.id,{dx:g.dx,dy:g.dy}]));

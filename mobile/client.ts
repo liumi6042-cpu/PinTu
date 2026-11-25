@@ -137,7 +137,7 @@ export class GameClient{
   if(this.authRequired||this.ticket?.room.id!==ticket.room.id||this.ticket.token!==ticket.token||this.ticketOwner!==this.ownerIdentity())return;
   this.applyProfile(value);
  }
- roomRealtime(ticket:RoomTicket,revision:()=>number){
+ roomRealtime(ticket:RoomTicket,revision:()=>number,onTapDisconnect?:()=>void){
   if(this.config.realtime?.version!==1||!this.platform.openSocket)return null;
   const base=this.platform.config.apiBase.replace(/\/$/,''),url=base.replace(/^https:/,'wss:').replace(/^http:/,'ws:')+'/realtime',owner=this.ownerIdentity();
   const authority=new RoomRealtime({url,openSocket:(url,handlers)=>this.platform.openSocket!(url,handlers),credentials:async()=>{
@@ -147,7 +147,7 @@ export class GameClient{
   }});
   const preview=(ticket.room as RoomTicket['room']&{tapPreview?:TapPreviewDescriptor}).tapPreview;
   if(this.platform.config.id!=='taptap'||preview?.version!==1||typeof preview.testOnly!=='boolean'||!this.platform.onlineBattleManager)return authority;
-  return new TapPreviewRealtime({authority,manager:()=>this.platform.onlineBattleManager!(),room:ticket.room,playerId:ticket.playerId,randomId:()=>this.platform.randomId(),sendHz:this.platform.config.previewTestRoom||preview.testOnly===false?10:undefined,request:body=>this.json('/api/rooms/'+ticket.room.id+'/tap-preview','POST',body,{Authorization:'Bearer '+ticket.token,'Content-Type':'application/json'})});
+  return new TapPreviewRealtime({authority,onDisconnect:onTapDisconnect,manager:()=>this.platform.onlineBattleManager!(),room:ticket.room,playerId:ticket.playerId,randomId:()=>this.platform.randomId(),sendHz:this.platform.config.previewTestRoom||preview.testOnly===false?10:undefined,request:body=>this.json('/api/rooms/'+ticket.room.id+'/tap-preview','POST',body,{Authorization:'Bearer '+ticket.token,'Content-Type':'application/json'})});
  }
  asset(path:string){
   const bundled=bundledArtworkPath(path,this.platform.config);if(bundled)return bundled;
