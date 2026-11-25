@@ -1,0 +1,82 @@
+{
+  "id": "album-spring-pastel-wander-03-20261118",
+  "origin": "project-ai-generated",
+  "width": 2231,
+  "height": 2231,
+  "sha256": "39bda0f5ac878cb4a6a19c10ecd3a0bfbd928a52274789afe52d97b3bee539aa",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-17",
+    "generatedAt": "2026-11-17T17:07:23.423Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-spring-pastel-wander-03-20261118.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-spring-pastel-wander-03-20261118/native.png",
+      "sha256": "39bda0f5ac878cb4a6a19c10ecd3a0bfbd928a52274789afe52d97b3bee539aa",
+      "bytes": 8394874,
+      "width": 2231,
+      "height": 2231,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/album-spring-pastel-wander-03-20261118.png",
+    "importedRegistrySha256": "e1f9d8b8ae83fe601ba756daa77a6de996ed4a51aaa130a4736e7a3fe3d6b565"
+  },
+  "resolutionNote": "原始生成 2231×2231；保存成品 2231×2231，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-18T09:03:25.636Z",
+    "notes": "用户确认的四区重绘成图。完整裁片来源及提示词见 D:\\chat\\拼图\\artwork\\春日粉彩漫游-20261117\\四区重绘升级 的升级清单与提示词.json。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "39bda0f5ac878cb4a6a19c10ecd3a0bfbd928a52274789afe52d97b3bee539aa",
+    "thumbnail": {
+      "src": "/puzzles/album-spring-pastel-wander-03-20261118-thumbnail-7e27cf1312b2.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "7e27cf1312b2870ee0b4d55ecfcf8fa348e1fd9db07ab1fe49b60430d782b47e",
+      "bytes": 18594,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "39bda0f5ac878cb4a6a19c10ecd3a0bfbd928a52274789afe52d97b3bee539aa",
+      "inputSha256": "39bda0f5ac878cb4a6a19c10ecd3a0bfbd928a52274789afe52d97b3bee539aa",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-spring-pastel-wander-03-20261118-optimized-a45a6239768d.webp",
+      "width": 2231,
+      "height": 2231,
+      "sha256": "a45a6239768d1ffa6dc31421d2470af23d652622ccc4d723ce2678a67900f616",
+      "bytes": 436568,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "39bda0f5ac878cb4a6a19c10ecd3a0bfbd928a52274789afe52d97b3bee539aa",
+      "inputSha256": "39bda0f5ac878cb4a6a19c10ecd3a0bfbd928a52274789afe52d97b3bee539aa",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

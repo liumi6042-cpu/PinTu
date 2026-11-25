@@ -1,0 +1,84 @@
+{
+  "id": "redraw-miniature-life-lab-20261018-04-20261018-v2",
+  "origin": "project-ai-generated",
+  "width": 2816,
+  "height": 1584,
+  "sha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "ByteDance Doubao",
+    "tool": "Ark Images Generations API",
+    "generatedDate": "2026-10-18",
+    "generatedAt": "2026-10-18T13:01:12.319Z",
+    "threadId": "recent-albums-redraw-20261018",
+    "promptPath": "content/image-prompts/redraw-miniature-life-lab-20261018-04-20261018-v2.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/redraw-miniature-life-lab-20261018-04-20261018-v2/native.png",
+      "sha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+      "bytes": 8136345,
+      "width": 2816,
+      "height": 1584,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/redraw-miniature-life-lab-20261018-04-20261018-v2.png",
+    "importedRegistrySha256": "8742340de568d18509e16e3625c2ad57792fad7e79918a5d66d87a14bdce1731",
+    "model": "doubao-seedream-5-0-flash-260915",
+    "method": "Reference redraw from the original concept image; continuous illustration with detail reconstruction"
+  },
+  "resolutionNote": "原始生成 2816×1584；保存成品 2816×1584，未放大。参考用的概念图由运营者提供，未在图库登记，也未随成品分发。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-18T13:07:41.783Z",
+    "notes": "已抽查修正版：保持原构图与比例，未发现拼图块、接缝或网格；原图保留。来源相册：微缩生活研究所。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://docs.volcengine.com/docs/ark/doubao-model-service-agreement?lang=zh",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+    "optimized": {
+      "src": "/puzzles/redraw-miniature-life-lab-20261018-04-20261018-v2-optimized-81002e7c0497.webp",
+      "sha256": "81002e7c0497b11e31c80b049cfa075d6db9c041fd4fdd7a4e5a9c02d53b678e",
+      "bytes": 582226,
+      "width": 2816,
+      "height": 1584,
+      "format": "webp",
+      "lossless": false,
+      "quality": 70,
+      "upscaled": false,
+      "sourceSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+      "inputSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    },
+    "thumbnail": {
+      "src": "/puzzles/redraw-miniature-life-lab-20261018-04-20261018-v2-thumbnail-8b6c2ad94da7.webp",
+      "sha256": "8b6c2ad94da79e450ae6b394f87078b9e114f421c754ea09ab8c79cae05b876c",
+      "bytes": 24598,
+      "width": 384,
+      "height": 216,
+      "format": "webp",
+      "lossless": false,
+      "quality": 82,
+      "upscaled": false,
+      "sourceSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+      "inputSha256": "71d0d01c992a24d5b666358d59cd921df29925692c777f91f5be97ec8e4dbb63",
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    }
+  }
+}

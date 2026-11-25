@@ -40,11 +40,11 @@
   "delivery": {
     "sourceSha256": "9379d77b418c680f8b2aff172f37af0c5ed1eba08891afea6f73419a599f1344",
     "optimized": {
-      "src": "/puzzles/new-6560c5fdd52cb95b-v1-optimized-89b2b4806a69.webp",
-      "sha256": "89b2b4806a6965c19ca99d153a4287aa71108f949382d27c0d01e590257986e7",
-      "bytes": 197548,
-      "width": 1707,
-      "height": 2560,
+      "src": "/puzzles/new-6560c5fdd52cb95b-v1-optimized-4841f508aad4.webp",
+      "sha256": "4841f508aad4e639552e4d5d53103f1e0313e505ba294b87bdff005ca47a4520",
+      "bytes": 249590,
+      "width": 2090,
+      "height": 3135,
       "format": "webp",
       "lossless": false,
       "quality": 70,
@@ -75,8 +75,7 @@
       "encoding": {
         "library": "sharp",
         "version": "0.34.5",
-        "effort": 6,
-        "smartSubsample": false
+        "effort": 6
       }
     }
   }

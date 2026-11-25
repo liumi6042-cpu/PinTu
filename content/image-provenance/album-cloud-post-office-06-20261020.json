@@ -1,0 +1,82 @@
+{
+  "id": "album-cloud-post-office-06-20261020",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-19",
+    "generatedAt": "2026-10-19T13:36:01.366Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-cloud-post-office-06-20261020.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-cloud-post-office-06-20261020/native.png",
+      "sha256": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+      "bytes": 3061250,
+      "width": 1536,
+      "height": 1024,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/album-cloud-post-office-06-20261020.png",
+    "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
+  },
+  "resolutionNote": "原始生成 1536×1024；保存成品 1536×1024，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-19T17:48:02.384Z",
+    "notes": "用户授权整册入库；海底音乐会使用腿部修改版。原生概念图，未标注为4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+    "thumbnail": {
+      "src": "/puzzles/album-cloud-post-office-06-20261020-thumbnail-b69a9ac6255c.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "b69a9ac6255c400cbdd19afb12cc2aef22faea7ba0aa17fa2341fa4c4cf37c9f",
+      "bytes": 37336,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+      "inputSha256": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-cloud-post-office-06-20261020-optimized-b032512b6e85.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "b032512b6e85572e853cbb6213b453cbbda0e6df4072f436d8912d567ee6dac5",
+      "bytes": 283168,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+      "inputSha256": "1c1a7a117c72057240cd590d46e3ba86ba8fcea5e579d323e46dc1edf622b18e",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "id": "album-moon-aquarium-06-20261020",
+  "origin": "project-ai-generated",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-19",
+    "generatedAt": "2026-10-19T15:05:39.848Z",
+    "threadId": "01a09f16-7e0a-7970-9fbb-c55cc7552056",
+    "promptPath": "content/image-prompts/album-moon-aquarium-06-20261020.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-moon-aquarium-06-20261020/native.png",
+      "sha256": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+      "bytes": 2911257,
+      "width": 1254,
+      "height": 1254,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/album-moon-aquarium-06-20261020.png",
+    "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
+  },
+  "resolutionNote": "原始生成 1254×1254；保存成品 1254×1254，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-10-19T17:48:07.413Z",
+    "notes": "用户授权整册入库；海底音乐会使用腿部修改版。原生概念图，未标注为4K。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+    "thumbnail": {
+      "src": "/puzzles/album-moon-aquarium-06-20261020-thumbnail-142ff8b1f6eb.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "142ff8b1f6eba1525c00b7f617dc53c650ed3db4fd40a0ccacd2acbc3395a8d7",
+      "bytes": 55572,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+      "inputSha256": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-moon-aquarium-06-20261020-optimized-dd157bead8be.webp",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "dd157bead8be2f272b1db6bb7403ba7394e89c6cd28e9919df3281d89fdf47e0",
+      "bytes": 243858,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+      "inputSha256": "8637d0f16102994bea0ba07b50e709db50131baf2d225b2c3a71b397014108cf",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "id": "album-shiguang-ch2-03-20261028",
+  "origin": "project-ai-generated",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-10-28",
+    "generatedAt": "2026-10-28T06:47:34.919Z",
+    "threadId": "01a18140-f505-74e0-b279-a371f0fb1255",
+    "promptPath": "content/image-prompts/album-shiguang-ch2-03-20261028.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-shiguang-ch2-03-20261028/native.png",
+      "sha256": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+      "bytes": 2583181,
+      "width": 1536,
+      "height": 1024,
+      "format": "png"
+    },
+    "originalFile": "public/puzzles/album-shiguang-ch2-03-20261028.png",
+    "importedRegistrySha256": "b69bd163534da323ae0ae750f1e27931f458dd9862eaa1bbe6be4b87b4c91dc0"
+  },
+  "resolutionNote": "原始生成 1536×1024；保存成品 1536×1024，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Claude",
+    "reviewedAt": "2026-10-28T07:11:58.859Z",
+    "notes": "拾光物语第 2 章关卡图，2026-10-28 批准使用。只给关卡用：相册两端都不显示。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+    "thumbnail": {
+      "src": "/puzzles/album-shiguang-ch2-03-20261028-thumbnail-c2e6413a604d.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "c2e6413a604d667f673ddcb436db67b688ca8239a2da8ba2b83f2e8ff65ff5b7",
+      "bytes": 29212,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+      "inputSha256": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+      "quality": 82,
+      "upscaled": false,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-shiguang-ch2-03-20261028-optimized-196fe7b7b795.webp",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "196fe7b7b79523bd4858ddd02f29eb71acd69f6ac2db50e69b5b80460749016e",
+      "bytes": 189784,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+      "inputSha256": "57682b4908f2029326a05e5cd70269852698b142d2a1cc6c42334de155175062",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

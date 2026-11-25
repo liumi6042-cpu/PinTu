@@ -1,0 +1,20 @@
+# ch1s-03-grandmas-box
+
+Mode: built-in image_gen
+Reference: cast-sheet-final.png
+Output: ch1s-03-grandmas-box.png
+Generated source: C:\Users\Administrator\.codex\generated_images\01a17bce-39ed-7181-842a-40abd5507f4f\exec-8a545457-f6f0-4d8c-8ec1-8414de8238a7.png
+
+## Final prompt
+
+Use case: illustration-story.
+Create ONE landscape 1536x1024 illustration, a single full-bleed picture-book story panel used as a beginner 20-piece jigsaw puzzle. No puzzle grid or piece-cut lines.
+Input image: the supplied cast-sheet-final.png is the EXACT character identity and costume reference for Xiaohe and Tuanzi, and reference for the old box of golden puzzle pieces. This is a new story scene, not a character sheet. Do not redesign them.
+
+Scene: Close-up on the cozy shop counter. An old wooden box is open, full of softly glowing golden puzzle pieces; next to it lies an opened envelope. Xiaohe sits at the counter reading a handwritten letter, smiling a little with visibly teary warm brown eyes. Letter marks must be only soft faint unreadable squiggles, no actual characters or letters. Tuanzi stands with BOTH front paws planted on the edge of the open box, peering inside. Include a desk lamp, a teacup, dried flowers in a bottle, warm late-afternoon light.
+
+Identity locks: Xiaohe is a 17-year-old girl with the exact friendly round face, short brown bob hair, small pink flower hair clip above her LEFT ear, warm brown eyes of the reference. Same mustard-yellow short jacket, cream-and-grey striped shirt, dark teal midi skirt, cream socks, brown lace-up ankle boots, beige canvas shoulder bag with teal puzzle-piece patch. Preserve costume in this counter close-up; lower legs may be naturally outside the crop. Tuanzi is the same chubby calico shop cat: mostly white fur, LEFT ear and area around LEFT eye orange, RIGHT ear and area around RIGHT eye black, one large black patch on back and one orange patch on rump, fluffy black tail, green eyes, pink nose. Preserve the exact reference fur pattern and small sage-green neckerchief tied at side of neck.
+
+Style: cozy hand-painted anime illustration matching the reference, warm soft light, gentle saturated cream, honey, sage green, berry pink and sky blue; clean recognizable shapes with soft painterly texture; tender storybook feel.
+Composition: the girl, cat and glowing open box form one unmistakable focal story group. Counter-level intimate three-quarter view, faces and actions readable at a glance. Foreground, middle and background clearly differentiated in colors and textures. Frame is filled edge to edge including corners, with varied wood grain, soft patterns, light, plants and the stated objects; no large flat empty wall or sky. Keep shapes broad, objects distinct and thoughtfully spaced for a 20-piece beginner puzzle. No tiny repetitive clutter.
+Avoid: any text, letters, numbers, readable writing, labels, UI, watermark, border, frame, speech bubbles, additional people or cats.
