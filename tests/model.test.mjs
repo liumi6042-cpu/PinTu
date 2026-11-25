@@ -126,7 +126,7 @@ test('candidates preserve catalog ordering, historical identity and original imm
 });
 
 test('previews expose registered WebP only, with explicit not-found errors', () => {
-  assert.match(previewFile(source, firstId, 'preview'), /[\\/]public[\\/]puzzles[\\/].*\.webp$/);
+  assert.match(previewFile(source, firstId, 'preview'), /[\\/](?:public|media-store)[\\/]puzzles[\\/].*\.webp$/);
   assert.throws(() => previewFile(source, 'unknown-photo', 'thumbnail'), error => error.status === 404);
   assert.throws(() => previewFile(source, '../server', 'thumbnail'), error => error.status === 400);
   assert.throws(() => previewFile(source, firstId, 'original'), error => error.status === 400);

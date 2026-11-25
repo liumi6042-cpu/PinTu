@@ -60,6 +60,7 @@ function webpSize(bytes) {
 function checkedImage(root, item, kind) {
   if (!dimensions(item) || !digestPattern.test(item.sha256 ?? '') || !Number.isSafeInteger(item.bytes) || item.bytes <= 0) fail('待整理图片尺寸或摘要记录无效。');
   if (kind === 'png' && item.master?.format === 'webp') {
+    if (typeof item.path !== 'string' || !item.path || item.path.includes('\\') || item.path.startsWith('/') || item.path.includes(':') || item.path.split('/').some(part => !part || part === '.' || part === '..') || /[\u0000-\u001f\u007f]/.test(item.path)) fail('待整理素材路径必须是登记目录内的相对路径。');
     const master = item.master;
     if (!digestPattern.test(master.sha256 ?? '') || !Number.isSafeInteger(master.bytes) || master.bytes <= 0) fail('待整理母版摘要记录无效。');
     if (master.quality !== undefined && (!Number.isSafeInteger(master.quality) || master.quality < 80 || master.quality > 100)) fail('待整理母版质量参数无效。');

@@ -10,6 +10,7 @@ import {readSource, previewFile} from '../source.mjs';
 import {analyzeDraft, buildCandidate, validateDraft} from '../model.mjs';
 import {pendingDeliveryFiles,readDeliveredAssets} from '../delivery-status.mjs';
 import {buildPublicAlbumDocument} from '../albums.mjs';
+import {mediaPuzzlesDir} from '../project-layout.mjs';
 
 const project = resolve(import.meta.dirname, '../..');
 const game = join(project, 'jigsaw-nook-taptap');
@@ -22,14 +23,19 @@ function fixture(t, includeGameFacts = false) {
   t.after(() => {assert.ok(root.startsWith(temp + sep)); rmSync(root, {recursive: true, force: true});});
   const pendingRoot = join(root, 'content-admin/work/pending-assets');
   mkdirSync(join(pendingRoot, 'images'), {recursive: true});
+  const puzzlesRoot = mediaPuzzlesDir(project, game);
+  const masterInfo = originalRecord.master?.format === 'webp' ? originalRecord.master : null;
+  const masterSrcFile = join(puzzlesRoot, (masterInfo ? masterInfo.src : originalPhoto.src).slice('/puzzles/'.length));
+  const masterRel = masterInfo ? 'images/original.webp' : 'images/original.png';
+  copyFileSync(masterSrcFile, join(pendingRoot, masterRel));
   const source = {path: 'images/original.png', sha256: originalRecord.sha256, width: originalRecord.width, height: originalRecord.height,
-    bytes: readFileSync(join(game, 'public', originalPhoto.src)).length};
-  copyFileSync(join(game, 'public', originalPhoto.src), join(pendingRoot, source.path));
+    bytes: readFileSync(masterSrcFile).length,
+    ...(masterInfo ? {master: {format: 'webp', quality: masterInfo.quality ?? 90, path: masterRel, sha256: masterInfo.sha256, bytes: masterInfo.bytes, width: masterInfo.width, height: masterInfo.height}} : {})};
   // Two delivery files since 2026-10-17; the playable file is the optimized one.
   const delivery = {sourceSha256: source.sha256};
   for (const kind of ['thumbnail', 'optimized']) {
     const old = originalRecord.delivery[kind], path = 'images/' + kind + '.webp';
-    copyFileSync(join(game, 'public', old.src), join(pendingRoot, path));
+    copyFileSync(join(puzzlesRoot, old.src.slice('/puzzles/'.length)), join(pendingRoot, path));
     delivery[kind] = {...old, path}; delete delivery[kind].src;
   }
   const asset = {id: 'pending-anime-new-v1', title: '新图', subtitle: '后台待整理', styleGroupId: 'anime', subjectTags: ['花园'], origin: 'project-ai-generated',
@@ -112,7 +118,7 @@ test('relative traversal, absolute paths, file size mismatches and duplicate IDs
   const f = fixture(t), good = structuredClone(f.registry);
   for (const mutate of [
     asset => {asset.source.path = '../original.png';}, asset => {asset.source.path = 'C:/outside.png';},
-    asset => {asset.source.bytes++;}, asset => {asset.delivery.optimized.quality = 20;},
+    asset => {if (asset.source.master) asset.source.master.bytes++; else asset.source.bytes++;}, asset => {asset.delivery.optimized.quality = 20;},
     asset => {asset.delivery.sourceSha256 = '0'.repeat(64);}, asset => {asset.delivery.optimized.lossless = true;},
   ]) {
     f.registry.assets = structuredClone(good.assets); mutate(f.registry.assets[0]); f.save();
@@ -126,7 +132,8 @@ test('new Q70 delivery is accepted alongside legacy Q84 while crossed encoder pr
   const f = fixture(t);
   assert.equal(readPendingAssets(f.root).assets.length, 1, 'legacy Q84 delivery remains readable');
   const sharp = createRequire(join(game, 'package.json'))('sharp');
-  const bytes = await sharp(join(f.pendingRoot, f.asset.source.path)).webp({quality: 70, effort: 6, smartSubsample: true}).toBuffer();
+  const sourceFile = join(f.pendingRoot, f.asset.source.master?.path ?? f.asset.source.path);
+  const bytes = await sharp(readFileSync(sourceFile)).webp({quality: 70, effort: 6, smartSubsample: true}).toBuffer();
   const optimized = f.asset.delivery.optimized;
   writeFileSync(join(f.pendingRoot, optimized.path), bytes);
   optimized.bytes = bytes.length;
@@ -148,9 +155,13 @@ test('new Q70 delivery is accepted alongside legacy Q84 while crossed encoder pr
 
 test('a directory junction cannot redirect a registered preview outside its private root', t => {
   const f = fixture(t), outside = join(f.root, 'outside');
-  mkdirSync(outside); copyFileSync(join(f.pendingRoot, f.asset.source.path), join(outside, 'original.png'));
+  const sourceRel = f.asset.source.master?.path ?? f.asset.source.path;
+  const leaf = sourceRel.split('/').at(-1);
+  mkdirSync(outside); copyFileSync(join(f.pendingRoot, sourceRel), join(outside, leaf));
   symlinkSync(outside, join(f.pendingRoot, 'redirect'), process.platform === 'win32' ? 'junction' : 'dir');
-  f.asset.source.path = 'redirect/original.png'; f.asset.export.originalPath = f.asset.source.path; f.save();
+  if (f.asset.source.master) f.asset.source.master.path = 'redirect/' + leaf;
+  else { f.asset.source.path = 'redirect/' + leaf; f.asset.export.originalPath = f.asset.source.path; }
+  f.save();
   assert.throws(() => readPendingAssets(f.root), error => error.code === 'INVALID_PENDING_ASSET');
 });
 
