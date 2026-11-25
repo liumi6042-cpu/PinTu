@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/painted-glasshouse-workbench-v1.webp",
+    "sha256": "e6e1028e5360cdc6b83103300db6948efffbc3a81e14e343d37d8518476b7356",
+    "bytes": 542430,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "1d0044ad612b00e185b390657e83e323599dff8e97d3be824ec9c8606c178609"
   }
 }

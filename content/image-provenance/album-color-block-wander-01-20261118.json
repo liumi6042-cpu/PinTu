@@ -20,7 +20,16 @@
       "bytes": 2988311,
       "width": 2731,
       "height": 1820,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-color-block-wander-01-20261118/native.webp",
+        "sha256": "59caa8a19f54321224ae5d89984a498e8090a530aa7567a2ed938c6591dd2f1a",
+        "bytes": 315654,
+        "width": 2731,
+        "height": 1820
+      }
     },
     "originalFile": "public/puzzles/album-color-block-wander-01-20261118.png",
     "importedRegistrySha256": "e78f92ab5c0056e622e9062e304c1d76db6cf242c1a7b4049bdbb824df501913"
@@ -78,5 +87,15 @@
         "smartSubsample": true
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-color-block-wander-01-20261118.webp",
+    "sha256": "59caa8a19f54321224ae5d89984a498e8090a530aa7567a2ed938c6591dd2f1a",
+    "bytes": 315654,
+    "width": 2731,
+    "height": 1820,
+    "originalPngSha256": "96c4812e522211b7b3b20e814f691d2cf8cf0e8c1ecf66aab7fce2785d3955d1"
   }
 }

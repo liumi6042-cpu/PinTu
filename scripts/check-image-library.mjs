@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { isPlayableOrigin, RETAINED_STATUSES } from './image-origin.mjs';
 import { deliveryDimensions, MAX_DELIVERY_PIXELS } from './delivery-spec.mjs';
 import { checkArtworkRevisions } from './check-artwork-revisions.mjs';
+import { resolveMediaDir, resolveRepoOrMediaFile, safeMediaFile } from './media-paths.mjs';
 
 const fullHdOptimizedIds=new Set(['mountain-lake-reflection-hd-v3','morning-meadow-tree-hd-v3','clear-sand-bay-hd-v3']);
 const OPENAI_TERMS='https://openai.com/policies/row-terms-of-use/';
@@ -25,7 +26,14 @@ export async function checkReferenceRedraw(root,photo,record){
   if(record.commercialUse?.basis!=='provider-output-terms'||record.commercialUse.termsUrl!==DOUBAO_TERMS||JSON.stringify(record.commercialUse.referenceTermsUrls)!==JSON.stringify([OPENAI_TERMS])||record.commercialUse.exclusiveRightsGuaranteed!==false)fail('双服务条款依据');
   const nativeAt=async(item,expectedPath)=>{
     if(item?.path!==expectedPath||!Number.isSafeInteger(item.width)||item.width<=0||!Number.isSafeInteger(item.height)||item.height<=0||!Number.isSafeInteger(item.bytes)||item.bytes<=0||!/^[a-f0-9]{64}$/.test(item.sha256??''))fail('原生文件记录');
-    const bytes=await readFile(join(root,expectedPath));
+    if(item.master?.format==='webp'){
+      if(item.master.path!==expectedPath.replace(/\.png$/,'.webp')||!Number.isSafeInteger(item.master.bytes)||item.master.bytes<=0||!/^[a-f0-9]{64}$/.test(item.master.sha256??''))fail('原生母版记录');
+      const bytes=await readFile(resolveRepoOrMediaFile(root,item.master.path));
+      const size=webpSize(bytes);
+      if(bytes.length!==item.master.bytes||size.width!==item.width||size.height!==item.height||sha(bytes)!==item.master.sha256)fail('原生WebP尺寸或哈希');
+      return;
+    }
+    const bytes=await readFile(resolveRepoOrMediaFile(root,expectedPath));
     if(bytes.length<24||bytes.subarray(0,8).toString('hex')!=='89504e470d0a1a0a'||bytes.length!==item.bytes||bytes.readUInt32BE(16)!==item.width||bytes.readUInt32BE(20)!==item.height||sha(bytes)!==item.sha256)fail('原生PNG尺寸或哈希');
   };
   const references=generation.referenceImages;
@@ -43,7 +51,7 @@ export async function checkReferenceRedraw(root,photo,record){
     for(const [evidenceIndex,item] of stage.evidence.entries()){
       const expectedPath='content/artwork/gallery-hd/'+photo.id+'/stage-'+index+'-evidence-'+evidenceIndex+'.json';
       if(item?.path!==expectedPath||!Number.isSafeInteger(item.bytes)||item.bytes<=0||item.bytes>1024*1024||!/^[a-f0-9]{64}$/.test(item.sha256??''))fail('阶段证据路径或摘要');
-      const bytes=await readFile(join(root,expectedPath));
+      const bytes=await readFile(resolveRepoOrMediaFile(root,expectedPath));
       if(bytes.length!==item.bytes||sha(bytes)!==item.sha256)fail('阶段证据哈希');
       const text=bytes.toString('utf8');if(/ark-[a-z0-9-]{20,}|Bearer\s+[a-z0-9_-]+|"(?:api[_-]?key|authorization)"\s*:/i.test(text))fail('证据包含凭据');
       evidence.push(JSON.parse(text));
@@ -79,9 +87,10 @@ export async function checkImageLibrary(root){
   const published=catalog.filter(photo=>isPlayableOrigin(photo.origin)&&photo.status==='published'),restorable=catalog.filter(photo=>isPlayableOrigin(photo.origin)&&RETAINED_STATUSES.includes(photo.status)),ids=new Set(),files=new Set();
   if(!published.length)throw new Error('图库至少需要一张已审核生成图');
   for(const photo of published)if(!photo.publishedAt||!Number.isFinite(Date.parse(photo.publishedAt)))throw new Error(`缺少有效上架时间 publishedAt：${photo.id}`);
+  const puzzlesDir=resolveMediaDir(root,'puzzles');
   for(const photo of restorable){
     if(!/^[a-z0-9-]+$/.test(photo.id)||ids.has(photo.id)||!/^\/puzzles\/[a-z0-9-]+\.png$/.test(photo.src))throw new Error('图库编号或路径无效');
-    ids.add(photo.id);files.add(photo.src.slice('/puzzles/'.length));
+    ids.add(photo.id);
     const record=JSON.parse(await readFile(join(root,'content/image-provenance',photo.id+'.json'),'utf8'));
     if(record.id!==photo.id||record.origin!==photo.origin||record.review.status!=='reviewed')throw new Error(`生成来源或审核记录缺失：${photo.id}`);
     if(photo.origin==='project-ai-generated'){
@@ -103,11 +112,18 @@ export async function checkImageLibrary(root){
         // illustrations. Preserve that provenance; do not call the reference our art.
         let approvedStyle=false;
         if(reference.origin==='user-provided-style-reference'&&['painted-moonlit-portrait-v1','cel-sunset-train-v1'].includes(photo.id)&&/^content\/artwork\/painted-cel-20260914\/style-references\/(painted|cel)-reference\.png$/.test(reference.path)&&reference.purpose==='rendering-style-only'&&reference.authorization==='user-request-2026-09-14'){
-          const approvals=JSON.parse(await readFile(join(root,'content/artwork/painted-cel-20260914/approved-style-references.json'),'utf8'));
+          const approvals=JSON.parse(await readFile(resolveRepoOrMediaFile(root,'content/artwork/painted-cel-20260914/approved-style-references.json'),'utf8'));
           approvedStyle=['origin','path','sha256','purpose','authorization'].every(key=>approvals[photo.id]?.[key]===reference[key]);
         }
         if(!legacyProject&&!catalogProject&&!approvedStyle)throw new Error(`图片参考来源或用途未获登记：${photo.id}`);
-        if(createHash('sha256').update(await readFile(join(root,reference.path))).digest('hex')!==reference.sha256)throw new Error(`生成参考图哈希不一致：${photo.id}`);
+        if(reference.master?.format==='webp'){
+          if(reference.master.path!==reference.path.replace(/\.png$/,'.webp')||!/^[a-f0-9]{64}$/.test(reference.master.sha256??'')||!Number.isSafeInteger(reference.master.bytes))throw new Error(`生成参考母版记录无效：${photo.id}`);
+          const refBytes=await readFile(resolveRepoOrMediaFile(root,reference.master.path));
+          if(refBytes.length!==reference.master.bytes||createHash('sha256').update(refBytes).digest('hex')!==reference.master.sha256)throw new Error(`生成参考母版哈希不一致：${photo.id}`);
+          webpSize(refBytes);
+        }else{
+          if(createHash('sha256').update(await readFile(resolveRepoOrMediaFile(root,reference.path))).digest('hex')!==reference.sha256)throw new Error(`生成参考图哈希不一致：${photo.id}`);
+        }
       }
       if(record.generation.promptPath){
         if(!/^content\/image-prompts\/[a-z0-9-]+\.txt$/.test(record.generation.promptPath))throw new Error('提示词存档路径无效');
@@ -122,15 +138,33 @@ export async function checkImageLibrary(root){
       if(!record.rights?.basis?.trim()||!record.rights?.statement?.trim())throw new Error(`缺少使用授权说明：${photo.id}`);
       if(record.generation)throw new Error(`用户提供图片不得伪造生成记录：${photo.id}`);
     }
-    const bytes=await readFile(join(root,'public',photo.src.slice(1)));
-    if(bytes.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')throw new Error('图片不是登记的 PNG 原件');
-    if(bytes.readUInt32BE(16)!==record.width||bytes.readUInt32BE(20)!==record.height||createHash('sha256').update(bytes).digest('hex')!==record.sha256)throw new Error(`图片与原始记录不一致：${photo.id}`);
+    if(record.master?.format==='webp'){
+      const masterSrc=record.master.src;
+      if(masterSrc!==`/puzzles/${photo.id}.webp`||!/^[a-f0-9]{64}$/.test(record.master.sha256??'')||!Number.isSafeInteger(record.master.bytes)||record.master.bytes<=0)throw new Error(`母版记录无效：${photo.id}`);
+      if(record.master.originalPngSha256&&record.master.originalPngSha256!==record.sha256)throw new Error(`母版原始摘要不一致：${photo.id}`);
+      const bytes=await readFile(safeMediaFile(puzzlesDir,masterSrc.slice('/puzzles/'.length)));
+      const size=webpSize(bytes);
+      if(bytes.length!==record.master.bytes||size.width!==record.width||size.height!==record.height||createHash('sha256').update(bytes).digest('hex')!==record.master.sha256)throw new Error(`母版图片与记录不一致：${photo.id}`);
+      files.add(masterSrc.slice('/puzzles/'.length));
+    }else{
+      files.add(photo.src.slice('/puzzles/'.length));
+      const bytes=await readFile(safeMediaFile(puzzlesDir,photo.src.slice('/puzzles/'.length)));
+      if(bytes.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')throw new Error('图片不是登记的 PNG 原件');
+      if(bytes.readUInt32BE(16)!==record.width||bytes.readUInt32BE(20)!==record.height||createHash('sha256').update(bytes).digest('hex')!==record.sha256)throw new Error(`图片与原始记录不一致：${photo.id}`);
+    }
     if(record.composite){
       if(record.nativeResolution!==false||record.composite.finalUpscaling!==false||record.composite.parts?.length!==4)throw new Error(`拼接来源说明无效：${photo.id}`);
       for(const part of record.composite.parts){
         if(!/^content\/artwork\/gallery-hd\/[a-z0-9-]+\/[a-z0-9-]+\.png$/.test(part.path))throw new Error('拼接分区路径无效');
-        const b=await readFile(join(root,part.path));
-        if(b.subarray(0,8).toString('hex')!=='89504e470d0a1a0a'||b.readUInt32BE(16)!==part.width||b.readUInt32BE(20)!==part.height||createHash('sha256').update(b).digest('hex')!==part.sha256)throw new Error(`拼接分区来源不一致：${photo.id}`);
+        if(part.master?.format==='webp'){
+          if(part.master.path!==part.path.replace(/\.png$/,'.webp')||!/^[a-f0-9]{64}$/.test(part.master.sha256??'')||!Number.isSafeInteger(part.master.bytes))throw new Error(`拼接分区母版记录无效：${photo.id}`);
+          const b=await readFile(resolveRepoOrMediaFile(root,part.master.path));
+          const sz=webpSize(b);
+          if(b.length!==part.master.bytes||sz.width!==part.width||sz.height!==part.height||createHash('sha256').update(b).digest('hex')!==part.master.sha256)throw new Error(`拼接分区母版不一致：${photo.id}`);
+        }else{
+          const b=await readFile(resolveRepoOrMediaFile(root,part.path));
+          if(b.subarray(0,8).toString('hex')!=='89504e470d0a1a0a'||b.readUInt32BE(16)!==part.width||b.readUInt32BE(20)!==part.height||createHash('sha256').update(b).digest('hex')!==part.sha256)throw new Error(`拼接分区来源不一致：${photo.id}`);
+        }
       }
     }
     if(record.delivery?.sourceSha256!==record.sha256)throw new Error(`衍生图片缺少原件关联：${photo.id}`);
@@ -139,7 +173,7 @@ export async function checkImageLibrary(root){
     for(const [kind,field] of [...(photo.playSrc&&photo.playSrc!==photo.optimizedSrc?[['play','playSrc']]:[]),['thumbnail','thumbSrc'],...(photo.standardSrc?[['standard','standardSrc']]:[])]){
       const item=record.delivery[kind];
       if(!item||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.upscaled!==false)throw new Error(`衍生图片记录无效：${photo.id}`);
-      const data=await readFile(join(root,'public',item.src.slice(1)));
+      const data=await readFile(safeMediaFile(puzzlesDir,item.src.slice('/puzzles/'.length)));
       if(createHash('sha256').update(data).digest('hex')!==item.sha256||data.length!==item.bytes)throw new Error(`衍生图片哈希不一致：${photo.id}`);
       const size=webpSize(data);
       if(size.width!==item.width||size.height!==item.height)throw new Error(`衍生图片尺寸不一致：${photo.id}`);
@@ -157,7 +191,7 @@ export async function checkImageLibrary(root){
       if(!item||typeof item.src!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||item.src!==photo[field]||item.src!==`/puzzles/${photo.id}-${kind}-${item.sha256.slice(0,12)}.webp`||item.format!=='webp'||item.lossless!==false||item.upscaled!==false||item.quality!==70)throw new Error(`压缩交付记录无效：${photo.id}`);
       if(item.sourceSha256!==record.sha256||item.inputSha256!==record.sha256)throw new Error(`压缩交付原件关联无效：${photo.id}`);
       if(item.encoding?.library!=='sharp'||typeof item.encoding.version!=='string'||!item.encoding.version||item.encoding.effort!==6||item.encoding.smartSubsample!==true)throw new Error(`压缩交付编码记录无效：${photo.id}`);
-      const data=await readFile(join(root,'public',item.src.slice(1)));
+      const data=await readFile(safeMediaFile(puzzlesDir,item.src.slice('/puzzles/'.length)));
       if(createHash('sha256').update(data).digest('hex')!==item.sha256||data.length!==item.bytes)throw new Error(`压缩交付哈希或字节不一致：${photo.id}`);
       if(data.length>2*1024*1024)throw new Error(`压缩交付超过体积预算：${photo.id}`);
       const size=lossyWebpSize(data);
@@ -171,12 +205,21 @@ export async function checkImageLibrary(root){
   }
   const artworkOverlay=await checkArtworkRevisions(root);
   for(const file of artworkOverlay.files)files.add(file);
-  const served=await readdir(join(root,'public/puzzles'));
+  const served=await readdir(puzzlesDir);
   // Files from earlier deliveries stay on disk so rooms created before a
   // re-encode keep resolving; they are listed explicitly instead of guessed.
   let legacyFiles=new Set();
   try{legacyFiles=new Set(JSON.parse(await readFile(join(root,'content/legacy-artwork-files.json'),'utf8')).files);}catch{}
-  for(const file of served)if(!files.has(file)&&!legacyFiles.has(file))throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
+  for(const file of served){
+    if(files.has(file)||legacyFiles.has(file))continue;
+    // Shared media-store/puzzles also hosts hash-addressed mobile story comics and tuanzi postcards.
+    const sharedMobile=/^(?:story-comic-[a-z0-9-]+-(?:page|pagethumb)|tuanzi-card-[a-z0-9-]+-(?:card|thumb))-([a-f0-9]{12})\.webp$/.exec(file);
+    if(sharedMobile){
+      const bytes=await readFile(safeMediaFile(puzzlesDir,file));
+      if(sha(bytes).slice(0,12)===sharedMobile[1]&&lossyWebpSize(bytes))continue;
+    }
+    throw new Error(`public/puzzles 中存在未登记或未审核素材：${file}`);
+  }
   return {published:published.length,artworkOverlay:{activeImages:artworkOverlay.activeImages,files:artworkOverlay.overlayFiles}};
 }
 

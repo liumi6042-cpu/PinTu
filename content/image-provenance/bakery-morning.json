@@ -89,5 +89,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/bakery-morning.webp",
+    "sha256": "225a6b3df619dd192fa7efd144049775bbd5bb723f8d8d5e7954201e14585661",
+    "bytes": 599806,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "61e70be74e954036b975362a91cb43160269efd7ccc1fd733605d9e9585edf0d"
   }
 }

@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/golden-sand-dunes-native-v2.webp",
+    "sha256": "ee171d6a0a1ce870e52f2780f6e9917972e2b71aeea07b5a9bdd6d07f6aaf78b",
+    "bytes": 247540,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "b9513a20d30c184a7e3ade3c286b8bdf028e361cdaf2cb937e2f5f4066dca4e8"
   }
 }

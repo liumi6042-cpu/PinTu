@@ -77,5 +77,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/lemon-still-life.webp",
+    "sha256": "cba4f5f1cd9b971046ec8493190f202e0b0c18aebfe60dd6a64333c3fad73fac",
+    "bytes": 177902,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "95267e1df6df78a4299c7b8efb6eb1a432913c35813c310542ac25eae042f8d6"
   }
 }

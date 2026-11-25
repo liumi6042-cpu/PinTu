@@ -1,5 +1,7 @@
 import {mkdir,readdir,link,stat,readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import path from 'node:path';
+import {resolveMediaDir} from './media-paths.mjs';
 
 export async function linkLocalAssets(root) {
   const source=path.resolve(root,'public'),target=path.resolve(root,'dist/client');
@@ -22,4 +24,8 @@ export async function linkLocalAssets(root) {
     }
   }
   await visit(source,target);
+  const puzzlesDir=resolveMediaDir(root,'puzzles');
+  if(puzzlesDir!==path.resolve(source,'puzzles')&&existsSync(puzzlesDir)){
+    await visit(puzzlesDir,path.join(target,'puzzles'));
+  }
 }

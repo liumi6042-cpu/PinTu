@@ -59,3 +59,7 @@ next-env.d.ts
 *.zip
 __pycache__/
 *.pyc
+
+# Shared media-store holds puzzle images & artwork masters outside Git.
+/public/puzzles/
+/content/artwork/

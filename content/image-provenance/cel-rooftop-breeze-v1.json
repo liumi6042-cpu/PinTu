@@ -19,7 +19,16 @@
         "imageId": "cel-sunset-train-v1",
         "path": "public/puzzles/cel-sunset-train-v1.png",
         "sha256": "687ad9c0aac100b01c441388490b64edf55812ab607b89db8b63a50ed53906c5",
-        "purpose": "rendering-style-only"
+        "purpose": "rendering-style-only",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "public/puzzles/cel-sunset-train-v1.webp",
+          "sha256": "f308498b8dbc981dd9628b10191940e7b6d7ee3286cdaab7af9866fc1fd74f26",
+          "bytes": 238906,
+          "width": 1536,
+          "height": 1024
+        }
       }
     ],
     "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-5581d089-d0b1-414d-b19f-c9d79f22f68c.png",
@@ -84,5 +93,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cel-rooftop-breeze-v1.webp",
+    "sha256": "7f2911f34267f595efe10fdde6b64599b21aadd4a14af52cb65d60bbe3267f05",
+    "bytes": 340112,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "2704a07ffbfdfa0123d92a4337a816a12b391aee3e608ac166c35cf44878fa54"
   }
 }

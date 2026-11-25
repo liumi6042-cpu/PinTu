@@ -20,7 +20,16 @@
       "bytes": 3456694,
       "width": 1536,
       "height": 1024,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-healing-time-04-20261105/native.webp",
+        "sha256": "df22bac808482ade316fe090a2ded15a6729b040774f3dcae9e37c84ce5e5d7a",
+        "bytes": 631386,
+        "width": 1536,
+        "height": 1024
+      }
     },
     "originalFile": "public/puzzles/album-healing-time-04-20261105.png",
     "importedRegistrySha256": "f62a86aeaa13dc9bede9d0203606a880e3a1068b627b6142212a89cec47ab360"
@@ -78,5 +87,15 @@
         "smartSubsample": true
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-healing-time-04-20261105.webp",
+    "sha256": "df22bac808482ade316fe090a2ded15a6729b040774f3dcae9e37c84ce5e5d7a",
+    "bytes": 631386,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "f0a882e8df9a197e17e4becccbdc8b58b31044c4cd0af06ab56b796589df4360"
   }
 }

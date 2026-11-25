@@ -19,7 +19,16 @@
         "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/reference-original.png",
         "sha256": "9698e120c98ef58f81bb04274af95235bce9f726fe60c8c060a6bcd12850a8f1",
         "purpose": "same-artwork-reference-redraw",
-        "resolution": "native-generation"
+        "resolution": "native-generation",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/reference-original.webp",
+          "sha256": "8d8d3ea3a70951a9a9782bb250830e9a981d1e82b4b53bebde2bd42ad8e2f5e8",
+          "bytes": 531762,
+          "width": 1254,
+          "height": 1254
+        }
       }
     ],
     "native": {
@@ -28,7 +37,16 @@
       "bytes": 9334570,
       "width": 2144,
       "height": 2144,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/native.webp",
+        "sha256": "b405e6e9887e8b6bb11f7c54e19ec2235711800fc4d26208dc1199b773fc1fee",
+        "bytes": 1526320,
+        "width": 2144,
+        "height": 2144
+      }
     },
     "originalFile": "public/puzzles/blossom-firefly-conservatory-v1.png",
     "importedRegistrySha256": "314d0cb168c084ae21951d88765abdf044eeeb09dbdb5ac59507e1d57b03dd85",
@@ -48,7 +66,16 @@
           "bytes": 3113239,
           "width": 1254,
           "height": 1254,
-          "format": "png"
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/reference-original.webp",
+            "sha256": "8d8d3ea3a70951a9a9782bb250830e9a981d1e82b4b53bebde2bd42ad8e2f5e8",
+            "bytes": 531762,
+            "width": 1254,
+            "height": 1254
+          }
         },
         "evidence": [
           {
@@ -76,7 +103,16 @@
           "bytes": 9334570,
           "width": 2144,
           "height": 2144,
-          "format": "png"
+          "format": "png",
+          "master": {
+            "format": "webp",
+            "quality": 90,
+            "path": "content/artwork/gallery-hd/blossom-firefly-conservatory-v1/native.webp",
+            "sha256": "b405e6e9887e8b6bb11f7c54e19ec2235711800fc4d26208dc1199b773fc1fee",
+            "bytes": 1526320,
+            "width": 2144,
+            "height": 2144
+          }
         },
         "evidence": [
           {
@@ -155,5 +191,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/blossom-firefly-conservatory-v1.webp",
+    "sha256": "b405e6e9887e8b6bb11f7c54e19ec2235711800fc4d26208dc1199b773fc1fee",
+    "bytes": 1526320,
+    "width": 2144,
+    "height": 2144,
+    "originalPngSha256": "9cfe2e30f0b6bf60cd166d2433b0811cde02dbc9f03c8a1a29d701d74e11813b"
   }
 }

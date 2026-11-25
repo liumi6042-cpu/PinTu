@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/ceramic-studio-native-v2.webp",
+    "sha256": "0e8b940e59a5cf0a60fcaf4bb25532523876c87f2d28f71a46f93dc89f270752",
+    "bytes": 429324,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "604a32477ecc3ab4bdccf3fc44e16570dc613e6e7bd433d6df1c7831a654b616"
   }
 }

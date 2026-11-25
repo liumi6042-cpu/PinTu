@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/starlit-lakeside-camp-v1.webp",
+    "sha256": "4b24684c550d988e9a8c9e0c975f215b24dfe24c8ce4bc96a3576c43d86199e7",
+    "bytes": 637492,
+    "width": 1672,
+    "height": 941,
+    "originalPngSha256": "18d4fdfcd994b868ffc46df07a702266d2837bbc0040974c61fbd754799568da"
   }
 }

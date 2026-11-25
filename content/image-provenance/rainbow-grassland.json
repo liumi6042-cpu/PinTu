@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/rainbow-grassland.webp",
+    "sha256": "afaf7a28d59f94cd04e2c024035cc1e008d60993184f629095bdbb0a6742a188",
+    "bytes": 500718,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "31bae1dea2238ad004e1a357677e498c5771d81f9a8c2457d42a532370e4c9c4"
   }
 }

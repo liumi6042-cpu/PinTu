@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/daily-lantern-lake-violin-v1.webp",
+    "sha256": "7afb17f8d4bcc19ff1733298deeee2028bd6c565a58e725632a243a7500128cf",
+    "bytes": 606056,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "7546e6d5e15e360299c7c904cbf6d7b8efb7e363df9772818f8b2c250e013d31"
   }
 }

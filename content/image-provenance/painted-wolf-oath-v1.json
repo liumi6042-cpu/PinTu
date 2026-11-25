@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/painted-wolf-oath-v1.webp",
+    "sha256": "6d167f8f8f9b4119b934afacb381529c7c60bb6987b4235c3aaecbcbf0ae22f6",
+    "bytes": 406880,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "a5ce687f68642f06086b3c0acaeadbb9f58e43e2761d2f3d91790af9d9be6dcc"
   }
 }

@@ -77,5 +77,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/mountain-lake-reflection.webp",
+    "sha256": "cf06296aa2a2ff5d4977abd6c64c1a3ec779c2d7b772a293105a47320ec37708",
+    "bytes": 421238,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "03b39a70fded56605f63ef3e4f6e0437c9b74706a72e70b0bdbd591f8ca67146"
   }
 }

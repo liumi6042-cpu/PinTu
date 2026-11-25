@@ -66,5 +66,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/enchanted-library-garden-v1.webp",
+    "sha256": "52a36303654ed24b3a705d86503f75cc40f721ca39e724ebd2f9b2aa8497dc71",
+    "bytes": 637836,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "7f13ab84ccbc24d6a42e8dde53dcd1d36b199451d258dbc899409eb9ac605b57"
   }
 }

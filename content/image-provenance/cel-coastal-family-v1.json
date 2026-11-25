@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cel-coastal-family-v1.webp",
+    "sha256": "84a587d499e1d69491f5554773ae4643c9ac59c065f1d9373398ce49758ffffd",
+    "bytes": 550350,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "8e4bd698a05fe2fc6464d1d0b8713be3f0e39e5f0d84e2288d007524d32d77d7"
   }
 }

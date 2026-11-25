@@ -66,5 +66,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/tropical-harbor-carnival-v1.webp",
+    "sha256": "c7385e115129ac1504f4aaf7aa6484d243d353ff98a0e6f1ff36569c7573de89",
+    "bytes": 852068,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "59d925ebb68a14ca33602c1903b3121e6e8c092734ba86a22d7bdb41969d680a"
   }
 }

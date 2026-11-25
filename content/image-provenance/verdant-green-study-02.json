@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/verdant-green-study-02.webp",
+    "sha256": "c4258f3409f46e9fab729a8c465adaa477280061b3ae1f26b9feb27e3bbe197e",
+    "bytes": 627104,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "58ad823de3acc12362d2a43986a3803300969fcf58ce5ddf3056e42fd1443585"
   }
 }

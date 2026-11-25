@@ -66,5 +66,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/clockwork-invention-fair-v1.webp",
+    "sha256": "0ccdbd2918506164d22d915a04229af0a4b6b0df35269c089bb1fe8679c4d5df",
+    "bytes": 777804,
+    "width": 1254,
+    "height": 1254,
+    "originalPngSha256": "78959119411dc1b5cf44ff26c60936dc710365a17f82d6059421b47b7c4b9000"
   }
 }

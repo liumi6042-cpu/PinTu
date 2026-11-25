@@ -64,5 +64,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/sunset-cliff-lighthouse-v1.webp",
+    "sha256": "de53635c5f1023a30139501103f0e4c57997f0c82df89bc976e1a53f404b8a32",
+    "bytes": 657284,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "d3e694aaa964078bce837d21af31d59925677ce00f8f2dc5583ab9f4a0d56545"
   }
 }

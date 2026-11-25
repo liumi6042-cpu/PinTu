@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/orange-bicycle-native-v2.webp",
+    "sha256": "b1cce96930ba262d914c583b3a40a2a0f212afb1a8ab402ceef7bf3d65b7d4eb",
+    "bytes": 526092,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "5e6b7fdc5ed3c8b54c75d01c4cd89f907c854d39c1e344904639778de23ea457"
   }
 }

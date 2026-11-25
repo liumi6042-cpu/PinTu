@@ -19,7 +19,16 @@
         "imageId": "painted-moonlit-portrait-v1",
         "path": "public/puzzles/painted-moonlit-portrait-v1.png",
         "sha256": "f365f3f566d7b8298a502369d4d9231a7432fa84214c750e4c50884df3ed8bb2",
-        "purpose": "rendering-style-only"
+        "purpose": "rendering-style-only",
+        "master": {
+          "format": "webp",
+          "quality": 90,
+          "path": "public/puzzles/painted-moonlit-portrait-v1.webp",
+          "sha256": "0d31827aad8f2496e8ebea2731a6fb91d23d97c9fa0f82a3d8281440def46aba",
+          "bytes": 346686,
+          "width": 1536,
+          "height": 1024
+        }
       }
     ],
     "originalFile": "C:/Users/Administrator/.codex/generated_images/01a07c42-3960-7ae3-8208-ed401f896166/exec-c6874b08-1844-42ec-b6cb-a13c169f4854.png",
@@ -84,5 +93,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/painted-amber-autumn-v1.webp",
+    "sha256": "4a2fc98cdb571707dc4eec52eb7065e83de0405df5d70bf518ca1ee35b3e02a6",
+    "bytes": 402154,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "66f893b046093ffd4474af57ed612eb00f25bddc620d511c4c2975d4dd4ab5f3"
   }
 }

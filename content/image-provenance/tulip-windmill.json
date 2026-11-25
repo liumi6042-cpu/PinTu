@@ -89,5 +89,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/tulip-windmill.webp",
+    "sha256": "badb9971ec72efeb4ca7eda9848a0d9f61b934d5a04076aea836d5c47d777784",
+    "bytes": 711126,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "52bd1c2e7c6cbbf985a98c7c665fb25820dfcdf69c5c4b8b548457ef24e8e2e0"
   }
 }

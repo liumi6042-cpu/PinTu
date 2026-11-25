@@ -77,5 +77,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/lone-pine-snow.webp",
+    "sha256": "3c4c3362145db246f37bca283ba9182eca0c1b6678ce8ba67b4e710f2ac0296a",
+    "bytes": 317144,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "66589b21a3904ecdb5ba244d1dda8278e55195b9389f35ae9e6cd331d5d69dfa"
   }
 }

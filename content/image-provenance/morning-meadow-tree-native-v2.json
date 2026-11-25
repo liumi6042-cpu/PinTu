@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/morning-meadow-tree-native-v2.webp",
+    "sha256": "be488c9a0f0d370528139f3ff205ce289bbe7972d505c4a03ec571db839205a4",
+    "bytes": 657202,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "bdd6d45c83f8486f411069245c9dd68af39eab97752dfa041e17f9a8548b6559"
   }
 }

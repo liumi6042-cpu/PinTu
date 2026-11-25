@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/desert-sun-native-v2.webp",
+    "sha256": "18606f6cdbed6545569e238773badb644fd3f6b96094ada7fc590392cef2e38c",
+    "bytes": 314220,
+    "width": 1774,
+    "height": 887,
+    "originalPngSha256": "c681c05842f848407d2af990fd8a5e35fced075c72bad932f07489b6bf844024"
   }
 }

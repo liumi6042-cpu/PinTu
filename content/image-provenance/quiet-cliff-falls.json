@@ -77,5 +77,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/quiet-cliff-falls.webp",
+    "sha256": "3432060597d79aa120eeeb2d606a8ec12aaa2f2a1c0c538d1423d03cfc6ebcdf",
+    "bytes": 628836,
+    "width": 1402,
+    "height": 1122,
+    "originalPngSha256": "4b81c2546ac9509f4c3ab5c32d4da9f1978f03f5433d7cda016283262f32db1c"
   }
 }

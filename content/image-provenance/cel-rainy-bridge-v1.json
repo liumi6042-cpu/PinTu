@@ -76,5 +76,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/cel-rainy-bridge-v1.webp",
+    "sha256": "9aa001ebe67452a8a58b1d40f539742e1c27c340ac7e2ca0db1c04b6de934dea",
+    "bytes": 587992,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "7b79673c0c263b35325218ad9dadb3de9b946825d908e47b463b323ada346495"
   }
 }

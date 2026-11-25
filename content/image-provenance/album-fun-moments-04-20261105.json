@@ -20,7 +20,16 @@
       "bytes": 3515828,
       "width": 1536,
       "height": 1024,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-fun-moments-04-20261105/native.webp",
+        "sha256": "37a603efe282b966cf374579441a7fbe780e6f52cc215b76b61e470a85807b79",
+        "bytes": 642890,
+        "width": 1536,
+        "height": 1024
+      }
     },
     "originalFile": "public/puzzles/album-fun-moments-04-20261105.png",
     "importedRegistrySha256": "eb31f29c8ff08ee5228f3357e9cd3f7ce16228c553029c9e9d4c39e8c561d44b"
@@ -78,5 +87,15 @@
         "smartSubsample": true
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-fun-moments-04-20261105.webp",
+    "sha256": "37a603efe282b966cf374579441a7fbe780e6f52cc215b76b61e470a85807b79",
+    "bytes": 642890,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "49496afa4e8e15a9b5965b4e1bdfcfa1560471dba8a326f973ea67b1ce1036e1"
   }
 }

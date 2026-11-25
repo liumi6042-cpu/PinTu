@@ -20,7 +20,16 @@
       "bytes": 2718883,
       "width": 1536,
       "height": 1024,
-      "format": "png"
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-antique-toy-shop-05-20261020/native.webp",
+        "sha256": "e4d3788a5a9453687944e76bdb2ae9f3f5d167add7d40b6c3a8e09f6a67359eb",
+        "bytes": 424356,
+        "width": 1536,
+        "height": 1024
+      }
     },
     "originalFile": "public/puzzles/album-antique-toy-shop-05-20261020.png",
     "importedRegistrySha256": "ff0532b6de0e540068b25baff85c92d99549417c7bf87325378922a79c6a43bb"
@@ -78,5 +87,15 @@
         "smartSubsample": true
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-antique-toy-shop-05-20261020.webp",
+    "sha256": "e4d3788a5a9453687944e76bdb2ae9f3f5d167add7d40b6c3a8e09f6a67359eb",
+    "bytes": 424356,
+    "width": 1536,
+    "height": 1024,
+    "originalPngSha256": "fe201c988464fa1ed21646f19fa80f76f49d4e57c01b3fee746531a1b8f88218"
   }
 }

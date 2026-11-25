@@ -89,5 +89,15 @@
         "smartSubsample": false
       }
     }
+  },
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/lantern-market.webp",
+    "sha256": "90591b6fc792b6b3249f10a6d02b601f4224b684663ea77bad50d7d492acdf80",
+    "bytes": 721520,
+    "width": 1448,
+    "height": 1086,
+    "originalPngSha256": "c59f3cc3096cdba8a4f60ac6fe1fea7ef92bd91ec8afc10317c151f1ac461411"
   }
 }
