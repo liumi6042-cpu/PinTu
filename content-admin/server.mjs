@@ -117,7 +117,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
  function currentDraft(id){const draft=store.draft(id);if(draft.sourceFingerprint===source.fingerprint)return {...draft,document:validateDraft(draft.document,source)};const document=mergeSourceDraft(draft);return {...draft,document,sourceNeedsMerge:!isDeepStrictEqual(comparisonDocument(document),comparisonDocument(draft.document))};}
  function checkHistorical(latest){const missing=store.historicalIds().filter(id=>!Object.hasOwn(latest.baseline.assets,id));if(missing.length)throw problem(409,'来源缺少已导入的历史图片 ID，请先恢复归档条目：'+missing.slice(0,5).join('、'),'HISTORICAL_ID_MISSING');}
  function publishConfiguration(){
-  try{return {configured:true,configuration:validatePublishTransportConfig(JSON.parse(readFileSync(publishConfigPath,'utf8'))),configurationMessage:'已配置网页端和小程序端同步。'};}
+  try{return {configured:true,configuration:validatePublishTransportConfig(JSON.parse(readFileSync(publishConfigPath,'utf8').replace(/^\uFEFF/,''))),configurationMessage:'已配置网页端和小程序端同步。'};}
   catch(cause){const code=cause.code==='ENOENT'?'PUBLISH_NOT_CONFIGURED':'INVALID_PUBLISH_CONFIG';return {configured:false,code,configurationMessage:PUBLISH_MESSAGES[code]};}
  }
  function savedReleaseSnapshot(){
@@ -155,7 +155,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    audits:status.audits.map(item=>({kind:item.kind,at:item.at,actor:item.actor,releaseId:releaseIdentity(item.releaseId),...(item.previousReleaseId?{previousReleaseId:releaseIdentity(item.previousReleaseId)}:{}),...(item.code?{code:publishCode(item.code),message:PUBLISH_MESSAGES[publishCode(item.code)]}:{}),...(item.receipt?{receipt:publicPublishReceipt(item.receipt)}:{})})),
   };
  }
- const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-recovery.js','album-recovery.js'],['/image-trash.js','image-trash.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/album-rewards-ui.js','album-rewards-ui.js'],['/release-ui.js','release-ui.js'],['/import-ui.js','import-ui.js'],['/style.css','style.css']]);
+ const routes=new Map([['/','index.html'],['/index.html','index.html'],['/app.js','app.js'],['/bulk-assets.js','bulk-assets.js'],['/album-drag.js','album-drag.js'],['/album-filters.js','album-filters.js'],['/album-recovery.js','album-recovery.js'],['/image-trash.js','image-trash.js'],['/daily-state.js','daily-state.js'],['/task-rewards-ui.js','task-rewards-ui.js'],['/game-settings-ui.js','game-settings-ui.js'],['/album-rewards-ui.js','album-rewards-ui.js'],['/release-ui.js','release-ui.js'],['/import-ui.js','import-ui.js'],['/style.css','style.css']]);
  const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; form-action 'self'");

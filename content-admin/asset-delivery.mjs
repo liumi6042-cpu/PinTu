@@ -35,7 +35,7 @@ function quote(value){return "'"+String(value).replaceAll("'","'\\''")+"'";}
 /** Private delivery transport: reuses the admin publish host and key only. */
 function readTransport(configPath){
  let input;
- try{input=JSON.parse(readFileSync(configPath,'utf8'));}
+ try{input=JSON.parse(readFileSync(configPath,'utf8').replace(/^\uFEFF/,''));}
  catch{throw failure('尚未配置正式服连接，无法上传图片。','INVALID_PUBLISH_CONFIG',409);}
  const host=input?.host??input?.sshHost;
  if(typeof host!=='string'||!host)throw failure('正式服连接缺少 SSH 主机。','INVALID_PUBLISH_CONFIG');
