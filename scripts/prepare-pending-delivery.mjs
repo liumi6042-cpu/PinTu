@@ -200,7 +200,7 @@ for (const target of targets) {
   const catalog = JSON.parse(metadata.get('content/puzzle-catalog.json')), guidance = JSON.parse(metadata.get('content/puzzle-guidance.json')), manifest = JSON.parse(metadata.get('h5/asset-manifest.json') ?? '[]');
   const byId = new Map(catalog.map(photo => [photo.id, photo]));
   assert.equal(byId.size, catalog.length, 'Existing catalog has duplicate IDs.');
-  assert.equal(new Set(manifest).size, manifest.length, 'Existing H5 manifest has duplicate URLs.');
+  const uniqueManifest = [...new Set(manifest)];
   const newCatalog = [], newGuidance = {}, generated = [];
   for (const item of additions) {
     if (byId.has(item.catalog.id)) assert.deepEqual(byId.get(item.catalog.id), item.catalog, 'Existing ID differs; never overwrite: ' + item.catalog.id);
@@ -211,7 +211,9 @@ for (const target of targets) {
     generated.push({path: 'content/image-prompts/' + item.catalog.id + '.txt', content: item.prompt + (item.prompt.endsWith('\n') ? '' : '\n')});
     generated.push(...item.extraGenerated);
   }
-  const newUrls = additions.flatMap(item => [item.catalog.playSrc, item.catalog.thumbSrc, item.catalog.optimizedSrc]).filter(url => !manifest.includes(url));
+  // Play and optimized may reference the same WebP. Keep one entry per URL.
+  const newUrls = [...new Set(additions.flatMap(item => [item.catalog.playSrc, item.catalog.thumbSrc, item.catalog.optimizedSrc]))]
+    .filter(url => !uniqueManifest.includes(url));
   const nextMetadata = new Map([
     ['content/puzzle-catalog.json', appendArray(metadata.get('content/puzzle-catalog.json'), newCatalog)],
     ['content/puzzle-guidance.json', appendObject(metadata.get('content/puzzle-guidance.json'), newGuidance)],
@@ -231,7 +233,10 @@ for (const target of targets) {
     else nextArtwork.versions[item.catalog.id] = [snapshot];
   }
   nextMetadata.set('content/artwork-revisions.json', JSON.stringify(nextArtwork, null, 2) + '\n');
-  if (metadata.has('h5/asset-manifest.json')) nextMetadata.set('h5/asset-manifest.json', appendArray(metadata.get('h5/asset-manifest.json'), newUrls));
+  if (metadata.has('h5/asset-manifest.json')) {
+    const manifestText = uniqueManifest.length === manifest.length ? metadata.get('h5/asset-manifest.json') : json(uniqueManifest);
+    nextMetadata.set('h5/asset-manifest.json', appendArray(manifestText, newUrls));
+  }
   const files = [...sourceFiles.values()].map(item => {
     const to = child(target, item.to), present = existsSync(to);
     if (present) assertBytes(to, item);

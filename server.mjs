@@ -306,7 +306,7 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
   }catch(e){const status=Number.isInteger(e.status)&&e.status>=400&&e.status<=599?e.status:500;response(res,status,{error:status===500?'后台未能完成操作，请重试':e.message,code:e.code??'SERVER_ERROR',...(e.analysis?{analysis:e.analysis}:{}),...(e.receipt?{receipt:publicPublishReceipt(e.receipt)}:{})});}
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;
- return {server,store,daily,albums,taskRewards,gameSettings,releases,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});})};
+ return {server,store,daily,albums,taskRewards,gameSettings,releases,get source(){return source;},close:()=>new Promise((done,reject)=>{clearInterval(dailyTimer);server.close(error=>{store.close();error?reject(error):done();});server.closeIdleConnections?.();server.closeAllConnections?.();})};
 }
 
 if(process.argv[1]&&realpathSync(process.argv[1])===realpathSync(fileURLToPath(import.meta.url))){

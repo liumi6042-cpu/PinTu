@@ -9,9 +9,11 @@ import {createDailyCoordinator} from '../daily.mjs';
 import {createDailyContent} from '../../jigsaw-nook-taptap/server/daily-content.mjs';
 import {PHOTOS,RESTORABLE_PHOTOS,dailyPuzzle} from '../../jigsaw-nook-taptap/outputs/mobile/engine.mjs';
 
+const projectRoot=resolve(import.meta.dirname,'../..');
+
 test('admin plan, real runtime receipt and next-day album enrollment agree',()=>{
- const qaRoot=resolve('content-admin/work');mkdirSync(qaRoot,{recursive:true});
- const dir=mkdtempSync(join(qaRoot,'qa-daily-bridge-')),source=readSource(resolve('.'));
+ const qaRoot=resolve(projectRoot,'content-admin/work');mkdirSync(qaRoot,{recursive:true});
+ const dir=mkdtempSync(join(qaRoot,'qa-daily-bridge-')),source=readSource(projectRoot);
  const store=createStore(join(dir,'admin'),source),bridgeDir=join(dir,'bridge'),appearanceDir=join(dir,'appearances');
  let now=Date.parse('2026-10-12T06:00:00Z');
  const coordinator=createDailyCoordinator({store,getSource:()=>source,validateDocument:validateDraft,bridgeDir,appearanceDir,now:()=>now});
@@ -41,8 +43,8 @@ test('admin plan, real runtime receipt and next-day album enrollment agree',()=>
 });
 
 test('real v2 bridge chooses manual, then undated automatic, then album library and preserves each actual day',()=>{
- const qaRoot=resolve('content-admin/work');mkdirSync(qaRoot,{recursive:true});
- const dir=mkdtempSync(join(qaRoot,'qa-daily-bridge-')),source=readSource(resolve('.'));
+ const qaRoot=resolve(projectRoot,'content-admin/work');mkdirSync(qaRoot,{recursive:true});
+ const dir=mkdtempSync(join(qaRoot,'qa-daily-bridge-')),source=readSource(projectRoot);
  const store=createStore(join(dir,'admin'),source),bridgeDir=join(dir,'bridge'),appearanceDir=join(dir,'appearances');
  let now=Date.parse('2026-10-12T06:00:00Z'),runtime;
  const coordinator=createDailyCoordinator({store,getSource:()=>source,validateDocument:validateDraft,bridgeDir,appearanceDir,now:()=>now});

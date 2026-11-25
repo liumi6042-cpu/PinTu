@@ -89,9 +89,19 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
     inputs.push({path: target + '/' + path, sha256: hash(fingerprintBytes)});
     return value;
   };
-  const catalogs = {pc: read('pc', 'content/puzzle-catalog.json')};
-  if (!Array.isArray(catalogs.pc)) throw error('素材目录不是数组。', 409);
+  const catalogs = {};
+  let runtimePcCatalog;
+  catalogs.pc = read('pc', 'content/puzzle-catalog.json', true, catalog => {
+    if (!Array.isArray(catalog) || new Set(catalog.map(photo => photo.id)).size !== catalog.length) throw error('素材目录无效或存在重复 ID。', 409);
+    runtimePcCatalog = catalog;
+    for (const photo of catalog) if (pending.byId.has(photo.id)) {
+      const record = JSON.parse(readFileSync(safeFile(roots.pc, 'content/image-provenance/' + photo.id + '.json'), 'utf8'));
+      validatePendingRuntimePhoto(pending.byId.get(photo.id), photo, record);
+    }
+    return catalog.filter(photo => !pending.byId.has(photo.id));
+  });
   const baselineIds = new Set(catalogs.pc.map(photo => photo.id));
+  const pcExtraIds = new Set(runtimePcCatalog.filter(photo => !baselineIds.has(photo.id)).map(photo => photo.id));
   let runtimeMobileCatalog;
   catalogs['mobile-shared'] = read('mobile-shared', 'content/puzzle-catalog.json', true, catalog => {
     if (!Array.isArray(catalog) || new Set(catalog.map(photo => photo.id)).size !== catalog.length) throw error('运行素材目录无效或存在重复 ID。', 409);
@@ -104,7 +114,15 @@ export function readSource(projectRoot = resolve(import.meta.dirname, '..')) {
     return catalog.filter(photo => baselineIds.has(photo.id));
   });
   const runtimeExtraIds = new Set(runtimeMobileCatalog.filter(photo => !baselineIds.has(photo.id)).map(photo => photo.id));
-  const guidance = {pc: read('pc', 'content/puzzle-guidance.json')};
+  const guidance = {};
+  guidance.pc = read('pc', 'content/puzzle-guidance.json', true, document => {
+    for (const [id, guide] of Object.entries(document)) if (!baselineIds.has(id)) {
+      const asset = pending.byId.get(id);
+      if (!pcExtraIds.has(id) || !asset || guide.width !== asset.source.width || guide.height !== asset.source.height) throw error('新增图片引导与登记不一致：' + id, 409);
+    }
+    for (const id of pcExtraIds) if (!document[id]) throw error('新增图片引导缺失：' + id, 409);
+    return Object.fromEntries(Object.entries(document).filter(([id]) => baselineIds.has(id)));
+  });
   guidance['mobile-shared'] = read('mobile-shared', 'content/puzzle-guidance.json', true, document => {
     for (const [id, guide] of Object.entries(document)) if (!baselineIds.has(id)) {
       const asset = pending.byId.get(id);
@@ -275,7 +293,8 @@ export async function verifyDelivery(source) {
     // missing optional hint must not invalidate their otherwise reviewed assets.
     if (guide && (guide.width !== record.width || guide.height !== record.height)) throw error('图片引导尺寸与来源不一致：' + photo.id, 409);
     const pcGuide = data.guidance.pc[photo.id];
-    if (JSON.stringify(pcGuide) !== JSON.stringify(guide)) throw error('两目标图片引导不一致：' + photo.id, 409);
+    if (pcGuide && (pcGuide.width !== record.width || pcGuide.height !== record.height)) throw error('PC 图片引导尺寸与来源不一致：' + photo.id, 409);
+    if ((pcGuide?.width ?? null) !== (guide?.width ?? null) || (pcGuide?.height ?? null) !== (guide?.height ?? null)) throw error('两目标图片引导尺寸不一致：' + photo.id, 409);
   }
   const delivered = readDeliveredAssets(data.root, latestPending);
   if (JSON.stringify([...delivered.availableIds].sort()) !== JSON.stringify([...data.delivered.availableIds].sort())) throw error('双端图片交付回执在校验期间已变化，请重新载入后台。', 409);

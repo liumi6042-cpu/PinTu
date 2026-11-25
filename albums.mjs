@@ -4,11 +4,12 @@ import {randomUUID} from 'node:crypto';
 import {problem} from './store.mjs';
 import {validateDraft} from './model.mjs';
 import {buildAlbumConfiguration} from '../jigsaw-nook-taptap/server/album-content.mjs';
+import {runtimeAvailable} from './delivery-status.mjs';
 
 /** The saved shared albums are the only source of per-album rewards. */
 export function buildPublicAlbumDocument(document,source){
  const validated=validateDraft(document,source);
- const playable=new Set(source.assets.filter(asset=>asset.lifecycle==='retained').map(asset=>asset.id));
+ const playable=new Set(source.assets.filter(asset=>runtimeAvailable(asset)&&!validated.assets[asset.id]?.deleted).map(asset=>asset.id));
  return {schema:'jigsaw-albums/v1',albums:validated.albums.map(album=>{
   // Keep pending artwork in management while exporting only delivered images.
   // Daily-release visibility is applied by the runtime, not by deleting members.
@@ -36,7 +37,7 @@ export function createAlbumCoordinator({store,getSource,bridgeDir,getDocument}){
  return {sync(){
   const source=getSource(),draft=getDocument?.(store.activeDraftId())??store.draft(store.activeDraftId());
   const document=buildPublicAlbumDocument(draft.document,source);
-  try{return writeAlbumConfiguration(bridgeDir,document,{photos:source.assets.filter(asset=>asset.lifecycle==='retained'),decorations:source._private.collection.decorations});}
+  try{return writeAlbumConfiguration(bridgeDir,document,{photos:source.assets.filter(runtimeAvailable),decorations:source._private.collection.decorations});}
   catch{throw problem(503,'相册已保留，但游戏相册配置暂未更新，请重新载入后台后重试','ALBUM_BRIDGE_FAILED');}
  }};
 }

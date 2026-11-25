@@ -2,8 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {defaultGameSettings,validateGameSettings} from '../../jigsaw-nook-taptap/server/game-settings.mjs';
 import {renderGameSettings,renderGameLevelPreview,readGameSettingsForm,updateGameSettingInput,addGameMilestone,removeGameMilestone} from '../public/game-settings-ui.js';
+import {renderAlbumRewards} from '../public/album-rewards-ui.js';
 
 const form=(section,elements)=>({dataset:{section},elements:elements.map(value=>({disabled:false,type:'number',...value}))});
+
+test('retired decorations leave the editor without shifting saved identities or silently editing an album reward',()=>{
+ const document=defaultGameSettings(),before=structuredClone(document);
+ const html=renderGameSettings({document,section:'decorations'});
+ assert.doesNotMatch(html,/莓色星光|蜜糖流星/);
+ assert.match(html,/name="decorations\.1\.title"/);
+ assert.deepEqual(document,before);
+ const album={imageIds:['a'],milestones:[{id:'kept-reward',target:1,coins:8,decorationId:'honey-star'}]};
+ const rewards=renderAlbumRewards(album,document.decorations);
+ assert.match(rewards,/value="honey-star" selected disabled/);
+ assert.match(rewards,/已移除，请另选/);
+ assert.equal(album.milestones[0].decorationId,'honey-star');
+ album.milestones[0].decorationId=null;
+ assert.doesNotMatch(renderAlbumRewards(album,document.decorations),/berry-spark|honey-star/);
+});
 
 test('each game settings page merges only its own fields while retaining reward identities and other pending edits',()=>{
  const document=defaultGameSettings();

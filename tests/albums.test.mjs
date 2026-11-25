@@ -40,19 +40,20 @@ test('public bridge includes every saved album, omits pending/unassigned images,
  settingsCoordinator.save(settings.revision,edited,'fixture-editor');const settingsBefore=store.gameSettings();
  const current=store.draft(store.activeDraftId()),document=copy(current.document),unassigned=document.albums.at(-1).imageIds.shift();
  document.albums.at(-1).coverImageId=document.albums.at(-1).imageIds[0];
- const pending=source.assets.find(asset=>asset.lifecycle==='pending').id,archived=source.assets.find(asset=>asset.lifecycle==='retained'&&asset.targets['mobile-shared'].status==='archived').id;
+ const pending=source.assets.find(asset=>asset.lifecycle==='pending').id,secondPending=source.assets.find(asset=>asset.lifecycle==='pending'&&asset.id!==pending).id,archived=source.assets.find(asset=>asset.lifecycle==='retained'&&asset.targets['mobile-shared'].status==='archived').id;
+ const testSource=Object.defineProperty({...source,assets:source.assets.map(asset=>[pending,secondPending].includes(asset.id)?{...asset,runtimeAvailable:false}:asset)},'_private',{value:source._private});
  const destination=emptyAlbum('all-archived');destination.showOnMobile=false;destination.imageIds=[pending,archived];destination.coverImageId=pending;
  for(const album of document.albums){album.imageIds=album.imageIds.filter(id=>id!==archived);if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
- document.albums.push(destination,emptyAlbum('pending-only'));document.albums.at(-1).imageIds=[source.assets.find(asset=>asset.lifecycle==='pending'&&asset.id!==pending).id];document.albums.at(-1).coverImageId=document.albums.at(-1).imageIds[0];
+ document.albums.push(destination,emptyAlbum('pending-only'));document.albums.at(-1).imageIds=[secondPending];document.albums.at(-1).coverImageId=document.albums.at(-1).imageIds[0];
  const saved=store.saveDraft(current.id,current.revision,document,'fixture-editor');
- const coordinator=createAlbumCoordinator({store,getSource:()=>source,bridgeDir:join(dir,'albums')}),configuration=coordinator.sync();
+ const coordinator=createAlbumCoordinator({store,getSource:()=>testSource,bridgeDir:join(dir,'albums')}),configuration=coordinator.sync();
  assert.equal(configuration.albums.length,document.albums.length);
  const publicAlbum=configuration.albums.find(album=>album.id===destination.id);
  assert.deepEqual(publicAlbum.imageIds,[archived]);assert.equal(publicAlbum.coverImageId,archived);assert.equal(publicAlbum.showOnMobile,false);
  assert.deepEqual(configuration.albums.at(-1).imageIds,[]);assert.equal(configuration.albums.at(-1).coverImageId,null);
  assert.equal(configuration.albums.flatMap(album=>album.imageIds).includes(unassigned),false);
  assert.equal(configuration.albums.some(album=>album.imageIds.includes(pending)),false);
- assert.deepEqual(validateAlbumConfiguration(configuration),buildPublicAlbumDocument(saved.document,source));
+ assert.deepEqual(validateAlbumConfiguration(configuration),buildPublicAlbumDocument(saved.document,testSource));
  const path=join(dir,'albums/configuration.json'),before=statSync(path,{bigint:true}).mtimeNs;coordinator.sync();assert.equal(statSync(path,{bigint:true}).mtimeNs,before);
  assert.deepEqual(store.draft(saved.id),saved);assert.deepEqual(store.gameSettings(),settingsBefore);
 });

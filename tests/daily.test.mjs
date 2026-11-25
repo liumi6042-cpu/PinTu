@@ -40,15 +40,24 @@ test('undated automatic candidates coexist with manual dates and legacy reservat
 });
 test('v2 bridge includes assigned archived, hidden and purchase albums; omits pending and unassigned',()=>{
  const draft=document(),pending=source.assets.find(asset=>asset.lifecycle==='pending'),archived=source.assets.find(asset=>asset.targets['mobile-shared'].status==='archived'),destination=draft.albums.find(album=>album.id==='daily-destination');
+ const testSource=Object.defineProperty({...source,assets:source.assets.map(asset=>asset.id===pending.id?{...asset,runtimeAvailable:false}:asset)},'_private',{value:source._private});
  destination.purchasable=true;destination.price=250;destination.imageIds=[archived.id];destination.coverImageId=archived.id;
  for(const album of draft.albums)if(album.id!==destination.id){album.imageIds=album.imageIds.filter(id=>![archived.id,thirdImage].includes(id));if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
  draft.dailyPlans=[plan(),automatic(secondImage),plan(pending.id,'2030-05-03')];
- const validated=validateDraft(draft,source),cfg=buildDailyConfiguration(validated,source);
+ const validated=validateDraft(draft,testSource),cfg=buildDailyConfiguration(validated,testSource);
  assert.equal(cfg.schema,'jigsaw-daily-content/v2');assert.equal(configurationDigest(cfg),cfg.configDigest);
  assert.deepEqual(cfg.entries,[{date:'2030-05-02',imageId:dailyImage,albumId:destination.id}]);assert.deepEqual(cfg.automaticCandidates,[{imageId:secondImage,albumId:destination.id}]);
  assert.equal(cfg.fallbackImageIds.includes(archived.id),true);assert.equal(cfg.fallbackImageIds.includes(thirdImage),false);assert.equal(cfg.fallbackImageIds.includes(pending.id),false);
- assert.equal(dailyReadiness(validated,source)[0].ready,true);assert.equal(dailyReadiness(validated,source)[2].ready,false);assert.equal(cfg.albums[0].purchasable,true);assert.equal(cfg.albums[0].showOnMobile,false);
+ assert.equal(dailyReadiness(validated,testSource)[0].ready,true);assert.equal(dailyReadiness(validated,testSource)[2].ready,false);assert.equal(cfg.albums[0].purchasable,true);assert.equal(cfg.albums[0].showOnMobile,false);
  for(const forbidden of ['sourceFingerprint','_private','password','salt','src','rightsStatement','sourceDescription','imageIds'])assert.equal(Object.hasOwn(cfg,forbidden),false);
+});
+test('story-level albums keep their pictures out of the daily fallback pool',()=>{
+ const draft=document(),level=emptyAlbum('shiguang-ch9');draft.albums.push(level);
+ for(const album of draft.albums){album.imageIds=album.imageIds.filter(id=>id!==thirdImage);if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
+ level.imageIds=[thirdImage];level.coverImageId=thirdImage;
+ const before=buildDailyConfiguration(validateDraft(draft,source),source);
+ assert.equal(before.fallbackImageIds.includes(thirdImage),false);assert.ok(before.fallbackImageIds.length>0);
+ level.id='story-extra';assert.equal(buildDailyConfiguration(validateDraft(draft,source),source).fallbackImageIds.includes(thirdImage),true);
 });
 test('automatic receipt freezes undated mode and enrolls once next Beijing day with CAS and no metadata loss',t=>{
  const f=fixture(t),draft=document();draft.dailyPlans=[automatic()];const origin=draft.albums.find(album=>album.id==='daily-origin');origin.imageIds=[dailyImage];origin.coverImageId=dailyImage;

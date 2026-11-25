@@ -54,7 +54,7 @@ function validateLegacyDraft(document, source) {
   object(document.assets, '素材配置', [...sourceIds]);
   const assets = {};
   for (const image of source.assets) {
-    const item = object(document.assets[image.id], '素材 ' + image.id, ['title', 'subtitle', 'styleGroupId', 'subjectTags', 'targets']);
+    const item = object(document.assets[image.id], '素材 ' + image.id, ['title', 'subtitle', 'styleGroupId', 'subjectTags', 'targets', 'deleted'], ['deleted']);
     object(item.targets, '素材目标', TARGETS);
     const tags = list(item.subjectTags, '题材标签', 30).map(tag => text(tag, '题材标签', 60));
     const targets = {};
@@ -65,7 +65,8 @@ function validateLegacyDraft(document, source) {
         category: text(config.category, '原分类', 80)};
     }
     assets[image.id] = {title: text(item.title, '图片标题', 180), subtitle: text(item.subtitle, '图片副标题', 800, true),
-      styleGroupId: styleRef(item.styleGroupId, styleIds, '画风引用'), subjectTags: [...new Set(tags)], targets};
+      styleGroupId: styleRef(item.styleGroupId, styleIds, '画风引用'), subjectTags: [...new Set(tags)], targets,
+      ...(Object.hasOwn(item, 'deleted') ? {deleted: bool(item.deleted, '图片回收站状态')} : {})};
   }
   const imageIds = (value, label) => {
     const result = list(value, label, sourceIds.size).map(value => id(value, '图片引用'));
@@ -140,7 +141,7 @@ function analyzeLegacyDraft(input, source) {
   compareEntities('shared', 'style', before.styles, document.styles);
   for (const asset of source.assets) {
     const a = before.assets[asset.id], b = document.assets[asset.id];
-    for (const field of ['title', 'subtitle', 'styleGroupId', 'subjectTags']) change('shared', 'asset', asset.id, field, a[field], b[field]);
+    for (const field of ['title', 'subtitle', 'styleGroupId', 'subjectTags', 'deleted']) change('shared', 'asset', asset.id, field, a[field], b[field]);
     if (asset.lifecycle !== 'pending' && (a.title !== b.title || a.subtitle !== b.subtitle)) for (const target of TARGETS) block(target, 'LOCALE_ADAPTER_REQUIRED', asset.id,
       '图片标题或副标题修改需要同步现有中英文展示映射；草稿可保存，首期候选先阻断该目标。');
     for (const target of TARGETS) {
@@ -313,6 +314,7 @@ function validateAlbumDraft(converted, source, version) {
       if (new Set(images).size !== images.length) fail('同一相册的图片不能重复。');
       for (const imageId of images) {
         if (!sourceIds.has(imageId)) fail('相册引用未登记图片。');
+        if (metadata.assets[imageId].deleted) fail('回收站中的图片须先恢复，才能放入相册：' + imageId);
         if (ownership.has(imageId)) fail('图片只能属于一个相册：' + imageId + '（' + ownership.get(imageId) + ' / ' + albumId + '）。');
         ownership.set(imageId, albumId);
       }
@@ -387,7 +389,7 @@ export function analyzeDraft(input, source) {
   entities('shared', 'style', before.styles, document.styles);
   for (const asset of source.assets) {
     const a = before.assets[asset.id], b = document.assets[asset.id];
-    for (const field of ['title', 'subtitle', 'styleGroupId', 'subjectTags']) change('shared', 'asset', asset.id, field, a[field], b[field]);
+    for (const field of ['title', 'subtitle', 'styleGroupId', 'subjectTags', 'deleted']) change('shared', 'asset', asset.id, field, a[field], b[field]);
     for (const target of TARGETS) for (const field of Object.keys(a.targets[target])) change(target, 'asset', asset.id, field, a.targets[target][field], b.targets[target][field]);
   }
   entities('shared', 'album', before.albums, document.albums);

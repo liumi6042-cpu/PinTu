@@ -7,6 +7,7 @@ import {existsSync, lstatSync, realpathSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {deliveryDimensions, MAX_DELIVERY_PIXELS} from '../delivery-spec.mjs';
 
 const cmsRoot = realpathSync(path.resolve(import.meta.dirname, '..'));
 const projectRoot = path.resolve(cmsRoot, '..');
@@ -54,6 +55,27 @@ function absoluteInput(value, label) {
   if (!path.isAbsolute(value)) fail(label + '必须是原始来源的绝对路径。');
   return path.normalize(value);
 }
+function generationMetadata(value) {
+  if (value === undefined) return {provider: 'OpenAI', tool: 'image_gen'};
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !['provider', 'tool', 'model', 'method', 'stages'].includes(key))) fail('generation 包含未知字段。');
+  const result = {provider: string(value.provider, '生成服务', 100), tool: string(value.tool, '生成工具', 100)};
+  for (const key of ['model', 'method']) if (value[key] !== undefined) result[key] = string(value[key], '生成 ' + key, 200);
+  if (value.stages !== undefined) {
+    if (!Array.isArray(value.stages) || !value.stages.length || value.stages.length > 8) fail('生成阶段必须为 1–8 项。');
+    result.stages = value.stages.map(stage => {
+      if (!stage || typeof stage !== 'object' || Array.isArray(stage) || Object.keys(stage).some(key => !['role', 'provider', 'tool', 'model', 'prompt', 'generatedAt', 'nativePath', 'evidencePaths'].includes(key))) fail('生成阶段包含未知字段。');
+      const generatedAt = string(stage.generatedAt, '阶段生成时间', 100);
+      if (!Number.isFinite(Date.parse(generatedAt))) fail('阶段生成时间无效。');
+      if (!Array.isArray(stage.evidencePaths) || stage.evidencePaths.length > 8) fail('阶段证据必须是最多 8 个 JSON 路径。');
+      const normalized = {role: string(stage.role, '生成阶段', 100), provider: string(stage.provider, '阶段服务', 100), tool: string(stage.tool, '阶段工具', 100),
+        prompt: string(stage.prompt, '阶段实际提示词', 64000), generatedAt, nativePath: absoluteInput(stage.nativePath, '阶段原生结果'),
+        evidencePaths: stage.evidencePaths.map(item => absoluteInput(item, '阶段证据'))};
+      if (stage.model !== undefined) normalized.model = string(stage.model, '阶段模型', 200);
+      return normalized;
+    });
+  }
+  return result;
+}
 function pngDimensions(data, label) {
   if (data.length < 24 || data.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') fail(label + '必须是真实 PNG，不能仅改扩展名。');
   const width = data.readUInt32BE(16), height = data.readUInt32BE(20);
@@ -71,7 +93,7 @@ async function pngFile(filename, sharp, label) {
 function normalizeManifest(input) {
   if (!Array.isArray(input) || !input.length || input.length > 100) fail('manifest 必须是 1–100 张记录的 JSON 数组。');
   const seen = new Set();
-  const allowed = ['exportPath', 'nativePath', 'id', 'title', 'subtitle', 'styleGroupId', 'subjectTags', 'prompt', 'threadId', 'generatedAt', 'referencePaths', 'review'];
+  const allowed = ['exportPath', 'nativePath', 'id', 'title', 'subtitle', 'styleGroupId', 'subjectTags', 'prompt', 'threadId', 'generatedAt', 'referencePaths', 'review', 'generation'];
   return input.map((value, index) => {
     if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !allowed.includes(key))) fail('manifest 第 ' + index + ' 条包含未知字段。');
     const id = string(value.id, '图片 ID', 96);
@@ -99,9 +121,9 @@ function normalizeManifest(input) {
       }
     }
     return {id, title: string(value.title, '标题', 180), subtitle: string(value.subtitle ?? '', '副标题', 800, true), styleGroupId, subjectTags,
-      exportPath: absoluteInput(value.exportPath, '4K 导出文件'), nativePath: absoluteInput(value.nativePath, '生成原生文件'),
+      exportPath: absoluteInput(value.exportPath, '导出文件'), nativePath: absoluteInput(value.nativePath, '生成原生文件'),
       prompt: string(value.prompt, '原始生成提示词', 100000), threadId: string(value.threadId, '来源会话 ID', 200),
-      generatedAt, referencePaths, review};
+      generatedAt, referencePaths, review, generation: generationMetadata(value.generation)};
   });
 }
 async function assertFreshIds(records) {
@@ -134,7 +156,7 @@ export async function buildPendingImport({manifestPath, outputDir}) {
   const lockPath = path.join(output, '.build-lock');
   await fs.writeFile(lockPath, json({schema: 'jigsaw-pending-build-lock/v1', pid: process.pid, startedAt: new Date().toISOString()}), {flag: 'wx'});
   async function save(relative, bytes) {
-    if (!/^(?:originals|native|references|delivery)\/[a-z0-9-]+\.(?:png|webp)$/.test(relative)) fail('生成路径不合法。');
+    if (!/^(?:(?:originals|native|references|delivery)\/[a-z0-9-]+\.(?:png|webp)|evidence\/[a-z0-9-]+\.json)$/.test(relative)) fail('生成路径不合法。');
     const file = path.join(output, ...relative.split('/'));
     const digest = sha(bytes);
     if (outputFiles.has(relative)) {assert.equal(outputFiles.get(relative), digest, '同名交付文件 SHA 冲突'); return;}
@@ -149,14 +171,15 @@ export async function buildPendingImport({manifestPath, outputDir}) {
       assert.ok(metadata.width <= 480 && metadata.height <= 384, '缩略图超出预算');
       assert.ok(metadata.width <= source.record.width && metadata.height <= source.record.height, '缩略图不可放大');
     } else {
-      assert.equal(metadata.width, source.record.width, '交付编码不允许改变宽度');
-      assert.equal(metadata.height, source.record.height, '交付编码不允许改变高度');
+      const expected = deliveryDimensions(source.record.width, source.record.height, MAX_DELIVERY_PIXELS);
+      assert.equal(metadata.width, kind === 'optimized' ? expected.width : source.record.width, '交付编码宽度不符合像素上限');
+      assert.equal(metadata.height, kind === 'optimized' ? expected.height : source.record.height, '交付编码高度不符合像素上限');
     }
     if (kind === 'optimized' && bytes.length > 2 * 1024 * 1024) fail(item.id + ' optimized 超过 2 MiB；请人工复核，脚本不会自动缩尺寸或降质量。');
     const digest = sha(bytes), relative = 'delivery/' + item.id + '-' + kind + '-' + digest.slice(0, 12) + '.webp';
     await save(relative, bytes);
     return {path: relative, width: metadata.width, height: metadata.height, sha256: digest, bytes: bytes.length,
-      format: 'webp', lossless: kind === 'play', quality: kind === 'play' ? null : kind === 'thumbnail' ? 82 : 84,
+      format: 'webp', lossless: kind === 'play', quality: kind === 'play' ? null : kind === 'thumbnail' ? 82 : 70,
       upscaled: false, sourceSha256: source.record.sha256, inputSha256: source.record.sha256,
       encoding: {library: 'sharp', version: sharp.versions.sharp, ...options}};
   }
@@ -181,6 +204,29 @@ export async function buildPendingImport({manifestPath, outputDir}) {
         await save(relative, reference.bytes);
         references.push(relative);
       }
+      const generation = {...item.generation};
+      if (generation.stages) {
+        generation.stages = [];
+        for (const stage of item.generation.stages) {
+          const stageNative = await pngFile(stage.nativePath, sharp, item.id + ' 阶段原生结果');
+          const relative = 'references/' + stageNative.record.sha256.slice(0, 12) + '.png';
+          await save(relative, stageNative.bytes);
+          const evidence = [];
+          for (const originalPath of stage.evidencePaths) {
+            const bytes = await fs.readFile(originalPath);
+            if (bytes.length > 1024 * 1024) fail('阶段 JSON 证据超过 1 MiB。');
+            const record = JSON.parse(bytes.toString('utf8').replace(/^\uFEFF/, ''));
+            // Request receipts intentionally omit authorization and base64 image
+            // bodies. A private provenance copy must not retain credentials.
+            if (/ark-[a-z0-9-]{20,}|Bearer\s+[a-z0-9_-]+|"(?:api[_-]?key|authorization)"\s*:/i.test(JSON.stringify(record))) fail('阶段证据疑似包含凭据，禁止复制。');
+            const digest = sha(bytes), evidencePath = 'evidence/' + item.id + '-' + digest.slice(0, 12) + '.json';
+            await save(evidencePath, bytes);
+            evidence.push({path: evidencePath, sha256: digest, bytes: bytes.length, originalPath});
+          }
+          const {nativePath: originalNativePath, evidencePaths, ...facts} = stage;
+          generation.stages.push({...facts, native: {path: relative, ...stageNative.record}, originalNativePath, evidence});
+        }
+      }
       // Pillow's existing preparation uses RGB, lossless method=6 and
       // thumbnail quality=82/method=6. Sharp effort is libwebp's method setting.
       const playBytes = await sharp(sourceBytes).removeAlpha().toColourspace('srgb').webp({lossless: true, effort: 6}).toBuffer();
@@ -190,17 +236,21 @@ export async function buildPendingImport({manifestPath, outputDir}) {
       const thumbnailBytes = await sharp(sourceBytes).removeAlpha().toColourspace('srgb')
         .resize({width: 480, height: 384, fit: 'inside', withoutEnlargement: true, kernel: 'lanczos3'})
         .webp({quality: 82, effort: 6}).toBuffer();
-      // Identical optimized options to prepare-optimized-delivery.mjs; no resize.
-      const optimizedBytes = await sharp(sourceBytes).webp({quality: 84, effort: 5, smartSubsample: true}).toBuffer();
+      // Keep native dimensions under the pixel cap; only oversized sources are
+      // resized proportionally before the Q70 delivery encode.
+      const optimizedSize = deliveryDimensions(source.record.width, source.record.height, MAX_DELIVERY_PIXELS);
+      const optimizedBytes = await sharp(sourceBytes).resize({width: optimizedSize.width, height: optimizedSize.height, fit: 'inside', withoutEnlargement: true})
+        .webp({quality: 70, effort: 6, smartSubsample: true}).toBuffer();
       const play = await delivery(item, source, 'play', playBytes, {effort: 6});
       const thumbnail = await delivery(item, source, 'thumbnail', thumbnailBytes, {effort: 6, kernel: 'lanczos3'});
-      const optimized = await delivery(item, source, 'optimized', optimizedBytes, {effort: 5, smartSubsample: true});
+      const optimized = await delivery(item, source, 'optimized', optimizedBytes, {effort: 6, smartSubsample: true});
       assets.push({id: item.id, title: item.title, subtitle: item.subtitle, styleGroupId: item.styleGroupId,
         subjectTags: item.subjectTags, origin: 'project-ai-generated', status: item.review.status === 'reviewed' ? 'accepted' : 'pending-review',
         width: source.record.width, height: source.record.height, source: sourceRecord,
-        generation: {provider: 'OpenAI', tool: 'image_gen', native: {path: nativePath, ...native.record}, prompt: item.prompt,
+        generation: {...generation, native: {path: nativePath, ...native.record}, prompt: item.prompt,
           threadId: item.threadId, generatedAt: item.generatedAt, referencePaths: [...new Set(references)]},
-        export: {originalPath: sourcePath, width: source.record.width, height: source.record.height, isUpscaled: true},
+        export: {originalPath: sourcePath, width: source.record.width, height: source.record.height,
+          isUpscaled: source.record.width > native.record.width || source.record.height > native.record.height},
         review: item.review, delivery: {sourceSha256: source.record.sha256, play, thumbnail, optimized}});
       console.error(`已完成 ${++completed}/${manifest.length} ${item.id}，optimized ${optimized.bytes} 字节`);
     }

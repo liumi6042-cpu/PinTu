@@ -2,11 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {join, resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {healDeliveries} from '../asset-heal.mjs';
 
-const sharp = createRequire('D:/chat/拼图/jigsaw-nook-taptap/package.json')('sharp');
+const sharp = createRequire(resolve(import.meta.dirname, '../../jigsaw-nook-taptap/package.json'))('sharp');
 
 /**
  * A miniature two-tree project: one picture, correctly encoded, so a test can
@@ -28,13 +28,13 @@ async function seed({root, web, mobile}, {quality = 70, lifetime = 'fresh'} = {}
   for (const tree of [web, mobile]) writeFileSync(join(tree, 'public/puzzles', id + '.png'), original);
 
   const encode = async (kind, box, q) => {
-    const buffer = await sharp(original).resize({width: box, height: box, fit: 'inside', withoutEnlargement: true})
+    const buffer = await sharp(original).resize({width: box.width, height: box.height, fit: 'inside', withoutEnlargement: true})
       .webp({quality: q, effort: 6, smartSubsample: kind === 'optimized'}).toBuffer();
     const meta = await sharp(buffer).metadata();
     return {buffer, width: meta.width, height: meta.height};
   };
-  const optimized = await encode('optimized', 2560, quality);
-  const thumbnail = await encode('thumbnail', 384, 82);
+  const optimized = await encode('optimized', {width: 2560, height: 2560}, quality);
+  const thumbnail = await encode('thumbnail', {width: 384, height: 384}, 82);
   const crypto = await import('node:crypto');
   const digest = buffer => crypto.createHash('sha256').update(buffer).digest('hex');
 

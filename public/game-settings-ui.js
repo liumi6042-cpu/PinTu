@@ -1,3 +1,4 @@
+import {isRetiredDecoration} from '../decoration-policy.mjs';
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
 const ART_OPTIONS=[['star','星光'],['bow','蝴蝶结'],['butterfly','蝴蝶'],['feather','羽毛'],['moon','月牙'],['lantern','灯笼'],['leaf','叶子']];
 const SOURCE_LABELS={default:'默认赠送',craft:'碎片合成',album:'相册奖励'};
@@ -43,6 +44,7 @@ function growth(document){
 function decorations(document){
  const c=document.collection;
  const cards=document.decorations.map((item,index)=>{
+  if(isRetiredDecoration(item.id))return '';
   const prefix='decorations.'+index+'.';
   return `<section class="game-settings-card game-decoration-card"><div class="game-decoration-heading"><div class="game-decoration-preview" data-decoration-preview="${index}">${renderGameDecorationPreview(item)}</div><div><h2>${esc(item.title)}</h2><span class="chip">${esc(SOURCE_LABELS[item.source]??'装饰')}</span></div></div><div class="game-number-grid">${text(prefix+'title','装饰名称',item.title,{max:40})}<label class="field"><b>装饰图案</b><select name="${prefix}artKey" aria-label="${esc(item.title)}装饰图案">${ART_OPTIONS.map(([key,label])=>`<option value="${key}" ${item.artKey===key?'selected':''}>${label}</option>`).join('')}</select></label><label class="field"><b>装饰颜色</b><input name="${prefix}color" type="color" value="${esc(item.color)}" aria-label="${esc(item.title)}装饰颜色"></label>${item.source==='craft'?number(prefix+'cost','合成所需碎片',item.cost):`<div class="field game-fixed-field"><b>获得方式</b><span>${item.source==='album'?'相册收集奖励':'默认赠送'}</span><small>${item.source==='album'?'在对应相册的设置中选择赠送装饰和集齐张数。':'默认装饰无需合成。'}</small></div>`}</div><div class="game-space-top">${text(prefix+'description','装饰说明',item.description,{multiline:true,max:300,required:false})}</div>${toggle(prefix+'enabled','在装饰商店显示',item.enabled,'关闭后停止新合成，已获得装饰继续可用；图鉴奖励照常发放。')}</section>`;
  }).join('');

@@ -3,7 +3,7 @@ const mb = bytes => (Number(bytes || 0) / 1048576).toFixed(2);
 
 /**
  * Import panel: drop original PNGs, they are compressed to the delivery spec on
- * the server (Q70 / longest side 2560 plus a 384 thumbnail) and registered in the
+ * the server (Q70 / total pixels at most 6,553,600 plus a 384 thumbnail) and registered in the
  * private catalogue. Nothing reaches the game until 「提交到双端」.
  */
 export function renderImport(state) {
@@ -17,7 +17,7 @@ export function renderImport(state) {
       <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-import-files hidden>
       <span class="import-drop-icon">＋</span>
       <strong>选择或拖入图片</strong>
-      <small>PNG 原图优先，单张最大 40MB。自动压成 Q70 / 长边 2560，并生成 384 缩略图。</small>
+      <small>PNG 原图优先，单张最大 40MB。总像素不超过 6,553,600 时保留原尺寸，超出后按比例压成 Q70，并生成 384 缩略图。</small>
     </label>
     ${queue.length ? `<div class="import-queue">${queue.map((item, index) => `<div class="import-row">
       <span class="import-name">${esc(item.file.name)}<small>${mb(item.file.size)} MB</small></span>

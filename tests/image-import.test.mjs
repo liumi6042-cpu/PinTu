@@ -1,12 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, readdirSync} from 'node:fs';
-import {join} from 'node:path';
+import {join, resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createRequire} from 'node:module';
 
-const sharp = createRequire('D:/chat/拼图/jigsaw-nook-taptap/package.json')('sharp');
+const sharp = createRequire(resolve(import.meta.dirname, '../../jigsaw-nook-taptap/package.json'))('sharp');
 const {createImageImporter, IMAGE_SPEC} = await import('../image-import.mjs');
+const {deliveryDimensions} = await import('../delivery-spec.mjs');
 
 /** A small but real PNG, so sharp sees ordinary pixel data. */
 async function samplePng(width = 900, height = 600) {
@@ -24,7 +25,7 @@ function fixture() {
   return {root, pending, registryPath: join(pending, 'registry.json'), importer};
 }
 
-test('import compresses to Q70 / 2560 and registers two delivery files', async () => {
+test('import keeps a landscape image under the pixel cap and registers two delivery files', async () => {
   const {root, pending, registryPath, importer} = fixture();
   try {
     const bytes = await samplePng(3200, 2000);
@@ -32,7 +33,8 @@ test('import compresses to Q70 / 2560 and registers two delivery files', async (
     assert.equal(receipt.imported.length, 1);
     const row = receipt.imported[0];
     assert.ok(row.optimizedBytes < bytes.length, 'delivery must be smaller than the source');
-    assert.equal(row.width, IMAGE_SPEC.longSide, 'long side is capped at 2560');
+    assert.equal(row.width, 3200, 'an image under the pixel cap keeps its native width');
+    assert.equal(row.height, 2000, 'an image under the pixel cap keeps its native height');
 
     const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
     const asset = registry.assets[0];
@@ -66,6 +68,20 @@ test('a small picture keeps its own size and is never enlarged', async () => {
     assert.equal(row.height, 480);
     const asset = JSON.parse(readFileSync(registryPath, 'utf8')).assets[0];
     assert.equal(asset.delivery.optimized.upscaled, false);
+  } finally {
+    rmSync(root, {recursive: true, force: true, maxRetries: 8, retryDelay: 120});
+  }
+});
+
+test('an oversized picture is scaled proportionally to the total-pixel cap', async () => {
+  const {root, importer} = fixture();
+  try {
+    const bytes = await samplePng(4000, 3000);
+    const receipt = await importer.run([{name: 'large.png', bytes}], [{title: 'Large'}], {actor: 'tester'});
+    const row = receipt.imported[0];
+    const expected = deliveryDimensions(4000, 3000, IMAGE_SPEC.maxPixels);
+    assert.deepEqual({width: row.width, height: row.height}, expected);
+    assert.ok(row.width * row.height <= IMAGE_SPEC.maxPixels);
   } finally {
     rmSync(root, {recursive: true, force: true, maxRetries: 8, retryDelay: 120});
   }

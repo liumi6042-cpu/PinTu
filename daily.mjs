@@ -4,6 +4,8 @@ import {join} from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import {problem} from './store.mjs';
 
+// Same list as AD_UNLOCK_ALBUM_IDS in jigsaw-nook-taptap server/mobile-collection.mjs (治愈时光, 2026-11-05).
+export const AD_UNLOCK_ALBUM_IDS = Object.freeze(new Set(['healing-time']));
 const IMAGE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const DIGEST = /^[a-f0-9]{64}$/;
 const DAY = 86_400_000, CHINA_OFFSET = 8 * 60 * 60 * 1000;
@@ -87,21 +89,26 @@ export function dailyReadiness(document, source, sourceNeedsMerge = false) {
   return (document.dailyPlans ?? []).map(plan => {
     const asset = assets.get(plan.imageId);
     const album = document.albums.find(album => album.id === plan.albumId);
-    let reason = sourceNeedsMerge ? '来源内容已变化，合并后才能同步每日计划。'
+    let reason = document.assets?.[plan.imageId]?.deleted ? '图片已移到回收站，停止每日发布与自动收录。'
+      : sourceNeedsMerge ? '来源内容已变化，合并后才能同步每日计划。'
       : !albumIds.has(plan.albumId) ? '预选相册不存在。'
-        : !asset || asset.lifecycle !== 'retained' ? '图片尚未接入游戏。' : '';
+        : !asset || !(asset.runtimeAvailable ?? asset.lifecycle === 'retained') ? '图片尚未接入游戏。' : '';
     return {imageId: plan.imageId, ready: !reason, reason: reason || '可供小游戏读取；实际出场以游戏记录为准。'};
   });
 }
 
 export function buildDailyConfiguration(document, source) {
   const readyIds = new Set(dailyReadiness(document, source).filter(item => item.ready).map(item => item.imageId));
-  const usableIds = new Set(source.assets.filter(asset => asset.lifecycle === 'retained').map(asset => asset.id));
+  const usableIds = new Set(source.assets.filter(asset => (asset.runtimeAvailable ?? asset.lifecycle === 'retained') && !document.assets?.[asset.id]?.deleted).map(asset => asset.id));
   const entries = (document.dailyPlans ?? []).filter(plan => readyIds.has(plan.imageId) && !isAutomaticDailyPlan(plan))
     .map(({date, imageId, albumId}) => ({date, imageId, albumId})).sort((a, b) => a.date.localeCompare(b.date));
   const automaticCandidates = (document.dailyPlans ?? []).filter(plan => readyIds.has(plan.imageId) && isAutomaticDailyPlan(plan))
     .map(({imageId, albumId}) => ({imageId, albumId})).sort((a, b) => a.imageId.localeCompare(b.imageId));
-  const fallbackImageIds = [...new Set(document.albums.flatMap(album => album.imageIds).filter(id => usableIds.has(id)))].sort();
+  // Story-level albums (shiguang-ch1, shiguang-ch2, …) are only played as levels; their pictures never fill the daily pool.
+  const levelAlbum = album => /^shiguang-ch\d+$/.test(album.id);
+  // Pictures of an album unlocked one by one through rewarded ads (mobile backend AD_UNLOCK_ALBUM_IDS) never become a free daily puzzle.
+  const adOnly = new Set(document.albums.filter(album => AD_UNLOCK_ALBUM_IDS.has(album.id)).flatMap(album => album.imageIds));
+  const fallbackImageIds = [...new Set(document.albums.filter(album => !levelAlbum(album)).flatMap(album => album.imageIds).filter(id => usableIds.has(id) && !adOnly.has(id)))].sort();
   const related = new Set([...entries, ...automaticCandidates].map(entry => entry.albumId));
   const fields = ['id', 'title', 'description', 'showOnPc', 'showOnMobile', 'purchasable', 'price', 'decorationId', 'milestones'];
   const albums = document.albums.filter(album => related.has(album.id)).map(album => Object.fromEntries(fields.map(field => [field, copy(album[field])])))
@@ -223,6 +230,7 @@ export function createDailyCoordinator({store, getSource, validateDocument, brid
       for (const fact of [...store.dailyAppearances(), ...incoming].sort((a, b) => a.date.localeCompare(b.date)))
         if (fact.planned !== false && fact.albumId && !firstPlannedDays.has(fact.imageId)) firstPlannedDays.set(fact.imageId, fact.date);
       for (const plan of lockedByImage.values()) {
+        if (next.assets[plan.imageId]?.deleted) continue;
         const firstAppearanceDate = firstPlannedDays.get(plan.imageId);
         if (!firstAppearanceDate || firstAppearanceDate >= beijingDate(at) || enrollmentIds.has(plan.imageId)) continue;
         const destination = next.albums.find(album => album.id === plan.albumId);

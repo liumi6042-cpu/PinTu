@@ -22,10 +22,11 @@ import sys
 import tempfile
 import time
 
-PROJECT = pathlib.Path('D:/chat/拼图/work/dual-managed-release-20261014')
-WORK = pathlib.Path('D:/chat/拼图/content-admin/work/deploy-web-20261017')
-IDENTITY = r'C:\Users\Administrator\.ssh\webhosting_186_241_106_176_ed25519'
-HOST = 'root@162.251.94.145'
+WORKSPACE_ROOT = pathlib.Path(__file__).resolve().parents[2]
+PROJECT = pathlib.Path(os.environ.get('JIGSAW_WEB_TREE') or (WORKSPACE_ROOT / 'puzzle-play'))
+WORK = WORKSPACE_ROOT / 'content-admin/work/deploy-web'
+IDENTITY = os.environ.get('JIGSAW_SSH_IDENTITY') or str(pathlib.Path.home() / '.ssh/webhosting_186_241_106_176_ed25519')
+HOST = 'jigsaw-prod'  # ssh alias: root@162.251.94.92 with the pinned host key
 SLOT = '3104'
 # Connection multiplexing was tried and removed: this link resets the shared
 # control socket. Each call opens its own connection and retries on a drop.

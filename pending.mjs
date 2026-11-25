@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {existsSync, lstatSync, readFileSync, realpathSync} from 'node:fs';
 import {join, relative, resolve, sep} from 'node:path';
+import {MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const fail = message => {throw Object.assign(new Error(message), {status: 409, code: 'INVALID_PENDING_ASSET'});};
@@ -127,16 +128,14 @@ export function readPendingAssets(projectRoot = resolve(import.meta.dirname, '..
       const item = asset.delivery[kind];
       if (!plain(item) || item.format !== 'webp') fail('待整理素材 WebP 交付记录缺失：' + kind);
       const {size} = checkedImage(root, item, 'webp');
-      const cap = kind === 'optimized' ? 2560 : 384;
       const quality = kind === 'optimized' ? 70 : 82;
       if (size.lossless !== false || item.lossless !== false) fail('待整理素材交付必须是有损 WebP：' + kind);
       if (kind === 'thumbnail') {
         if (item.width > 480 || item.height > 384 || item.width > asset.source.width || item.height > asset.source.height) fail('待整理素材缩略图超过尺寸预算。');
         continue;
       }
-      const expected = Math.min(cap, Math.max(asset.source.width, asset.source.height));
-      if (Math.max(item.width, item.height) !== expected) fail('待整理素材交付长边必须为 ' + cap + ' 或原生尺寸：' + kind);
       if (item.width > asset.source.width || item.height > asset.source.height) fail('待整理素材交付不得放大：' + kind);
+      if (item.width * item.height > MAX_DELIVERY_PIXELS) fail('待整理素材交付超过总像素上限：' + kind);
       if (item.quality !== quality) fail('待整理素材交付质量必须为 Q' + quality + '：' + kind);
       const effort = item.effort ?? item.encoding?.effort;
       if (effort !== 6 || (item.smartSubsample ?? item.encoding?.smartSubsample) !== true) fail('待整理压缩交付参数不符：' + kind);

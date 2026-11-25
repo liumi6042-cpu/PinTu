@@ -1,7 +1,9 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $adminUrl = 'http://127.0.0.1:3214'
 $nodeExe = (Get-Command node -ErrorAction Stop).Source
-$adminRoot = (& $nodeExe -p 'require("node:fs").realpathSync(process.argv[1])' $PSScriptRoot).Trim()
+$resolvedAdminRoot = 'console.log(require("node:fs").realpathSync(process.argv[2]))' | & $nodeExe - $PSScriptRoot
+if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the admin project directory.' }
+$adminRoot = ([string]$resolvedAdminRoot).Trim()
 $adminWork = Join-Path $adminRoot 'work'
 New-Item -ItemType Directory -Path $adminWork -Force | Out-Null
 $running = $false

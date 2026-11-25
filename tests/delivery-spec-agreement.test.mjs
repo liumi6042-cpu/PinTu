@@ -46,7 +46,7 @@ test('the pixel budget stays a ceiling, not a target', () => {
 test('the Web tree is discovered rather than hard-coded', () => {
   const tree = webTree(projectRoot);
   assert.ok(existsSync(join(tree, 'content/puzzle-catalog.json')), '发现的 Web 树不像一棵内容树：' + tree);
-  assert.match(webTreeName(projectRoot), /^work\/dual-managed-release-\d{8}$/, 'Web 树路径格式意外：' + webTreeName(projectRoot));
+  assert.match(webTreeName(projectRoot), /^(?:puzzle-play|work\/dual-managed-release-\d{8})$/, 'Web 树路径格式意外：' + webTreeName(projectRoot));
   assert.ok(!webTreeName(projectRoot).includes('\\'), '相对路径必须是 POSIX 风格');
 });
 

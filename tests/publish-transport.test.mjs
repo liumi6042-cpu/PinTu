@@ -32,6 +32,27 @@ test('health headers accept only a strict host and forwarded protocol',()=>{
  for(const headers of [null,[],{Authorization:'fixture'},{Cookie:'fixture'},{constructor:'https'},{Host:'example.com\r\nCookie: fixture'},{Host:'bad host'},{Host:'https://example.com'},{Host:'-bad.example'},{Host:'example.com:65536'},{Host:'example.com',host:'second.example'},{'X-Forwarded-Proto':'https\r\nCookie: fixture'},{'X-Forwarded-Proto':'ftp'}])assert.throws(()=>validatePublishTransportConfig(withHeaders(headers)),{code:'INVALID_PUBLISH_CONFIG'});
 });
 
+test('optional local bind address accepts only literal IP addresses',()=>{
+ assert.equal(Object.hasOwn(validatePublishTransportConfig(config),'bindAddress'),false);
+ for(const bindAddress of ['10.0.0.195','::1'])assert.equal(validatePublishTransportConfig({...config,bindAddress}).bindAddress,bindAddress);
+ for(const bindAddress of [null,42,'','ethernet','localhost','999.0.0.1','[::1]','10.0.0.195 -o ProxyCommand=example','10.0.0.195\nProxyCommand=example'])assert.throws(()=>validatePublishTransportConfig({...config,bindAddress}),{code:'INVALID_PUBLISH_CONFIG'});
+});
+
+test('SSH and SCP share the optional bind option while the default adds none',async t=>{
+ const release=await fixture(t),receipt={schema:'jigsaw-content-publish-receipt/v1',releaseId:release.manifest.releaseId,ok:true,targets:[{id:'web',ok:true,contentReleaseId:release.manifest.releaseId},{id:'mobile',ok:true,contentReleaseId:release.manifest.releaseId}]};
+ for(const bindAddress of [undefined,'10.0.0.195','::1']){
+  const calls=[];
+  await publishRelease(release,{...config,...(bindAddress?{bindAddress}:{})},{runProcess:async(command,args)=>{calls.push({command,args});return{code:0,stdout:command==='ssh'&&args.at(-1).startsWith('python3')?JSON.stringify(receipt):'',stderr:''};}});
+  assert.deepEqual(calls.map(call=>call.command),['ssh','scp','ssh']);
+  for(const call of calls){
+   const options=call.args.filter(value=>value.startsWith('BindAddress='));
+   assert.deepEqual(options,bindAddress?['BindAddress='+bindAddress]:[]);
+   if(bindAddress)assert.equal(call.args[call.args.indexOf('BindAddress='+bindAddress)-1],'-o');
+   assert.ok(call.args.includes('StrictHostKeyChecking=yes'));
+  }
+ }
+});
+
 test('transport uploads only declared public release files and requires both current-version receipts',async t=>{
  const release=await fixture(t),calls=[];let activationRequest;
  const withHeaders={...config,targets:[{...config.targets[0],healthHeaders:{Host:'jigsawnook.online','X-Forwarded-Proto':'https'}},config.targets[1]]};

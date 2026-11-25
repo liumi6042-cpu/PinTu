@@ -77,7 +77,7 @@ test('independent PC edits and PC-only albums require a conflict resolution', ()
 });
 
 test('each display checkbox independently controls the same album members', () => {
-  const document = draft(), album = document.albums[0], original = visible(document, 'pc');
+  const document = validateDraft(draft(), source), album = document.albums[0], original = visible(document, 'pc');
   album.showOnPc = false;
   assert.equal(visible(document, 'pc').length, original.length - album.imageIds.length);
   assert.equal(visible(document, 'mobile-shared').length, original.length);
@@ -106,7 +106,7 @@ test('global ownership remains unique even when duplicate albums target differen
 });
 
 test('shared configuration preserves two flags and PC runtime support remains an explicit requirement', () => {
-  const document = draft(); document.albums[0].showOnPc = false;
+  const document = validateDraft(draft(), source); document.albums[0].showOnPc = false;
   const config = buildAlbumConfiguration(document, source);
   assert.equal(config.schema, 'jigsaw-content-albums/v3');
   assert.equal(config.sharedAlbums, true); assert.equal(config.unassignedImagesVisible, false);

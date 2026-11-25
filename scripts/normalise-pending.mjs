@@ -9,12 +9,13 @@ import {createRequire} from 'node:module';
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {basename, dirname, join} from 'node:path';
 
-const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
 import {deliveryDimensions, MAX_DELIVERY_PIXELS} from '../delivery-spec.mjs';
+import {defaultProjectRoot, mobileTree} from '../project-layout.mjs';
+const REQUIRE_FROM = join(mobileTree(defaultProjectRoot()), 'package.json');
 const QUALITY = 70, THUMB = 384, THUMB_QUALITY = 82, EFFORT = 6;
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 
-export async function normalisePending({projectRoot = 'D:/chat/拼图', ids = null, apply = false} = {}) {
+export async function normalisePending({projectRoot = defaultProjectRoot(), ids = null, apply = false} = {}) {
   const pendingRoot = join(projectRoot, 'content-admin/work/pending-assets');
   const registryPath = join(pendingRoot, 'registry.json');
   const registry = JSON.parse(readFileSync(registryPath, 'utf8'));

@@ -16,9 +16,9 @@ import {createRequire} from 'node:module';
 import {copyFileSync, existsSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import {basename, join, resolve} from 'node:path';
 import {deliveryDimensions, MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
-import {webTree} from './project-layout.mjs';
+import {defaultProjectRoot, mobileTree, webTree} from './project-layout.mjs';
 
-const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
+const REQUIRE_FROM = join(mobileTree(defaultProjectRoot()), 'package.json');
 export const DELIVERY_SPEC = {maxPixels: MAX_DELIVERY_PIXELS, quality: 70, thumbBox: 384, thumbQuality: 82, effort: 6};
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -108,16 +108,13 @@ function writeAll(file, text) {
 /**
  * @returns {{checked:number, healed:Array<{id:string,problems:string[]}>, skipped:Array<{id:string,reason:string}>}}
  */
-export async function healDeliveries({projectRoot = 'D:/chat/拼图'} = {}) {
+export async function healDeliveries({projectRoot = defaultProjectRoot()} = {}) {
   const project = resolve(projectRoot);
   const web = webTree(project);
   const mobile = join(project, 'jigsaw-nook-taptap');
   const registryPath = join(project, 'content-admin/work/pending-assets/registry.json');
-  // The admin compares the retired PC baseline (puzzle-play) with the mobile
-  // project, and the build reads the Web worktree. All three have to carry the
-  // same catalogue and provenance, so every write goes to all of them.
   const pcBaseline = join(project, 'puzzle-play');
-  const trees = [web, mobile, pcBaseline].filter(tree => existsSync(join(tree, 'content/puzzle-catalog.json')));
+  const trees = [...new Set([web, mobile, pcBaseline])].filter(tree => existsSync(join(tree, 'content/puzzle-catalog.json')));
 
   const cataloguePath = join(web, 'content/puzzle-catalog.json');
   const catalogue = JSON.parse(readFileSync(cataloguePath, 'utf8'));

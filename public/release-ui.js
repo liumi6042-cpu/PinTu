@@ -40,7 +40,7 @@ function renderHealing(healing) {
   if (!healing || !healing.healed?.length) return '';
   const rows = healing.healed.slice(0, 8).map(item => `<li>${esc(item.id)} — ${esc((item.problems || []).join('、'))}</li>`).join('');
   const more = healing.healed.length > 8 ? `<li>…另有 ${healing.healed.length - 8} 张</li>` : '';
-  return `<div class="release-assets"><strong>已自动压缩 ${esc(healing.healed.length)} 张图片</strong><span>这些图片原来是别的编码参数，提交前统一成 Q70 / 长边 2560 并重新生成缩略图。原图保留。</span><ul class="release-healed">${rows}${more}</ul></div>`;
+  return `<div class="release-assets"><strong>已自动压缩 ${esc(healing.healed.length)} 张图片</strong><span>这些图片原来是别的编码参数，提交前统一成 Q70；总像素不超过 6,553,600 的图片保留原尺寸，超出后按比例缩小。原图保留。</span><ul class="release-healed">${rows}${more}</ul></div>`;
 }
 
 export function renderReleasePreview(prepared, status, assets) {

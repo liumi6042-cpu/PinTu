@@ -10,9 +10,9 @@ import {existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, write
 import {spawnSync} from 'node:child_process';
 import {dirname, join, resolve} from 'node:path';
 import {deliveryDimensions, MAX_DELIVERY_PIXELS} from './delivery-spec.mjs';
-import {mobileTree, webTree} from './project-layout.mjs';
+import {defaultProjectRoot, mobileTree, webTree} from './project-layout.mjs';
 
-const REQUIRE_FROM = 'D:/chat/拼图/jigsaw-nook-taptap/package.json';
+const REQUIRE_FROM = join(mobileTree(defaultProjectRoot()), 'package.json');
 const QUALITY = 70;
 const THUMB_BOX = 384;
 const THUMB_QUALITY = 82;
@@ -150,7 +150,7 @@ async function importOne({sharp, bytes, originalName, draft, pendingRoot, batchD
 
 /** Write the batch into the private registry, refusing to overwrite an existing ID. */
 export function createImageImporter({projectRoot, pendingRoot, registryPath, dataDir} = {}) {
-  const project = resolve(projectRoot ?? 'D:/chat/拼图');
+  const project = resolve(projectRoot ?? defaultProjectRoot());
   const pending = resolve(pendingRoot ?? join(project, 'content-admin/work/pending-assets'));
   const registry = resolve(registryPath ?? join(pending, 'registry.json'));
   const work = resolve(dataDir ?? join(project, 'content-admin/work'));

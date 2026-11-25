@@ -3,6 +3,7 @@ import {createHash,randomBytes} from 'node:crypto';
 import {mkdtemp,readFile,realpath,rm,writeFile} from 'node:fs/promises';
 import {isAbsolute,join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {isIP} from 'node:net';
 
 const PUBLIC_FILES=new Set(['albums.json','daily.json','game-settings.json','task-rewards.json','assets.json']);
 const ROOT_ALLOWLIST=new Set(['/srv/sites/jigsaw-content']);
@@ -44,6 +45,8 @@ export function validatePublishTransportConfig(input,{allowedRemoteRoots=[...ROO
  if(typeof remoteRoot!=='string'||!/^\/[a-zA-Z0-9/_-]+$/.test(remoteRoot)||remoteRoot.includes('//')||remoteRoot.endsWith('/')||!allowedRemoteRoots.includes(remoteRoot))throw fail('INVALID_PUBLISH_CONFIG','发布目录不在服务器允许的目录范围内。');
  const identityFile=input.identityFile;
  if(identityFile!==undefined&&(typeof identityFile!=='string'||!isAbsolute(identityFile)||/[\r\n\0]/.test(identityFile)))throw fail('INVALID_PUBLISH_CONFIG','SSH 私钥必须使用本机绝对路径。');
+ const bindAddress=input.bindAddress;
+ if(bindAddress!==undefined&&(typeof bindAddress!=='string'||isIP(bindAddress)===0))throw fail('INVALID_PUBLISH_CONFIG','SSH 本机绑定地址必须是有效的 IPv4 或 IPv6 地址。');
  const targets=input.targets;
  if(!Array.isArray(targets)||targets.length!==2||new Set(targets.map(item=>item?.id)).size!==2||targets.some(item=>!['web','mobile'].includes(item?.id)))throw fail('INVALID_PUBLISH_CONFIG','必须同时配置网页端和小程序端。');
  const normalizedTargets=targets.map(item=>{
@@ -54,7 +57,7 @@ export function validatePublishTransportConfig(input,{allowedRemoteRoots=[...ROO
  });
  const timeoutMs=input.timeoutMs??180000;
  if(!Number.isInteger(timeoutMs)||timeoutMs<1000||timeoutMs>240000)throw fail('INVALID_PUBLISH_CONFIG','发布超时时间必须在 1 秒到 4 分钟之间。');
- return {schema:'jigsaw-publish-transport/v1',host,remoteRoot,...(identityFile?{identityFile}:{}),targets:normalizedTargets,timeoutMs};
+ return {schema:'jigsaw-publish-transport/v1',host,remoteRoot,...(identityFile?{identityFile}:{}),...(bindAddress===undefined?{}:{bindAddress}),targets:normalizedTargets,timeoutMs};
 }
 
 function runProcess(command,args,{timeoutMs}){
@@ -86,7 +89,7 @@ export async function publishRelease(release,configuration,options={}){
  if(config.identityFile){try{await realpath(config.identityFile);}catch{throw fail('INVALID_PUBLISH_CONFIG','配置的 SSH 私钥文件不可用。');}}
  const stageName=releaseId+'-'+randomBytes(8).toString('hex'),stage=config.remoteRoot+'/.incoming/'+stageName;
  const temporary=await mkdtemp(join(resolve(releaseDir,'../..'),'.publish-'));
- const sshOptions=['-o','BatchMode=yes','-o','ConnectTimeout=10','-o','StrictHostKeyChecking=yes',...(config.identityFile?['-i',config.identityFile]:[])];
+ const sshOptions=['-o','BatchMode=yes','-o','ConnectTimeout=10','-o','StrictHostKeyChecking=yes',...(config.bindAddress?['-o','BindAddress='+config.bindAddress]:[]),...(config.identityFile?['-i',config.identityFile]:[])];
  const ssh=remoteCommand=>run('ssh',[...sshOptions,'-T',config.host,remoteCommand],{timeoutMs:config.timeoutMs});
  try{
   const request={schema:'jigsaw-content-activation/v1',releaseId,manifestSha256,remoteRoot:config.remoteRoot,targets:config.targets,healthTimeoutSeconds:30,preflightTimeoutSeconds:45};

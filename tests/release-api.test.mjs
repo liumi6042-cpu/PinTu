@@ -39,7 +39,7 @@ test('release routes require session and CSRF; preview only uses saved data and 
  const status=await request('/api/releases/status');assert.equal(status.status,200);assert.equal(status.body.configured,false);assert.equal(status.body.current,null);
  const preview=await request('/api/releases/prepare','POST',{});assert.equal(preview.status,201,JSON.stringify(preview.body));
  assert.deepEqual(preview.body.sourceVersions,{draftId:before.draft.id,draftRevision:before.draft.revision,gameRevision:before.game.revision,taskRevision:before.tasks.revision});
- assert.equal(preview.body.summary.albumCount,before.draft.document.albums.length);assert.equal(preview.body.summary.pendingImageCount,source.assets.filter(asset=>asset.lifecycle==='pending').length);
+ assert.equal(preview.body.summary.albumCount,before.draft.document.albums.length);assert.equal(preview.body.summary.pendingImageCount,source.assets.filter(asset=>asset.lifecycle==='pending'&&!asset.runtimeAvailable).length);
  assert.equal(preview.body.files.length,5);assert.equal(readManagedRelease(join(directory,'content-releases')),null);
  const confirmation={releaseId:preview.body.releaseId,manifestSha256:preview.body.manifestSha256};
  const noConfig=await request('/api/releases/confirm','POST',confirmation);assert.equal(noConfig.status,503);assert.equal(noConfig.body.code,'PUBLISH_NOT_CONFIGURED');assert.equal(calls,0);

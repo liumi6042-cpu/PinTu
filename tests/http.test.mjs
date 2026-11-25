@@ -263,7 +263,7 @@ test('HTTP authorization, draft concurrency and compatible version lifecycle', {
     assert.ok(exportedCandidate.files.length > 0);
     assert.equal(exportedCandidate.document, undefined, 'public candidate downloads must not include a private CMS draft');
     assert.ok(exportedCandidate.files.every(file => !/image-provenance|\.sqlite|player|password|secret/i.test(file.path)));
-    for (const asset of app.source.assets.filter(asset => asset.lifecycle === 'pending')) assert.ok(exportedCandidate.files.every(file => !file.content.includes(asset.id)), 'pending artwork must stay out of public runtime candidates');
+    for (const asset of app.source.assets.filter(asset => asset.lifecycle === 'pending' && !asset.runtimeAvailable)) assert.ok(exportedCandidate.files.every(file => !file.content.includes(asset.id)), 'pending artwork must stay out of public runtime candidates');
     const beforePlanning = structuredClone(draft.document);
     const planned = structuredClone(draft.document);
     planned.albums[0].price += 1;
