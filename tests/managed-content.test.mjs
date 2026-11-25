@@ -11,6 +11,7 @@ import {buildAlbumConfiguration} from '../server/album-content.mjs';
 import {createDailyContent} from '../server/daily-content.mjs';
 import {checkContentRelease} from '../scripts/check-content-release.mjs';
 import guidance from '../content/puzzle-guidance.json' with {type:'json'};
+import catalog from '../content/puzzle-catalog.json' with {type:'json'};
 
 globalThis.__contentTestEnv={};
 registerHooks({resolve(specifier,context,next){
@@ -56,7 +57,8 @@ test('missing pointer stays legacy; switching versions keeps each operation pinn
 });
 
 test('every delivered photo carries measured dimensions; missing dimensions fail preflight',()=>{
- assert.equal(managedPhotos.length,134);
+ assert.equal(managedPhotos.length,catalog.length);
+ assert.ok(managedPhotos.length>=134);
  for(const photo of managedPhotos){assert.ok(Number.isSafeInteger(photo.width)&&photo.width>0,photo.id);assert.ok(Number.isSafeInteger(photo.height)&&photo.height>0,photo.id);assert.equal(photo.width,guidance[photo.id].width);assert.equal(photo.height,guidance[photo.id].height);}
  const historical=managedPhotos.find(photo=>photo.id==='coral-garden');assert.equal(historical.width,1774);assert.equal(historical.height,887);
  const f=fixture();try{f.publish('bad-dimensions');assert.throws(()=>readNodeManagedContent({directory:f.root,photos:photos.map(photo=>({...photo,width:undefined}))}),{status:503});}finally{f.close();}
