@@ -1,4 +1,4 @@
-import type {Platform,Input,Rect,Route,WebLinks} from './ports';
+import type {AdPlacementKey,Platform,Input,Rect,Route,TelemetryBridge,WebLinks} from './ports';
 import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
 import {timeLabelFor,nodeState} from './story-timeline';
@@ -41,7 +41,7 @@ import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import {HAIRPIN_ID,STREAK_SEEN_KEY,WEEKLY_GIFT_KEY,beijingDay,breathScale,chapterProgress,completionFooter,completionPrimary,readShownDay,readStreakSeen,streakBadge,streakHint,streakToast,teaserLine,weeklyCell,weeklyGiftAutoShow,weeklyGrantText,weeklyTaskRow,type RetentionSummary,type RetentionView,type WeeklyGrant} from './retention';
 import publicPhrases from '../config/social-phrases.json';
-import type {MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom,MobileLevelsView,MobileLevelClear,MobileChapter,MobileLevel} from '../h5/mobile-api';
+import type {MobileProfile,MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom,MobileLevelsView,MobileLevelClear,MobileChapter,MobileLevel} from '../h5/mobile-api';
 import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {RoomCard} from '../lib/lobby-types';
 import type {AssistanceGrant} from '../lib/assistance-policy';
@@ -103,7 +103,7 @@ export class GameApp{
  private readonly offline:OfflineMode;
  private get offlineRoom(){return this.offline?.isRoom(this.room?.ticket?.room?.id)??false;}
  private syncOffline(){if(this.ready)void this.offline?.sync(this.client,levels=>{this.levels=levels;this.levelsOwner=this.ownerKey();this.invalidate();},message=>this.note(message));}
- private enterOffline(){this.offline.active=true;this.route='chapter';this.scroll=0;this.modal=null;this.invalidate();}
+ private enterOffline(){this.offline.active=true;this.initTelemetryOnce(this.client.profile);this.route='chapter';this.scroll=0;this.modal=null;this.invalidate();}
  private async launchOffline(input:OfflineInput){await this.attachTicket(this.offline.createRoom(input));}
  private privacyAccepted=false;private privacyDocument:'privacy'|'terms'|null=null;private privacyRefused=false;private privacyEpoch=0;private authorizationTesting=false;private loginDialogActive=false;private authorizationNudged=false;private loginLogOpen=false;private loginLogReturnScroll=0;
  private identityHook=false;private consentPreparing=false;private consentError='';
@@ -168,6 +168,7 @@ export class GameApp{
  private readonly social:SocialPanel;
  private readonly shareReward:TaskShareReward;
  private readonly audioSettings:AudioSettings;
+ private readonly telemetry?:TelemetryBridge;private telemetryLobbyMarked=false;private telemetryFallback:ReturnType<typeof setTimeout>|null=null;
  private timers:Array<ReturnType<typeof setInterval>>=[];private cleanups:Array<()=>void>=[];private attempts=new Map<string,string>();
  private handledQueries=new Set<string>();
  // 七日礼 / 每日拼图连续天数 (server capabilities weeklyGift / dailyStreak).
@@ -202,6 +203,7 @@ export class GameApp{
   try{this.lockButtonEnabled=platform.storage.get(LOCK_BUTTON_KEY)==='1';this.viewLocked=this.lockButtonEnabled&&platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
   try{this.minimapEnabled=platform.storage.get(MINIMAP_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
+  this.telemetry=platform.createTelemetry?.();
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>this.socialRoom(),snapshot:state=>this.socialSnapshot(state)});
   this.inviteSeen=new InviteSeenStore(platform.storage);
   this.inviteQueue=new RoomInviteQueue({send:job=>this.sendRoomInvite(job),randomId:()=>this.platform.randomId(),changed:()=>this.invalidate(),sent:job=>this.roomInviteSent(job),failed:error=>{if((error as {code?:string})?.code!=='ROOM_LEFT')this.note(errorText(error));}});
@@ -348,6 +350,29 @@ export class GameApp{
   try{await this.run(async()=>{try{await this.client.reauthorizeTapTap();if(!this.ready)await this.start();this.note('昵称授权与账号重连已完成，原进度保留');}catch(error){if(!this.ready)this.startupError=errorText(error);throw error;}});}
   finally{this.authorizationTesting=false;this.loginDialogActive=false;this.invalidate();}
  }
+ private clearTelemetryFallback(){if(this.telemetryFallback!==null){clearTimeout(this.telemetryFallback);this.telemetryFallback=null;}}
+ private initTelemetryOnce(profile:MobileProfile|null|undefined=this.client.profile){
+  if(!this.telemetry||this.destroyed||this.needsPrivacyChoice)return;
+  this.telemetry.init(profile);this.prepareRewardedAd();
+  if(profile){if(!this.telemetryLobbyMarked){this.telemetryLobbyMarked=true;this.telemetry.milestone('new_user','进入大厅');}if(profile.level>=5)this.telemetry.milestone('global','达到5级');}
+ }
+ private checkLevelMilestone(){if((this.client.profile?.level??0)>=5)this.telemetry?.milestone('global','达到5级');}
+ private storyLevelNumber(levelId:string|null|undefined):number|undefined{
+  if(!levelId)return undefined;
+  const chapters=this.storyView?.chapters??this.levels?.chapters??this.offline?.catalog?.chapters;
+  if(!chapters)return undefined;
+  const ordered=chapters.flatMap(chapter=>chapter.levels.map(level=>level.id));
+  const index=ordered.indexOf(levelId);
+  return index>=0?index+1:undefined;
+ }
+ private roomTelemetryMode(room:RoomClient,offline:boolean):string{
+  const levelId=room.snapshot.levelId;
+  if(offline)return levelId?'离线闯关':'离线自由拼图';
+  if(levelId)return '剧情闯关';
+  if(this.dailyPhoto?.id&&room.snapshot.puzzle.imageId===this.dailyPhoto.id)return '每日拼图';
+  if(room.snapshot.visibility==='private'||room.snapshot.visibility==='solo')return '私人房';
+  return '多人公开房';
+ }
  async start(){
   if(this.destroyed)return;
   if(!this.identityHook&&this.platform.onIdentityChange){this.identityHook=true;this.cleanups.push(this.platform.onIdentityChange(()=>{if(this.destroyed)return;this.stage.input({type:'cancel',points:[],changed:[]});this.pointer=null;this.invalidate();}));}
@@ -360,18 +385,20 @@ export class GameApp{
   }
   this.startupError='';this.invalidate();
   const epoch=this.privacyEpoch;
+  this.clearTelemetryFallback();
+  this.telemetryFallback=setTimeout(()=>{this.telemetryFallback=null;if(!this.destroyed&&!this.needsPrivacyChoice&&epoch===this.privacyEpoch)this.initTelemetryOnce(this.client.profile);},2500);
   this.startupPending=(async()=>{
-  try{await this.client.start();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;if(this.client.profile&&!this.soloOutboxesFlushed){this.soloOutboxesFlushed=true;void flushStoredSoloOutboxes({storage:this.platform.storage,fetch:this.offline.onlineFetch(this.client.fetchLike),now:()=>Date.now(),randomId:()=>this.platform.randomId(),skipRoomId:this.room?.ticket.room.id}).catch(()=>{});}this.ready=true;this.loginDialogActive=false;this.offline.active=false;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);this.syncOffline();}
-  catch(error){if(!this.destroyed){this.startupError=errorText(error);this.invalidate();}}
+  try{await this.client.start();this.clearTelemetryFallback();if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;this.initTelemetryOnce(this.client.profile);if(this.client.profile&&!this.soloOutboxesFlushed){this.soloOutboxesFlushed=true;void flushStoredSoloOutboxes({storage:this.platform.storage,fetch:this.offline.onlineFetch(this.client.fetchLike),now:()=>Date.now(),randomId:()=>this.platform.randomId(),skipRoomId:this.room?.ticket.room.id}).catch(()=>{});}this.ready=true;this.loginDialogActive=false;this.offline.active=false;this.message='';if(this.client.tapNotice)this.note(this.client.tapNotice);this.invalidate();const query=this.startupQuery??this.platform.initialQuery;this.startupQuery=null;await this.loadInitialContent(query,epoch);this.syncOffline();}
+  catch(error){this.clearTelemetryFallback();if(!this.destroyed){if(!this.needsPrivacyChoice&&epoch===this.privacyEpoch)this.initTelemetryOnce(this.client.profile);this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.modal==='social'||this.modal==='invite'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat'||this.route==='room'&&this.layout==='desktop')void this.loadChat();},3000));
   this.timers.push(setInterval(()=>this.tickVisibleTime(),1000));
   this.invalidate();
-  })().finally(()=>{if(epoch===this.privacyEpoch){this.startupPending=null;this.loginDialogActive=false;if(!this.destroyed)this.invalidate();}});
+  })().finally(()=>{this.clearTelemetryFallback();if(epoch===this.privacyEpoch){this.startupPending=null;this.loginDialogActive=false;if(!this.destroyed)this.invalidate();}});
   return this.startupPending;
  }
- destroy(){this.destroyed=true;this.releaseComicBack();this.stopStoryFrame();this.finishOrientationOffer();this.platform.cancelShare?.();this.platform.cancelIdentity?.();this.pendingViews?.invalidate();this.cancelChatPress();this.social.destroy();this.leaveRoom();this.client.onChange=undefined;for(const timer of this.timers)clearInterval(timer);for(const cleanup of this.cleanups)cleanup();}
+ destroy(){this.destroyed=true;this.clearTelemetryFallback();this.releaseComicBack();this.stopStoryFrame();this.finishOrientationOffer();this.platform.cancelShare?.();this.platform.cancelIdentity?.();this.pendingViews?.invalidate();this.cancelChatPress();this.social.destroy();this.leaveRoom();this.telemetry?.close();this.client.onChange=undefined;for(const timer of this.timers)clearInterval(timer);for(const cleanup of this.cleanups)cleanup();}
  private async loadInitialContent(query:Record<string,string>,epoch=this.privacyEpoch){
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
   if(this.offlineRoom)return;
@@ -844,7 +871,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(this.room===room)await network.drop(group.id,0,0);
   });
  }
- private leaveRoom(){if(this.room)this.inviteQueue?.cancel(this.room.ticket.room.id);this.storyIntro=null;this.roomVariant=null;this.stopStoryFrame();this.clearCompletionTransition();this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.setCompletionPhase('idle');this.room=null;this.board=null;this.aid=null;}
+ private leaveRoom(){this.telemetry?.endAttempt('quit');if(this.room)this.inviteQueue?.cancel(this.room.ticket.room.id);this.storyIntro=null;this.roomVariant=null;this.stopStoryFrame();this.clearCompletionTransition();this.cheer?.close();this.cheer=null;this.stopCheers();this.cursor?.stop();this.cursor=null;this.cursorVisible=false;this.detachRoom?.();this.unsubscribeRoom?.();this.room?.leave();this.realtime?.close();this.realtime=null;this.board?.destroy?.();this.detachRoom=null;this.unsubscribeRoom=null;this.setCompletionPhase('idle');this.room=null;this.board=null;this.aid=null;}
  private async attachTicket(ticket:RoomTicket){
   this.clearCompletionTransition();
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
@@ -858,12 +885,18 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:local-play-error'&&this.room===room)this.platform.loginLog?.add('本地拼图出错，改为联网拼 · '+String((detail as {message?:string})?.message??'').slice(0,80));
    if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
-   if(name==='puzzle:successful-drop'&&this.room===room)this.board?.confirmMobileContribution(detail as MobileContributionReceipt);
+   if(name==='puzzle:successful-drop'&&this.room===room){this.board?.confirmMobileContribution(detail as MobileContributionReceipt);if(!this.nineGridRoom)this.telemetry?.milestone('new_user','完成首次拼合');}
    if(name==='mobile:profile')this.invalidate();
    if(name==='room:request-timing'&&this.room===room){const timing=detail as RoomRequestTiming;if(timing.action==='drop-start'){for(const key of ['drop','drop-queue','drop-total'])this.nineTimings.delete(key);}this.nineTimings.set(timing.action,timing);this.invalidate();}
    if(name==='mobile:gameplay-error')this.note((detail as {message?:string})?.message||'操作暂未完成');
    if(name==='mobile:energy-empty'){if(this.energyEnabled){this.note('体力不足，请使用礼包或补给');this.navigate('supplies');}else this.note('当前游戏规则需要重新连接，请返回大厅后再进入房间');}
   }});this.room=room;this.setCompletionPhase('idle');this.completionLive=!room.snapshot.completedAt;
+  if(!this.nineGridRoom&&!room.snapshot.completedAt){
+   const levelId=room.snapshot.levelId??undefined,mode=this.roomTelemetryMode(room,offline),pieces=room.snapshot.requestedPieces??(room.snapshot.puzzle.cols*room.snapshot.puzzle.rows);
+   this.telemetry?.startAttempt({levelId:levelId??room.snapshot.puzzle.imageId,levelNo:this.storyLevelNumber(levelId),mode,pieces,randomId:()=>this.platform.randomId()});
+   this.telemetry?.milestone('new_user','开始首局拼图');
+   if(!offline&&!levelId)this.telemetry?.milestone('global','体验多人房间');
+  }
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);board.trayKey=room.snapshot.id;this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;
   // 回忆变奏关: set before the room attaches, so a wind room's kept pieces are drawn where the player left them.
   this.roomVariant=this.storyRoomVariant(ticket,room);if(this.roomVariant)board.setVariant(boardVariant(this.roomVariant,ticket.room.id));board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
@@ -878,7 +911,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private syncCompletion(room:RoomClient){
   if(this.room!==room)return;const chapter=this.chapterForLevel(this.room.snapshot.levelId??this.room.snapshot.mobileResult?.levelClear?.levelId);if(chapter)this.syncComicClear(chapter);if(!room.snapshot.completedAt)this.completionLive=true;
-  if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{if(this.offlineRoom){room.flushSoloNow();}else{void this.client.refresh().catch(()=>{});void this.loadCollection();}if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}}}if(this.offlineRoom&&room.snapshot.completedAt)this.syncOffline();this.invalidate();
+  if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.telemetry?.endAttempt('win');this.telemetry?.milestone('new_user','完成首局拼图');this.telemetry?.milestone('global','完成任意拼图');const clearedLevelId=room.snapshot.levelId??room.snapshot.mobileResult?.levelClear?.levelId;if(clearedLevelId==='ch1-1')this.telemetry?.milestone('global','通关故事1-1');if(chapter?.id==='ch1'&&(room.snapshot.mobileResult?.levelClear?.chapterComplete===true||chapter.levels.every(lv=>lv.status==='cleared'||lv.id===clearedLevelId)))this.telemetry?.milestone('global','通关第一章');if(this.offlineRoom){room.flushSoloNow();}else{void this.client.refresh().then(()=>this.checkLevelMilestone()).catch(()=>{});void this.loadCollection();}if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}}}if(this.offlineRoom&&room.snapshot.completedAt)this.syncOffline();this.invalidate();
  }
  private clearCompletionTransition(){if(this.completionFxFrame!=null)this.platform.cancelFrame(this.completionFxFrame);this.completionFxFrame=null;this.completionFx=null;this.completionFxRect=null;this.completionCheerQueue=[];this.completionLive=false;this.settleButtonRect=null;}
  private beginCompletionTransition(){
@@ -923,10 +956,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(result!=='shared')throw Error(result==='copied'?'仅复制链接不会发奖，请在分享面板选择好友或分享渠道':result==='cancelled'?'已取消分享，本次未领取奖励':'TapTap分享面板暂不可用，请从TapTap内打开新测试包后重试');
  }
  /** Watch a TapTap rewarded video; if TapTap is disconnected/unavailable, skip the ad so rewards still succeed. */
- private async watchTapTapAd(kindLabel:string):Promise<{skipped:boolean}>{
+ private async watchTapTapAd(kindLabel:string,placementKey:AdPlacementKey,payload?:Record<string,unknown>):Promise<{skipped:boolean}>{
   if(!this.supplyAdAvailable)return {skipped:true};
+  const unit=this.rewardedSlot().unit;if(!unit)return {skipped:true};
   let outcome:string;
-  try{outcome=await this.platform.watchAd(this.rewardedSlot().unit);}catch{outcome='failed';}
+  try{outcome=this.telemetry?.adEnabled?await this.telemetry.watchRewardedAd(placementKey,unit,payload):await this.platform.watchAd(unit);}catch{outcome='failed';}
   if(outcome==='completed')return {skipped:false};
   if(outcome==='closed')throw Error('广告未完整观看，本次未领取'+kindLabel);
   // 与 TapTap 断连或广告不可用/加载失败时，自动跳过广告，不影响正常获取。
@@ -937,17 +971,17 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(!this.room||!this.aid)return;if(this.activeAid(kind))return;
   await this.run(async()=>{const room=this.room!,key='aid-ad:'+room.ticket.room.id+':'+kind,headers={Authorization:'Bearer '+room.ticket.token,'Content-Type':'application/json'},path='/api/rooms/'+room.ticket.room.id+'/assistance',context='room/'+room.ticket.room.id,storageKey='jigsaw:ad:'+this.platform.config.apiBase+':'+(this.client.profile?.code??'')+':'+key;
    let pending:any=null;try{const stored=JSON.parse(this.platform.storage.get(storageKey)||'null');if(stored?.kind===kind&&stored.context===context&&stored.completed===true)pending=stored;}catch{}
-   const requestId=pending?.requestId??this.attempt(key),wantLasting=kind==='hint';let data:any;
+   const requestId=pending?.requestId??this.attempt(key),wantLasting=kind==='hint';let usedAd=!!pending,data:any;
    try{data=await this.client.json(path,'POST',pending??(wantLasting?{kind,requestId,lasting:true}:{kind,requestId}),headers);}catch(error){
     if(pending&&[400,401,403,410].includes((error as{status?:number}).status??0)){this.platform.storage.remove(storageKey);this.attempts.delete(key);throw error;}
     const code=(error as{code?:string}).code;if(code!=='AD_REQUIRED'&&code!=='SHARE_REQUIRED')throw error;
-    const adResult=await this.watchTapTapAd(kind==='hint'?'提示':'底图');
+    const adResult=await this.watchTapTapAd(kind==='hint'?'提示':'底图',kind==='hint'?'room_hint':'room_underlay',{room_mode:this.roomTelemetryMode(room,false),pieces:room.snapshot.requestedPieces??(room.snapshot.puzzle.cols*room.snapshot.puzzle.rows)});
     const challenge=await this.client.json<{rewardToken:string}>('/api/rewarded/challenge','POST',{kind,requestId,context,...(adResult.skipped?{adSkipped:true}:{})},headers);
     pending={kind,requestId,context,rewardToken:challenge.rewardToken,completed:true,...(adResult.skipped?{adSkipped:true}:{}),...(wantLasting?{lasting:true}:{})};
-    this.platform.storage.set(storageKey,JSON.stringify(pending));
+    this.platform.storage.set(storageKey,JSON.stringify(pending));usedAd=true;
     data=await this.client.json(path,'POST',pending,headers);
    }
-   this.platform.storage.remove(storageKey);this.attempts.delete(key);if(this.room!==room)return;const offset=Date.now()-data.serverTime;this.aid={...data,grants:data.grants.map((grant:AssistanceGrant)=>({...grant,expiresAt:grant.expiresAt+offset}))};if(kind==='underlay')this.underlayHiddenRoom=null;this.applyAssistance();const lasting=data.grants.some((grant:AssistanceGrant)=>grant.kind===kind&&grant.lasting);this.note(kind==='hint'?(lasting?'提示已开启，拼好这几块前一直有效':'提示已开启30秒'):'底图已开启30秒');
+   this.platform.storage.remove(storageKey);this.attempts.delete(key);if(this.room!==room)return;const offset=Date.now()-data.serverTime;this.aid={...data,grants:data.grants.map((grant:AssistanceGrant)=>({...grant,expiresAt:grant.expiresAt+offset}))};if(kind==='underlay')this.underlayHiddenRoom=null;this.applyAssistance();if(usedAd)this.telemetry?.milestone('new_user','使用补给或看广告');const lasting=data.grants.some((grant:AssistanceGrant)=>grant.kind===kind&&grant.lasting);this.note(kind==='hint'?(lasting?'提示已开启，拼好这几块前一直有效':'提示已开启30秒'):'底图已开启30秒');
   });
  }
  private async claimSupply(kind:'energy'|'create'){
@@ -964,7 +998,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  /** 当前画面方向对应的激励广告位；服务端未分横竖屏时沿用 rewardedAdUnitId。 */
  private rewardedSlot(){const v=typeof this.platform.viewport==='function'?this.platform.viewport():undefined,orientation:'portrait'|'landscape'=v&&v.width>v.height?'landscape':'portrait',c=this.client.config;return {orientation,unit:(orientation==='landscape'?c.rewardedAdUnitIdLandscape:c.rewardedAdUnitIdPortrait)||c.rewardedAdUnitId};}
  /** 官方做法：广告实例提前创建并预加载，点击时直接展示。重复调用只查表。 */
- private prepareRewardedAd(){if(this.supplyAdAvailable)this.platform.prepareAd?.(this.rewardedSlot().unit);}
+ private prepareRewardedAd(){if(!this.supplyAdAvailable)return;const unit=this.rewardedSlot().unit;if(!unit)return;if(this.telemetry?.adEnabled)this.telemetry.prepareAd(unit);else this.platform.prepareAd?.(unit);}
  private async testRewardedAd(){
   if(!this.adTestingAllowed)return;
   // 优先使用服务端按方向下发的广告位；暂停广告时，诊断入口使用官方H5匹配且已真机验证的广告位。
@@ -980,12 +1014,12 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    const storageKey='jigsaw:shared:supply-ad:v1:'+this.platform.config.apiBase+':'+profile.code;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
    // A video already watched is redeemed first, whichever supply it was for.
    if(!pending?.completed){const name=kind==='energy'?'体力包':'建房券';if(profile.supply[kind]>=3)throw Error('库存已满，使用后再领取');
-    const adResult=await this.watchTapTapAd(name);
+    const adResult=await this.watchTapTapAd(name,kind==='energy'?'supply_energy':'supply_create_ticket',{supply_kind:kind});
     const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/supply/challenge',{kind,requestId,...(adResult.skipped?{adSkipped:true}:{})},5000);
     pending={kind,requestId,rewardToken:challenge.rewardToken,completed:true,...(adResult.skipped?{adSkipped:true}:{})};
     this.platform.storage.set(storageKey,JSON.stringify(pending));
    }
-   try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.note(pending.kind==='create'?'建房券已补满，可以开桌了':'体力包 +1，已存入库存');
+   try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.telemetry?.milestone('new_user','使用补给或看广告');this.note(pending.kind==='create'?'建房券已补满，可以开桌了':'体力包 +1，已存入库存');
   });
  }
  /** One completed rewarded ad unlocks one picture of an ad album (server: /api/mobile/collection/unlock/*).
@@ -996,7 +1030,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(!pending?.completed||typeof pending.imageId!=='string'){
     if(!this.energyAdAvailable)throw Error('广告暂未开放，暂时无法解锁这张图');
     const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/collection/unlock/challenge',{imageId,requestId},5000);pending={imageId,requestId,rewardToken:challenge.rewardToken,completed:false};
-    let outcome:string;try{outcome=await this.platform.watchAd(this.rewardedSlot().unit);}catch{outcome='failed';}
+    const adUnit=this.rewardedSlot().unit;let outcome:string;try{outcome=this.telemetry?.adEnabled&&adUnit?await this.telemetry.watchRewardedAd('unlock_album_image',adUnit,{image_id:imageId}):await this.platform.watchAd(adUnit);}catch{outcome='failed';}
     if(outcome!=='completed'){void this.client.post('/api/mobile/collection/unlock/cancel',pending).catch(()=>{});const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，这张图还没有解锁':'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+'，请稍后再试');}
     pending.completed=true;this.platform.storage.set(storageKey,JSON.stringify(pending));
    }
@@ -1004,25 +1038,25 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    try{data=await this.client.post<MobileCollectionView&{unlocked?:{imageId:string}}>('/api/mobile/collection/unlock/redeem',pending);}catch(error){if([400,401,403,409,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}
    this.platform.storage.remove(storageKey);this.applyCollection(data);
    if(this.previewPack)this.previewPack=data.packs.find(pack=>pack.id===this.previewPack?.id)??this.previewPack;
-   await this.client.refresh();void this.loadGallery();
+   await this.client.refresh();void this.loadGallery();this.telemetry?.milestone('new_user','使用补给或看广告');this.telemetry?.milestone('global','解锁图包或合成装饰');
    const title=photoMap.get(pending.imageId)?.title??data.packs.flatMap(pack=>pack.images).find(image=>image.id===pending.imageId)?.title??'这张图';
    this.note('「'+title+'」已解锁'+(pending.imageId===imageId?'，可以开拼了':'（上次看完的广告已补发）'));
   });
  }
  private async useEnergy(){await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
- private async openGift(kind:string,quantity=1){await this.run(async()=>{const key='gift:'+kind;const data=await this.client.post<MobileGiftOpenResult>('/api/mobile/gifts/open',{kind,quantity,requestId:this.attempt(key)});this.attempts.delete(key);this.applyTasks(data);if((data.opened.coins??0)>0){try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}}await this.client.refresh();this.note(this.rewardText(data.opened.energy,data.opened.xp,data.opened.coins??0));});}
+ private async openGift(kind:string,quantity=1){await this.run(async()=>{const key='gift:'+kind;const data=await this.client.post<MobileGiftOpenResult>('/api/mobile/gifts/open',{kind,quantity,requestId:this.attempt(key)});this.attempts.delete(key);this.applyTasks(data);if((data.opened.coins??0)>0){try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}}await this.client.refresh();this.telemetry?.milestone('new_user','开启任务礼包');this.checkLevelMilestone();this.note(this.rewardText(data.opened.energy,data.opened.xp,data.opened.coins??0));});}
  private async shareInvitation(){await this.run(async()=>{
   if(this.platform.config.id==='web'){const result=await this.platform.share({title:'来'+this.platform.config.gameName+'一起拼图',roomId:this.room?.ticket.room.id,inviteCode:this.tasks?.invitation.code});this.note(result==='copied'?'邀请链接已复制，可以粘贴给好友':result==='shared'?'已分享邀请链接':result==='cancelled'?'本次分享已取消':'浏览器暂不支持分享或复制，请使用邀请码');return;}
   if(!this.shareAvailable&&this.platform.config?.id==='wechat'){const privateCode=(this.client.ticket as RoomTicket&{inviteCode?:string})?.inviteCode,result=await this.shareFromGame({title:'来'+this.platform.config.gameName+'一起拼图',roomId:this.room?.ticket.room.id,query:privateCode&&this.room?{roomInvite:privateCode}:undefined});this.note(result==='opened'||result==='shared'?'已打开分享，请选择微信好友':result==='cancelled'?'本次分享已取消':'当前环境无法分享');return;}
-  const adResult=await this.watchTapTapAd('每日奖励');
+  const adResult=await this.watchTapTapAd('每日奖励','daily_ad_reward');
   const key='ad-daily-reward',requestId=this.attempt(key);
   const data=await this.client.post<MobileInviteShareResult>('/api/mobile/invitations/share',{requestId,shared:true,adCompleted:!adResult.skipped,adSkipped:adResult.skipped});
-  this.attempts.delete(key);this.applyTasks(data);await this.client.refresh();
+  this.attempts.delete(key);this.applyTasks(data);await this.client.refresh();this.telemetry?.milestone('new_user','使用补给或看广告');this.checkLevelMilestone();
   this.note(data.shared.alreadyRewarded?'今天的广告奖励已领完':'广告奖励已到账：'+this.rewardText(data.shared.energy,data.shared.xp,data.shared.coins??0));
  });}
  private async acceptInvitation(){const code=this.pendingInvitation.trim();if(!code)return;await this.run(async()=>{await this.client.post('/api/mobile/invitations/accept',{code,requestId:this.attempt('accept:'+code)});this.pendingViews?.invalidate();this.attempts.delete('accept:'+code);this.pendingInvitation='';await this.loadTasks();this.note('已关联邀请，一起完成拼图吧');});}
  /** `equip` with a null id takes the pointer decoration off (the server stores no decoration). */
- private async collectionAction(kind:'buy'|'craft'|'equip',id:string|null){await this.run(async()=>{const key=kind+':'+(id??'none');const data=await this.client.post<MobileCollectionView>('/api/mobile/collection/'+kind,{[kind==='buy'?'packId':'decorationId']:id,requestId:this.attempt(key)});this.applyCollection(data);this.attempts.delete(key);this.modal=null;await this.client.refresh();if(kind==='buy')void this.loadGallery();this.note(kind==='buy'?'图包已永久解锁':kind==='craft'?'装饰已合成':id===null?'装饰已取下':'装饰已装备');});}
+ private async collectionAction(kind:'buy'|'craft'|'equip',id:string|null){await this.run(async()=>{const key=kind+':'+(id??'none');const data=await this.client.post<MobileCollectionView>('/api/mobile/collection/'+kind,{[kind==='buy'?'packId':'decorationId']:id,requestId:this.attempt(key)});this.applyCollection(data);this.attempts.delete(key);this.modal=null;await this.client.refresh();if(kind==='buy'||kind==='craft')this.telemetry?.milestone('global','解锁图包或合成装饰');if(kind==='buy')void this.loadGallery();this.note(kind==='buy'?'图包已永久解锁':kind==='craft'?'装饰已合成':id===null?'装饰已取下':'装饰已装备');});}
  private async loadChat(){if(this.offlineRoom)return;
   if(!this.room||this.chatLoading)return;this.chatLoading=true;
   try{const room=this.room,data=await this.client.json<any>('/api/rooms/'+room.ticket.room.id+'/chat?after='+this.chatCursor,'GET',undefined,{Authorization:'Bearer '+room.ticket.token});if(room!==this.room||this.destroyed)return;

@@ -37,3 +37,10 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# GamePropel CLI binding & SDK runtime state
+.gamealgo/
+gamealgo_sdk_storage_v1.json
+gamealgo_sdk_storage_v1.backup.json
+gaq_*.json
+

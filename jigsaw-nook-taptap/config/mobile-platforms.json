@@ -22,9 +22,15 @@
     "id": "taptap",
     "gameName": "拼图小窝",
     "appId": "963283",
+    "appVersion": "0.53.23",
     "apiBase": "https://jigsawnook.online/h5-mobile-v3",
     "assetBase": "https://jigsawnook.online/h5-mobile-v3/assets",
     "gameBase": "https://jigsawnook.online/taptap-mobile-v3/",
+    "gamePropel": {
+      "baseUrl": "https://game-algo-sdk.dictapis.cn",
+      "gameKey": "ga_live_db8dfc4dbf104cc2b36b29960b624d6a4defc111ecb04dd2857aa08446bdbe91",
+      "experimentIntegrationVersion": 0
+    },
     "development": true
   }
 }

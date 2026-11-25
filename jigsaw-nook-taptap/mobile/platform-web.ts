@@ -11,6 +11,7 @@ import {themeColors} from './theme';
 import {AudioPlayback} from './audio-playback';
 import {shareOnTapTap,subscribeTapShareReturn,tapShareScene,type TapShareHost} from './taptap-share';
 import type {TapBattleManager} from './tap-preview';
+import {createTapTapTelemetry} from './telemetry';
 
 type RewardedVideo={load():Promise<unknown>;show():Promise<unknown>;onClose(fn:(result:{isEnded?:boolean})=>void):void;offClose?(fn:(result:{isEnded?:boolean})=>void):void;onError(fn:(error:unknown)=>void):void;offError?(fn:(error:unknown)=>void):void;destroy?():void};
 type TapBackHost={onBackPress?:(handler:()=>boolean)=>void;offBackPress?:(handler:()=>boolean)=>void};
@@ -339,7 +340,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   ...(config.id==='taptap'?{cancelShare:()=>shareController?.abort()}:{}),
   adDiagnostics:()=>adDiagnostic,
   adFailure:()=>rewarded.failure(),
-  prepareAd(unit){if(config.id==='taptap'&&unit)rewarded.prepare(unit);},
+  prepareAd(unit){if(config.id==='taptap'&&unit&&!config.gamePropel?.gameKey)rewarded.prepare(unit);},
   async share(input){const url=new URL(config.gameBase||location.href,document.baseURI),params=new URLSearchParams(input.query);if(input.roomId)params.set('room',input.roomId);if(input.inviteCode)params.set('ref',input.inviteCode);for(const [key,value]of params)url.searchParams.set(key,value);
    if(config.id==='taptap'){
     if(shareController)return 'unavailable';const controller=new AbortController();shareController=controller;
@@ -352,6 +353,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    watching=true;audioPlayback.setAdPlaying(true);
    try{return await rewarded.watch(unit);}finally{watching=false;audioPlayback.setAdPlaying(false);}
   },
+  createTelemetry:()=>createTapTapTelemetry({config,storage:platform.storage,onAdPlaying:playing=>audioPlayback.setAdPlaying(playing)}),
   async prompt(title,value='',options){return options?.multiline||options?.singleLine?textPrompt(title,value,options.maxLength??2000,options):window.prompt(title,value);},alert:message=>window.alert(message),
   async copyText(text){
    // TapTap first (tt.setClipboardData), then the async clipboard, then a selected textarea.

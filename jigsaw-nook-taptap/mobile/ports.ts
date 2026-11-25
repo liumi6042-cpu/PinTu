@@ -34,7 +34,20 @@ export type TapTapIdentity={code:string;nickname?:string;/** The host has no nic
 /** Hidden preparation and an optional official native private-chat entry. */
 export type NativeSocial={prepare():Promise<NativeSocialStatus>;status():NativeSocialStatus;openPrivate?():Promise<NativeSocialOpenResult>;openFriends?():Promise<NativeSocialOpenResult>};
 export type WebLinks={account?:string;security?:string;membership?:string;uploads?:string;legacyLobby?:string;legacyRoom?:string;largePuzzles?:string;terms?:string;privacy?:string;feedback?:string};
-export type PlatformConfig={id:PlatformId;gameName:string;apiBase:string;assetBase:string;appId?:string;rewardedAdUnitId?:string;gameBase?:string;uiBase?:string;bundledArtwork?:Readonly<Record<string,string>>;offlineCatalog?:OfflineCatalog;identityMode?:'guest-device'|'web-cookie'|'taptap';webLinks?:WebLinks;development?:boolean;nativeSocialEnabled?:boolean;buildVersion?:string;tapAuthorizationTest?:boolean;previewTestRoom?:{id:string;inviteCode:string}};
+export type AdPlacementKey='supply_energy'|'supply_create_ticket'|'room_hint'|'room_underlay'|'daily_ad_reward'|'unlock_album_image';
+export type TelemetryAttemptStart={levelId?:string;levelNo?:number;mode:string;pieces:number;randomId:()=>string};
+export type TelemetryBridge={
+ readonly adEnabled:boolean;
+ init(profile:unknown):void;
+ prepareAd(unit:string):void;
+ watchRewardedAd(placementKey:AdPlacementKey,unit:string,payload?:Record<string,unknown>):Promise<'completed'|'closed'|'failed'|'unavailable'>;
+ startAttempt(attempt:TelemetryAttemptStart):void;
+ endAttempt(result:'win'|'quit'):void;
+ milestone(type:'new_user'|'global',point:string):void;
+ close():void;
+};
+export type GamePropelConfig={baseUrl:string;gameKey:string;experimentIntegrationVersion?:number};
+export type PlatformConfig={id:PlatformId;gameName:string;apiBase:string;assetBase:string;appId?:string;appVersion?:string;rewardedAdUnitId?:string;gameBase?:string;uiBase?:string;bundledArtwork?:Readonly<Record<string,string>>;offlineCatalog?:OfflineCatalog;identityMode?:'guest-device'|'web-cookie'|'taptap';webLinks?:WebLinks;development?:boolean;nativeSocialEnabled?:boolean;buildVersion?:string;tapAuthorizationTest?:boolean;previewTestRoom?:{id:string;inviteCode:string};gamePropel?:GamePropelConfig};
 export type Platform={
  config:PlatformConfig;
  canvas:HTMLCanvasElement;
@@ -88,6 +101,7 @@ export type Platform={
  /** Create the rewarded ad for this slot once and preload it, so a later watchAd can show at once. */
  prepareAd?(unit:string):void;
  watchAd(unit:string):Promise<'completed'|'closed'|'failed'|'unavailable'>;
+ createTelemetry?:()=>TelemetryBridge;
  prompt(title:string,value?:string,options?:TextPromptOptions):Promise<string|null>;
  alert(message:string):void;
  /** Copy a short text (player ID, invitation code); false when the host cannot. */

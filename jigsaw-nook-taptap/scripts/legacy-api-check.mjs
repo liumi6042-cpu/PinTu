@@ -8,15 +8,15 @@ const POLYFILLED=[
  ['findLast/findLastIndex (Chrome 97)',/\.findLast(?:Index)?\(/g],
 ];
 const MISSING=[
- ['crypto.randomUUID (Chrome 92)',/\.randomUUID\b/g],
  ['toSorted/toReversed/toSpliced (Chrome 110)',/\.(?:toSorted|toReversed|toSpliced)\(/g],
  ['Object.groupBy/Map.groupBy (Chrome 117)',/\b(?:Object|Map)\.groupBy\b/g],
  ['Promise.withResolvers (Chrome 119)',/\bPromise\.withResolvers\b/g],
  ['Array.fromAsync (Chrome 121)',/\bArray\.fromAsync\b/g],
  ['String isWellFormed/toWellFormed (Chrome 111)',/\.(?:isWellFormed|toWellFormed)\(/g],
 ];
-// Used only behind a typeof check (with a fallback).
+// Used only behind a typeof check or optional call chain (with a fallback).
 const GUARDED=[
+ ['crypto.randomUUID (Chrome 92)',/\.randomUUID\b/g,/(?:typeof\s+[\w$.]*randomUUID|\?\.randomUUID\?\.)/],
  ['structuredClone (Chrome 98)',/\bstructuredClone\(/g,/typeof structuredClone/],
  ['AbortSignal.timeout (Chrome 103)',/\bAbortSignal\.timeout\(/g,/typeof AbortSignal\.timeout/],
 ];
@@ -26,7 +26,7 @@ export function legacyApiProblems(code){
  for(const [name,pattern] of POLYFILLED)if(!polyfilled&&count(pattern))problems.push(name+' used without mobile/legacy-runtime.ts');
  for(const [name,pattern] of MISSING)if(count(pattern))problems.push(name+' is not available on older WebViews');
  for(const [name,pattern,guard] of GUARDED){
-  for(const match of code.matchAll(pattern)){const before=code.slice(Math.max(0,match.index-160),match.index);if(!guard.test(before)){problems.push(name+' without a typeof guard');break;}}
+  for(const match of code.matchAll(pattern)){const window=code.slice(Math.max(0,match.index-160),match.index+20);if(!guard.test(window)){problems.push(name+' without a typeof guard');break;}}
  }
  return problems;
 }

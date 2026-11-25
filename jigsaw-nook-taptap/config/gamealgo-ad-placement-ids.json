@@ -1,0 +1,11 @@
+{
+  "gameId": "game-0bf51abc61f34db8",
+  "ids": {
+    "supply_energy": "gap_01e49aaf1c9d47dfb8b70b4d523f6833",
+    "supply_create_ticket": "gap_bf31e14c31b44f8caf99093d47f1e9c3",
+    "room_hint": "gap_1453dc748f44406081c6c9d91d407488",
+    "room_underlay": "gap_9f778ad04e29456e812593652106b24f",
+    "daily_ad_reward": "gap_524ccb2d37094bba84fcd371a669aeef",
+    "unlock_album_image": "gap_ef16fddbbd4845a49de678dc1bd2f988"
+  }
+}
