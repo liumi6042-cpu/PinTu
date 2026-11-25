@@ -76,3 +76,5 @@ __pycache__/
 # Concept art and browser-test screenshots stay local; they are large and regenerated.
 /docs/concepts/
 /docs/verification/
+
+.claude/
