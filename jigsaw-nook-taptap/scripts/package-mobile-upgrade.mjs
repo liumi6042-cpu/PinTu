@@ -5,6 +5,7 @@ import {spawnSync} from 'node:child_process';
 import {runtimeAssets,mobileStaticAsset,hash,TAR} from './release-files.mjs';
 import {checkImageLibrary} from './check-image-library.mjs';
 import {buildRoomRealtime} from './build-room-realtime.mjs';
+import {resolveMediaDir,safeMediaFile} from './media-paths.mjs';
 
 // Code-only upgrade requires byte-for-byte compatibility with every runtime
 // asset in the installed release. New resources require the full API package.
@@ -27,7 +28,8 @@ if(keepInstalled){
  assets=installed;
 }
 const previous=new Map(baseline.files.filter(file=>file.path.startsWith('public/')).map(file=>[file.path,file]));
-const current=wanted.map(path=>{const name='public'+path,source=realpathSync(resolve(name));if(!source.startsWith(root+sep))throw Error('Asset escapes project');const bytes=readFileSync(source);return {path:name,bytes:bytes.length,sha256:hash(bytes)};});
+const puzzlesDir=resolveMediaDir(root,'puzzles');
+const current=wanted.map(path=>{const name='public'+path,isPuzzle=name.startsWith('public/puzzles/'),source=isPuzzle?safeMediaFile(puzzlesDir,name.slice('public/puzzles/'.length)):realpathSync(resolve(name));if(!isPuzzle&&!source.startsWith(root+sep))throw Error('Asset escapes project');const bytes=readFileSync(source);return {path:name,bytes:bytes.length,sha256:hash(bytes)};});
 const changed=current.filter(file=>!previous.has(file.path)||previous.get(file.path).sha256!==file.sha256||previous.get(file.path).bytes!==file.bytes).map(file=>file.path);
 const names=new Set(current.map(file=>file.path)),removed=keepInstalled?[]:[...previous.keys()].filter(path=>!names.has(path));
 if(changed.length||removed.length)throw Error('Runtime resources differ; use package-mobile-backend.mjs (full package). '+JSON.stringify({changed,removed}));
@@ -36,7 +38,8 @@ if(existsSync(stage))throw Error('Upgrade stage already exists; choose a fresh r
 mkdirSync(stage,{recursive:true});if(realpathSync(stage)!==stage)throw Error('Upgrade stage cannot be a link');
 await build({configFile:false,publicDir:false,build:{ssr:resolve('server/mobile-engine.entry.ts'),target:'node24',outDir:resolve(stage,'outputs/mobile'),emptyOutDir:false,minify:false,rolldownOptions:{platform:'node',output:{entryFileNames:'engine.mjs'}}}});
 await buildRoomRealtime(resolve(stage,'outputs/mobile'));
-const files=['server/h5-gateway.mjs','server/mobile-service.mjs','server/mobile-room-history.mjs','server/tap-preview.mjs','server/mobile-social.mjs','server/mobile-privacy.mjs','server/mobile-events.mjs','server/mobile-levels.mjs','config/levels.json','config/social-phrases.json','server/daily-content.mjs','server/mobile-collection.mjs','server/mobile-economy.mjs','server/mobile-tasks.mjs','server/task-reward-settings.mjs','config/task-reward-defaults.json','server/game-settings.mjs','config/game-settings-defaults.json','server/album-content.mjs','server/content-release.mjs','server/mobile-managed-content.mjs','server/managed-daily-content.mjs','scripts/check-content-release.mjs','lib/mobile-collection-catalog.json','lib/tap-platform-id.mjs'];
+const catalog=JSON.parse(readFileSync('content/puzzle-catalog.json','utf8'));
+const files=['server/h5-gateway.mjs','server/mobile-service.mjs','server/mobile-solo-batch.mjs','server/diagnostic-actions.mjs','server/guest-names.mjs','server/mobile-room-history.mjs','server/tap-preview.mjs','server/mobile-social.mjs','server/mobile-privacy.mjs','server/mobile-events.mjs','server/mobile-levels.mjs','config/levels.json','server/mobile-tuanzi.mjs','config/tuanzi-travel.json','config/tuanzi-image-regions.json','server/mobile-redeem.mjs','config/redeem-codes.json','scripts/redeem-codes.mjs','config/social-phrases.json','server/daily-content.mjs','server/mobile-collection.mjs','server/mobile-economy.mjs','server/mobile-tasks.mjs','server/mobile-retention.mjs','config/retention-rewards.json','server/task-reward-settings.mjs','config/task-reward-defaults.json','server/game-settings.mjs','config/game-settings-defaults.json','server/album-content.mjs','server/content-release.mjs','server/mobile-managed-content.mjs','server/managed-daily-content.mjs','scripts/check-content-release.mjs','scripts/media-paths.mjs','lib/mobile-collection-catalog.json','lib/decoration-policy.mjs','lib/tap-platform-id.mjs','scripts/check-artwork-revisions.mjs','content/artwork-revisions.json','content/puzzle-catalog.json',...catalog.map(photo=>'content/image-provenance/'+photo.id+'.json')];
 for(const path of files){const from=realpathSync(resolve(path)),to=resolve(stage,path);if(!from.startsWith(root+sep)||!to.startsWith(stage+sep))throw Error('Unsafe code path');mkdirSync(dirname(to),{recursive:true});copyFileSync(from,to);}
 mkdirSync(resolve(stage,'h5'),{recursive:true});writeFileSync(resolve(stage,'h5/asset-manifest.json'),JSON.stringify(assets,null,2)+'\n');
 mkdirSync(resolve(stage,'server'),{recursive:true});copyFileSync(realpathSync(resolve('server/room-realtime.LICENSE.txt')),resolve(stage,'server/room-realtime.LICENSE.txt'));

@@ -143,7 +143,7 @@ void test('every published mobile grid stays between 48 and 500 actual pieces',(
  assert.equal(mobileGridForPhoto(photo,1000),null);
 });
 
-void test('supplies require rewarded ads, underlay expires in 30s, base energy cap is 50, and task rewards stay at original defaults',()=>{
+void test('supplies support ads and legacy share compatibility, underlay expires in 30s, base energy cap is 50, and task rewards stay at original defaults',()=>{
  let now=1800000000000;
  const service=createMobileService({shareRewards:true,adEnabled:true,now:()=>now,randomInt:min=>min});
  const owner='e'.repeat(64);
@@ -152,17 +152,16 @@ void test('supplies require rewarded ads, underlay expires in 30s, base energy c
   // 0. Base energy cap is 50 (only this default changed).
   assert.equal(call('/api/mobile/profile').data.energyCap,50);
 
-  // 1. Supplies (energy pack & creation ticket) reject sharing and only work via rewarded ads.
-  for(const kind of ['energy','create']){
-   const shareChallenge=call('/api/mobile/share/challenge',{kind,context:'supply',requestId:rid()});
-   assert.equal(shareChallenge.status,403);assert.equal(shareChallenge.data.code,'AD_REQUIRED');
-   const shareRedeem=call('/api/mobile/share/redeem',{kind,context:'supply',requestId:rid(),rewardToken:'x',completed:true});
-   assert.equal(shareRedeem.status,403);assert.equal(shareRedeem.data.code,'AD_REQUIRED');
-  }
+  // 1. New TapTap clients use rewarded ads for supplies; legacy TapTap/WeChat clients retain share supply fallback (energy 1/day).
   const adReq={kind:'energy',requestId:rid()},ch=call('/api/mobile/supply/challenge',adReq);
   assert.equal(ch.status,200);
   const redeemed=call('/api/mobile/supply/redeem',{...adReq,rewardToken:ch.data.rewardToken,completed:true});
   assert.equal(redeemed.status,200);assert.equal(redeemed.data.supply.energy,1);
+  const legacyReq={kind:'energy',context:'supply',requestId:rid()},legacyCh=call('/api/mobile/share/challenge',legacyReq);
+  assert.equal(legacyCh.status,200);
+  const legacyRedeemed=call('/api/mobile/share/redeem',{...legacyReq,rewardToken:legacyCh.data.rewardToken,completed:true});
+  assert.equal(legacyRedeemed.status,200);assert.equal(legacyRedeemed.data.supply.energy,2);
+  assert.equal(call('/api/mobile/share/challenge',{kind:'energy',context:'supply',requestId:rid()}).data.code,'SHARE_DAILY_LIMIT');
 
   // 2. Underlay lasts exactly 30s and disappears after 30s even when lasting:true is requested; hint remains lasting.
   const room=call('/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
@@ -207,11 +206,11 @@ void test('disconnected TapTap ad skips automatically for supplies and tools whi
   now+=30001;
   assert.equal(call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid()},room2.token).status,200);
   now+=30001;
-  const needAd=call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid()},room2.token);
+  const needAd=call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:rid(),toolAd:true},room2.token);
   assert.equal(needAd.status,402);assert.equal(needAd.data.code,'AD_REQUIRED');
   const aidRid=rid(),aidCh=call('/api/rewarded/challenge',{kind:'underlay',requestId:aidRid,context:'room/'+room2.room.id,adSkipped:true},room2.token);
   assert.equal(aidCh.status,200);
-  const u3=call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:aidRid,context:'room/'+room2.room.id,rewardToken:aidCh.data.rewardToken,completed:true,adSkipped:true},room2.token);
+  const u3=call('/api/rooms/'+room2.room.id+'/assistance',{kind:'underlay',requestId:aidRid,context:'room/'+room2.room.id,rewardToken:aidCh.data.rewardToken,completed:true,adSkipped:true,toolAd:true},room2.token);
   assert.equal(u3.status,200);assert.equal(u3.data.grants.find(g=>g.kind==='underlay')?.expiresAt,now+30000);
 
   // Invitation share requires shared:true and rejects adSkipped-only requests.
@@ -271,19 +270,28 @@ void test('in-room tools grant 2 newcomer lifetime free uses per kind across roo
   const init3=call(owner,'/api/rooms/'+room3.room.id+'/assistance?lasting=1',undefined,room3.token);
   assert.deepEqual(init3.data.freeRemaining,{hint:1,underlay:0});
 
-  const u3NeedAd=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',requestId:rid()},room3.token);
+  const u3NeedAd=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',requestId:rid(),toolAd:true},room3.token);
   assert.equal(u3NeedAd.status,402);assert.equal(u3NeedAd.data.code,'AD_REQUIRED');
   assert.deepEqual(u3NeedAd.data.freeRemaining,{hint:1,underlay:0});
   const u3Rid=rid(),u3Ch=call(owner,'/api/rewarded/challenge',{kind:'underlay',context:'room/'+room3.room.id,requestId:u3Rid},room3.token);
   assert.equal(u3Ch.status,200);
-  const u3Paid=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',requestId:u3Rid,rewardToken:u3Ch.data.rewardToken,completed:true},room3.token);
+  const u3Paid=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',requestId:u3Rid,rewardToken:u3Ch.data.rewardToken,completed:true,toolAd:true},room3.token);
   assert.equal(u3Paid.status,200);assert.deepEqual(u3Paid.data.freeRemaining,{hint:1,underlay:0});
 
-  // Exhaust 2nd free hint in room 3; a 3rd hint in room 4 requires an ad.
-  const h2=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room3.token);
+  // Legacy client (omitting toolAd) gets SHARE_REQUIRED after free uses are exhausted and can still redeem /api/mobile/share/challenge.
+  now+=30001;
+  const legacyNeedShare=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',requestId:rid()},room3.token);
+  assert.equal(legacyNeedShare.status,402);assert.equal(legacyNeedShare.data.code,'SHARE_REQUIRED');
+  const legacyAidRid=rid(),legacyAidCh=call(owner,'/api/mobile/share/challenge',{kind:'underlay',context:'room/'+room3.room.id,requestId:legacyAidRid},room3.token);
+  assert.equal(legacyAidCh.status,200);
+  const legacyAidPaid=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'underlay',context:'room/'+room3.room.id,requestId:legacyAidRid,rewardToken:legacyAidCh.data.rewardToken,completed:true},room3.token);
+  assert.equal(legacyAidPaid.status,200);assert.equal(legacyAidPaid.data.grants.find(g=>g.kind==='underlay')?.expiresAt,now+30000);
+
+  // Exhaust 2nd free hint in room 3; a 3rd hint in room 4 requires an ad (new client) or share (legacy client).
+  const h2=call(owner,'/api/rooms/'+room3.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true,toolAd:true},room3.token);
   assert.equal(h2.status,200);assert.deepEqual(h2.data.freeRemaining,{hint:0,underlay:0});
   const room4=call(owner,'/api/rooms',{mode:'random',pieces:48,visibility:'public',requestId:rid()}).data;
-  const h3NeedAd=call(owner,'/api/rooms/'+room4.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room4.token);
+  const h3NeedAd=call(owner,'/api/rooms/'+room4.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true,toolAd:true},room4.token);
   assert.equal(h3NeedAd.status,402);assert.equal(h3NeedAd.data.code,'AD_REQUIRED');
 
   // Another player joining room 3 still has their own 2 free uses per tool.

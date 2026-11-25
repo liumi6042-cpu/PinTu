@@ -822,12 +822,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   await this.run(async()=>{const room=this.room!,key='aid-ad:'+room.ticket.room.id+':'+kind,headers={Authorization:'Bearer '+room.ticket.token,'Content-Type':'application/json'},path='/api/rooms/'+room.ticket.room.id+'/assistance',context='room/'+room.ticket.room.id,storageKey='jigsaw:ad:'+this.platform.config.apiBase+':'+(this.client.profile?.code??'')+':'+key;
    let pending:any=null;try{const stored=JSON.parse(this.platform.storage.get(storageKey)||'null');if(stored?.kind===kind&&stored.context===context&&stored.completed===true)pending=stored;}catch{}
    const requestId=pending?.requestId??this.attempt(key),wantLasting=kind==='hint';if(pending&&!wantLasting)delete pending.lasting;let usedAd=!!pending,data:any;
-   try{data=await this.client.json(path,'POST',pending??(wantLasting?{kind,requestId,lasting:true}:{kind,requestId}),headers);}catch(error){
+   const baseBody=wantLasting?{kind,requestId,lasting:true}:{kind,requestId};
+   try{data=await this.client.json(path,'POST',pending??{...baseBody,toolAd:true},headers);}catch(error){
     if(pending&&[400,401,403,410].includes((error as{status?:number}).status??0)){this.platform.storage.remove(storageKey);this.attempts.delete(key);throw error;}
     const code=(error as{code?:string}).code;if(code!=='AD_REQUIRED'&&code!=='SHARE_REQUIRED')throw error;
     const adResult=await this.watchTapTapAd(kind==='hint'?'提示':'底图',kind==='hint'?'room_hint':'room_underlay',{room_mode:this.roomTelemetryMode(room,false),pieces:room.snapshot.requestedPieces??(room.snapshot.puzzle.cols*room.snapshot.puzzle.rows)});
     const challenge=await this.client.json<{rewardToken:string}>('/api/rewarded/challenge','POST',{kind,requestId,context,...(adResult.skipped?{adSkipped:true}:{})},headers);
-    pending={kind,requestId,context,rewardToken:challenge.rewardToken,completed:true,...(adResult.skipped?{adSkipped:true}:{}),...(wantLasting?{lasting:true}:{})};
+    pending={kind,requestId,context,rewardToken:challenge.rewardToken,completed:true,toolAd:true,...(adResult.skipped?{adSkipped:true}:{}),...(wantLasting?{lasting:true}:{})};
     this.platform.storage.set(storageKey,JSON.stringify(pending));usedAd=true;
     data=await this.client.json(path,'POST',pending,headers);
    }
