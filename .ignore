@@ -1,0 +1,11 @@
+# Ripgrep / AI / CLI search exclusions for non-source and archived directories
+/assets/
+/media-store/
+/_private/
+/server-ops/_archive/
+/puzzle-play/public/shared-client/
+/content-admin/work/
+**/node_modules/
+**/dist/
+**/.next/
+**/outputs/

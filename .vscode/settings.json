@@ -1,0 +1,21 @@
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.next": true,
+    "**/outputs": true,
+    "assets/**": true,
+    "media-store/**": true,
+    "_private/**": true,
+    "server-ops/_archive/**": true,
+    "puzzle-play/public/shared-client/**": true,
+    "content-admin/work/**": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "assets/**": true,
+    "media-store/**": true,
+    "content-admin/work/**": true,
+    "puzzle-play/public/shared-client/**": true
+  }
+}

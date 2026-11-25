@@ -1,99 +1,58 @@
-import type {AdPlacementKey,Platform,Input,Rect,Route,TelemetryBridge,WebLinks} from './ports';
+import type {AdPlacementKey,Platform,Input,Rect,Route,TelemetryBridge} from './ports';
 import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
-import {timeLabelFor,nodeState} from './story-timeline';
-import {comicFor,comicSource,comicCloseRect,comicPageRect,comicLayout,comicTextCount,drawComicPage,drawComicText,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
+import {comicFor,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
 import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
-import {tapAuthorizationLayout} from './tap-authorization-layout';
 import {PuzzleBoard,DRAG_SLOP} from './puzzle-board';
 import {SocialPanel} from './social-panel';
-import {RoomInviteQueue,InviteSeenStore,pickIncomingInvite,inviteOrder,type IncomingInvite,type InviteJob} from './friend-invite';
+import {RoomInviteQueue,InviteSeenStore,pickIncomingInvite,type IncomingInvite,type InviteJob} from './friend-invite';
 import type {SocialPlayer,SocialSnapshot} from './social-types';
 import {TaskShareReward} from './task-share-reward';
-import {contributionCopy,recoveryCopy} from './economy-copy';
-import {collectionDecorationRewardHints} from './collection-copy';
-import {boardThemeColors,isThemeId,landscapeRoomColors as roomColors,type ThemeId} from './theme';
-import {roomRoundPath} from './room-chrome';
+import {boardThemeColors,isThemeId,type ThemeId} from './theme';
 import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-client';
 import {flushStoredSoloOutboxes,otherPlayersPresent} from '../lib/solo-play';
-import {storyVariantFor,boardVariant,variantIntroKey,variantIntroSentence,type StoryVariant} from './story-variants';
+import {boardVariant,type StoryVariant} from './story-variants';
 import {CursorClient} from '../lib/cursor-client';
-import {CheerClient,CHEER_LABELS} from './cheer-client';
+import {CheerClient} from './cheer-client';
 import {CHEER_EMOTES,type Cheer,type CheerEmote} from '../lib/room-realtime';
 import {completionSeats,type CompletionSeat} from './completion-seats';
 import {CheerEffects} from './cheer-effects';
-import {drawCelebration} from './completion-celebration';
 import {CompletionTransition} from './completion-transition';
 import {CompletionFlow,type CompletionPhase,type CompletionPhaseEvent,type CompletionContext,type CompletionAction} from './completion-flow';
-import {drawCheerIcon} from './cheer-icons';
 import type {ManagedRoomRealtime} from '../lib/room-realtime';
 import type {MobileContributionReceipt} from '../lib/connection-feedback';
 import {GALLERY_PHOTOS,RESTORABLE_PHOTOS,CATEGORIES} from '../lib/puzzle-catalog';
-import {photoGuidance} from '../lib/play-guidance';
 import {customPhoto} from '../lib/custom-images';
 import {activeRoomPhoto} from './room-photo';
 import {ViewRequests} from './view-requests';
 import {AudioSettings} from './audio-settings';
 import {orientationPreferenceKey,readOrientationPreference,saveOrientationPreference,type ScreenOrientation} from './orientation-choice';
-import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT,privacySectionsFor,termsSectionsFor} from './privacy-policy';
+import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT} from './privacy-policy';
 import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
-import {HAIRPIN_ID,STREAK_SEEN_KEY,WEEKLY_GIFT_KEY,beijingDay,breathScale,chapterProgress,completionFooter,completionPrimary,readShownDay,readStreakSeen,streakBadge,streakHint,streakToast,teaserLine,weeklyCell,weeklyGiftAutoShow,weeklyGrantText,weeklyTaskRow,type RetentionSummary,type RetentionView,type WeeklyGrant} from './retention';
-import publicPhrases from '../config/social-phrases.json';
+import {STREAK_SEEN_KEY,WEEKLY_GIFT_KEY,beijingDay,breathScale,completionFooter,readShownDay,readStreakSeen,streakToast,weeklyGiftAutoShow,weeklyGrantText,type RetentionSummary,type RetentionView,type WeeklyGrant} from './retention';
 import type {MobileProfile,MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom,MobileLevelsView,MobileLevelClear,MobileChapter,MobileLevel} from '../h5/mobile-api';
-import type {MobileCollectionView,CollectionPack,CollectionDecoration,CollectionAlbum} from '../h5/mobile-collection-api';
-import type {RoomCard} from '../lib/lobby-types';
+import type {MobileCollectionView,CollectionPack,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {AssistanceGrant} from '../lib/assistance-policy';
-import {REDEEM_GROUP_HINT,REDEEM_WECHAT_HINT,CAT_PAW_WECHAT_TEXT,REDEEM_MAX_LENGTH,redeemAnswered,redeemCells,redeemErrorText,redeemInput,redeemSummary,type RedeemGrant} from './redeem';
+import {REDEEM_GROUP_HINT,REDEEM_WECHAT_HINT,CAT_PAW_WECHAT_TEXT,REDEEM_MAX_LENGTH,redeemAnswered,redeemErrorText,redeemInput,redeemSummary,type RedeemGrant} from './redeem';
 import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
-type Direction='all'|'portrait'|'landscape'|'square';
-type PerformanceMode='smooth'|'power-saving';
-type Modal='orientation'|'weeklyGift'|'welcome'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|'redeem'|null;
-type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
-type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
-type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
-const directions:[Direction,string][]=[['all','全部'],['portrait','竖图'],['landscape','横图'],['square','方图']];
-const themeOptions:[ThemeId,string][]=[['light','浅色'],['dark','夜间'],['wood','仿木']];
-const counts=[48,108,300,500] as const;
-const contentMaxWidth=1120;
-const settingsTipKey='jigsaw:settings-tip:v1';
-const phrases=publicPhrases;
-/** Phrases from this id on are newer than some live servers; show them only once the server lists them. */
-const NEWER_PHRASE_ID=16;
-type PublicMessage={id:number;name:string;text:string;playerId:string;code:string;level?:number;sentAt?:number};
-type SharedPhoto={id:string;title:string;src:string;thumbSrc:string;category:string;width?:number;height?:number};
-type WebPage=Exclude<keyof WebLinks,'legacyLobby'|'legacyRoom'|'largePuzzles'>;
-type ListView={route:Route;scroll:number;albumListScroll:number;direction:Direction;filterCount:number;openOnly:boolean;activeOnly:boolean;category:string;search:string;source:'free'|'owned'|'all';packId:string|null;selected:string|null;collectionTab:'albums'|'packs'|'decorations';albumId:string;decorationId:string;decorationOwnedOnly:boolean;taskTab:'tasks'|'gifts'};
-const photoMap=new Map<string,SharedPhoto>(RESTORABLE_PHOTOS.map(photo=>[photo.id,photo]));
-const packed=new Set(collectionCatalog.packs.flatMap(pack=>pack.imageIds));
-function orientation(id:string):Direction{const photo=photoMap.get(id),size=photo?.width&&photo.height?photo:photoGuidance(id);return !size?'all':size.width===size.height?'square':size.width!>size.height!?'landscape':'portrait';}
-function errorText(error:unknown){return error instanceof Error?error.message:'连接暂时中断，请重试';}
-function taskCoinsText(min=0,max=min){return max>0?' · 金币 +'+min+(min===max?'':'～'+max):'';}
-function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
-// 服务端把已完成房间标题改成「已完成」，作品页要显示图片原名。
-function historyPhotoTitle(room:MobileOwnedRoom){return room.photo?.title||(room.imageId?photoMap.get(room.imageId)?.title:undefined)||'拼好的作品';}
-function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return (day.getUTCMonth()+1)+'月'+day.getUTCDate()+'日';}
-// Seats come from the server (4/6/8 by piece count); backends without maxPlayers seat 8.
-const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
-const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
+import {type AppHost,type Direction,type PerformanceMode,type Modal,type PrivacyRequest,type RecentPlayer,type RoomListing,type PublicMessage,type SharedPhoto,type WebPage,type ListView,directions,themeOptions,counts,contentMaxWidth,settingsTipKey,phrases,NEWER_PHRASE_ID,photoMap,packed,errorText,taskCoinsText,clamp,seatLimit,VIEW_LOCK_KEY,LOCK_BUTTON_KEY,MINIMAP_KEY,WECHAT_PACKAGE_VERSION,CHAT_BUBBLE_ARM_MS,ORGANIZE_CONFIRM_MS,inside,roomListKey,messageListKey} from './panels/shared';
+import {drawSavedRoomPanel,drawHistoryGridPanel,drawHistoryPreviewPanel,drawHistoryWindowPanel,drawRedeemPanel,drawWeeklyGiftPanel,drawLoginLogPanel,drawPrivacyChoicePanel,drawPolicyPanel,drawWelcomeHeroPanel,drawWelcomeArtPanel,drawWelcomePanel,drawOrientationPickerPanel} from './panels/modals-panel';
+import {drawInviteBannerPanel,drawInviteFriendsPanel,drawFriendsPanel,drawLoadingPanel,drawLobbyStartupPanel,drawLobbyPanel,drawDailyHeroPanel,drawContinueRoomPanel,drawLobbyActionsPanel,drawRoomHeaderPanel,drawChipsPanel,drawRoomGridPanel,drawRoomCardPanel,drawGalleryPanel,drawPhotoCardPanel,drawCreatePanelView,drawPictureButtonPanel} from './panels/lobby-gallery-panel';
+import {drawChapterPanel,openLevelComicPanel,turnComicPanel,advanceComicPanel,drawLevelComicPanel,inputComicPanel,beginStoryIntroPanel,storyRoomVariantPanel,drawStoryIntroPanel} from './panels/story-panel';
+import {drawTasksPanel,drawTasksPagePanel,drawSuppliesPanel,drawWebSuppliesPanel,drawTaskWindowPanel} from './panels/tasks-supplies-panel';
+import {drawCollectionPanel,drawAlbumCardPanel,drawAlbumHeaderPanel,drawAlbumRewardsPanel,drawAlbumImagesPanel,drawAlbumDetailPanel,drawDecorationsPanel,drawPackPreviewPanel} from './panels/collection-panel';
+import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscapeSurfacePanel,drawLandscapeButtonPanel,drawRoomTopBarPanel,drawLandscapeRoomControlsPanel,drawBoardQuickToolsPanel,drawChatBubblePanel,drawRoomGiftPanel,drawZoomControlPanel,drawPlayerCardPanel,drawRoomSidePanel,drawReconnectBannerPanel,drawRoomGuidePanel,drawNineGridPanel,drawRoomChatEntryPanel,drawRoomToolTogglePanel,drawRoomToolsPanel,drawPublicChatPanel} from './panels/room-hud-panel';
+import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
+
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
 const CLIENT_PACKAGE_VERSION='v53.22';
-/** Shown when 分享领体力包 was already used this game day (the day flips at 20:00 Beijing, like the daily puzzle). */
-const SHARE_ENERGY_DONE_TEXT='今天已经分享领过体力包了，每天限 1 次，晚上 8 点后可以再领';
-/** The WeChat mini-game numbers its own uploads (the devtools version field). */
-const WECHAT_PACKAGE_VERSION='0.53.20';
-/** A chat bubble that just popped up under a finger reaching for a piece does not open the chat until it has shown this long. */
-const CHAT_BUBBLE_ARM_MS=600;
-/** 整理 reshuffles every loose piece, so its first tap only arms it for this long. */
-const ORGANIZE_CONFIRM_MS=3000;
-function inside(r:Rect,x:number,y:number){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
-function roomListKey(rooms:RoomListing[]){return JSON.stringify(rooms.map(room=>[room.id,room.title,room.imageId,room.thumbSrc??room.photo?.thumbSrc??photoMap.get(room.imageId)?.thumbSrc,room.actualPieces??room.pieces,room.placed,room.players,seatLimit(room),room.acceptingNew!==false,!!room.completed]));}
-function messageListKey(messages:PublicMessage[]){return JSON.stringify(messages.map(item=>[item.id,item.name,item.text,item.playerId,item.code,item.level??0,item.sentAt??0]));}
 
 /** One scene graph and one set of game rules for both mobile platforms. */
 export class GameApp{
+ private get host():AppHost{return this as unknown as AppHost;}
  route:Route='lobby';
  private routeStack:Route[]=[];
  private routeFrames:ListView[]=[];private savedRoutes=new Map<Route,ListView>();private listOwner?:string;private roomReturn:ListView|null=null;private roomReturnStack:Route[]=[];private roomReturnFrames:ListView[]=[];
@@ -500,69 +459,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   finally{if(owner===this.ownerKey()&&serial===this.historySerial&&!this.destroyed){this.historyLoading=false;this.invalidate();}}
  }
  private async removeOwnRoom(id:string){await this.run(async()=>{await this.client.post('/api/my-rooms',{action:'remove',roomId:id});await this.client.refresh();this.note('已从自创列表删除，历史记录和拼图进度保留');});}
- private drawSavedRoom(room:MobileOwnedRoom,left:number,cy:number,width:number,own:boolean){
-  const s=this.stage,withDelete=own,thumb=room.thumbSrc??(room.imageId?photoMap.get(room.imageId)?.thumbSrc:undefined),textX=thumb?left+78:left+10,textWidth=width-(textX-left)-10;
-  s.panel({x:left,y:cy,w:width,h:104});if(thumb)this.cardImage(thumb,{x:left+9,y:cy+10,w:58,h:46});
-  s.text(room.completed?'已完成':room.title??'一起拼图',textX,cy+12,15,this.colors.ink,700,textWidth);
-  const total=room.actualPieces??room.pieces??0,percent=clamp(Math.round((room.placed??0)/Math.max(1,total)*100),0,100);
-  s.text(room.unavailable?'房间暂不可用':(room.players??0)+'人 · '+(total||'—')+'片 · '+(room.completed?'100':percent)+'%',textX,cy+37,12,this.colors.muted,undefined,textWidth);
-  this.button(left+10,cy+65,withDelete?(width-26)/2:width-20,room.completed?'已完成':room.unavailable?'不可进入':'继续拼',()=>void this.enterRoom(room.id),'berry',30,room.completed===true||room.unavailable===true);
-  if(withDelete)this.button(left+16+(width-26)/2,cy+65,(width-26)/2,'删除',()=>void this.removeOwnRoom(room.id),'cream',30);
-  return cy+116;
- }
+ private drawSavedRoom(room:MobileOwnedRoom,left:number,cy:number,width:number,own:boolean){return drawSavedRoomPanel.call(this.host,room,left,cy,width,own);}
  private get historyDrafts(){return (this.historyRooms??[]).filter(room=>!room.completed);}
  private get historyFinished(){return (this.historyRooms??[]).filter(room=>room.completed).sort((a,b)=>(b.completedAt??0)-(a.completedAt??0));}
  private setHistoryTab(tab:'drafts'|'finished'){this.historyTab=tab;this.historyPreview=null;this.modalScroll=0;this.invalidate();}
- private drawHistoryGrid(rooms:MobileOwnedRoom[],left:number,top:number,width:number){
-  const s=this.stage,columns=width>=720?Math.min(4,Math.floor((width+12)/210)):width>=520?3:2,gap=12,cw=(width-gap*(columns-1))/columns,imageHeight=(cw-12)/1.12,ch=imageHeight+76;
-  rooms.forEach((room,index)=>{
-   const x=left+index%columns*(cw+gap),y=top+Math.floor(index/columns)*(ch+gap),art={x:x+6,y:y+6,w:cw-12,h:imageHeight};
-   s.frame({x,y,w:cw,h:ch},'button-linen-normal');s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(x+6,y+6,cw-12,ch-12);
-   if(room.thumbSrc)s.image(this.client.asset(room.thumbSrc),art);
-   const total=room.actualPieces??room.pieces??0,percent=room.completed?100:Math.max(0,Math.min(100,Math.round((room.placed??0)/Math.max(1,total)*100))),copyY=y+imageHeight+13,small=cw<160;
-   s.text(room.completed?historyPhotoTitle(room):room.title??'一起拼图',x+10,copyY,small?13:16,this.colors.ink,800,cw-20);
-   const metaY=copyY+24,font=small?10:12;s.text((total||'—')+'片',x+10,metaY,font,this.colors.muted);
-   if(room.completed){const day=room.completedAt?beijingMonthDay(room.completedAt)+'完成':'已完成';s.text(day,x+cw-10-s.measure(day,font,700),metaY,font,this.colors.ink,700);s.meter({x:x+10,y:y+ch-16,w:cw-20,h:8},1);}
-   else{s.text((room.players??0)+'人',x+cw*.44,metaY,font,this.colors.muted);s.text(percent+'%',x+cw-10-s.measure(percent+'%',font,700),metaY,font,this.colors.ink,700);s.meter({x:x+10,y:y+ch-16,w:cw-20,h:8},percent/100);}
-   if(room.unavailable&&!room.completed){s.ctx.fillStyle='#6f374edb';s.ctx.fillRect(art.x,art.y+art.h-23,art.w,23);s.text('暂不可用',art.x+8,art.y+art.h-18,11,'#fff9f0',700);}
-   else if(room.completed)s.hit({x,y,w:cw,h:ch},()=>{this.historyPreview=room;this.modalScroll=0;this.invalidate();});
-   else s.hit({x,y,w:cw,h:ch},()=>{if(!this.busy)void this.enterRoom(room.id);});
-  });
-  return top+Math.ceil(rooms.length/columns)*(ch+gap);
- }
- private drawHistoryPreview(room:MobileOwnedRoom,left:number,top:number,width:number){
-  const s=this.stage,src=room.artwork?.src||room.photo?.src||room.thumbSrc||'',total=room.actualPieces??room.pieces??0,meta=(total||'—')+'片'+(room.completedAt?' · '+beijingMonthDay(room.completedAt)+'完成':'');
-  // 矮窗口（横屏手机）图放左边、文字放右边，免得说明和返回键被挤出窗口。
-  const side=width>=520&&this.modalArea.h<420,imageW=side?Math.round(width*.6):width,imageH=side?Math.max(150,this.modalArea.h-8):Math.max(160,Math.min(width,this.modalArea.h-150));
-  s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(left,top,imageW,imageH);
-  if(src)s.image(this.client.asset(src),{x:left,y:top,w:imageW,h:imageH},'contain');
-  const textX=side?left+imageW+18:left,textW=side?width-imageW-18:width;let cy=side?top+6:top+imageH+14;
-  s.text(historyPhotoTitle(room),textX,cy,18,this.colors.ink,800,textW);cy+=28;
-  s.text(meta,textX,cy,13,this.colors.muted,undefined,textW);cy+=30;
-  this.button(textX,cy,textW,'返回已完成历史',()=>{this.historyPreview=null;this.modalScroll=0;this.invalidate();},'cream',38);
-  return Math.max(cy+50,top+(side?imageH+8:0));
- }
- private drawHistoryWindow(){
-  const s=this.stage,v=this.platform.viewport(),w=Math.min(s.w-24,1000),x=(s.w-w)/2,y=Math.max(v.top+15,s.h*.1),h=s.h-y-v.bottom-24;
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  s.text('历史拼图',x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>this.showModal(null));s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
-  const left=x+20,width=w-40,drafts=this.historyDrafts,finished=this.historyFinished,tabW=Math.min(220,(width-8)/2),tabY=y+54,compact=tabW<150;
-  s.button({x:left,y:tabY,w:tabW,h:34},'草稿存档 '+drafts.length,()=>this.setHistoryTab('drafts'),{tone:this.historyTab==='drafts'?'berry':'cream',icon:'piece',fontSize:compact?12:14});
-  s.button({x:left+tabW+8,y:tabY,w:tabW,h:34},'已完成历史 '+finished.length,()=>this.setHistoryTab('finished'),{tone:this.historyTab==='finished'?'berry':'cream',icon:'check',fontSize:compact?12:14});
-  this.modalStart=tabY+46;this.modalArea={x:x+12,y:this.modalStart,w:w-24,h:y+h-14-this.modalStart};let cy=this.modalStart-this.modalScroll;
-  s.clip(this.modalArea,()=>{
-   const preview=this.historyTab==='finished'?this.historyPreview:null;
-   if(preview){cy=this.drawHistoryPreview(preview,left,cy,width);return;}
-   const limits=this.historyLimits,draftsTab=this.historyTab==='drafts',rooms=draftsTab?drafts:finished;
-   cy=this.paragraph(draftsTab?'没拼完的拼图，点卡片继续拼。最多保留'+limits.drafts+'张。':'拼好的作品，点卡片看完整大图。最多保留'+limits.completed+'张。',left,cy,width,13)+15;
-   if(this.historyLoading)cy=this.paragraph('正在读取历史记录…',left,cy,width,13)+15;
-   if(this.historyError){cy=this.paragraph(this.historyError,left,cy,width,13)+12;this.button(left,cy,width,'重新读取',()=>void this.loadRoomHistory(),'cream',36);cy+=48;}
-   cy=this.drawHistoryGrid(rooms,left,cy,width);
-   if(!this.historyLoading&&!this.historyError&&!rooms.length)cy=this.paragraph(draftsTab?'没有没拼完的拼图，去大厅拼一会儿吧。':'还没有拼完的作品，拼完一张就会出现在这里。',left,cy,width,14)+24;
-   if(draftsTab){this.button(left,cy,width,'自己的房间',()=>this.showModal('manage'),'cream',40);cy+=52;}
-  });
-  this.modalExtent=cy-(this.modalStart-this.modalScroll)+7;const next=Math.max(0,Math.min(this.modalScroll,Math.max(0,this.modalExtent-this.modalArea.h)));if(next!==this.modalScroll){this.modalScroll=next;this.invalidate();}
- }
+ private drawHistoryGrid(rooms:MobileOwnedRoom[],left:number,top:number,width:number){return drawHistoryGridPanel.call(this.host,rooms,left,top,width);}
+ private drawHistoryPreview(room:MobileOwnedRoom,left:number,top:number,width:number){return drawHistoryPreviewPanel.call(this.host,room,left,top,width);}
+ private drawHistoryWindow(){return drawHistoryWindowPanel.call(this.host);}
  private setTaskTab(tab:'tasks'|'gifts'){this.taskTab=tab;if(this.modal==='tasks')this.modalScroll=0;else this.scroll=0;this.invalidate();}
  private openPublicMessage(message:PublicMessage){if(!message.code)return;this.showModal('social');this.social.openRoomMessage(message);}
  private cancelChatPress(){if(this.chatPress)clearTimeout(this.chatPress.timer);this.chatPress=null;}
@@ -730,36 +633,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    }catch(error){if(redeemAnswered(error))this.attempts.delete(key);this.redeemError=redeemErrorText(error);}
   });
  }
- private drawRedeem(){
-  const s=this.stage,v=this.platform.viewport(),grant=this.redeemGrant,cells=grant?redeemCells(grant):[],gap=8;
-  const w=Math.min(grant&&cells.length>3?520:420,s.w-32),cols=Math.max(1,Math.min(cells.length,4)),rows=Math.ceil(cells.length/4),cellW=Math.min(112,(w-40-gap*(cols-1))/cols),cellH=96;
-  const h=grant?80+rows*cellH+(rows-1)*gap+18+42+18:80+48+(this.redeemError?40:22)+42+18,x=(s.w-w)/2,y=v.top+Math.max(8,(s.h-v.top-v.bottom-h)/2),left=x+20;
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  this.modalArea={x,y,w,h};this.modalExtent=0;this.modalScroll=0;
-  const centered=(label:string,top:number,size:number,color:string,weight=500)=>s.text(label,x+(w-s.measure(label,size,weight))/2,top,size,color,weight,w-40);
-  s.button({x:x+w-38,y:y+8,w:28,h:28},'',()=>this.closeModal(),{icon:'close'});
-  if(grant){
-   centered('兑换成功',y+18,20,this.colors.ink,700);centered('兑换码 '+grant.code+' · 奖励已到账',y+48,13,this.colors.muted);
-   const rowWidth=(n:number)=>n*cellW+(n-1)*gap;
-   cells.forEach((cell,index)=>{
-    const row=Math.floor(index/4),inRow=Math.min(4,cells.length-row*4),col=index%4,r={x:x+(w-rowWidth(inRow))/2+col*(cellW+gap),y:y+76+row*(cellH+gap),w:cellW,h:cellH};
-    s.frame(r,'panel-gold');
-    const size=Math.min(40,r.h-(cell.extra?56:44)),icon={x:r.x+(r.w-size)/2,y:r.y+12,w:size,h:size};
-    if(cell.decoration)s.decoration(cell.decoration,icon);else s.icon(cell.icon,icon);
-    const fs=Math.min(13,13*(r.w-8)/Math.max(1,s.measure(cell.label,13,700)));s.text(cell.label,r.x+(r.w-s.measure(cell.label,fs,700))/2,r.y+r.h-(cell.extra?38:24),fs,this.colors.ink,700,r.w-4);
-    if(cell.extra){const es=Math.min(11,11*(r.w-8)/Math.max(1,s.measure(cell.extra,11,600)));s.text(cell.extra,r.x+(r.w-s.measure(cell.extra,es,600))/2,r.y+r.h-20,es,this.colors.muted,600,r.w-4);}
-   });
-   s.button({x:left,y:y+76+rows*cellH+(rows-1)*gap+18,w:w-40,h:42},'好的',()=>this.closeModal(),{tone:'berry',fontSize:15});
-   return;
-  }
-  centered('兑换码',y+18,20,this.colors.ink,700);centered(this.redeemHint,y+48,13,this.colors.muted);
-  const field={x:left,y:y+80,w:w-40,h:48};s.frame(field,'button-cream-normal');
-  if(this.redeemCode)centered(this.redeemCode,field.y+14,20,this.colors.ink,800);else centered('点这里输入兑换码',field.y+16,15,this.colors.muted,600);
-  s.hit(field,()=>void this.promptRedeemCode());
-  let by=field.y+field.h+12;
-  if(this.redeemError){centered(this.redeemError,by+2,13,this.colors.rose,700);by+=28;}else by+=10;
-  s.button({x:left,y:by,w:w-40,h:42},this.busy?'正在兑换…':'兑换',()=>void(this.redeemCode?this.submitRedeem():this.promptRedeemCode()),{tone:'berrydark',fontSize:15,disabled:this.busy});
- }
+ private drawRedeem(){return drawRedeemPanel.call(this.host);}
  private checkStreakToast(){
   if(!this.retentionCapable('dailyStreak')||!this.ready)return;
   const live=(this.client.profile as {retention?:RetentionSummary}|null)?.retention?.dailyStreak;if(!live)return;
@@ -770,35 +644,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const toast=streakToast(live,readStreakSeen(raw),today);if(!toast)return;
   save(toast.seen);this.note(toast.text);if(toast.text.includes('金币')){try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}}
  }
- private drawWeeklyGift(){
-  const s=this.stage,v=this.platform.viewport(),view=this.retention?.weeklyGift,wide=this.layout==='phoneLandscape'||s.w>=720;
-  const w=Math.min(wide?660:420,s.w-32),gap=8,cols=wide?7:4,rows=wide?1:2,cellW=(w-40-gap*(cols-1))/cols,cellH=wide?clamp(s.h-v.top-v.bottom-190,88,112):96;
-  const h=80+rows*cellH+(rows-1)*gap+18+44+18,x=(s.w-w)/2,y=v.top+Math.max(8,(s.h-v.top-v.bottom-h)/2),left=x+20;
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  this.modalArea={x,y,w,h};this.modalExtent=0;this.modalScroll=0;
-  const centered=(label:string,top:number,size:number,color:string,weight=500)=>s.text(label,x+(w-s.measure(label,size,weight))/2,top,size,color,weight,w-40);
-  s.button({x:x+w-38,y:y+8,w:28,h:28},'',()=>this.closeModal(),{icon:'close'});
-  centered('七日礼',y+18,20,this.colors.ink,700);centered('登录就能领，不用连续',y+48,13,this.colors.muted);
-  const days=view?.days??[];
-  days.forEach((day,index)=>{
-   const row=wide?0:index<4?0:1,col=wide?index:index<4?index:index-4,offset=!wide&&row===1?(cellW+gap)/2:0;
-   const r={x:left+offset+col*(cellW+gap),y:y+76+row*(cellH+gap),w:cellW,h:cellH},cell=weeklyCell(day),claimed=day.state==='claimed',today=day.state==='today';
-   const c=s.ctx;c.save();if(claimed)c.globalAlpha=.55;
-   s.frame(r,today?'panel-gold':claimed?'button-linen-normal':'button-cream-normal');
-   const title=cell.title,tw=s.measure(title,12,700);s.text(title,r.x+(r.w-tw)/2,r.y+7,12,today?this.colors.ink:this.colors.muted,700,r.w-6);
-   const size=Math.min(38,r.h-(cell.extra?58:46)),icon={x:r.x+(r.w-size)/2,y:r.y+24,w:size,h:size};
-   if(cell.icon==='hairpin')s.decoration({id:HAIRPIN_ID,artKey:'hairpin',color:'#f4a6c0'},icon);else s.icon(cell.icon,icon);
-   const label=cell.label,fs=Math.min(11,11*(r.w-6)/Math.max(1,s.measure(label,11,700)));s.text(label,r.x+(r.w-s.measure(label,fs,700))/2,r.y+r.h-(cell.extra?34:19),fs,this.colors.ink,700,r.w-4);
-   if(cell.extra)s.text(cell.extra,r.x+(r.w-s.measure(cell.extra,10,600))/2,r.y+r.h-18,10,this.colors.muted,600,r.w-4);
-   c.restore();
-   if(claimed){const stamp='已领';s.text(stamp,r.x+(r.w-s.measure(stamp,11,800))/2,r.y+24+size/2-6,11,this.colors.rose,800);}
-  });
-  if(!view)centered('正在读取七日礼…',y+76+cellH/2,13,this.colors.muted);
-  const by=y+76+rows*cellH+(rows-1)*gap+18,granted=this.weeklyGrant;
-  if(granted)s.button({x:left,y:by,w:w-40,h:42},'好的',()=>this.closeModal(),{tone:'berry',fontSize:15});
-  else if(view?.available)s.button({x:left,y:by,w:w-40,h:42},'领取第 '+(view.claimed+1)+' 天礼物',()=>void this.claimWeeklyGift(),{tone:'berrydark',fontSize:15,disabled:this.busy});
-  else s.button({x:left,y:by,w:w-40,h:42},view?.done||!view?'好的':'明天再来',()=>this.closeModal(),{fontSize:15});
- }
+ private drawWeeklyGift(){return drawWeeklyGiftPanel.call(this.host);}
  /** Daily done = merged in today's daily (server) or, on an old backend, a finished room of today's picture. */
  private dailyDoneToday(imageId?:string|null){
   const daily=this.dailyPhoto?.id;if(daily&&imageId===daily)return true;
@@ -811,14 +657,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   return completionFooter({tomorrowDay:gift?.tomorrowDay,now:Date.now()});
  }
  /** Story clears show chapter progress, the next album reward and a teaser of the next level. */
- private storyCompletionLines(levelId:string|undefined,chapters:readonly {albumId?:string;milestones?:readonly {target:number;coins?:number;earned?:boolean}[];levels:readonly {id:string;status:string;intro?:string|null;line?:string|null}[]}[],maxChars:number):{progress:string;reward:string|null;teaser:string|null}|null{
-  if(!levelId)return null;const index=chapters.findIndex(chapter=>chapter.levels.some(level=>level.id===levelId));if(index<0)return null;
-  const chapter=chapters[index],levels=chapter.levels,at=levels.findIndex(level=>level.id===levelId),cleared=levels.filter(level=>level.status==='cleared'||level.id===levelId).length;
-  const album=this.collection?.albums.find(item=>item.id===chapter.albumId),numbers=['一','二','三','四','五','六','七','八','九','十'];
-  const {progress,reward}=chapterProgress({chapterTitle:'第'+(numbers[index]??String(index+1))+'章',cleared,total:levels.length,milestones:album?.milestones??chapter.milestones??[]});
-  const next=levels[at+1]??chapters[index+1]?.levels[0],text=next?.intro||next?.line||null,teaser=teaserLine(text,Math.max(6,maxChars-4));
-  return {progress,reward,teaser:teaser?'下一关：'+teaser:null};
- }
+ private storyCompletionLines(levelId:string|undefined,chapters:readonly {albumId?:string;milestones?:readonly {target:number;coins?:number;earned?:boolean}[];levels:readonly {id:string;status:string;intro?:string|null;line?:string|null}[]}[],maxChars:number):{progress:string;reward:string|null;teaser:string|null}|null{return storyCompletionLinesPanel.call(this.host,levelId,chapters,maxChars);}
  /** Breathing next-level button: redraw at ~15 fps only while that button is on screen. */
  private animateBreath(){
   if(this.breathFrame!==null||this.hidden||this.destroyed||this.modal!=='completion'||typeof this.platform.frame!=='function'||reducedComicMotion())return;
@@ -1121,55 +960,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const text=['拼图小窝 登录日志 '+CLIENT_PACKAGE_VERSION+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),...(this.platform.loginLog?.lines()??[]),'当前 · '+(this.platform.tapAuthorizationDebug?.()??'')].join('\n');
   const copied=await (this.platform.copyText?.(text)??Promise.resolve(false)).catch(()=>false);this.note(copied?'登录日志已复制':'复制失败，请截图发送');
  }
- private drawLoginLog(){
-  const s=this.stage,v=this.platform.viewport(),w=Math.min(640,s.w-24),x=(s.w-w)/2,top=v.top+12,bottom=s.h-v.bottom-12;
-  // 面板盖住登录弹窗时，透明原生按钮不能留在上面。
-  this.platform.setIdentityButtonVisible?.(false);
-  s.panel({x,y:top,w,h:bottom-top});
-  s.text('登录日志',x+16,top+16,19,this.colors.ink,800,w-32);
-  this.bodyTop=top+54;this.bodyBottom=bottom-70;this.listArea={x:x+15,y:this.bodyTop,w:w-30,h:Math.max(30,this.bodyBottom-this.bodyTop)};this.sceneArea={...this.listArea};
-  const lines=this.platform.loginLog?.lines()??[];let y=this.bodyTop-this.scroll;
-  s.clip(this.listArea,()=>{if(!lines.length)y=this.paragraph('暂无记录。',x+18,y,w-36,12)+6;for(const line of lines)y=this.paragraph(line,x+18,y,w-36,11,this.colors.ink)+5;y=this.paragraph('当前 · '+(this.platform.tapAuthorizationDebug?.()??''),x+18,y+4,w-36,11)+6;});
-  this.extent=y-(this.bodyTop-this.scroll);this.scroll=clamp(this.scroll,0,Math.max(0,this.extent-this.listArea.h));
-  const gap=8,half=(w-32-gap)/2;
-  s.button({x:x+16,y:bottom-54,w:half,h:38},'关闭',()=>this.closeLoginLog(),{fontSize:12});
-  s.button({x:x+24+half,y:bottom-54,w:half,h:38},'复制',()=>void this.copyLoginLog(),{fontSize:13,tone:'berrydark'});
- }
- private drawPrivacyChoice(){
-  const s=this.stage,v=this.platform.viewport(),detail=this.privacyDocument!==null,entry=tapAuthorizationLayout(s.w,s.h,v.top,v.bottom),combined=this.platform.config.id==='taptap'&&!!this.platform.prepareTapConsent,waiting=this.platform.tapAuthorizationPending?.()===true;
-  this.platform.setIdentityButtonVisible?.(!detail);
-  const w=detail?Math.min(600,s.w-24):entry.panel.w,x=(s.w-w)/2,available=s.h-v.top-v.bottom-24,h=detail?available:entry.panel.h,top=v.top+12+(available-h)/2,bottom=top+h;
-  s.panel({x,y:top,w,h});
-  if(detail){
-   s.text('服务与隐私协议',x+16,top+16,19,this.colors.ink,800,w-32);
-   this.bodyTop=top+54;this.bodyBottom=bottom-70;this.listArea={x:x+15,y:this.bodyTop,w:w-30,h:Math.max(30,this.bodyBottom-this.bodyTop)};this.sceneArea={...this.listArea};
-   const sections=[...privacySectionsFor(this.platform.config?.id,this.supplyAdAvailable),...termsSectionsFor(this.platform.config?.id)];let y=this.bodyTop-this.scroll;
-   s.clip(this.listArea,()=>{for(const[title,text]of sections){s.text(title,x+18,y,14,this.colors.ink,750,w-36);y=this.paragraph(text,x+18,y+25,w-36,12)+17;}});
-   this.extent=y-(this.bodyTop-this.scroll);this.scroll=clamp(this.scroll,0,Math.max(0,this.extent-this.listArea.h));
-  }else{
-   this.scroll=0;this.extent=0;this.bodyTop=top;this.bodyBottom=bottom;this.listArea={x,y:top,w,h:0};this.sceneArea={...this.listArea};
-   const prefix='点击同意确认',size=16,prefixWidth=s.measure(prefix,size),linkWidth=s.measure('协议',size),start=x+(w-prefixWidth-linkWidth)/2,y=top+39;
-   s.text(prefix,start,y,size,this.colors.ink,500);s.text('协议',start+prefixWidth,y,size,this.colors.berry,700);
-   s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(start+prefixWidth,y+21,linkWidth,1);
-   s.hit({x:start+prefixWidth-5,y:y-8,w:linkWidth+10,h:38},()=>{this.privacyDocument='privacy';this.scroll=0;this.platform.setIdentityButtonVisible?.(false);this.invalidate();});
-   if(combined||waiting)this.paragraph(waiting&&this.authorizationNudged?'登录按钮已重新准备，请再点一次“同意并登录”；仍无反应将以游客身份进入。':!this.needsPrivacyChoice&&!waiting?'正在登录TapTap，已有进度会保留。':this.consentError&&!this.privacyRefused?(this.platform.tapNicknameUnavailable?.()?'此客户端不支持昵称授权，点“同意并登录”直接用TapTap账号登录。':'TapTap登录暂不可用，点“同意并登录”将以游客身份进入，进度会保留。'):'同时授权TapTap昵称，用于显示玩家名称。',x+20,top+78,w-40,11);
-   // 登录日志入口放在面板右上角，远离透明原生按钮所在的右下按钮。
-   if(this.platform.config.id==='taptap'&&this.platform.loginLog){const label='登录日志',width=s.measure(label,11),lx=x+w-16-width,ly=top+12;s.text(label,lx,ly,11,this.colors.berry,700);s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(lx,ly+15,width,1);s.hit({x:lx-8,y:ly-8,w:width+16,h:30},()=>this.openLoginLog());}
-  }
-  const gap=8,half=(w-32-gap)/2,back=()=>{this.privacyDocument=null;this.scroll=0;this.platform.setIdentityButtonVisible?.(true);this.invalidate();};
-  s.button({x:x+16,y:bottom-54,w:half,h:38},detail?'返回':this.needsPrivacyChoice?'暂不同意':'取消登录',()=>{if(detail){back();return;}this.privacyRefused=true;this.platform.cancelIdentity?.();this.invalidate();},{fontSize:12});
-  const right={x:x+24+half,y:bottom-54,w:half,h:38};
-  if(detail&&combined){s.button(right,'返回登录',back,{fontSize:13,tone:'berrydark'});return;}
-  if(!detail&&(waiting||combined)){
-   if(waiting){s.frame(right,'button-berrydark-normal');s.text('同意并登录',right.x+(right.w-s.measure('同意并登录',13,750))/2,right.y+11,13,this.colors.onAccent,750);
-    // 原生透明按钮应先接住这次点击；画布收到说明它没对准或未就绪，重建后请玩家再点一次。
-    // 第一次：在这次点击内同步重建原生按钮；第二次仍落到画布：以游客身份进入。
-    s.hit(right,()=>{this.platform.loginLog?.add('画布接到“同意并登录”点击（原生按钮未接住）· '+(this.platform.tapAuthorizationDebug?.()??''));if(!this.authorizationNudged){this.authorizationNudged=true;this.platform.retryTapAuthorizationButton?.();}else this.enterAsTapGuest('原生按钮两次未接住点击');this.invalidate();});}
-   else if(this.consentPreparing||!this.needsPrivacyChoice)s.button(right,'正在连接…',()=>{},{fontSize:13,tone:'berrydark',disabled:true});
-   else if(this.privacyRefused)s.button(right,'重新连接',()=>{this.privacyRefused=false;this.prepareConsentButton();this.invalidate();},{fontSize:13,tone:'berrydark'});
-   else s.button(right,'同意并登录',()=>{if(this.platform.tapNicknameUnavailable?.())this.acceptLoginOnly();else this.enterAsTapGuest('TapTap登录准备失败');},{fontSize:13,tone:'berrydark'});
-  }else s.button(right,'同意',()=>this.acceptPrivacy(),{fontSize:13,tone:'berrydark'});
- }
+ private drawLoginLog(){return drawLoginLogPanel.call(this.host);}
+ private drawPrivacyChoice(){return drawPrivacyChoicePanel.call(this.host);}
  private async loadPrivacyRequests(){
   if(this.privacyRequestsLoading||this.client.config.capabilities.privacyRequests!==true)return;this.privacyRequestsLoading=true;this.invalidate();
   try{const result=await this.client.json<{requests:PrivacyRequest[]}>('/api/mobile/privacy-request');this.privacyRequests=result.requests;}catch(error){this.note(errorText(error));}finally{this.privacyRequestsLoading=false;this.invalidate();}
@@ -1262,16 +1054,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.room?.ticket.room.id===message.roomId){this.note('你已经在这桌了');return;}
   await this.enterRoom(message.roomId,message.inviteCode);
  }
- private drawInviteBanner(){
-  if(!this.inviteBanner&&this.incomingInvite&&this.inviteBannerAllowed){const next=this.incomingInvite;this.incomingInvite=null;if(!this.inviteSeen.has(next.message.id)&&next.message.roomId!==this.room?.ticket.room.id){this.inviteSeen.add(next.message.id);this.inviteBanner={...next,until:Date.now()+60000};}}
-  const banner=this.inviteBanner;if(!banner)return;if(Date.now()>banner.until){this.inviteBanner=null;return;}if(!this.inviteBannerAllowed)return;
-  const s=this.stage,view=this.platform.viewport(),w=Math.min(s.w-24,400),h=62,x=(s.w-w)/2,top=Math.max(view.top+10,this.platform.config.id==='taptap'?44:0)+(this.busy?34:0),y=Math.max(top,this.noticeBottom?this.noticeBottom+6:0),r={x,y,w,h};
-  s.panel(r,'gold');s.hit(r,()=>{});const joinW=58,laterW=52,joinX=x+w-10-joinW,laterX=joinX-6-laterW,tx=x+46,tw=Math.max(40,laterX-8-tx);
-  s.icon('invite',{x:x+10,y:y+16,w:28,h:28});s.text(banner.peer.name+' 邀请你一起拼',tx,y+11,13,this.colors.ink,800,tw);
-  s.text('「'+(banner.message.title??'一起拼图')+'」',tx,y+33,12,this.colors.muted,600,tw);
-  s.button({x:laterX,y:y+15,w:laterW,h:32},'稍后',()=>{this.inviteBanner=null;this.invalidate();},{fontSize:12});
-  s.button({x:joinX,y:y+15,w:joinW,h:32},'加入',()=>void this.joinInvite(banner),{tone:'berry',fontSize:12,disabled:this.busy});
- }
+ private drawInviteBanner(){return drawInviteBannerPanel.call(this.host);}
  private openSocialInbox(){this.showModal('social');this.social.open(this.social.unread?'messages':this.social.requestCount?'requests':'friends');}
  /** Friend messages and requests, on the room's member avatars (the room hides the tab bar that normally shows them). */
  private drawRoomFriendBadge(){
@@ -1280,112 +1063,18 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   s.frame({x,y,w,h:18},'segment-berry-selected');s.text(label,x+(w-s.measure(label,10,700))/2,y+3,10,this.colors.onAccent,700);s.hit({x:x-8,y:y-6,w:w+16,h:30},()=>this.openSocialInbox());
  }
  /** Top of the 「邀请好友」 window: the game friend list (or, with no friends yet, ways to add one). Returns the next y. */
- private drawInviteFriends(left:number,cy:number,width:number){
-  const s=this.stage,ink=this.colors.ink,muted=this.colors.muted,data=this.social.state,room=this.socialRoom();
-  s.text('邀请游戏好友',left,cy,16,ink,800,width);cy+=26;
-  cy=this.paragraph(room?'好友会在游戏里收到邀请，点一下就能加入':'开一桌后自动邀请好友，不用分享',left,cy,width,12)+10;
-  if(!data){s.text('正在读取好友…',left,cy+4,13,muted,600,width);return cy+36;}
-  const friends=inviteOrder(data.friends),members=new Set((room?.members??[]).map(member=>member.code).filter(Boolean));
-  if(!friends.length){
-   s.text('还没有游戏好友',left,cy+2,14,ink,700,width);cy+=28;
-   s.button({x:left,y:cy,w:width,h:38},'按玩家 ID 添加',()=>{this.showModal('social');this.social.startSearch();},{tone:'berry',icon:'plus',fontSize:13});cy+=50;
-   const recent=this.recentPlayers.slice(0,5);
-   if(recent.length){s.text('最近同桌',left,cy,13,muted,700);cy+=24;
-    for(const peer of recent){s.icon('avatar',{x:left,y:cy,w:30,h:34});s.text(peer.name,left+40,cy+1,14,ink,800,width-130);s.text('一起拼过「'+peer.roomTitle+'」',left+40,cy+20,11,muted,600,width-130);s.button({x:left+width-74,y:cy+2,w:74,h:30},peer.requested?'已申请':'加好友',()=>void this.requestFriend(peer.code),{fontSize:12,disabled:peer.requested||this.busy});cy+=46;}}
-   return cy+4;
-  }
-  for(const friend of friends){
-   const r={x:left,y:cy,w:width,h:54},bw=86;s.frame(r,'button-linen-normal');s.icon('avatar',{x:left+8,y:cy+9,w:32,h:36});
-   if(friend.online){s.ctx.fillStyle=s.color('#879864');s.ctx.fillRect(left+34,cy+38,7,7);}
-   const status=members.has(friend.code)?'在这桌':friend.online?friend.room?'正在拼「'+friend.room.title+'」':'在线':friend.lastSeenAt?this.ago(friend.lastSeenAt)+'在线':'离线';
-   s.text(friend.name,left+50,cy+8,14,ink,800,width-bw-64);s.text(status,left+50,cy+29,11,friend.online?ink:muted,600,width-bw-64);
-   const b={x:left+width-bw-8,y:cy+11,w:bw,h:32};
-   if(!room)s.button(b,'开一桌邀请',()=>this.startTableInvite(friend),{tone:'berry',fontSize:12,disabled:this.busy});
-   else if(members.has(friend.code))s.button(b,'已在桌上',()=>{},{fontSize:12,disabled:true});
-   else{const state=this.inviteQueue.state(room.id,friend.code),label=state==='queued'?'排队中':state==='sending'?'发送中':state==='sent'?'已邀请':state==='failed'?'重试':'邀请';
-    s.button(b,label,()=>this.inviteFriend(friend),{tone:state==='sent'?'cream':'berry',icon:state?undefined:'invite',fontSize:12,disabled:state==='queued'||state==='sending'||state==='sent'});}
-   cy+=60;
-  }
-  s.text('＋ 添加更多好友',left,cy+4,12,this.colors.berry,700);s.hit({x:left-4,y:cy-4,w:130,h:30},()=>{this.showModal('social');this.social.startSearch();});
-  return cy+34;
- }
+ private drawInviteFriends(left:number,cy:number,width:number){return drawInviteFriendsPanel.call(this.host,left,cy,width);}
  private friendsTab:'friends'|'messages'|'requests'='friends';private recentPlayers:RecentPlayer[]=[];
  private async loadRecentPlayers(){try{const data=await this.client.json<{players:RecentPlayer[]}>('/api/mobile/social/recent');this.recentPlayers=Array.isArray(data.players)?data.players:[];this.invalidate();}catch{}}
  private ago(at:number){const minutes=Math.max(1,Math.round((Date.now()-at)/60000));return minutes<60?minutes+' 分钟前':minutes<1440?Math.round(minutes/60)+' 小时前':Math.round(minutes/1440)+' 天前';}
  private async requestFriend(code:string){await this.run(async()=>{await this.client.post('/api/mobile/social/requests',{code,requestId:this.platform.randomId()});await this.social.refresh();await this.loadRecentPlayers();this.note('好友申请已发送');});}
  private async respondFriend(code:string,accept:boolean){await this.run(async()=>{await this.client.post('/api/mobile/social/requests/respond',{code,accept,requestId:this.platform.randomId()});await this.social.refresh();this.note(accept?'已成为好友':'已忽略申请');});}
  private openConversation(code:string){this.showModal('social');this.social.openConversation(code);}
- private drawFriends(){
-  const s=this.stage,data=this.social.state,desktop=this.desktop,pad=12,w=s.w-24,ink=this.colors.ink,muted=this.colors.muted,sideW=desktop?Math.min(340,w*.36):w,listW=desktop?w-sideW-16:w;
-  const friends=data?.friends??[],incoming=data?.requests.incoming??[],outgoing=data?.requests.outgoing??[],conversations=data?.conversations??[],messages=this.client.config?.capabilities?.social?.privateMessages===true||this.client.config?.capabilities?.social?.privateMessageHistory===true;
-  let y=this.bodyTop-this.scroll,side=desktop?this.bodyTop-this.scroll:0;
-  const row=(r:Rect)=>{s.frame(r,'button-linen-normal');};
-  this.scrolled(()=>{
-   const tabs:[typeof this.friendsTab,string][]=[['friends','好友 '+friends.length],...(messages?[['messages','消息'] as [typeof this.friendsTab,string]]:[]),['requests','好友申请']];
-   y=this.drawChips(pad,y,Math.min(listW,360),34,tabs.map(([id,label])=>[label,this.friendsTab===id,()=>{this.friendsTab=id;this.scroll=0;this.invalidate();}] as const));
-   const unread=this.social.unread,requests=incoming.length,tw=Math.min(listW,360);if(requests){const x=pad+tw-18;s.frame({x,y:y-42,w:20,h:18},'segment-berry-selected');s.text(String(Math.min(99,requests)),x+5,y-40,11,this.colors.onAccent,700);}
-   if(unread&&messages){const x=pad+tw/3*2-18;s.frame({x,y:y-42,w:20,h:18},'segment-berry-selected');s.text(String(Math.min(99,unread)),x+5,y-40,11,this.colors.onAccent,700);}
-   y+=14;
-   if(!data){s.text('正在读取好友…',pad+8,y+12,14,muted);y+=60;}
-   else if(this.friendsTab==='friends'){
-    if(!friends.length){s.icon('friendArt',{x:pad+(listW-70)/2,y,w:70,h:66});const t='认识一位拼友吧';s.text(t,pad+(listW-s.measure(t,16,800))/2,y+76,16,ink,800);const h='按玩家 ID 添加，或在最近同桌里加好友';s.text(h,pad+(listW-s.measure(h,12,600))/2,y+102,12,muted,600,listW);y+=136;}
-    for(const friend of friends){const r={x:pad,y,w:listW,h:72};row(r);s.icon('avatar',{x:pad+10,y:y+12,w:44,h:48});s.text(friend.name,pad+64,y+12,15,ink,800,listW-260);s.text('Lv.'+friend.level,pad+64+Math.min(listW-260,s.measure(friend.name,15,800))+8,y+15,12,muted,700);
-     const room=friend.room,status=friend.online?room?'正在拼「'+room.title+'」'+(typeof room.players==='number'?' · '+room.players+'/'+seatLimit(room):''):'在大厅':friend.lastSeenAt?this.ago(friend.lastSeenAt)+'在线':'很久没上线';if(friend.online){s.ctx.fillStyle=s.color('#879864');s.ctx.fillRect(pad+50,y+52,8,8);}
-     s.text(status,pad+64,y+38,12,friend.online?ink:muted,600,listW-260);let bx=messages?pad+listW-82:pad+listW;if(messages)s.button({x:bx,y:y+19,w:72,h:34},'私信',()=>this.openConversation(friend.code),{fontSize:13});
-     if(friend.online&&room&&room.visibility!=='private'){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'加入这桌',()=>void this.enterRoom(room.id),{tone:'berry',fontSize:13,disabled:this.busy});}else if(friend.online&&this.roomInvitesEnabled){bx-=104;s.button({x:bx,y:y+19,w:96,h:34},'开一桌邀请TA',()=>this.startTableInvite(friend),{tone:'berry',fontSize:12,disabled:this.busy});}
-     y+=80;}
-   }else if(this.friendsTab==='messages'){
-    if(!conversations.length){s.text('还没有私聊，点好友的“私信”开始',pad+8,y+12,14,muted,600,listW);y+=50;}
-    for(const item of conversations){const r={x:pad,y,w:listW,h:66};row(r);s.icon('avatar',{x:pad+10,y:y+10,w:40,h:44});s.text(item.peer.name,pad+60,y+10,15,ink,800,listW-150);const last=item.lastMessage,text=last.kind==='room-invite'?'邀请你一起拼「'+(last.title??'拼图')+'」':last.text??'';s.text((last.mine?'我：':'')+text,pad+60,y+36,12,muted,600,listW-150);s.text(this.ago(last.sentAt),pad+listW-80,y+12,11,muted,600,70);
-     if(item.unread){s.frame({x:pad+listW-36,y:y+34,w:22,h:18},'segment-berry-selected');s.text(String(Math.min(99,item.unread)),pad+listW-30,y+36,11,this.colors.onAccent,700);}s.hit(r,()=>this.openConversation(item.peer.code));y+=74;}
-   }else{
-    if(!incoming.length&&!outgoing.length){s.text('没有待处理的好友申请',pad+8,y+12,14,muted,600,listW);y+=50;}
-    for(const peer of incoming){const r={x:pad,y,w:listW,h:66};row(r);s.icon('avatar',{x:pad+10,y:y+10,w:40,h:44});s.text(peer.name,pad+60,y+10,15,ink,800,listW-240);s.text('Lv.'+peer.level+' · 想加你为好友',pad+60,y+36,12,muted,600,listW-240);
-     s.button({x:pad+listW-166,y:y+16,w:76,h:34},'接受',()=>void this.respondFriend(peer.code,true),{tone:'berry',fontSize:13,disabled:this.busy});s.button({x:pad+listW-84,y:y+16,w:74,h:34},'忽略',()=>void this.respondFriend(peer.code,false),{fontSize:13,disabled:this.busy});y+=74;}
-    for(const peer of outgoing){const r={x:pad,y,w:listW,h:58};row(r);s.icon('avatar',{x:pad+10,y:y+8,w:36,h:40});s.text(peer.name,pad+56,y+10,14,ink,800,listW-150);s.text('已发送申请，等待对方确认',pad+56,y+32,12,muted,600,listW-150);y+=66;}
-   }
-   // 加好友 and 最近同桌: a right column on desktop, below the list on phones.
-   const sx=desktop?pad+listW+16:pad;let sy=desktop?side:y+8;
-   const add={x:sx,y:sy,w:sideW,h:128};s.panel(add);s.text('加好友',sx+16,sy+14,16,ink,800);s.button({x:sx+16,y:sy+42,w:sideW-32,h:38},'按玩家 ID 添加',()=>{this.showModal('social');this.social.startSearch();},{tone:'berry',icon:'plus',fontSize:14});
-   const code=data?.self.code??this.client.profile?.code??'';s.text('我的 ID '+(code||'…'),sx+16,sy+94,13,muted,700,sideW-110);if(code&&this.platform.copyText){s.button({x:sx+sideW-80,y:sy+86,w:64,h:30},'复制',()=>void this.platform.copyText!(code).then(ok=>this.note(ok?'已复制玩家 ID':'复制失败')),{fontSize:12});}
-   sy+=140;const recent=this.recentPlayers,rh=50+Math.max(1,recent.length)*58;s.panel({x:sx,y:sy,w:sideW,h:rh});s.text('最近同桌',sx+16,sy+14,16,ink,800);let ry=sy+46;
-   if(!recent.length){s.text('一起拼过的人会出现在这里',sx+16,ry+4,12,muted,600,sideW-32);}
-   for(const peer of recent){s.icon('avatar',{x:sx+14,y:ry,w:34,h:38});s.text(peer.name,sx+56,ry+2,14,ink,800,sideW-150);s.text('一起拼过「'+peer.roomTitle+'」· '+this.ago(peer.seenAt),sx+56,ry+22,11,muted,600,sideW-150);s.button({x:sx+sideW-88,y:ry+4,w:74,h:32},peer.requested?'已申请':'加好友',()=>void this.requestFriend(peer.code),{fontSize:12,disabled:peer.requested||this.busy});ry+=58;}
-   sy+=rh+12;if(!desktop)y=sy;else side=sy;
-  });
-  this.extent=Math.max(y,desktop?side:0)+this.scroll-this.bodyTop+12;
- }
+ private drawFriends(){return drawFriendsPanel.call(this.host);}
  private loadingStarted=0;private loadingShown=0;private loadingDone=0;private loadingFrom=0;
  /** Full-screen start-up: logo, progress and rotating tips. Progress follows the real steps and eases in between. */
- private drawLoading(){
-  const s=this.stage,now=Date.now(),v=this.platform.viewport(),ink=this.colors.ink,muted=this.colors.muted;if(!this.loadingStarted)this.loadingStarted=now;
-  // Quick to ~70%, then a slow creep toward 99% so a long login never looks frozen; 100% only once start-up is done.
-  const elapsed=(now-this.loadingStarted)/1000,creep=.7*(1-Math.exp(-elapsed/1.4))+.29*(1-Math.exp(-elapsed/25)),target=this.client.profile?Math.max(creep,.97*(1-Math.exp(-elapsed/1.4))):creep,finish=this.loadingDone?Math.min(1,(now-this.loadingDone)/220):0;
-  const progress=this.loadingDone?this.loadingFrom+(1-this.loadingFrom)*(1-(1-finish)**2):Math.max(this.loadingShown,target);this.loadingShown=progress;
-  const glow=s.ctx.createRadialGradient(s.w/2,s.h*.42,0,s.w/2,s.h*.42,Math.max(s.w,s.h)*.7);glow.addColorStop(0,this.colors.cream);glow.addColorStop(1,this.colors.paper);s.ctx.fillStyle=glow;s.ctx.fillRect(0,0,s.w,s.h);
-  const cx=s.w/2,size=Math.min(112,s.w*.26,s.h*.2),top=Math.max(v.top+16,s.h*.42-size-60);
-  s.icon('piece',{x:cx-size/2,y:top,w:size,h:size});
-  const name=this.platform.config.gameName||'拼图小窝',nameSize=Math.min(34,s.w/9);s.text(name,cx-s.measure(name,nameSize,800)/2,top+size+18,nameSize,ink,800);
-  const slogan='和朋友一起拼拼拼';s.text(slogan,cx-s.measure(slogan,15,600)/2,top+size+nameSize+30,15,muted,600);
-  const barW=Math.min(320,s.w-64),barY=top+size+nameSize+76;s.meter({x:cx-barW/2,y:barY,w:barW,h:10},progress);const percent=Math.round(progress*100)+'%';s.text(percent,cx-s.measure(percent,13,700)/2,barY+18,13,ink,700);
-  const tips=['先把边缘拼好，框架出来就快多了','双指缩放，拖空白处可以移动桌面','拼完的图会自动收进图集','公开房免费，叫上朋友一起拼','卡住的时候，试试提示和底图','每天都有一张新的每日拼图','集齐一个图包，有金币和装饰'],tip=tips[Math.floor(elapsed/3)%tips.length];
-  s.text(tip,cx-Math.min(s.w-32,s.measure(tip,13,600))/2,Math.min(s.h-v.bottom-40,barY+64),13,muted,600,s.w-32);
-  setTimeout(()=>{if(!this.destroyed)this.invalidate();},this.loadingDone?16:120);
- }
- private drawLobbyStartup(){
-  const s=this.stage,left=12,width=Math.min(1120,s.w-24),x=(s.w-width)/2,y=this.bodyTop+8;
-  s.icon('piece',{x,y,w:28,h:28});s.text('拼图大厅',x+36,y+2,23,this.colors.ink,800,width-42);
-  if(this.startupError||this.client.authRequired){
-   const w=Math.min(440,width),cx=x+(width-w)/2,cy=y+60;this.extent=250;
-   const by=this.paragraph(this.client.authRequired?'登录网站账号，即可继续使用已有进度与收藏。':this.startupError,cx+left,cy,w-24,15)+20;
-   const offline=!!this.offline.catalog&&!this.formalWeb,retry=()=>void this.start();if(offline)s.button({x:cx+12,y:by,w:w-24,h:40},'离线拼图',()=>this.enterOffline(),{tone:'berry'});s.button({x:cx+12,y:by+(offline?50:0),w:w-24,h:40},'重新连接',retry,{tone:offline?'cream':'berry'});
-   if(this.formalWeb){s.button({x:cx+12,y:by+50,w:w-24,h:38},'登录 / 注册',()=>this.openWeb('account'));this.drawWebLinks(cx+12,by+108,w-24);}else{let next=by+(offline?104:54);if(this.platform.config.tapAuthorizationTest){s.button({x:cx+12,y:next,w:w-24,h:40},this.authorizationTesting?'取消昵称授权测试':'重新走昵称授权',()=>void this.reauthorizeNickname(),{disabled:this.busy&&!this.authorizationTesting});next+=54;next=this.paragraph(this.platform.tapIdentityDiagnostics?.()??'昵称授权自测',cx+12,next,w-24,11)+20;}if(this.platform.config.buildVersion)s.text('版本 '+this.platform.config.buildVersion,cx+12,next,11,this.colors.muted,500,w-24);}return;
-  }
-  s.text('正在读取房间与玩家信息…',x,y+43,13,this.colors.muted,500,width);
-  const columns=this.desktop?Math.max(3,Math.min(4,Math.floor(width/240))):s.w>=640?3:2,gap=12,cw=(width-gap*(columns-1))/columns,h=Math.min(205,cw*.72+48),top=y+79;
-  for(let index=0;index<columns;index++){const cx=x+index*(cw+gap);s.panel({x:cx,y:top,w:cw,h});s.ctx.fillStyle=this.colors.line;s.ctx.globalAlpha=.22;s.ctx.fillRect(cx+10,top+10,cw-20,h-55);s.ctx.fillRect(cx+12,top+h-31,cw*.58,8);s.ctx.fillRect(cx+12,top+h-16,cw*.35,5);s.ctx.globalAlpha=1;}
-  this.extent=top+h-this.bodyTop+18;
- }
+ private drawLoading(){return drawLoadingPanel.call(this.host);}
+ private drawLobbyStartup(){return drawLobbyStartupPanel.call(this.host);}
  private copyInvitationCode(code:string){if(!this.platform.copyText){this.note('邀请码：'+code);return;}void this.platform.copyText(code).then(ok=>this.note(ok?'已复制邀请码 '+code:'复制失败，请手动记下邀请码 '+code));}
  /** Headers draw beside the nav rail in local coordinates, but keep the same screen right edge. */
  /** Right-edge items end left of TapTap's ••• capsule; rows are never pushed below it (portrait since v31). */
@@ -1456,287 +1145,40 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawLobbyTasks(r:Rect,iconOnly=false){
   const s=this.stage;s.icon('gift',{x:r.x+4,y:r.y+4,w:26,h:32});if(!iconOnly)s.text('任务',r.x+34,r.y+13,13,this.colors.ink,750);this.navBadge('tasks',r.x+28,r.y+5);s.hit(r,()=>this.navigate('tasks'));
  }
- private drawLobby(){
-  const s=this.stage,layout=this.layout,gap=layout==='phoneLandscape'?10:14,top=this.bodyTop,bottom=this.bodyBottom,width=Math.min(1400,s.w-24),left=(s.w-width)/2;
-  if(layout==='phonePortrait'){
-   // One scrolling column: hero, last room, actions, then the public rooms.
-   let y=top-this.scroll;const columns=width>=520?3:2;
-   this.scrolled(()=>{
-    const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
-    const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
-    this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
-    y=this.drawRoomSection(left,y,width,columns,top,bottom);
-   },top,bottom);
-   this.extent=y+this.scroll-top+12;return;
-  }
-  // Desktop and phone landscape: a fixed left column and a room list that scrolls by itself.
-  const landscape=layout==='phoneLandscape',leftW=landscape?Math.min(300,width*.42):Math.min(380,width*.36),rightX=left+leftW+gap+6,rightW=left+width-rightX;
-  let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,rest=(last?continueH+gap:0)+actionH+gap,heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
-  y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
-  if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
-  this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
-  const header=this.drawRoomHeader(rightX,top,rightW,landscape),columns=landscape?3:rightW>=900?4:3;
-  this.bodyTop=header;this.listColumn={x:this.contentOrigin.x+rightX-6,w:rightW+12};
-  let end=header;this.scrolled(()=>{end=this.drawRoomGrid(rightX,header-this.scroll+4,rightW,columns,header,bottom);},header,bottom);
-  this.extent=end+this.scroll-header+12;
- }
+ private drawLobby(){return drawLobbyPanel.call(this.host);}
  private lobbyColumn(){return this.listColumn;}
  // Offline mode draws the bundled chapter with its own levels view.
- private drawChapter(chapter=this.selectedChapter,view=this.storyView){
-  if(!chapter){this.stage.text('小窝的故事',20,this.bodyTop+12,24,this.colors.ink,800,this.stage.w-40);this.stage.text('故事暂未开放，请稍后再来看看',20,this.bodyTop+54,14,this.colors.muted,600,this.stage.w-40);this.extent=0;return;}
-  this.syncComicClear(chapter);
-  const s=this.stage,ctx=s.ctx,portrait=this.layout==='phonePortrait',width=Math.min(1400,s.w-24),left=(s.w-width)/2,top=this.bodyTop,bottom=this.bodyBottom;
-  const current=chapter.levels.find(level=>level.status==='unlocked'),cleared=chapter.levels.filter(level=>level.status==='cleared').length,total=chapter.levels.length,complete=total>0&&cleared===total,number=(view?.chapters.indexOf(chapter)??0)+1;
-  const description='拼完一格，故事就往下走一格。'+(this.energyEnabled?'每格第一次拼完送 '+(view?.firstClearEnergy??0)+' 体力。':'');
-  const mainLabel=complete?'从头看':current?'拼第 '+(chapter.levels.indexOf(current)+1)+' 格（'+current.pieces+' 片）':'暂未解锁';
-  const mainAction=()=>{if(complete)this.openLevelComic(chapter.levels[0].id,{sequence:true});else if(current)void this.launch({mode:'level',levelId:current.id});};
-  const progressWidth=portrait?width:Math.min(172,width*.26),chapterSwitch={x:left+width-progressWidth-128,y:top,w:120,h:40};
-  const heading=(y:number)=>{
-   const textWidth=portrait?width:chapterSwitch.x-left-12;
-   s.text('小窝的故事',left,y,24,this.colors.ink,800,textWidth);
-   const chapters=view?.chapters.filter(item=>item.status==='available')??[],switching=chapters.length>=2;
-   s.text('第 '+number+' 章 · '+chapter.title,left,y+28,12,this.colors.muted,700,portrait&&switching?textWidth-80:textWidth);
-   if(switching){
-    const selected=chapters.findIndex(item=>item.id===chapter.id),x=portrait?left+width-72:chapterSwitch.x+24,sy=portrait?y+20:y+4;
-    [-1,1].forEach((direction,index)=>{const r={x:x+index*40,y:sy,w:32,h:32},disabled=selected+direction<0||selected+direction>=chapters.length;
-     const action=()=>{if(disabled)return;this.storyChapterId=chapters[selected+direction].id;this.scroll=0;this.invalidate();};
-     s.hit(r,()=>{});ctx.save();if(disabled)ctx.globalAlpha=.35;s.button(r,index?'›':'‹',action,{disabled,fontSize:24});ctx.restore();
-    });
-   }
-   const x=portrait?left:left+width-progressWidth,py=portrait?y+54:y;
-   s.text(cleared+' / '+total+' 格',x,py,14,this.colors.ink,700,172);
-   s.meter({x,y:py+23,w:progressWidth,h:6},total?cleared/total:0);
-  };
-  const fit=(value:string,width:number,size:number,weight=600)=>{if(s.measure(value,size,weight)<=width)return value;let text=value;while(text.length&&s.measure(text+'…',size,weight)>width)text=text.slice(0,-1);return text+'…';};
-  const bubble=(line:string,r:Rect)=>{
-   // Wrap at most once. Move closing punctuation with the previous character.
-   const size=!portrait&&r.h<64?10:11,rowHeight=size+4,room=r.w-32,chars=[...line];let count=0;while(count<chars.length&&s.measure(chars.slice(0,count+1).join(''),size,600)<=room)count++;
-   while(count>1&&count<chars.length&&/[。，、！？；：…）」』”’]/.test(chars[count]))count--;count=Math.max(1,count);
-   const rows=(!portrait&&r.h<64?[line]:count<chars.length?[chars.slice(0,count).join(''),chars.slice(count).join('')]:[line]).map(row=>portrait?row:fit(row,room,size)),bw=Math.min(r.w-16,Math.max(...rows.map(row=>s.measure(row,size,600)))+18),bh=!portrait&&r.h<64?size+10:rows.length*rowHeight+10,bx=r.x+r.w-bw-8,by=r.y+r.h-bh-7;
-   ctx.save();ctx.fillStyle=this.colors.cream;ctx.strokeStyle=this.colors.ink;ctx.lineWidth=2;roomRoundPath(ctx,{x:bx,y:by,w:bw,h:bh},7);ctx.fill();ctx.stroke();ctx.restore();
-   rows.forEach((row,index)=>s.text(row,bx+8,by+5+index*rowHeight,size,this.colors.ink,600,bw-16));
-  };
-  const card=(index:number,r:Rect)=>{
-   const level=chapter.levels[index],state=nodeState(level,current),done=state==='cleared',active=state==='current',src=this.levelPicture(level).src;
-   ctx.save();ctx.fillStyle=done?this.colors.placeholder:this.colors.cream;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();
-   if(src&&done)s.clip(r,()=>s.image(this.client.asset(src),r,'cover'));
-   ctx.save();ctx.strokeStyle=active?'#cf9f52':done?this.colors.ink:'#b88f84';ctx.lineWidth=active?3:2;if(state==='locked')ctx.setLineDash?.([6,4]);ctx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);ctx.restore();
-   if(done){
-    const badge=!portrait&&r.h<64?14:22;ctx.save();ctx.fillStyle=this.colors.ink;ctx.fillRect(r.x+3,r.y+3,badge,badge);ctx.restore();s.text(index+1,r.x+(badge===14?6:9),r.y+(badge===14?5:7),badge===14?9:12,this.colors.cream,800,badge-4);
-    if(level.line&&!portrait)bubble(level.line,r);
-    s.hit(r,()=>this.openLevelComic(level.id));
-   }else if(active){
-    const compact=!portrait&&r.h<72,size=portrait?16:compact?10:12,label=portrait?'第 '+(index+1)+' 格 · '+level.pieces+' 片':fit('第 '+(index+1)+' 格 · '+level.pieces+' 片',r.w-12,size,800),hint='拼完解锁这一页',hintSize=compact?9:11,cx=r.x+r.w/2,cy=r.y+r.h/2;
-    if(!compact){ctx.save();ctx.fillStyle='#cf9f52';ctx.beginPath();ctx.moveTo(cx-5,cy-29);ctx.lineTo(cx-5,cy-15);ctx.lineTo(cx+7,cy-22);ctx.closePath();ctx.fill();ctx.restore();}
-    s.text(label,cx-s.measure(label,size,800)/2,cy-(compact?12:8),size,this.colors.ink,800,r.w-12);
-    const hintText=portrait?hint:fit(hint,r.w-12,hintSize);s.text(hintText,cx-s.measure(hintText,hintSize,portrait?500:600)/2,cy+(compact?5:15),hintSize,this.colors.muted,600,r.w-12);
-    s.hit(r,()=>{if(!this.busy&&(this.client.profile||this.offline?.active))void this.launch({mode:'level',levelId:level.id});});
-   }else{const raw=timeLabelFor(chapter,index,level)??'第 '+(index+1)+' 格',label=portrait?raw:fit(raw,r.w-40,12,700),w=s.measure(label,12,700),x=r.x+(r.w-w-28)/2;
-    s.icon('lock',{x,y:r.y+(r.h-18)/2,w:18,h:18},this.colors.muted);s.text(label,x+28,r.y+(r.h-12)/2,12,this.colors.muted,700,r.w-40);
-    s.hit(r,()=>this.note('先拼完前面的格子，就能解锁这里'));
-   }
-  };
-  const node=(index:number,x:number,y:number)=>{
-   const state=nodeState(chapter.levels[index],current),radius=state==='current'?13:11;
-   ctx.save();ctx.lineWidth=2;ctx.strokeStyle=state==='current'?'#cf9f52':state==='cleared'?'#a85567':'#b88f84';
-   if(state==='locked')ctx.setLineDash?.([3,3]);
-   if(state==='current'){ctx.shadowColor='#cf9f52';ctx.shadowBlur=12;}
-   ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);
-   if(state!=='locked'){ctx.fillStyle=state==='cleared'?'#a85567':this.colors.onAccent;ctx.fill();}if(state!=='cleared')ctx.stroke();
-   if(state==='cleared'){ctx.strokeStyle=this.colors.onAccent;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x-5,y);ctx.lineTo(x-1,y+4);ctx.lineTo(x+6,y-4);ctx.stroke();}ctx.restore();
-  };
-  const track=(points:{x:number;y:number}[])=>{
-   if(!points.length)return;const first=points[0],last=points[points.length-1],r=portrait?{x:first.x-3,y:first.y,w:6,h:Math.max(6,last.y-first.y)}:{x:first.x,y:first.y-3,w:Math.max(6,last.x-first.x),h:6};
-   ctx.save();const gradient=ctx.createLinearGradient(first.x,first.y,last.x,last.y);
-   ['#f3c7a0','#9cc9e6','#f0cf6e','#eba965','#d4776c','#3d4170'].forEach((color,index)=>gradient.addColorStop(index/5,color));
-   roomRoundPath(ctx,r,3);ctx.fillStyle=gradient;ctx.fill();
-   const active=current?chapter.levels.indexOf(current):complete?total-1:Math.max(0,chapter.levels.findIndex(level=>level.status!=='cleared')),point=points[active];
-   if(point&&active<total-1){s.clip(r,()=>{ctx.fillStyle='rgba(251,243,232,.62)';if(portrait)ctx.fillRect(r.x,point.y,r.w,last.y-point.y);else ctx.fillRect(point.x,r.y,last.x-point.x,r.h);});}ctx.restore();
-  };
-  if(portrait){
-   let y=top-this.scroll;const start=y;this.scrolled(()=>{
-    heading(y);y+=98;
-    const rows=chapter.levels.map((level,index)=>{const state=nodeState(level,current),h=state==='cleared'?92:state==='current'?128:46,r={x:left+38,y,w:width-38,h},point={x:left+14,y:y+h/2};y+=h+12;return {index,state,r,point};});
-    track(rows.map(row=>row.point));
-    for(const {index,state,r,point}of rows){
-     const level=chapter.levels[index],label=timeLabelFor(chapter,index,level),meta=(label?label+' · ':'')+level.pieces+' 片';node(index,point.x,point.y);
-     if(state==='cleared'){
-      card(index,{x:r.x,y:r.y,w:116,h:76});const text={x:r.x+128,y:r.y+28,w:r.w-128,h:56};
-      s.text(meta,text.x,r.y+2,12,this.colors.muted,700,text.w);if(level.line)bubble(level.line,text);
-     }else{card(index,r);}
-    }
-    y=this.paragraph(description,left,y+6,width,13)+14;
-    s.button({x:left,y,w:width,h:52},mainLabel,mainAction,{tone:'berrydark',fontSize:14,disabled:this.busy||(!this.client.profile&&!this.offline?.active)||(!current&&!complete)});y+=62;
-    if(!this.offline?.active||this.ready){s.button({x:left,y,w:width,h:44},'去大厅逛逛',()=>this.navigate('lobby'),{fontSize:13});y+=56;}
-   });this.extent=y-start;
-  }else{
-   // Alternating cards share horizontal space. Keep both rows visible without scrolling.
-   this.scroll=0;this.extent=0;heading(top);
-   // Reserve title/footer first. The 34px rail band includes the largest node.
-   // A 36px gap between same-row cards also leaves a readable metadata slot.
-   const headingBottom=top+40,railBand=34,minHeight=44,buttonH=26,stacked=bottom-headingBottom-16-42>=minHeight*2+railBand,footerTop=bottom-(stacked?42:buttonH),railTop=headingBottom+8,railBottom=footerTop-8;
-   const heightLimit=Math.max(0,(railBottom-railTop-railBand)/2),widthLimit=total>1?(2*width-36*(total-1))/(total+1):width;
-   // For an exceptionally small host, bounds win over the preferred 44px minimum.
-   const ch=Math.min(92,heightLimit,Math.max(0,widthLimit)*92/168),cw=ch*168/92,cy=(railTop+railBottom)/2;
-   const points=chapter.levels.map((_,index)=>({x:left+cw/2+(width-cw)*index/Math.max(1,total-1),y:cy}));track(points);
-   chapter.levels.forEach((level,index)=>{
-    const point=points[index],above=index%2===0,r={x:clamp(point.x-cw/2,left,left+width-cw),y:above?cy-railBand/2-ch:cy+railBand/2,w:cw,h:ch};card(index,r);node(index,point.x,point.y);
-    const step=total>1?(width-cw)/(total-1):width,mw=Math.max(1,Math.min(80,total>1?2*step-cw-8:width,2*(point.x-left),2*(left+width-point.x))),label=timeLabelFor(chapter,index,level),size=Math.min(11,Math.max(8,mw/4)),rows=label&&ch>=44?[label,level.pieces+' 片']:[label??level.pieces+' 片'],metaH=rows.length*size+(rows.length-1)*4,my=above?cy+railBand/2+4:cy-railBand/2-4-metaH;
-    rows.forEach((value,row)=>{const text=fit(value,mw,size,700);s.text(text,point.x-s.measure(text,size,700)/2,my+row*(size+4),size,this.colors.muted,700,mw);});
-   });
-   const showLobby=!this.offline?.active||this.ready,count=showLobby?2:1,bw=Math.min(stacked?240:132,(width-12)/2),by=bottom-buttonH,descriptionWidth=stacked?width:width-count*(bw+12),footerText=s.measure(description,10,500)<=descriptionWidth?description:'拼完一格，故事往下走一格';
-   s.text(fit(footerText,descriptionWidth,10,500),left,stacked?footerTop:by+8,10,this.colors.muted,500,descriptionWidth);
-   if(!this.offline?.active||this.ready)s.button({x:left+width-bw*2-12,y:by,w:bw,h:26},'去大厅逛逛',()=>this.navigate('lobby'),{fontSize:12});
-   s.button({x:left+width-bw,y:by,w:bw,h:26},mainLabel,mainAction,{tone:'berrydark',fontSize:13,disabled:this.busy||(!this.client.profile&&!this.offline?.active)||(!current&&!complete)});
-   return {chapterSwitch,cardSize:{w:cw,h:ch}};
-  }
- }
+ private drawChapter(chapter=this.selectedChapter,view=this.storyView){return drawChapterPanel.call(this.host,chapter,view);}
  private preloadComicPage(comic:Comic|null){
   if(!comic?.page)return;
   const src=this.client.asset(comic.page.src),thumb=this.client.asset(comic.page.thumbSrc);this.stage.preloadComicImage(src,thumb);return {src,thumb};
  }
  /** Synchronous entry, also used by offline play. No refresh or API request. */
- openLevelComic(levelId:string,options:{sequence?:boolean;fromClear?:boolean}={}){
-  const chapter=this.chapterForLevel(levelId);if(!chapter)return;this.syncComicClear(chapter);
-  const index=options.sequence?0:chapter.levels.findIndex(level=>level.id===levelId),level=chapter.levels[index];
-  if(!level||index<0||index>=this.comicLimit(chapter))return;
-  const returnTo=this.modal==='completion'?'completion':this.modal==='levelComic'?this.comicPage?.returnTo??null:null,comic=comicFor(chapter,index,level)!;
-  this.preloadComicPage(comic);
-  this.stopStoryFrame();this.comicClosePress=null;this.comicGesture=null;this.comicDrag=0;this.comicSnap=undefined;this.comicHintUntil=0;
-  if(!this.comicHintSeen){
-   try{this.comicHintSeen=this.platform.storage.get('jigsaw:comic-hint:v1')==='1';}catch{}
-   if(!this.comicHintSeen){this.comicHintUntil=Date.now()+2500;this.comicHintSeen=true;try{this.platform.storage.set('jigsaw:comic-hint:v1','1');}catch{}}
-  }
-  this.comicPage={chapterId:chapter.id,levelId:level.id,index,sequence:!!options.sequence,fromClear:!!options.fromClear,started:Date.now(),shown:this.comicRead?.has(this.comicReadKey(level.id))?comicTextCount(comic):0,returnTo};this.showModal('levelComic');
- }
+ openLevelComic(levelId:string,options:{sequence?:boolean;fromClear?:boolean}={}){return openLevelComicPanel.call(this.host,levelId,options);}
  private releaseComicBack(){const off=this.comicBack;this.comicBack=undefined;off?.();}
  private stopStoryFrame(){if(this.storyFrame!=null)this.platform.cancelFrame?.(this.storyFrame);this.storyFrame=null;}
  private animateStory(){
   if(this.storyFrame!=null||this.destroyed||this.hidden||!this.platform.frame)return;
   this.storyFrame=this.platform.frame(()=>{this.storyFrame=null;if(this.destroyed||this.hidden)return;if(this.modal==='levelComic'||this.storyIntro)this.invalidate();});
  }
- private turnComic(index:number){
-  const page=this.comicPage,chapter=this.comicChapter;if(!page||!chapter)return;
-  const limit=this.comicLimit(chapter);if(index<0||index>limit||index===page.index)return;
-  const ending=index===limit,level=chapter.levels[index],comic=!ending&&level?comicFor(chapter,index,level):null;
-  if(!ending&&!comic)return;
-  this.preloadComicPage(comic);
-  this.comicPage={...page,index,levelId:ending?'':level.id,ending,fromClear:false,started:Date.now()-520,shown:comic&&this.comicRead?.has(this.comicReadKey(level.id))?comicTextCount(comic):0,turn:reducedComicMotion()?undefined:{started:Date.now(),direction:index>page.index?1:-1}};this.invalidate();
- }
- private advanceComic(all=false){
-  const page=this.comicPage,chapter=this.comicChapter;if(!page||!chapter||page.ending||page.index>=this.comicLimit(chapter))return;
-  const comic=comicFor(chapter,page.index,chapter.levels[page.index]);if(!comic)return;const total=comicTextCount(comic);
-  if(page.shown<total){page.shown=all?total:page.shown+1;page.started=Math.min(page.started,Date.now()-(page.fromClear?1320:520));}
-  if(page.shown>=total)(this.comicRead??=new Set()).add(this.comicReadKey(page.levelId));this.invalidate();
- }
- private drawLevelComic(){
-  const page=this.comicPage,chapter=this.comicChapter;if(!page||!chapter)return;this.syncComicClear(chapter);const limit=this.comicLimit(chapter);
-  if(page.index>limit||(!page.ending&&page.index>=limit)){this.closeModal();return;}
-  const s=this.stage,c=s.ctx,view=this.platform.viewport(),area=comicPageRect(s,view,view.menu),layout=comicLayout(area,s.w>s.h),now=Date.now(),reduced=reducedComicMotion();
-  this.modalArea=area;this.modalExtent=0;c.fillStyle='#3d2129';c.fillRect(0,0,s.w,s.h);
-  // The story page underneath stays drawn: margins and the dot strip must swallow taps, not reach its buttons.
-  s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});
-  if(this.comicSnap){const t=reduced?1:clamp((now-this.comicSnap.started)/150,0,1);this.comicDrag=this.comicSnap.offset*(1-t)*(1-t);if(t===1)this.comicSnap=undefined;else this.animateStory();}
-  const level=chapter.levels[page.index],comic=!page.ending&&level?comicFor(chapter,page.index,level):null;
-  const turn=page.turn&&!reduced?Math.max(0,1-(now-page.turn.started)/250):0;if(!turn)page.turn=undefined;
-  // Clip to the capsule-free region even while the page follows a downward drag.
-  s.clip(area,()=>{c.save();c.translate(turn*turn*area.w*(page.turn?.direction??1),this.comicDrag);c.globalAlpha*=Math.max(.4,1-this.comicDrag/Math.max(1,area.h)*.65);
-   try{
-    if(comic){
-     const photo=this.levelPicture(level),pageImage=this.preloadComicPage(comic),pageSize=s.w>s.h&&pageImage?s.comicImageSize(pageImage.src,pageImage.thumb):null,usePage=!!pageSize;
-     const source=comicSource(comic,s.w>s.h,usePage,{src:photo.src??'',thumb:photo.thumbSrc??''}),src=source.src?this.client.asset(source.src):'',thumb=source.thumb?this.client.asset(source.thumb):'',roomLevel=this.room?.snapshot.levelId??this.room?.snapshot.mobileResult?.levelClear?.levelId,decoded=!usePage&&roomLevel===level.id?this.board?.comicPicture:null;
-     const drawing=usePage?{...comic,panels:comic.panels.map((panel,index)=>({...panel,crop:source.crops[index]}))}:comic;
-     const result=drawComicPage(s,page,drawing,'',(r,crop,zoom)=>s.comicImage(src,thumb,r,crop,zoom,decoded),now,pageSize??s.comicImageSize(src,thumb,decoded),area);if(result.animating)this.animateStory();
-     s.hit(area,()=>this.advanceComic());
-    }else{
-     c.fillStyle='#fffdf8';c.fillRect(area.x,area.y,area.w,area.h);
-     const number=(this.storyView?.chapters.findIndex(item=>item.id===chapter.id)??0)+1,next=chapter.levels[limit],nextChapter=!next?this.storyView?.chapters[number]:null,crossChapter=nextChapter?.status==='available'&&nextChapter.levels[0]?.status==='unlocked'?nextChapter.levels[0]:null,playable=next?.status==='unlocked'?next:crossChapter;
-     const title=playable?next?'下一页：拼完第 '+(limit+1)+' 格解锁':'本章完':'第 '+number+' 章 完',detail=playable?crossChapter?'轻点这里去第 '+(number+1)+' 章':'轻点这里去拼第 '+(limit+1)+' 格（'+playable.pieces+' 片）':'故事待续';
-     const center=(text:string,y:number,size:number,weight:number)=>{size=Math.min(size,(area.w-24)/Math.max(1,[...text].length));s.text(text,area.x+(area.w-s.measure(text,size,weight))/2,y,size,'#642238',weight,area.w-24);};
-     center(title,area.y+area.h/2-28,20,800);center(detail,area.y+area.h/2+16,14,700);
-     if(playable)s.hit(area,()=>{if(this.busy)return;this.showModal(null);if(this.room)this.leaveRoom();void this.launch({mode:'level',levelId:playable.id});});
-    }
-   }finally{c.restore();}
-  });
-  if(turn)this.animateStory();
-  const {dots}=layout,step=Math.min(16,dots.w/(limit+1)),start=dots.x+(dots.w-step*(limit+1))/2;
-  c.save();c.globalAlpha*=.45;c.strokeStyle='#fff4cf';c.lineWidth=1;
-  for(let index=0;index<=limit;index++){c.fillStyle=index===page.index?'#fff4cf':'#cf9f9f';c.beginPath();c.arc(start+(index+.5)*step,dots.y+7,2.5,0,Math.PI*2);if(index<limit)c.fill();else c.stroke();}c.restore();
-  if(this.comicHintUntil>now){c.save();c.globalAlpha*=.45*Math.min(1,(this.comicHintUntil-now)/400);const text='左右滑动翻页 · 下滑关闭',size=Math.min(12,(area.w-24)/text.length);s.text(text,area.x+(area.w-s.measure(text,size,500))/2,area.y+area.h-30,size,'#fffdf8',500,area.w-24);c.restore();this.animateStory();}
-  // Draw last, outside the animated/fading page and the first-open hint.
-  const close=comicCloseRect(view),cx=close.x+close.w/2,cy=close.y+close.h/2;
-  c.save();c.globalAlpha*=.55;c.fillStyle='#3d2129';c.beginPath();c.arc(cx,cy,20,0,Math.PI*2);c.fill();c.restore();
-  // The button sits on the same dark backdrop, so a faint ring keeps its outline readable.
-  c.save();c.strokeStyle='rgba(255,255,255,.4)';c.lineWidth=1.5;c.beginPath();c.arc(cx,cy,19.25,0,Math.PI*2);c.stroke();c.restore();
-  c.save();c.strokeStyle='#ffffff';c.lineWidth=2.5;c.lineCap='round';c.beginPath();c.moveTo(cx-7,cy-7);c.lineTo(cx+7,cy+7);c.moveTo(cx+7,cy-7);c.lineTo(cx-7,cy+7);c.stroke();c.restore();
-  s.hit(close,()=>this.closeModal());
- }
+ private turnComic(index:number){return turnComicPanel.call(this.host,index);}
+ private advanceComic(all=false){return advanceComicPanel.call(this.host,all);}
+ private drawLevelComic(){return drawLevelComicPanel.call(this.host);}
  private snapComicBack(){
   this.comicSnap=this.comicDrag&&!reducedComicMotion()?{started:Date.now(),offset:this.comicDrag}:undefined;
   if(!this.comicSnap)this.comicDrag=0;this.invalidate();
  }
  /** Lock the dominant axis after 16px; a drag never also becomes a tap. */
- private inputComic(input:Input){
-  const point=input.changed[0]??input.points[0],now=Date.now();
-  if(input.type==='down'){this.comicHintUntil=0;this.invalidate();}
-  if(input.type==='cancel'||input.points.length>1){this.comicClosePress=null;this.comicGesture=null;this.snapComicBack();this.stage.input({type:'cancel',points:[],changed:[]});return true;}
-  const close=comicCloseRect(this.platform.viewport());
-  if(input.type==='down'&&point&&inside(close,point.x,point.y)){
-   this.comicClosePress=point.id;this.comicGesture=null;this.stage.input({type:'cancel',points:[],changed:[]});return true;
-  }
-  if(this.comicClosePress!==null){
-   if(input.type==='up'&&point?.id===this.comicClosePress){this.comicClosePress=null;if(inside(close,point.x,point.y))this.closeModal();}
-   return true;
-  }
-  if(input.type==='down'){
-   this.comicSnap=undefined;this.comicDrag=0;
-   this.comicGesture=point&&inside(this.modalArea,point.x,point.y)?{id:point.id,x:point.x,y:point.y,lastY:point.y,lastAt:now,velocity:0}:null;
-  }
-  const gesture=this.comicGesture;
-  if(gesture&&point&&point.id===gesture.id&&(input.type==='move'||input.type==='up')){
-   const dx=point.x-gesture.x,dy=point.y-gesture.y;
-   if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>=16)gesture.axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
-   if(gesture.axis){
-    this.stage.input({type:'cancel',points:[],changed:[]});
-    if(now>gesture.lastAt&&point.y!==gesture.lastY)gesture.velocity=(point.y-gesture.lastY)/(now-gesture.lastAt);
-    else if(now-gesture.lastAt>80)gesture.velocity=0;
-    if(gesture.axis==='y'){this.comicDrag=Math.max(0,dy);this.invalidate();}
-    if(input.type==='up'){
-     this.comicGesture=null;
-     if(gesture.axis==='x'&&Math.abs(dx)>=40&&this.comicPage)this.turnComic(this.comicPage.index+(dx>0?-1:1));
-     else if(gesture.axis==='y'&&(dy>=90||dy>24&&gesture.velocity>.65))this.closeModal();
-     else this.snapComicBack();
-    }else if(point.y!==gesture.lastY){gesture.lastY=point.y;gesture.lastAt=now;}
-    return true;
-   }
-  }
-  if(input.type==='up')this.comicGesture=null;return this.stage.input(input);
- }
- private beginStoryIntro(levelId:string|undefined){
-  this.storyIntro=null;const chapter=this.chapterForLevel(levelId),index=chapter?.levels.findIndex(level=>level.id===levelId)??-1;
-  const intro=chapter&&index>=0?comicFor(chapter,index,chapter.levels[index])?.intro:undefined;
-  // The first time a player meets each variant, its intro says what is different.
-  const variant=this.roomVariant,key=variant?variantIntroKey(variant):'';let extra='';
-  if(variant){let seen=false;try{seen=!!this.platform.storage.get(key);}catch{}if(!seen){extra=variantIntroSentence(variant);try{this.platform.storage.set(key,'1');}catch{}}}
-  const text=intro&&extra?intro+'\n'+extra:intro||extra;if(text){this.storyIntro={text,until:0,ms:extra?4200:2000};this.invalidate();}
- }
+ private inputComic(input:Input){return inputComicPanel.call(this.host,input);}
+ private beginStoryIntro(levelId:string|undefined){return beginStoryIntroPanel.call(this.host,levelId);}
  /** The 回忆变奏关 of a story room this player has to themselves; daily, gallery and shared rooms stay normal. */
- private storyRoomVariant(ticket:RoomTicket,room:RoomClient):StoryVariant|null{
-  const levelId=(ticket.room as typeof ticket.room&{levelId?:string}).levelId;if(!levelId||this.nineGridRoom||room.snapshot.completedAt)return null;
-  if(otherPlayersPresent(room.snapshot,ticket.playerId))return null;
-  const level=this.chapterForLevel(levelId)?.levels.find(item=>item.id===levelId)??this.offline?.view?.chapters.flatMap(chapter=>chapter.levels).find(item=>item.id===levelId)??null;
-  return storyVariantFor(levelId,level);
- }
+ private storyRoomVariant(ticket:RoomTicket,room:RoomClient):StoryVariant|null{return storyRoomVariantPanel.call(this.host,ticket,room);}
  /** Someone else came into this story room: the level carries on as a normal one. */
  private checkVariantCompany(room:RoomClient){
   if(this.room!==room||!this.roomVariant||!this.board||room.snapshot.completedAt||!otherPlayersPresent(room.snapshot,room.ticket.playerId))return;
   this.roomVariant=null;this.board.suspendVariant();this.note('有伙伴加入，这一关改为普通玩法');
  }
- private drawStoryIntro(){
-  const intro=this.storyIntro;if(!intro||!this.imageReady||this.modal)return;
-  if(!intro.until)intro.until=Date.now()+(intro.ms??2000);if(Date.now()>=intro.until){this.storyIntro=null;return;}
-  const s=this.stage,r=this.roomArea;s.ctx.save();s.ctx.fillStyle='rgba(42,26,31,.48)';s.ctx.fillRect(r.x,r.y,r.w,r.h);drawComicText(s,{kind:'caption',at:'tl',text:intro.text},{x:r.x+16,y:r.y+70,w:Math.min(r.w-32,480),h:120});s.ctx.restore();this.animateStory();
- }
+ private drawStoryIntro(){return drawStoryIntroPanel.call(this.host);}
  private get continueRoom(){return this.historyRooms?.find(room=>!room.completed&&!room.unavailable)??null;}
  private dailyNow(){return Date.now()+this.serverOffset;}
  private get dailyLabel(){const day=new Date(this.dailyNow()+8*3600000);return '今日拼图 · '+(day.getUTCMonth()+1)+'月'+day.getUTCDate()+'日';}
@@ -1746,324 +1188,40 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private launchDaily(){void this.launch({mode:'daily',pieces:108,visibility:'public'});}
  // The invite flow shares the current room, so the daily table is opened first.
  private async inviteToDaily(){await this.launch({mode:'daily',pieces:108,visibility:'public'});if(this.room)this.showModal('invite');}
- private drawDailyHero(r:Rect,compact:boolean){
-  const s=this.stage,photo=this.dailyPhoto,ink=this.colors.ink,textH=this.heroTextHeight(compact),imageH=Math.max(0,r.h-textH-8),hasImage=imageH>=(compact?24:40),busy=this.busy||!this.client.profile;
-  s.frame(r,'panel-cream');
-  if(hasImage){const art={x:r.x+8,y:r.y+8,w:r.w-16,h:imageH};if(photo)s.image(this.client.asset(photo.src||photo.thumbSrc),art,'cover');else{s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(art.x,art.y,art.w,art.h);}s.hit(art,()=>{if(!busy)this.launchDaily();});}
-  // 每日拼图连续天数: a gold tag on the picture (or in the label row when the card has no picture).
-  const streak=this.dailyStreak,badge=streak?streakBadge(streak.count):'',hint=badge&&!compact?streakHint(streak):null;
-  // Top-right corner: the one-time settings tip points at the avatar on the left.
-  if(badge&&hasImage){const bw=s.measure(badge,12,800)+22,bx=r.x+r.w-14-bw,by=r.y+14;s.frame({x:bx,y:by,w:bw,h:26},'panel-gold');s.text(badge,bx+11,by+7,12,ink,800,bw-14);
-   if(hint&&imageH>=64){const hw=s.measure(hint,11,600)+18,hx=r.x+r.w-14-hw;s.frame({x:hx,y:by+30,w:hw,h:24},'button-cream-normal');s.text(hint,hx+9,by+36,11,this.colors.muted,600,hw-12);}}
-  let y=r.y+(hasImage?imageH+8:0)+(compact?8:10);const x=r.x+14,w=r.w-28,left=this.dailyLeft,leftW=s.measure(left,11,600);
-  const finished=this.dailyFinished?' · 今天已有 '+this.dailyFinished+' 人拼完':'';s.text(this.dailyLabel+(badge&&!hasImage?' · '+badge:'')+finished,x,y,11,this.colors.muted,700,w-leftW-10);s.text(left,x+w-leftW,y,11,this.colors.muted,600);y+=compact?16:18;
-  const title=photo?.title??'正在读取今日拼图…',size=compact?15:22;s.text(title,x,y,size,ink,800,w);y+=size+(compact?6:8);
-  const description=(photo as {description?:unknown}|null)?.description;if(!compact&&typeof description==='string'&&description){s.text(description,x,y,12,this.colors.muted,500,w);y+=20;}
-  const bh=compact?34:40,primary=Math.round(w*.58);
-  s.button({x,y,w:primary,h:bh},'开始拼 · 108 片',()=>this.launchDaily(),{tone:'berrydark',icon:'daily',fontSize:compact?12:14,disabled:busy});
-  s.button({x:x+primary+8,y,w:w-primary-8,h:bh},'叫上朋友',()=>void this.inviteToDaily(),{icon:'invite',fontSize:compact?12:14,disabled:busy});
-  s.ornaments(r,compact?14:18);
-  return r.y+r.h;
- }
- private drawContinueRoom(room:MobileOwnedRoom,r:Rect){
-  const s=this.stage,slim=r.h<70,thumb=room.thumbSrc??(room.imageId?photoMap.get(room.imageId)?.thumbSrc:undefined),total=room.actualPieces??room.pieces??0,percent=clamp(Math.round((room.placed??0)/Math.max(1,total)*100),0,100),bw=slim?82:96;
-  s.frame(r,'button-linen-normal');const th=r.h-12,tw=Math.round(th*1.25);
-  if(thumb)s.image(this.client.asset(thumb),{x:r.x+6,y:r.y+6,w:tw,h:th});else{s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(r.x+6,r.y+6,tw,th);}
-  const x=r.x+tw+14,w=r.w-tw-bw-30;
-  s.text('继续上次',x,r.y+(slim?7:9),10,this.colors.muted,700);s.text(room.title??'一起拼图',x+50,r.y+(slim?6:8),slim?12:14,this.colors.ink,800,w-50);
-  s.text((total||'—')+' 片'+(room.players?' · 同桌 '+room.players+' 人':''),x,r.y+(slim?23:30),11,this.colors.muted,500,w);
-  s.meter({x,y:r.y+r.h-(slim?13:19),w:Math.max(20,w-34),h:slim?6:8},percent/100);s.text(percent+'%',x+w-30,r.y+r.h-(slim?16:23),10,this.colors.ink,800,32);
-  s.button({x:r.x+r.w-bw-8,y:r.y+(r.h-(slim?32:36))/2,w:bw,h:slim?32:36},'回到这桌',()=>{if(!this.busy)void this.enterRoom(room.id);},{tone:'berry',fontSize:slim?11:13});
- }
+ private drawDailyHero(r:Rect,compact:boolean){return drawDailyHeroPanel.call(this.host,r,compact);}
+ private drawContinueRoom(room:MobileOwnedRoom,r:Rect){return drawContinueRoomPanel.call(this.host,room,r);}
  private quickJoin(){
   const open=this.rooms.filter(room=>room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed),progress=(room:RoomListing)=>room.placed/Math.max(1,room.actualPieces??room.pieces);
   const best=open.filter(room=>progress(room)<.9).sort((a,b)=>progress(b)-progress(a))[0];
   if(best)void this.enterRoom(best.id);else void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction});
  }
- private drawLobbyActions(r:Rect){
-  const half=(r.w-10)/2,font=r.h<42?13:15,icon=r.h<42?17:21;
-  this.drawPictureButton({x:r.x,y:r.y,w:half,h:r.h},'快速加入',()=>this.quickJoin(),'berry','players',font,icon,this.busy||!this.client.profile);
-  this.drawPictureButton({x:r.x+half+10,y:r.y,w:half,h:r.h},'开一桌',()=>this.navigate('gallery'),'cream','create',font,icon);
- }
+ private drawLobbyActions(r:Rect){return drawLobbyActionsPanel.call(this.host,r);}
  private get lobbyRooms(){
   const pieces=(room:RoomListing)=>room.actualPieces??room.pieces,open=(room:RoomListing)=>room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed;
   const rooms=this.rooms.filter(room=>this.lobbyPieces==='small'?pieces(room)<=108:this.lobbyPieces==='large'?pieces(room)>=300:true);
   return [...rooms.filter(open),...rooms.filter(room=>!open(room))];
  }
  private setLobbyChip(change:()=>void){const before=JSON.stringify([this.direction,this.filterCount,this.lobbyPieces]);change();if(JSON.stringify([this.direction,this.filterCount,this.lobbyPieces])===before)return;this.scroll=0;this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();this.invalidate();}
- private drawRoomHeader(x:number,y:number,w:number,compact:boolean){
-  const s=this.stage,count=this.lobbyRooms.length,label=(this.lobbyCursor?count+'+':String(count))+' 桌在拼',size=compact?16:20,historyLabel='历史拼图',historySize=12,hw=Math.ceil(s.measure(historyLabel,historySize,750))+Math.min(19,historySize+5)+(compact?16:22);
-  s.text('公开房间',x,y+2,size,this.colors.ink,800);s.text(label,x+s.measure('公开房间',size,800)+10,y+(compact?5:8),12,this.colors.muted,600);
-  s.button({x:x+w-hw-2,y:y-2,w:hw,h:compact?26:30},historyLabel,()=>this.showModal('history'),{icon:'piece',fontSize:historySize});
-  y+=compact?28:36;
-  const more=!!this.filterCount||this.activeOnly||!this.openOnly||this.direction==='square',chips:[string,boolean,()=>void][]=[
-   ['全部',this.direction==='all'&&this.lobbyPieces==='all'&&!more,()=>this.setLobbyChip(()=>{this.direction='all';this.lobbyPieces='all';this.filterCount=0;})],
-   ['竖图',this.direction==='portrait',()=>this.setLobbyChip(()=>{this.direction=this.direction==='portrait'?'all':'portrait';})],
-   ['横图',this.direction==='landscape',()=>this.setLobbyChip(()=>{this.direction=this.direction==='landscape'?'all':'landscape';})],
-   ['≤108 片',this.lobbyPieces==='small',()=>this.setLobbyChip(()=>{this.lobbyPieces=this.lobbyPieces==='small'?'all':'small';this.filterCount=0;})],
-   ['300 片+',this.lobbyPieces==='large',()=>this.setLobbyChip(()=>{this.lobbyPieces=this.lobbyPieces==='large'?'all':'large';this.filterCount=0;})],
-   ['更多',more,()=>this.showModal('filters')]];
-  return this.drawChips(x,y,w,compact?28:32,chips)+(compact?8:12);
- }
- private drawChips(x:number,y:number,w:number,h:number,chips:readonly(readonly[string,boolean,()=>void])[]){
-  const s=this.stage,font=12,chipGap=6,natural=chips.map(([label])=>s.measure(label,font,700)+(w<360?14:22)),scale=Math.min(1,(w-chipGap*(chips.length-1))/natural.reduce((a,b)=>a+b,0));
-  let cx=x;chips.forEach(([label,selected,action],index)=>{const cw=Math.floor(natural[index]*scale),r={x:cx,y,w:cw,h};s.frame(r,selected?'segment-berry-selected':'button-linen-normal');s.text(label,cx+(cw-s.measure(label,font,700))/2,y+(h-font)/2-1,font,selected?this.colors.onAccent:this.colors.ink,700,cw-4);s.hit(r,action);cx+=cw+chipGap;});
-  return y+h;
- }
+ private drawRoomHeader(x:number,y:number,w:number,compact:boolean){return drawRoomHeaderPanel.call(this.host,x,y,w,compact);}
+ private drawChips(x:number,y:number,w:number,h:number,chips:readonly(readonly[string,boolean,()=>void])[]){return drawChipsPanel.call(this.host,x,y,w,h,chips);}
  private drawRoomSection(x:number,y:number,w:number,columns:number,top:number,bottom:number){return this.drawRoomGrid(x,this.drawRoomHeader(x,y,w,false),w,columns,top,bottom);}
- private drawRoomGrid(x:number,y:number,w:number,columns:number,top:number,bottom:number){
-  const s=this.stage,rooms=this.lobbyRooms,gap=w>=600?14:10,cw=(w-gap*(columns-1))/columns,imageHeight=(cw-12)/1.12,ch=imageHeight+76;
-  if(!rooms.length){
-   if(this.lobbyBusy){s.text('正在寻找拼图桌面…',x+(w-s.measure('正在寻找拼图桌面…',15,700))/2,y+30,15,this.colors.muted,700);return y+80;}
-   if(this.rooms.length||this.lobbyPieces!=='all'||this.direction!=='all'||this.filterCount){const message='没有符合条件的房间，换个筛选试试';s.text(message,x+(w-s.measure(message,14,700))/2,y+30,14,this.colors.muted,700,w);return y+80;}
-   const r={x,y,w,h:Math.min(260,w*.7+60)},bw=Math.min(170,(w-46)/2),art=Math.min(84,r.h*.32);s.panel(r);
-   s.icon('friendArt',{x:x+(w-art)/2,y:y+16,w:art,h:art});let cy=y+art+28;
-   const title='还没有公开房，来开第一桌吧';s.text(title,x+(w-s.measure(title,16,800))/2,cy,16,this.colors.ink,800,w-24);cy+=28;
-   const hint='开好后别人能在这里看到并加入；也可以把邀请发给朋友',hw=Math.min(w-32,s.measure(hint,12,500));cy+=this.stage.wrap(hint,x+(w-hw)/2,cy,hw+2,12,this.colors.muted,18)+8;
-   const bx=x+(w-bw*2-12)/2,by=Math.min(cy,r.y+r.h-50);s.button({x:bx,y:by,w:bw,h:38},'随机开一桌',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),{tone:'berrydark',icon:'dice',fontSize:13,disabled:this.busy||!this.client.profile});s.button({x:bx+bw+12,y:by,w:bw,h:38},'邀请朋友',()=>this.showModal('invite'),{icon:'invite',fontSize:13});
-   return y+r.h+12;
-  }
-  rooms.forEach((room,index)=>{const cx=x+(index%columns)*(cw+gap),cy=y+Math.floor(index/columns)*(ch+gap);if(cy+ch<top||cy>bottom)return;this.drawRoomCard(room,{x:cx,y:cy,w:cw,h:ch});});
-  let end=y+Math.ceil(rooms.length/columns)*(ch+gap);
-  if(this.lobbyCursor){this.button(x+12,end,w-24,this.lobbyBusy?'加载中…':'加载更多',()=>void this.loadLobby(true),'cream',38,this.lobbyBusy);end+=50;}
-  return end;
- }
- private drawRoomCard(room:RoomListing,r:Rect){
-  const s=this.stage,{x,y:cy,w:cw,h:ch}=r,narrow=cw<170,photo=room.photo??photoMap.get(room.imageId),thumb=room.thumbSrc??photo?.thumbSrc,total=room.actualPieces??room.pieces,percent=clamp(Math.round(room.placed/Math.max(1,total)*100),0,100),art={x:x+6,y:cy+6,w:cw-12,h:ch-82};
-  s.frame(r,'button-linen-normal');s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(x+6,cy+6,cw-12,ch-12);if(thumb)s.image(this.client.asset(thumb),art);
-  const copyY=art.y+art.h+7;s.text(room.title,x+11,copyY,narrow?14:16,this.colors.ink,800,cw-22);const metaY=copyY+23;s.icon('piece',{x:x+11,y:metaY,w:14,h:16});s.text(total+'片',x+28,metaY+2,12,this.colors.ink,600);
-  const seats=room.players+'/'+seatLimit(room),seatsW=s.measure(seats,12,700),stack=Math.min(3,room.players),stackX=x+cw-11-seatsW-4-(stack?14+stack*10:0);
-  for(let i=0;i<stack;i++){const member=room.members?.[i];s.icon('avatar',{x:stackX+i*10,y:metaY-2,w:18,h:20});if(member?.decoration)s.decoration(member.decoration,{x:stackX+i*10+10,y:metaY-6,w:10,h:11});}s.text(seats,x+cw-11-seatsW,metaY+2,12,this.colors.ink,700);
-  s.meter({x:x+11,y:cy+ch-16,w:cw-52,h:8},percent/100);s.text(percent+'%',x+cw-11-s.measure(percent+'%',10,800),cy+ch-19,10,this.colors.ink,800);
-  if(room.players>=seatLimit(room)||room.acceptingNew===false){s.ctx.fillStyle='#6f374edb';s.ctx.fillRect(art.x,art.y+art.h-23,art.w,23);s.text(room.players>=seatLimit(room)?'已满员':'暂停加入',art.x+8,art.y+art.h-18,11,'#fff9f0',700);}
-  s.hit(r,()=>{if(room.players>=seatLimit(room))this.note('房间已满，请选择其他房间');else if(room.acceptingNew===false||room.completed)this.note('房间暂不接受加入');else void this.enterRoom(room.id);});
- }
- private drawGallery(){
-  const s=this.stage,layout=this.layout,portrait=layout==='phonePortrait',landscape=layout==='phoneLandscape',width=Math.min(1400,s.w-24),left=(s.w-width)/2,owned=new Set(this.client.profile?.collection?.ownedImageIds??[]);
-  const pack=this.packId?(this.collection?.packs.find(p=>p.id===this.packId)??collectionCatalog.packs.find(p=>p.id===this.packId)):null;
-  const panelW=portrait?0:landscape?260:340,gridW=width-(panelW?panelW+14:0);let y=this.bodyTop;
-  const chipCategories=CATEGORIES.filter(c=>c!=='全部').map(c=>[c,GALLERY_PHOTOS.filter(photo=>photo.category===c).length] as const).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([c])=>c);
-  const view=(change:()=>void)=>this.changeListView(()=>{change();this.packId=null;this.selected=null;});
-  const chips:[string,boolean,()=>void][]=[
-   ['全部',this.source==='all'&&this.direction==='all'&&this.category==='全部'&&!this.search,()=>view(()=>{this.source='all';this.direction='all';this.category='全部';this.search='';})],
-   ['竖图',this.direction==='portrait',()=>view(()=>{this.direction=this.direction==='portrait'?'all':'portrait';})],
-   ['横图',this.direction==='landscape',()=>view(()=>{this.direction=this.direction==='landscape'?'all':'landscape';})],
-   ['免费',this.source==='free',()=>view(()=>{this.source=this.source==='free'?'all':'free';})],
-   ['我的图包',this.source==='owned',()=>view(()=>{this.source=this.source==='owned'?'all':'owned';})],
-   ...chipCategories.map(category=>[category,this.category===category,()=>view(()=>{this.category=this.category===category?'全部':category;})] as [string,boolean,()=>void]),
-   ['更多',!!this.search||this.direction==='square'||this.category!=='全部'&&!chipCategories.includes(this.category),()=>this.showModal('filters')]];
-  y=this.drawChips(left,y,gridW,portrait||landscape?30:34,portrait?chips.filter(([label])=>label!==chipCategories[1]):chips)+10;
-  if(pack){s.icon('book',{x:left+2,y,w:23,h:25});s.text(pack.title,left+30,y+5,13,this.colors.ink,700,gridW-130);s.text('查看所有图片',left+gridW-90,y+6,12,this.colors.muted,600);s.hit({x:left+gridW-98,y,w:98,h:30},()=>this.changeListView(()=>{this.packId=null;this.selected=null;}));y+=34;}
-  const photos=this.availableGallery().filter(photo=>(this.direction==='all'||orientation(photo.id)===this.direction)&&(this.category==='全部'||this.category===photo.category)&&photo.title.includes(this.search)&&(!pack||pack.imageIds.includes(photo.id))&&(this.source==='all'||this.source==='free'&&!!this.freeGalleryIds?.has(photo.id)||this.source==='owned'&&owned.has(photo.id)));
-  const selected=this.selected?photoMap.get(this.selected)??null:null,sheetH=portrait&&selected?this.createPanelHeight(true):0,v=this.platform.viewport(),bottom=s.h-v.bottom-12-(sheetH?sheetH+4:0);
-  const columns=portrait?(gridW>=520?3:2):landscape?3:Math.max(2,Math.min(5,Math.floor(gridW/235))),gap=landscape?8:portrait?10:14,cw=(gridW-gap*(columns-1))/columns,imageHeight=(cw-12)/1.38,ch=imageHeight+(cw<170?56:60);
-  this.bodyTop=y;this.bodyBottom=bottom;this.listColumn={x:this.contentOrigin.x+left-6,w:gridW+12};this.extent=Math.ceil(photos.length/columns)*(ch+gap)+12;
-  this.scrolled(()=>{
-   photos.forEach((photo,index)=>{const x=left+(index%columns)*(cw+gap),cy=y+Math.floor(index/columns)*(ch+gap)-this.scroll;if(cy+ch<y||cy>bottom)return;this.drawPhotoCard(photo,{x,y:cy,w:cw,h:ch},imageHeight,owned);});
-   if(!photos.length){const message=this.source==='owned'?'收藏一个喜欢的图包':'换个条件试试';s.icon(this.source==='owned'?'book':'underlay',{x:left+gridW/2-26,y:y+20,w:52,h:52});s.text(message,left+(gridW-s.measure(message,17,800))/2,y+85,17,this.colors.ink,800);this.drawPictureButton({x:left+gridW/2-85,y:y+122,w:170,h:38},this.source==='owned'?'前往收藏':'查看全部图片',()=>{if(this.source==='owned')this.navigate('collection');else view(()=>{this.direction='all';this.category='全部';this.search='';this.source='all';});},'cream','book',13,17);this.extent=190;}
-  },y,bottom);
-  if(panelW){const top=this.bodyTop-(pack?34:0)-40;this.drawCreatePanel({x:left+width-panelW,y:Math.max(12,top),w:panelW,h:s.h-v.bottom-12-Math.max(12,top)},selected,owned,false);}
-  else if(selected)this.drawCreatePanel({x:left-2,y:s.h-v.bottom-sheetH-4,w:width+4,h:sheetH},selected,owned,true);
- }
+ private drawRoomGrid(x:number,y:number,w:number,columns:number,top:number,bottom:number){return drawRoomGridPanel.call(this.host,x,y,w,columns,top,bottom);}
+ private drawRoomCard(room:RoomListing,r:Rect){return drawRoomCardPanel.call(this.host,room,r);}
+ private drawGallery(){return drawGalleryPanel.call(this.host);}
  private galleryPack(id:string){return this.collection?.packs.find(pack=>pack.imageIds.includes(id))??collectionCatalog.packs.find(pack=>pack.imageIds.includes(id))??null;}
  private photoTag(id:string,owned:Set<string>){if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack&&(pack as CollectionPack).unlock==='ad')return {label:'看广告解锁',tone:'locked',ad:true,price:0};if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
- private drawPhotoCard(photo:SharedPhoto,r:Rect,imageHeight:number,owned:Set<string>){
-  const s=this.stage,selected=this.selected===photo.id,art={x:r.x+6,y:r.y+6,w:r.w-12,h:imageHeight},tag=this.photoTag(photo.id,owned),small=r.w<170;
-  s.frame(r,selected?'panel-gold':'button-linen-normal');s.ctx.fillStyle=selected?s.color('#fff3e7'):this.colors.cream;s.ctx.fillRect(r.x+6,r.y+6,r.w-12,r.h-12);s.image(this.client.asset(photo.thumbSrc),art);
-  if(selected){s.frame({x:art.x+5,y:art.y+5,w:27,h:27},'segment-berry-selected');s.icon('check',{x:art.x+10,y:art.y+10,w:17,h:17},'#fff9ed');}
-  const ty=art.y+art.h+7;s.text(photo.title,r.x+10,ty,small?14:15,this.colors.ink,800,r.w-20);
-  const tagY=ty+(small?21:23);
-  if(tag.tone==='locked'&&'ad' in tag){s.icon('lock',{x:r.x+9,y:tagY,w:13,h:14},this.colors.berry);s.text(tag.label,r.x+25,tagY+1,12,this.colors.berry,700,r.w-35);}
-  else if(tag.tone==='locked'){s.icon('lock',{x:r.x+9,y:tagY,w:13,h:14},this.colors.muted);const price=String(tag.price)+' 金币',pw=s.measure(price,12,700);s.text(tag.label,r.x+25,tagY+1,12,this.colors.muted,600,r.w-pw-46);s.icon('coin',{x:r.x+r.w-pw-27,y:tagY,w:14,h:15});s.text(price,r.x+r.w-pw-10,tagY+1,12,this.colors.ink,700);}
-  else{const tw=s.measure(tag.label,12,700)+12;s.ctx.fillStyle=s.color(tag.tone==='owned'?'#cc8996':'#f2d5ad');s.ctx.fillRect(r.x+10,tagY-1,tw,18);s.text(tag.label,r.x+16,tagY+1,12,tag.tone==='owned'?'#fff8ec':'#674625',700);}
-  s.hit(r,()=>{this.selected=photo.id;this.invalidate();});
- }
+ private drawPhotoCard(photo:SharedPhoto,r:Rect,imageHeight:number,owned:Set<string>){return drawPhotoCardPanel.call(this.host,photo,r,imageHeight,owned);}
  private createPanelHeight(sheet:boolean){const rooms=this.selected?this.rooms.filter(room=>room.imageId===this.selected).length:0;return 14+64+12+(sheet?32:58)+8+(sheet?32:58)+8+(rooms?26:0)+(this.usesCreationTickets?42:0)+46+14;}
- private drawCreatePanel(r:Rect,photo:SharedPhoto|null,owned:Set<string>,sheet:boolean){
-  const s=this.stage,p=this.client.profile,ink=this.colors.ink,x=r.x+14,w=r.w-28,compact=r.w<300;
-  s.frame(r,'panel-cream');s.hit(r,()=>{});let y=r.y+14;
-  // Creation rules are unchanged: owned public rooms are free, otherwise the first choice or a ticket.
-  const freeOwned=!!this.selected&&owned.has(this.selected)&&this.visibility==='public',freeFirst=!!p?.firstSelectionAvailable,available=(p?.supply.create??0)>0,roomCount=this.ownedRoomCount;
-  const lockedPack=!this.formalWeb&&photo&&this.photoTag(photo.id,owned).tone==='locked'?this.galleryPack(photo.id):null;
-  const adLocked=!!lockedPack&&(lockedPack as CollectionPack).unlock==='ad';
-  const createLabel=adLocked?'看广告解锁这张图':lockedPack?'解锁图包':!this.usesCreationTickets?'开一桌':roomCount>=this.ownRoomLimit?'管理房间':freeOwned||freeFirst||available?'开一桌':'观看 TapTap 广告',createAction=()=>{if(adLocked&&photo){void this.unlockAdImage(photo.id);return;}if(lockedPack){const full=this.collection?.packs.find(item=>item.id===lockedPack.id);if(full)this.openPackPreview(full);else this.navigate('collection');return;}if(!this.formalWeb&&roomCount>=this.ownRoomLimit){this.showModal('manage');return;}if(!this.selected){this.note('先选择一张图片');return;}if(!this.usesCreationTickets||freeOwned||freeFirst||available)void this.launch({mode:'selected',pieces:this.pieces,visibility:this.visibility,imageId:this.selected});else void this.claimSupply('create');};
-  const disabled=this.busy||!p||(!lockedPack&&this.usesCreationTickets&&!freeOwned&&!freeFirst&&!available&&!this.ticketClaimAvailable&&roomCount<3);
-  const thumb=compact?52:64;
-  if(photo){s.frame({x,y,w:Math.round(thumb*1.3),h:thumb},'plus-cream-normal');s.image(this.client.asset(photo.thumbSrc),{x:x+3,y:y+3,w:Math.round(thumb*1.3)-6,h:thumb-6});const tx=x+thumb*1.3+10,tw=w-thumb*1.3-(sheet?44:10);s.text(photo.title,tx,y+4,compact?15:17,ink,800,tw);s.text(photo.category,tx,y+(compact?26:30),12,this.colors.muted,600,tw);
-   const tag=this.photoTag(photo.id,owned),pack=tag.tone==='locked'?this.galleryPack(photo.id):null;if(pack){const label=(pack as CollectionPack).unlock==='ad'?'看整本「'+pack.title+'」 ›':'解锁图包 ›';s.text(label,tx,y+thumb-16,12,this.colors.berry,700);s.hit({x:tx-4,y:y+thumb-22,w:s.measure(label,12,700)+8,h:24},()=>{const full=this.collection?.packs.find(item=>item.id===pack.id);if(full)this.openPackPreview(full);else this.navigate('collection');});}}
-  else{s.icon('piece',{x,y:y+8,w:26,h:29});this.paragraph('点选一张喜欢的图片',x+34,y+10,w-34,13);}
-  if(sheet){s.button({x:r.x+r.w-46,y:r.y+10,w:34,h:34},'',()=>{this.selected=null;this.invalidate();});s.icon('close',{x:r.x+r.w-41,y:r.y+15,w:24,h:24},ink);}
-  y+=thumb+12;
-  const row=(label:string,draw:(rr:Rect)=>void)=>{if(sheet){const lw=56;s.text(label,x,y+8,13,this.colors.muted,700);draw({x:x+lw,y,w:w-lw,h:32});y+=40;}else{s.text(label,x,y,13,this.colors.muted,700);draw({x,y:y+20,w,h:34});y+=66;}};
-  row('片数',rr=>s.segments(rr,this.pieceCounts.map(n=>[n,this.pieceLevel(n)?n+'·'+this.pieceLevel(n)+'级':String(n)] as const),this.pieces,n=>{if(this.pieceLevel(n)){this.note(this.pieceLevel(n)+'级解锁'+n+'片房间，你现在 Lv.'+(this.client.profile?.level??0));return;}this.pieces=n;this.invalidate();},this.pieceCounts.filter(n=>this.pieceLevel(n))));
-  row('谁能加入',rr=>s.segments(rr,[['public','公开'],['private','私人']] as const,this.visibility,v=>{this.visibility=v;this.invalidate();}));
-  const tables=this.selected?this.rooms.filter(room=>room.imageId===this.selected&&room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed):[];
-  if(tables.length){const label='这张图有 '+tables.length+' 桌公开房正在拼 · 去加入 ›';s.text(label,x,y,12,this.colors.berry,700,w);s.hit({x:x-4,y:y-6,w,h:26},()=>{const best=[...tables].sort((a,b)=>b.placed/Math.max(1,b.actualPieces??b.pieces)-a.placed/Math.max(1,a.actualPieces??a.pieces))[0];if(best)void this.enterRoom(best.id);});y+=26;}
-  if(this.usesCreationTickets){const cost=freeOwned?'这张图的公开房免费':freeFirst?'首次开桌免费':'需要 1 张建房券';s.text(cost+' · 私人房或其他图用 1 张建房券',x,y,12,this.colors.ink,600,w);y+=19;const stock='建房券 '+(p?.supply.create??0)+'/3';s.text(stock,x,y,12,this.colors.muted,700);if(this.ticketClaimAvailable){const lx=x+s.measure(stock,12,700)+8,label='· 观看 TapTap 广告';s.text(label,lx,y,12,this.colors.berry,700);s.hit({x:lx-4,y:y-6,w:s.measure(label,12,700)+8,h:26},()=>void this.claimSupply('create'));}y+=23;}
-  this.drawPictureButton({x,y,w,h:44},createLabel,createAction,'berrydark','players',16,19,disabled);y+=54;
-  if(!sheet)this.drawPictureButton({x,y,w,h:38},'随机开一桌（公开 · 免费）',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),'cream','dice',compact?12:13,16,this.busy||!p);
- }
- private drawPictureButton(r:Rect,label:string,fn:()=>void,tone='cream',icon='',fontSize=11,iconSize=16,disabled=false,selected=false){
-  const s=this.stage,c=s.ctx;c.save();if(selected){s.frame(r,'button-'+tone+'-'+(disabled?'disabled':'selected'));if(!disabled)s.hit(r,fn);}else s.button(r,'',fn,{tone,disabled});const accent=tone==='berry'||tone==='berrydark'||tone==='gold',textColor=disabled?this.colors.disabled:accent?'#fffaf0':this.colors.ink,gap=label&&icon?3:0,contentWidth=s.measure(label,fontSize,750)+(icon?iconSize:0)+gap,start=r.x+(r.w-contentWidth)/2;if(icon)s.icon(icon,{x:start,y:r.y+(r.h-iconSize)/2,w:iconSize,h:iconSize},disabled?this.colors.disabled:accent?'#fffaf0':icon==='create'?this.colors.gold:undefined);if(label)s.text(label,start+(icon?iconSize+gap:0),r.y+(r.h-fontSize)/2-1,fontSize,textColor,750);c.restore();
- }
- private drawTasks(inWindow=false){
-  const s=this.stage,data=this.tasks,p=this.client.profile,pad=12,w=s.w-24,columns=w>=740?2:1,gap=16,cw=(w-gap*(columns-1))/columns;let y=this.bodyTop;
-  if(!this.desktop&&!inWindow){s.icon('avatar',{x:pad,y,w:40,h:43});s.text('Lv.'+(p?.level??1),pad+47,y+3,15,this.colors.ink,700);s.meter({x:pad+47,y:y+26,w:70,h:7},(p?.xp??0)/Math.max(1,p?.xpToNext??1));s.icon(this.energyEnabled?'lightning':'coin',{x:s.w-130,y:y+8,w:23,h:27});s.text(this.energyEnabled?(p?.energy??0)+'/'+(p?.energyCap??0):String(p?.collection?.coins??0),s.w-99,y+14,15,this.colors.ink,700,83);if(!this.energyEnabled)s.hit({x:s.w-134,y,w:118,h:45},()=>this.showModal('coins'));y+=55;}
-  const tabW=Math.min(220,(w-8)/2),tabH=inWindow?32:38;s.button({x:pad,y,w:tabW,h:tabH},'拼图任务',()=>this.setTaskTab('tasks'),{tone:this.taskTab==='tasks'?'berry':'cream',icon:'daily',fontSize:inWindow?13:15});s.button({x:pad+tabW+8,y,w:tabW,h:tabH},'我的礼包',()=>this.setTaskTab('gifts'),{tone:this.taskTab==='gifts'?'berry':'cream',icon:'gift',fontSize:inWindow?13:15});
-  if(!inWindow){const label='补给站',bw=s.measure(label,13,750)+50,wide=w>=tabW*2+8+bw+8;s.button({x:wide?pad+w-bw:pad,y:wide?y:y+tabH+8,w:bw,h:wide?tabH:32},label,()=>this.navigate('supplies'),{icon:'store',fontSize:13});if(!wide)y+=40;}
-  this.bodyTop=y+tabH+(inWindow?10:15);if(!data){s.text('正在整理任务与礼包…',pad+8,this.bodyTop+25,14);this.extent=0;return;}
-  let cy=this.bodyTop-this.scroll;const gifts=data.inventory.filter(gift=>gift.count>0&&this.giftVisible(gift)),giftCount=gifts.reduce((n,g)=>n+g.count,0),full=(p?.energy??0)>=(p?.energyCap??1);
-  const drawGift=(gift:typeof gifts[number],r:Rect)=>{s.panel(r);const art=gift.effect==='full-energy'&&this.energyEnabled?'refillGift':gift.kind.startsWith('ten')?'pouch':gift.kind.startsWith('friend')?'goldGift':'xpChest';s.icon(art,{x:r.x+13,y:r.y+17,w:55,h:57});const title=!this.energyEnabled&&gift.effect==='full-energy'?'邀请礼包':gift.title;s.text(title+' ×'+gift.count,r.x+80,r.y+16,15,this.colors.ink,750,r.w-94);let ry=r.y+45;
-   const range=(min:number,max:number)=>String(min)+(max!==min?'～'+max:'');const lines=[this.energyEnabled?(gift.effect==='full-energy'?'恢复至当前体力上限':'体力 +'+range(gift.energyMin,gift.energyMax)):'',(gift.xpMax??gift.xp)>0?'经验 +'+range(gift.xpMin??gift.xp,gift.xpMax??gift.xp):'',(gift.coinsMax??gift.coins??0)>0?'金币 +'+range(gift.coinsMin??gift.coins??0,gift.coinsMax??gift.coins??0):''].filter(Boolean);for(const line of lines){s.text(line,r.x+80,ry,12,this.colors.muted,500,r.w-94);ry+=19;}
-   const blocked=this.energyEnabled&&gift.effect==='full-energy'&&full;s.button({x:r.x+12,y:r.y+r.h-45,w:r.w-24,h:34},blocked?'体力已满':gift.effect==='full-energy'&&this.energyEnabled?'使用一份':'开启一份',()=>void this.openGift(gift.kind),{tone:'berry',fontSize:12,disabled:this.busy||blocked});};
-  const drawTask=(task:typeof data.tasks[number],r:Rect)=>{s.panel(r);const title=task.title||({beginner:'新手任务',sharing:'分享邀请',invitation:'邀请好友',friend:'好友默契',cooperation:'今日拼合'}[task.group]),art=task.group==='sharing'?'invitationArt':task.group==='invitation'||task.group==='friend'?'friendArt':'cooperationArt';s.icon(art,{x:r.x+12,y:r.y+17,w:53,h:55});s.text(title,r.x+77,r.y+16,16,this.colors.ink,750,r.w-92);const copy=task.group==='sharing'?'每日分享最多 '+task.target+' 次':task.group==='invitation'?'好友完成 '+data.invitation.requiredContributions+' 次有效拼合':'完成 '+task.target+' 次'+(task.group==='friend'?'好友':'')+'拼合';s.text(copy,r.x+77,r.y+45,11,this.colors.muted,500,r.w-92);
-   const reward=this.energyEnabled&&task.effect==='full-energy'?'补满体力包'+(task.xp?' · 经验 +'+task.xp:'')+taskCoinsText(task.coins??0):this.rewardText(task.energy,task.xp,task.coins??0);s.text(reward,r.x+14,r.y+86,12,this.colors.ink,600,r.w-28);
-   const label=Math.min(task.progress,task.target)+' / '+task.target;s.meter({x:r.x+14,y:r.y+112,w:r.w-87,h:8},task.progress/Math.max(1,task.target));s.text(label,r.x+r.w-66,r.y+108,11,this.colors.muted,700,56);
-   const actionable=task.group==='sharing'||task.group==='invitation'||task.earned,action=()=>task.group==='sharing'?void this.shareInvitation():task.group==='invitation'?this.showModal('invite'):this.setTaskTab('gifts');s.button({x:r.x+12,y:r.y+r.h-45,w:r.w-24,h:33},task.group==='sharing'?'分享邀请':task.group==='invitation'?'邀请好友':task.earned?'查看已存礼包':'进行中',action,{tone:actionable?'berry':'cream',fontSize:12,disabled:this.busy||!actionable});};
-  const drawGrid=<T,>(items:T[],height:number,draw:(item:T,r:Rect)=>void)=>{const base=cy;items.forEach((item,index)=>{const r={x:pad+(index%columns)*(cw+gap),y:base+Math.floor(index/columns)*(height+gap),w:cw,h:height};if(r.y+r.h>=this.bodyTop&&r.y<=this.bodyBottom)draw(item,r);});cy+=Math.ceil(items.length/columns)*(height+gap);};
-  this.scrolled(()=>{if(this.taskTab==='tasks'){
-   const giftRow=this.retentionCapable('weeklyGift')?weeklyTaskRow(this.retention?.weeklyGift??null):null;
-   if(giftRow){s.button({x:pad,y:cy,w,h:39},giftRow,()=>this.openWeeklyGift(),{icon:'gift',tone:this.retention?.weeklyGift.available?'gold':'cream',fontSize:14});cy+=51;}
-   const beginner=data.tasks.filter(task=>task.group==='beginner');if(beginner.length){s.text('新手任务',pad+2,cy+3,17,this.colors.ink,750);cy+=35;drawGrid(beginner,100,(task,r)=>{s.panel(r);s.icon('coin',{x:r.x+12,y:r.y+14,w:26,h:26});s.text(task.title,r.x+47,r.y+17,14,this.colors.ink,700,r.w-137);s.text('金币 +'+(task.coins??0),r.x+r.w-85,r.y+19,12,this.colors.ink,700,73);s.meter({x:r.x+14,y:r.y+54,w:r.w-91,h:8},task.progress/task.target);s.text(task.progress+' / '+task.target,r.x+r.w-69,r.y+50,11,this.colors.muted,700,57);s.text('达成自动领取 · 每档仅一次',r.x+14,r.y+76,10,this.colors.muted,500,r.w-28);});}
-   s.panel({x:pad,y:cy,w,h:85});s.text('十格小礼',pad+15,cy+15,15,this.colors.ink,750);const slotsX=pad+103,slotsW=Math.min(320,w-168),slotW=slotsW/10,slotSize=Math.min(22,Math.max(8,slotW-3));for(let i=0;i<10;i++)s.icon('piece',{x:slotsX+i*slotW+(slotW-slotSize)/2,y:cy+24-slotSize/2,w:slotSize,h:slotSize},i<data.giftProgress?this.colors.rose:this.colors.line);s.text(data.giftProgress+'/10',slotsX+slotsW+8,cy+18,12,this.colors.ink,700);const smallReward=[this.energyEnabled?'体力 +'+(data.giftMinimum??1)+'～'+data.giftMaximum:'',(data.giftXp??0)>0?'经验 +'+data.giftXp:'',(data.giftCoins??0)>0?'金币 +'+data.giftCoins:''].filter(Boolean).join(' · ');s.text('每 10 次有效拼合存入小礼'+(smallReward?'：'+smallReward:''),pad+15,cy+55,11,this.colors.muted,500,w-30);s.hit({x:pad,y:cy,w,h:85},()=>this.setTaskTab('gifts'));cy+=101;
-   const featured=data.tasks.filter(t=>t.group==='sharing'||t.group==='invitation');drawGrid(featured,180,drawTask);s.text('今日任务',pad+2,cy+3,17,this.colors.ink,750);cy+=35;drawGrid(data.tasks.filter(t=>t.group==='cooperation'||t.group==='friend'),180,drawTask);
-   s.button({x:pad,y:cy,w,h:39},'查看已存礼包 · '+giftCount+' 份',()=>this.setTaskTab('gifts'),{icon:'gift',fontSize:14});cy+=54;
-  }else{s.text('存下的小确幸',pad+2,cy+3,19,this.colors.ink,750);s.text('礼包可积累，开启后收下本次奖励',pad+2,cy+33,12,this.colors.muted);cy+=68;if(gifts.length)drawGrid(gifts,168,drawGift);else{s.icon('xpChest',{x:s.w/2-48,y:cy+13,w:96,h:83});const message='继续拼图，收下下一份小礼';s.text(message,(s.w-s.measure(message,14))/2,cy+116,14,this.colors.muted);cy+=177;}const resumeW=Math.min(260,w);s.button({x:pad+(w-resumeW)/2,y:cy,w:resumeW,h:39},'继续拼图',()=>inWindow?this.showModal(null):this.back(),{tone:'berry',fontSize:14});cy+=54;}
-  });this.extent=cy-(this.bodyTop-this.scroll)+12;
- }
+ private drawCreatePanel(r:Rect,photo:SharedPhoto|null,owned:Set<string>,sheet:boolean){return drawCreatePanelView.call(this.host,r,photo,owned,sheet);}
+ private drawPictureButton(r:Rect,label:string,fn:()=>void,tone='cream',icon='',fontSize=11,iconSize=16,disabled=false,selected=false){return drawPictureButtonPanel.call(this.host,r,label,fn,tone,icon,fontSize,iconSize,disabled,selected);}
+ private drawTasks(inWindow=false){return drawTasksPanel.call(this.host,inWindow);}
  private supplyFocus=false;
  private async openAllGifts(){const gifts=(this.tasks?.inventory??[]).filter(gift=>gift.count>0&&this.giftVisible(gift)&&!(this.energyEnabled&&gift.effect==='full-energy'));for(const gift of gifts)await this.openGift(gift.kind,gift.count);}
- private drawTasksPage(){
-  const s=this.stage,data=this.tasks,p=this.client.profile,pad=12,w=s.w-24,two=w>=760,gap=16,colW=two?(w-gap)/2:w,ink=this.colors.ink,muted=this.colors.muted;
-  if(!data){s.text('正在整理任务与礼包…',pad+8,this.bodyTop+25,14);this.extent=0;return;}
-  const columns=[pad,two?pad+colW+gap:pad];let left=this.bodyTop-this.scroll,right=two?left:0;
-  const section=(column:0|1,title:string,height:number,draw:(x:number,y:number,w:number)=>void)=>{const x=columns[column],y=column===0||!two?left:right,r={x,y,w:colW,h:height};if(y+height>=this.bodyTop-20&&y<=this.bodyBottom+20){s.panel(r);s.text(title,x+16,y+14,17,ink,800,colW-32);draw(x+16,y+44,colW-32);}if(column===0||!two)left+=height+14;else right+=height+14;return y;};
-  let supplyY=0;
-  this.scrolled(()=>{
-   // 1. 十格小礼
-   section(0,'十格小礼',118,(x,y,cw)=>{const slot=Math.min(30,(cw-60)/10);for(let i=0;i<10;i++)s.icon('fragment',{x:x+i*(slot+2),y,w:slot,h:slot},i<data.giftProgress?undefined:this.colors.line);if(data.giftProgress<10){s.ctx.save();s.ctx.globalAlpha=.55;s.ctx.fillStyle=this.colors.cream;for(let i=data.giftProgress;i<10;i++)s.ctx.fillRect(x+i*(slot+2),y,slot,slot);s.ctx.restore();}
-    s.text(data.giftProgress+'/10',x+10*(slot+2)+6,y+slot/2-8,15,ink,800);const left=Math.max(0,10-data.giftProgress),reward=[this.energyEnabled?'体力 +'+(data.giftMinimum??1)+'～'+data.giftMaximum:'',(data.giftXp??0)>0?'经验 +'+data.giftXp:'',(data.giftCoins??0)>0?'金币 +'+data.giftCoins:''].filter(Boolean).join(' · ');
-    s.text('再拼合 '+left+' 次就能存下一份'+(reward?' · '+reward:''),x,y+slot+12,13,muted,600,cw);});
-   // 2. 今日任务
-   const daily=data.tasks.filter(task=>task.group==='cooperation'||task.group==='friend');
-   section(0,'今日任务',44+daily.length*86+8,(x,y,cw)=>{daily.forEach((task,index)=>{const ty=y+index*86,art=task.group==='friend'?'friendArt':'cooperationArt',done=task.earned||task.progress>=task.target,copy='完成 '+task.target+' 次'+(task.group==='friend'?'好友':'')+'拼合',reward=this.energyEnabled&&task.effect==='full-energy'?'补满体力包'+(task.xp?' · 经验 +'+task.xp:''):this.rewardText(task.energy,task.xp,task.coins??0);
-     s.icon(art,{x,y:ty,w:44,h:46});s.text(task.title||copy,x+54,ty+2,15,ink,800,cw-160);s.text(copy,x+54,ty+22,12,muted,600,cw-150);s.meter({x:x+54,y:ty+44,w:cw-134,h:8},task.progress/Math.max(1,task.target));s.text(Math.min(task.progress,task.target)+'/'+task.target,x+cw-74,ty+40,12,muted,700,40);
-     if(done)s.text('✓ 礼包已存入',x+cw-92,ty+4,12,'#879864',800,92);s.text('奖励 '+reward,x+54,ty+58,12,done?muted:ink,700,cw-54);});});
-   // 3. 新手任务
-   const beginner=data.tasks.filter(task=>task.group==='beginner'),current=beginner.find(task=>task.progress<task.target)??beginner[beginner.length-1];
-   if(current)section(0,'新手任务',118,(x,y,cw)=>{s.icon('coin',{x,y,w:28,h:30});s.text(current.title,x+38,y+4,15,ink,800,cw-140);s.text('金币 +'+(current.coins??0),x+cw-s.measure('金币 +'+(current.coins??0),14,800),y+5,14,ink,800);s.meter({x,y:y+40,w:cw-70,h:9},current.progress/Math.max(1,current.target));s.text(Math.min(current.progress,current.target)+' / '+current.target,x+cw-62,y+35,13,muted,700,62);s.text('达成自动领取 · 共 '+beginner.length+' 档',x,y+56,12,muted,600,cw);});
-   // 4. 我的礼包
-   const gifts=data.inventory.filter(gift=>gift.count>0&&this.giftVisible(gift)),full=(p?.energy??0)>=(p?.energyCap??1),giftCols=colW>=420?3:2,giftW=(colW-32-(giftCols-1)*10)/giftCols,giftRows=Math.ceil(gifts.length/giftCols);
-   section(1,'我的礼包',gifts.length?44+giftRows*136+56:150,(x,y,cw)=>{
-    if(!gifts.length){s.icon('xpChest',{x,y,w:56,h:48});s.text('继续拼图，收下下一份小礼',x+68,y+16,13,muted,600,cw-68);return;}
-    gifts.forEach((gift,index)=>{const gx=x+(index%giftCols)*(giftW+10),gy=y+Math.floor(index/giftCols)*136,r={x:gx,y:gy,w:giftW,h:126},art=gift.effect==='full-energy'&&this.energyEnabled?'refillGift':gift.kind.startsWith('ten')?'pouch':gift.kind.startsWith('friend')?'goldGift':'xpChest',blocked=this.energyEnabled&&gift.effect==='full-energy'&&full;
-     s.frame(r,'button-linen-normal');s.icon(art,{x:gx+(giftW-52)/2,y:gy+8,w:52,h:50});const title=(!this.energyEnabled&&gift.effect==='full-energy'?'邀请礼包':gift.title)+' ×'+gift.count;s.text(title,gx+(giftW-Math.min(giftW-12,s.measure(title,13,700)))/2,gy+62,13,ink,700,giftW-12);
-     s.button({x:gx+8,y:gy+84,w:giftW-16,h:34},blocked?'体力已满':'开启',()=>void this.openGift(gift.kind),{tone:'berry',fontSize:13,disabled:this.busy||blocked});});
-    s.button({x,y:y+giftRows*136+4,w:cw,h:38},'全部开启',()=>void this.openAllGifts(),{tone:'berrydark',fontSize:14,disabled:this.busy});});
-   // 5. 补给
-   const tickets=this.usesCreationTickets,energy=this.energyEnabled,wechat=this.platform.config?.id==='wechat',adLabel=wechat?'观看广告':'观看 TapTap 广告';
-   // Narrow portrait: the energy buttons move to their own row when space beside the title is tight.
-   const energyTitle='补满体力包 '+(p?.supply.energy??0)+'/3',energyLine='体力 '+(p?.energy??0)+'/'+(p?.energyCap??0),energyButtonsW=72+130,energyStacked=energy&&38+Math.max(s.measure(energyTitle,15,800),s.measure(energyLine,12,600))+12+energyButtonsW>colW-32;
-   if(tickets||energy){supplyY=section(1,'补给',44+(tickets?70:0)+(energy?(energyStacked?106:70):0)+10,(x,y,cw)=>{let ry=y;
-    if(energy){const stock=p?.supply.energy??0,textW=energyStacked?cw-38:cw-50-energyButtonsW;s.icon('lightning',{x,y:ry,w:28,h:38});s.text(energyTitle,x+38,ry+2,15,ink,800,textW);s.text(energyLine,x+38,ry+24,12,muted,600,textW);
-     const useOptions={fontSize:13,disabled:this.busy||!p||stock===0||(p?.energy??0)>=(p?.energyCap??0)};
-     if(this.supplyAdAvailable)this.prepareRewardedAd();
-     if(energyStacked){const bw=(cw-8)/2,by=ry+50;
-      s.button({x,y:by,w:bw,h:34},stock>=3?'库存已满':adLabel,()=>void this.claimSupply('energy'),{tone:'berry',fontSize:12,disabled:this.busy||stock>=3});
-      s.button({x:x+bw+8,y:by,w:bw,h:34},'使用',()=>void this.useEnergy(),useOptions);ry+=106;}
-     else{const bw=72,adW=124;s.button({x:x+cw-bw,y:ry+4,w:bw,h:34},'使用',()=>void this.useEnergy(),useOptions);
-      s.button({x:x+cw-bw-adW-6,y:ry+4,w:adW,h:34},stock>=3?'库存已满':adLabel,()=>void this.claimSupply('energy'),{tone:'berry',fontSize:12,disabled:this.busy||stock>=3});ry+=70;}}
-    if(tickets){const stock=p?.supply.create??0;s.icon('ticket',{x,y:ry,w:34,h:36});s.text('建房券 '+stock+'/3',x+44,ry+2,15,ink,800,cw-176);s.text('私人房或指定图片时使用',x+44,ry+24,12,muted,600,cw-176);
-     if(this.supplyAdAvailable)this.prepareRewardedAd();
-     s.button({x:x+cw-124,y:ry+4,w:124,h:34},stock>=3?'库存已满':adLabel,()=>void this.claimSupply('create'),{tone:'berry',fontSize:12,disabled:this.busy||stock>=3||!this.ticketClaimAvailable});}
-   });}
-   // 6. 邀请好友
-   const invitation=data.invitation,invitationTask=data.tasks.find(task=>task.group==='invitation');
-   if(!this.inviteRewardsHidden)section(1,'邀请好友',this.energyEnabled?292:222,(x,y,cw)=>{s.icon('invitationArt',{x,y,w:70,h:66});const copy=this.energyEnabled?'每位有效好友体力上限 +1（最多 +5），并送补满体力包'+(invitationTask?.xp?'及 '+invitationTask.xp+' 经验':'')+taskCoinsText(invitationTask?.coins??0):'好友接受邀请并完成 '+(invitation?.requiredContributions??3)+' 次有效拼合，你可获得 '+this.rewardText(0,invitationTask?.xp??0,invitationTask?.coins??0)+'，每日最多 '+(invitation?.dailyLimit??3)+' 位。';this.paragraph(copy,x+82,y,cw-82,12,muted);
-    if(this.energyEnabled){this.paragraph('好友绑定邀请码并完成 '+(invitation?.requiredContributions??3)+' 次有效拼合；补满包每日最多 '+(invitation?.dailyLimit??3)+' 份。',x,y+76,cw,12,muted);s.text('已加成 '+(invitation?.capBonus??0)+'/'+(invitation?.capBonusMaximum??5),x,y+120,13,this.colors.berry,700);y+=70;}
-    s.text('我的邀请码',x,y+84,12,muted,700);s.text(invitation?.code??'正在读取…',x+76,y+80,18,ink,800,cw-76);if(invitation?.code)s.hit({x:x+70,y:y+72,w:Math.min(cw-70,s.measure(invitation.code,18,800)+20),h:34},()=>this.copyInvitationCode(invitation.code));const bw=(cw-10)/2;
-    s.button({x,y:y+114,w:bw,h:38},'分享邀请',()=>void this.shareInvitation(),{tone:'berry',icon:'invite',fontSize:14,disabled:this.busy});
-    s.button({x:x+bw+10,y:y+114,w:bw,h:38},this.platform.copyText?'复制邀请码':'输入好友邀请码',()=>{if(this.platform.copyText&&invitation?.code)this.copyInvitationCode(invitation.code);else this.showModal('invite');},{fontSize:14});
-    s.text('输入好友的邀请码 ›',x,y+160,12,this.colors.berry,700);s.hit({x:x-4,y:y+152,w:140,h:26},()=>this.showModal('invite'));});
-  });
-  this.extent=Math.max(left,right)+this.scroll-this.bodyTop+12;
-  if(this.supplyFocus&&supplyY){this.supplyFocus=false;this.scroll=clamp(supplyY+this.scroll-this.bodyTop-8,0,Math.max(0,this.extent-(this.bodyBottom-this.bodyTop)));this.invalidate();}
- }
- private drawSupplies(){
-  if(!this.energyEnabled){this.drawWebSupplies();return;}
-  const s=this.stage,p=this.client.profile,pad=12,w=s.w-pad*2,landscape=s.w>650&&s.w>s.h,adLabel=this.platform.config?.id==='wechat'?'观看广告':'观看 TapTap 广告';let y=this.bodyTop-this.scroll+4;
-  this.scrolled(()=>{const cw=landscape?(w-12)/2:w,ch=218,start=y;
-   for(const [index,[kind,title,description,art,smallArt]]of ([['energy','补满体力包','需要时再开启','supplyEnergy','lightning'],['create','建房券','指定图片或私人房间','supplyTicket','ticket']] as const).entries()){
-    const x=pad+(landscape?index*(cw+12):0),cy=start+(landscape?0:index*(ch+12)),r={x,y:cy,w:cw,h:ch},imageW=Math.min(110,Math.floor(cw*.32)),imageR={x:x+10,y:cy+10,w:imageW,h:126};s.panel(r);s.clip(imageR,()=>{const edge=Math.max(imageR.w,imageR.h);s.icon(art,{x:imageR.x+(imageR.w-edge)/2,y:imageR.y+(imageR.h-edge)/2,w:edge,h:edge});});
-    const dx=x+imageW+20,dw=cw-imageW-32,small=cw<330,stock=p?.supply[kind]??0;
-    s.icon(smallArt,{x:dx,y:cy+15,w:22,h:26});s.text(title,dx+28,cy+20,small?16:19,this.colors.ink,700,dw-28);
-    this.paragraph(description,dx,cy+52,dw,12,this.colors.ink);
-    s.ctx.fillStyle=s.color('#f8e8d8');s.ctx.fillRect(dx,cy+103,dw,28);s.text('库存 '+stock+'/3',dx+8,cy+109,14,this.colors.ink,700,dw-16);
-    if(this.supplyAdAvailable)this.prepareRewardedAd();
-    s.button({x:x+12,y:cy+150,w:cw-24,h:43},stock>=3?'库存已满':adLabel,()=>void this.claimSupply(kind),{tone:'berry',fontSize:14,disabled:this.busy||stock>=3});
-   }y=start+(landscape?ch:2*ch+12)+12;
-   s.panel({x:pad,y,w,h:40},'linen');s.icon('store',{x:pad+10,y:y+5,w:31,h:28});s.text('已购图包可免费创建公开房间。',pad+49,y+14,11,this.colors.ink,700,w-92);s.icon('sprig',{x:s.w-pad-31,y:y+11,w:22,h:20});y+=52;
-   const inventory={x:pad,y,w,h:100};s.panel(inventory);s.icon('bag',{x:pad+13,y:y+11,w:17,h:18},this.colors.ink);s.text('我的库存',pad+37,y+12,18,this.colors.ink,700);s.ctx.fillStyle=s.color('#dfbdad');s.ctx.fillRect(pad+9,y+38,w-18,1);
-   const slotW=(w-24)*.31,bx=pad+18+slotW*2,bw=s.w-pad-bx-11;
-   for(const[index,[kind,label,art]]of ([['energy','体力包','energy'],['create','建房券','ticket']] as const).entries()){const sx=pad+12+index*slotW;s.icon(art,{x:sx,y:y+48,w:31,h:38});s.text(label,sx+35,y+47,10,this.colors.ink,700);s.ctx.fillStyle=s.color('#f8e8d8');s.ctx.fillRect(sx+35,y+64,33,21);s.text(p?.supply[kind]??0,sx+44,y+65,17,this.colors.ink,700);if(index===0){s.ctx.fillStyle=s.color('#dfbdad');s.ctx.fillRect(sx+slotW-4,y+45,1,43);}}
-   this.button(bx,y+48,bw,p&&p.energy>=p.energyCap?'体力已满':'使用体力包',()=>void this.useEnergy(),'berry',42,!p||p.supply.energy===0||p.energy>=p.energyCap);y+=115;
-   const note='提前准备，拼图时随用随取';s.text(note,(s.w-s.measure(note,11))/2,y,11,this.colors.muted);y+=28;
-   s.text('回去拼图  →',(s.w-80)/2,y+4,12,this.colors.muted);s.hit({x:pad,y:y-4,w,h:36},()=>this.back());y+=46;
-  });this.extent=y-(this.bodyTop-this.scroll)+12;
- }
- private drawWebSupplies(){
-  const s=this.stage,p=this.client.profile,w=Math.min(650,s.w-24),x=(s.w-w)/2,adLabel=this.platform.config?.id==='wechat'?'观看广告':'观看 TapTap 广告';let y=this.bodyTop-this.scroll;
-  if(this.formalWeb){this.scrolled(()=>{s.icon('coin',{x:x+12,y:y+8,w:42,h:44});s.text('我的金币 '+(p?.collection?.coins??0),x+67,y+17,22,this.colors.ink,750,w-80);y+=76;y=this.paragraph('金币、相册和已拥有内容继续保留。建房条件以当前账号与会员权限为准。',x+8,y,w-16,14)+24;s.button({x:x+8,y,w:w-16,h:40},'账号与会员',()=>this.openWeb('membership'),{fontSize:14});y+=52;});this.extent=y-(this.bodyTop-this.scroll)+12;return;}
-  this.scrolled(()=>{s.panel({x,y,w,h:225});s.icon('supplyTicket',{x:x+14,y:y+22,w:140,h:140});s.text('建房券',x+166,y+24,23,this.colors.ink,750,w-183);s.text('指定图片或创建私人房间',x+167,y+64,12,this.colors.muted,500,w-184);s.text('当前库存 '+(p?.supply.create??0)+' / 3',x+167,y+100,17,this.colors.ink,750,w-184);s.button({x:x+17,y:y+169,w:w-34,h:39},(p?.supply.create??0)>=3?'库存已满':adLabel,()=>void this.claimSupply('create'),{tone:'berry',fontSize:13,disabled:this.busy||!this.ticketClaimAvailable||(p?.supply.create??0)>=3});if(this.supplyAdAvailable)this.prepareRewardedAd();y+=247;y=this.paragraph('随机公开房免费创建；已拥有的图包图片，也可免费创建公开房。已有建房券可以正常使用。',x+8,y,w-16,14)+23;s.button({x:x+8,y,w:w-16,h:41},'去挑选图片',()=>this.navigate('gallery'),{icon:'underlay',fontSize:14});y+=55;});this.extent=y-(this.bodyTop-this.scroll)+12;
- }
+ private drawTasksPage(){return drawTasksPagePanel.call(this.host);}
+ private drawSupplies(){return drawSuppliesPanel.call(this.host);}
+ private drawWebSupplies(){return drawWebSuppliesPanel.call(this.host);}
  private albumDetailOpen=false;private decorationFilter:'all'|'owned'|'craft'|'album'='all';
- private drawCollection(){
-  const s=this.stage,data=this.collection,desktop=this.desktop,landscape=this.layout==='phoneLandscape',pad=12,w=s.w-pad*2;let y=this.bodyTop;
-  const tab=this.collectionTab==='decorations'?'decorations':'albums';
-  if(landscape||!(tab==='albums'&&this.albumDetailOpen&&!desktop)){
-   const tabs=[['albums','图集','book'],['decorations','装饰','leaf']] as const,tw=Math.min(180,(w-8)/2);
-   tabs.forEach(([id,label,icon],index)=>s.button({x:pad+index*(tw+8),y,w:tw,h:landscape?32:38},label,()=>this.changeListView(()=>{this.collectionTab=id;this.albumDetailOpen=false;}),{tone:tab===id?'berry':'linen',icon,fontSize:15}));
-   if(landscape&&tab==='albums'&&this.albumDetailOpen)s.button({x:pad+tw*2+24,y,w:84,h:32},'‹ 图集',()=>{this.albumDetailOpen=false;this.scroll=0;this.albumListScroll=0;this.invalidate();},{fontSize:12});
-   else if(w>tw*2+200&&!(desktop&&tab==='albums'))s.text(tab==='albums'?'拼完一张图就收进图集，集满有奖励':'装饰会在拖动拼块时展示给同桌',pad+tw*2+24,y+12,13,this.colors.muted,600,w-tw*2-30);
-   y+=landscape?40:50;if(!landscape&&w<=tw*2+200&&tab==='albums'){s.text('拼完一张图就收进图集，集满有奖励',pad+2,y-4,12,this.colors.muted,600,w);y+=20;}
-  }
-  this.bodyTop=y;if(!data){s.text('正在翻开收藏…',pad+8,y+32,15);this.extent=0;return;}
-  if(tab==='decorations'){this.drawDecorations(data);return;}
-  const albums=this.orderedAlbums(data),selected=albums.find(album=>album.id===this.albumId)??albums.find(album=>this.packFor(data,album.id))??albums[0];
-  if(landscape){
-   if(this.albumDetailOpen&&selected){
-    const leftW=w*.34,gap=12,grid={x:pad+leftW+gap,y,w:w-leftW-gap,h:this.bodyBottom-y};
-    this.listColumn={x:this.contentOrigin.x+pad,w:leftW};
-    let bottom=y-this.scroll;
-    s.clip({x:pad,y,w:leftW,h:grid.h},()=>{
-     bottom=this.drawAlbumHeader(data,selected,pad,bottom,leftW,true);
-     bottom=this.drawAlbumRewards(data,selected,pad,bottom+6,leftW,true);
-    });this.extent=bottom+this.scroll-y+8;
-    this.albumListArea={...grid,x:grid.x+this.contentOrigin.x,y:grid.y+this.contentOrigin.y};
-    this.albumListExtent=this.albumImageGridHeight(selected,grid.w,3);
-    this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-grid.h));
-    s.clip(grid,()=>this.drawAlbumImages(selected,grid.x,y-this.albumListScroll,grid.w,3));
-   }else{
-    const columns=w>=900?4:3,gap=12,cw=(w-gap*(columns-1))/columns;let bottom=y-this.scroll;
-    this.scrolled(()=>{for(let row=0;row<Math.ceil(albums.length/columns);row++){
-     let rowBottom=bottom;for(let col=0;col<columns;col++){const album=albums[row*columns+col];if(album)rowBottom=Math.max(rowBottom,this.drawAlbumCard(data,album,{x:pad+col*(cw+gap),y:bottom,w:cw},false,true));}bottom=rowBottom+gap;
-    }},y,this.bodyBottom);this.extent=bottom+this.scroll-y;
-   }return;
-  }
-  if(desktop){
-   const listW=Math.min(560,w*.5),detail={x:pad+listW+16,y,w:w-listW-16,h:this.bodyBottom-y};
-   let ly=y-this.scroll;this.listColumn={x:this.contentOrigin.x+pad-4,w:listW+8};
-   this.scrolled(()=>{for(const album of albums)ly=this.drawAlbumCard(data,album,{x:pad,y:ly,w:listW},album.id===selected?.id)+12;},y,this.bodyBottom);this.extent=ly+this.scroll-y;
-   if(selected){s.panel(detail);this.albumListArea={x:this.contentOrigin.x+detail.x,y:this.contentOrigin.y+detail.y+8,w:detail.w,h:detail.h-16};let dy=detail.y+16-this.albumListScroll;const inner={x:detail.x+16,w:detail.w-32};
-    s.clip({x:detail.x+4,y:detail.y+6,w:detail.w-8,h:detail.h-12},()=>{dy=this.drawAlbumDetail(data,selected,inner.x,dy,inner.w,3);});this.albumListExtent=dy+this.albumListScroll-detail.y;this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-detail.h+16));}
-   return;
-  }
-  let cy=y-this.scroll;
-  this.scrolled(()=>{
-   if(this.albumDetailOpen&&selected){s.button({x:pad,y:cy,w:84,h:34},'‹ 图集',()=>{this.albumDetailOpen=false;this.scroll=0;this.invalidate();},{fontSize:14});cy=this.drawAlbumDetail(data,selected,pad,cy+46,w,2);}
-   else for(const album of albums)cy=this.drawAlbumCard(data,album,{x:pad,y:cy,w},false)+12;
-  },y,this.bodyBottom);this.extent=cy+this.scroll-y+12;
- }
+ private drawCollection(){return drawCollectionPanel.call(this.host);}
  private packFor(data:MobileCollectionView,albumId:string){return data.packs.find(pack=>pack.id===albumId)??null;}
  /** 日常拾光 (the album without a pack) first, then the packs in catalogue order. */
  private orderedAlbums(data:MobileCollectionView){return [...data.albums.filter(album=>!this.packFor(data,album.id)),...data.albums.filter(album=>this.packFor(data,album.id))];}
@@ -2073,208 +1231,29 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   return next.target>=album.total?'集齐送 '+next.coins+' 金币'+(decoration?'和'+decoration:''):'再拼 '+left+' 张得 '+next.coins+' 金币'+(decoration?'和'+decoration:'');
  }
  private openAlbum(id:string){this.albumId=id;this.albumDetailOpen=true;this.albumListScroll=0;if(!this.desktop)this.scroll=0;this.invalidate();}
- private drawAlbumCard(data:MobileCollectionView,album:CollectionAlbum,r:{x:number;y:number;w:number},selected:boolean,compact=false){
-  const s=this.stage,pack=this.packFor(data,album.id),ink=this.colors.ink;
-  if(compact){const h=164,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');
-   if(pack)s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||''),{x:r.x+5,y:r.y+5,w:r.w-10,h:65},'cover');else s.icon('book',{x:r.x+12,y:r.y+12,w:46,h:46});
-   s.text(album.title,r.x+10,r.y+77,15,ink,800,r.w-20);s.text('已收集 '+album.collected+'/'+album.total,r.x+10,r.y+100,12,this.colors.muted,700,r.w-20);
-   s.meter({x:r.x+10,y:r.y+121,w:r.w-20,h:8},album.collected/Math.max(1,album.total));
-   if(pack&&!pack.owned)s.button({x:r.x+8,y:r.y+133,w:r.w-16,h:26},this.packOfferLabel(pack),()=>this.openPackOffer(pack),{icon:pack.unlock==='ad'?'lock':'coin',fontSize:12,disabled:this.busy});
-   else s.text(this.nextMilestoneText(data,album),r.x+10,r.y+140,11,this.colors.muted,600,r.w-20);
-   s.hit({...card,h:130},()=>this.openAlbum(album.id));return r.y+h;
-  }
-  if(!pack){const h=100,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');s.icon('book',{x:r.x+14,y:r.y+18,w:44,h:40});s.text(album.title,r.x+68,r.y+14,17,ink,800,r.w-170);s.text('每日拼图自动收进来',r.x+68,r.y+38,12,this.colors.muted,600,r.w-170);
-   const count=album.collected+' / '+album.total;s.text(count,r.x+r.w-14-s.measure(count,15,800),r.y+16,15,ink,800);s.meter({x:r.x+68,y:r.y+60,w:r.w-84,h:9},album.collected/Math.max(1,album.total));s.text(this.nextMilestoneText(data,album),r.x+68,r.y+76,12,this.colors.muted,600,r.w-84);s.hit(card,()=>this.openAlbum(album.id));return r.y+h;}
-  const coverH=Math.min(170,r.w*.42),h=coverH+52,card={...r,h},cover={x:r.x+6,y:r.y+6,w:r.w-12,h:coverH},adPack=pack.unlock==='ad',locked=!pack.owned&&album.collected===0&&!(adPack&&(pack.unlocked??0)>0);
-  s.frame(card,selected?'panel-gold':'button-linen-normal');s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||album.images[0]?.thumbSrc||''),cover,'cover');
-  const c=s.ctx,shade=c.createLinearGradient(0,cover.y+coverH*.35,0,cover.y+coverH);shade.addColorStop(0,'#2a142000');shade.addColorStop(1,'#2a1420d9');c.fillStyle=shade;c.fillRect(cover.x,cover.y,cover.w,cover.h);
-  s.text(album.title,cover.x+14,cover.y+coverH-52,20,'#fff8ec',800,cover.w-130);s.text(album.description,cover.x+14,cover.y+coverH-24,12,'#fff3e2',500,cover.w-28);
-  const badge=adPack&&!pack.owned?'已解锁 '+(pack.unlocked??0)+'/'+album.total:locked?'未解锁':album.collected>=album.total?album.collected+' / '+album.total+' ✓':album.collected+' / '+album.total,bw=s.measure(badge,13,800)+18;c.fillStyle=s.color(locked?'#573b40':'#a85567');c.fillRect(cover.x+cover.w-bw-10,cover.y+10,bw,24);s.text(badge,cover.x+cover.w-bw+(-1),cover.y+15,13,'#fffaf0',800);
-  const fy=r.y+coverH+16;s.text(this.nextMilestoneText(data,album),r.x+14,fy+2,13,ink,600,r.w-140);
-  if(!pack.owned){const bw=adPack?124:104;s.button({x:r.x+r.w-bw-12,y:fy-6,w:bw,h:34},this.packOfferLabel(pack),()=>this.openPackOffer(pack),{tone:'berrydark',icon:adPack?'lock':'coin',fontSize:13,disabled:this.busy});s.hit({x:r.x,y:r.y,w:r.w-120,h},()=>this.openAlbum(album.id));}
-  else{s.text('查看 ›',r.x+r.w-60,fy+2,13,this.colors.berry,700);s.hit(card,()=>this.openAlbum(album.id));}
-  return r.y+h;
- }
- private drawAlbumHeader(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,compact=false){
-  const s=this.stage,ink=this.colors.ink,stack=compact||w<430,progressW=stack?w:Math.min(200,w*.38),titleW=stack?w:w-progressW-16;
-  s.icon('book',{x,y,w:compact?26:36,h:compact?28:38});s.text(album.title,x+(compact?32:44),y+4,compact?16:21,ink,800,titleW-(compact?32:44));
-  const descriptionY=y+(compact?32:44),descriptionH=s.wrap(album.description,x,descriptionY,titleW,compact?11:12,this.colors.muted,16);
-  const py=stack?descriptionY+descriptionH+6:y+3,px=stack?x:x+w-progressW;
-  s.icon('piece',{x:px,y:py,w:18,h:20});s.text('已收集 '+album.collected+'/'+album.total,px+24,py+3,compact?12:14,ink,700,progressW-24);
-  // Stage.meter clamps the fraction and paints its rounded fill inside the track.
-  s.meter({x:px,y:py+27,w:progressW,h:9},album.collected/Math.max(1,album.total));
-  let bottom=Math.max(descriptionY+descriptionH,py+36)+12;const pack=this.packFor(data,album.id);
-  if(pack&&!pack.owned){s.button({x,y:bottom,w:Math.min(w,210),h:compact?28:34},pack.unlock==='ad'?'每张看一次广告解锁':pack.price+' 金币 · 解锁图包',()=>this.openPackOffer(pack),{icon:pack.unlock==='ad'?'lock':'coin',tone:'berrydark',fontSize:12,disabled:this.busy});bottom+=compact?34:42;}
-  return bottom;
- }
- private drawAlbumRewards(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,compact=false){
-  if(!album.milestones.length)return y;
-  const s=this.stage,ink=this.colors.ink,final=[...album.milestones].reverse().find(m=>m.decorationId),decoration=data.decorations.find(d=>d.id===final?.decorationId),tagW=decoration?Math.min(compact?80:150,w*.38):0,h=138;
-  s.panel({x,y,w,h});const left=x+22,right=x+w-tagW-26,trackW=Math.max(1,right-left),ty=y+28,total=Math.max(1,album.total,...album.milestones.map(m=>m.target));
-  s.meter({x:left,y:ty,w:trackW,h:9},album.collected/total);
-  for(const milestone of album.milestones){const nx=left+trackW*clamp(milestone.target/total,0,1),reached=album.collected>=milestone.target;
-   s.frame({x:nx-11,y:ty-7,w:22,h:22},reached?'segment-berry-selected':'button-linen-normal');
-   if(reached)s.icon('check',{x:nx-7,y:ty-3,w:14,h:14});else s.icon('lock',{x:nx-6,y:ty-2,w:12,h:14});
-   s.text(milestone.target+'张',nx-s.measure(milestone.target+'张',11,700)/2,ty+22,11,ink,700);
-   const reward=data.decorations.find(d=>d.id===milestone.decorationId);
-   if(milestone.coins){s.icon('coin',{x:nx-9,y:ty+42,w:18,h:20});s.text(milestone.coins,nx-s.measure(String(milestone.coins),10,700)/2,ty+65,10,ink,700);}
-   if(reward)s.decoration(reward,{x:nx-12,y:ty+(milestone.coins?80:43),w:24,h:26});
-  }
-  if(decoration){const tx=x+w-tagW;s.frame({x:tx,y:y+10,w:tagW-8,h:24},'segment-berry-selected');s.text('集齐可得',tx+5,y+16,compact?10:12,this.colors.onAccent,700,tagW-18);
-   s.decoration(decoration,{x:tx+4,y:y+40,w:28,h:30});s.text(decoration.title,tx+2,y+76,compact?10:13,ink,800,tagW-10);
-   s.clip({x:tx,y:y+94,w:tagW-8,h:h-98},()=>s.wrap(decoration.description,tx+2,y+96,tagW-12,10,this.colors.muted,14));
-  }return y+h+12;
- }
+ private drawAlbumCard(data:MobileCollectionView,album:CollectionAlbum,r:{x:number;y:number;w:number},selected:boolean,compact=false){return drawAlbumCardPanel.call(this.host,data,album,r,selected,compact);}
+ private drawAlbumHeader(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,compact=false){return drawAlbumHeaderPanel.call(this.host,data,album,x,y,w,compact);}
+ private drawAlbumRewards(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,compact=false){return drawAlbumRewardsPanel.call(this.host,data,album,x,y,w,compact);}
  private albumImageGridHeight(album:CollectionAlbum,w:number,columns:number){const cw=(w-12*(columns-1))/columns;return Math.ceil(album.images.length/columns)*(cw*.72+78);}
- private drawAlbumImages(album:CollectionAlbum,x:number,y:number,w:number,columns:number){
-  const s=this.stage,ink=this.colors.ink,gap=12,cw=(w-gap*(columns-1))/columns,ih=cw*.72,ch=ih+66;
-  album.images.forEach((image,index)=>{const cx=x+(index%columns)*(cw+gap),cy=y+Math.floor(index/columns)*(ch+gap),r={x:cx,y:cy,w:cw,h:ch},art={x:cx+5,y:cy+5,w:cw-10,h:ih};if(cy+ch<0||cy>s.h)return;
-   s.frame(r,'button-linen-normal');s.image(this.client.asset(image.thumbSrc),art,'cover');
-   s.text(image.title,cx+9,cy+ih+13,12,image.collected?ink:this.colors.muted,700,cw-18);
-   const pill={x:cx+8,y:cy+ih+34,w:cw-16,h:24};s.frame(pill,'button-linen-normal');s.icon(image.collected?'leaf':'lock',{x:pill.x+6,y:pill.y+4,w:15,h:16});s.text(image.collected?'已收藏':'未收集',pill.x+25,pill.y+6,11,this.colors.muted,700,pill.w-28);
-   if(image.difficulties.length){const badge=String(Math.max(...image.difficulties)),bw=Math.min(art.w-8,s.measure(badge,11,700)+28);s.frame({x:art.x+art.w-bw-4,y:art.y+4,w:bw,h:22},'button-linen-normal');s.icon('piece',{x:art.x+art.w-bw,y:art.y+8,w:13,h:14});s.text(badge,art.x+art.w-bw+16,art.y+9,11,ink,700,bw-20);}
-   if(!image.collected)s.hit(r,()=>this.playImage(image.id));
-  });return y+this.albumImageGridHeight(album,w,columns);
- }
- private drawAlbumDetail(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,columns:number){
-  y=this.drawAlbumHeader(data,album,x,y,w);
-  y=this.drawAlbumImages(album,x,y+4,w,columns);
-  return this.drawAlbumRewards(data,album,x,y+8,w);
- }
+ private drawAlbumImages(album:CollectionAlbum,x:number,y:number,w:number,columns:number){return drawAlbumImagesPanel.call(this.host,album,x,y,w,columns);}
+ private drawAlbumDetail(data:MobileCollectionView,album:CollectionAlbum,x:number,y:number,w:number,columns:number){return drawAlbumDetailPanel.call(this.host,data,album,x,y,w,columns);}
  private playImage(id:string){
   if(!this.availableGallery().some(photo=>photo.id===id)){this.note('这张图会出现在每日拼图里，留意大厅的今日拼图');return;}
   this.navigate('gallery',{source:'all',category:'全部',direction:'all',search:'',packId:null});this.selected=id;this.invalidate();
  }
- private drawDecorations(data:MobileCollectionView){
-  // The server lists gift rewards only to owners; show the rest as locked cards from the bundled catalogue.
-  const gifts:CollectionDecoration[]=collectionCatalog.rewardDecorations.filter(item=>!data.decorations.some(d=>d.id===item.id)).map(item=>({...item,kind:'cursor',source:'gift',owned:false,equipped:false}));
-  const s=this.stage,pad=12,w=s.w-24,ink=this.colors.ink,filter=this.decorationFilter,all=[...data.decorations,...gifts];
-  const matches=(item:CollectionDecoration)=>filter==='owned'?item.owned:filter==='craft'?!item.owned&&item.source==='craft':filter==='album'?item.source==='album':true;
-  const decorations=all.filter(matches),selected=all.find(item=>item.id===this.decorationId)??all.find(item=>item.equipped)??all[0],hints=selected&&!selected.owned?collectionDecorationRewardHints(selected,data.albums):[];let y=this.bodyTop-this.scroll;
-  this.scrolled(()=>{
-   if(selected){const wide=w>=560,h=wide?190:280,r={x:pad,y,w,h};s.panel(r);
-    const mock={x:pad+12,y:y+12,w:wide?w*.42:w-24,h:wide?h-24:120};s.ctx.fillStyle=this.colors.placeholder;s.ctx.fillRect(mock.x,mock.y,mock.w,mock.h);s.text('同桌看到的样子',mock.x+10,mock.y+8,12,this.colors.muted,700);
-    const cx=mock.x+mock.w*.42,cy=mock.y+mock.h*.5;s.decoration(selected,{x:cx-34,y:cy-30,w:40,h:44});const tag={x:cx+6,y:cy+6,w:Math.min(150,mock.w*.5),h:34};s.frame(tag,'button-linen-normal');s.icon('avatar',{x:tag.x+4,y:tag.y+3,w:24,h:27});s.text(data.profile.name,tag.x+32,tag.y+4,12,ink,700,tag.w-36);s.text('Lv.'+data.profile.level,tag.x+32,tag.y+18,11,this.colors.muted,600);
-    const tx=wide?mock.x+mock.w+16:pad+14,ty=wide?y+16:mock.y+mock.h+12,tw=wide?w-mock.w-40:w-28;s.text(selected.title,tx,ty,18,ink,800,tw);let dy=ty+28+s.wrap(this.decorationText(selected),tx,ty+28,tw,12,ink,18);for(const hint of hints)dy+=s.wrap(hint,tx,dy,tw,12,this.colors.muted,17);
-    const label=selected.equipped?'取下装饰':selected.owned?'使用这个装饰':selected.source==='gift'?(selected.id==='cat-paw'?(this.platform.config?.id==='wechat'?'活动或兑换码获得':'论坛反馈或群兑换码获得'):selected.description||'限定礼物'):selected.source==='album'?'集齐图集获得':data.wallet.fragments<selected.cost?'碎片不足 · '+data.wallet.fragments+'/'+selected.cost:'制作 · '+selected.cost+' 碎片',disabled=!selected.owned&&(selected.source!=='craft'||selected.enabled===false||data.wallet.fragments<selected.cost);
-    s.button({x:tx,y:y+h-52,w:Math.min(240,tw),h:40},label,()=>void this.collectionAction(selected.owned?'equip':'craft',selected.equipped?null:selected.id),{tone:selected.equipped?'cream':'berrydark',fontSize:14,disabled:disabled||this.busy});y+=h+12;}
-   const tuning=data.tuning;y=this.paragraph('碎片来自拼图：每拼合 '+(tuning?.fragmentContributionStep??10)+' 块得 1 片，拼完一张最多 '+(tuning?.completionFragmentMaximum??10)+' 片 · 现有 '+data.wallet.fragments+' 片',pad+2,y,w,12)+12;
-   const chip=(value:typeof filter,label:string):[string,boolean,()=>void]=>[label,filter===value,()=>this.changeListView(()=>{this.decorationFilter=value;})];
-   y=this.drawChips(pad,y,Math.min(w,440),32,[chip('all','全部 '+all.length),chip('owned','已拥有'),chip('craft','可制作'),chip('album','图集奖励')])+12;
-   const columns=w>=760?4:w>=520?3:2,gap=12,cw=(w-gap*(columns-1))/columns,h=112,base=y;
-   decorations.forEach((item,index)=>{const x=pad+index%columns*(cw+gap),cy=base+Math.floor(index/columns)*(h+gap),r={x,y:cy,w:cw,h};if(cy+h<this.bodyTop||cy>this.bodyBottom)return;
-    s.frame(r,selected?.id===item.id?'panel-gold':'button-linen-normal');s.decoration(item,{x:x+10,y:cy+12,w:44,h:50});s.text(item.title,x+62,cy+14,14,ink,800,cw-70);
-    let status=item.equipped?'使用中':item.owned?'已拥有':'',tone=item.equipped?'#a85567':'#879864';
-    if(!status&&item.source==='craft'){s.icon('fragment',{x:x+62,y:cy+38,w:16,h:18});s.text(item.cost+' 碎片',x+82,cy+40,13,ink,700);}
-    else if(!status&&item.source==='gift')s.wrap(item.id==='cat-paw'?(this.platform.config?.id==='wechat'?'活动或\n兑换码获得':'论坛/评论区\n反馈获得'):item.id===HAIRPIN_ID?'七日礼\n第 7 天获得':item.description||'限定礼物',x+62,cy+40,cw-70,12,'#8a5a5f',17);
-    else if(!status){const album=data.albums.find(a=>a.id===item.albumId);status='集齐「'+(album?.title??'图集')+'」获得';tone='#8a5a5f';if(album){s.meter({x:x+62,y:cy+64,w:cw-74,h:7},album.collected/Math.max(1,album.total));s.text(album.collected+'/'+album.total,x+62,cy+76,12,this.colors.muted,700);}}
-    if(status)s.text(status,x+62,cy+40,13,tone,700,cw-70);
-    s.hit(r,()=>{this.decorationId=item.id;this.scroll=0;this.invalidate();});});
-   y=base+Math.ceil(decorations.length/columns)*(h+gap)+8;
-  });this.extent=y-(this.bodyTop-this.scroll);
- }
+ private drawDecorations(data:MobileCollectionView){return drawDecorationsPanel.call(this.host,data);}
  /** 治愈时光-style albums unlock picture by picture after a rewarded ad; coin packs keep the purchase modal. */
  private packOfferLabel(pack:CollectionPack){return pack.unlock==='ad'?'看广告解锁':pack.price+' 解锁';}
  private openPackOffer(pack:CollectionPack){if(pack.unlock==='ad')this.openPackPreview(pack);else{this.purchase=pack;this.showModal('purchase');}}
  private openPackPreview(pack:CollectionPack){if(!pack.images.length)return;this.previewReadOnly=false;this.previewPack=pack;this.previewIndex=-1;this.previewGridScroll=0;this.stage.retryImages();this.showModal('packPreview');}
  private returnToPackGrid(){if(this.previewReadOnly){this.showModal(null);return;}this.previewIndex=-1;this.modalScroll=this.previewGridScroll;this.invalidate();}
  private stepPackPreview(delta:number){if(!this.previewPack)return;this.previewIndex=clamp(this.previewIndex+delta,0,this.previewPack.images.length-1);this.modalScroll=0;this.invalidate();}
- private drawPackPreview(){
-  const pack=this.previewPack;if(!pack)return;
-  const s=this.stage,v=this.platform.viewport(),w=Math.min(920,s.w-24),columns=w>=720?4:2,gap=w>=720?16:12,pad=20,cw=(w-pad*2-gap*(columns-1))/columns,rowH=cw+36,rows=Math.ceil(pack.images.length/columns),h=Math.min(s.h-v.top-v.bottom-28,84+Math.min(rows,3)*(rowH+gap)+94),x=(s.w-w)/2,y=v.top+(s.h-v.top-v.bottom-h)/2,footerY=y+h-(this.previewReadOnly?10:80);
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  s.text(pack.title,x+20,y+18,21,this.colors.ink,800,w-80);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>this.showModal(null));s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
-  this.modalStart=y+80;this.modalArea={x:x+14,y:this.modalStart,w:w-28,h:Math.max(20,footerY-this.modalStart-14)};
-  if(this.previewIndex<0){
-   s.text(pack.unlock==='ad'?'已解锁 '+pack.images.filter(image=>image.owned).length+'/'+pack.images.length+' · 点图片看大图，看一次广告解锁一张':pack.images.length+' 张主题图片 · 点击缩略图查看大图',x+20,y+51,w<400?11:13,this.colors.muted,500,w-40);
-   this.modalExtent=rows*(rowH+gap)-gap+8;this.modalScroll=clamp(this.modalScroll,0,Math.max(0,this.modalExtent-this.modalArea.h));
-   s.clip(this.modalArea,()=>{pack.images.forEach((image,index)=>{
-    const cx=x+pad+index%columns*(cw+gap),cy=this.modalStart+4+Math.floor(index/columns)*(rowH+gap)-this.modalScroll;if(cy+rowH<this.modalArea.y||cy>this.modalArea.y+this.modalArea.h)return;
-    const art={x:cx,y:cy,w:cw,h:cw};s.frame(art,'panel-cream');s.image(this.client.asset(image.thumbSrc||image.src),{x:cx+5,y:cy+5,w:cw-10,h:cw-10},'contain');
-    s.text(image.title,cx+3,cy+cw+12,w<400?12:14,this.colors.ink,700,cw-6);
-    if(pack.unlock==='ad'){s.frame({x:cx+9,y:cy+9,w:27,h:27},image.owned?'segment-berry-selected':'plus-cream-normal');s.icon(image.owned?'check':'lock',{x:cx+14,y:cy+14,w:17,h:17},image.owned?'#fff9ed':this.colors.muted);}
-    s.hit({x:cx,y:cy,w:cw,h:rowH},()=>{this.previewGridScroll=this.modalScroll;this.previewIndex=index;this.modalScroll=0;this.stage.retryImages();this.invalidate();});
-   });});
-   if(this.modalExtent>this.modalArea.h){const track=this.modalArea,thumbH=Math.max(24,track.h*track.h/this.modalExtent),thumbY=track.y+(track.h-thumbH)*this.modalScroll/(this.modalExtent-track.h);s.ctx.fillStyle=this.colors.rose;s.ctx.fillRect(x+w-9,thumbY,3,thumbH);}
-  }else{
-   if(!this.previewReadOnly)s.button({x:x+20,y:y+45,w:138,h:28},'‹ 返回全部图片',()=>this.returnToPackGrid(),{fontSize:12});
-   this.modalExtent=0;this.modalScroll=0;const image=pack.images[this.previewIndex],area=this.modalArea,art={x:x+20,y:area.y+2,w:w-40,h:Math.max(20,area.h-54)};
-   s.frame(art,'panel-cream');s.image(this.client.asset(image.src||image.thumbSrc),{x:art.x+5,y:art.y+5,w:art.w-10,h:art.h-10},'contain');s.ornaments(art,16);
-   const captionY=art.y+art.h+12;s.text(image.title,x+20,captionY,14,this.colors.ink,700,w-190);
-   const counter=(this.previewIndex+1)+' / '+pack.images.length;s.text(counter,x+w-104-s.measure(counter,12,700)/2,captionY+3,12,this.colors.muted,700);
-   s.button({x:x+w-167,y:captionY-4,w:31,h:28},'‹',()=>this.stepPackPreview(-1),{disabled:this.previewIndex===0,fontSize:19});s.button({x:x+w-72,y:captionY-4,w:31,h:28},'›',()=>this.stepPackPreview(1),{disabled:this.previewIndex===pack.images.length-1,fontSize:19});
-  }
-  if(this.previewReadOnly)return;
-  s.ctx.fillStyle=this.colors.rose;s.ctx.fillRect(x+20,footerY, w-40,1);
-  const buttonW=Math.min(245,w-40),buttonX=x+(w-buttonW)/2;
-  if(pack.unlock==='ad'){
-   const image=this.previewIndex>=0?pack.images[this.previewIndex]:null,firstLocked=pack.images.findIndex(item=>!item.owned);
-   const label=image?(image.owned?'已解锁 · 去建房':'看广告解锁这张图'):firstLocked<0?'已全部解锁 · 去建房':'挑一张看广告解锁';
-   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},label,()=>{if(image&&!image.owned)void this.unlockAdImage(image.id);else if(image||firstLocked<0)this.openPackGallery(pack.id);else{this.previewGridScroll=this.modalScroll;this.previewIndex=firstLocked;this.modalScroll=0;this.stage.retryImages();this.invalidate();}},{tone:'berry',icon:image?(image.owned?'check':'lock'):firstLocked<0?'check':'lock',fontSize:14,disabled:this.busy});
-   const hint='每张图看一次广告永久解锁 · 解锁的图可免费开公开房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);return;
-  }
-  s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},pack.owned?'已拥有 · 去建房':pack.price+' 金币 · 解锁图包',()=>{if(pack.owned)this.openPackGallery(pack.id);else{this.purchase=pack;this.showModal('purchase');}},{tone:'berry',icon:pack.owned?'check':'coin',fontSize:14,disabled:this.busy});
-  const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
- }
- private drawPolicy(){const s=this.stage;let y=this.bodyTop-this.scroll;const sections=this.route==='privacy'||this.route==='terms'?[...privacySectionsFor(this.platform.config?.id,this.supplyAdAvailable),...termsSectionsFor(this.platform.config?.id)]:[
-  ['一起拼图','拖动拼块，靠近正确位置松开即可拼合。双指缩放和平移，电脑可滚轮缩放、空格或中键平移；'+(this.platform.config.id==='web'?'“适配”可找回完整桌面。':'“定位”会闪亮标出所有未拼块，压在拼好画面上的也能找到；“更多”里可启用锁定按钮，锁定后单指只拖拼块不移动画面；原图小窗点开后可双指放大查看；“更多”里可打开小地图，放大时点小地图直接跳到那里；“更多”里可适配完整桌面。')+'边缘筛选和整理可帮助寻找拼块。'],
-  [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile):'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
-  ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留'+this.ownRoomLimit+'个未结束的自建房间。'],
-  ['邀请与礼包',this.inviteRewardsHidden?'和好友一起拼图，可以积累每日任务礼包；邀请好友不发放奖励。':this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
- ];this.scrolled(()=>{for(const[title,text]of sections){s.text(title,20,y,18,this.colors.ink,700);y=this.paragraph(text,20,y+31,s.w-40,14)+24;}if(!this.formalWeb){this.button(20,y,s.w-40,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));y+=48;}this.button(20,y,s.w-40,'服务与隐私说明',()=>this.navigate('privacy'));y+=52;});this.extent=y-(this.bodyTop-this.scroll);}
+ private drawPackPreview(){return drawPackPreviewPanel.call(this.host);}
+ private drawPolicy(){return drawPolicyPanel.call(this.host);}
 
- private drawRoom(){
-  if(this.nineGridRoom){this.drawNineGrid();return;}
-  const s=this.stage,room=this.room,board=this.board,view=this.platform.viewport(),p=this.client.profile;
-  if(!room||!board){s.text('尚未加入房间',20,view.top+35,18);this.button(20,view.top+81,s.w-40,'返回大厅',()=>this.navigate('lobby'));return;}
-  const visible=!this.hidden&&!this.modalBlocksInput;if(visible!==this.cursorVisible){this.cursorVisible=visible;if(visible)this.cursor?.refresh();else this.clearRoomPointer();}
-  const layout=this.layout,c=s.ctx,safeBottom=s.h-view.bottom,headerTop=this.roomHeaderTop();
-  if(layout==='desktop'){
-   const panel=this.roomPanelCollapsed?32:300,bar=60;this.roomArea={x:0,y:bar,w:s.w-panel,h:s.h-bar};
-   this.placeBoard(board,0,()=>this.desktopFit(board));
-   c.fillStyle=this.colors.cream;c.fillRect(0,0,s.w,bar);c.fillStyle=this.colors.line;c.fillRect(0,bar-1,s.w,1);
-   this.drawRoomTopBar({x:0,y:0,w:s.w,h:bar},'desktop');this.drawDesktopTools(this.roomArea.x+12,bar+12,safeBottom);
-   if(!this.roomPanelCollapsed)this.drawRoomPanel({x:s.w-panel,y:bar,w:panel,h:s.h-bar});
-   s.button({x:s.w-panel,y:bar+4,w:32,h:32},this.roomPanelCollapsed?'\u2039':'\u203a',()=>this.setRoomPanelCollapsed(!this.roomPanelCollapsed),{fontSize:22});
-   this.drawRoomGift(this.roomArea.x+10,safeBottom-62,true);this.drawZoomControl(this.roomArea.x+this.roomArea.w-150,safeBottom-50);
-  }else if(layout==='phoneLandscape'){
-   const web=this.platform.config.id==='web',column=web?62:this.landscapeToolsOpen?72:0;this.roomArea={x:0,y:0,w:s.w-column,h:safeBottom};
-   this.placeBoard(board,headerTop+58,()=>this.phoneFit(board,'height'));
-   this.drawRoomTopBar({x:0,y:headerTop,w:s.w-column,h:52},'landscape');
-   if(web){c.fillStyle=this.colors.cream;c.fillRect(s.w-column,0,column,s.h);c.fillStyle=this.colors.line;c.fillRect(s.w-column,0,2,s.h);this.drawToolColumn({x:s.w-column+2,y:headerTop+6,w:column-2,h:safeBottom-headerTop-6});}
-   else this.drawToolColumn({x:s.w-72,y:0,w:72,h:s.h});
-   if(web)this.drawRoomGift(8,safeBottom-50,false);else if(!board.previewZoomed)this.drawLandscapeRoomControls(board,headerTop,safeBottom);
-  }else{
-   const headerBottom=headerTop+76;this.roomArea={x:0,y:headerBottom+1,w:s.w,h:Math.max(90,safeBottom-headerBottom-1)};
-   this.placeBoard(board,6,()=>this.phoneFit(board,'width'));
-   c.fillStyle=this.colors.cream;c.fillRect(0,0,s.w,headerBottom);c.fillStyle=this.colors.line;c.fillRect(0,headerBottom,s.w,1);
-   this.drawRoomTopBar({x:0,y:headerTop,w:s.w,h:76},'portrait');
-   // The large reference covers the board like a dialog; its own close button and backdrop dismiss it.
-   if(!board.previewZoomed){const map=board.minimapFrame;this.drawChatBubble(map?Math.max(headerBottom+8,map.y+map.h+8):headerBottom+8);this.drawRoomGift(10,safeBottom-62,true);if(!this.toolsOpen){const slot=this.portraitQuickSlot(s.w,safeBottom);this.drawBoardQuickTools(slot.x,slot.bottom);}this.drawRoomTools({x:s.w-63,y:safeBottom-65,w:50,h:50},false);}
-  }
-  if(!this.imageReady){const preparation=board.imagePreparation??{phase:'loading',completed:0,total:0},label=preparation.phase==='preparing'?'正在准备碎片 '+preparation.completed+'/'+preparation.total+'…':preparation.phase==='loading'?'正在加载图片…':'正在铺开拼图…',r=this.roomArea,w=Math.min(r.w-36,420);s.panel({x:r.x+(r.w-w)/2,y:r.y+20,w,h:74});this.paragraph(this.imageError||label,r.x+(r.w-w)/2+12,r.y+37,w-24,14);if(this.imageError)this.button(r.x+(r.w-w)/2+7,r.y+104,w-14,'重新加载图片',()=>void this.run(()=>this.retryRoomImage(board)));}
-  if(this.platform.config.previewTestRoom){
-   const d=this.realtime?.diagnostics(),active=d?.previewConnected===true,available=d?.preview==='taptap-test',label=active?'平台同步已接通':'原通道 · '+String(d?.previewDetail||'当前房间未启用平台预览'),w=Math.min(this.roomArea.w-24,420),x=this.roomArea.x+12,y=this.roomArea.y+5;
-   s.panel({x,y,w,h:43});s.text('联机自测 D4：'+label,x+8,y+6,10,this.colors.ink,600,w-16);
-   s.text(available?'目标 '+(d.previewTargetHz??'—')+'/秒 · 实发 '+(d.platformSendRate??0)+' · 成功 '+(d.platformSucceeded??0)+' · 失败 '+(d.platformFailed??0)+' · 收 '+(d.platformReceived??0):'平台统计未启用 · 点击查看原因',x+8,y+24,9,this.colors.muted,600,w-16);
-   s.hit({x,y,w,h:43},()=>this.showModal('settings'));
-  }
-  if(this.completionFx)this.drawCompletionTransition();this.drawSettleButton();
-  if(!room.connected)this.drawReconnectBanner(room);
-  this.drawStoryIntro();
-  if(!this.storyIntro){if(this.roomGuideStep)this.drawRoomGuide();else if(this.imageReady&&!this.modal&&!this.roomGuideSeen()){this.roomGuideStep=1;this.invalidate();}}
- }
- private drawCompletionTransition(){
-  const fx=this.completionFx,board=this.board;if(!fx||!board||this.nineGridRoom)return;const s=this.stage,c=s.ctx,now=Date.now(),p=board.pictureScreenRect(),room=this.roomArea,left=Math.max(room.x,p.x-p.w*.2),right=Math.min(room.x+room.w,p.x+p.w*1.2),top=Math.max(room.y,p.y),bottom=Math.min(room.y+room.h,p.y+p.h),area={x:left,y:top,w:right-left,h:bottom-top};
-  if(area.w>0&&area.h>0){c.save();c.beginPath();c.rect(room.x,room.y,room.w,room.h);c.clip();drawCelebration(c,fx.celebration,now,{picture:p,field:{x:area.x,y:room.y,w:area.w,h:area.y+area.h-room.y},clip:room});c.restore();}
-  const banner=fx.banner(now);if(!banner)return;const label='拼好啦！',w=s.measure(label,15,800)+58,h=32,x=clamp(p.x+p.w/2-w/2,room.x+8,room.x+room.w-w-8),topSafe=this.layout==='phoneLandscape'?this.roomHeaderTop()+58:room.y+10,y=Math.min(p.y+p.h/2,Math.max(topSafe,p.y-42)),scale=banner.scale,r={x:x+w*(1-scale)/2,y:y+h*(1-scale)/2,w:w*scale,h:h*scale};c.save();c.globalAlpha=banner.alpha;s.frame(r,'button-gold-normal');s.text(label,r.x+29*scale,r.y+8*scale,15*scale,this.colors.ink,800);drawCheerIcon(c,'star',{x:r.x+7*scale,y:r.y+8*scale,w:16*scale,h:16*scale});drawCheerIcon(c,'star',{x:r.x+r.w-23*scale,y:r.y+8*scale,w:16*scale,h:16*scale});c.restore();
- }
- private drawSettleButton(){
-  this.settleButtonRect=null;if(!this.room?.snapshot.completedAt||this.completionFx||this.modal!==null||this.nineGridRoom)return;
-  // A finished story level always shows the way on, also after its popup was closed.
-  const destination=this.room.snapshot.levelId?this.levelDestination():null,label=destination?this.levelNextLabel(destination):'查看结算';
-  const area=this.roomArea,safeBottom=this.stage.h-this.platform.viewport().bottom,x=area.x+(area.w-112)/2,y=safeBottom-(this.layout==='phoneLandscape'?12:14)-36;this.settleButtonRect={x,y,w:112,h:36};this.button(x,y,112,label,()=>{if(destination)this.continueLevel(destination);else this.openCompletionPopup();},'gold',36);
- }
+ private drawRoom(){return drawRoomPanelView.call(this.host);}
+ private drawCompletionTransition(){return drawCompletionTransitionPanel.call(this.host);}
+ private drawSettleButton(){return drawSettleButtonPanel.call(this.host);}
  private roomZoomBase=1;
  private placeBoard(board:PuzzleBoard,topInset:number,fit:()=>void){
   board.phoneLandscapeRoom=this.platform.config.id!=='web'&&this.layout==='phoneLandscape';
@@ -2325,48 +1304,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   c.fillStyle=s.color(ad?'#ba667e':active?'#fae7b8':pending?'#eee7db':'#f2efd8');c.fillRect(bx,y,bw,16);s.text(badge,bx+4,y+2,10,ad?'#fffaf0':active?'#83542f':'#7a7244',600,bw-6);
  }
  private roomIcon(kind:string){return kind==='orientation'?'orientation':kind==='organize'?'piece':kind==='more'?'tools':kind==='chat'?'chat':kind;}
- private drawDesktopTools(x:number,y:number,safeBottom:number){
-  const s=this.stage;
-  if(!this.desktopToolsOpen){const toggle={x,y,w:48,h:48};this.roomToolsArea=toggle;s.frame(toggle,'button-cream-normal');s.icon('tools',{x:x+12,y:y+6,w:24,h:24});s.text('T',x+20,y+31,11,this.colors.muted,700);s.hit(toggle,()=>this.setDesktopToolsOpen(true));return;}
-  const items=[...this.roomTools,['more','更多','']] as const,header=36,padding=8,available=safeBottom-80-y-header-padding,h=Math.min(66,available/items.length),r={x,y,w:80,h:header+items.length*h+padding};this.roomToolsArea=r;
-  s.hit(r,()=>{});this.drawLandscapeSurface(r,10,this.colors.cream,this.colors.line,1,2);
-  s.text('工具',x+10,y+12,12,this.colors.ink,700);s.button({x:x+r.w-34,y:y+4,w:28,h:28},'‹',()=>this.setDesktopToolsOpen(false),{fontSize:22});
-  items.forEach(([kind,label,key],index)=>{const b={x:r.x+8,y:r.y+header+index*h,w:r.w-16,h:h-8},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
-   s.frame(b,active?'button-cream-selected':disabled?'button-cream-disabled':'button-cream-normal');s.icon(this.roomIcon(kind),{x:b.x+(b.w-26)/2,y:b.y+8,w:26,h:26});const text=label+(key?' '+key:'');s.text(label,b.x+(b.w-s.measure(text,12,700))/2,b.y+b.h-21,12,disabled?this.colors.disabled:this.colors.ink,700);if(key)s.text(key,b.x+(b.w+s.measure(text,12,700))/2-s.measure(key,11,700),b.y+b.h-20,11,this.colors.muted,700);
-   this.drawAidBadge(kind,b.x+b.w+4,b.y-4);if(!disabled)s.hit(b,()=>this.roomTool(kind));});
- }
- private drawToolColumn(r:Rect){
-  if(this.platform.config.id==='web'){
-   const s=this.stage,items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['organize','整理'],['orientation','竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),h=Math.min(58,r.h/items.length);this.roomToolsArea={...r};
-   items.forEach(([kind,label],index)=>{const b={x:r.x+5,y:r.y+index*h,w:r.w-10,h:h-5},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
-    if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+4,w:22,h:22});s.text(label,b.x+(b.w-s.measure(label,12,700))/2,b.y+b.h-17,12,disabled?this.colors.disabled:this.colors.ink,700);if(!disabled)s.hit(b,()=>this.roomTool(kind));});return;
-  }
-  const s=this.stage,c=s.ctx,menu=this.platform.viewport().menu;
-  if(menu){const y=Math.max(r.y,menu.y+menu.h+8);r={...r,y,h:Math.max(0,r.y+r.h-y)};}
-  const toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};toggle.x-=this.menuReserve(toggle);this.landscapeToggle=toggle;this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
-  if(this.landscapeToolsOpen){
-   c.fillStyle=roomColors.cream;c.fillRect(r.x,0,r.w,s.h);c.fillStyle=roomColors.line;c.fillRect(r.x,0,2,s.h);s.hit(r,()=>{});
-   const items=([['edge','边缘'],['hint','提示'],['underlay','底图'],['locate','定位'],['organize','整理'],['orientation','横竖屏'],['more','更多']] as const).filter(([kind])=>kind==='organize'?this.soloRoom:kind!=='orientation'||!!this.platform.setOrientation),height=Math.min(58,Math.floor(r.h/items.length)),gap=Math.min(4,Math.max(0,(r.h-items.length*height)/(items.length-1))),top=r.y+(r.h-(items.length*height+(items.length-1)*gap))/2;
-   items.forEach(([kind,label],index)=>{const b={x:r.x+6,y:top+index*(height+gap),w:r.w-12,h:height},badge=kind==='hint'||kind==='underlay',active=this.toolActive(kind),disabled=badge&&this.assistanceUnavailable(kind);
-    if(active||s.isPressed(b))this.drawLandscapeSurface(b,8,roomColors.roseL);
-    s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+Math.min(10,Math.max(0,height-39)),w:22,h:22},roomColors.ink);s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+Math.min(38,height-11),11,roomColors.ink,700);
-    if(badge){const grant=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,text=grant?this.aidBadge(kind):!this.aid?'读取中':this.aid.newcomerProtected||free>0?'免费':'看广告',bw=s.measure(text,8.5,700)+6;
-     this.drawLandscapeSurface({x:b.x,y:b.y,w:bw,h:13},3,roomColors.goldL);s.text(text,b.x+3,b.y+2,8.5,'#7a4d10',700);
-    }if(!disabled)s.hit(b,()=>this.roomTool(kind));
-   });
-  }
-  if(this.board?.previewZoomed)return;
-  this.drawLandscapeSurface(toggle,18,roomColors.card,roomColors.ink,2,2);s.icon(this.landscapeToolsOpen?'close':'tools',{x:toggle.x+8,y:toggle.y+8,w:20,h:20},roomColors.ink);s.hit(toggle,()=>this.setLandscapeToolsOpen(!this.landscapeToolsOpen));
- }
+ private drawDesktopTools(x:number,y:number,safeBottom:number){return drawDesktopToolsPanel.call(this.host,x,y,safeBottom);}
+ private drawToolColumn(r:Rect){return drawToolColumnPanel.call(this.host,r);}
  /** Coordinates are Stage logical pixels, so the host's UI scale also scales this chrome and its hits. */
- private drawLandscapeSurface(r:Rect,radius:number,fill:string,border?:string,width=0,shadow=0){
-  const c=this.stage.ctx;c.save();if(shadow){roomRoundPath(c,{...r,y:r.y+shadow},radius);c.fillStyle=border||roomColors.ink;c.fill();}
-  roomRoundPath(c,r,radius);c.fillStyle=fill;c.fill();if(border){c.strokeStyle=border;c.lineWidth=width;c.stroke();}c.restore();
- }
- private drawLandscapeButton(r:Rect,label:string,action:()=>void,fill:string,size:number){
-  const s=this.stage;this.drawLandscapeSurface(r,8,s.isPressed(r)?roomColors.roseL:fill,roomColors.ink,2,2);
-  s.textMiddle(label,r.x+(r.w-s.measure(label,size,900))/2,r.y+r.h/2-1,size,fill===roomColors.roseD?'#ffffff':roomColors.ink,900);s.hit(r,action);
- }
+ private drawLandscapeSurface(r:Rect,radius:number,fill:string,border?:string,width=0,shadow=0){return drawLandscapeSurfacePanel.call(this.host,r,radius,fill,border,width,shadow);}
+ private drawLandscapeButton(r:Rect,label:string,action:()=>void,fill:string,size:number){return drawLandscapeButtonPanel.call(this.host,r,label,action,fill,size);}
  private setLandscapeToolsOpen(open:boolean){
   if(this.landscapeToolsOpen===open)return;this.clearRoomPointer();this.landscapeToolsOpen=open;this.platform.storage.set('jigsaw:landscape-tools-open:v1',open?'1':'0');this.roomViewPending=true;this.invalidate();
  }
@@ -2375,45 +1317,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private roomToolsArea:Rect={x:0,y:0,w:0,h:0};private roomMembersArea:Rect={x:0,y:0,w:0,h:0};
  private get chatUnread(){return this.messages.filter(message=>message.id>this.chatSeen&&message.code!==this.client.profile?.code&&!this.social.blockedCodes.includes(message.code)).length;}
- private drawRoomTopBar(r:Rect,mode:'desktop'|'portrait'|'landscape'){
-  if(mode!=='portrait')r={...r,w:Math.min(r.w,this.stage.w-this.menuReserve(r)-r.x)};
-  const s=this.stage,room=this.room!,photo=activeRoomPhoto(room.snapshot,photoMap.get(room.state.imageId)),title=room.snapshot.title||photo?.title||'一起拼图',total=room.state.cols*room.state.rows,placed=placedCount(room.state),percent=Math.floor(placed/Math.max(1,total)*100),members=room.snapshot.members,kind=total+' 片 · '+(room.snapshot.visibility==='private'?'私人房':'公开房'),ink=this.colors.ink;
-  const back=(x:number,y:number)=>{s.button({x,y,w:36,h:36},'',()=>this.exitRoom());s.icon('back',{x:x+7,y:y+7,w:22,h:22});};
-  const avatars=(right:number,y:number,size:number)=>{const shown=members.slice(0,3),label=members.length+'/'+seatLimit(room.snapshot),lw=s.measure(label,13,700);let x=right-lw;s.text(label,x,y+(size-13)/2,13,ink,700);x-=6+(shown.length?size+(shown.length-1)*(size*.62):0);const start=x;shown.forEach((_member,index)=>s.icon('avatar',{x:x+index*size*.62,y,w:size,h:size*1.08}));return start;};
-  if(mode==='desktop'){
-   back(r.x+12,r.y+12);s.text(title,r.x+58,r.y+11,18,ink,800,300);s.text(kind,r.x+58,r.y+35,12,this.colors.muted,600,300);
-   const count=placed+' / '+total+'  '+percent+'%',cw=s.measure(count,18,800),mid=84+(s.w-84-300)/2;s.icon('piece',{x:mid-cw/2-28,y:r.y+9,w:22,h:24});s.text(count,mid-cw/2,r.y+10,18,ink,800);s.meter({x:mid-170,y:r.y+38,w:340,h:9},placed/Math.max(1,total));
-   const inviteW=118;s.button({x:r.x+r.w-inviteW-14,y:r.y+12,w:inviteW,h:36},'＋ 邀请朋友',()=>this.showModal('invite'),{tone:'berry',fontSize:14});
-   const start=avatars(r.x+r.w-inviteW-28,r.y+14,28);this.roomMembersArea={x:start-6,y:r.y+6,w:r.x+r.w-start,h:48};s.hit({x:start-6,y:r.y+6,w:r.x+r.w-inviteW-22-start,h:48},()=>this.focusRoomMembers());
-  }else if(mode==='portrait'){
-   back(r.x+8,r.y+4);const inviteX=r.x+r.w-44-this.menuReserve({...r,h:44});s.button({x:inviteX,y:r.y+6,w:34,h:34},'',()=>this.showModal('invite'),{tone:'berry'});s.icon('plus',{x:inviteX+9,y:r.y+15,w:16,h:16},this.colors.onAccent);
-   const start=avatars(inviteX-8,r.y+9,24);this.roomMembersArea={x:start-4,y:r.y+2,w:inviteX+34-start,h:42};s.hit({x:start-4,y:r.y+2,w:inviteX-start,h:42},()=>this.showModal('chat'));
-   s.text(title,r.x+50,r.y+5,16,ink,800,start-r.x-58);s.text(kind,r.x+50,r.y+26,11,this.colors.muted,600,start-r.x-58);
-   const line=placed+' / '+total+' · '+percent+'%',lw=s.measure(line,14,800);s.icon('piece',{x:r.x+12,y:r.y+48,w:18,h:20});s.text(line,r.x+34,r.y+50,14,ink,800);s.meter({x:r.x+44+lw,y:r.y+55,w:Math.max(20,r.w-58-lw),h:9},placed/Math.max(1,total));
-  }else if(this.platform.config.id==='web'){
-   const panel={x:r.x+6,y:r.y+4,w:Math.min(320,r.w*.48),h:r.h-6};s.frame(panel,'button-linen-normal');back(panel.x+5,panel.y+5);
-   s.text(title,panel.x+48,panel.y+5,14,ink,800,panel.w-56);const line=placed+'/'+total+' · '+percent+'%',lw=s.measure(line,12,800);s.text(line,panel.x+48,panel.y+25,12,ink,800);s.meter({x:panel.x+56+lw,y:panel.y+29,w:Math.max(20,panel.w-66-lw),h:7},placed/Math.max(1,total));
-   const right=r.x+r.w-8,inviteW=64,box={x:right-inviteW-130,y:r.y+4,w:inviteW+130,h:r.h-6};s.frame(box,'button-linen-normal');s.button({x:right-inviteW-4,y:box.y+5,w:inviteW,h:box.h-10},'邀请',()=>this.showModal('invite'),{tone:'berry',icon:'invite',fontSize:13});
-   avatars(right-inviteW-12,box.y+8,24);this.roomMembersArea={...box};s.hit({x:box.x,y:box.y,w:box.w-inviteW-8,h:box.h},()=>this.showModal('chat'));
-  }else{
-   const size=26,step=size-7,avatarW=members.length?size+(members.length-1)*step:0,gap=8,inviteW=s.measure('＋ 邀请',13,900)+20;
-   const right=r.x+r.w-12,invite={x:right-inviteW,y:r.y,w:inviteW,h:34},avatarX=invite.x-gap-avatarW;
-   const count=placed+'/'+total,percentText=Math.round(placed/Math.max(1,total)*100)+'%',countW=s.measure(count,13,900),percentW=s.measure(percentText,13,900),capsuleW=24+countW+percentW+16+180;
-   // Centred on the table area with the full 180px meter. At a crowded small viewport,
-   // move the capsule below the first row instead of shrinking the meter or overlapping members.
-   const capsule={x:r.x+r.w/2-capsuleW/2,y:r.y+2,w:capsuleW,h:25},backRect={x:r.x+12,y:r.y,w:36,h:36},textX=backRect.x+44;
-   const stacked=capsule.x<textX+28||capsule.x+capsule.w+gap>avatarX;if(stacked)capsule.y=r.y+44;
-   const titleRight=stacked?avatarX-gap:capsule.x-gap;
-   this.drawLandscapeButton(backRect,'<',()=>this.exitRoom(),roomColors.card,20);s.text(title,textX,r.y+2,15,roomColors.ink,900,Math.max(1,titleRight-textX));s.text(total+' 片',textX,r.y+21,10.5,roomColors.muted,500,Math.max(1,titleRight-textX));
-   this.drawLandscapeSurface(capsule,16,'rgba(255,250,243,.92)',roomColors.lineD,1.5);
-   s.textMiddle(count,capsule.x+12,capsule.y+capsule.h/2,13,roomColors.ink,900,'0123456789');
-   const meter={x:capsule.x+12+countW+8,y:capsule.y+capsule.h/2-4,w:180,h:8};this.drawLandscapeSurface(meter,4,roomColors.meterTrack);const fill=placed/Math.max(1,total);if(fill>0)this.drawLandscapeSurface({...meter,w:meter.w*fill},4,roomColors.green);
-   s.textMiddle(percentText,meter.x+meter.w+8,capsule.y+capsule.h/2,13,roomColors.green,900,'0123456789');s.hit(capsule,()=>{});
-   members.forEach((_member,index)=>s.icon('avatar',{x:avatarX+index*step,y:r.y+4,w:size,h:size}));
-   this.roomMembersArea={x:avatarX,y:r.y,w:avatarW,h:34};s.hit(this.roomMembersArea,()=>this.showModal('chat'));this.drawLandscapeButton(invite,'＋ 邀请',()=>this.showModal('invite'),roomColors.roseD,13);
-  }
-  this.drawRoomFriendBadge();
- }
+ private drawRoomTopBar(r:Rect,mode:'desktop'|'portrait'|'landscape'){return drawRoomTopBarPanel.call(this.host,r,mode);}
  private chatBubble:{message:PublicMessage;until:number}|null=null;private bubbleSeen=-1;private bubbleArmTimer:ReturnType<typeof setTimeout>|null=null;private organizeArmedUntil=0;
  private landscapeChatVisible=false;
  private viewLocked=false;private lockButtonEnabled=false;private minimapEnabled=false;
@@ -2439,27 +1343,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private portraitQuickSlot(width:number,safeBottom:number){return{x:Math.round(Math.max(151+12,Math.min(width*.57-23,width-63-12-46))),bottom:safeBottom-9};}
  /** Landscape phone room: the tray lies along the bottom, so the gift goes up under the corner map (or the back button)
   * and 锁定 under the corner tool toggle; the chat bubble sits above an open tray. */
- private drawLandscapeRoomControls(board:PuzzleBoard,headerTop:number,safeBottom:number){
-  const map=board.minimapFrame,toggle=this.landscapeToggle;this.drawChatBubble(0);this.drawRoomGift(12,map?map.y+map.h+8:headerTop+58,false);
-  if(toggle)this.drawBoardQuickTools(toggle.x+toggle.w/2-23,toggle.y+toggle.h+8+54);else this.drawBoardQuickTools(this.roomArea.x+this.roomArea.w-58,safeBottom-4);
- }
- private drawBoardQuickTools(x:number,bottom:number){
-  const board=this.board,room=this.room;if(!this.lockButtonEnabled||!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
-  const s=this.stage,size=46,items=[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
-  items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-gold-normal':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
- }
- private drawChatBubble(y:number){
-  this.landscapeChatVisible=false;
-  const s=this.stage,messages=this.messages.filter(message=>!this.social.blockedCodes.includes(message.code)),latest=messages[messages.length-1];
-  if(latest){if(this.bubbleSeen<0)this.bubbleSeen=latest.id;else if(latest.id>this.bubbleSeen){this.bubbleSeen=latest.id;if(latest.code!==this.client.profile?.code||this.platform.config.id!=='web'&&this.layout==='phoneLandscape')this.chatBubble={message:latest,until:Date.now()+5000};}}
-  const bubble=this.chatBubble;if(!bubble||Date.now()>bubble.until||this.modal)return;
-  if(this.platform.config.id!=='web'&&this.layout==='phoneLandscape'){
-   const c=s.ctx,name=bubble.message.name,text='：'+bubble.message.text,nameW=Math.min(s.measure(name,12,700),this.roomArea.w*.35),w=Math.min(this.roomArea.w-78,this.room?.snapshot.completedAt&&!this.completionFx?(this.roomArea.w-112)/2-20:Infinity,nameW+s.measure(text,12,500)+20),tray=this.board?.trayFrame,r={x:tray?64:12,y:tray?tray.y-26:this.roomArea.h-32,w:tray?Math.max(1,w-52):w,h:20},member=this.room?.snapshot.members.find(member=>member.id===bubble.message.playerId);
-   const remaining=bubble.until-Date.now();c.save();c.globalAlpha=Math.min(1,remaining/1000);this.drawLandscapeSurface(r,14,'rgba(255,250,243,.95)',roomColors.lineD,1.5);if(remaining<1000)this.invalidate();
-   s.text(name,r.x+10,r.y+4,12,member?.color||roomColors.ink,700,nameW);s.text(text,r.x+10+nameW,r.y+4,12,roomColors.ink,500,w-nameW-20);c.restore();this.bubbleHit(bubble,r);this.landscapeChatVisible=true;return;
-  }
-  const text=bubble.message.name+'：'+bubble.message.text,w=Math.min(s.w-24,s.measure(text,13,600)+48),r={x:(s.w-w)/2,y,w,h:32};s.frame(r,'button-linen-normal');s.icon('chat',{x:r.x+10,y:r.y+8,w:16,h:16});s.text(text,r.x+31,r.y+8,13,this.colors.ink,600,w-40);this.bubbleHit(bubble,r);
- }
+ private drawLandscapeRoomControls(board:PuzzleBoard,headerTop:number,safeBottom:number){return drawLandscapeRoomControlsPanel.call(this.host,board,headerTop,safeBottom);}
+ private drawBoardQuickTools(x:number,bottom:number){return drawBoardQuickToolsPanel.call(this.host,x,bottom);}
+ private drawChatBubble(y:number){return drawChatBubblePanel.call(this.host,y);}
  /** The bubble's tap area arms CHAT_BUBBLE_ARM_MS after it appears (until-5000), so a bubble popping up under a finger that is
   * reaching for a piece does not open the chat; a redraw is scheduled for the moment it arms. */
  private bubbleHit(bubble:{until:number},r:Rect){
@@ -2467,14 +1353,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(wait<=0){this.stage.hit(r,()=>this.showModal('chat'));return;}
   if(!this.bubbleArmTimer)this.bubbleArmTimer=setTimeout(()=>{this.bubbleArmTimer=null;if(!this.destroyed)this.invalidate();},wait+16);
  }
- private drawRoomGift(x:number,y:number,label:boolean){
-  const s=this.stage,p=this.client.profile,giftLabel='任务 '+(p?.giftProgress??0)+'/10',reserve=label&&this.room?.snapshot.completedAt&&!this.completionFx&&this.layout==='phonePortrait',hitW=reserve?Math.min(144,(this.roomArea.w-112)/2-8-x+3):label?144:44;s.icon('gift',{x,y:y+4,w:label?44:36,h:label?46:38});if(label)s.text(giftLabel,x+46,y+20,15,this.colors.ink,700,reserve?Math.max(1,hitW-49):undefined);s.hit({x:x-3,y,w:hitW,h:52},()=>this.navigate('tasks'));
-  const giftCount=p?.giftCount??0;if(giftCount>0){const text=giftCount>99?'99+':String(giftCount),badgeW=Math.max(20,s.measure(text,11,700)+8);s.panel({x:x+30,y:y-2,w:badgeW,h:19},'berry');s.text(text,x+34,y+1,11,'#fffaf0',700);}
- }
- private drawZoomControl(x:number,y:number){
-  const s=this.stage,board=this.board;if(!board)return;const r={x,y,w:140,h:40},label=Math.round(board.camera.z/Math.max(.0001,this.roomZoomBase)*100)+'%';s.frame(r,'button-linen-normal');
-  s.button({x:x+4,y:y+4,w:32,h:32},'−',()=>{if(!this.completionFx)board.zoom(.8);this.invalidate();},{fontSize:18});s.button({x:x+r.w-36,y:y+4,w:32,h:32},'＋',()=>{if(!this.completionFx)board.zoom(1.25);this.invalidate();},{fontSize:16});s.text(label,x+(r.w-s.measure(label,14,800))/2,y+12,14,this.colors.ink,800);
- }
+ private drawRoomGift(x:number,y:number,label:boolean){return drawRoomGiftPanel.call(this.host,x,y,label);}
+ private drawZoomControl(x:number,y:number){return drawZoomControlPanel.call(this.host,x,y);}
  private setRoomPanelCollapsed(collapsed:boolean){
   if(this.roomPanelCollapsed===collapsed)return;this.roomPanelCollapsed=collapsed;this.platform.storage.set('jigsaw:room-panel-collapsed:v1',collapsed?'1':'0');this.roomViewPending=true;this.invalidate();
  }
@@ -2500,163 +1380,23 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   try{await this.client.post('/api/mobile/social/requests',{code,requestId:this.cardRequestId});if(this.cardCode===code&&this.cardData===data){data.relationship='outgoing';this.cardCache.set(code,{at:Date.now(),data});}this.note('好友申请已发送');}
   catch(error){this.note(errorText(error));}finally{this.cardSending=false;this.invalidate();}
  }
- private drawPlayerCard(){
-  const s=this.stage,v=this.platform.viewport(),w=Math.min(360,s.w-24),h=Math.min(386,s.h-v.top-v.bottom-16),x=(s.w-w)/2,y=v.top+(s.h-v.top-v.bottom-h)/2;
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  s.text('玩家名片',x+16,y+17,19,this.colors.ink,800,w-70);s.button({x:x+w-44,y:y+10,w:30,h:30},'',()=>this.showModal(this.cardReturn),{icon:'close'});
-  this.modalArea={x:x+12,y:y+50,w:w-24,h:h-62};this.modalExtent=0;
-  const data=this.cardData;if(!data){s.wrap(this.cardLoading?'正在读取名片…':this.cardError||'名片暂不可用',x+22,y+78,w-44,14,this.colors.muted,22);if(!this.cardLoading)s.button({x:x+22,y:y+h-58,w:w-44,h:36},'重试',()=>void this.openPlayerCard({code:this.cardCode}),{fontSize:14});return;}
-  const area=this.modalArea,contentH=data.relationship==='self'?270:322;this.modalExtent=contentH;this.modalScroll=clamp(this.modalScroll,0,Math.max(0,contentH-area.h));
-  s.clip(area,()=>{let cy=area.y+8-this.modalScroll;
-   s.icon('avatar',{x:x+22,y:cy,w:52,h:56});if(data.player.decoration)s.decoration(data.player.decoration,{x:x+54,y:cy+29,w:29,h:31});s.text(data.player.name,x+89,cy+6,18,this.colors.ink,800,w-109);s.icon('cardLevel',{x:x+89,y:cy+31,w:21,h:25});s.text('Lv.'+data.player.level,x+116,cy+36,14,this.colors.muted,700,w-136);cy+=76;
-   const rows:[string,string,number][]=[['cardPuzzles','拼完的图片数',data.stats.completedPuzzles],['cardPacks','拥有的图包数',data.stats.ownedPacks],['cardAlbums','集齐的图集数',data.stats.completedAlbums],['piece','本局拼合数',data.stats.roomContribution]];
-   for(const[icon,label,value]of rows){s.icon(icon,{x:x+24,y:cy,w:25,h:27});s.text(label,x+61,cy+7,14,this.colors.ink,600,w-131);const text=String(value);s.text(text,x+w-26-s.measure(text,16,800),cy+6,16,this.colors.ink,800);cy+=41;}
-   if(data.relationship!=='self'){const disabled=this.cardSending||data.relationship==='friend'||data.relationship==='outgoing'||data.relationship==='incoming';s.button({x:x+22,y:cy+8,w:w-44,h:38},data.relationship==='friend'?'已是好友':['outgoing','incoming'].includes(data.relationship)?'已申请':this.cardSending?'正在申请…':'加好友',()=>void this.requestCardFriend(),{icon:'cardAddFriend',tone:'berry',fontSize:14,disabled});}
-  });
- }
- private drawRoomPanel(r:Rect){
-  const s=this.stage,room=this.room!,ink=this.colors.ink,x=r.x+12,w=r.w-24;s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(r.x,r.y,r.w,r.h);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(r.x,r.y,1,r.h);s.hit(r,()=>{});
-  let y=r.y+40;const ratio=room.state.cols/Math.max(1,room.state.rows),artH=Math.min(170,Math.max(40,r.h-500),w/Math.max(.6,ratio)),art={x,y,w,h:artH};s.frame(art,'button-linen-normal');if(this.roomImage)s.image(this.roomImage,{x:x+5,y:y+5,w:w-10,h:artH-10},'contain');y+=artH+6;s.text('参考图',x,y,12,this.colors.muted,700);y+=24;
-  const members=room.snapshot.members as Array<(typeof room.snapshot.members)[number]&{code?:string;level?:number;contribution?:number}>,me=this.client.profile?.code;
-  const columns=r.h<680?2:1,rowW=w/columns;
-  if(Date.now()<this.roomMembersHighlight)s.frame({x:x-4,y:y-4,w:w+8,h:28+Math.ceil(members.length/columns)*34},'panel-gold');
-  s.text('同桌 '+members.length+' / '+seatLimit(room.snapshot),x,y,15,ink,800);y+=26;
-  members.forEach((member,index)=>{const rx=x+index%columns*rowW,ry=y+Math.floor(index/columns)*34;s.icon('avatar',{x:rx,y:ry,w:26,h:28});s.text(member.name+(member.code&&member.code===me?'（我）':''),rx+34,ry+1,13,ink,700,rowW-(columns===1?90:40));s.text('Lv.'+(member.level??0)+(columns===2?' · 拼合 '+(member.contribution??0):''),rx+34,ry+17,10,this.colors.muted,600,rowW-38);if(columns===1){const placed='拼合 '+(member.contribution??0);s.text(placed,rx+rowW-18-s.measure(placed,12,700),ry+7,12,ink,700);}s.hit({x:rx,y:ry,w:rowW,h:32},()=>void this.openPlayerCard(member));});y+=Math.ceil(members.length/columns)*34;
-  s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x,y+2,w,1);y+=12;s.text('聊天',x,y,15,ink,800);y+=24;
-  const free=this.formalWeb,replies=[8,5,9,6],footer=8+Math.ceil(replies.length/2)*36+(free?42:0),bottom=r.y+r.h-footer,messages=this.messages.filter(message=>!this.social.blockedCodes.includes(message.code));
-  this.chatSeen=this.chatCursor;const rows:PublicMessage[]=[];let used=0;for(let i=messages.length-1;i>=0&&used+40<=bottom-y;i--){rows.unshift(messages[i]);used+=40;}
-  if(!rows.length)s.text('还没有消息，点下方短句打个招呼',x,y+4,12,this.colors.muted,500,w);
-  let my=bottom-used-4;for(const message of rows){s.text(message.name,x,my,11,this.colors.muted,700,w);s.text(message.text,x,my+16,13,ink,600,w);my+=40;}
-  let fy=bottom+4;const bw=(w-8)/2;replies.forEach((id,index)=>s.button({x:x+(index%2)*(bw+8),y:fy+Math.floor(index/2)*36,w:bw,h:30},phrases[id],()=>void this.say(id),{fontSize:12,disabled:this.busy}));fy+=Math.ceil(replies.length/2)*36;
-  if(free){s.frame({x,y:fy,w,h:34},'rail-cream-normal');s.text('输入消息…',x+12,fy+10,13,this.colors.muted,500);s.hit({x,y:fy,w,h:34},()=>void this.sayText());}
- }
- private drawReconnectBanner(room:RoomClient){
-  const s=this.stage,area=this.roomArea,w=Math.min(area.w-24,440),x=area.x+(area.w-w)/2,y=area.y+(this.layout==='phonePortrait'?44:this.layout==='phoneLandscape'?this.platform.viewport().top+60:10),r={x,y,w,h:58};s.panel(r);
-  const t=Math.floor(Date.now()/250)%8;for(let i=0;i<8;i++){const angle=i*Math.PI/4;s.ctx.globalAlpha=i===t?1:.3;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(Math.round(x+24+Math.cos(angle)*8)-2,Math.round(y+29+Math.sin(angle)*8)-2,4,4);}s.ctx.globalAlpha=1;
-  s.text('房间同步中断，正在重连…',x+44,y+11,14,this.colors.ink,800,w-130);s.text('已确认的拼图进度会保留',x+44,y+33,12,this.colors.muted,500,w-130);
-  s.button({x:x+w-76,y:y+12,w:64,h:34},'重试',()=>{room.retryNow();this.invalidate();},{fontSize:13});
- }
+ private drawPlayerCard(){return drawPlayerCardPanel.call(this.host);}
+ private drawRoomPanel(r:Rect){return drawRoomSidePanel.call(this.host,r);}
+ private drawReconnectBanner(room:RoomClient){return drawReconnectBannerPanel.call(this.host,room);}
  private roomGuideStep=0;
  private roomGuideSeen(){try{return this.platform.storage.get('jigsaw:room-guide:v1')==='done';}catch{return true;}}
  private finishRoomGuide(){this.roomGuideStep=0;try{this.platform.storage.set('jigsaw:room-guide:v1','done');}catch{}this.invalidate();}
- private drawRoomGuide(){
-  const s=this.stage,c=s.ctx,step=this.roomGuideStep,layout=this.layout,menu={x:s.w-70,y:s.h-this.platform.viewport().bottom-72,w:64,h:64};
-  const hole=step===1?this.roomArea:step===2?(layout==='phonePortrait'?menu:this.roomToolsArea):this.roomMembersArea,r={x:Math.round(hole.x),y:Math.round(hole.y),w:Math.round(hole.w),h:Math.round(hole.h)};
-  c.fillStyle=this.colors.overlay;c.fillRect(0,0,s.w,r.y);c.fillRect(0,r.y+r.h,s.w,s.h-r.y-r.h);c.fillRect(0,r.y,r.x,r.h);c.fillRect(r.x+r.w,r.y,s.w-r.x-r.w,r.h);
-  c.strokeStyle=s.color('#fff1d9');c.lineWidth=2;c.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);s.hit({x:0,y:0,w:s.w,h:s.h},()=>this.finishRoomGuide());
-  const copy=['① 把拼块拖到拼盘里 — 拼对了会自动吸住。双指可以缩放，拖空白处可以移动桌面。','② 工具都在这里 — 边缘、提示、底图…'+(this.platform.config.id==='web'?'':' 找不到拼块就点「定位」，没拼上的块都会闪亮标出'),'③ 叫朋友一起拼 — 同桌越多越快'][step-1],w=Math.min(340,s.w-32);
-  let x=Math.min(Math.max(16,r.x+r.w/2-w/2),s.w-w-16),y=step===1?r.y+Math.min(r.h*.55,r.h-150):r.y+r.h+12;if(y+140>s.h)y=Math.max(12,r.y-150);if(step===2&&layout!=='phonePortrait'&&r.x<s.w/2){x=Math.min(s.w-w-16,r.x+r.w+12);y=Math.min(r.y+40,s.h-160);}if(step===2&&layout==='phoneLandscape'){x=r.x-w-12;y=Math.min(r.y+40,s.h-160);}
-  const textH=this.stage.wrap(copy,-9999,0,w-32,14,this.colors.ink,21),card={x,y,w,h:textH+70};s.panel(card);s.hit(card,()=>{});
-  this.paragraph(copy,x+16,y+14,w-32,14,this.colors.ink);s.text(step+' / 3',x+16,y+card.h-38,13,this.colors.muted,700);s.button({x:x+w-110,y:y+card.h-46,w:94,h:36},step<3?'下一步':'知道了',()=>{if(step<3){this.roomGuideStep++;this.invalidate();}else this.finishRoomGuide();},{tone:'berrydark',fontSize:14});
- }
- private drawNineGrid(){
-  const s=this.stage,room=this.room!,board=this.board!,view=this.platform.viewport(),top=view.top+5,wide=s.w>=600&&s.w>s.h,panelW=wide?242:s.w-24,x=12;
-  const time=(key:string)=>{const value=this.nineTimings.get(key);if(!value)return '—';return value.status===0?'连接失败':value.status>=400?'失败 '+value.status:value.ms>=1000?(value.ms/1000).toFixed(2)+'秒':Math.round(value.ms)+'ms';};
-  s.button({x:8,y:top+3,w:34,h:34},'‹',()=>this.exitRoom(),{fontSize:24});
-  s.text('九格拼合测试 · '+placedCount(room.state)+'/9',49,top+12,17,this.colors.ink,750,s.w-60);
-  const mode=this.platform.networkDiagnostics?.().http,channel=mode==='browser'?'浏览器直连':mode==='native'?'TapTap宿主':'正在选择';
-    s.text((this.room?.diagnosticActionsActive?'长连接操作':channel)+' · '+(this.realtime?.connected?'实时推送':'轮询同步'),x,top+51,12,this.colors.muted,600,panelW);
-  s.text('拿起 '+time('claim')+'  ·  移动 '+time('move'),x,top+76,12,this.colors.ink,600,panelW);
-  s.text('排队 '+time('drop-queue')+'  ·  拼合 '+time('drop'),x,top+100,12,this.colors.ink,600,panelW);
-  const serverMs=this.nineTimings.get('drop')?.serverMs,server=serverMs===undefined?'—':Math.round(serverMs)+'ms';
-  s.text('服务器 '+server+'  ·  松手总计 '+time('drop-total'),x,top+124,12,this.colors.ink,700,panelW);
-  const gap=8,bw=(panelW-gap)/2;
-  s.button({x,y:top+150,w:bw,h:37},'自动拼一片',()=>void this.testNineGridPiece(),{tone:'berry',fontSize:12,disabled:this.busy||!this.imageReady});
-  s.button({x:x+bw+gap,y:top+150,w:bw,h:37},'重新摆放',()=>void this.startNineGrid(),{fontSize:12,disabled:this.busy});
-  if(wide)this.paragraph('仅你的账号可用\n不扣体力，不发奖励\n碎片按1—9排列，也可手动拖动。\n测试后截图上方耗时。',x,top+202,panelW,12);
-  else s.text('不扣体力、不发奖励 · 可手动拖动或自动测试',x,top+198,11,this.colors.muted,500,panelW);
-  this.roomArea=wide?{x:panelW+24,y:top+45,w:s.w-panelW-24,h:Math.max(90,s.h-view.bottom-top-45)}:{x:0,y:top+220,w:s.w,h:Math.max(90,s.h-view.bottom-top-220)};
-  this.bodyTop=this.roomArea.y;this.bodyBottom=this.roomArea.y+this.roomArea.h;board.previewTopInset=0;board.setRect(this.roomArea);
-  if(this.roomViewPending){board.openMobileView({bottom:8});this.roomViewPending=false;}board.draw(s.ctx);
-  s.ctx.save();s.ctx.beginPath();s.ctx.rect(this.roomArea.x,this.roomArea.y,this.roomArea.w,this.roomArea.h);s.ctx.clip();
-  const unit=board.board.width/3;
-  for(const group of room.state.groups){if(group.locked)continue;const id=group.pieces[0],p=board.worldToScreen({x:board.board.x+(id%3+.5)*unit+group.dx,y:board.board.y+(Math.floor(id/3)+.5)*unit+group.dy});s.panel({x:p.x-11,y:p.y-11,w:22,h:22});s.text(String(id+1),p.x-4,p.y-7,12,this.colors.ink,750);}
-  s.ctx.restore();
-  if(!this.imageReady||!room.connected){s.panel({x:this.roomArea.x+8,y:this.roomArea.y+8,w:this.roomArea.w-16,h:45});s.text(this.imageError||(!room.connected?room.message:'正在准备九格图片…'),this.roomArea.x+17,this.roomArea.y+24,12,this.colors.ink,500,this.roomArea.w-34);}
- }
- private drawRoomChatEntry(members:number,unread:number,floating:boolean){
-  const s=this.stage,r=this.chatEntryArea,label=members+'/'+seatLimit(this.room?.snapshot),start=floating?r.x+(r.w-25-s.measure(label,14,700))/2:r.x+3;
-  if(floating)s.button(r,'',()=>this.showModal('chat'));else s.hit(r,()=>this.showModal('chat'));
-  s.icon('person',{x:start,y:r.y+(r.h-25)/2,w:20,h:25});s.text(label,start+25,r.y+(r.h-14)/2,14,this.colors.ink,700);
-  if(unread){const x=r.x+r.w-16,y=r.y-4;s.frame({x,y,w:17,h:17},'segment-berry-selected');s.text(Math.min(99,unread),x+4,y+2,9,this.colors.onAccent,700);}
- }
+ private drawRoomGuide(){return drawRoomGuidePanel.call(this.host);}
+ private drawNineGrid(){return drawNineGridPanel.call(this.host);}
+ private drawRoomChatEntry(members:number,unread:number,floating:boolean){return drawRoomChatEntryPanel.call(this.host,members,unread,floating);}
  private assistanceUnavailable(_kind:'hint'|'underlay'){return false;}
- private drawRoomToolToggle(toggle:Rect,open:boolean,change:()=>void){
-  const s=this.stage,c=s.ctx;
-  // The original B2 toggle is an integer-stepped circle, not a rounded rectangle.
-  c.save();c.translate(toggle.x,toggle.y);c.scale(toggle.w/54,toggle.h/54);
-  const circle=(points:number[],fill:string)=>{c.beginPath();for(let i=0;i<points.length;i+=2){if(i)c.lineTo(points[i],points[i+1]);else c.moveTo(points[i],points[i+1]);}c.closePath();c.fillStyle=s.color(fill);c.fill();};
-  circle([18,1,36,1,36,3,42,3,42,6,48,6,48,12,51,12,51,18,53,18,53,36,51,36,51,42,48,42,48,48,42,48,42,51,36,51,36,53,18,53,18,51,12,51,12,48,6,48,6,42,3,42,3,36,1,36,1,18,3,18,3,12,6,12,6,6,12,6,12,3,18,3],'#925363');
-  circle([18,3,36,3,36,5,42,5,42,8,46,8,46,12,49,12,49,18,51,18,51,36,49,36,49,42,46,42,46,46,42,46,42,49,36,49,36,51,18,51,18,49,12,49,12,46,8,46,8,42,5,42,5,36,3,36,3,18,5,18,5,12,8,12,8,8,12,8,12,5,18,5],'#e3bda4');
-  circle([19,5,35,5,35,7,41,7,41,10,44,10,44,13,47,13,47,19,49,19,49,35,47,35,47,41,44,41,44,44,41,44,41,47,35,47,35,49,19,49,19,47,13,47,13,44,10,44,10,41,7,41,7,35,5,35,5,19,7,19,7,13,10,13,10,10,13,10,13,7,19,7],open?'#f4e7db':'#fff8ef');c.restore();
-  const inset=toggle.w*12/50,size=toggle.w*26/50;s.icon(open?'close':'tools',{x:toggle.x+inset,y:toggle.y+inset,w:size,h:size});s.hit(toggle,change);
- }
- private drawRoomTools(toggle:Rect,landscape:boolean){
-  const s=this.stage,board=this.board;if(!board)return;
-  this.drawRoomToolToggle(toggle,this.toolsOpen,()=>{this.clearRoomPointer();this.toolsOpen=!this.toolsOpen;this.invalidate();});
-  if(!this.toolsOpen)return;
-  const width=Math.min(366,s.w-26),box={x:s.w-13-width,y:Math.max(this.roomArea.y+7,toggle.y-160),w:width,h:150};s.panel(box);s.hit(box,()=>{});
-  const items:readonly(readonly[string,string])[]=[...this.roomTools.map(([kind,label])=>[kind,label] as const),...(this.platform.setOrientation?[['orientation','横屏']] as const:[])],cellW=(box.w-14)/items.length;
-  items.forEach(([kind,label],index)=>{const x=box.x+7+index*cellW,cx=x+cellW/2,y=box.y+12,disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
-   s.frame({x:cx-21,y:y+8,w:42,h:42},this.toolActive(kind)?'button-cream-selected':disabled?'button-cream-disabled':'button-cream-normal');s.icon(this.roomIcon(kind),{x:cx-13,y:y+16,w:26,h:26});s.text(label,cx-s.measure(label,12,700)/2,y+55,12,disabled?this.colors.disabled:this.colors.ink,700);
-   this.drawAidBadge(kind,x+cellW-1,box.y+4);if(!disabled)s.hit({x,y:box.y+5,w:cellW,h:76},()=>this.roomTool(kind));});
-  s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(box.x+12,box.y+88,box.w-24,1);
-  const members=this.room?.snapshot.members.length??0,unread=this.chatUnread,bw=(box.w-24-12)/3,by=box.y+98;
-  s.button({x:box.x+12,y:by,w:bw,h:40},'',()=>this.roomTool('chat'));for(let i=0;i<Math.min(3,members);i++)s.icon('avatar',{x:box.x+20+i*11,y:by+10,w:18,h:20});s.text('同桌 '+members,box.x+24+Math.min(3,members)*11+8,by+12,13,this.colors.ink,700,bw-40);
-  s.button({x:box.x+18+bw,y:by,w:bw,h:40},'聊天',()=>this.roomTool('chat'),{icon:'chat',fontSize:13});if(unread){const ux=box.x+18+bw*2-18;s.frame({x:ux,y:by-6,w:18,h:18},'segment-berry-selected');s.text(Math.min(99,unread),ux+4,by-4,10,this.colors.onAccent,700);}
-  s.button({x:box.x+24+bw*2,y:by,w:bw,h:40},'更多 ›',()=>this.roomTool('more'),{fontSize:13});
- }
+ private drawRoomToolToggle(toggle:Rect,open:boolean,change:()=>void){return drawRoomToolTogglePanel.call(this.host,toggle,open,change);}
+ private drawRoomTools(toggle:Rect,landscape:boolean){return drawRoomToolsPanel.call(this.host,toggle,landscape);}
 
 
- private drawPublicChat(){
-  const messages=this.messages.filter(message=>!this.social.blockedCodes.includes(message.code));
-  const s=this.stage,view=this.platform.viewport(),landscape=s.w>s.h&&s.w>=540,w=landscape?Math.min(370,s.w*.44):s.w-24,chatTop=this.roomArea.y+12,
-   h=landscape?Math.min(520,s.h-view.bottom-chatTop-12):Math.min(Math.max(380,s.h*.52),s.h-view.top-view.bottom-20),
-   x=landscape?s.w-w-74:12,y=landscape?Math.max(view.top+8,chatTop):s.h-view.bottom-h-10;
-  this.chatWindowArea={x,y,w,h};s.panel(this.chatWindowArea);s.hit(this.chatWindowArea,()=>{});
-  s.text('同桌交流',x+15,y+17,18,this.colors.ink,800,w-180);
-  s.segments({x:x+w-165,y:y+12,w:116,h:32},[['room','房间'],['friends','好友']],'room',value=>{if(value==='friends')this.openSocialInbox();});
-  {const count=this.social.unread+this.social.requestCount;if(count){const label=count>99?'99+':String(count),bw=Math.max(17,s.measure(label,9,700)+8),bx=x+w-165+116-bw/2,by=y+6;s.frame({x:bx,y:by,w:bw,h:17},'segment-berry-selected');s.text(label,bx+(bw-s.measure(label,9,700))/2,by+2,9,this.colors.onAccent,700);}}
-  const strip=this.room?.snapshot.members??[],memberColumns=Math.max(1,Math.floor((w-110)/78)),memberWidth=78,memberBottom=84;
-  strip.slice(0,memberColumns).forEach((member,index)=>{const sx=x+14+index*memberWidth,sy=y+50;s.icon('avatar',{x:sx,y:sy,w:24,h:26});s.text(member.name,sx+27,sy+1,12,this.colors.ink,700,46);s.text('Lv.'+((member as {level?:number}).level??0),sx+27,sy+16,10,this.colors.muted,600);s.hit({x:sx,y:sy,w:75,h:34},()=>void this.openPlayerCard(member));});
-  s.button({x:x+w-86,y:y+50,w:72,h:30},'同桌 '+strip.length+' ›',()=>this.showModal('members'),{fontSize:12});
-  s.button({x:x+w-42,y:y+12,w:29,h:31},'',()=>this.showModal(null),{icon:'close'});
-  const groups=[{label:'协作',ids:[1,5,6,2,8,3,7]},{label:'鼓励',ids:[0,4,9,10,11]},{label:'表情',ids:[12,13,14,15]},{label:'心情',ids:[16,17,18,19,20]}].map(g=>({...g,ids:g.ids.filter(id=>this.phraseAvailable(id))})).filter(g=>g.ids.length);
-  if(this.phraseGroup>=groups.length)this.phraseGroup=0;
-  const selected=groups[this.phraseGroup],columns=w>=310?3:2,
-   rows=Math.ceil(selected.ids.length/columns),footerHeight=48+rows*34+(this.formalWeb?38:0),footerY=y+h-footerHeight-10,
-   list={x:x+10,y:y+memberBottom+4,w:w-20,h:Math.max(24,footerY-y-memberBottom-11)};
-  let messageY=0;const entries=messages.map(message=>{const lines:string[]=[];if(this.formalWeb){let line='';for(const char of message.text){if(char==='\n'||s.measure(line+char,14,650)>list.w-82){lines.push(line);line=char==='\n'?'':char;}else line+=char;}lines.push(line);}else lines.push(message.text);const h=this.formalWeb?Math.max(56,31+lines.length*21):56,entry={message,lines,y:messageY,h};messageY+=h;return entry;});
-  this.modalArea=list;this.modalExtent=messageY;this.modalScroll=clamp(this.modalScroll,0,Math.max(0,this.modalExtent-list.h));this.chatHits=[];
-  s.clip(list,()=>{
-   if(!messages.length){s.text('还没有消息',list.x+9,list.y+16,13,this.colors.muted);s.text('点下方短句和同桌打个招呼',list.x+9,list.y+42,12,this.colors.muted,500,list.w-20);}
-   for(const entry of entries){
-    const {message,lines}=entry,cy=list.y+entry.y-this.modalScroll;
-    if(cy+entry.h<list.y||cy>list.y+list.h)continue;
-    const r={x:list.x,y:cy,w:list.w,h:entry.h-4},avatar={x:r.x+3,y:r.y+4,w:29,h:32};s.icon('avatar',avatar);
-    const name=message.name+' · Lv.'+(message.level??0);s.text(name,r.x+40,r.y+2,11,this.colors.muted,700,r.w-75);
-    lines.forEach((line,index)=>s.text(line,r.x+40,r.y+23+index*21,14,this.colors.ink,650,r.w-82));
-    if(message.sentAt){const date=new Date(message.sentAt);s.text(String(date.getHours()).padStart(2,'0')+':'+String(date.getMinutes()).padStart(2,'0'),r.x+r.w-42,r.y+2,9,this.colors.muted);}
-    const own=message.code===this.client.profile?.code;
-    if(!own&&message.code){s.text('···',r.x+r.w-24,r.y+23,18,this.colors.muted,800);s.hit({x:r.x+r.w-37,y:r.y+13,w:36,h:36},()=>this.openPublicMessage(message));const visible={x:r.x,y:Math.max(list.y,r.y),w:r.w-39,h:Math.max(0,Math.min(list.y+list.h,r.y+r.h)-Math.max(list.y,r.y))};this.chatHits.push({r:visible,message});}
-   }
-  });
-  s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(x+12,footerY,w-24,1);if(w>=310)s.text(this.formalWeb?'快捷短句':'只发送预设短句',x+14,footerY+7,10,this.colors.muted);
-  const segmentW=Math.min(groups.length*58,w-26);s.segments({x:x+w-13-segmentW,y:footerY+3,w:segmentW,h:28},groups.map((g,i)=>[i as 0|1|2|3,g.label] as const),this.phraseGroup,value=>{this.phraseGroup=value;this.invalidate();});
-  const bw=(w-26-(columns-1)*6)/columns;
-  selected.ids.forEach((id,i)=>s.button({x:x+13+(i%columns)*(bw+6),y:footerY+39+Math.floor(i/columns)*34,w:bw,h:29},phrases[id],()=>void this.say(id),{fontSize:11,tone:'cream',disabled:this.busy}));
-  if(this.formalWeb)s.button({x:x+13,y:footerY+39+rows*34,w:w-26,h:30},'输入消息',()=>void this.sayText(),{fontSize:12,disabled:this.busy});
- }
+ private drawPublicChat(){return drawPublicChatPanel.call(this.host);}
 
- private drawTaskWindow(){
-  const s=this.stage,v=this.platform.viewport(),w=Math.min(380,s.w-24),bottom=s.h-v.bottom-12,minY=this.route==='room'?this.roomArea.y+8:v.top+12,h=Math.min(560,Math.max(120,bottom-minY)),x=12,y=bottom-h;
-  this.taskWindowArea={x,y,w,h};s.panel(this.taskWindowArea);s.hit(this.taskWindowArea,()=>{});
-  s.text('任务与礼包',x+16,y+15,18,this.colors.ink,750,w-75);s.button({x:x+w-43,y:y+9,w:30,h:30},'',()=>this.showModal(null));s.icon('close',{x:x+w-40,y:y+12,w:24,h:24},this.colors.ink);
-  const area={x:x+8,y:y+46,w:w-16,h:h-58},saved={scroll:this.scroll,extent:this.extent,bodyTop:this.bodyTop,bodyBottom:this.bodyBottom};
-  // Reuse task cards while keeping their scroll separate from the page behind the window.
-  try{s.withViewport(area,()=>{this.scroll=this.modalScroll;this.extent=this.modalExtent;this.bodyTop=6;this.bodyBottom=s.h-8;this.drawTasks(true);this.scroll=clamp(this.scroll,0,Math.max(0,this.extent-(this.bodyBottom-this.bodyTop)));this.modalScroll=this.scroll;this.modalExtent=this.extent;this.modalArea={x:area.x,y:area.y+this.bodyTop,w:area.w,h:Math.max(0,this.bodyBottom-this.bodyTop)};});}
-  finally{Object.assign(this,saved);}
- }
+ private drawTaskWindow(){return drawTaskWindowPanel.call(this.host);}
  private stopCheers(){if(this.cheerFrame!==null)this.platform.cancelFrame(this.cheerFrame);this.cheerFrame=null;this.cheerEffects.clear();}
  private animateCheers(){
   if(this.cheerFrame!==null||this.hidden||this.destroyed||this.modal!=='completion')return;
@@ -2666,115 +1406,13 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private completionSeats(){const snap=this.room?.snapshot;return completionSeats(snap?.members??[],(snap as typeof snap&{mobileResult?:{ranking?:Parameters<typeof completionSeats>[1]}})?.mobileResult?.ranking,this.room?.ticket.playerId??'',this.client.profile?.code,seatLimit(snap));}
  private landscapeSeatWidth(available:number){return Math.max(120,Math.min(140,(available-500)/2));}
  private completionOutsideSeats(x:number,w:number){return this.desktop&&x>=194&&this.stage.w-x-w>=194;}
- private drawCompletionSeat(seat:CompletionSeat,r:Rect,vertical=false){
-  const s=this.stage,c=s.ctx,avatar=vertical?34:this.layout==='phoneLandscape'?r.w<140?30:34:50,size=vertical?34:this.layout==='phoneLandscape'?avatar:40;r={...r,y:r.y+this.cheerEffects.hop(seat.playerId)};this.completionSeatRects.set(seat.playerId,r);
-  c.save();c.globalAlpha=1;s.frame(r,seat.me?'button-cream-selected':'button-linen-normal');
-  if(seat.me){c.save();c.globalAlpha*=.12;c.fillStyle=this.colors.berry;c.fillRect(r.x+4,r.y+4,r.w-8,r.h-8);c.restore();}
-  // The portrait me tag needs 1px more clearance at the outer avatar edge.
-  const mirror=seat.column==='right',ax=vertical?r.x+(r.w-avatar)/2+(seat.me?(mirror?-1:1):0):mirror?r.x+r.w-avatar-6:r.x+6,ay=vertical?r.y+3:r.y+(r.h-avatar)/2;
-  const ar={x:ax,y:ay,w:avatar,h:avatar};this.completionAvatarRects.set(seat.playerId,ar);if(!seat.present)c.globalAlpha=.45;s.icon('avatar',ar);if(seat.crown)drawCheerIcon(c,'crown',{x:ax+(avatar-24)/2,y:ay-10,w:24,h:24});
-  const p=this.completionPicture,slot={x:vertical?(mirror?(p.x+p.w+r.x)/2:(r.x+r.w+p.x)/2)-size/2:mirror?r.x+6:r.x+r.w-6-size,y:ay+(avatar-size)/2,w:size,h:size};this.completionSlotRects.set(seat.playerId,slot);
-  const tx=vertical?r.x+3:mirror?slot.x+size+4:ax+avatar+5,tw=vertical?r.w-6:mirror?ax-5-tx:slot.x-4-tx;
-  s.text(seat.name,tx,vertical?r.y+39:r.y+12,vertical?11:12,this.colors.ink,seat.me?800:600,tw);
-  s.text('拼合 '+seat.contribution,tx,vertical?r.y+56:r.y+34,vertical?10:11,this.colors.muted,600,tw);
-  if(seat.me){const tag={x:mirror?r.x+r.w-17:r.x+3,y:r.y+(vertical?3:-6),w:14,h:13};c.fillStyle=this.colors.berry;c.fillRect(tag.x,tag.y,tag.w,tag.h);s.text('我',tag.x+2,tag.y+1,9,this.colors.onAccent,700);}
-  c.restore();
- }
- private drawCompletionSeats(panel:Rect){
-  this.completionAvatarRects.clear();this.completionSlotRects.clear();
-  const seats=this.completionSeats(),landscape=this.layout==='phoneLandscape',v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},w=landscape?this.landscapeSeatWidth(this.stage.w-(v.left??0)-(v.right??0)):176,h=landscape?60:70,gap=landscape?12:16;
-  for(const seat of seats){const rows=Math.ceil(seats.length/2),x=landscape?seat.column==='left'?10+(v.left??0):this.stage.w-10-(v.right??0)-w:seat.column==='left'?panel.x-18-w:panel.x+panel.w+18,y=panel.y+(panel.h-(rows*h+(rows-1)*gap))/2+seat.row*(h+gap);this.drawCompletionSeat(seat,{x,y,w,h});}
- }
- private drawCompletionPicture(r:Rect){
-  const s=this.stage;this.completionPicture=r;s.frame(r,'panel-cream');const shown=this.board?.drawCompletedPicture(s.ctx,{x:r.x+6,y:r.y+6,w:r.w-12,h:r.h-12});
-  const level=this.chapterForLevel(this.room?.snapshot.levelId)?.levels.find(level=>level.id===this.room?.snapshot.levelId),src=level?this.levelPicture(level).src:'';
-  if(!shown&&src)s.image(this.client.asset(src),{x:r.x+6,y:r.y+6,w:r.w-12,h:r.h-12},'contain');
-  if(!shown&&!src){s.text(this.imageError?'图片加载失败':'正在加载成品…',r.x+12,r.y+r.h/2-20,13,this.colors.muted,500,r.w-24);if(this.imageError)this.button(r.x+12,r.y+r.h/2+4,r.w-24,'重新加载',()=>void this.run(async()=>{const board=this.board;if(!board)return;await board.setImage(this.roomImage);if(this.board===board){this.imageReady=true;this.imageError='';this.message='';}}),'cream',32);}
-  s.ornaments(r,26);
- }
- private drawCompletionBar(r:Rect){
-  this.completionBar=r;const s=this.stage,vertical=this.layout==='phonePortrait',enabled=!!this.room?.snapshot.members.some(member=>member.id===this.room!.ticket.playerId&&member.lastSeen>0),gap=4,bw=(r.w-5*gap)/6;
-  CHEER_EMOTES.forEach((emote,i)=>{const b={x:r.x+i*(bw+gap),y:r.y,w:bw,h:r.h};s.ctx.save();if(!enabled)s.ctx.globalAlpha=.45;s.frame(b,this.cheerEffects.pressed(emote)?'button-cream-pressed':'button-cream-normal');
-   const size=vertical?24:22,label=CHEER_LABELS[emote],font=vertical?11:this.desktop?14:13,iw=16,lw=s.measure(label,font,700),horizontal=bw>=iw+lw+10;
-   drawCheerIcon(s.ctx,emote,{x:vertical||!horizontal?b.x+(bw-size)/2:b.x+(bw-iw-lw-4)/2,y:vertical?b.y+5:horizontal?b.y+(b.h-size)/2:b.y+3,w:size,h:size});
-   s.text(label,vertical||!horizontal?b.x+(bw-lw)/2:b.x+(bw-iw-lw-4)/2+iw+6,vertical?b.y+35:horizontal?b.y+(b.h-font)/2:b.y+26,font,this.colors.ink,700,bw-4);
-   if(this.desktop)s.text(i+1,b.x+4,b.y+3,9,this.colors.muted);
-   const count=this.cheerEffects.count(emote);if(count>=2){const badge='×'+count;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(b.x+b.w-25,b.y-4,27,16);s.text(badge,b.x+b.w-23,b.y-3,10,this.colors.onAccent,700,25);}
-   if(enabled)s.hit(b,()=>this.sendCompletionCheer(emote));s.ctx.restore();});
- }
- private drawCompletionContent(left:number,cy:number,width:number,landscape=false,panel?:Rect){
-  if(this.offlineRoom)return this.offline.drawCompletion(this.stage,{...this.room!.ticket,room:this.room!.snapshot},left,cy,width,landscape,panel,{picture:r=>this.drawCompletionPicture(r),paragraph:(...args)=>this.paragraph(...args),launch:input=>void this.run(()=>this.launchOffline(input)),back:()=>this.exitRoom(),comic:{available:id=>this.hasLevelComic(id),open:id=>this.openLevelComic(id,{fromClear:true})},story:id=>{const story=this.storyCompletionLines(id,this.offline.view?.chapters??[],Math.floor(width/13));return story?[story.progress+(story.reward?' · '+story.reward:''),...(story.teaser?[story.teaser]:[])]:null;},nextButton:(r,label,action)=>this.breathButton(r,label,action)});
-  const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
-  const seats=this.completionSeats(),levelClear=(result?.levelClear??this.levelDestination()??undefined) as import('../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
-  if(!landscape&&!this.completionOutsideSeats(left-20,width+40)){this.completionAvatarRects.clear();this.completionSlotRects.clear();}
-  if(landscape&&panel){const side=Math.min(240,panel.h-134,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+40,w:side,h:side});left=panel.x+16+side+16;width=panel.x+panel.w-16-left;
-   // Short screens only lift the column when album reward lines need the room.
-   cy=panel.y+Math.max(12,Math.min(42,panel.h-332+18*Math.max(0,2-(result?.catalog?.albumRewards?.length??0))));}
-  else if(seats.length&&!this.completionOutsideSeats(left-20,width+40)){
-   cy+=5; // Leave the first row clear of the modal heading.
-   const side=width-146,rows=Math.ceil(seats.length/2),height=Math.max(side,rows*74+(rows-1)*8);this.drawCompletionPicture({x:left+73,y:cy,w:side,h:side});
-   for(const seat of seats)this.drawCompletionSeat(seat,{x:seat.column==='left'?left:left+width-66,y:cy+seat.row*82,w:66,h:74},true);cy+=height+20;
-  }else{const picture={x:left,y:cy,w:width,h:Math.min(width*.62,this.desktop?230:240)};this.drawCompletionPicture(picture);cy+=picture.h+20;}
-  const title=(snap?.title||snap?.photo?.title||'这幅画')+'，拼好啦！';
-  // A lifted landscape title shares the close button's row, so centre it in the space before the button.
-  if(landscape&&panel&&cy<panel.y+36){const tw=width-28;s.text(title,left+Math.max(0,(tw-s.measure(title,17,800))/2),cy,17,ink,800,tw);}else center(title,cy,landscape?17:20,ink,800);cy+=levelLandscape?24:landscape?27:32;
-  if(chapterComplete){center((this.levels?.chapters.find(chapter=>chapter.levels.some(level=>level.id===levelClear.levelId))?.title||'本章')+'完成！',cy,landscape?13:16,ink,800);cy+=landscape?18:26;}
-  const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
-  const meta=[pieces?pieces+' 片':'',started&&finished&&finished>started?'用时 '+Math.max(1,Math.round((finished-started)/60000))+' 分钟':'',together?together+' 人同桌':''].filter(Boolean).join(' · ');  // Story clears: chapter progress + next album reward, then a teaser of the next level. The short landscape panel
-  // shows the progress line in place of the table metadata and skips the teaser.
-  const story=levelClear?this.storyCompletionLines(levelClear.levelId,this.availableChapters,Math.floor(width/13)):null,storyHead=story?story.progress+(story.reward?' · '+story.reward:''):'';
-  if(story&&levelLandscape){center(storyHead,cy,12,ink,700);cy+=20;}
-  else{if(meta){center(meta,cy,landscape?12:13,muted,600);cy+=levelLandscape?20:landscape?25:30;}
-   if(story){center(storyHead,cy-6,landscape?12:13,ink,700);cy+=landscape?18:22;if(story.teaser){center(story.teaser,cy-6,12,muted,500);cy+=landscape?18:22;}}}
-  if(this.cheersEnabled&&!landscape){this.drawCompletionBar({x:left,y:cy,w:width,h:this.layout==='phonePortrait'?58:46});cy+=this.layout==='phonePortrait'?72:60;}
-    if(result){
-     const imageId=snap?.puzzle?.imageId,album=imageId?this.collection?.albums.find(item=>item.images.some(image=>image.id===imageId)):undefined;
-     const tiles:{icon:string;label:string;gold?:boolean}[]=[{icon:'coin',label:'金币 +'+(result.coins??0)},{icon:'fragment',label:'碎片 +'+(result.fragments??0)},...(this.energyEnabled&&result.energy?[{icon:'lightning',label:'体力 +'+result.energy}]:[]),...(levelClear?.firstClear&&this.energyEnabled&&levelClear.energy>0?[{icon:'lightning',label:'通关体力 +'+levelClear.energy}]:[]),...(album?[{icon:'book',label:'图集 '+album.collected+'/'+album.total}]:[]),...(landscape?[]:((result.catalog?.albumRewards??[]) as {title:string;coins?:number}[]).map(reward=>({icon:reward.coins?'coin':'leaf',label:reward.coins?'集满 +'+reward.coins:'得到装饰',gold:true})))];
-     const gap=levelLandscape?6:8,columns=Math.min(tiles.length,landscape?levelClear?5:4:this.desktop||width>=420?5:4),tileH=levelLandscape?52:landscape?58:64,tw=(width-gap*(columns-1))/columns;
-     const weights=levelLandscape?tiles.map(tile=>Math.max(40,s.measure(tile.label,12,700)+8)):[],total=weights.reduce((sum,value)=>sum+value,0);let tileX=left;
-     tiles.forEach((tile,index)=>{const tileW=levelLandscape?(width-gap*(columns-1))*weights[index]/total:tw,r={x:levelLandscape?tileX:left+(index%columns)*(tw+gap),y:cy+Math.floor(index/columns)*(tileH+gap),w:tileW,h:tileH};tileX+=tileW+gap;s.frame(r,tile.gold?'panel-gold':'button-linen-normal');s.icon(tile.icon,{x:r.x+(tileW-26)/2,y:r.y+6,w:24,h:24});const base=levelLandscape?12:tw<84?12:13,size=Math.min(base,base*(tileW-8)/s.measure(tile.label,base,700));s.text(tile.label,r.x+Math.max(4,(tileW-s.measure(tile.label,size,700))/2),r.y+(levelLandscape?33:35),size,ink,700,tileW-8);});
-     cy+=Math.ceil(tiles.length/columns)*(tileH+gap)+4;
-     if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,landscape?12:13,muted,600);cy+=levelLandscape?16:landscape?18:26;}
-     for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,landscape?12:13,ink,700);cy+=landscape?18:24;}
-    }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
-    cy+=landscape?2:6;const extra=this.completionFlow.action(this.completionContext()),primaryW=extra?(width-8)/2:width;if(extra){const size=Math.max(12,Math.min(16,16*(primaryW-12)/s.measure(extra.label,16,750)));s.button({x:left,y:cy,w:primaryW,h:landscape?40:46},extra.label,extra.action,{tone:extra.tone??'gold',fontSize:size});}const pictureAlbum=(snap?.puzzle?.imageId&&this.collection?.albums.find(item=>item.images.some(image=>image.id===snap.puzzle!.imageId))?.id)||'';
-    // 拼完必有下一步: next story level, else today's daily, else the albums.
-    const primary=completionPrimary({levelLabel:levelClear?this.levelNextLabel(levelClear):null,dailyDone:this.dailyDoneToday(snap?.puzzle?.imageId)}),primaryRect={x:extra?left+primaryW+8:left,y:cy,w:primaryW,h:landscape?40:46};
-    const primaryAction=()=>{if(primary.kind==='level'&&levelClear)this.continueLevel(levelClear);else if(primary.kind==='daily'){this.leaveRoom();this.launchDaily();}else{this.leaveRoom();this.openCollection('albums');if(pictureAlbum)this.openAlbum(pictureAlbum);}};
-    if(primary.kind==='level')this.breathButton(primaryRect,primary.label,primaryAction);else s.button(primaryRect,primary.label,primaryAction,{tone:'berrydark',fontSize:16});cy+=landscape?46:56;
-    const third=(width-16)/3,albumId=(snap?.puzzle?.imageId&&this.collection?.albums.find(item=>item.images.some(image=>image.id===snap.puzzle!.imageId))?.id)||'';
-    s.button({x:left,y:cy,w:third,h:landscape?34:40},'分享成品',()=>void this.run(async()=>{const outcome=await this.shareFromGame({title:'我们拼好了「'+(snap?.title||snap?.photo?.title||'一幅画')+'」，来'+this.platform.config.gameName+'一起拼',inviteCode:this.tasks?.invitation.code});this.note(outcome==='copied'?'链接已复制，可以发给朋友':outcome==='shared'||outcome==='opened'?'已分享':outcome==='cancelled'?'本次分享已取消':'暂时无法分享');}),{fontSize:13});
-    s.button({x:left+third+8,y:cy,w:third,h:landscape?34:40},'查看图集',()=>{this.leaveRoom();this.openCollection('albums');if(albumId)this.openAlbum(albumId);},{fontSize:13});
-    s.button({x:left+(third+8)*2,y:cy,w:third,h:landscape?34:40},'回大厅',()=>{this.leaveRoom();this.navigate('lobby');},{fontSize:13});cy+=landscape?40:50;
-    // Landscape panels are short: the line only shows when it fits above the cheers bar.
-    if(!landscape||!panel||cy+14+(this.cheersEnabled?66:0)<=panel.y+panel.h-6){center(this.completionFooterText(),cy,12,muted,500);cy+=landscape?16:24;}
-  if(this.cheersEnabled&&landscape&&panel){const bar={x:panel.x+16,y:Math.max(this.completionPicture.y+this.completionPicture.h+8,cy+2),w:panel.w-32,h:44};this.drawCompletionBar(bar);const hint='点一下就能喝彩，同桌都看得到';s.text(hint,bar.x+(bar.w-s.measure(hint,11))/2,bar.y+49,11,muted,500);}
-  return cy;
- }
- private drawLandscapeCompletion(){
-  const s=this.stage,v=this.platform.viewport() as ReturnType<Platform['viewport']>&{left?:number;right?:number},available=s.w-(v.left??0)-(v.right??0),seatW=this.landscapeSeatWidth(available),w=Math.min(640,available-(this.completionSeats().length?2*(seatW+18):252)),panel={x:(v.left??0)+(available-w)/2,y:Math.max(8,v.top),w,h:s.h-Math.max(8,v.top)-Math.max(8,v.bottom)};
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.frame(panel,'panel-cream');this.modalArea=panel;this.modalExtent=0;this.modalScroll=0;this.completionSeatRects.clear();this.drawCompletionSeats(panel);
-  s.text('拼图完成',panel.x+16,panel.y+12,17,this.colors.ink,700);s.button({x:panel.x+panel.w-38,y:panel.y+7,w:28,h:28},'',()=>this.closeModal(),{icon:'close'});
-  this.drawCompletionContent(panel.x+16,panel.y+40,panel.w-32,true,panel);this.drawCompletionEffects();
- }
- private drawCompletionEffects(){
-  this.completionBubbleRects.clear();const fx=this.cheerEffects,now=Date.now();fx.update(now);const s=this.stage,c=s.ctx,p=this.completionPicture;
-  // Cups meet above the image; only show them while its top is in the scroll viewport.
-  if(fx.tea&&p.y>=this.modalArea.y){const t=(now-fx.tea.start)/1000,spread=40*(1-Math.min(1,t*2));for(const direction of [-1,1])drawCheerIcon(c,'tea',{x:p.x+p.w/2-16+direction*(16+spread),y:p.y-28-Math.sin(t*Math.PI)*8,w:32,h:32});}
-  const outside=this.layout==='phoneLandscape'||this.completionOutsideSeats(this.modalArea.x-12,this.modalArea.w+24);
-  const area=outside?{x:0,y:0,w:s.w,h:s.h}:this.modalArea,bubbleRect=(id:string)=>{const slot=this.completionSlotRects.get(id);if(slot)return !outside&&(slot.x+slot.w<=area.x||slot.x>=area.x+area.w||slot.y+slot.h<=area.y||slot.y>=area.y+area.h)?null:slot;return {x:clamp(p.x+p.w/2-21,area.x+2,area.x+area.w-44),y:clamp(p.y+p.h-48,area.y+2,area.y+area.h-40),w:42,h:38};};
-  s.clip(area,()=>{
-  const origin=(id:string)=>{const r=bubbleRect(id);return r?{x:r.x+r.w/2,y:r.y+r.h/2}:null;};
-  for(const scene of fx.celebrations)drawCelebration(c,scene,now,{picture:this.completionPicture,field:this.modalArea,clip:area});
-  for(const particle of fx.particles){const t=(now-particle.start)/particle.duration;c.save();const o=origin(particle.playerId),slot=this.completionSlotRects.get(particle.playerId),rise=slot?t*((outside?64:60)+particle.y*12):t*100+particle.y*20,dx=slot?outside?Math.sin(t*8)*(particle.x*2-1)*Math.max(0,slot.w/2-12):(.35*rise*(slot.x<p.x+p.w/2?1:-1)+Math.sin(t*8)*(particle.x*2-1)*4):(particle.x-.5)*60;c.globalAlpha=1-t;if(o)drawCheerIcon(c,'heart',{x:o.x-12+dx,y:o.y-12-rise,w:24,h:24});c.restore();}
-  if(now<fx.starsUntil){const size=16+Math.round(8*Math.abs(Math.sin(now/95)));for(const [x,y] of [[p.x,p.y],[p.x+p.w,p.y],[p.x,p.y+p.h],[p.x+p.w,p.y+p.h]])drawCheerIcon(c,'star',{x:x-size/2,y:y-size/2,w:size,h:size});}
-  for(const bubble of fx.bubbles){const target=bubbleRect(bubble.playerId),scale=fx.bubbleScale(bubble);if(!target||scale<=0)continue;const r={x:target.x+target.w/2*(1-scale),y:target.y+target.h/2*(1-scale),w:target.w*scale,h:target.h*scale};this.completionBubbleRects.set(bubble.playerId,r);
-   // Stage.frame paints in physical pixels, so animate its rectangle explicitly.
-   c.save();c.globalAlpha=fx.bubbleAlpha(bubble);s.clip(r,()=>{s.frame(r,'button-cream-normal');if(scale>.5){drawCheerIcon(c,bubble.emote,{x:r.x+(r.w-24*scale)/2,y:r.y+r.h/2-14*scale,w:24*scale,h:24*scale});if(bubble.count>=2){const badge={x:r.x+r.w-22*scale,y:r.y+r.h-14*scale,w:20*scale,h:12*scale};c.fillStyle=this.colors.berry;c.fillRect(badge.x,badge.y,badge.w,badge.h);s.text('×'+bubble.count,badge.x+2*scale,badge.y+scale,9*scale,this.colors.onAccent,800,16*scale);}}});c.restore();}
-  // Portrait slots flank the picture's top edge, so the combo banner narrows to fit between them.
-  if(fx.combo){const label=fx.combo.count+' 人一起喝彩！',cx=p.x+p.w/2,room=outside?Infinity:Math.min(Infinity,...[...this.completionSlotRects.values()].filter(r=>r.y<p.y+29&&r.y+r.h>p.y-3).map(r=>(r.x+r.w<=cx?cx-r.x-r.w:r.x-cx)-2)),w=Math.min(p.w+60,s.measure(label,14,800)+58,room*2),r={x:p.x+(p.w-w)/2,y:p.y-3,w,h:32};s.frame(r,'button-gold-normal');s.text(label,r.x+(w-s.measure(label,14,800))/2,r.y+8,14,this.colors.ink,800);for(const x of [r.x+5,r.x+w-21])drawCheerIcon(c,'star',{x,y:r.y+8,w:16,h:16});}
-  });
- }
+ private drawCompletionSeat(seat:CompletionSeat,r:Rect,vertical=false){return drawCompletionSeatPanel.call(this.host,seat,r,vertical);}
+ private drawCompletionSeats(panel:Rect){return drawCompletionSeatsPanel.call(this.host,panel);}
+ private drawCompletionPicture(r:Rect){return drawCompletionPicturePanel.call(this.host,r);}
+ private drawCompletionBar(r:Rect){return drawCompletionBarPanel.call(this.host,r);}
+ private drawCompletionContent(left:number,cy:number,width:number,landscape=false,panel?:Rect){return drawCompletionContentPanel.call(this.host,left,cy,width,landscape,panel);}
+ private drawLandscapeCompletion(){return drawLandscapeCompletionPanel.call(this.host);}
+ private drawCompletionEffects(){return drawCompletionEffectsPanel.call(this.host);}
  /** Arms the greeting after a plain login (no invite link); the lobby or story page shows it once the orientation picker and 七日礼 are done. */
  private armWelcome(){
   const skip=!this.welcomeEnabled?'设置里已关闭':this.platform.config.id!=='taptap'?'':this.brandNewPlayer?'新手账号':'';
@@ -2812,85 +1450,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(start.kind==='create')this.launchDaily();else void this.enterRoom(start.roomId);
  }
  /** Today's daily picture tinted for the time of day; without the picture the tint sits on the placeholder. */
- private drawWelcomeHero(r:Rect,slot:WelcomeSlot){
-  const s=this.stage,c=s.ctx,photo=this.dailyPhoto,tone=slot.tone;
-  if(photo)s.image(this.client.asset(photo.src||photo.thumbSrc),r,'cover');else{c.fillStyle=this.colors.placeholder;c.fillRect(r.x,r.y,r.w,r.h);}
-  c.save();
-  if(tone==='morning'){c.fillStyle='#ffd9bf33';c.fillRect(r.x,r.y,r.w,r.h);const g=c.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,'#fff0dcb0');g.addColorStop(.5,'#ffd8bf40');g.addColorStop(1,'#ffd8bf00');c.fillStyle=g;c.fillRect(r.x,r.y,r.w,r.h);}
-  if(tone==='dusk'){const g=c.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,'#e7a07a40');g.addColorStop(1,'#d9824c80');c.fillStyle=g;c.fillRect(r.x,r.y,r.w,r.h);}
-  if(tone==='night'){
-   c.fillStyle='#231d4459';c.fillRect(r.x,r.y,r.w,r.h);const g=c.createLinearGradient(0,r.y,0,r.y+r.h*.55);g.addColorStop(0,'#1c173a66');g.addColorStop(1,'#1c173a00');c.fillStyle=g;c.fillRect(r.x,r.y,r.w,r.h*.55);
-   // Pixel stars along the top; the 1 s lobby tick makes a couple of them blink.
-   const second=Math.floor(Date.now()/1000),alpha=c.globalAlpha;
-   [[.07,.12,3],[.19,.3,2],[.31,.09,2],[.47,.2,3],[.63,.08,2],[.78,.24,3],[.91,.1,2]].forEach(([fx,fy,size],index)=>{const x=Math.round(r.x+fx*r.w),y=Math.round(r.y+fy*r.h);
-    c.globalAlpha=alpha*((second+index)%3===0?.4:1);c.fillStyle='#fff6dc';c.fillRect(x-1.5,y-1.5,3,3);if(size>2){c.fillStyle='#f1d498';c.fillRect(x-1,y-5.5,2,3.5);c.fillRect(x-1,y+2,2,3.5);c.fillRect(x-5.5,y-1,3.5,2);c.fillRect(x+2,y-1,3.5,2);}});
-  }
-  c.restore();
-  if(!photo){const glyph=tone==='night'?'themeMoon':'themeSun',size=Math.min(56,r.h*.4);s.icon(glyph,{x:r.x+(r.w-size)/2,y:r.y+(r.h-size)/2,w:size,h:size},tone==='night'?'#fff6dc':this.colors.gold);return;}
-  const label='今日拼图 · '+(photo.title||'每日拼图'),size=11,lw=Math.min(r.w-16,s.measure(label,size,700)+30),chip={x:r.x+8,y:r.y+r.h-28,w:lw,h:20};
-  c.save();c.globalAlpha*=.86;c.fillStyle='#573b40';c.fillRect(chip.x,chip.y,chip.w,chip.h);c.restore();s.icon('piece',{x:chip.x+5,y:chip.y+3,w:14,h:14},'#fff8ed');s.textCentered(label,chip.x+22,chip.y+chip.h/2,size,'#fff8ed',700,chip.w-28);
- }
+ private drawWelcomeHero(r:Rect,slot:WelcomeSlot){return drawWelcomeHeroPanel.call(this.host,r,slot);}
  /** The lobby's chibi friend art without its add-friend badge. */
- private drawWelcomeArt(r:Rect){
-  const c=this.stage.ctx;c.save();c.beginPath();c.moveTo(r.x,r.y);c.lineTo(r.x+r.w,r.y);c.lineTo(r.x+r.w,r.y+r.h*.56);c.lineTo(r.x+r.w*.6,r.y+r.h*.56);c.lineTo(r.x+r.w*.6,r.y+r.h);c.lineTo(r.x,r.y+r.h);c.closePath();c.clip();this.stage.icon('friendArt',r);c.restore();
-  // A flower from the same sprite set hides the cut where the add-friend badge was.
-  this.stage.icon('flower',{x:r.x+r.w*.5,y:r.y+r.h*.5,w:r.w*.44,h:r.h*.46});
- }
- private drawWelcome(){
-  const view=this.welcome;if(!view){this.modal=null;return;}
-  const s=this.stage,c=s.ctx,v=this.platform.viewport(),landscape=this.layout==='phoneLandscape',{slot,tie}=view,t=clamp((Date.now()-view.openedAt)/180,0,1),ease=1-(1-t)**3,lift=Math.round((1-ease)*12);
-  if(t<1&&this.welcomeFrame==null&&this.platform.frame)this.welcomeFrame=this.platform.frame(()=>{this.welcomeFrame=null;if(!this.destroyed&&this.modal==='welcome')this.invalidate();});
-  c.save();c.globalAlpha=ease;
-  c.fillStyle=this.colors.overlay;c.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>this.closeWelcome());
-  const story=tie?.kind==='story',pill=tie&&tie.kind!=='away'?tie:null,ink=this.colors.ink,muted=this.colors.muted,availH=s.h-v.top-v.bottom-24;
-  const wrapLine=(width:number)=>{const lines:string[]=[];let row='';for(const ch of view.line){if(s.measure(row+ch,14)>width){lines.push(row);row=ch;}else row+=ch;}if(row)lines.push(row);return lines.slice(0,2);};
-  const textBlock=(x:number,y:number,w:number,art:number,artTop=-2)=>{
-   // Chip: sun or moon and the slot greeting (no clock: players read it as a wrong time).
-   const chipLabel=slot.greeting,chip={x,y,w:s.measure(chipLabel,12,700)+40,h:26};s.frame(chip,'button-linen-normal');
-   s.icon(slot.tone==='night'?'themeMoon':'themeSun',{x:chip.x+8,y:chip.y+5,w:16,h:16},slot.tone==='night'?this.colors.gold:'#d9915a');s.textCentered(chipLabel,chip.x+28,chip.y+chip.h/2,12,muted,700);
-   if(art)this.drawWelcomeArt({x:x+w-art,y:y+artTop,w:art,h:Math.round(art*66/70)});
-   let cy=y+38;s.text('欢迎回家',x,cy,24,ink,800,w-art-6);cy+=36;
-   const lines=wrapLine(w-art);lines.forEach((text,index)=>s.text(text,x,cy+index*22,14,muted,500,w-art));cy+=lines.length*22+8;
-   if(pill){const size=13,pw=Math.min(w,s.measure(pill.text,size,700)+46),r={x,y:cy,w:pw,h:30};s.frame(r,'rail-cream-normal');s.icon(pill.icon,{x:r.x+9,y:r.y+6,w:18,h:18});s.textCentered(pill.text,r.x+33,r.y+r.h/2,size,ink,700,pw-40);cy+=40;}
-   return cy;
-  };
-  const buttons=(x:number,y:number,w:number,h:number)=>{const primary=Math.round(w*.6);s.button({x,y,w:primary,h},story?'继续故事':'开拼 · 108 片',()=>this.welcomePrimary(),{tone:'berrydark',icon:story?'story':'daily',fontSize:15,disabled:this.busy});s.button({x:x+primary+10,y,w:w-primary-10,h},'先逛逛',()=>this.closeWelcome(),{fontSize:15});};
-  let panel:Rect;
-  if(landscape){
-   // Hero left, text right; the panel is only as tall as the text column needs.
-   const w=Math.min(s.w-32,640),heroW=Math.round(w*.47),tw=w-heroW-56,art=tw>=260?64:0,lines=wrapLine(tw-art).length,h=Math.min(availH,Math.max(232,22+74+lines*22+8+(pill?40:0)+12+42+20)),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
-   s.hit(panel,()=>{});s.panel(panel);
-   const hero={x:x+12,y:y+12,w:heroW,h:h-24};this.drawWelcomeHero(hero,slot);
-   const tx=hero.x+hero.w+20;textBlock(tx,y+22,tw,art,30);buttons(tx,y+h-62,tw,42);
-  }else{
-   const w=Math.min(s.w-32,420),heroH=Math.round(clamp((w-24)*.52,120,200)),art=70,lines=wrapLine(w-40-art).length,h=Math.min(availH,12+heroH+18+74+lines*22+8+(pill?40:0)+10+44+20),x=Math.round((s.w-w)/2),y=Math.round(v.top+12+(availH-h)/2)+lift;panel={x,y,w,h};
-   s.hit(panel,()=>{});s.panel(panel);
-   const hero={x:x+12,y:y+12,w:w-24,h:heroH};this.drawWelcomeHero(hero,slot);
-   textBlock(x+20,hero.y+hero.h+18,w-40,art);buttons(x+20,y+h-64,w-40,44);
-  }
-  s.ornaments(panel,18);
-  s.button({x:panel.x+panel.w-42,y:panel.y+8,w:30,h:30},'',()=>this.closeWelcome(),{icon:'close'});
-  this.modalArea=panel;this.modalExtent=0;this.modalScroll=0;
-  c.restore();
- }
- private drawOrientationPicker(){
-  const s=this.stage,v=this.platform.viewport(),w=Math.min(s.w-32,420),tileH=clamp(s.h-v.top-v.bottom-216,84,116),h=tileH+184,x=(s.w-w)/2,y=v.top+(s.h-v.top-v.bottom-h)/2,left=x+20,width=w-40,tileW=(width-12)/2,cy=y+80;
-  s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
-  const centered=(label:string,top:number,size:number,color:string,weight=500)=>s.text(label,x+(w-s.measure(label,size,weight))/2,top,size,color,weight,w-40);
-  this.modalArea={x,y,w,h};this.modalExtent=0;this.modalScroll=0;
-  s.button({x:x+w-38,y:y+8,w:28,h:28},'',()=>this.closeModal(),{icon:'close',disabled:this.orientationSwitching});
-  centered('选择屏幕方向',y+20,20,this.colors.ink,700);centered('点一下立即切换，选好后点确认',y+51,13,this.colors.muted);
-  const options:readonly(readonly[ScreenOrientation,string,string])[]=[['landscape','横屏','画面更宽'],['portrait','竖屏','单手更顺']];
-  options.forEach(([value,label,caption],index)=>{
-   const tile={x:left+index*(tileW+12),y:cy,w:tileW,h:tileH};s.button(tile,'',()=>void this.chooseOrientation(value),{selected:this.orientationChoice===value,disabled:this.orientationSwitching});
-   const c=s.ctx,on=this.orientationChoice===value,tint=on?this.colors.rose:this.colors.ink,dw=value==='landscape'?44:28,dh=value==='landscape'?28:44,dx=tile.x+(tile.w-dw)/2,dy=tile.y+(tile.h-46-dh)/2,r=5;
-   // The pixel frame's selected state is subtle; a rose inner ring makes the current choice obvious.
-   c.save();if(on){c.strokeStyle=this.colors.rose;c.lineWidth=3;c.strokeRect(tile.x+6.5,tile.y+6.5,tile.w-13,tile.h-13);}c.strokeStyle=tint;c.lineWidth=2;c.beginPath();c.moveTo(dx+r,dy);c.arcTo(dx+dw,dy,dx+dw,dy+dh,r);c.arcTo(dx+dw,dy+dh,dx,dy+dh,r);c.arcTo(dx,dy+dh,dx,dy,r);c.arcTo(dx,dy,dx+dw,dy,r);c.closePath();c.stroke();c.fillStyle=tint;c.beginPath();c.arc(value==='landscape'?dx+dw-5:dx+dw/2,value==='landscape'?dy+dh/2:dy+dh-5,1.5,0,Math.PI*2);c.fill();c.restore();
-   s.text(label,tile.x+(tile.w-s.measure(label,16,700))/2,tile.y+tile.h-46,16,this.colors.ink,700);s.text(caption,tile.x+(tile.w-s.measure(caption,12))/2,tile.y+tile.h-26,12,this.colors.muted);
-   if(on)s.icon('check',{x:tile.x+tile.w-28,y:tile.y+10,w:18,h:18},this.colors.rose);
-  });
-  centered('之后也能点右上角的旋转按钮随时切换',cy+tileH+12,12,this.colors.muted);s.button({x:left,y:cy+tileH+42,w:width,h:42},'确认',()=>this.confirmOrientation(),{tone:'berry',fontSize:15,disabled:this.orientationSwitching});
- }
+ private drawWelcomeArt(r:Rect){return drawWelcomeArtPanel.call(this.host,r);}
+ private drawWelcome(){return drawWelcomePanel.call(this.host);}
+ private drawOrientationPicker(){return drawOrientationPickerPanel.call(this.host);}
  private drawModal(){
   if(this.modal==='orientation'){this.drawOrientationPicker();return;}
   if(this.modal==='welcome'){this.drawWelcome();return;}

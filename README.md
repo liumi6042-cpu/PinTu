@@ -69,7 +69,9 @@
   ```powershell
   cd jigsaw-nook-taptap
   npm run build:mobile-server
-  npm run test:mobile
+  npm run test:changed   # 开发期默认：按 git 变更自动跑关联定向测试（数秒级）
+  npm run test:story     # 按模块分域快测（另有 test:board / test:completion / test:social / test:modals / test:server）
+  npm run test:mobile    # 合入主线前全量回归
   npm run test:h5
   npm run check:images
   ```

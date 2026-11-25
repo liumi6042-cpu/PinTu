@@ -35,6 +35,13 @@
     "test:mobile:responsive": "node tests/mobile-responsive-browser.mjs",
     "test:mobile:package": "node tests/mobile-package-smoke.mjs",
     "test:mobile:package-assets": "node tests/taptap-package-assets.mjs",
+    "test:changed": "node scripts/run-targeted-tests.mjs",
+    "test:story": "node scripts/run-targeted-tests.mjs --group=story",
+    "test:board": "node scripts/run-targeted-tests.mjs --group=board",
+    "test:completion": "node scripts/run-targeted-tests.mjs --group=completion",
+    "test:social": "node scripts/run-targeted-tests.mjs --group=social",
+    "test:modals": "node scripts/run-targeted-tests.mjs --group=modals",
+    "test:server": "node scripts/run-targeted-tests.mjs --group=server",
     "ui:pixels": "node scripts/build-pixel-ui.mjs",
     "check:ui-pixels": "node scripts/build-pixel-ui.mjs --check"
   },
