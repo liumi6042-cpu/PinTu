@@ -7,11 +7,11 @@ export const INVITATION_SHARE_DAILY_LIMIT=2;
 export const INVITATION_SHARE_REWARD=Object.freeze({energy:10,xp:5,coins:0});
 export const BEGINNER_TASKS=Object.freeze([10,50,100].map(target=>Object.freeze({id:'beginner-'+target,kind:'beginner-'+target,group:'beginner',title:'累计拼合'+target+'次',target,energy:0,xp:0,coins:target})));
 export const TASK_REWARDS=[
- {id:'cooperation-10',group:'cooperation',title:'小试身手',target:10,energy:6,xp:2,coins:0},
- {id:'cooperation-30',group:'cooperation',title:'渐入佳境',target:30,energy:10,xp:5,coins:0},
- {id:'cooperation-60',group:'cooperation',title:'心手相合',target:60,energy:14,xp:8,coins:0},
- {id:'friend-10',group:'friend',title:'好友相伴',target:10,energy:4,xp:2,coins:0},
- {id:'friend-30',group:'friend',title:'好友默契',target:30,energy:6,xp:5,coins:0},
+ {id:'cooperation-10',group:'cooperation',title:'小试身手',target:10,energy:3,xp:2,coins:0},
+ {id:'cooperation-30',group:'cooperation',title:'渐入佳境',target:30,energy:5,xp:5,coins:0},
+ {id:'cooperation-60',group:'cooperation',title:'心手相合',target:60,energy:7,xp:8,coins:0},
+ {id:'friend-10',group:'friend',title:'好友相伴',target:10,energy:5,xp:2,coins:0},
+ {id:'friend-30',group:'friend',title:'好友默契',target:30,energy:10,xp:5,coins:0},
 ];
 const KINDS=new Map([
  ...[5,6,7].map(max=>['ten-'+max,{title:'十格小礼',energyMin:1,energyMax:max,xp:0,coins:0}]),
@@ -92,7 +92,7 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
    return {...t,...reward,coins:reward.coins??0,kind:t.id,progress:Math.min(t.target,daily[t.group]),earned:!!issued};
   });
   const todayShared=Number(db.prepare('SELECT COUNT(*) n FROM mobile_invitation_shares WHERE owner=? AND day=?').get(p.id,day).n);
-  tasks.push({id:'share-invitation',kind:'share-invitation',group:'sharing',title:'分享邀请',target:settings.invitationShare.dailyLimit,progress:Math.min(settings.invitationShare.dailyLimit,todayShared),earned:todayShared>=settings.invitationShare.dailyLimit,energy:settings.invitationShare.energy,xp:settings.invitationShare.xp,coins:settings.invitationShare.coins??0});
+  tasks.push({id:'share-invitation',kind:'share-invitation',group:'sharing',title:'观看 TapTap 广告',target:settings.invitationShare.dailyLimit,progress:Math.min(settings.invitationShare.dailyLimit,todayShared),earned:todayShared>=settings.invitationShare.dailyLimit,energy:settings.invitationShare.energy,xp:settings.invitationShare.xp,coins:settings.invitationShare.coins??0});
   tasks.push({id:'invite-friend',kind:'invite-refill',effect:'full-energy',group:'invitation',title:'邀请好友加入',target:3,progress:todayRewarded,earned:todayRewarded>=3,energy:0,xp:settings.invitationFriend.xp,coins:settings.invitationFriend.coins??0});
   tasks.unshift(...beginner(p.id,now).tasks);
   const tenReward=tenGridReward(settings,p.level);

@@ -173,12 +173,32 @@ void test('supplies require rewarded ads, underlay expires in 30s, and tightened
   const hint=call('/api/rooms/'+room.room.id+'/assistance',{kind:'hint',requestId:rid(),lasting:true},room.token);
   assert.equal(hint.status,200);assert.equal(hint.data.grants.find(g=>g.kind==='hint')?.lasting,true);
 
-  // 3. Tightened task rewards: cooperation 6/10/14, friend 4/6, share 10x2, tenGrid max 3..5.
+  // 3. Tightened task rewards: cooperation 3/5/7, friend 5/10, daily ad 10x2, tenGrid max 3..5.
   const tasks=call('/api/mobile/tasks').data;
   const byId=Object.fromEntries(tasks.tasks.map(t=>[t.id,t]));
-  assert.equal(byId['cooperation-10'].energy,6);assert.equal(byId['cooperation-30'].energy,10);assert.equal(byId['cooperation-60'].energy,14);
-  assert.equal(byId['friend-10'].energy,4);assert.equal(byId['friend-30'].energy,6);
+  assert.equal(byId['cooperation-10'].energy,3);assert.equal(byId['cooperation-30'].energy,5);assert.equal(byId['cooperation-60'].energy,7);
+  assert.equal(byId['friend-10'].energy,5);assert.equal(byId['friend-30'].energy,10);
   assert.equal(byId['share-invitation'].energy,10);assert.equal(byId['share-invitation'].target,2);
+  assert.equal(byId['share-invitation'].title,'观看 TapTap 广告');
   assert.equal(tasks.giftMaximum,3);
+ }finally{service.close();}
+});
+
+void test('disconnected TapTap ad skips automatically without blocking supplies, tools, or daily ad reward',()=>{
+ const now=1800000000000;
+ // adEnabled=false simulates TapTap ad disconnect/unavailable on mobile.
+ const service=createMobileService({shareRewards:true,adEnabled:false,now:()=>now,randomInt:min=>min});
+ const owner='f'.repeat(64);
+ const call=(url,body,token)=>service.handle({identity:owner,method:body===undefined?'GET':'POST',url,body,authorization:token?'Bearer '+token:undefined});
+ try{
+  // Supply with adSkipped:true succeeds even when adsEnabled is false.
+  const req={kind:'energy',requestId:rid(),adSkipped:true};
+  const ch=call('/api/mobile/supply/challenge',req);assert.equal(ch.status,200);
+  const redeemed=call('/api/mobile/supply/redeem',{...req,rewardToken:ch.data.rewardToken,completed:true});
+  assert.equal(redeemed.status,200);assert.equal(redeemed.data.supply.energy,1);
+
+  // Daily ad reward succeeds with adSkipped:true.
+  const daily=call('/api/mobile/invitations/share',{requestId:rid(),adSkipped:true});
+  assert.equal(daily.status,200);assert.equal(daily.data.shared.energy,10);
  }finally{service.close();}
 });

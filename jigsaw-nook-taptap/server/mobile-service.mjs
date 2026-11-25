@@ -382,9 +382,9 @@ export function createMobileService(options={}){
  // A drop receipt keeps only the contribution; the whole room reply was ~12 KB per drop.
  const roomActionReceipt=result=>result.mobileContribution?{mobileContribution:result.mobileContribution}:{};
  const soloBatch=createSoloBatch({enabled:soloLocalPlay,roomActionReceipt,replay,snapshotView,profileView,engine,fail,requestKey});
- function challenge(p,{kind,requestId,context='supply',authorization=''},now){
+ function challenge(p,{kind,requestId,context='supply',authorization='',allowSkip=false},now){
   if(!requestKey(requestId))fail(400,'REQUEST_ID_REQUIRED','请求编号无效');
-  const sharing=context.startsWith('share:');if(sharing?!shareRewards:!adsEnabled)fail(503,sharing?'SHARE_UNAVAILABLE':'ADS_UNAVAILABLE',sharing?'当前平台未开放分享奖励':'当前平台未开放广告');
+  const sharing=context.startsWith('share:');if(sharing?!shareRewards:!adsEnabled&&!(allowSkip&&!web))fail(503,sharing?'SHARE_UNAVAILABLE':'ADS_UNAVAILABLE',sharing?'当前平台未开放分享奖励':'当前平台未开放广告');
   const existing=db.prepare('SELECT * FROM mobile_ad_challenges WHERE owner=? AND context=? AND request_id=?').get(p.id,context,requestId);
   if(existing){if(existing.kind!==kind||existing.auth_hash!==hash(authorization))fail(409,'REQUEST_CONFLICT','广告请求与当前操作不匹配');if(existing.used||existing.expires_at<=now)fail(409,'AD_EXPIRED','本次广告机会已失效');return {rewardToken:existing.token,expiresAt:existing.expires_at};}
   if(context==='supply'||context==='share:supply'){
@@ -451,9 +451,9 @@ export function createMobileService(options={}){
    // A lasting hint may be replaced by a fresh one (its pieces may have been moved by teammates).
    if(grants().some(g=>g.kind===input.kind&&!grantLasting))fail(409,'TOOL_ACTIVE','该功能正在生效');
    const free=protectedRoom||used(input.kind)<2;
-   if(!free&&!input.rewardToken)fail(402,shareRewards?'SHARE_REQUIRED':'AD_REQUIRED',shareRewards?(grantLasting?'免费次数已用完，分享后可开启':'免费次数已用完，分享后可开启30秒'):'免费次数已用完，请主动观看广告',{freeRemaining:view().freeRemaining});
+   if(!free&&!input.rewardToken)fail(402,'AD_REQUIRED',grantLasting?'免费次数已用完，观看 TapTap 广告后可开启':'免费次数已用完，观看 TapTap 广告后可开启30秒',{freeRemaining:view().freeRemaining});
    let pieceIds=[];if(input.kind==='hint'){const held=new Set(Object.keys(room.leases).map(Number));pieceIds=room.puzzle.groups.filter(g=>!g.locked&&!held.has(g.id)).flatMap(g=>g.pieces).slice(0,3);if(!pieceIds.length)fail(409,'NO_HINT_AVAILABLE','暂时没有可提示的拼块');}
-   if(!free)consumeChallenge(p,input,(shareRewards?'share:':'')+'room/'+room.id,request.authorization,now);
+   if(!free)consumeChallenge(p,input,'room/'+room.id,request.authorization,now);
    if(!protectedRoom&&free)db.prepare('INSERT INTO mobile_tool_uses VALUES(?,?,?,1) ON CONFLICT(room_id,owner,kind) DO UPDATE SET uses=uses+1').run(room.id,p.id,input.kind);
    const grant={requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+(grantLasting?LASTING_TOOL_MS:LEGACY_TOOL_MS),...(grantLasting?{lasting:true,startedAt:now}:{})};db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
   });
@@ -563,7 +563,7 @@ export function createMobileService(options={}){
   }
   if(path==='/api/mobile/tasks'&&method==='GET')return taskView();
   if(path==='/api/mobile/gifts/open'&&method==='POST')return replay(p,'gift-open',input,now,()=>{const opened=tasks.open(p,input,now);return {...taskView(),opened};});
-  if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{if(shareRewards&&input.shared!==true)fail(403,'SHARE_REQUIRED','请通过分享面板完成分享，复制链接不计奖励');const shared=tasks.share(p,input,now);return {...taskView(),shared};});
+  if(path==='/api/mobile/invitations/share'&&method==='POST')return replay(p,'invitation-share',input,now,()=>{if(shareRewards&&input.shared!==true&&input.adCompleted!==true&&input.adSkipped!==true)fail(403,'AD_REQUIRED','请完整观看 TapTap 广告后领取奖励');const shared=tasks.share(p,input,now);return {...taskView(),shared};});
   if(path==='/api/mobile/invitations/accept'&&method==='POST')return replay(p,'invitation-accept',input,now,()=>{const accepted=tasks.accept(p,input,now);return {...taskView(),accepted};});
   if(path==='/api/mobile/share/challenge'&&method==='POST'){
    if(!shareRewards||web)fail(503,'SHARE_UNAVAILABLE','当前平台未开放分享奖励');
@@ -582,9 +582,9 @@ export function createMobileService(options={}){
    if(row.used===0)db.prepare('UPDATE mobile_ad_challenges SET used=2 WHERE token=? AND used=0').run(row.token);return profileView(p,now);
   }
   if(path==='/api/mobile/share/redeem'&&method==='POST')fail(403,'AD_REQUIRED','建房券与体力包仅可通过观看广告获取');
-  if(path==='/api/mobile/supply/challenge'&&method==='POST')return challenge(p,{kind:input.kind,requestId:input.requestId},now);
+  if(path==='/api/mobile/supply/challenge'&&method==='POST')return challenge(p,{kind:input.kind,requestId:input.requestId,allowSkip:input.adSkipped===true},now);
   if(path==='/api/mobile/supply/redeem'&&method==='POST')return replay(p,'supply-redeem',input,now,()=>{
-   if(!adsEnabled)fail(503,'ADS_UNAVAILABLE','当前平台暂未开放广告，请稍后再试');
+   if(!adsEnabled&&!(!web&&input.adSkipped===true))fail(503,'ADS_UNAVAILABLE','当前平台暂未开放广告，请稍后再试');
    if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
    if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');consumeChallenge(p,input,'supply','',now);p.supply[input.kind]=input.kind==='create'?3:p.supply[input.kind]+1;saveProfile(p);return profileView(p,now);
   });
@@ -603,7 +603,7 @@ export function createMobileService(options={}){
    if(typeof input.context!=='string'||!/^room\/[a-f0-9]{32}$/.test(input.context)||!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','广告工具请求无效');
    const room=readRoom(input.context.slice(5));authorize(room,request,now);if(p.firstRoomId===room.id&&!p.firstRoomCompleted)fail(409,'FREE_TOOL_AVAILABLE','新手首局可直接使用工具');
    const uses=Number(db.prepare('SELECT uses FROM mobile_tool_uses WHERE room_id=? AND owner=? AND kind=?').get(room.id,p.id,input.kind)?.uses??0);if(uses<2)fail(409,'FREE_TOOL_AVAILABLE','请先使用本局免费次数');
-   return challenge(p,{...input,authorization:request.authorization??''},now);
+   return challenge(p,{...input,authorization:request.authorization??'',allowSkip:input.adSkipped===true},now);
   }
   if(path==='/api/auth/me'&&method==='GET')return {account:null};
   if(path==='/api/auth/logout'&&method==='POST')return {ok:true};

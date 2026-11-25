@@ -66,6 +66,6 @@ test('level completion, chapter completion and share copy ignore the server seri
   f.app.drawCompletionPicture=()=>{};f.app.drawCompletionContent(12,80,366,false);
   assert.ok(!f.texts.some(text=>text.includes('拾光物语')));assert.ok(f.buttons.some(button=>button.label==='翻开这一页'));assert.ok(f.buttons.some(button=>button.label===(chapterComplete?'去拼今日拼图':'下一关')));
   if(chapterComplete)assert.ok(f.texts.includes('开张完成！'));
-  let share;f.app.shareFromGame=async value=>{share=value;return 'cancelled';};f.app.note=()=>{};f.buttons.find(button=>button.label==='分享成品').fn();await tick();assert.ok(share);assert.ok(!share.title.includes('拾光物语'));
+  let claimed;f.app.claimSupply=async kind=>{claimed=kind;};f.app.note=()=>{};f.buttons.find(button=>button.label==='观看 TapTap 广告').fn();await tick();assert.equal(claimed,'energy');
  }
 });

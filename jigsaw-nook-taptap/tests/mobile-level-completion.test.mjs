@@ -47,9 +47,9 @@ test('level rewards fit all layouts with eight seats, album milestones, six chee
   // The story action exists only for levels of the loaded chapter.
   const f=fixture({width,height,levelClear});if(!f.app.levels.chapters[0].levels.some(level=>level.id===levelClear.levelId))f.app.levels.chapters[0].levels.push({id:levelClear.levelId,status:'cleared'});f.draw();assert.equal(f.app.completionSeatRects.size,8);
   const cheers=f.calls.filter(call=>call.kind==='hit'&&call.r.y===f.app.completionBar.y&&call.r.h===f.app.completionBar.h);assert.equal(cheers.length,6);
-  for(const label of ['翻开这一页','分享成品','查看图集','回大厅'])assert.ok(f.button(label));
+  for(const label of ['翻开这一页','观看 TapTap 广告','查看图集','回大厅'])assert.ok(f.button(label));
   for(const call of f.calls.filter(call=>call.kind==='button'||call.kind==='frame')){assert.ok(call.r.w>0&&call.r.h>0);assert.ok(call.r.x>=0&&call.r.x+call.r.w<=width+.01);}
-  if(width===844){for(const label of ['翻开这一页','下一关','去拼今日拼图','分享成品','查看图集','回大厅']){const button=f.button(label);if(button)assert.ok(button.r.y+button.r.h<=f.app.completionBar.y,label);}assert.ok(f.app.completionBar.y+f.app.completionBar.h+22<=382);}
+  if(width===844){for(const label of ['翻开这一页','下一关','去拼今日拼图','观看 TapTap 广告','查看图集','回大厅']){const button=f.button(label);if(button)assert.ok(button.r.y+button.r.h<=f.app.completionBar.y,label);}assert.ok(f.app.completionBar.y+f.app.completionBar.h+22<=382);}
   if(width===390)assert.ok(f.app.modalExtent>f.app.modalArea.h,'portrait content remains scrollable');
  }
 });
@@ -59,7 +59,7 @@ test('completion story action opens the cleared level with fromClear without lea
   const f=fixture({width,height}),opened=[];f.app.openLevelComic=(...args)=>opened.push(args);f.draw();f.button('翻开这一页').fn();assert.deepEqual(opened,[['ch1-1',{fromClear:true}]]);assert.deepEqual(f.events,[]);
   const primary=f.button('下一关').r,comic=f.button('翻开这一页').r;assert.equal(primary.y,comic.y);assert.equal(primary.h,comic.h);// The completion hook places story actions left of the primary action.
   assert.ok(comic.x+comic.w<primary.x);
-  for(const label of ['下一关','分享成品','查看图集','回大厅'])assert.ok(f.button(label));
+  for(const label of ['下一关','观看 TapTap 广告','查看图集','回大厅'])assert.ok(f.button(label));
  }
 });
 
@@ -86,7 +86,7 @@ test('disabled cheers remove the bar, hint and reserved content space while reta
   assert.ok(!f.calls.some(call=>call.kind==='hit'&&call.r.h===enabled.app.completionBar.h));assert.ok(!f.texts().some(text=>text.includes('点一下就能喝彩')||['鼓掌','撒花','比心','好耶','干杯','喵～'].includes(text)));
   const label=levelClear&&!levelClear.chapterComplete?'下一关':'去拼今日拼图',offset=width===390?72:width===1280?60:0;
   assert.ok(Math.abs(f.button(label).r.y-enabled.button(label).r.y+offset)<.01);if(width!==844)assert.ok(Math.abs(f.app.modalExtent-enabled.app.modalExtent+offset)<.01);
-  for(const label of ['分享成品','查看图集','回大厅'])assert.ok(f.button(label));assert.ok(f.texts().includes('金币 +20'));assert.ok(f.texts().includes('碎片 +2'));assert.ok(f.texts().includes('相册阶段奖励：金币 +100'));
+  for(const label of ['观看 TapTap 广告','查看图集','回大厅'])assert.ok(f.button(label));assert.ok(f.texts().includes('金币 +20'));assert.ok(f.texts().includes('碎片 +2'));assert.ok(f.texts().includes('相册阶段奖励：金币 +100'));
   f.button(label).fn();await new Promise(resolve=>setImmediate(resolve));if(label==='下一关')assert.deepEqual(f.events,['leave','create','attach']);else{assert.equal(f.events[0],'leave');assert.equal(f.created[0]?.mode,'daily');}
  }
 });

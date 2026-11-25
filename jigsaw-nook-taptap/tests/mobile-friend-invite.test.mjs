@@ -114,10 +114,10 @@ test('the room invite window starts with the game friends; 邀请 sends a room i
  t.game.modal='invite';
  let shown=t.frame(()=>t.game.drawModal());
  const labels=shown.map(b=>b.label);
- assert.ok(labels.includes('邀请'),'邀请 button');assert.ok(labels.includes('已在桌上'),'a tablemate is marked');assert.ok(labels.includes('邀请好友'),'sharing stays below');
+ assert.ok(labels.includes('邀请'),'邀请 button');assert.ok(labels.includes('已在桌上'),'a tablemate is marked');assert.ok(labels.includes('观看 TapTap 广告'),'ad button stays below');
  const invites=shown.filter(b=>b.label==='邀请');assert.equal(invites.length,2);
  assert.ok(invites[0].r.y<invites[1].r.y);
- const share=shown.find(b=>b.label==='邀请好友');assert.ok(share.r.y>invites[1].r.y,'share to WeChat/QQ is below the friend list');
+ const share=shown.find(b=>b.label==='观看 TapTap 广告');assert.ok(share.r.y>invites[1].r.y,'ad button is below the friend list');
  invites[0].fn();invites[1].fn();await settle();
  const sent=t.calls.filter(call=>call.path==='/api/mobile/social/messages');
  assert.equal(sent.length,1,'the second invite waits its 3.2 s turn');
@@ -221,6 +221,6 @@ test('WeChat lists no share or invite reward tasks; TapTap keeps them',async()=>
   assert.deepEqual([...new Set(wechat.groups)].sort(),['beginner','cooperation','friend']);
   for(const banned of ['分享邀请','邀请好友','邀请码','分享领','邀请礼包'])assert.equal(wechat.all.includes(banned),false,banned+' on WeChat');
   const taptap=draw('taptap',energy);
-  assert.ok(taptap.groups.includes('sharing')&&taptap.groups.includes('invitation'));assert.ok(taptap.all.includes('分享邀请'),'TapTap unchanged');
+  assert.ok(taptap.groups.includes('sharing')&&taptap.groups.includes('invitation'));assert.ok(taptap.all.includes('观看 TapTap 广告'),'TapTap shows ad button');
  }
 });
