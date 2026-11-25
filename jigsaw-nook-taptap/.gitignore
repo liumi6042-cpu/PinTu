@@ -80,6 +80,7 @@ __pycache__/
 # Shared media-store holds puzzle images & artwork masters outside Git.
 /public/puzzles/
 /content/artwork/
+/content/music/**/*.wav
 
 .claude/
 

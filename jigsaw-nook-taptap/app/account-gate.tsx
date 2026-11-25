@@ -76,7 +76,7 @@ function AccountForm({ onSuccess, initialError, solo }: {
         setBusy(false);
     } }
     return <main className="account-page">
-  <img className="account-art" src="/intro/dream-horizon.png" alt="" aria-hidden="true"/>
+  <img className="account-art" src="/intro/dream-horizon-3c402b70b693.webp" alt="" aria-hidden="true"/>
   <a className="account-brand" href="/"><Puzzle size={26}/>{t("一起拼图")}</a>
   <div className="account-language"><LanguageSwitch /></div>
   <section className="account-card">

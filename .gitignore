@@ -31,6 +31,8 @@ publish-config*
 *.tar
 *.tar.gz
 *.tgz
+*-master.wav
+/docs/design/*.png
 
 # Python / OS / IDE artifacts
 __pycache__/
