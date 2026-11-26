@@ -8,6 +8,7 @@ const built=await build({
    export {GameApp} from "./mobile/app";
    export {PuzzleBoard} from "./mobile/puzzle-board";
    export {RoomClient} from "./lib/room-client";
+   export {enrichCursorsFromMembers} from "./lib/room-cursors";
    export {TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY} from "./mobile/panels/shared";
   `,
   resolveDir:process.cwd(),
@@ -15,7 +16,7 @@ const built=await build({
  },
  bundle:true,write:false,platform:'node',format:'esm',
 });
-const {GameApp,PuzzleBoard,RoomClient,TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY}=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
+const {GameApp,PuzzleBoard,RoomClient,enrichCursorsFromMembers,TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY}=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
 
 function makeBoard(played){
  const p={
@@ -96,7 +97,7 @@ function appFixture({development=false,admin=false,storageInit={}}={}){
   modalScroll:0,
   busy:false,
   roomArea:{x:0,y:80,w:390,h:700},
-  teammateSoundEnabled:memory.get(TEAMMATE_SOUND_KEY)==='1',
+  teammateSoundEnabled:memory.get(TEAMMATE_SOUND_KEY)!=='0',
   adminDiagEnabled:memory.get(ADMIN_DIAG_KEY)==='1',
   adminDiagExpanded:false,
   roomTimings:new Map([['drop',{action:'drop',ms:42,status:200,at:Date.now()}]]),
@@ -123,7 +124,7 @@ function appFixture({development=false,admin=false,storageInit={}}={}){
   },
   realtime:{
    connected:true,
-   diagnostics:()=>({connected:true,connections:1,reconnects:0,roomMessages:12,pendingActions:0,lastError:'',preview:'taptap-test',previewConnected:true,previewMembersReady:2,previewMembersTotal:2,platformSendRate:6,platformSendPeak:10,platformSucceeded:40,platformFailed:0,platformReceived:35,previewDetail:'ok'}),
+   diagnostics:()=>({connected:true,connections:1,reconnects:0,roomMessages:12,pendingActions:0,lastError:'',preview:'taptap-test',previewConnected:true,previewMembersReady:2,previewMembersTotal:2,previewPeersConfirmed:1,previewPeersExpected:1,platformSendRate:6,platformSendPeak:10,platformSucceeded:40,platformFailed:0,platformReceived:35,platformCallbacks:36,previewRecoveryCount:1,previewIgnored:{notReady:1,payload:0,sender:0,binding:0,duplicate:0,frame:0},platformPeerReceives:[{name:'队友',total:35,hz:5}],previewDetail:'ok'}),
   },
   board:{
    teammateSoundEnabled:false,
@@ -152,19 +153,66 @@ function appFixture({development=false,admin=false,storageInit={}}={}){
  return {app,memory,texts,hits,buttons,copied,notes,alerts};
 }
 
-test('teammate sound toggle defaults OFF and persists + updates live board when toggled in Settings',()=>{
+test('teammate sound toggle defaults ON and persists + updates live board when toggled in Settings',()=>{
  const {app,memory,buttons}=appFixture({admin:false});
- assert.equal(app.teammateSoundEnabled,false,'defaults to off for cozy non-competitive play');
+ assert.equal(app.teammateSoundEnabled,true,'defaults to on so players hear teammate snaps');
+ app.board.teammateSoundEnabled=true;
  app.modal='settings';
  app.drawModal();
- const toggle=buttons.find(b=>b.label==='队友拼合音效');
- assert.ok(toggle,'Settings exposes 队友拼合音效 toggle');
+ const toggle=buttons.find(b=>b.label==='✓ 队友拼合音效');
+ assert.ok(toggle,'Settings exposes checked 队友拼合音效 toggle by default');
  toggle.action();
- assert.equal(app.teammateSoundEnabled,true);
- assert.equal(app.board.teammateSoundEnabled,true);
- assert.equal(memory.get(TEAMMATE_SOUND_KEY),'1');
+ assert.equal(app.teammateSoundEnabled,false);
+ assert.equal(app.board.teammateSoundEnabled,false);
+ assert.equal(memory.get(TEAMMATE_SOUND_KEY),'0');
  // Non-admin must NOT see admin room diagnostic toggle.
  assert.equal(buttons.some(b=>b.label.includes('房间网络诊断浮窗')),false);
+});
+
+test('PuzzleBoard smoothly interpolates remote teammate dragged pieces at 60fps and snaps immediately on release',()=>{
+ const frames=[];
+ const p={
+  config:{id:'web'},
+  createCanvas:()=>({width:1,height:1,getContext:()=>({})}),
+  onHide:()=>()=>{},
+  onShow:()=>()=>{},
+  frame:fn=>{frames.push(fn);return frames.length;},
+  cancelFrame(){},
+ };
+ const state={
+  version:1,layout:'square',imageId:'test',cols:2,rows:2,seed:1,elapsed:0,
+  groups:[
+   {id:0,pieces:[0],dx:100,dy:100,locked:false},
+   {id:1,pieces:[1],dx:300,dy:300,locked:false},
+  ],
+ };
+ const board=new PuzzleBoard(p,state,()=>{});
+ const remoteOwner={0:{playerId:'p2',name:'队友',color:'#ff66aa'}};
+
+ // Teammate claims piece 0 at (100, 100), then Tap 10Hz preview moves it to (200, 150).
+ board.syncRemote(structuredClone(state),remoteOwner,new Set(),false);
+ const moved=structuredClone(state);
+ moved.groups[0].dx=200;moved.groups[0].dy=150;
+ board.syncRemote(moved,remoteOwner,new Set(),false);
+ // Authoritative state has target (200, 150), while smooth visual offset starts at (100, 100) and glides smoothly.
+ assert.equal(board.state.groups[0].dx,200);
+ const beforeStep=board.displayOffset(board.state.groups[0]);
+ assert.equal(beforeStep.dx,100);assert.equal(beforeStep.dy,100);
+ assert.ok(frames.length>0,'remote drag schedules requestAnimationFrame smoothing');
+
+ // Advance two 16ms frames: visual offset moves partway toward (200, 150) without overshoot.
+ frames.shift()(1000);
+ frames.shift()(1016);
+ const mid=board.displayOffset(board.state.groups[0]);
+ assert.ok(mid.dx>100&&mid.dx<200,'dx glides smoothly toward target: '+mid.dx);
+ assert.ok(mid.dy>100&&mid.dy<150,'dy glides smoothly toward target: '+mid.dy);
+
+ // When teammate drops/releases piece 0, smooth offset clears immediately so final placement has zero lag.
+ const dropped=structuredClone(moved);
+ dropped.groups[0].dx=220;dropped.groups[0].dy=160;
+ board.syncRemote(dropped,{},new Set(),false);
+ const afterDrop=board.displayOffset(board.state.groups[0]);
+ assert.equal(afterDrop.dx,220);assert.equal(afterDrop.dy,160);
 });
 
 test('admin room network diagnostics pill is hidden for normal players and works end-to-end for whitelisted admins',async()=>{
@@ -204,12 +252,30 @@ test('admin room network diagnostics pill is hidden for normal players and works
  await new Promise(resolve=>setTimeout(resolve,0));
  assert.equal(copied.length,1);
  assert.match(copied[0],/roomId=abcdef1234567890abcdef1234567890/);
+ assert.match(copied[0],/确认1\/1/);
+ assert.match(copied[0],/previewStats=callbacks:36 recovery:1 ignored:notReady=1/);
+ assert.match(copied[0],/previewPeers=队友:35\(5\/s\)/);
  assert.match(copied[0],/previewDetail=ok/);
  assert.deepEqual(notes,['已复制房间诊断信息']);
 
  // Clicking collapse button folds card back to pill.
  hits[3].action();
  assert.equal(app.adminDiagExpanded,false);
+});
+
+test('enrichCursorsFromMembers fills missing level/decoration for slim cursors without overwriting explicit fields',()=>{
+ const deco={id:'leaf',title:'叶',artKey:'leaf',color:'#5a9',kind:'cursor'};
+ const members=[{id:'p1',name:'小晴',color:'#abc',level:24,decoration:deco},{id:'p2',name:'阿明',color:'#def',level:9,decoration:null}];
+ const enriched=enrichCursorsFromMembers([
+  {playerId:'p1',name:'',color:'',x:10,y:20,updatedAt:100},
+  {playerId:'p2',name:'阿明',color:'#def',level:11,x:30,y:40,updatedAt:100},
+ ],members);
+ assert.equal(enriched[0].name,'小晴');
+ assert.equal(enriched[0].color,'#abc');
+ assert.equal(enriched[0].level,24);
+ assert.deepEqual(enriched[0].decoration,deco);
+ assert.equal(enriched[1].level,11,'explicit cursor level is preserved');
+ assert.equal(enriched[1].decoration,null);
 });
 
 test('RoomClient emits room:request-timing in normal rooms only when traceTimings() is enabled',async()=>{

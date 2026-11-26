@@ -1,4 +1,4 @@
-import type {CursorInput,SharedCursor} from '../lib/room-cursors';
+import {enrichCursorFromMember,type CursorInput,type CursorMemberMeta,type SharedCursor} from '../lib/room-cursors';
 import type {RoomSnapshot} from '../lib/room-engine';
 import type {CheerEmote,CheerSnapshot,ManagedRoomRealtime,RealtimeActionInput,RealtimeActionReply} from '../lib/room-realtime';
 import {applyRoomUpdate} from '../lib/room-sync';
@@ -7,6 +7,9 @@ import {validTapPlatformId,normalizeTapPlatformId} from '../lib/tap-platform-id.
 
 export type TapBattleManager={registerListener(listener:Record<string,(data:any)=>void>):void;unregisterListener?(listener:Record<string,(data:any)=>void>):void;[method:string]:unknown};
 type PreviewSnapshot=RoomSnapshot&{tapPreview?:TapPreviewDescriptor};
+function sameDecoration(a:SharedCursor['decoration'],b:SharedCursor['decoration']){
+ return a?.id===b?.id&&a?.title===b?.title&&a?.artKey===b?.artKey&&a?.color===b?.color&&a?.kind===b?.kind;
+}
 type Options={authority:ManagedRoomRealtime;manager:()=>TapBattleManager|undefined;request:(body:Record<string,unknown>)=>Promise<TapPreviewDescriptor&{canCreate?:boolean}>;room:RoomSnapshot;playerId:string;randomId:()=>string;now?:()=>number;sendHz?:number;onDisconnect?:()=>void};
 const id=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{32}$/.test(v);
 const platformId=(v:unknown):v is string=>validTapPlatformId(v);
@@ -245,7 +248,7 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
    const stats=this.peerStats.get(member.id)??{name:member.name,total:0,times:[]};stats.name=member.name;stats.total++;stats.times.push(this.now());this.recent(stats.times);this.peerStats.set(member.id,stats);
    this.heard.set(frame.c,{nonce:frame.n,at:this.now()});if(frame.a.includes(this.nonce))this.confirmed.set(frame.c,this.now());
    if(!this.previewReady){this.refresh();return;}
-   if(frame.p)this.cursors.set(frame.c,{playerId:member.id,name:member.name,color:member.color,x:frame.p[0],y:frame.p[1],updatedAt:this.now()});else this.cursors.delete(frame.c);
+   if(frame.p)this.cursors.set(frame.c,enrichCursorFromMember({playerId:member.id,name:member.name,color:member.color,x:frame.p[0],y:frame.p[1],updatedAt:this.now()},member as CursorMemberMeta,true));else this.cursors.delete(frame.c);
    if(frame.d){const [groupId,dx,dy,leaseId]=frame.d,lease=this.room.leases[groupId],group=this.room.puzzle.groups.find(g=>g.id===groupId);
     if(lease?.playerId===member.id&&lease.expires>this.serverNow()&&lease.previewId===leaseId&&group&&!group.locked)this.moves.set(frame.c,{playerId:member.id,groupId,dx,dy,leaseId,receivedAt:this.now()});
    }
@@ -271,7 +274,15 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
  private refresh(force=false){
   const ready=this.previewReady;let changed=force;
   for(const [key,move]of this.moves){const lease=this.room.leases[move.groupId];if(!ready||this.now()-move.receivedAt>2500||lease?.playerId!==move.playerId||lease.expires<=this.serverNow()||lease.previewId!==move.leaseId){this.moves.delete(key);changed=true;}}
-  for(const [key,cursor]of this.cursors)if(!ready||this.now()-cursor.updatedAt>2500){this.cursors.delete(key);changed=true;}
+  for(const [key,cursor]of this.cursors){
+   if(!ready||this.now()-cursor.updatedAt>2500){this.cursors.delete(key);changed=true;continue;}
+   const member=this.room.members.find(m=>m.id===cursor.playerId) as CursorMemberMeta|undefined;
+   if(!member)continue;
+   const next=enrichCursorFromMember(cursor,member,true);
+   if(next.name!==cursor.name||next.color!==cursor.color||next.level!==cursor.level||next.badge!==cursor.badge||next.cursorStyle!==cursor.cursorStyle||!sameDecoration(next.decoration,cursor.decoration)){
+    this.cursors.set(key,next);changed=true;
+   }
+  }
   for(const key of this.receivedSeq.keys())if(!this.meta?.peers.some(p=>p.clientId===key))this.receivedSeq.delete(key);
   for(const [key,value]of this.heard)if(this.now()-value.at>3500||!this.meta?.peers.some(p=>p.clientId===key)){this.heard.delete(key);this.confirmed.delete(key);}
   if(ready!==this.lastReady){this.lastReady=ready;changed=true;this.dirty=true;if(!ready){this.drag=null;if(this.cursor)this.opts.authority.sendCursor(this.cursor);}this.scheduleTick();}

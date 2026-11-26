@@ -411,3 +411,37 @@ test('waiting for a late player binding is distinct from message timeout and res
  const waiting=a.adapter.diagnostics();assert.equal(waiting.previewError,'');assert.equal(waiting.previewSessionJoined,true);assert.equal(waiting.previewMembersReady,2);assert.equal(waiting.previewMembersTotal,3);assert.deepEqual(waiting.previewMissingBindings,['迟到拼友']);assert.match(waiting.previewDetail,/等待 1 位玩家.*绑定/);
  f.dropMessages(false);const c=f.actor(2);c.adapter.start();await f.ready();assert.equal(a.adapter.preview.connected,true);assert.equal(c.adapter.preview.connected,true);assert.match(a.adapter.diagnostics().previewDetail,/双向验证/);
 });
+
+test('platform preview cursors enrich level and decoration from local room members without enlarging wire frames and refresh on level-up',async t=>{
+ const f=transportFixture(t);
+ const paw={id:'cat-paw',title:'猫爪',artKey:'cat-paw',color:'#d9829c',kind:'cursor'};
+ f.room.members[0].level=28;f.room.members[0].decoration=paw;
+ f.room.members[1].level=17;f.room.members[1].decoration=null;
+ const a=f.actor(0),b=f.actor(1);
+ const seenA=[],seenB=[];
+ a.adapter.subscribeCursors(data=>seenA.push(data.cursors));
+ b.adapter.subscribeCursors(data=>seenB.push(data.cursors));
+ a.adapter.start();b.adapter.start();await f.ready();
+
+ // Move cursor over Tap platform: wire payload stays coordinate-only while local cursors carry level + decoration.
+ a.adapter.sendCursor({clientId:key(200),seq:1,point:{x:120,y:240}});
+ b.adapter.sendCursor({clientId:key(201),seq:1,point:{x:300,y:180}});
+ for(let n=0;n<4;n++)await f.advance(100);
+ const lastWire=f.sent.at(-1)?.msg;
+ assert.ok(lastWire&&!lastWire.includes('cat-paw')&&!lastWire.includes('"level"'),'platform wire frame omits static member metadata');
+ const cursorForA=seenB.at(-1)?.find(c=>c.playerId===key(2));
+ assert.equal(cursorForA?.level,28);
+ assert.deepEqual(cursorForA?.decoration,paw);
+ const cursorForB=seenA.at(-1)?.find(c=>c.playerId===key(3));
+ assert.equal(cursorForB?.level,17);
+ assert.equal(cursorForB?.decoration,null);
+
+ // Mid-room level-up and decoration swap in room.members refreshes cached Tap cursors immediately on next room update.
+ const star={id:'star',title:'星芒',artKey:'star',color:'#e8c47a',kind:'cursor'};
+ f.room.members[0].level=29;f.room.members[0].decoration=star;
+ f.room.revision++;f.room.serverTime=Date.now();
+ b.authority.emit();await settle();
+ const updatedA=seenB.at(-1)?.find(c=>c.playerId===key(2));
+ assert.equal(updatedA?.level,29);
+ assert.deepEqual(updatedA?.decoration,star);
+});

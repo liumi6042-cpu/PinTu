@@ -14,6 +14,7 @@ import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-cli
 import {flushStoredSoloOutboxes,otherPlayersPresent} from '../lib/solo-play';
 import {boardVariant,type StoryVariant} from './story-variants';
 import {CursorClient} from '../lib/cursor-client';
+import {enrichCursorsFromMembers,type CursorMemberMeta} from '../lib/room-cursors';
 import {CheerClient} from './cheer-client';
 import {CHEER_EMOTES,type Cheer,type CheerEmote} from '../lib/room-realtime';
 import {completionSeats,type CompletionSeat} from './completion-seats';
@@ -48,7 +49,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.22';
+const CLIENT_PACKAGE_VERSION='v53.27';
 
 /** One scene graph and one set of game rules for both mobile platforms. */
 export class GameApp{
@@ -136,7 +137,7 @@ export class GameApp{
  private pendingViews?:ViewRequests;private lastDataOwner='';private lastAidClock='';
  private renderMode:PerformanceMode='smooth';
  private performanceInfoEnabled=false;
- private teammateSoundEnabled=false;
+ private teammateSoundEnabled=true;
  private adminDiagEnabled=false;private adminDiagExpanded=false;
  private nineTimings=new Map<string,RoomRequestTiming>();
  private roomTimings=new Map<string,RoomRequestTiming&{at:number}>();
@@ -169,7 +170,7 @@ export class GameApp{
   const perfText=boardPerf?`缓冲${(boardPerf.bufferBytes/1048576).toFixed(1)}MB · 触点${boardPerf.pointers}`:'—';
   const wsLine=`通道：${wsConnected?'WS在线':'轮询/重连'}(连${d?.connections??0}/重连${d?.reconnects??0}/推${d?.roomMessages??0}/待${d?.pendingActions??0})${d?.lastError?' 错:'+String(d.lastError):''}`;
   const previewLine=hasPreview
-   ?`平台：${previewOn?'已接通':'回退'} · 绑定${d?.previewMembersReady??'—'}/${d?.previewMembersTotal??'—'} · 发${d?.platformSendRate??0}/峰${d?.platformSendPeak??0}Hz · 成${d?.platformSucceeded??0}/败${d?.platformFailed??0} · 收${d?.platformReceived??0}`
+   ?`平台：${previewOn?'已接通':'回退'} · 绑定${d?.previewMembersReady??'—'}/${d?.previewMembersTotal??'—'} · 确认${d?.previewPeersConfirmed??0}/${d?.previewPeersExpected??0} · 发${d?.platformSendRate??0}/峰${d?.platformSendPeak??0}Hz · 成${d?.platformSucceeded??0}/败${d?.platformFailed??0} · 收${d?.platformReceived??0}`
    :`平台：${host?.managerAvailable?'宿主已就绪（当前房未启）':'未启用/非TapTap多人通道'}`;
   const lines=[
    `房间 ${(snap?.id??'—').slice(0,8)} · ${mode} · rev ${rev} · ${members}人 · 租约${leases} · 光标${cursors}`,
@@ -179,11 +180,17 @@ export class GameApp{
    `图片缓存：${imgText} · ${perfText}`,
    `版本：${CLIENT_PACKAGE_VERSION}${this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''} · ${this.platform.config.id} · ${this.layout}`,
   ];
+  const ignored=d?.previewIgnored as Record<string,number>|undefined;
+  const peerList=Array.isArray(d?.platformPeerReceives)?d.platformPeerReceives as Array<{name:string;total:number;hz:number}>:[];
+  const missingList=Array.isArray(d?.previewMissingBindings)?d.previewMissingBindings as string[]:[];
   const copyLines=[
    `[拼图小窝 管理员房间诊断] ${new Date().toISOString()}`,
    `roomId=${snap?.id??''} mode=${mode} rev=${rev} connected=${room?.connected} members=${members} leases=${leases} cursors=${cursors}`,
    ...lines,
    ...(d?.previewDetail?[`previewDetail=${String(d.previewDetail)}`]:[]),
+   ...(hasPreview?[`previewStats=callbacks:${d?.platformCallbacks??0} recovery:${d?.previewRecoveryCount??0}${ignored?` ignored:notReady=${ignored.notReady??0},payload=${ignored.payload??0},sender=${ignored.sender??0},binding=${ignored.binding??0},dup=${ignored.duplicate??0},frame=${ignored.frame??0}`:''}`]:[]),
+   ...(peerList.length?[`previewPeers=${peerList.map(p=>`${p.name}:${p.total}(${p.hz}/s)`).join(', ')}`]:[]),
+   ...(missingList.length?[`previewMissing=${missingList.join(',')}`]:[]),
    ...(d?.platformLastSendError?[`platformLastSendError=${String(d.platformLastSendError)}`]:[]),
    `apiBase=${this.platform.config.apiBase}`,
   ];
@@ -210,7 +217,7 @@ export class GameApp{
   try{this.welcomeEnabled=platform.storage.get(WELCOME_ENABLED_KEY)!=='0';}catch{}
   try{this.lockButtonEnabled=platform.storage.get(LOCK_BUTTON_KEY)==='1';this.viewLocked=this.lockButtonEnabled&&platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
   try{this.minimapEnabled=platform.storage.get(MINIMAP_KEY)==='1';}catch{}
-  try{this.teammateSoundEnabled=platform.storage.get(TEAMMATE_SOUND_KEY)==='1';}catch{}
+  try{this.teammateSoundEnabled=platform.storage.get(TEAMMATE_SOUND_KEY)!=='0';}catch{}
   try{this.adminDiagEnabled=platform.storage.get(ADMIN_DIAG_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
   this.telemetry=platform.createTelemetry?.();
@@ -796,7 +803,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);board.trayKey=room.snapshot.id;this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;
   // 回忆变奏关: set before the room attaches, so a wind room's kept pieces are drawn where the player left them.
   this.roomVariant=this.storyRoomVariant(ticket,room);if(this.roomVariant)board.setVariant(boardVariant(this.roomVariant,ticket.room.id));board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';board.teammateSoundEnabled=this.teammateSoundEnabled===true;{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
-  if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
+  if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(enrichCursorsFromMembers(cursors,room.snapshot.members as readonly CursorMemberMeta[])),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
   this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>this.receiveCheer(room,cheer,own)}):null;
   this.cheer?.setActive(this.modal==='completion');
   this.unsubscribeRoom=room.subscribe(()=>{this.syncCompletion(room);this.checkVariantCompany(room);});
@@ -1620,7 +1627,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     cy=this.drawAudioLevel('effects','游戏音效',left,cy,width);
     cy=this.paragraph('控制拼合、金币等游戏音效，设置会自动记住。',left,cy,width,12)+14;
     this.button(left,cy,width,(this.teammateSoundEnabled?'✓ ':'')+'队友拼合音效',()=>this.setTeammateSoundEnabled(!this.teammateSoundEnabled),this.teammateSoundEnabled?'berry':'cream',39);cy+=47;
-    cy=this.paragraph('默认关闭，保持轻松氛围；开启后同桌其他玩家拼合时也会有轻响。',left,cy,width,12)+18;
+    cy=this.paragraph('默认开启，同桌其他玩家拼合时也会有轻响；如想更安静可随时关闭。',left,cy,width,12)+18;
     s.text('画面',left,cy,15,this.colors.ink,750);cy+=28;this.rowOptions([['smooth','流畅'],['power-saving','省电']],this.performanceMode,left,cy,width,value=>this.setPerformanceMode(value),39);cy+=48;cy=this.paragraph(this.performanceMode==='power-saving'?'持续画面最高30帧，拖动流畅度略有降低。':'跟随设备正常刷新频率，优先保证拖动流畅。',left,cy,width,12)+18;
     if(this.platform.config.id==='web'||this.desktop||this.platform.config.id==='taptap'){heading('操作');if(this.desktop){cy=this.paragraph('快捷键（电脑）：E 边缘 · H 提示 · B 底图 · F 适配 · '+(this.soloRoom?'R 整理 · ':'')+'T 收起/展开工具 · 空格或中键拖动平移 · 滚轮缩放 · Esc 返回',left,cy,width,12)+12;}
      if(this.platform.config.id==='web'&&this.platform.fullscreen?.available()){this.button(left,cy,width,this.platform.fullscreen.active()?'退出全屏':'全屏',()=>void this.toggleFullscreen(),'cream',39);cy+=51;}
