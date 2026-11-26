@@ -42,7 +42,7 @@ export function drawRoomPanelView(this:AppHost){
    s.panel({x,y,w,h:43});s.text('联机自测 D4：'+label,x+8,y+6,10,this.colors.ink,600,w-16);
    s.text(available?'目标 '+(d.previewTargetHz??'—')+'/秒 · 实发 '+(d.platformSendRate??0)+' · 成功 '+(d.platformSucceeded??0)+' · 失败 '+(d.platformFailed??0)+' · 收 '+(d.platformReceived??0):'平台统计未启用 · 点击查看原因',x+8,y+24,9,this.colors.muted,600,w-16);
    s.hit({x,y,w,h:43},()=>this.showModal('settings'));
-  }
+  }else if(this.adminDiagnosticsAllowed&&this.adminDiagEnabled)this.drawAdminDiagnostics();
   if(this.completionFx)this.drawCompletionTransition();this.drawSettleButton();
   if(!room.connected)this.drawReconnectBanner(room);
   this.drawStoryIntro();
@@ -316,4 +316,29 @@ export function drawPublicChatPanel(this:AppHost){
   const bw=(w-26-(columns-1)*6)/columns;
   selected.ids.forEach((id,i)=>s.button({x:x+13+(i%columns)*(bw+6),y:footerY+39+Math.floor(i/columns)*34,w:bw,h:29},phrases[id],()=>void this.say(id),{fontSize:11,tone:'cream',disabled:this.busy}));
   if(this.formalWeb)s.button({x:x+13,y:footerY+39+rows*34,w:w-26,h:30},'输入消息',()=>void this.sayText(),{fontSize:12,disabled:this.busy});
+ }
+
+export function drawAdminDiagnosticsPanel(this:AppHost){
+  const s=this.stage,snap=this.roomDiagnosticSnapshot();
+  const topY=this.layout==='phoneLandscape'?this.roomHeaderTop()+56:this.roomArea.y+6;
+  const label=snap.pill+(this.adminDiagExpanded?' ▴':' ▾');
+  const pillW=Math.min(this.roomArea.w-16,Math.max(150,s.measure(label,10,700)+20));
+  const pill={x:this.roomArea.x+(this.roomArea.w-pillW)/2,y:topY,w:pillW,h:24};
+  this.drawLandscapeSurface(pill,12,'rgba(34,26,22,0.84)',snap.wsConnected?'#e8c47a':'#f08a8a',1);
+  s.text(label,pill.x+10,pill.y+6,10,'#fff8ee',700,pill.w-20);
+  s.hit(pill,()=>{this.adminDiagExpanded=!this.adminDiagExpanded;this.invalidate();});
+  if(!this.adminDiagExpanded)return;
+  const cardW=Math.min(this.roomArea.w-16,380),lineH=15,cardH=14+snap.lines.length*lineH+36;
+  const card={x:this.roomArea.x+(this.roomArea.w-cardW)/2,y:topY+28,w:cardW,h:cardH};
+  this.drawLandscapeSurface(card,10,'rgba(28,22,19,0.92)','#e8c47a88',1);
+  s.hit(card,()=>{});
+  snap.lines.forEach((line:string,index:number)=>s.text(line,card.x+10,card.y+8+index*lineH,10,'#f7efe2',600,card.w-20));
+  const by=card.y+card.h-30,bw=(card.w-28)/2;
+  const copyBtn={x:card.x+10,y:by,w:bw,h:22},closeBtn={x:card.x+18+bw,y:by,w:bw,h:22};
+  this.drawLandscapeSurface(copyBtn,6,'rgba(176,84,111,0.92)','#fff2e288',1);
+  s.text('复制诊断',copyBtn.x+(bw-s.measure('复制诊断',10,700))/2,copyBtn.y+5,10,'#fff8ee',700,bw-6);
+  s.hit(copyBtn,()=>void this.copyRoomDiagnostics());
+  this.drawLandscapeSurface(closeBtn,6,'rgba(82,68,60,0.92)','#fff2e255',1);
+  s.text('收起',closeBtn.x+(bw-s.measure('收起',10,700))/2,closeBtn.y+5,10,'#fff8ee',700,bw-6);
+  s.hit(closeBtn,()=>{this.adminDiagExpanded=false;this.invalidate();});
  }

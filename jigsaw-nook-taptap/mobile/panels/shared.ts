@@ -91,7 +91,7 @@ export function historyPhotoTitle(room:MobileOwnedRoom){return room.photo?.title
 export function beijingMonthDay(time:number){const day=new Date(time+8*3600000);return (day.getUTCMonth()+1)+'月'+day.getUTCDate()+'日';}
 // Seats come from the server (4/6/8 by piece count); backends without maxPlayers seat 8.
 export const seatLimit=(room:{maxPlayers?:number}|null|undefined)=>room?.maxPlayers??8;
-export const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1';
+export const VIEW_LOCK_KEY='jigsaw:room-view-lock:v1',LOCK_BUTTON_KEY='jigsaw:room-lock-button:v1',MINIMAP_KEY='jigsaw:room-minimap:v1',TEAMMATE_SOUND_KEY='jigsaw:teammate-sound:v1',ADMIN_DIAG_KEY='jigsaw:admin-room-diag:v1';
 export const SHARE_ENERGY_DONE_TEXT='今天已经分享领过体力包了，每天限 1 次，晚上 8 点后可以再领';
 export const WECHAT_PACKAGE_VERSION='0.53.20';
 export const CHAT_BUBBLE_ARM_MS=600;
