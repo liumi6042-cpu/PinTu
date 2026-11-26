@@ -487,7 +487,7 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/privacy-request')return privacy.route(request,input,now);
   if(path==='/api/mobile/social'||path.startsWith('/api/mobile/social/'))return social.route(request,p,input,url,now);
   if(path==='/api/daily'&&method==='GET'){const photo=displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request);return {date:engine.dailyPuzzleDate(dailyClock(now)),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,width:photo.width,height:photo.height},serverTime:now};}
-  if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request)}:{}),serverTime:dailyClock(now)};}
+  if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),completedImageIds:collection.completedImageIds(p.id),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request)}:{}),serverTime:dailyClock(now)};}
   if(path==='/api/levels'&&method==='GET')return levels.view(p.id,now);
   if(path==='/api/levels/offline-clears'&&method==='POST'){
    if(!offlineLevelClears)fail(503,'OFFLINE_CLEARS_UNAVAILABLE','离线通关同步暂不可用');

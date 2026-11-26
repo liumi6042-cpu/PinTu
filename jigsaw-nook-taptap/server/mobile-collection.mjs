@@ -323,10 +323,13 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const doubled=db.prepare('SELECT coins,fragments FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,'completion-double:'+roomId);
   return {...parsed,doubleClaimed:Boolean(doubled),...(doubled?{doubleBonus:{coins:doubled.coins,fragments:doubled.fragments}}:{})};
  }
+ function completedImageIds(owner){
+  return db.prepare('SELECT DISTINCT image_id FROM mobile_collection_artworks WHERE owner=? ORDER BY image_id').all(owner).map(row=>row.image_id);
+ }
  function playerStats(owner,now){
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,adUnlockAlbum,adUnlocked,adDailyState,assertAdUnlockAllowed,unlockAdImage,craft,equip,contribution,complete,completion,assertCompletionDoubleAllowed,claimCompletionDouble,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
+ return {view,summary,buy,adUnlockAlbum,adUnlocked,adDailyState,assertAdUnlockAllowed,unlockAdImage,craft,equip,contribution,complete,completion,completedImageIds,assertCompletionDoubleAllowed,claimCompletionDouble,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
 }
 
