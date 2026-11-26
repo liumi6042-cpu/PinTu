@@ -254,10 +254,13 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   db.prepare('INSERT INTO mobile_collection_completions VALUES(?,?,?,?)').run(room.id,owner,JSON.stringify(result),now);return result;
  }
  function completion(owner,roomId){const row=db.prepare('SELECT data FROM mobile_collection_completions WHERE room_id=? AND owner=?').get(roomId,owner);return row?JSON.parse(row.data):{coins:0,fragments:0,catalog:null};}
+ function completedImageIds(owner){
+  return db.prepare('SELECT DISTINCT image_id FROM mobile_collection_artworks WHERE owner=? ORDER BY image_id').all(owner).map(row=>row.image_id);
+ }
  function playerStats(owner,now){
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,adUnlockAlbum,adUnlocked,unlockAdImage,craft,equip,contribution,complete,completion,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
+ return {view,summary,buy,adUnlockAlbum,adUnlocked,unlockAdImage,craft,equip,contribution,complete,completion,completedImageIds,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
 }
 

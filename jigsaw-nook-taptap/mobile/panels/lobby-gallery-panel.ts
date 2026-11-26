@@ -237,24 +237,26 @@ export function drawGalleryPanel(this:AppHost){
   const pack=this.packId?(this.collection?.packs.find(p=>p.id===this.packId)??collectionCatalog.packs.find(p=>p.id===this.packId)):null;
   const panelW=portrait?0:landscape?260:340,gridW=width-(panelW?panelW+14:0);let y=this.bodyTop;
   const chipCategories=CATEGORIES.filter(c=>c!=='全部').map(c=>[c,GALLERY_PHOTOS.filter(photo=>photo.category===c).length] as const).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([c])=>c);
+  const completed=this.completedPhotoIds(),shownCategories=portrait?[]:chipCategories;
   const view=(change:()=>void)=>this.changeListView(()=>{change();this.packId=null;this.selected=null;});
   const chips:[string,boolean,()=>void][]=[
-   ['全部',this.source==='all'&&this.direction==='all'&&this.category==='全部'&&!this.search,()=>view(()=>{this.source='all';this.direction='all';this.category='全部';this.search='';})],
+   ['全部',this.source==='all'&&this.direction==='all'&&this.category==='全部'&&!this.search&&!this.unplayedOnly,()=>view(()=>{this.source='all';this.direction='all';this.category='全部';this.search='';this.unplayedOnly=false;})],
+   ['未拼过',this.unplayedOnly,()=>this.changeListView(()=>{this.unplayedOnly=!this.unplayedOnly;if(this.unplayedOnly&&this.selected&&completed.has(this.selected))this.selected=null;})],
    ['竖图',this.direction==='portrait',()=>view(()=>{this.direction=this.direction==='portrait'?'all':'portrait';})],
    ['横图',this.direction==='landscape',()=>view(()=>{this.direction=this.direction==='landscape'?'all':'landscape';})],
    ['免费',this.source==='free',()=>view(()=>{this.source=this.source==='free'?'all':'free';})],
    ['我的图包',this.source==='owned',()=>view(()=>{this.source=this.source==='owned'?'all':'owned';})],
-   ...chipCategories.map(category=>[category,this.category===category,()=>view(()=>{this.category=this.category===category?'全部':category;})] as [string,boolean,()=>void]),
-   ['更多',!!this.search||this.direction==='square'||this.category!=='全部'&&!chipCategories.includes(this.category),()=>this.showModal('filters')]];
-  y=this.drawChips(left,y,gridW,portrait||landscape?30:34,portrait?chips.filter(([label])=>label!==chipCategories[1]):chips)+10;
+   ...shownCategories.map(category=>[category,this.category===category,()=>view(()=>{this.category=this.category===category?'全部':category;})] as [string,boolean,()=>void]),
+   ['更多',!!this.search||this.direction==='square'||this.category!=='全部'&&!shownCategories.includes(this.category),()=>this.showModal('filters')]];
+  y=this.drawChips(left,y,gridW,portrait||landscape?30:34,chips)+10;
   if(pack){s.icon('book',{x:left+2,y,w:23,h:25});s.text(pack.title,left+30,y+5,13,this.colors.ink,700,gridW-130);s.text('查看所有图片',left+gridW-90,y+6,12,this.colors.muted,600);s.hit({x:left+gridW-98,y,w:98,h:30},()=>this.changeListView(()=>{this.packId=null;this.selected=null;}));y+=34;}
-  const photos=this.availableGallery().filter(photo=>(this.direction==='all'||orientation(photo.id)===this.direction)&&(this.category==='全部'||this.category===photo.category)&&photo.title.includes(this.search)&&(!pack||pack.imageIds.includes(photo.id))&&(this.source==='all'||this.source==='free'&&!!this.freeGalleryIds?.has(photo.id)||this.source==='owned'&&owned.has(photo.id)));
+  const photos=this.availableGallery().filter(photo=>(this.direction==='all'||orientation(photo.id)===this.direction)&&(this.category==='全部'||this.category===photo.category)&&photo.title.includes(this.search)&&(!pack||pack.imageIds.includes(photo.id))&&(this.source==='all'||this.source==='free'&&!!this.freeGalleryIds?.has(photo.id)||this.source==='owned'&&owned.has(photo.id))&&(!this.unplayedOnly||!completed.has(photo.id)));
   const selected=this.selected?photoMap.get(this.selected)??null:null,sheetH=portrait&&selected?this.createPanelHeight(true):0,v=this.platform.viewport(),bottom=s.h-v.bottom-12-(sheetH?sheetH+4:0);
   const columns=portrait?(gridW>=520?3:2):landscape?3:Math.max(2,Math.min(5,Math.floor(gridW/235))),gap=landscape?8:portrait?10:14,cw=(gridW-gap*(columns-1))/columns,imageHeight=(cw-12)/1.38,ch=imageHeight+(cw<170?56:60);
   this.bodyTop=y;this.bodyBottom=bottom;this.listColumn={x:this.contentOrigin.x+left-6,w:gridW+12};this.extent=Math.ceil(photos.length/columns)*(ch+gap)+12;
   this.scrolled(()=>{
    photos.forEach((photo,index)=>{const x=left+(index%columns)*(cw+gap),cy=y+Math.floor(index/columns)*(ch+gap)-this.scroll;if(cy+ch<y||cy>bottom)return;this.drawPhotoCard(photo,{x,y:cy,w:cw,h:ch},imageHeight,owned);});
-   if(!photos.length){const message=this.source==='owned'?'收藏一个喜欢的图包':'换个条件试试';s.icon(this.source==='owned'?'book':'underlay',{x:left+gridW/2-26,y:y+20,w:52,h:52});s.text(message,left+(gridW-s.measure(message,17,800))/2,y+85,17,this.colors.ink,800);this.drawPictureButton({x:left+gridW/2-85,y:y+122,w:170,h:38},this.source==='owned'?'前往收藏':'查看全部图片',()=>{if(this.source==='owned')this.navigate('collection');else view(()=>{this.direction='all';this.category='全部';this.search='';this.source='all';});},'cream','book',13,17);this.extent=190;}
+   if(!photos.length){const needPacks=this.source==='owned'&&!owned.size,message=needPacks?'收藏一个喜欢的图包':this.unplayedOnly?'这里的图片你都拼过啦':'换个条件试试';s.icon(needPacks?'book':'underlay',{x:left+gridW/2-26,y:y+20,w:52,h:52});s.text(message,left+(gridW-s.measure(message,17,800))/2,y+85,17,this.colors.ink,800);this.drawPictureButton({x:left+gridW/2-85,y:y+122,w:170,h:38},needPacks?'前往收藏':'查看全部图片',()=>{if(needPacks)this.navigate('collection');else view(()=>{this.direction='all';this.category='全部';this.search='';this.source='all';this.unplayedOnly=false;});},'cream','book',13,17);this.extent=190;}
   },y,bottom);
   if(panelW){const top=this.bodyTop-(pack?34:0)-40;this.drawCreatePanel({x:left+width-panelW,y:Math.max(12,top),w:panelW,h:s.h-v.bottom-12-Math.max(12,top)},selected,owned,false);}
   else if(selected)this.drawCreatePanel({x:left-2,y:s.h-v.bottom-sheetH-4,w:width+4,h:sheetH},selected,owned,true);

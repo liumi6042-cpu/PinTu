@@ -79,7 +79,7 @@ export const NEWER_PHRASE_ID=16;
 export type PublicMessage={id:number;name:string;text:string;playerId:string;code:string;level?:number;sentAt?:number};
 export type SharedPhoto={id:string;title:string;src:string;thumbSrc:string;category:string;width?:number;height?:number};
 export type WebPage=Exclude<keyof WebLinks,'legacyLobby'|'legacyRoom'|'largePuzzles'>;
-export type ListView={route:Route;scroll:number;albumListScroll:number;direction:Direction;filterCount:number;openOnly:boolean;activeOnly:boolean;category:string;search:string;source:'free'|'owned'|'all';packId:string|null;selected:string|null;collectionTab:'albums'|'packs'|'decorations';albumId:string;decorationId:string;decorationOwnedOnly:boolean;taskTab:'tasks'|'gifts'};
+export type ListView={route:Route;scroll:number;albumListScroll:number;direction:Direction;filterCount:number;openOnly:boolean;activeOnly:boolean;category:string;search:string;source:'free'|'owned'|'all';unplayedOnly:boolean;packId:string|null;selected:string|null;collectionTab:'albums'|'packs'|'decorations';albumId:string;decorationId:string;decorationOwnedOnly:boolean;taskTab:'tasks'|'gifts'};
 export const photoMap=new Map<string,SharedPhoto>(RESTORABLE_PHOTOS.map(photo=>[photo.id,photo]));
 export const packed=new Set(collectionCatalog.packs.flatMap(pack=>pack.imageIds));
 export function orientation(id:string):Direction{const photo=photoMap.get(id),size=photo?.width&&photo.height?photo:photoGuidance(id);return !size?'all':size.width===size.height?'square':size.width!>size.height!?'landscape':'portrait';}
