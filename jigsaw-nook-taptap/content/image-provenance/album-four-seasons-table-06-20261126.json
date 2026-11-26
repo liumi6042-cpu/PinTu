@@ -1,0 +1,102 @@
+{
+  "id": "album-four-seasons-table-06-20261126",
+  "origin": "project-ai-generated",
+  "width": 2727,
+  "height": 1816,
+  "sha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-four-seasons-table-06-20261126.webp",
+    "sha256": "1cc286a2876527d091cb0f51e9ad2b84dbc0eee8ada5642c6fa158f32ea6ff7b",
+    "bytes": 2075260,
+    "width": 2727,
+    "height": 1816,
+    "originalPngSha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-four-seasons-table-06-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-four-seasons-table-06-20261126/native.png",
+      "sha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce",
+      "bytes": 14467214,
+      "width": 2727,
+      "height": 1816,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-four-seasons-table-06-20261126/native.webp",
+        "sha256": "1cc286a2876527d091cb0f51e9ad2b84dbc0eee8ada5642c6fa158f32ea6ff7b",
+        "bytes": 2075260,
+        "width": 2727,
+        "height": 1816
+      }
+    },
+    "originalFile": "public/puzzles/album-four-seasons-table-06-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2727×1816；保存成品 2727×1816，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/四季食光手账-20261126/06-江南桂花甜品与糖藕席.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce",
+    "thumbnail": {
+      "src": "/puzzles/album-four-seasons-table-06-20261126-thumbnail-f868fcfb8aff.webp",
+      "width": 384,
+      "height": 256,
+      "sha256": "f868fcfb8aff0faed38aba26ca4d5715abbce176da48ddd98521855085e4934e",
+      "bytes": 39408,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce",
+      "inputSha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-four-seasons-table-06-20261126-optimized-969f5fcafdf3.webp",
+      "width": 2727,
+      "height": 1816,
+      "sha256": "969f5fcafdf3f2873887eb1f03b714a942cb907c09be1e5a2f508447d5fefce2",
+      "bytes": 1050518,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce",
+      "inputSha256": "4327996a163486136a512d88cf377a55837b583a4a032e6d541d3e14b284bcce",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

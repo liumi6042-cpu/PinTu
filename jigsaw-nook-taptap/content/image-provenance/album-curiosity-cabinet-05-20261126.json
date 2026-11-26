@@ -1,0 +1,102 @@
+{
+  "id": "album-curiosity-cabinet-05-20261126",
+  "origin": "project-ai-generated",
+  "width": 2227,
+  "height": 2227,
+  "sha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-curiosity-cabinet-05-20261126.webp",
+    "sha256": "c6ce5680e8bea672584abeaeea3105a73a2322992c14fe1ff309fc536530d7b9",
+    "bytes": 2406150,
+    "width": 2227,
+    "height": 2227,
+    "originalPngSha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-curiosity-cabinet-05-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-curiosity-cabinet-05-20261126/native.png",
+      "sha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644",
+      "bytes": 13373638,
+      "width": 2227,
+      "height": 2227,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-curiosity-cabinet-05-20261126/native.webp",
+        "sha256": "c6ce5680e8bea672584abeaeea3105a73a2322992c14fe1ff309fc536530d7b9",
+        "bytes": 2406150,
+        "width": 2227,
+        "height": 2227
+      }
+    },
+    "originalFile": "public/puzzles/album-curiosity-cabinet-05-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2227×2227；保存成品 2227×2227，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/博物珍奇柜-20261126/05-古董怀表与世界奇物抽屉.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644",
+    "thumbnail": {
+      "src": "/puzzles/album-curiosity-cabinet-05-20261126-thumbnail-c2b84d1f76f0.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "c2b84d1f76f02126d16d5b08e3fea504203d1adeebe0e38a0e018fbc75d63e77",
+      "bytes": 68454,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644",
+      "inputSha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-curiosity-cabinet-05-20261126-optimized-86b8fea5d517.webp",
+      "width": 2227,
+      "height": 2227,
+      "sha256": "86b8fea5d5171f9eabc43e0e31cbc5631c8bead59ef8bffe50768fd213d114e6",
+      "bytes": 1385168,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644",
+      "inputSha256": "4e691e514541338be965889dbcef64dd7adfbe1397c688a84a875102991c1644",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

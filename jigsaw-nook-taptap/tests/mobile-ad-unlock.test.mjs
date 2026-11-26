@@ -73,3 +73,17 @@ test('free pictures, missing ads and the web runtime cannot use the ad unlock',(
   const off=g.call('/api/mobile/collection/unlock/challenge',{imageId:ad1,requestId:rid()});assert.equal(off.status,503);assert.equal(off.data.code,'ADS_UNAVAILABLE');
  }finally{g.close();}
 });
+
+test('four-seasons-table and curiosity-cabinet use the same per-picture ad unlock rule',()=>{
+ for(const albumId of ['four-seasons-table','curiosity-cabinet']){
+  const customAlbums={schema:'jigsaw-albums/v1',albums:[album('free',[free]),album(albumId,[ad1,ad2],{showOnPc:false,purchasable:true,price:1,milestones:[{id:'milestone-3',target:3,coins:30,decorationId:null}]})]};
+  const f=fixture({albumContent:{read:()=>customAlbums}});try{
+   const pack=f.call('/api/mobile/collection').data.packs.find(item=>item.id===albumId);
+   assert.equal(pack.unlock,'ad');assert.equal(pack.owned,false);assert.equal(pack.unlocked,0);
+   assert.equal(f.call('/api/mobile/collection/buy',{packId:albumId,requestId:rid()}).data.code,'AD_UNLOCK_ONLY');
+   assert.equal(f.unlock(ad1).redeem().status,200);
+   assert.equal(f.create(ad1).status,201);
+   assert.equal(f.create(ad2).data.code,'PACK_LOCKED');
+  }finally{f.close();}
+ }
+});

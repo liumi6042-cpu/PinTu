@@ -1,0 +1,102 @@
+{
+  "id": "album-azure-green-garden-01-20261126",
+  "origin": "project-ai-generated",
+  "width": 2969,
+  "height": 1668,
+  "sha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-azure-green-garden-01-20261126.webp",
+    "sha256": "4a617aac52ad530086a9ffca03fe04011d601ab887d9af52aad2afc99a44c4d5",
+    "bytes": 2880652,
+    "width": 2969,
+    "height": 1668,
+    "originalPngSha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-azure-green-garden-01-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-azure-green-garden-01-20261126/native.png",
+      "sha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c",
+      "bytes": 14621037,
+      "width": 2969,
+      "height": 1668,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-azure-green-garden-01-20261126/native.webp",
+        "sha256": "4a617aac52ad530086a9ffca03fe04011d601ab887d9af52aad2afc99a44c4d5",
+        "bytes": 2880652,
+        "width": 2969,
+        "height": 1668
+      }
+    },
+    "originalFile": "public/puzzles/album-azure-green-garden-01-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2969×1668；保存成品 2969×1668，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/青绿游园记-20261126/01-深秋红枫锦鲤池.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c",
+    "thumbnail": {
+      "src": "/puzzles/album-azure-green-garden-01-20261126-thumbnail-791b9d3daf4f.webp",
+      "width": 384,
+      "height": 216,
+      "sha256": "791b9d3daf4f0f1d4a7014a15c788ec1a9c3cde9d9fbd9c701e383447ced7333",
+      "bytes": 41308,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c",
+      "inputSha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-azure-green-garden-01-20261126-optimized-14f313c427f5.webp",
+      "width": 2969,
+      "height": 1668,
+      "sha256": "14f313c427f55ecaf9309e7cc01fd66fa9c3b7bd7fe51caf6cc6b54938af5b2a",
+      "bytes": 1754928,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c",
+      "inputSha256": "88fc828f77e71555b41c8ee1088a7484a7a80753ff91072d08072f2cc964989c",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

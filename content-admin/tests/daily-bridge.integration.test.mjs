@@ -52,7 +52,7 @@ test('real v2 bridge chooses manual, then undated automatic, then album library 
   const saved=store.draft(store.activeDraftId()),document=validateDraft(saved.document,source),automaticId='daily-moonlit-cherry-umbrella-v1',manualId='daily-lantern-lake-violin-v1';
   const archivedId=RESTORABLE_PHOTOS.find(photo=>photo.status==='archived').id,albumId='everyday-gallery';
   for(const album of document.albums){album.imageIds=[];album.coverImageId=null;}
-  document.albums.push({id:'daily-paid-fixture',title:'隐藏购买相册',description:'每日可试拼',imageIds:[archivedId],coverImageId:archivedId,styleGroupId:null,showOnPc:false,showOnMobile:false,purchasable:true,price:250,decorationId:null,milestones:[]});
+  document.albums.push({id:'daily-paid-fixture',title:'移动端购买相册',description:'每日可试拼',imageIds:[archivedId],coverImageId:archivedId,styleGroupId:null,showOnPc:false,showOnMobile:true,purchasable:true,price:250,decorationId:null,milestones:[]});
   document.dailyPlans=[{id:automaticId,imageId:automaticId,date:null,albumId,autoPublish:true},{id:manualId,imageId:manualId,date:'2026-10-13',albumId}];
   store.saveDraft(saved.id,saved.revision,validateDraft(document,source),'integration-fixture');coordinator.sync();
   runtime=createDailyContent({configurationPath:join(bridgeDir,'configuration.json'),appearanceDir,photos:RESTORABLE_PHOTOS,fallback:dailyPuzzle,now:()=>now,randomInt:()=>0});
