@@ -38,13 +38,13 @@ import type {AssistanceGrant} from '../lib/assistance-policy';
 import {REDEEM_GROUP_HINT,REDEEM_WECHAT_HINT,CAT_PAW_WECHAT_TEXT,REDEEM_MAX_LENGTH,redeemAnswered,redeemErrorText,redeemInput,redeemSummary,type RedeemGrant} from './redeem';
 import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
-import {type AppHost,type Direction,type PerformanceMode,type Modal,type PrivacyRequest,type RecentPlayer,type RoomListing,type PublicMessage,type SharedPhoto,type WebPage,type ListView,directions,themeOptions,counts,contentMaxWidth,settingsTipKey,phrases,NEWER_PHRASE_ID,photoMap,packed,errorText,taskCoinsText,clamp,seatLimit,VIEW_LOCK_KEY,LOCK_BUTTON_KEY,MINIMAP_KEY,WECHAT_PACKAGE_VERSION,CHAT_BUBBLE_ARM_MS,ORGANIZE_CONFIRM_MS,inside,roomListKey,messageListKey} from './panels/shared';
+import {type AppHost,type Direction,type PerformanceMode,type Modal,type PrivacyRequest,type RecentPlayer,type RoomListing,type PublicMessage,type SharedPhoto,type WebPage,type ListView,directions,themeOptions,counts,contentMaxWidth,settingsTipKey,phrases,NEWER_PHRASE_ID,photoMap,packed,errorText,taskCoinsText,clamp,seatLimit,VIEW_LOCK_KEY,LOCK_BUTTON_KEY,MINIMAP_KEY,TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY,WECHAT_PACKAGE_VERSION,CHAT_BUBBLE_ARM_MS,ORGANIZE_CONFIRM_MS,inside,roomListKey,messageListKey} from './panels/shared';
 import {drawSavedRoomPanel,drawHistoryGridPanel,drawHistoryPreviewPanel,drawHistoryWindowPanel,drawRedeemPanel,drawWeeklyGiftPanel,drawLoginLogPanel,drawPrivacyChoicePanel,drawPolicyPanel,drawWelcomeHeroPanel,drawWelcomeArtPanel,drawWelcomePanel,drawOrientationPickerPanel} from './panels/modals-panel';
 import {drawInviteBannerPanel,drawInviteFriendsPanel,drawFriendsPanel,drawLoadingPanel,drawLobbyStartupPanel,drawLobbyPanel,drawDailyHeroPanel,drawContinueRoomPanel,drawLobbyActionsPanel,drawRoomHeaderPanel,drawChipsPanel,drawRoomGridPanel,drawRoomCardPanel,drawGalleryPanel,drawPhotoCardPanel,drawCreatePanelView,drawPictureButtonPanel} from './panels/lobby-gallery-panel';
 import {drawChapterPanel,openLevelComicPanel,turnComicPanel,advanceComicPanel,drawLevelComicPanel,inputComicPanel,beginStoryIntroPanel,storyRoomVariantPanel,drawStoryIntroPanel} from './panels/story-panel';
 import {drawTasksPanel,drawTasksPagePanel,drawSuppliesPanel,drawWebSuppliesPanel,drawTaskWindowPanel} from './panels/tasks-supplies-panel';
 import {drawCollectionPanel,drawAlbumCardPanel,drawAlbumHeaderPanel,drawAlbumRewardsPanel,drawAlbumImagesPanel,drawAlbumDetailPanel,drawDecorationsPanel,drawPackPreviewPanel} from './panels/collection-panel';
-import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscapeSurfacePanel,drawLandscapeButtonPanel,drawRoomTopBarPanel,drawLandscapeRoomControlsPanel,drawBoardQuickToolsPanel,drawChatBubblePanel,drawRoomGiftPanel,drawZoomControlPanel,drawPlayerCardPanel,drawRoomSidePanel,drawReconnectBannerPanel,drawRoomGuidePanel,drawNineGridPanel,drawRoomChatEntryPanel,drawRoomToolTogglePanel,drawRoomToolsPanel,drawPublicChatPanel} from './panels/room-hud-panel';
+import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscapeSurfacePanel,drawLandscapeButtonPanel,drawRoomTopBarPanel,drawLandscapeRoomControlsPanel,drawBoardQuickToolsPanel,drawChatBubblePanel,drawRoomGiftPanel,drawZoomControlPanel,drawPlayerCardPanel,drawRoomSidePanel,drawReconnectBannerPanel,drawRoomGuidePanel,drawNineGridPanel,drawRoomChatEntryPanel,drawRoomToolTogglePanel,drawRoomToolsPanel,drawPublicChatPanel,drawAdminDiagnosticsPanel} from './panels/room-hud-panel';
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
@@ -136,8 +136,12 @@ export class GameApp{
  private pendingViews?:ViewRequests;private lastDataOwner='';private lastAidClock='';
  private renderMode:PerformanceMode='smooth';
  private performanceInfoEnabled=false;
+ private teammateSoundEnabled=false;
+ private adminDiagEnabled=false;private adminDiagExpanded=false;
  private nineTimings=new Map<string,RoomRequestTiming>();
+ private roomTimings=new Map<string,RoomRequestTiming&{at:number}>();
  private get nineGridAvailable(){return this.platform.config.id==='taptap'&&this.client.profile?.taptap?.diagnostics===true||this.platform.config.id==='web'&&this.client.config.identityMode==='web-cookie'&&this.client.profile?.diagnostics===true;}
+ private get adminDiagnosticsAllowed(){return this.platform.config.development===true||this.nineGridAvailable;}
  private get nineGridRoom(){return (this.room?.snapshot as (RoomTicket['room']&{diagnostic?:boolean})|undefined)?.diagnostic===true;}
  get diagnosticsAvailable(){return this.platform.config.development===true;}
  get performanceInfoVisible(){return this.diagnosticsAvailable&&this.performanceInfoEnabled;}
@@ -145,6 +149,52 @@ export class GameApp{
  onRenderProbe:(()=>void)|null=null;
  get renderProbeAvailable(){return this.route==='room'&&!!this.board;}
  performanceDetails(){const board=this.board?.performanceDetails();return board?[board.gesture+' · '+board.pieces+'片 · 缓存'+(board.cache?'命中':'未使用'),'同步：'+(this.realtime?.connected?'实时连接':'请求同步'),'缓存重画 '+board.builds+' · 分配 '+board.allocations+' 次','缓冲 '+(board.bufferBytes/1048576).toFixed(1)+'MB · 触点 '+board.pointers]:['大厅'];}
+ private setTeammateSoundEnabled(enabled:boolean){this.teammateSoundEnabled=enabled;if(this.board)this.board.teammateSoundEnabled=enabled;try{this.platform.storage.set(TEAMMATE_SOUND_KEY,enabled?'1':'0');}catch{}this.invalidate();}
+ private setAdminDiagEnabled(enabled:boolean){this.adminDiagEnabled=enabled;if(!enabled)this.adminDiagExpanded=false;try{this.platform.storage.set(ADMIN_DIAG_KEY,enabled?'1':'0');}catch{}this.invalidate();}
+ private drawAdminDiagnostics(){return drawAdminDiagnosticsPanel.call(this.host);}
+ private roomDiagnosticSnapshot(){
+  const room=this.room,snap=room?.snapshot,d=this.realtime?.diagnostics?.() as Record<string,any>|undefined,host=this.platform.onlineBattleDiagnostics?.();
+  const wsConnected=d?.connected===true,localSolo=room?.localPlay===true,offline=this.offlineRoom===true;
+  const members=snap?.members?.length??0,leases=Object.keys(snap?.leases??{}).length,cursors=this.board?.remoteCursorCount??0,rev=snap?.revision??0;
+  const mode=offline?'离线':localSolo?'单人本地':'多人联机';
+  const latestTiming=[...(this.roomTimings?.values()??[])].sort((a,b)=>b.at-a.at)[0];
+  const rttShort=latestTiming?Math.round(latestTiming.ms)+'ms':'—';
+  const hasPreview=d?.preview==='taptap-test',previewOn=d?.previewConnected===true;
+  const wsTag=offline?'离线':localSolo?'本地':wsConnected?'WS✓':'WS断';
+  const previewTag=hasPreview?(previewOn?'平台✓':'平台退'):'原通道';
+  const pill=`诊断 · ${wsTag} · ${previewTag} · ${rttShort} · rev${rev} · ${members}人`;
+  const fmtTiming=(key:string)=>{const t=this.roomTimings?.get(key);return t?`${Math.round(t.ms)}ms(${t.status})`:'—';};
+  const img=this.stage.imageDiagnostics?.(),boardPerf=this.board?.performanceDetails?.();
+  const imgText=img?`${img.entries}张/${(img.decodedBytes/1048576).toFixed(1)}MB(载入${img.loading})`:'—';
+  const perfText=boardPerf?`缓冲${(boardPerf.bufferBytes/1048576).toFixed(1)}MB · 触点${boardPerf.pointers}`:'—';
+  const wsLine=`通道：${wsConnected?'WS在线':'轮询/重连'}(连${d?.connections??0}/重连${d?.reconnects??0}/推${d?.roomMessages??0}/待${d?.pendingActions??0})${d?.lastError?' 错:'+String(d.lastError):''}`;
+  const previewLine=hasPreview
+   ?`平台：${previewOn?'已接通':'回退'} · 绑定${d?.previewMembersReady??'—'}/${d?.previewMembersTotal??'—'} · 发${d?.platformSendRate??0}/峰${d?.platformSendPeak??0}Hz · 成${d?.platformSucceeded??0}/败${d?.platformFailed??0} · 收${d?.platformReceived??0}`
+   :`平台：${host?.managerAvailable?'宿主已就绪（当前房未启）':'未启用/非TapTap多人通道'}`;
+  const lines=[
+   `房间 ${(snap?.id??'—').slice(0,8)} · ${mode} · rev ${rev} · ${members}人 · 租约${leases} · 光标${cursors}`,
+   wsLine,
+   previewLine,
+   `请求RTT：claim ${fmtTiming('claim')} · drop ${fmtTiming('drop')} · poll ${fmtTiming('poll')}${room?.pendingSoloOps?' · 队列'+room.pendingSoloOps:''}`,
+   `图片缓存：${imgText} · ${perfText}`,
+   `版本：${CLIENT_PACKAGE_VERSION}${this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''} · ${this.platform.config.id} · ${this.layout}`,
+  ];
+  const copyLines=[
+   `[拼图小窝 管理员房间诊断] ${new Date().toISOString()}`,
+   `roomId=${snap?.id??''} mode=${mode} rev=${rev} connected=${room?.connected} members=${members} leases=${leases} cursors=${cursors}`,
+   ...lines,
+   ...(d?.previewDetail?[`previewDetail=${String(d.previewDetail)}`]:[]),
+   ...(d?.platformLastSendError?[`platformLastSendError=${String(d.platformLastSendError)}`]:[]),
+   `apiBase=${this.platform.config.apiBase}`,
+  ];
+  return {pill,lines,copyText:copyLines.join('\n'),wsConnected:wsConnected||localSolo||offline};
+ }
+ private async copyRoomDiagnostics(){
+  const text=this.roomDiagnosticSnapshot().copyText;
+  const copied=await this.platform.copyText?.(text).catch(()=>false);
+  if(copied)this.note('已复制房间诊断信息');
+  else this.platform.alert(text);
+ }
  private sceneArea:Rect={x:0,y:0,w:0,h:0};private listArea:Rect={x:0,y:0,w:0,h:0};
  private albumListArea:Rect={x:0,y:0,w:0,h:0};private albumListScroll=0;private albumListExtent=0;
  constructor(readonly platform:Platform,readonly client:GameClient,readonly stage:Stage){
@@ -160,6 +210,8 @@ export class GameApp{
   try{this.welcomeEnabled=platform.storage.get(WELCOME_ENABLED_KEY)!=='0';}catch{}
   try{this.lockButtonEnabled=platform.storage.get(LOCK_BUTTON_KEY)==='1';this.viewLocked=this.lockButtonEnabled&&platform.storage.get(VIEW_LOCK_KEY)==='1';}catch{}
   try{this.minimapEnabled=platform.storage.get(MINIMAP_KEY)==='1';}catch{}
+  try{this.teammateSoundEnabled=platform.storage.get(TEAMMATE_SOUND_KEY)==='1';}catch{}
+  try{this.adminDiagEnabled=platform.storage.get(ADMIN_DIAG_KEY)==='1';}catch{}
   this.audioSettings=new AudioSettings(platform);
   this.telemetry=platform.createTelemetry?.();
   this.social=new SocialPanel(client,{invalidate:()=>this.invalidate(),note:message=>this.note(message),joinRoom:(id,invite)=>this.enterRoom(id,invite),room:()=>this.socialRoom(),snapshot:state=>this.socialSnapshot(state)});
@@ -295,6 +347,7 @@ export class GameApp{
   this.maybeWeeklyGift();this.checkStreakToast();
   if(this.welcomePending)this.maybeWelcome();
   if(this.modal==='welcome'&&this.welcome?.slot.tone==='night')changed=true;
+  if(this.route==='room'&&this.adminDiagnosticsAllowed&&this.adminDiagEnabled)changed=true;
   if(changed||this.authorizationTesting||this.platform.config.previewTestRoom&&(this.route==='room'||this.modal==='settings'))this.invalidate();
  }
  private note(message:string,permanent=false){this.message=message;this.messageUntil=permanent?Infinity:Date.now()+3000;this.invalidate();}
@@ -721,16 +774,16 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const offline=this.offline?.isRoom(ticket.room.id)??false;
   this.social.close();
   const source=this.saveListView();if(source.route!=='room'){this.roomReturn=source;this.roomReturnStack=[...this.routeStack];this.roomReturnFrames=[...this.routeFrames];}
-  this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;
+  this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;this.roomTimings?.clear();this.adminDiagExpanded=false;
   const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision,()=>{
    if(this.room===room)this.note('与 TapTap 的实时连接已断开，改用游戏服务器同步');
   })??null;this.realtime=realtime;
-  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>this.adminDiagnosticsAllowed&&this.adminDiagEnabled,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:local-play-error'&&this.room===room)this.platform.loginLog?.add('本地拼图出错，改为联网拼 · '+String((detail as {message?:string})?.message??'').slice(0,80));
    if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
    if(name==='puzzle:successful-drop'&&this.room===room){this.board?.confirmMobileContribution(detail as MobileContributionReceipt);if(!this.nineGridRoom)this.telemetry?.milestone('new_user','完成首次拼合');}
    if(name==='mobile:profile')this.invalidate();
-   if(name==='room:request-timing'&&this.room===room){const timing=detail as RoomRequestTiming;if(timing.action==='drop-start'){for(const key of ['drop','drop-queue','drop-total'])this.nineTimings.delete(key);}this.nineTimings.set(timing.action,timing);this.invalidate();}
+   if(name==='room:request-timing'&&this.room===room){const timing=detail as RoomRequestTiming;if(timing.action==='drop-start'){for(const key of ['drop','drop-queue','drop-total'])this.nineTimings?.delete(key);}this.nineTimings?.set(timing.action,timing);(this.roomTimings??=new Map()).set(timing.action,{...timing,at:Date.now()});this.invalidate();}
    if(name==='mobile:gameplay-error')this.note((detail as {message?:string})?.message||'操作暂未完成');
    if(name==='mobile:energy-empty'){if(this.energyEnabled){this.note('体力不足，请使用礼包或补给');this.navigate('supplies');}else this.note('当前游戏规则需要重新连接，请返回大厅后再进入房间');}
   }});this.room=room;this.setCompletionPhase('idle');this.completionLive=!room.snapshot.completedAt;
@@ -742,7 +795,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   }
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);board.trayKey=room.snapshot.id;this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;
   // 回忆变奏关: set before the room attaches, so a wind room's kept pieces are drawn where the player left them.
-  this.roomVariant=this.storyRoomVariant(ticket,room);if(this.roomVariant)board.setVariant(boardVariant(this.roomVariant,ticket.room.id));board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
+  this.roomVariant=this.storyRoomVariant(ticket,room);if(this.roomVariant)board.setVariant(boardVariant(this.roomVariant,ticket.room.id));board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';board.teammateSoundEnabled=this.teammateSoundEnabled===true;{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
   if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
   this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>this.receiveCheer(room,cheer,own)}):null;
   this.cheer?.setActive(this.modal==='completion');
@@ -1565,7 +1618,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(this.audioSettings.hasMusic){cy=this.drawAudioLevel('music','背景音乐',left,cy,width);cy=this.paragraph('轻快的轻音乐，一首放完会先停一会儿再换下一首。调到 0% 即关闭。',left,cy,width,12)+16;}
     this.button(left,cy,width,this.audioSettings.levels.effects===0?'开启音效':'音效静音',()=>this.toggleEffectsMute(),this.audioSettings.levels.effects===0?'cream':'berry',39);cy+=51;
     cy=this.drawAudioLevel('effects','游戏音效',left,cy,width);
-    cy=this.paragraph('控制拼合、金币等游戏音效，设置会自动记住。',left,cy,width,12)+18;
+    cy=this.paragraph('控制拼合、金币等游戏音效，设置会自动记住。',left,cy,width,12)+14;
+    this.button(left,cy,width,(this.teammateSoundEnabled?'✓ ':'')+'队友拼合音效',()=>this.setTeammateSoundEnabled(!this.teammateSoundEnabled),this.teammateSoundEnabled?'berry':'cream',39);cy+=47;
+    cy=this.paragraph('默认关闭，保持轻松氛围；开启后同桌其他玩家拼合时也会有轻响。',left,cy,width,12)+18;
     s.text('画面',left,cy,15,this.colors.ink,750);cy+=28;this.rowOptions([['smooth','流畅'],['power-saving','省电']],this.performanceMode,left,cy,width,value=>this.setPerformanceMode(value),39);cy+=48;cy=this.paragraph(this.performanceMode==='power-saving'?'持续画面最高30帧，拖动流畅度略有降低。':'跟随设备正常刷新频率，优先保证拖动流畅。',left,cy,width,12)+18;
     if(this.platform.config.id==='web'||this.desktop||this.platform.config.id==='taptap'){heading('操作');if(this.desktop){cy=this.paragraph('快捷键（电脑）：E 边缘 · H 提示 · B 底图 · F 适配 · '+(this.soloRoom?'R 整理 · ':'')+'T 收起/展开工具 · 空格或中键拖动平移 · 滚轮缩放 · Esc 返回',left,cy,width,12)+12;}
      if(this.platform.config.id==='web'&&this.platform.fullscreen?.available()){this.button(left,cy,width,this.platform.fullscreen.active()?'退出全屏':'全屏',()=>void this.toggleFullscreen(),'cream',39);cy+=51;}
@@ -1582,7 +1637,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     s.text('当前版本 '+(this.platform.config?.id==='wechat'?WECHAT_PACKAGE_VERSION:CLIENT_PACKAGE_VERSION)+(this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''),left,cy+4,12,this.colors.muted,600,width);cy+=30;
     if(this.formalWeb){this.button(left,cy,width,'问题反馈',()=>this.openWeb('feedback'));cy+=48;cy=this.paragraph('账号、进度与收藏会持续保存在当前网站。',left,cy+4,width,12)+10;}else{this.button(left,cy,width,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));cy+=48;cy=this.paragraph('当前为本机游客身份，尚未绑定平台账号存档。清除本机数据可能丢失进度。',left,cy+4,width,12)+10;}
     if(this.platform.config.id==='taptap'&&this.platform.loginLog){this.button(left,cy,width,'登录日志',()=>this.openLoginLog());cy+=48;}
-    if(this.adTestingAllowed||this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest||this.platform.config.previewTestRoom||this.nineGridAvailable||this.platform.config.id==='taptap'&&p?.taptap?.diagnostics===true||this.diagnosticsAvailable){cy+=10;heading('测试与诊断');}
+    if(this.adTestingAllowed||this.adminDiagnosticsAllowed||this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest||this.platform.config.previewTestRoom||this.nineGridAvailable||this.platform.config.id==='taptap'&&p?.taptap?.diagnostics===true||this.diagnosticsAvailable){cy+=10;heading('测试与诊断');}
+    if(this.adminDiagnosticsAllowed){this.button(left,cy,width,(this.adminDiagEnabled?'✓ ':'')+'房间网络诊断浮窗',()=>this.setAdminDiagEnabled(!this.adminDiagEnabled),this.adminDiagEnabled?'berry':'cream',39);cy+=47;cy=this.paragraph('仅管理员可见：在房间顶部显示实时网络、平台通道、延迟与缓存状态胶囊，点击可展开或一键复制。',left,cy,width,12)+16;}
     if(this.adTestingAllowed){s.button({x:left,y:cy,w:width,h:40},'广告观看测试',()=>void this.testRewardedAd(),{tone:'berry',disabled:this.busy});cy+=52;cy=this.paragraph('仅当前测试账号可见，只测试展示，不发放奖励。',left,cy,width,11)+17;}
     if(this.platform.config.id==='taptap'&&this.platform.config.tapAuthorizationTest){s.button({x:left,y:cy,w:width,h:40},this.authorizationTesting?'取消昵称授权测试':'重新走昵称授权',()=>void this.reauthorizeNickname(),{tone:'berry',disabled:!!this.room||this.busy&&!this.authorizationTesting});cy+=52;cy=this.paragraph((this.room?'请回大厅后进行授权自测。':this.platform.tapIdentityDiagnostics?.()??'仅当前自测包开放，不清除账号和进度。')+'\n版本 '+(this.platform.config.buildVersion??'自测'),left,cy,width,11)+17;}
     if(this.platform.config.previewTestRoom){

@@ -31,7 +31,7 @@ const LOCATE_MS=3600,LOCATE_PULSE_MS=900;
 const MAX_TIMER_MS=2147483647;
 // Hints pulse (continuous frames) for their first 30 s only; a lasting hint then stays drawn without animating.
 const HINT_PULSE_MS=30000;
-type SnapFlash={anchor:number;ids:number[];local:boolean;startedAt:number;until:number;reduced:boolean;xp?:number};
+type SnapFlash={anchor:number;ids:number[];local:boolean;color?:string;startedAt:number;until:number;reduced:boolean;xp?:number};
 /** 默契拼合: hearts and sparkles in both players' colours at the seam two players just joined. */
 type TeamBurst={a:number;b:number;colors:[string,string];names:string;startedAt:number;until:number;reduced:boolean};
 const TEAM_BURST_MS=1500,TEAM_REDUCED_MS=600,SELF_HOLDER='\u0000self';
@@ -163,7 +163,8 @@ export class PuzzleBoard implements RoomTable {
  camera={x:0,y:0,z:1};rect:Rect={x:0,y:0,w:0,h:0};
  completionReveal=0;completionSweep:number|null=null;
  pictureScreenRect():Rect{const r=this.rect,c=this.camera,b=this.board;return {x:r.x+c.x+b.x*c.z,y:r.y+c.y+b.y*c.z,w:b.width*c.z,h:b.height*c.z};}
- notice='';onNotice:((message:string)=>void)|null=null;soundUrl='';
+ notice='';onNotice:((message:string)=>void)|null=null;soundUrl='';teammateSoundEnabled=true;
+ get remoteCursorCount(){return this.cursors.size;}
  previewTopInset=6;
  /** Thumbnail top when a floating control sits in the top-right corner; null keeps previewTopInset. */
  previewThumbInset:number|null=null;
@@ -735,10 +736,21 @@ export class PuzzleBoard implements RoomTable {
     // moves it (整理) or it is no longer a loose single piece, the room's state wins.
     const keep=this.kept.get(group.id);if(keep){if(!group.locked&&group.pieces.length===1&&this.sameOffset(group,keep.bx,keep.by)){group.dx=keep.dx;group.dy=keep.dy;}else{this.kept.delete(group.id);keptChanged=true;}}
    }return group;});
+  const prevOwners=this.owners;
   for(const id of protectedIds)raiseGroup(this.state,id);if(localDrag!==null)raiseGroup(this.state,localDrag);this.state.elapsed=next.elapsed;this.owners=owners;
   this.syncVariant(before,showFeedback&&!this.feedbackHidden,keptChanged);
   this.pruneHints();
-  if(showFeedback&&!this.feedbackHidden){const localIds=new Set([...protectedIds,...this.pendingDrops.keys()]);for(const glow of newMobileConnections(before,this.state,localIds))this.addFlash(glow);}
+  if(showFeedback&&!this.feedbackHidden){
+   const localIds=new Set([...protectedIds,...this.pendingDrops.keys()]);
+   const findPeerColor=(glow:MobileConnectionGlow)=>{
+    if(glow.source==='local')return undefined;
+    const candidates=new Set<number>([glow.anchor,...glow.outlineIds]);
+    for(const g of before)if(g.pieces.some(id=>candidates.has(id))){candidates.add(g.id);const o=prevOwners[g.id];if(o?.color)return o.color;}
+    for(const id of candidates){const o=prevOwners[id];if(o?.color)return o.color;const held=this.mergeLog.holders.get(id);if(held&&held.player!==SELF_HOLDER&&held.color)return held.color;}
+    return undefined;
+   };
+   for(const glow of newMobileConnections(before,this.state,localIds))this.addFlash(glow,findPeerColor(glow));
+  }
   // Judge a merge by who held its parts before this snapshot, then take the snapshot's holds.
   const now=Date.now(),merges=detectTeamMerges(before,this.state,this.mergeLog.holders,now);this.mergeLog.syncRemote(owners,now,SELF_HOLDER);
   if(merges.length&&showFeedback&&!this.feedbackHidden)this.addTeamBursts(merges.map(m=>({a:m.a,b:m.b,colors:[m.holders[0].color,m.holders[1].color],names:`${m.holders[0].name} × ${m.holders[1].name}`})),now);
@@ -763,10 +775,10 @@ export class PuzzleBoard implements RoomTable {
   for(const merge of merges){while(this.teamBursts.length>=2)this.teamBursts.shift();this.teamBursts.push({...merge,startedAt:now,until:now+(reduced?TEAM_REDUCED_MS:TEAM_BURST_MS),reduced});}
   if(this.chimeUrl)try{this.platform.playSound?.(this.chimeUrl);}catch{}
  }
- private addFlash(glow:MobileConnectionGlow){
+ private addFlash(glow:MobileConnectionGlow,color?:string){
   const now=Date.now(),reduced=typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
   this.flashes=this.flashes.filter(flash=>flash.until>now);while(this.flashes.length>=3)this.flashes.shift();
-  const flash:SnapFlash={anchor:glow.anchor,ids:glow.outlineIds,local:glow.source==='local',startedAt:now,until:now+(reduced?MOBILE_REDUCED_GLOW_MS:CANVAS_SNAP_FEEDBACK_MS),reduced};this.flashes.push(flash);return flash;
+  const flash:SnapFlash={anchor:glow.anchor,ids:glow.outlineIds,local:glow.source==='local',...(color?{color}:{}),startedAt:now,until:now+(reduced?MOBILE_REDUCED_GLOW_MS:CANVAS_SNAP_FEEDBACK_MS),reduced};this.flashes.push(flash);return flash;
  }
  /** A local acknowledgement can follow a poll of the same merge. Promote that
   * burst, but display XP only once and only from the authoritative receipt. */
@@ -777,7 +789,7 @@ export class PuzzleBoard implements RoomTable {
   if(!flash)flash=this.addFlash({anchor:receipt.groupId,seams:[],outlineIds:[receipt.groupId],source:'local'});
   flash.local=true;flash.xp=receipt.creditedXp;flash.startedAt=now;flash.until=now+(flash.reduced?MOBILE_REDUCED_GLOW_MS:CANVAS_SNAP_FEEDBACK_MS);this.changed();this.animateFeedback();
  }
- playConnectionSound(_source:'local'|'teammate'='local'){if(this.soundUrl)this.platform.playSound?.(this.soundUrl);}
+ playConnectionSound(source:'local'|'teammate'='local'){if(source==='teammate'&&!this.teammateSoundEnabled)return;if(this.soundUrl)this.platform.playSound?.(this.soundUrl);}
  setHints(ids:number[],until:number,grantId:string|number=until){
   const active=Number.isFinite(until)&&until>Date.now(),activated=active&&this.hintGrant!==grantId;
   if(!active){this.hintIds=[];this.hintGrant=null;this.hintUntil=0;}
@@ -1134,15 +1146,25 @@ export class PuzzleBoard implements RoomTable {
   for(const flash of this.flashes){
    if(flash.until<=now)continue;const group=this.state.groups.find(g=>g.pieces.includes(flash.anchor));if(!group)continue;
    const t=Math.max(0,Math.min(1,(now-flash.startedAt)/(flash.until-flash.startedAt)));
-   const alpha=flash.reduced?.58:flash.local?(t<.16?t/.16:t<.55?1-(t-.16)/.39*.18:.82*(1-t)/.45):(t<.18?t/.18*.6:.6*(1-t)/.82);
+   const alpha=flash.reduced?.62:flash.local?(t<.16?t/.16:t<.55?1-(t-.16)/.39*.18:.82*(1-t)/.45):(t<.16?t/.16*.88:.88*(1-t)/.84);
+   const peerColor=flash.color||'#7ebce6';
    ctx.save();ctx.lineJoin='round';ctx.lineCap='round';ctx.globalAlpha=alpha;
-   for(const id of flash.ids){const piece=this.pieces[id];if(!piece)continue;ctx.save();ctx.translate(b.x+piece.col*w+group.dx,b.y+piece.row*h+group.dy);tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=flash.local?'#dab36466':'#d5c39440';ctx.lineWidth=(flash.local?6:4.16)/cam.z;ctx.stroke();ctx.strokeStyle=flash.local?'#fff2bb':'#e4d4a7b3';ctx.lineWidth=(flash.local?2.4:1.6)/cam.z;ctx.stroke();ctx.restore();}
+   for(const id of flash.ids){
+    const piece=this.pieces[id];if(!piece)continue;
+    ctx.save();ctx.translate(b.x+piece.col*w+group.dx,b.y+piece.row*h+group.dy);tracePuzzlePath(ctx,this.paths[id]);
+    if(flash.local){ctx.strokeStyle='#dab36466';ctx.lineWidth=6/cam.z;ctx.stroke();ctx.strokeStyle='#fff2bb';ctx.lineWidth=2.4/cam.z;ctx.stroke();}
+    else{ctx.save();ctx.globalAlpha=alpha*.5;ctx.strokeStyle=peerColor;ctx.lineWidth=5.4/cam.z;ctx.stroke();ctx.restore();ctx.strokeStyle='#fff6dc';ctx.lineWidth=2.2/cam.z;ctx.stroke();}
+    ctx.restore();
+   }
    const focus=this.pieces[flash.anchor];ctx.translate(b.x+(focus.col+.5)*w+group.dx,b.y+(focus.row+.5)*h+group.dy);ctx.scale(1/cam.z,1/cam.z);
    if(flash.local&&!flash.reduced){
     const ease=1-(1-t)**2,spread=12+25*ease;ctx.globalAlpha=(1-t)*.85;
     ctx.strokeStyle=this.currentTheme==='dark'?'#ffe4a8':'#c18a36';ctx.lineWidth=1.7;ctx.beginPath();ctx.arc(0,0,9+25*ease,0,Math.PI*2);ctx.stroke();
     for(let i=0;i<8;i++){const angle=i*Math.PI/4,x=Math.cos(angle)*spread,y=Math.sin(angle)*spread,r=(i%2?2:3.5)*(1-t*.5);ctx.fillStyle=i%2?'#e5aa52':'#fff2b0';ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r*.65,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r*.65,y);ctx.closePath();ctx.fill();}
-
+   }else if(!flash.local&&!flash.reduced){
+    // Teammate snap: four soft sparkles in the teammate's colour (no expanding ring or +XP so own snaps stay primary).
+    const ease=1-(1-t)**2,spread=8+18*ease;ctx.globalAlpha=(1-t)*.78;
+    for(let i=0;i<4;i++){const angle=Math.PI/4+i*Math.PI/2,x=Math.cos(angle)*spread,y=Math.sin(angle)*spread,r=(i%2?2.1:3.1)*(1-t*.45);ctx.fillStyle=i%2?'#fff6d6':peerColor;ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r*.65,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r*.65,y);ctx.closePath();ctx.fill();}
    }
    if(flash.xp){ctx.globalAlpha=flash.reduced?1:t<.15?t/.15:t<.7?1:(1-t)/.3;ctx.font='700 15px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle=this.currentTheme==='dark'?'#ffe4a8':'#896027';ctx.strokeStyle=this.currentTheme==='dark'?'#2b271d':'#fff7df';ctx.lineWidth=3;const y=-36+(flash.reduced?0:3-10*(1-(1-t)**2)),label=`+${flash.xp} XP`;ctx.strokeText(label,0,y);ctx.fillText(label,0,y);}
    ctx.restore();

@@ -24,6 +24,7 @@ export type RoomClientDependencies = {
   profile?:(data:unknown)=>void;
   refreshProfile?:()=>Promise<unknown>;
   solo?:{enabled():boolean;storage?:SoloStorage;energy():SoloEnergy|null};
+  traceTimings?:()=>boolean;
 };
 const browserDependencies:RoomClientDependencies={
   fetch:(url,init)=>fetch(url,init),
@@ -153,7 +154,7 @@ export class RoomClient {
     return {snapshot:{ ...full, mobileContribution: contribution },data};
   }
   private trace(action:string,started:number,status=200,serverMs?:number){
-    if((this.ticket.room as MobileRoomSnapshot).diagnostic!==true)return;
+    if((this.ticket.room as MobileRoomSnapshot).diagnostic!==true&&this.deps.traceTimings?.()!==true)return;
     this.deps.emit('room:request-timing',{action,ms:Math.max(0,this.deps.performanceNow()-started),status,...(Number.isFinite(serverMs)?{serverMs}:{})} satisfies RoomRequestTiming);
   }
   private receive(s: RoomSnapshot, force = false, soundRemote = true,ownDropId?:number) {
