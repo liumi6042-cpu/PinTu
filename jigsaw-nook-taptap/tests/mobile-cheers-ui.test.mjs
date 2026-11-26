@@ -220,3 +220,27 @@ for(const [width,height,seatW,slotS,panelW] of [[844,390,140,34,528],[740,360,12
 test('me tags occupy the outer corner and avoid avatar, crown pixels and slot in both columns',()=>{
  for(const [width,height] of [[844,390],[390,844],[1920,1080]])for(const column of ['left','right']){const {app,calls}=fixture(width,height);app.completionPicture={x:100,y:100,w:190,h:190};const vertical=height>width,r={x:column==='left'?27:297,y:100,w:vertical?66:width===844?140:176,h:vertical?74:width===844?60:70};app.drawCompletionSeat({playerId:'0',name:'奶油泡芙小蛋糕',contribution:42,present:true,me:true,crown:true,column,row:0},r,vertical);const tag=meTags(app,calls)[0][1];assert.deepEqual(tag,{x:column==='left'?r.x+3:r.x+r.w-17,y:r.y+(vertical?3:-6),w:14,h:13});for(const rect of [app.completionAvatarRects.get('0'),app.completionSlotRects.get('0'),...seatLabels(app,calls).map(c=>c[1]),...calls.filter(c=>c[0]==='fill'&&c[1].w<=2).map(c=>c[1])])assert.ok(!intersects(tag,rect));}
 });
+
+test('TapTap completion modal shows inline double button in landscape and full-width button in portrait within panel bounds',()=>{
+ for(const [width,height] of [[844,390],[740,360],[390,844]]){
+  const {app,calls}=fixture(width,height,4,{energyEnabled:true,album:true});
+  app.platform.config={id:'taptap'};
+  app.client.config={adRewardEnabled:true,rewardedAdUnitId:'1054324',capabilities:{energy:true,ads:true}};
+  app.room.snapshot.mobileResult.roomId='c'.repeat(32);
+  app.drawModal();
+  const doubleBtn=calls.find(c=>c[0]==='button'&&c[2]?.includes('看广告双倍'));
+  assert.ok(doubleBtn,`expected double button at ${width}x${height}`);
+  if(width>height){
+   assert.ok(contains(app.modalArea,doubleBtn[1]),`double button outside landscape panel at ${width}x${height}`);
+   assert.ok(doubleBtn[1].y+doubleBtn[1].h<=app.completionBar.y,`double button overlaps cheers bar at ${width}x${height}`);
+  }
+  // Once doubled, button disappears and tiles show 2x totals.
+  calls.length=0;
+  app.room.snapshot.mobileResult.doubleClaimed=true;
+  app.room.snapshot.mobileResult.doubleBonus={coins:20,fragments:2};
+  app.drawModal();
+  assert.ok(!calls.some(c=>c[0]==='button'&&c[2]?.includes('看广告双倍')));
+  assert.ok(calls.some(c=>c[0]==='text'&&c[2]==='金币 +40'));
+  assert.ok(calls.some(c=>c[0]==='text'&&c[2]==='碎片 +4'));
+ }
+});

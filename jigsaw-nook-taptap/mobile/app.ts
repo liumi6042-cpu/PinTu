@@ -92,7 +92,7 @@ export class GameApp{
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
  private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
  private previewPack:CollectionPack|null=null;private previewIndex=-1;private previewGridScroll=0;private previewReadOnly=false;
- private room:(RoomClient&{snapshot:RoomClient['snapshot']&{levelId?:string;maxPlayers?:number;mobileResult?:{levelClear?:MobileLevelClear}}})|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
+ private room:(RoomClient&{snapshot:RoomClient['snapshot']&{levelId?:string;requestedPieces?:number;maxPlayers?:number;mobileResult?:{roomId?:string;levelClear?:MobileLevelClear;coins?:number;fragments?:number;energy?:number;doubleClaimed?:boolean;doubleBonus?:{coins:number;fragments:number};ranking?:any;catalog?:any}}})|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
  private cheer:CheerClient|null=null;private readonly cheerEffects=new CheerEffects();private cheerFrame:number|null=null;
  private completionFx:CompletionTransition|null=null;private completionFxFrame:number|null=null;private completionCheerQueue:{cheer:Cheer;own:boolean;at:number}[]=[];private completionLive=false;private completionFxRect:Rect|null=null;private settleButtonRect:Rect|null=null;
@@ -873,7 +873,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.telemetry?.milestone('new_user','使用补给或看广告');this.note(pending.kind==='create'?'建房券已补满，可以开桌了':'体力包 +1，已存入库存');
   });
  }
- /** One completed rewarded ad unlocks one picture of an ad album (server: /api/mobile/collection/unlock/*).
+ /** Completed rewarded ads advance an ad-album picture (2 watches = permanent unlock, max 2 watches / 1 picture per day).
   * A finished ad is kept in storage until the server confirms, so a dropped redeem retries without a second video. */
  private async unlockAdImage(imageId:string){
   await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');
@@ -882,16 +882,52 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     if(!this.energyAdAvailable)throw Error('广告暂未开放，暂时无法解锁这张图');
     const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/collection/unlock/challenge',{imageId,requestId},5000);pending={imageId,requestId,rewardToken:challenge.rewardToken,completed:false};
     const adUnit=this.rewardedSlot().unit;let outcome:string;try{outcome=this.telemetry?.adEnabled&&adUnit?await this.telemetry.watchRewardedAd('unlock_album_image',adUnit,{image_id:imageId}):await this.platform.watchAd(adUnit);}catch{outcome='failed';}
-    if(outcome!=='completed'){void this.client.post('/api/mobile/collection/unlock/cancel',pending).catch(()=>{});const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，这张图还没有解锁':'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+'，请稍后再试');}
+    if(outcome!=='completed'){void this.client.post('/api/mobile/collection/unlock/cancel',pending).catch(()=>{});const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，本次未计入解锁进度':'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+'，请稍后再试');}
     pending.completed=true;this.platform.storage.set(storageKey,JSON.stringify(pending));
    }
-   let data:MobileCollectionView&{unlocked?:{imageId:string}};
-   try{data=await this.client.post<MobileCollectionView&{unlocked?:{imageId:string}}>('/api/mobile/collection/unlock/redeem',pending);}catch(error){if([400,401,403,409,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}
+   type UnlockReceipt={imageId:string;alreadyOwned?:boolean;unlocked?:boolean;progress?:number;required?:number;dailyUsed?:number;dailyLimit?:number};
+   let data:MobileCollectionView&{unlocked?:UnlockReceipt};
+   try{data=await this.client.post<MobileCollectionView&{unlocked?:UnlockReceipt}>('/api/mobile/collection/unlock/redeem',pending);}catch(error){if([400,401,403,409,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}
    this.platform.storage.remove(storageKey);this.applyCollection(data);
    if(this.previewPack)this.previewPack=data.packs.find(pack=>pack.id===this.previewPack?.id)??this.previewPack;
-   await this.client.refresh();void this.loadGallery();this.telemetry?.milestone('new_user','使用补给或看广告');this.telemetry?.milestone('global','解锁图包或合成装饰');
-   const title=photoMap.get(pending.imageId)?.title??data.packs.flatMap(pack=>pack.images).find(image=>image.id===pending.imageId)?.title??'这张图';
-   this.note('「'+title+'」已解锁'+(pending.imageId===imageId?'，可以开拼了':'（上次看完的广告已补发）'));
+   await this.client.refresh();void this.loadGallery();this.telemetry?.milestone('new_user','使用补给或看广告');
+   const receipt=data.unlocked,title=photoMap.get(pending.imageId)?.title??data.packs.flatMap(pack=>pack.images).find(image=>image.id===pending.imageId)?.title??'这张图',resumed=pending.imageId===imageId?'':'（上次看完的广告已补发）';
+   if(receipt&&receipt.unlocked===false&&!receipt.alreadyOwned){
+    const progress=receipt.progress??1,required=receipt.required??2,left=Math.max(1,required-progress);
+    this.note('「'+title+'」解锁进度 '+progress+'/'+required+'，再看 '+left+' 次广告即可永久解锁'+resumed);
+    return;
+   }
+   this.telemetry?.milestone('global','解锁图包或合成装饰');
+   try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}
+   this.note('「'+title+'」已永久解锁'+(resumed||'，可以开拼了'));
+  });
+ }
+ /** One completed rewarded ad doubles a finished room's base completion coins & fragments once.
+  * A finished ad stays in storage until /redeem succeeds, so a dropped reply never asks for a second video. */
+ private async claimCompletionDouble(roomId:string){
+  await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');
+   const storageKey='jigsaw:shared:completion-double:v1:'+this.platform.config.apiBase+':'+profile.code+':'+roomId;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
+   if(!pending?.completed||pending.roomId!==roomId){
+    if(!this.supplyAdAvailable)throw Error('广告暂未开放，暂时无法翻倍领取');
+    const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/completion/double/challenge',{roomId,requestId},5000);pending={roomId,requestId,rewardToken:challenge.rewardToken,completed:false};
+    const adUnit=this.rewardedSlot().unit,snap=this.room?.snapshot,result=snap?.mobileResult;
+    let outcome:string;try{outcome=this.telemetry?.adEnabled&&adUnit?await this.telemetry.watchRewardedAd('daily_ad_reward',adUnit,{reward_kind:'completion_double',room_id:roomId,pieces:snap?.requestedPieces??(snap?snap.puzzle.cols*snap.puzzle.rows:0),coins:result?.coins??0,fragments:result?.fragments??0}):await this.platform.watchAd(adUnit);}catch{outcome='failed';}
+    if(outcome!=='completed'){void this.client.post('/api/mobile/completion/double/cancel',pending).catch(()=>{});const reason=this.platform.adFailure?.()||'';throw Error(outcome==='closed'?'广告未完整观看，本次奖励未翻倍':'广告暂时加载不出来'+(reason?'（'+reason+'）':'')+'，请稍后再试');}
+    pending.completed=true;this.platform.storage.set(storageKey,JSON.stringify(pending));
+   }
+   type DoubleReply={doubled:{roomId:string;coins:number;fragments:number;alreadyClaimed?:boolean};completion?:{coins:number;fragments:number;doubleClaimed?:boolean;doubleBonus?:{coins:number;fragments:number}};profile?:MobileProfile};
+   let data:DoubleReply;
+   try{data=await this.client.post<DoubleReply>('/api/mobile/completion/double/redeem',pending);}catch(error){if([400,401,403,404,409,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}
+   this.platform.storage.remove(storageKey);
+   if(this.room?.snapshot.id===roomId&&this.room.snapshot.mobileResult){
+    this.room.snapshot.mobileResult={...this.room.snapshot.mobileResult,doubleClaimed:true,doubleBonus:{coins:data.doubled.coins,fragments:data.doubled.fragments}};
+   }
+   try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}
+   await this.client.refresh();if(this.collection)void this.loadCollection();
+   this.telemetry?.milestone('new_user','使用补给或看广告');
+   const parts=[data.doubled.coins>0?'金币 +'+data.doubled.coins:'',data.doubled.fragments>0?'碎片 +'+data.doubled.fragments:''].filter(Boolean).join('、');
+   this.note(data.doubled.alreadyClaimed?'这次完图奖励已经翻倍领取过了':'双倍奖励已到账：'+(parts||'已翻倍'));
+   this.invalidate();
   });
  }
  private async useEnergy(){await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
@@ -1210,7 +1246,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawRoomCard(room:RoomListing,r:Rect){return drawRoomCardPanel.call(this.host,room,r);}
  private drawGallery(){return drawGalleryPanel.call(this.host);}
  private galleryPack(id:string){return this.collection?.packs.find(pack=>pack.imageIds.includes(id))??collectionCatalog.packs.find(pack=>pack.imageIds.includes(id))??null;}
- private photoTag(id:string,owned:Set<string>){if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack&&(pack as CollectionPack).unlock==='ad')return {label:'看广告解锁',tone:'locked',ad:true,price:0};if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
+ private photoTag(id:string,owned:Set<string>){if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack&&(pack as CollectionPack).unlock==='ad'){const full=this.collection?.packs.find(item=>item.id===pack.id),img=full?.images.find(item=>item.id===id),req=img?.adRequired??full?.adRequired??2,prog=img?.adProgress??0;return {label:prog>0?'看广告解锁 '+prog+'/'+req:'看'+req+'次广告解锁',tone:'locked',ad:true,price:0};}if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
  private drawPhotoCard(photo:SharedPhoto,r:Rect,imageHeight:number,owned:Set<string>){return drawPhotoCardPanel.call(this.host,photo,r,imageHeight,owned);}
  private createPanelHeight(sheet:boolean){const rooms=this.selected?this.rooms.filter(room=>room.imageId===this.selected).length:0;return 14+64+12+(sheet?32:58)+8+(sheet?32:58)+8+(rooms?26:0)+(this.usesCreationTickets?42:0)+46+14;}
  private drawCreatePanel(r:Rect,photo:SharedPhoto|null,owned:Set<string>,sheet:boolean){return drawCreatePanelView.call(this.host,r,photo,owned,sheet);}
