@@ -14,6 +14,7 @@ import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-cli
 import {flushStoredSoloOutboxes,otherPlayersPresent} from '../lib/solo-play';
 import {boardVariant,type StoryVariant} from './story-variants';
 import {CursorClient} from '../lib/cursor-client';
+import {enrichCursorsFromMembers,type CursorMemberMeta} from '../lib/room-cursors';
 import {CheerClient} from './cheer-client';
 import {CHEER_EMOTES,type Cheer,type CheerEmote} from '../lib/room-realtime';
 import {completionSeats,type CompletionSeat} from './completion-seats';
@@ -169,7 +170,7 @@ export class GameApp{
   const perfText=boardPerf?`缓冲${(boardPerf.bufferBytes/1048576).toFixed(1)}MB · 触点${boardPerf.pointers}`:'—';
   const wsLine=`通道：${wsConnected?'WS在线':'轮询/重连'}(连${d?.connections??0}/重连${d?.reconnects??0}/推${d?.roomMessages??0}/待${d?.pendingActions??0})${d?.lastError?' 错:'+String(d.lastError):''}`;
   const previewLine=hasPreview
-   ?`平台：${previewOn?'已接通':'回退'} · 绑定${d?.previewMembersReady??'—'}/${d?.previewMembersTotal??'—'} · 发${d?.platformSendRate??0}/峰${d?.platformSendPeak??0}Hz · 成${d?.platformSucceeded??0}/败${d?.platformFailed??0} · 收${d?.platformReceived??0}`
+   ?`平台：${previewOn?'已接通':'回退'} · 绑定${d?.previewMembersReady??'—'}/${d?.previewMembersTotal??'—'} · 确认${d?.previewPeersConfirmed??0}/${d?.previewPeersExpected??0} · 发${d?.platformSendRate??0}/峰${d?.platformSendPeak??0}Hz · 成${d?.platformSucceeded??0}/败${d?.platformFailed??0} · 收${d?.platformReceived??0}`
    :`平台：${host?.managerAvailable?'宿主已就绪（当前房未启）':'未启用/非TapTap多人通道'}`;
   const lines=[
    `房间 ${(snap?.id??'—').slice(0,8)} · ${mode} · rev ${rev} · ${members}人 · 租约${leases} · 光标${cursors}`,
@@ -179,11 +180,17 @@ export class GameApp{
    `图片缓存：${imgText} · ${perfText}`,
    `版本：${CLIENT_PACKAGE_VERSION}${this.platform.config.buildVersion?' · '+this.platform.config.buildVersion:''} · ${this.platform.config.id} · ${this.layout}`,
   ];
+  const ignored=d?.previewIgnored as Record<string,number>|undefined;
+  const peerList=Array.isArray(d?.platformPeerReceives)?d.platformPeerReceives as Array<{name:string;total:number;hz:number}>:[];
+  const missingList=Array.isArray(d?.previewMissingBindings)?d.previewMissingBindings as string[]:[];
   const copyLines=[
    `[拼图小窝 管理员房间诊断] ${new Date().toISOString()}`,
    `roomId=${snap?.id??''} mode=${mode} rev=${rev} connected=${room?.connected} members=${members} leases=${leases} cursors=${cursors}`,
    ...lines,
    ...(d?.previewDetail?[`previewDetail=${String(d.previewDetail)}`]:[]),
+   ...(hasPreview?[`previewStats=callbacks:${d?.platformCallbacks??0} recovery:${d?.previewRecoveryCount??0}${ignored?` ignored:notReady=${ignored.notReady??0},payload=${ignored.payload??0},sender=${ignored.sender??0},binding=${ignored.binding??0},dup=${ignored.duplicate??0},frame=${ignored.frame??0}`:''}`]:[]),
+   ...(peerList.length?[`previewPeers=${peerList.map(p=>`${p.name}:${p.total}(${p.hz}/s)`).join(', ')}`]:[]),
+   ...(missingList.length?[`previewMissing=${missingList.join(',')}`]:[]),
    ...(d?.platformLastSendError?[`platformLastSendError=${String(d.platformLastSendError)}`]:[]),
    `apiBase=${this.platform.config.apiBase}`,
   ];
@@ -796,7 +803,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);board.trayKey=room.snapshot.id;this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;
   // 回忆变奏关: set before the room attaches, so a wind room's kept pieces are drawn where the player left them.
   this.roomVariant=this.storyRoomVariant(ticket,room);if(this.roomVariant)board.setVariant(boardVariant(this.roomVariant,ticket.room.id));board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';board.teammateSoundEnabled=this.teammateSoundEnabled===true;{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
-  if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(cursors),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
+  if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(enrichCursorsFromMembers(cursors,room.snapshot.members as readonly CursorMemberMeta[])),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
   this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>this.receiveCheer(room,cheer,own)}):null;
   this.cheer?.setActive(this.modal==='completion');
   this.unsubscribeRoom=room.subscribe(()=>{this.syncCompletion(room);this.checkVariantCompany(room);});

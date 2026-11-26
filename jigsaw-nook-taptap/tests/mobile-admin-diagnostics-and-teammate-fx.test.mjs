@@ -8,6 +8,7 @@ const built=await build({
    export {GameApp} from "./mobile/app";
    export {PuzzleBoard} from "./mobile/puzzle-board";
    export {RoomClient} from "./lib/room-client";
+   export {enrichCursorsFromMembers} from "./lib/room-cursors";
    export {TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY} from "./mobile/panels/shared";
   `,
   resolveDir:process.cwd(),
@@ -15,7 +16,7 @@ const built=await build({
  },
  bundle:true,write:false,platform:'node',format:'esm',
 });
-const {GameApp,PuzzleBoard,RoomClient,TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY}=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
+const {GameApp,PuzzleBoard,RoomClient,enrichCursorsFromMembers,TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY}=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
 
 function makeBoard(played){
  const p={
@@ -123,7 +124,7 @@ function appFixture({development=false,admin=false,storageInit={}}={}){
   },
   realtime:{
    connected:true,
-   diagnostics:()=>({connected:true,connections:1,reconnects:0,roomMessages:12,pendingActions:0,lastError:'',preview:'taptap-test',previewConnected:true,previewMembersReady:2,previewMembersTotal:2,platformSendRate:6,platformSendPeak:10,platformSucceeded:40,platformFailed:0,platformReceived:35,previewDetail:'ok'}),
+   diagnostics:()=>({connected:true,connections:1,reconnects:0,roomMessages:12,pendingActions:0,lastError:'',preview:'taptap-test',previewConnected:true,previewMembersReady:2,previewMembersTotal:2,previewPeersConfirmed:1,previewPeersExpected:1,platformSendRate:6,platformSendPeak:10,platformSucceeded:40,platformFailed:0,platformReceived:35,platformCallbacks:36,previewRecoveryCount:1,previewIgnored:{notReady:1,payload:0,sender:0,binding:0,duplicate:0,frame:0},platformPeerReceives:[{name:'队友',total:35,hz:5}],previewDetail:'ok'}),
   },
   board:{
    teammateSoundEnabled:false,
@@ -204,12 +205,30 @@ test('admin room network diagnostics pill is hidden for normal players and works
  await new Promise(resolve=>setTimeout(resolve,0));
  assert.equal(copied.length,1);
  assert.match(copied[0],/roomId=abcdef1234567890abcdef1234567890/);
+ assert.match(copied[0],/确认1\/1/);
+ assert.match(copied[0],/previewStats=callbacks:36 recovery:1 ignored:notReady=1/);
+ assert.match(copied[0],/previewPeers=队友:35\(5\/s\)/);
  assert.match(copied[0],/previewDetail=ok/);
  assert.deepEqual(notes,['已复制房间诊断信息']);
 
  // Clicking collapse button folds card back to pill.
  hits[3].action();
  assert.equal(app.adminDiagExpanded,false);
+});
+
+test('enrichCursorsFromMembers fills missing level/decoration for slim cursors without overwriting explicit fields',()=>{
+ const deco={id:'leaf',title:'叶',artKey:'leaf',color:'#5a9',kind:'cursor'};
+ const members=[{id:'p1',name:'小晴',color:'#abc',level:24,decoration:deco},{id:'p2',name:'阿明',color:'#def',level:9,decoration:null}];
+ const enriched=enrichCursorsFromMembers([
+  {playerId:'p1',name:'',color:'',x:10,y:20,updatedAt:100},
+  {playerId:'p2',name:'阿明',color:'#def',level:11,x:30,y:40,updatedAt:100},
+ ],members);
+ assert.equal(enriched[0].name,'小晴');
+ assert.equal(enriched[0].color,'#abc');
+ assert.equal(enriched[0].level,24);
+ assert.deepEqual(enriched[0].decoration,deco);
+ assert.equal(enriched[1].level,11,'explicit cursor level is preserved');
+ assert.equal(enriched[1].decoration,null);
 });
 
 test('RoomClient emits room:request-timing in normal rooms only when traceTimings() is enabled',async()=>{
