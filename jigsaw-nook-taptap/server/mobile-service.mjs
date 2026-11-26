@@ -315,14 +315,17 @@ export function createMobileService(options={}){
  function card(room,now){const photo=photoOf(room);return {id:room.id,title:room.title||photo?.title||'一起拼图',imageId:room.puzzle.imageId,pieces:room.mobilePieces,actualPieces:room.puzzle.cols*room.puzzle.rows,visibility:room.visibility,players:room.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length,maxPlayers:seatLimit(room),placed:engine.placedCount(room.puzzle),completed:room.completedAt!==null,acceptingNew:room.acceptingNew!==false,started:room.startedAt!==null,startedAt:room.startedAt,createdAt:room.createdAt,expiresAt:room.expiresAt,lastPlayedAt:room.lastPlayedAt,direction:photo?directionOf(photo):'landscape',artwork:engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS),photo,thumbSrc:photo?.thumbSrc};}
  function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;result.maxPlayers=seatLimit(room);if(room.mobileMode==='level')result.levelId=room.mobileLevelId;const preview=tapPreview.descriptor(room);if(preview)result.tapPreview=preview;if(room.diagnostic===true)result.diagnostic=true;result.artwork=engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS);result.photo=photoOf(room);if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),extra=member?memberCard(room,member,now):null;return {...m,contribution:extra?.contribution??0,code:extra?.code??null,level:extra?.level??0,decoration:extra?.decoration??null};});if(identity&&room.completedAt!==null&&room.diagnostic!==true){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id),ranking:Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).sort((x,y)=>y[1].count-x[1].count).slice(0,8).map(([owner,c])=>({name:readProfile(owner,now).name,code:social.person(owner,now).code,contribution:c.count,mine:owner===identity}))};if(room.mobileMode==='level'&&identity===room.ownerId){const progress=levels.progress(identity).find(row=>row.level_id===room.mobileLevelId),firstClear=progress?.room_id===room.id;result.mobileResult.levelClear={levelId:room.mobileLevelId,energy:firstClear?progress.energy:0,firstClear,...levels.destination(room.mobileLevelId)};}}return result;}
  function authorize(room,request,now){
-  if(room.diagnostic===true){request.identity=resolveIdentity(request.identity);if(room.ownerId!==request.identity||!diagnosticAllowed(request.identity))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');}
+  request.identity=resolveIdentity(request.identity);
+  if(room.diagnostic===true&&(room.ownerId!==request.identity||!diagnosticAllowed(request.identity)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
   const token=/^Bearer ([a-f0-9]{32})$/.exec(request.authorization??'')?.[1];if(!token)fail(401,'ROOM_ADMISSION_REQUIRED','请重新加入房间');
   const member=engine.authenticate(room,hash(token),now);if(member.guestId!==request.identity)fail(403,'ROOM_IDENTITY_MISMATCH','请用当前身份重新加入房间');return member;
  }
  function cursorMembers(room,now){return room.members.filter(m=>m.lastSeen>0).map(m=>{const extra=m.guestId?memberCard(room,m,now):null;return {playerId:m.id,name:m.name,color:m.color,level:extra?extra.level:readProfile(m.guestId,now).level,decoration:extra?extra.decoration:collection.equipped(m.guestId)};});}
  function cursorsView(room,now,members=cursorMembers(room,now),refresh=false){return {cursors:[...cursorState(room.id,refresh)].flatMap(([playerId,value])=>{const member=members.find(m=>m.playerId===playerId);return value.point&&member?[{...value.point,...member,updatedAt:now,positionUpdatedAt:value.updatedAt}]:[];}),serverTime:now};}
  function realtimeAuthorize(context){
-  realtimeCounters.authorizations++;const now=clock(),room=readSharedRoom(context.roomId);requireArtworkClient(room,context);const member=authorize(room,context,now);
+  realtimeCounters.authorizations++;const now=clock(),room=readSharedRoom(context.roomId);requireArtworkClient(room,context);
+  context.rawIdentity??=context.identity;context.identity=resolveIdentity(context.rawIdentity);
+  const member=authorize(room,context,now);
   if(member.lastSeen<=0)fail(409,'ROOM_ADMISSION_REQUIRED','请先重新连接房间');
   context.room=room;context.member=member;context.cursorMembers=cursorMembers(room,now);context.version=roomVersions.get(room.id)??0;return context;
  }
@@ -369,7 +372,7 @@ export function createMobileService(options={}){
   requireArtworkClient(room,request);room.playerLimit=seatLimit(room);
   if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
   if(room.visibility==='private'&&room.ownerId!==p.id&&!room.admitted?.[p.id]&&input.inviteCode!==room.mobileInviteCode)fail(403,'INVITE_REQUIRED','私人房间需要有效邀请码');
-  const token=id(),known=room.members.some(m=>m.guestId===p.id),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);if(!known)events.record(p.id,'room-join',room.id,{},now);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
+  const token=id(),known=room.members.some(m=>m.guestId===p.id),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);tapPreview.releaseMember(room.id,member.id);if(!known)events.record(p.id,'room-join',room.id,{},now);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
   return {token,playerId:member.id,room:snapshotView(room,now,null,p.id),...(room.ownerId===p.id&&room.mobileInviteCode?{inviteCode:room.mobileInviteCode}:{})};
  }
  // With a receipt, only receipt.store(result) is kept (marked receipt:1) and a retry gets receipt.restore(stored).
@@ -772,7 +775,7 @@ export function createMobileService(options={}){
    member.name=p.name;engine.applyAction(room,member,input,now);
    if(input.type==='claim'&&tapPreview.allowed(room))room.leases[input.groupId].previewId=id();
    if(input.type==='heartbeat'&&input.historyJoin===true)roomHistory.joined(p.id,room,now);
-   if(input.type==='leave')room.lastLeftAt=now;
+   if(input.type==='leave'){room.lastLeftAt=now;tapPreview.releaseMember(room.id,member.id);}
    const streamState=room.diagnostic===true?room.diagnosticActions:room.roomActions;
    if(streamState?.leases&&['claim','drop','release'].includes(input.type))delete streamState.leases[input.groupId];
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;

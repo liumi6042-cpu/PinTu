@@ -52,5 +52,16 @@ export function createTapPreview({enabled=false,roomIds=[],now=Date.now,notify=(
   }else if(input.op!=='renew')fault(400,'TAP_PREVIEW_INPUT');
   old.expires=time+20000;s.serial=++serial;notify(room.id);return view(s);
  }
- return {allowed,descriptor,request,clear:()=>states.clear()};
+ function releaseMember(roomId,playerId){
+  const s=states.get(roomId);if(!s)return false;
+  let removed=false;
+  for(const [clientId,p]of [...s.peers.entries()]){
+   if(p.playerId!==playerId)continue;
+   s.peers.delete(clientId);removed=true;
+   if(s.creator===clientId){if(s.channelId)resetChannel(s);else s.creatorUntil=0;}
+  }
+  if(removed){s.serial=++serial;notify(roomId);}
+  return removed;
+ }
+ return {allowed,descriptor,request,releaseMember,clear:()=>states.clear()};
 }
