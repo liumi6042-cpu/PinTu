@@ -1,0 +1,102 @@
+{
+  "id": "album-curiosity-cabinet-03-20261126",
+  "origin": "project-ai-generated",
+  "width": 2227,
+  "height": 2227,
+  "sha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-curiosity-cabinet-03-20261126.webp",
+    "sha256": "b657d4b846d1bc7bf44068c3d48f3aba4459c0a9e1909f093fba171c20d7b443",
+    "bytes": 2488144,
+    "width": 2227,
+    "height": 2227,
+    "originalPngSha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-curiosity-cabinet-03-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-curiosity-cabinet-03-20261126/native.png",
+      "sha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548",
+      "bytes": 14086414,
+      "width": 2227,
+      "height": 2227,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-curiosity-cabinet-03-20261126/native.webp",
+        "sha256": "b657d4b846d1bc7bf44068c3d48f3aba4459c0a9e1909f093fba171c20d7b443",
+        "bytes": 2488144,
+        "width": 2227,
+        "height": 2227
+      }
+    },
+    "originalFile": "public/puzzles/album-curiosity-cabinet-03-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2227×2227；保存成品 2227×2227，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/博物珍奇柜-20261126/03-森林蘑菇与蕨类标本架.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548",
+    "thumbnail": {
+      "src": "/puzzles/album-curiosity-cabinet-03-20261126-thumbnail-737a97edcc9a.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "737a97edcc9ad08c78beefa1f01e41b595cffec1a804d1076494e88f8ac16fa5",
+      "bytes": 66824,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548",
+      "inputSha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-curiosity-cabinet-03-20261126-optimized-e5f8a80c7dc6.webp",
+      "width": 2227,
+      "height": 2227,
+      "sha256": "e5f8a80c7dc6eedde17a37e50879b23ce943bb6d79e8641bd136ed5b392d2bb2",
+      "bytes": 1436552,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548",
+      "inputSha256": "a378923c90137d2003b31d2e6bd4a2b245270c66e610b07472365a5934dd7548",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

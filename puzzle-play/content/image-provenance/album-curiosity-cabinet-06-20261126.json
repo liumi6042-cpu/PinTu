@@ -1,0 +1,102 @@
+{
+  "id": "album-curiosity-cabinet-06-20261126",
+  "origin": "project-ai-generated",
+  "width": 2227,
+  "height": 2227,
+  "sha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-curiosity-cabinet-06-20261126.webp",
+    "sha256": "3df9a618c64b37dc68c5309d28d5d3ca71911c3e394e4bd2937c067c94628e8c",
+    "bytes": 2443816,
+    "width": 2227,
+    "height": 2227,
+    "originalPngSha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-curiosity-cabinet-06-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-curiosity-cabinet-06-20261126/native.png",
+      "sha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a",
+      "bytes": 14274023,
+      "width": 2227,
+      "height": 2227,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-curiosity-cabinet-06-20261126/native.webp",
+        "sha256": "3df9a618c64b37dc68c5309d28d5d3ca71911c3e394e4bd2937c067c94628e8c",
+        "bytes": 2443816,
+        "width": 2227,
+        "height": 2227
+      }
+    },
+    "originalFile": "public/puzzles/album-curiosity-cabinet-06-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2227×2227；保存成品 2227×2227，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/博物珍奇柜-20261126/06-飞羽鸟蛋与林间果实箱.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a",
+    "thumbnail": {
+      "src": "/puzzles/album-curiosity-cabinet-06-20261126-thumbnail-2580561e07dd.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "2580561e07dd86a256c78b43e0adf25f363383485524aa1335cc582030e8b32d",
+      "bytes": 62472,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a",
+      "inputSha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-curiosity-cabinet-06-20261126-optimized-809a698848c8.webp",
+      "width": 2227,
+      "height": 2227,
+      "sha256": "809a698848c8af2531dd9cf90143980c29494f94869946f218f34c20f228926e",
+      "bytes": 1382888,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a",
+      "inputSha256": "5c9b0161dad88e4929b63b30cab2ba1ec84cf0d3cfcbf7f7ef3f02463232a70a",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

@@ -67,6 +67,18 @@ test('story-level, ad-unlock and mobile-hidden albums keep their pictures out of
  const existingHealing=draft.albums.find(album=>album.id==='healing-time'&&album!==level);
  if(existingHealing){existingHealing.showOnMobile=true;existingHealing.imageIds=[...existingHealing.imageIds,thirdImage];draft.albums=draft.albums.filter(album=>album!==level);}
  assert.equal(buildDailyConfiguration(validateDraft(draft,source),source).fallbackImageIds.includes(thirdImage),false);
+ for(const adId of ['four-seasons-table','curiosity-cabinet']){
+  const d=document();
+  for(const album of d.albums){album.imageIds=album.imageIds.filter(id=>id!==thirdImage);if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
+  const adAlbum={...emptyAlbum(adId),showOnMobile:true,purchasable:true,price:1,imageIds:[thirdImage],coverImageId:thirdImage};
+  const existing=d.albums.find(album=>album.id===adId);
+  if(existing){existing.showOnMobile=true;existing.purchasable=true;existing.price=1;existing.imageIds=[...existing.imageIds,thirdImage];existing.coverImageId??=thirdImage;}
+  else d.albums.push(adAlbum);
+  d.dailyPlans=[{id:thirdImage,imageId:thirdImage,date:null,albumId:adId,autoPublish:true}];
+  const cfg=buildDailyConfiguration(validateDraft(d,source),source);
+  assert.equal(cfg.fallbackImageIds.includes(thirdImage),false);
+  assert.equal(cfg.automaticCandidates.some(entry=>entry.imageId===thirdImage&&entry.albumId===adId),true);
+ }
 });
 test('automatic receipt freezes undated mode and enrolls once next Beijing day with CAS and no metadata loss',t=>{
  const f=fixture(t),draft=document();draft.dailyPlans=[automatic()];const origin=draft.albums.find(album=>album.id==='daily-origin');origin.imageIds=[dailyImage];origin.coverImageId=dailyImage;

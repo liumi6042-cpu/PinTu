@@ -1,0 +1,102 @@
+{
+  "id": "album-curiosity-cabinet-02-20261126",
+  "origin": "project-ai-generated",
+  "width": 2231,
+  "height": 2231,
+  "sha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-curiosity-cabinet-02-20261126.webp",
+    "sha256": "ae00538d21af73728553f0c7af2fdb8330bcfab7cc73928d8d2f0ce24a734dd4",
+    "bytes": 2665702,
+    "width": 2231,
+    "height": 2231,
+    "originalPngSha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-curiosity-cabinet-02-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-curiosity-cabinet-02-20261126/native.png",
+      "sha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35",
+      "bytes": 14240566,
+      "width": 2231,
+      "height": 2231,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-curiosity-cabinet-02-20261126/native.webp",
+        "sha256": "ae00538d21af73728553f0c7af2fdb8330bcfab7cc73928d8d2f0ce24a734dd4",
+        "bytes": 2665702,
+        "width": 2231,
+        "height": 2231
+      }
+    },
+    "originalFile": "public/puzzles/album-curiosity-cabinet-02-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2231×2231；保存成品 2231×2231，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/博物珍奇柜-20261126/02-海洋贝壳与珊瑚珍宝盒.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35",
+    "thumbnail": {
+      "src": "/puzzles/album-curiosity-cabinet-02-20261126-thumbnail-94f14d4fbddd.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "94f14d4fbddd61c3c3f01e142933d0bcb2e2802e047f87e9fc6ccd8776d723fa",
+      "bytes": 71626,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35",
+      "inputSha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-curiosity-cabinet-02-20261126-optimized-488491b348f1.webp",
+      "width": 2231,
+      "height": 2231,
+      "sha256": "488491b348f15c715dec6c333d44047404352189616a239e268c935faab61d63",
+      "bytes": 1527600,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35",
+      "inputSha256": "6a8778c2ecc7af2f22f5445b46da4fe69bf87bfc9584acdb63a2cf5c04c27f35",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}
