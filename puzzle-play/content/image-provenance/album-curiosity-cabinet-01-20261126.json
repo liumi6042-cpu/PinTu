@@ -1,0 +1,102 @@
+{
+  "id": "album-curiosity-cabinet-01-20261126",
+  "origin": "project-ai-generated",
+  "width": 2231,
+  "height": 2231,
+  "sha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-curiosity-cabinet-01-20261126.webp",
+    "sha256": "6d07566930a28195eb577b6bce4350ffecef874bee8f501a831f786daa2df8a4",
+    "bytes": 2687360,
+    "width": 2231,
+    "height": 2231,
+    "originalPngSha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-curiosity-cabinet-01-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-curiosity-cabinet-01-20261126/native.png",
+      "sha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a",
+      "bytes": 13968390,
+      "width": 2231,
+      "height": 2231,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-curiosity-cabinet-01-20261126/native.webp",
+        "sha256": "6d07566930a28195eb577b6bce4350ffecef874bee8f501a831f786daa2df8a4",
+        "bytes": 2687360,
+        "width": 2231,
+        "height": 2231
+      }
+    },
+    "originalFile": "public/puzzles/album-curiosity-cabinet-01-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2231×2231；保存成品 2231×2231，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/博物珍奇柜-20261126/01-蝶翼宝石与星仪珍奇柜.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a",
+    "thumbnail": {
+      "src": "/puzzles/album-curiosity-cabinet-01-20261126-thumbnail-4f1a733741fc.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "4f1a733741fc2aac25ba0ec38cd0cacaea0f7bbe8aa14a997cc7dd6fb1d62ea6",
+      "bytes": 67744,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a",
+      "inputSha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-curiosity-cabinet-01-20261126-optimized-e06b73f4df9c.webp",
+      "width": 2231,
+      "height": 2231,
+      "sha256": "e06b73f4df9c762fc3015c41cfceafcca0c46c54ee9a90d48791e42c7d96efa1",
+      "bytes": 1570024,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a",
+      "inputSha256": "d08ac7de31eb48337091371ffa42e61bb754003f6b22d8105884f1a113e9858a",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

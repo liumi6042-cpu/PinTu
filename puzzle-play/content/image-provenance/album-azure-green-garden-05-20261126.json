@@ -1,0 +1,102 @@
+{
+  "id": "album-azure-green-garden-05-20261126",
+  "origin": "project-ai-generated",
+  "width": 2969,
+  "height": 1668,
+  "sha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-azure-green-garden-05-20261126.webp",
+    "sha256": "e641a117e699b88ebfb21f30920924bc45d714b77667bfd8eb6a8a3b57da5ae0",
+    "bytes": 2858116,
+    "width": 2969,
+    "height": 1668,
+    "originalPngSha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-26",
+    "generatedAt": "2026-11-26T02:50:00.000Z",
+    "threadId": "codex-cli-20261126",
+    "promptPath": "content/image-prompts/album-azure-green-garden-05-20261126.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-azure-green-garden-05-20261126/native.png",
+      "sha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d",
+      "bytes": 14511650,
+      "width": 2969,
+      "height": 1668,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-azure-green-garden-05-20261126/native.webp",
+        "sha256": "e641a117e699b88ebfb21f30920924bc45d714b77667bfd8eb6a8a3b57da5ae0",
+        "bytes": 2858116,
+        "width": 2969,
+        "height": 1668
+      }
+    },
+    "originalFile": "public/puzzles/album-azure-green-garden-05-20261126.png",
+    "importedRegistrySha256": "27eb279faae9ea1714f263a775c6c6a3a09e8f8867a37805c597f3776385332a"
+  },
+  "resolutionNote": "原始生成 2969×1668；保存成品 2969×1668，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-26T02:52:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检。原始无损 PNG 归档于 assets/artwork-unimported/青绿游园记-20261126/05-月下桂影花灯廊.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d",
+    "thumbnail": {
+      "src": "/puzzles/album-azure-green-garden-05-20261126-thumbnail-b30d58d5019f.webp",
+      "width": 384,
+      "height": 216,
+      "sha256": "b30d58d5019f92236e5aa1c33ebbc63fc4d02c7dbfa6bbe1dd6c381e5b97e83a",
+      "bytes": 41902,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d",
+      "inputSha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-azure-green-garden-05-20261126-optimized-41db40a59a6d.webp",
+      "width": 2969,
+      "height": 1668,
+      "sha256": "41db40a59a6d9de3a365c3c4543a4ba0c97542e278d8277c3116b10acf65f111",
+      "bytes": 1713528,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d",
+      "inputSha256": "a385dfbc7ed740a5ca8c4f650008e78e3e5ca9bfc557d699ed11df975db0f89d",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}

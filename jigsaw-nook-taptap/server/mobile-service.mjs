@@ -539,21 +539,46 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/collection/buy'&&method==='POST')return replay(p,'collection-buy',input,now,()=>{const purchase=collection.buy(p.id,input.packId,now);return {...collectionView(),purchase};});
   if(path==='/api/mobile/collection/craft'&&method==='POST')return replay(p,'collection-craft',input,now,()=>{const crafted=collection.craft(p.id,input.decorationId,now);return {...collectionView(),crafted};});
   if(path==='/api/mobile/collection/equip'&&method==='POST')return replay(p,'collection-equip',input,now,()=>{collection.equip(p.id,input.decorationId);return collectionView();});
-  // 治愈时光: one rewarded ad unlocks one picture of an ad album (challenge → watch → redeem, like 补给).
+  // 治愈时光: two completed rewarded ads unlock one picture permanently, capped at 2 unlock ads (1 picture) per Beijing day.
   if(path==='/api/mobile/collection/unlock/challenge'&&method==='POST'){
-   if(typeof input.imageId!=='string')fail(400,'INVALID_AD_IMAGE','请选择要解锁的图片');collection.adUnlockAlbum(input.imageId,now);
-   if(collection.adUnlocked(p.id,input.imageId))fail(409,'IMAGE_UNLOCKED','这张图已经解锁了');
+   if(typeof input.imageId!=='string')fail(400,'INVALID_AD_IMAGE','请选择要解锁的图片');
+   const pendingWatches=db.prepare("SELECT COUNT(*) n FROM mobile_ad_challenges WHERE owner=? AND kind='image' AND context LIKE 'unlock:%' AND used=0 AND expires_at>? AND request_id<>?").get(p.id,now,typeof input.requestId==='string'?input.requestId:'').n;
+   collection.assertAdUnlockAllowed(p.id,input.imageId,now,pendingWatches);
    return challenge(p,{kind:'image',requestId:input.requestId,context:'unlock:'+input.imageId},now);
   }
   if(path==='/api/mobile/collection/unlock/redeem'&&method==='POST')return replay(p,'collection-unlock',input,now,()=>{
    if(!adsEnabled)fail(503,'ADS_UNAVAILABLE','当前平台未开放广告');
    if(typeof input.imageId!=='string')fail(400,'INVALID_AD_IMAGE','请选择要解锁的图片');collection.adUnlockAlbum(input.imageId,now);
    consumeChallenge(p,{...input,kind:'image'},'unlock:'+input.imageId,'',now);
-   const unlocked=collection.unlockAdImage(p.id,input.imageId,now);return {...collectionView(),unlocked:{imageId:input.imageId,alreadyOwned:!unlocked}};
+   const result=collection.unlockAdImage(p.id,input.imageId,now);return {...collectionView(),unlocked:{imageId:input.imageId,...result}};
   });
   if(path==='/api/mobile/collection/unlock/cancel'&&method==='POST'){
    if(typeof input.imageId!=='string'||!requestKey(input.requestId)||typeof input.rewardToken!=='string')fail(400,'INVALID_AD_IMAGE','解锁请求无效');
    const row=db.prepare('SELECT * FROM mobile_ad_challenges WHERE token=? AND owner=? AND context=? AND kind=? AND request_id=?').get(input.rewardToken,p.id,'unlock:'+input.imageId,'image',input.requestId);
+   if(!row)fail(403,'AD_REQUIRED','广告请求不属于当前身份');
+   if(row.used===0)db.prepare('UPDATE mobile_ad_challenges SET used=2 WHERE token=? AND used=0').run(row.token);
+   return {ok:true};
+  }
+  // Completion double reward: one completed rewarded ad doubles base completion coins & fragments once per room.
+  if(path==='/api/mobile/completion/double/challenge'&&method==='POST'){
+   if(typeof input.roomId!=='string'||!requestKey(input.roomId))fail(400,'INVALID_ROOM','房间编号无效');
+   const room=readRoom(input.roomId);if(room.diagnostic===true||!room.completedAt)fail(409,'COMPLETION_NOT_FOUND','该房间尚未完成');
+   collection.assertCompletionDoubleAllowed(p.id,room.id);
+   return challenge(p,{kind:'completion-double',requestId:input.requestId,context:'completion-double:'+room.id},now);
+  }
+  if(path==='/api/mobile/completion/double/redeem'&&method==='POST')return replay(p,'completion-double',input,now,()=>{
+   if(!adsEnabled)fail(503,'ADS_UNAVAILABLE','当前平台未开放广告');
+   if(typeof input.roomId!=='string'||!requestKey(input.roomId))fail(400,'INVALID_ROOM','房间编号无效');
+   const room=readRoom(input.roomId);if(room.diagnostic===true||!room.completedAt)fail(409,'COMPLETION_NOT_FOUND','该房间尚未完成');
+   collection.assertCompletionDoubleAllowed(p.id,room.id);
+   consumeChallenge(p,{...input,kind:'completion-double'},'completion-double:'+room.id,'',now);
+   const doubled=collection.claimCompletionDouble(p.id,room.id,now);
+   events.record(p.id,'completion-double',room.id,{coins:doubled.coins,fragments:doubled.fragments},now);
+   return {doubled:{roomId:room.id,...doubled},completion:collection.completion(p.id,room.id),collection:collection.summary(p.id,now),profile:profileView(p,now)};
+  });
+  if(path==='/api/mobile/completion/double/cancel'&&method==='POST'){
+   if(typeof input.roomId!=='string'||!requestKey(input.roomId)||!requestKey(input.requestId)||typeof input.rewardToken!=='string')fail(400,'INVALID_ROOM','翻倍请求无效');
+   const row=db.prepare('SELECT * FROM mobile_ad_challenges WHERE token=? AND owner=? AND context=? AND kind=? AND request_id=?').get(input.rewardToken,p.id,'completion-double:'+input.roomId,'completion-double',input.requestId);
    if(!row)fail(403,'AD_REQUIRED','广告请求不属于当前身份');
    if(row.used===0)db.prepare('UPDATE mobile_ad_challenges SET used=2 WHERE token=? AND used=0').run(row.token);
    return {ok:true};
@@ -670,7 +695,7 @@ export function createMobileService(options={}){
     const pool=galleryPhotos(now).filter(photo=>{const bound={...photo,...creationArtwork(photo,pieces,request)};return collection.randomAllowed(p.id,photo.id,now)&&mobileGridForPhoto(bound,pieces)&&(direction==='all'||directionOf(bound)===direction);});if(!pool.length)fail(400,'NO_IMAGE_AVAILABLE','该条件下没有可用图片');photo=pool[randomInt(0,pool.length)];
    }else photo=galleryPhotos(now).find(p=>p.id===input.imageId);
    if(!photo)fail(400,'INVALID_IMAGE','请选择可用图片');
-   if(!web&&mode==='selected'&&collection.packedImageIds(now).includes(photo.id)&&!collection.freeImageIds(now).includes(photo.id)&&!collection.ownsImage(p.id,photo.id,now))fail(403,'PACK_LOCKED',collection.albumOf(photo.id,now)?.id&&AD_UNLOCK_ALBUM_IDS.has(collection.albumOf(photo.id,now).id)?'这张图看一次广告就能解锁，解锁后再来开拼':'这张图在未解锁的图包里，请先解锁图包');
+   if(!web&&mode==='selected'&&collection.packedImageIds(now).includes(photo.id)&&!collection.freeImageIds(now).includes(photo.id)&&!collection.ownsImage(p.id,photo.id,now))fail(403,'PACK_LOCKED',collection.albumOf(photo.id,now)?.id&&AD_UNLOCK_ALBUM_IDS.has(collection.albumOf(photo.id,now).id)?'这张图看两次广告就能解锁（每日限 1 张），解锁后再来开拼':'这张图在未解锁的图包里，请先解锁图包');
    const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces,mode);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
    if(mode==='daily'){
     const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(dailyClock(now))&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<seatLimit(r)&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
