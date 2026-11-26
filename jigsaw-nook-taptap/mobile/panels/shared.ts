@@ -22,7 +22,7 @@ export type PanelRoom = Omit<RoomClient, 'snapshot'> & {
  snapshot: RoomClient['snapshot'] & {
   levelId?: string;
   maxPlayers?: number;
-  mobileResult?: {levelClear?: MobileLevelClear; ranking?: any; coins?: number; fragments?: number; energy?: number; catalog?: any};
+  mobileResult?: {roomId?: string; levelClear?: MobileLevelClear; ranking?: any; coins?: number; fragments?: number; energy?: number; catalog?: any; doubleClaimed?: boolean; doubleBonus?: {coins: number; fragments: number}};
  };
 };
 

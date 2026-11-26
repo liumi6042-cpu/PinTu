@@ -84,7 +84,7 @@ export function drawAlbumHeaderPanel(this:AppHost,data:MobileCollectionView,albu
   // Stage.meter clamps the fraction and paints its rounded fill inside the track.
   s.meter({x:px,y:py+27,w:progressW,h:9},album.collected/Math.max(1,album.total));
   let bottom=Math.max(descriptionY+descriptionH,py+36)+12;const pack=this.packFor(data,album.id);
-  if(pack&&!pack.owned){s.button({x,y:bottom,w:Math.min(w,210),h:compact?28:34},pack.unlock==='ad'?'每张看一次广告解锁':pack.price+' 金币 · 解锁图包',()=>this.openPackOffer(pack),{icon:pack.unlock==='ad'?'lock':'coin',tone:'berrydark',fontSize:12,disabled:this.busy});bottom+=compact?34:42;}
+  if(pack&&!pack.owned){const req=pack.adRequired??2,dailyUnlock=pack.dailyUnlockLimit??1;s.button({x,y:bottom,w:Math.min(w,228),h:compact?28:34},pack.unlock==='ad'?'每张看 '+req+' 次广告解锁 · 每日限 '+dailyUnlock+' 张':pack.price+' 金币 · 解锁图包',()=>this.openPackOffer(pack),{icon:pack.unlock==='ad'?'lock':'coin',tone:'berrydark',fontSize:12,disabled:this.busy});bottom+=compact?34:42;}
   return bottom;
  }
 
@@ -160,13 +160,18 @@ export function drawPackPreviewPanel(this:AppHost){
   s.text(pack.title,x+20,y+18,21,this.colors.ink,800,w-80);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>this.showModal(null));s.icon('close',{x:x+w-42,y:y+15,w:24,h:24},this.colors.ink);
   this.modalStart=y+80;this.modalArea={x:x+14,y:this.modalStart,w:w-28,h:Math.max(20,footerY-this.modalStart-14)};
   if(this.previewIndex<0){
-   s.text(pack.unlock==='ad'?'已解锁 '+pack.images.filter(image=>image.owned).length+'/'+pack.images.length+' · 点图片看大图，看一次广告解锁一张':pack.images.length+' 张主题图片 · 点击缩略图查看大图',x+20,y+51,w<400?11:13,this.colors.muted,500,w-40);
+   const req=pack.adRequired??2,dailyUsed=pack.dailyUsed??0,dailyLimit=pack.dailyLimit??2;
+   s.text(pack.unlock==='ad'?'已解锁 '+pack.images.filter(image=>image.owned).length+'/'+pack.images.length+' · 今日解锁广告 '+dailyUsed+'/'+dailyLimit+' · 每张看 '+req+' 次解锁':pack.images.length+' 张主题图片 · 点击缩略图查看大图',x+20,y+51,w<400?11:13,this.colors.muted,500,w-40);
    this.modalExtent=rows*(rowH+gap)-gap+8;this.modalScroll=clamp(this.modalScroll,0,Math.max(0,this.modalExtent-this.modalArea.h));
    s.clip(this.modalArea,()=>{pack.images.forEach((image,index)=>{
     const cx=x+pad+index%columns*(cw+gap),cy=this.modalStart+4+Math.floor(index/columns)*(rowH+gap)-this.modalScroll;if(cy+rowH<this.modalArea.y||cy>this.modalArea.y+this.modalArea.h)return;
     const art={x:cx,y:cy,w:cw,h:cw};s.frame(art,'panel-cream');s.image(this.client.asset(image.thumbSrc||image.src),{x:cx+5,y:cy+5,w:cw-10,h:cw-10},'contain');
     s.text(image.title,cx+3,cy+cw+12,w<400?12:14,this.colors.ink,700,cw-6);
-    if(pack.unlock==='ad'){s.frame({x:cx+9,y:cy+9,w:27,h:27},image.owned?'segment-berry-selected':'plus-cream-normal');s.icon(image.owned?'check':'lock',{x:cx+14,y:cy+14,w:17,h:17},image.owned?'#fff9ed':this.colors.muted);}
+    if(pack.unlock==='ad'){
+     const imgReq=image.adRequired??req,imgProg=image.owned?imgReq:(image.adProgress??0);
+     if(!image.owned&&imgProg>0){const tag=imgProg+'/'+imgReq,tw=Math.max(32,s.measure(tag,11,800)+12);s.frame({x:cx+9,y:cy+9,w:tw,h:24},'panel-gold');s.text(tag,cx+9+(tw-s.measure(tag,11,800))/2,cy+14,11,this.colors.ink,800);}
+     else{s.frame({x:cx+9,y:cy+9,w:27,h:27},image.owned?'segment-berry-selected':'plus-cream-normal');s.icon(image.owned?'check':'lock',{x:cx+14,y:cy+14,w:17,h:17},image.owned?'#fff9ed':this.colors.muted);}
+    }
     s.hit({x:cx,y:cy,w:cw,h:rowH},()=>{this.previewGridScroll=this.modalScroll;this.previewIndex=index;this.modalScroll=0;this.stage.retryImages();this.invalidate();});
    });});
    if(this.modalExtent>this.modalArea.h){const track=this.modalArea,thumbH=Math.max(24,track.h*track.h/this.modalExtent),thumbY=track.y+(track.h-thumbH)*this.modalScroll/(this.modalExtent-track.h);s.ctx.fillStyle=this.colors.rose;s.ctx.fillRect(x+w-9,thumbY,3,thumbH);}
@@ -180,12 +185,15 @@ export function drawPackPreviewPanel(this:AppHost){
   }
   if(this.previewReadOnly)return;
   s.ctx.fillStyle=this.colors.rose;s.ctx.fillRect(x+20,footerY, w-40,1);
-  const buttonW=Math.min(245,w-40),buttonX=x+(w-buttonW)/2;
+  const buttonW=Math.min(265,w-40),buttonX=x+(w-buttonW)/2;
   if(pack.unlock==='ad'){
    const image=this.previewIndex>=0?pack.images[this.previewIndex]:null,firstLocked=pack.images.findIndex(item=>!item.owned);
-   const label=image?(image.owned?'已解锁 · 去建房':'看广告解锁这张图'):firstLocked<0?'已全部解锁 · 去建房':'挑一张看广告解锁';
-   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},label,()=>{if(image&&!image.owned)void this.unlockAdImage(image.id);else if(image||firstLocked<0)this.openPackGallery(pack.id);else{this.previewGridScroll=this.modalScroll;this.previewIndex=firstLocked;this.modalScroll=0;this.stage.retryImages();this.invalidate();}},{tone:'berry',icon:image?(image.owned?'check':'lock'):firstLocked<0?'check':'lock',fontSize:14,disabled:this.busy});
-   const hint='每张图看一次广告永久解锁 · 解锁的图可免费开公开房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);return;
+   const req=image?.adRequired??pack.adRequired??2,prog=image?(image.owned?req:(image.adProgress??0)):0;
+   const dailyUsed=pack.dailyUsed??0,dailyLimit=pack.dailyLimit??2,dailyUnlocked=pack.dailyUnlocked??0,dailyUnlockLimit=pack.dailyUnlockLimit??1;
+   const dailyBlocked=image&&!image.owned&&(dailyUsed>=dailyLimit||(prog+1>=req&&dailyUnlocked>=dailyUnlockLimit));
+   const label=image?(image.owned?'已解锁 · 去建房':dailyBlocked?'今日次数已用完 · 明天再来':prog>0?'再看 '+(req-prog)+' 次广告解锁（'+prog+'/'+req+'）':'看广告解锁（0/'+req+'）'):firstLocked<0?'已全部解锁 · 去建房':dailyUsed>=dailyLimit?'今日次数已用完（'+dailyUsed+'/'+dailyLimit+'）':'挑一张看广告解锁';
+   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},label,()=>{if(image&&!image.owned)void this.unlockAdImage(image.id);else if(image||firstLocked<0)this.openPackGallery(pack.id);else{this.previewGridScroll=this.modalScroll;this.previewIndex=firstLocked;this.modalScroll=0;this.stage.retryImages();this.invalidate();}},{tone:'berry',icon:image?(image.owned?'check':'lock'):firstLocked<0?'check':'lock',fontSize:13,disabled:this.busy||Boolean(dailyBlocked)});
+   const hint='每张图看 '+req+' 次广告永久解锁 · 每日限解锁 '+dailyUnlockLimit+' 张（'+dailyLimit+' 次广告）';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted,500,w-24);return;
   }
   s.button({x:buttonX,y:footerY+13,w:buttonW,h:36},pack.owned?'已拥有 · 去建房':pack.price+' 金币 · 解锁图包',()=>{if(pack.owned)this.openPackGallery(pack.id);else{this.purchase=pack;this.showModal('purchase');}},{tone:'berry',icon:pack.owned?'check':'coin',fontSize:14,disabled:this.busy});
   const hint=pack.owned?'随时选择喜欢的图片开拼':'永久解锁 · 免费公开建房';s.text(hint,x+(w-s.measure(hint,11))/2,footerY+58,11,this.colors.muted);
