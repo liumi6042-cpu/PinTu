@@ -97,7 +97,7 @@ function appFixture({development=false,admin=false,storageInit={}}={}){
   modalScroll:0,
   busy:false,
   roomArea:{x:0,y:80,w:390,h:700},
-  teammateSoundEnabled:memory.get(TEAMMATE_SOUND_KEY)==='1',
+  teammateSoundEnabled:memory.get(TEAMMATE_SOUND_KEY)!=='0',
   adminDiagEnabled:memory.get(ADMIN_DIAG_KEY)==='1',
   adminDiagExpanded:false,
   roomTimings:new Map([['drop',{action:'drop',ms:42,status:200,at:Date.now()}]]),
@@ -153,19 +153,66 @@ function appFixture({development=false,admin=false,storageInit={}}={}){
  return {app,memory,texts,hits,buttons,copied,notes,alerts};
 }
 
-test('teammate sound toggle defaults OFF and persists + updates live board when toggled in Settings',()=>{
+test('teammate sound toggle defaults ON and persists + updates live board when toggled in Settings',()=>{
  const {app,memory,buttons}=appFixture({admin:false});
- assert.equal(app.teammateSoundEnabled,false,'defaults to off for cozy non-competitive play');
+ assert.equal(app.teammateSoundEnabled,true,'defaults to on so players hear teammate snaps');
+ app.board.teammateSoundEnabled=true;
  app.modal='settings';
  app.drawModal();
- const toggle=buttons.find(b=>b.label==='队友拼合音效');
- assert.ok(toggle,'Settings exposes 队友拼合音效 toggle');
+ const toggle=buttons.find(b=>b.label==='✓ 队友拼合音效');
+ assert.ok(toggle,'Settings exposes checked 队友拼合音效 toggle by default');
  toggle.action();
- assert.equal(app.teammateSoundEnabled,true);
- assert.equal(app.board.teammateSoundEnabled,true);
- assert.equal(memory.get(TEAMMATE_SOUND_KEY),'1');
+ assert.equal(app.teammateSoundEnabled,false);
+ assert.equal(app.board.teammateSoundEnabled,false);
+ assert.equal(memory.get(TEAMMATE_SOUND_KEY),'0');
  // Non-admin must NOT see admin room diagnostic toggle.
  assert.equal(buttons.some(b=>b.label.includes('房间网络诊断浮窗')),false);
+});
+
+test('PuzzleBoard smoothly interpolates remote teammate dragged pieces at 60fps and snaps immediately on release',()=>{
+ const frames=[];
+ const p={
+  config:{id:'web'},
+  createCanvas:()=>({width:1,height:1,getContext:()=>({})}),
+  onHide:()=>()=>{},
+  onShow:()=>()=>{},
+  frame:fn=>{frames.push(fn);return frames.length;},
+  cancelFrame(){},
+ };
+ const state={
+  version:1,layout:'square',imageId:'test',cols:2,rows:2,seed:1,elapsed:0,
+  groups:[
+   {id:0,pieces:[0],dx:100,dy:100,locked:false},
+   {id:1,pieces:[1],dx:300,dy:300,locked:false},
+  ],
+ };
+ const board=new PuzzleBoard(p,state,()=>{});
+ const remoteOwner={0:{playerId:'p2',name:'队友',color:'#ff66aa'}};
+
+ // Teammate claims piece 0 at (100, 100), then Tap 10Hz preview moves it to (200, 150).
+ board.syncRemote(structuredClone(state),remoteOwner,new Set(),false);
+ const moved=structuredClone(state);
+ moved.groups[0].dx=200;moved.groups[0].dy=150;
+ board.syncRemote(moved,remoteOwner,new Set(),false);
+ // Authoritative state has target (200, 150), while smooth visual offset starts at (100, 100) and glides smoothly.
+ assert.equal(board.state.groups[0].dx,200);
+ const beforeStep=board.displayOffset(board.state.groups[0]);
+ assert.equal(beforeStep.dx,100);assert.equal(beforeStep.dy,100);
+ assert.ok(frames.length>0,'remote drag schedules requestAnimationFrame smoothing');
+
+ // Advance two 16ms frames: visual offset moves partway toward (200, 150) without overshoot.
+ frames.shift()(1000);
+ frames.shift()(1016);
+ const mid=board.displayOffset(board.state.groups[0]);
+ assert.ok(mid.dx>100&&mid.dx<200,'dx glides smoothly toward target: '+mid.dx);
+ assert.ok(mid.dy>100&&mid.dy<150,'dy glides smoothly toward target: '+mid.dy);
+
+ // When teammate drops/releases piece 0, smooth offset clears immediately so final placement has zero lag.
+ const dropped=structuredClone(moved);
+ dropped.groups[0].dx=220;dropped.groups[0].dy=160;
+ board.syncRemote(dropped,{},new Set(),false);
+ const afterDrop=board.displayOffset(board.state.groups[0]);
+ assert.equal(afterDrop.dx,220);assert.equal(afterDrop.dy,160);
 });
 
 test('admin room network diagnostics pill is hidden for normal players and works end-to-end for whitelisted admins',async()=>{
