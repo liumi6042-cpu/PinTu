@@ -701,7 +701,7 @@ html, body {
   position: absolute;
   left: 66px;
   right: 38px;
-  top: 62px;
+  top: 69px;
   bottom: 58px;
   display: flex;
   flex-direction: column;
@@ -710,10 +710,11 @@ html, body {
 }
 
 .book-top-bar {
+  height: 44px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 0 11px 22px;
+  padding: 0 4px 0 24px;
   border-bottom: 1.5px solid rgba(133, 94, 66, 0.24);
   flex-shrink: 0;
 }
@@ -721,9 +722,11 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  height: 100%;
   font-family: var(--font-ui);
   font-size: 14.5px;
   font-weight: 700;
+  line-height: 1;
   color: var(--ink);
 }
 .ink-return svg {
@@ -735,20 +738,39 @@ html, body {
   font-family: var(--font-ui);
   font-size: 13.5px;
   font-weight: 700;
+  line-height: 1;
   color: var(--ink-mid);
 }
-.book-tabs { display: flex; gap: 16px; align-items: center; }
+.book-tabs {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  height: 100%;
+}
 .book-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
   font-family: var(--font-ui);
   font-size: 14.5px;
   font-weight: 600;
+  line-height: 1;
   color: var(--ink-light);
-  padding-bottom: 4px;
 }
 .book-tab.active {
   color: var(--vermilion-deep);
   font-weight: 800;
-  border-bottom: 2.5px solid var(--vermilion);
+}
+.book-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--vermilion);
 }
 
 .book-scroll {
