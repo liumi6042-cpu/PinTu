@@ -545,71 +545,74 @@ function renderMailboxBook(el) {
       return;
     }
 
+    const cardIdx = cards.findIndex(c => c.uid === card.uid);
     el.innerHTML = `
       ${topTabs}
       <div class="book-scroll">
-        <div class="pc-thumbs-strip">
-          ${cards.map(c => {
-            const t = POSTCARD_POOL[c.templateId];
-            return `
-              <button class="craft-btn pc-thumb ${c.uid === card.uid ? 'active' : ''} ${c.developed ? '' : 'undeveloped'}" data-pcuid="${c.uid}">
-                <img src="${t.src}" alt="${t.title}" />
-              </button>
-            `;
-          }).join('')}
+        <div class="book-heading" style="margin-top:10px;">
+          <h3 style="font-size:22px;">${tpl.title}</h3>
+          <div class="date-line">${card.seasonLabel} · ${card.cnDate} · 寄自${tpl.place}</div>
         </div>
 
         <div class="pc-stage-card">
+          <img class="pc-tape" src="./assets/uikit/washi-tape.webp" alt="" />
           <div class="pc-photo-frame ${card.developed ? '' : 'undeveloped'}">
             <img src="${tpl.src}" alt="${tpl.title}" />
             ${card.developed ? '' : `
               <div class="pc-mist-overlay">
-                <strong style="font-size:16px;">记忆尚未显影</strong>
-                <span style="font-size:12.5px;">拼完 9 片轻拼图即可看清全画并解锁后记</span>
+                <strong style="font-size:17px;">记忆尚未显影</strong>
+                <span style="font-size:13px; line-height:1.5;">拼完 9 片轻拼图即可看清全画<br/>并显现背面隐藏后记</span>
               </div>
             `}
             <div class="pc-postmark-mini">
-              <span>${tpl.place.slice(0, 3)}</span>
+              <span>${tpl.postmark || '拾光镇'}</span>
               <span>${card.cnDate.slice(0, 4)}</span>
             </div>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-top:7px; font-family:var(--font-hand); font-size:12px; color:var(--ink-light);">
-            <span>${tpl.title}</span>
-            <span>${card.seasonLabel} · ${card.cnDate}</span>
-          </div>
         </div>
 
-        <div class="hand-prose" style="text-indent:0; font-size:15px;">
-          “${tpl.line}”
+        ${cards.length > 1 ? `
+          <div class="pc-pager-row">
+            <button class="craft-btn ink-turn" id="pc-prev" style="${cardIdx <= 0 ? 'opacity:0.35' : ''}">← 上一张</button>
+            <span>第 ${cardIdx + 1} / ${cards.length} 张</span>
+            <button class="craft-btn ink-turn" id="pc-next" style="${cardIdx >= cards.length - 1 ? 'opacity:0.35' : ''}">下一张 →</button>
+          </div>
+        ` : ''}
+
+        <div class="pc-quote-card">
+          <div class="pc-quote-text">“${tpl.line}”</div>
+          <div class="letter-sign">—— 团子</div>
         </div>
-        <div class="letter-sign">—— 团子 &nbsp;寄自${tpl.place}</div>
 
         ${card.developed ? `
-          <div class="margin-stamp-row" style="margin-top:12px; padding-top:10px;">
-            <img class="portrait" src="${NPCS[tpl.npcId].portrait}" alt="" style="width:42px; height:42px;" />
+          <div class="margin-stamp-row" style="margin-top:4px; padding-top:10px;">
+            <img class="portrait" src="${NPCS[tpl.npcId].portrait}" alt="" style="width:48px; height:48px;" />
             <div>
               <div class="ms-title">隐形墨水后记已显现</div>
               <div class="ms-sub">${tpl.hiddenNote}</div>
             </div>
           </div>
-        ` : ''}
+        ` : `
+          <div class="pc-hint-strip">
+            未显影明信片不耗体力，拼完后将高清收进《拾光剪贴簿》，并得 +4 条小鱼干。
+          </div>
+        `}
       </div>
 
-      <div class="book-footer">
-        <div class="ink-turn">${card.developed ? '已收入拾光剪贴簿' : '显影可获 +4 小鱼干'}</div>
-        <button class="craft-btn wax-turn" id="btn-play-pc">
-          <span>${card.developed ? '再拼一次' : '拼图显影'}</span>
-          <img src="./assets/uikit/wax-paw.webp" alt="" />
+      <div class="book-cta-center">
+        <button class="craft-btn book-wax-ribbon-btn" id="btn-play-pc">
+          <img class="rb" src="./assets/uikit/paper-ribbon.webp" alt="" />
+          <span>${card.developed ? '再拼一次明信片' : '开始拼图显影 (+4 鱼干)'}</span>
+          <img class="sl" src="./assets/uikit/wax-paw.webp" alt="" />
         </button>
       </div>
     `;
     bindBookCommon(el);
-    el.querySelectorAll('[data-pcuid]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedPostcardUid = btn.dataset.pcuid;
-        sound.paperTurn();
-        renderMailboxBook(el);
-      });
+    $('pc-prev')?.addEventListener('click', () => {
+      if (cardIdx > 0) { selectedPostcardUid = cards[cardIdx - 1].uid; sound.paperTurn(); renderMailboxBook(el); }
+    });
+    $('pc-next')?.addEventListener('click', () => {
+      if (cardIdx < cards.length - 1) { selectedPostcardUid = cards[cardIdx + 1].uid; sound.paperTurn(); renderMailboxBook(el); }
     });
     $('btn-play-pc').addEventListener('click', () => {
       playingPuzzleUid = card.uid;
@@ -719,25 +722,24 @@ function renderShopBook(el) {
     </div>
     <div class="book-heading">
       <h3>拾光杂货铺</h3>
-      <div class="date-line">口粮各有风味，永久器物买一次即可反复使用</div>
+      <div class="date-line">口粮各有风味 · 永久器物买一次反复用</div>
     </div>
     <div class="book-scroll">
-      <div class="shop-list">
+      <div class="shop-grid">
         ${shopIds.map(id => {
           const item = ITEMS[id];
           const owned = state.inventory[id] || 0;
           const lockedPerm = item.permanent && owned > 0;
           const poor = state.fish < item.price;
           return `
-            <div class="shop-row">
-              <img src="${item.icon}" alt="${item.name}" />
-              <div class="sr-info">
-                <h4>${item.name} <small style="color:var(--ink-light); font-weight:400;">${lockedPerm ? '· 已拥有' : owned ? `· 已有 ${owned}` : ''}</small></h4>
-                <p>${item.shortDesc}</p>
-              </div>
+            <div class="shop-card">
+              ${lockedPerm ? `<span class="sc-tag owned">已拥有</span>` : owned > 0 ? `<span class="sc-tag">余 ${owned}</span>` : ''}
+              <img class="sc-ico" src="${item.icon}" alt="${item.name}" />
+              <h4>${item.name}</h4>
+              <p>${item.shortDesc}</p>
               <button class="craft-btn shop-buy-btn ${lockedPerm || poor ? 'disabled' : ''}" data-buy="${id}">
                 <img class="bg" src="./assets/uikit/wood-oval.webp" alt="" />
-                ${lockedPerm ? `<span>已备</span>` : `<img class="f" src="./assets/icons/fish.webp" alt="" /><span>${item.price}</span>`}
+                ${lockedPerm ? `<span>已备妥</span>` : `<img class="f" src="./assets/icons/fish.webp" alt="" /><span>${item.price} 鱼干</span>`}
               </button>
             </div>
           `;
@@ -777,8 +779,9 @@ function renderScrapbookBook(el) {
   `;
 
   if (scrapSubTab === 'overview') {
-    const firstCard = POSTCARD_POOL[state.postcards[state.postcards.length - 1]?.templateId || 'grandma-shop'];
-    const latestCard = POSTCARD_POOL[state.postcards[0]?.templateId || 'misty-lake'];
+    const uniqueTemplates = [...new Set(state.postcards.map(c => c.templateId))];
+    const firstCard = POSTCARD_POOL[uniqueTemplates[uniqueTemplates.length - 1] || 'grandma-shop'];
+    const secondCard = uniqueTemplates.length >= 2 ? POSTCARD_POOL[uniqueTemplates[0]] : null;
     const firstSouv = state.souvenirs[0];
     const souvInfo = firstSouv ? SOUVENIRS[firstSouv.id] : SOUVENIRS.windchime;
     const heldDays = firstSouv ? Math.floor((state.now - firstSouv.placedAt) / DAY) : 0;
@@ -790,11 +793,12 @@ function renderScrapbookBook(el) {
           <img class="brass-clip-overlay" src="./assets/uikit/paperclip.webp" alt="" />
           <div class="scrap-photo left">
             <img src="${firstCard.src}" alt="" />
-            <span>${firstCard.seasonTag}</span>
+            <span>${firstCard.seasonTag} · ${firstCard.postmark}</span>
           </div>
           <div class="scrap-photo right">
-            <img src="${latestCard.src}" alt="" />
-            <span>${latestCard.seasonTag}</span>
+            ${secondCard
+              ? `<img src="${secondCard.src}" alt="" /><span>${secondCard.seasonTag} · ${secondCard.postmark}</span>`
+              : `<div class="empty-photo">下一段季节<br/>等待启程</div><span>跨季留白位</span>`}
           </div>
         </div>
 
@@ -809,9 +813,9 @@ function renderScrapbookBook(el) {
           </div>
         </div>
 
-        <div style="margin:12px 0 6px; display:flex; justify-content:space-between; font-family:var(--font-hand);">
-          <span style="font-size:15px; font-weight:700;">拾光镇的熟人们</span>
-          <small style="color:var(--ink-light); font-size:11.5px;">相伴 ${view.daysTogether} 日</small>
+        <div style="margin:6px 2px 4px; display:flex; justify-content:space-between; align-items:baseline; font-family:var(--font-ui);">
+          <span style="font-size:15.5px; font-weight:800; color:#3a2115;">拾光镇的熟人们</span>
+          <small style="color:var(--ink-mid); font-size:12.5px; font-weight:600;">相伴第 ${view.daysTogether} 日</small>
         </div>
 
         <div class="cast-grid">
@@ -832,11 +836,18 @@ function renderScrapbookBook(el) {
             `;
           }).join('')}
         </div>
+
+        ${state.memories[0] ? `
+          <div class="pc-hint-strip" style="margin-top:16px;">
+            <strong style="color:#3a2115;">最近手账 · ${state.memories[0].title}</strong><br/>
+            ${state.memories[0].summary}
+          </div>
+        ` : ''}
       </div>
 
       <div class="personality-stamp-foot">
         <div class="ps-txt">
-          ${view.plantStageLabel}<br/>
+          <strong>${view.plantStageLabel}</strong><br/>
           ${view.personality.desc}
         </div>
         <div class="ps-seal">${view.personality.seal}</div>
@@ -1145,13 +1156,24 @@ $('btn-demo-day30').addEventListener('click', () => {
   skipTimeMs(30 * DAY + 6 * HOUR);
 });
 
-// 支持 URL ?demo=day30 直接跳到 30 天雪夜重逢场景
-if (new URLSearchParams(location.search).get('demo') === 'day30') {
+// 支持 URL ?demo=day30 和 ?screen=shop|mailbox|scrapbook|bag 直接预览指定页
+const urlParams = new URLSearchParams(location.search);
+if (urlParams.get('demo') === 'day30') {
   state = createInitialState();
   state = packBag(state, { food: 'bento', tool: 'camera', wish: 'token-apang' });
   state = togglePantrySlot(state, 1, 'osmanthus');
   state = simulateTo(state, state.now + 30 * DAY + 6 * HOUR).state;
 }
+const initScreen = urlParams.get('screen');
+if (['bag', 'shop', 'mailbox', 'scrapbook', 'reunion'].includes(initScreen)) {
+  activeScreen = initScreen;
+  $('screen-nook').classList.toggle('hidden', true);
+  $('screen-bag').classList.toggle('hidden', initScreen !== 'bag');
+  $('screen-book').classList.toggle('hidden', initScreen === 'bag');
+}
 
 renderAll();
-requestAnimationFrame(() => $('room-bg-day30').classList.add('smooth-fade'));
+requestAnimationFrame(() => {
+  $('room-bg-day30').classList.add('smooth-fade');
+  document.querySelectorAll('.screen-layer').forEach(el => el.classList.add('smooth-layer'));
+});
