@@ -115,6 +115,7 @@ export function dropAssistOffset(state:PuzzleState,id:number,reach:number,blocke
  return best;
 }
 const PAPER_SURFACE_BYTES=12*1024*1024;
+const hashF64=new Float64Array(1),hashU32=new Uint32Array(hashF64.buffer);
 export const CURSOR_SMOOTHING_MS=50;
 const inside=(p:Point,r:Rect)=>p.x>=r.x&&p.y>=r.y&&p.x<=r.x+r.w&&p.y<=r.y+r.h;
 const cloneGroups=(groups:Group[])=>groups.map(g=>({...g,pieces:[...g.pieces]}));
@@ -229,6 +230,7 @@ export class PuzzleBoard implements RoomTable {
  private dotPatterns=new WeakMap<CanvasRenderingContext2D,{theme:ThemeId;value:CanvasPattern|null}>();
  private dragSurface:DragSurface|null=null;
  private gestureSurface:GestureSurface|null=null;
+ private idleSurface:DragSurface|null=null;
  private surfaceBuffer:HTMLCanvasElement|null=null;
  private surfaceBuilds=0;private surfaceAllocations=0;
  private paperSurface:PaperSurface|null=null;
@@ -250,7 +252,7 @@ export class PuzzleBoard implements RoomTable {
  get backgroundPanning(){return !!this.pan&&!this.drag&&!this.pinch;}
  /** One finger on empty table, whether or not the view lock stops it from panning. */
  get backgroundTouch(){return (!!this.pan||!!this.lockedTouch)&&!this.drag&&!this.pinch;}
- performanceDetails(){return {gesture:this.pinch?'缩放':this.pan?'移动背景':this.drag?'拖动碎片':'静止',cache:!!(this.dragSurface||this.gestureSurface),pieces:this.pieces.length,pointers:this.pointers.size,builds:this.surfaceBuilds,allocations:this.surfaceAllocations,bufferBytes:this.surfaceBuffer?this.surfaceBuffer.width*this.surfaceBuffer.height*4:0};}
+ performanceDetails(){return {gesture:this.pinch?'缩放':this.pan?'移动背景':this.drag?'拖动碎片':'静止',cache:!!(this.dragSurface||this.gestureSurface||this.idleSurface),pieces:this.pieces.length,pointers:this.pointers.size,builds:this.surfaceBuilds,allocations:this.surfaceAllocations,bufferBytes:this.surfaceBuffer?this.surfaceBuffer.width*this.surfaceBuffer.height*4:0};}
  get imagePreparation():ImagePreparation{return this.preparation;}
  setTheme(theme:ThemeId){if(this.currentTheme===theme)return;this.currentTheme=theme;this.releasePaperSurface();this.changed();}
  get edgeOnly(){return this.edges;}set edgeOnly(value:boolean){this.cancelInput(true);this.edges=value;this.changed();}
@@ -434,7 +436,7 @@ export class PuzzleBoard implements RoomTable {
    const serial=this.imageSerial,cancelled=()=>{if(serial!==this.imageSerial||this.destroyed||this.variant!==variant)throw Object.assign(Error('已切换拼图图片'),{code:'IMAGE_LOAD_CANCELLED'});};
    void this.makeGrayAtlas(this.atlas,cancelled,()=>new Promise<void>(resolve=>setTimeout(resolve,0))).then(gray=>{if(!gray)return;if(serial===this.imageSerial&&!this.destroyed&&this.variant===variant){this.grayAtlas=gray;this.changed();}else gray.width=gray.height=1;}).catch(()=>{});
   }
-  this.releaseGestureSurface();this.releaseDragSurface();this.changed();
+  this.releaseGestureSurface();this.releaseDragSurface();this.releaseIdleSurface();this.changed();
  }
  /** Another player joined: the level carries on as a normal one. Every piece turns upright, and pieces kept
   * where the player put them are dropped there for the room. */
@@ -443,7 +445,7 @@ export class PuzzleBoard implements RoomTable {
   if(this.drag?.local)this.cancelInput(true);
   this.variant=null;this.rot.clear();this.turning.clear();this.colorAt.clear();this.selected=null;this.rotateRect=null;this.rotateTouch=null;this.releaseGrayAtlas();
   if(variant.kind==='wind'){this.saveWindTo(variant.roomId);for(const id of this.kept.keys())this.queueSettle(id,0);}
-  this.releaseGestureSurface();this.releaseDragSurface();this.changed();
+  this.releaseGestureSurface();this.releaseDragSurface();this.releaseIdleSurface();this.changed();
  }
  get variantKind(){return this.variant?.kind??null;}
  private sameOffset(group:{dx:number;dy:number},dx:number,dy:number){return Math.abs(group.dx-dx)<.01&&Math.abs(group.dy-dy)<.01;}
@@ -1219,7 +1221,7 @@ export class PuzzleBoard implements RoomTable {
   if(t.b!==0||t.c!==0||!Number.isFinite(t.a)||!Number.isFinite(t.d)||t.a<=0||t.d<=0){this.paintPaper(ctx);return;}
   const x=Math.floor(r.x*t.a+t.e),y=Math.floor(r.y*t.d+t.f),width=Math.ceil((r.x+r.w)*t.a+t.e)-x,height=Math.ceil((r.y+r.h)*t.d+t.f)-y,bytes=width*height*4;
   if(width<1||height<1||width>8192||height>8192||bytes>PAPER_SURFACE_BYTES){this.releasePaperSurface();this.paintPaper(ctx);return;}
-  const key=JSON.stringify([r,this.currentTheme,this.phoneLandscapeRoom,t.a,t.d,t.e,t.f,ctx.imageSmoothingEnabled,ctx.imageSmoothingQuality]);
+  const key=`${r.x}|${r.y}|${r.w}|${r.h}|${this.currentTheme}|${this.phoneLandscapeRoom?1:0}|${t.a}|${t.d}|${t.e}|${t.f}|${ctx.imageSmoothingEnabled?1:0}|${ctx.imageSmoothingQuality}`;
   if(this.paperSurface?.key!==key){
    this.releasePaperSurface();let canvas:HTMLCanvasElement|undefined;
    try{
@@ -1256,10 +1258,13 @@ export class PuzzleBoard implements RoomTable {
   const {rect:r,camera:cam}=view,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,colors=boardThemeColors(this.currentTheme);
   const skipped=(id:number)=>skip!==undefined&&(typeof skip==='number'?skip===id:skip.has(id));
   const included=(id:number)=>only===undefined||(typeof only==='number'?only===id:only.has(id));
+  const t=this.tile,pad=t.pad,tw=t.w/t.scale,th=t.h/t.scale,vx0=-cam.x/cam.z,vx1=(r.w-cam.x)/cam.z,vy0=-cam.y/cam.z,vy1=(r.h-cam.y)/cam.z;
+  const fadeActive=this.variant?.kind==='fade'&&!!this.grayAtlas,windActive=this.variant?.kind==='wind';
   // Keep placed pieces below every loose group without reordering synced state.
   // Within each layer, preserve the existing raiseGroup / hit-testing order.
   const placedPicture=this.ready&&!!this.atlas&&paint!=='overlays'&&only===undefined;
   for(const locked of [true,false]){const layer=locked&&placedPicture?this.placedLayer():null;if(layer)ctx.drawImage(layer,this.board.x,this.board.y,this.board.width,this.board.height);
+  if(locked&&layer&&!fadeActive&&(paint==='pieces'||this.focusedPiece===null))continue;
   for(const group of this.state.groups){if(skipped(group.id)||!included(group.id)||group.locked!==locked||!this.groupVisible(group))continue;const owner=this.owners[group.id],{dx,dy}=this.displayOffset(group);
    const lift=view===this&&this.drag?.id===group.id?this.dragLift(group):null;
    if(lift&&paint!=='overlays'){
@@ -1268,19 +1273,27 @@ export class PuzzleBoard implements RoomTable {
     for(const id of group.pieces){const p=this.pieces[id];appendTurnedPath(ctx,this.paths[id],this.board.x+p.col*w+dx,this.board.y+p.row*h+dy,group.pieces.length===1?this.angleOf(id,now):0,w/2,h/2);}
     ctx.fillStyle=colors.dragShadow;ctx.fill();ctx.restore();
    }
-   for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+dx,y=this.board.y+p.row*h+dy;if(x+w+this.tile.pad<(0-cam.x)/cam.z||x-this.tile.pad>(r.w-cam.x)/cam.z||y+h+this.tile.pad<(0-cam.y)/cam.z||y-this.tile.pad>(r.h-cam.y)/cam.z)continue;
-    if(paint==='overlays'&&!owner&&this.focusedPiece!==id&&this.selected!==group.id)continue;
+   const isDragged=this.drag?.id===group.id,isSelected=this.selected===group.id&&this.rotatable(group),single=group.pieces.length===1;
+   for(const id of group.pieces){const p=this.pieces[id],x=this.board.x+p.col*w+dx,y=this.board.y+p.row*h+dy;if(x+w+pad<vx0||x-pad>vx1||y+h+pad<vy0||y-pad>vy1)continue;
+    const hasOverlay=paint!=='pieces'&&(!!owner||isDragged||this.focusedPiece===id||isSelected);
+    if(paint==='overlays'&&!hasOverlay)continue;
+    const fade=fadeActive?this.fadeOf(group,id,now):0;
+    if(locked&&layer&&fade===0&&!hasOverlay)continue;
+    const angle=windActive&&single?this.angleOf(id,now):0;
+    if(!lift&&!angle&&!hasOverlay&&this.atlas&&paint!=='overlays'&&fade===0&&!(locked&&layer)){
+     ctx.translate(x,y);ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-pad,-pad,tw,th);ctx.translate(-x,-y);
+     continue;
+    }
     ctx.save();if(lift){ctx.translate(lift.x,lift.y);ctx.scale(lift.s,lift.s);ctx.translate(-lift.x,-lift.y);}ctx.translate(x,y);
-    const angle=group.pieces.length===1?this.angleOf(id,now):0;if(angle){ctx.translate(w/2,h/2);ctx.rotate(angle*Math.PI/180);ctx.translate(-w/2,-h/2);}
+    if(angle){ctx.translate(w/2,h/2);ctx.rotate(angle*Math.PI/180);ctx.translate(-w/2,-h/2);}
     if(paint!=='overlays'){
      // Faded: the grey tile instead of the colour one, or over it while the colour comes back.
-     const fade=this.fadeOf(group,id,now),t=this.tile;
-     if(!(locked&&layer)&&fade<1){if(this.atlas){ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
-     if(fade>0&&this.grayAtlas){const alpha=ctx.globalAlpha;if(fade<1)ctx.globalAlpha=alpha*fade;ctx.drawImage(this.grayAtlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-t.pad,-t.pad,t.w/t.scale,t.h/t.scale);ctx.globalAlpha=alpha;}
+     if(!(locked&&layer)&&fade<1){if(this.atlas){ctx.drawImage(this.atlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-pad,-pad,tw,th);}else{tracePuzzlePath(ctx,this.paths[id]);ctx.fillStyle=colors.piecePlaceholder;ctx.fill();ctx.strokeStyle=colors.pieceLine;ctx.lineWidth=.8/cam.z;ctx.stroke();}}
+     if(fade>0&&this.grayAtlas){const alpha=ctx.globalAlpha;if(fade<1)ctx.globalAlpha=alpha*fade;ctx.drawImage(this.grayAtlas,(id%t.columns)*t.w,Math.floor(id/t.columns)*t.h,t.w,t.h,-pad,-pad,tw,th);ctx.globalAlpha=alpha;}
     }
     if(paint!=='pieces'){
-    if(owner||this.drag?.id===group.id||this.focusedPiece===id){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=owner?.color||colors.focus;ctx.lineWidth=(owner&&this.phoneLandscapeRoom?2.5:2)/cam.z;ctx.stroke();}
-    else if(this.selected===group.id&&this.rotatable(group)){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle='#f0b44c';ctx.lineWidth=3/cam.z;ctx.stroke();}
+    if(owner||isDragged||this.focusedPiece===id){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle=owner?.color||colors.focus;ctx.lineWidth=(owner&&this.phoneLandscapeRoom?2.5:2)/cam.z;ctx.stroke();}
+    else if(isSelected){tracePuzzlePath(ctx,this.paths[id]);ctx.strokeStyle='#f0b44c';ctx.lineWidth=3/cam.z;ctx.stroke();}
     }
     ctx.restore();
    }
@@ -1435,7 +1448,20 @@ export class PuzzleBoard implements RoomTable {
   ctx.beginPath();ctx.moveTo(1,1);ctx.lineTo(1,19);ctx.lineTo(6,14);ctx.lineTo(10,23);ctx.lineTo(14,21);ctx.lineTo(10,13);ctx.lineTo(18,13);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
  }
  private releaseGestureSurface(){this.gestureSurface=null;}
- private releaseSurfaceBuffer(){this.dragSurface=null;this.gestureSurface=null;if(this.surfaceBuffer){this.surfaceBuffer.width=this.surfaceBuffer.height=1;this.surfaceBuffer=null;}}
+ private releaseIdleSurface(){this.idleSurface=null;}
+ private releaseSurfaceBuffer(){this.dragSurface=null;this.gestureSurface=null;this.idleSurface=null;if(this.surfaceBuffer){this.surfaceBuffer.width=this.surfaceBuffer.height=1;this.surfaceBuffer=null;}}
+ private groupsKey(skip?:number|ReadonlySet<number>){
+  let h1=0x811c9dc5,h2=0x9e3779b9;
+  const mix=(v:number)=>{h1=Math.imul(h1^v,0x01000193);h2=Math.imul(h2^(v+0x517cc1b7),0x85ebca6b);};
+  const mixNum=(v:number)=>{hashF64[0]=v;mix(hashU32[0]);mix(hashU32[1]);};
+  const skipped=(id:number)=>skip!==undefined&&(typeof skip==='number'?skip===id:skip.has(id));
+  for(const g of this.state.groups){
+   mix(g.id);mix(g.locked?1:0);mix(g.pieces.length);
+   for(let i=0;i<g.pieces.length;i++)mix(g.pieces[i]);
+   if(skipped(g.id))mix(0x55aa55aa);else{mixNum(g.dx);mixNum(g.dy);}
+  }
+  return this.state.groups.length+':'+(h1>>>0).toString(36)+':'+(h2>>>0).toString(36);
+ }
  /** One GPU backing store per room, reused across both kinds of gesture.
   * Invalidating its contents never reallocates or resizes the texture. */
  private prepareSurfaceBuffer(width:number,height:number){
@@ -1461,12 +1487,12 @@ export class PuzzleBoard implements RoomTable {
   if(!this.gestureCacheEnabled||!(this.pan||this.pinch)||this.drag||!this.atlas||this.variantAnimating(now)||typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'){this.releaseGestureSurface();return null;}
   const transform=ctx.getTransform();
   if(!transform||transform.b!==0||transform.c!==0||!Number.isFinite(transform.a)||!Number.isFinite(transform.d)||transform.a<=0||transform.d<=0||ctx.globalAlpha!==1||ctx.globalCompositeOperation!=='source-over'){this.releaseGestureSurface();return null;}
-  this.releaseDragSurface();
+  this.releaseDragSurface();this.releaseIdleSurface();
   const {rect:r,camera:cam}=this,sx=transform.a,sy=transform.d,margin=Math.min(160,Math.max(64,Math.min(r.w,r.h)*.32));
   const mx=Math.ceil(margin*sx),my=Math.ceil(margin*sy),width=Math.ceil(r.w*sx)+mx*2,height=Math.ceil(r.h*sy)+my*2;
   if(width*height*4>DRAG_SURFACE_BYTES||width>8192||height>8192){this.releaseSurfaceBuffer();return null;}
   const remoteIds=this.remoteOwnedIds();
-  const key=JSON.stringify([this.imageSerial,this.currentTheme,this.edges,this.edges?this.hintIds:[],r,sx,sy,width,height,ctx.imageSmoothingEnabled,ctx.imageSmoothingQuality,this.state.groups.map(g=>[g.id,g.locked,g.pieces,...(remoteIds.has(g.id)?['r']:[g.dx,g.dy])]),this.variantKey()]);
+  const key=JSON.stringify([this.imageSerial,this.currentTheme,this.edges,this.edges?this.hintIds:[],r,sx,sy,width,height,ctx.imageSmoothingEnabled,ctx.imageSmoothingQuality,this.groupsKey(remoteIds.size?remoteIds:undefined),this.variantKey()]);
   let surface=this.gestureSurface;
   if(surface?.key===key&&cam.z/surface.camera.z>=.8&&cam.z/surface.camera.z<=1.25&&gestureFrameSample(surface,cam,r.w,r.h))return surface;
   try{
@@ -1489,10 +1515,11 @@ export class PuzzleBoard implements RoomTable {
   const transform=ctx.getTransform();if(!transform||transform.b!==0||transform.c!==0||!Number.isFinite(transform.a)||!Number.isFinite(transform.d)||transform.a<=0||transform.d<=0){this.releaseDragSurface();return null;}
   const {rect:r,camera:cam}=this,width=ctx.canvas?.width??0,height=ctx.canvas?.height??0;
   if(!Number.isFinite(width*height)||width<1||height<1||width*height*4>DRAG_SURFACE_BYTES){this.releaseSurfaceBuffer();return null;}
+  this.releaseIdleSurface();
   const paint={imageSmoothingEnabled:ctx.imageSmoothingEnabled,imageSmoothingQuality:ctx.imageSmoothingQuality,lineCap:ctx.lineCap,lineJoin:ctx.lineJoin,miterLimit:ctx.miterLimit,lineDashOffset:ctx.lineDashOffset,textAlign:ctx.textAlign,textBaseline:ctx.textBaseline,direction:ctx.direction,fontKerning:ctx.fontKerning,fontStretch:ctx.fontStretch,fontVariantCaps:ctx.fontVariantCaps,letterSpacing:ctx.letterSpacing,wordSpacing:ctx.wordSpacing,textRendering:ctx.textRendering},dash=ctx.getLineDash?.()??[];
   const remoteIds=this.remoteOwnedIds(drag.id),skipIds:number|ReadonlySet<number>=remoteIds.size?new Set<number>([drag.id,...remoteIds]):drag.id;
   const staticOwners=remoteIds.size?Object.fromEntries(Object.entries(this.owners).filter(([id])=>!remoteIds.has(Number(id)))):this.owners;
-  const activeHints=this.hintUntil>now?this.hintIds:[],key=JSON.stringify([this.imageSerial,r,cam,width,height,transform.a,transform.d,transform.e,transform.f,this.currentTheme,this.edges,this.underlay,this.focusedPiece,activeHints,paint,dash,groups.map(g=>[g.id,g.locked,g.pieces,...(g.id===drag.id||remoteIds.has(g.id)?[]:[g.dx,g.dy])]),staticOwners,Object.keys(staticOwners).filter(id=>this.cursorShown(staticOwners[id])),[...remoteIds],this.variantKey()]);
+  const activeHints=this.hintUntil>now?this.hintIds:[],key=JSON.stringify([this.imageSerial,r,cam,width,height,transform.a,transform.d,transform.e,transform.f,this.currentTheme,this.phoneLandscapeRoom,this.edges,this.underlay,this.focusedPiece,activeHints,paint,dash,this.groupsKey(skipIds),staticOwners,Object.keys(staticOwners).filter(id=>this.cursorShown(staticOwners[id])),[...remoteIds],this.variantKey()]);
   if(this.dragSurface?.key===key)return this.dragSurface;
   let surface=this.dragSurface;
   try{
@@ -1503,16 +1530,46 @@ export class PuzzleBoard implements RoomTable {
    surface.key=key;this.dragSurface=surface;return surface;
   }catch{this.releaseSurfaceBuffer();return null;}
  }
+ /** Cache stationary pieces while multiplayer cursors, teammate drags or feedback
+  * animate at 60fps. Reuses the same pooled backing buffer so RAM stays bounded. */
+ private cachedIdleSurface(ctx:CanvasRenderingContext2D,now:number):DragSurface|null{
+  if(!this.gestureCacheEnabled||this.drag||this.pan||this.pinch||!this.ready||!this.atlas||this.completionReveal>0||this.variantAnimating(now)){this.releaseIdleSurface();return null;}
+  const animating=(this.cursors?.size??0)>0||(this.remoteOffsets?.size??0)>0||(this.flashes?.length??0)>0||(this.teamBursts?.length??0)>0||this.locateUntil>now||(this.hintIds.length>0&&Math.min(this.hintUntil,this.hintPulseUntil)>now);
+  if(!animating){this.releaseIdleSurface();return null;}
+  let loose=0;for(const g of this.state.groups)if(!g.locked)loose++;
+  if(loose<12){this.releaseIdleSurface();return null;}
+  if(typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'||ctx.globalAlpha!==1||ctx.globalCompositeOperation!=='source-over'||ctx.shadowBlur!==0||ctx.shadowColor!=='rgba(0, 0, 0, 0)'||(ctx.filter!==undefined&&ctx.filter!=='none')){this.releaseIdleSurface();return null;}
+  const transform=ctx.getTransform();if(!transform||transform.b!==0||transform.c!==0||!Number.isFinite(transform.a)||!Number.isFinite(transform.d)||transform.a<=0||transform.d<=0){this.releaseIdleSurface();return null;}
+  const {rect:r,camera:cam}=this,width=ctx.canvas?.width??0,height=ctx.canvas?.height??0;
+  if(!Number.isFinite(width*height)||width<1||height<1||width*height*4>DRAG_SURFACE_BYTES){this.releaseIdleSurface();return null;}
+  this.releaseDragSurface();this.releaseGestureSurface();
+  const paint={imageSmoothingEnabled:ctx.imageSmoothingEnabled,imageSmoothingQuality:ctx.imageSmoothingQuality,lineCap:ctx.lineCap,lineJoin:ctx.lineJoin,miterLimit:ctx.miterLimit,lineDashOffset:ctx.lineDashOffset,textAlign:ctx.textAlign,textBaseline:ctx.textBaseline,direction:ctx.direction,fontKerning:ctx.fontKerning,fontStretch:ctx.fontStretch,fontVariantCaps:ctx.fontVariantCaps,letterSpacing:ctx.letterSpacing,wordSpacing:ctx.wordSpacing,textRendering:ctx.textRendering},dash=ctx.getLineDash?.()??[];
+  const remoteIds=this.remoteOwnedIds(),skipIds=remoteIds.size?remoteIds:undefined;
+  const staticOwners=remoteIds.size?Object.fromEntries(Object.entries(this.owners).filter(([id])=>!remoteIds.has(Number(id)))):this.owners;
+  const activeHints=this.hintUntil>now?this.hintIds:[],key=JSON.stringify([this.imageSerial,r,cam,width,height,transform.a,transform.d,transform.e,transform.f,this.currentTheme,this.phoneLandscapeRoom,this.edges,this.underlay,this.focusedPiece,this.selected,activeHints,paint,dash,this.groupsKey(skipIds),staticOwners,Object.keys(staticOwners).filter(id=>this.cursorShown(staticOwners[id])),[...remoteIds],this.variantKey()]);
+  if(this.idleSurface?.key===key)return this.idleSurface;
+  let surface=this.idleSurface;
+  try{
+   const {canvas,c}=this.prepareSurfaceBuffer(width,height);surface={canvas,key:''};
+   c.setTransform(transform.a,0,0,transform.d,transform.e,transform.f);
+   Object.assign(c,Object.fromEntries(Object.entries(paint).filter(([,value])=>value!==undefined)));c.setLineDash?.(dash);
+   c.save();this.drawSurface(c);this.drawPieceGroups(c,now,skipIds);c.restore();
+   surface.key=key;this.idleSurface=surface;return surface;
+  }catch{this.releaseSurfaceBuffer();return null;}
+ }
  draw(ctx:CanvasRenderingContext2D){
   this.pruneHints();
   if(this.destroyed||!this.rect.w)return;const {rect:r,camera:cam}=this,w=this.board.width/this.state.cols,h=this.board.height/this.state.rows,now=Date.now(),colors=boardThemeColors(this.currentTheme);
-  const decorations:{value:RoomDecoration;rect:Rect}[]=[];let surface:DragSurface|null=null;
+  const decorations:{value:RoomDecoration;rect:Rect}[]=[];let surface:DragSurface|null=null,idle:DragSurface|null=null;
   let gesture:GestureSurface|null=null;
   try{gesture=this.cachedGestureSurface(ctx,now);}catch{this.releaseGestureSurface();}
   try{surface=this.cachedDragSurface(ctx,now);}catch{this.releaseDragSurface();}
-  if(surface){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(surface.canvas,0,0);ctx.restore();}
+  if(!surface&&!gesture)try{idle=this.cachedIdleSurface(ctx,now);}catch{this.releaseIdleSurface();}
+  else this.releaseIdleSurface();
+  const baked=surface??idle;
+  if(baked){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(baked.canvas,0,0);ctx.restore();}
   ctx.save();
-  if(surface){ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.translate(r.x+cam.x,r.y+cam.y);ctx.scale(cam.z,cam.z);const remoteIds=this.remoteOwnedIds(this.drag!.id);if(remoteIds.size)this.drawPieceGroups(ctx,now,undefined,remoteIds);this.drawPieceGroups(ctx,now,undefined,this.drag!.id);}
+  if(baked){ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.translate(r.x+cam.x,r.y+cam.y);ctx.scale(cam.z,cam.z);const remoteIds=this.remoteOwnedIds(surface?this.drag!.id:undefined);if(remoteIds.size)this.drawPieceGroups(ctx,now,undefined,remoteIds);if(surface)this.drawPieceGroups(ctx,now,undefined,this.drag!.id);}
   else{this.drawSurface(ctx);
    const sample=gesture&&gestureFrameSample(gesture,cam,r.w,r.h);
    if(gesture&&sample){

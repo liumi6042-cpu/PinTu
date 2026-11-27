@@ -1,4 +1,4 @@
-import type {AdPlacementKey,Platform,Input,Rect,Route,TelemetryBridge} from './ports';
+import type {AdPlacementKey,Platform,Input,Rect,Route,TelemetryBridge,Viewport} from './ports';
 import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
 import {comicFor,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
@@ -49,7 +49,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.30';
+const CLIENT_PACKAGE_VERSION='v53.31';
 
 /** One scene graph and one set of game rules for both mobile platforms. */
 export class GameApp{
@@ -280,12 +280,14 @@ export class GameApp{
  private webLink(key:WebPage){return this.platform.config.webLinks?.[key]??this.client.config.compatUrls?.[key]??({account:'/account',security:'/account/security',membership:'/membership',uploads:'/upload',terms:'/terms',privacy:'/privacy',feedback:'/feedback'}[key]);}
  private openWeb(key:WebPage){this.platform.openUrl?.(this.webLink(key));}
  private drawWebLinks(x:number,y:number,w:number){const s=this.stage,items:[WebPage,string][]=[['terms','用户协议'],['privacy','隐私政策'],['feedback','反馈']];items.forEach(([key,label],index)=>{const cw=w/items.length,cx=x+index*cw;s.text(label,cx+(cw-s.measure(label,10))/2,y,10,this.colors.muted);s.hit({x:cx,y:y-4,w:cw,h:22},()=>this.openWeb(key));});}
+ private frameViewport:Viewport|null=null;
+ private currentViewport():Viewport{return this.frameViewport??this.platform.viewport();}
  private get finePointer(){try{return typeof matchMedia==='function'&&matchMedia('(pointer:fine)').matches;}catch{return false;}}
  private layoutFor(width:number,height:number):'desktop'|'phoneLandscape'|'phonePortrait'{const id=this.platform.config.id;if(width>=1000&&height>=600&&(id==='web'||id==='taptap'&&this.finePointer))return 'desktop';return width>height&&height<500?'phoneLandscape':'phonePortrait';}
  /** The single layout decision, from the scaled logical viewport; every screen reads it. */
- private get layout(){const v=this.platform.viewport();return this.layoutFor(v.width,v.height);}
+ private get layout(){const v=this.currentViewport();return this.layoutFor(v.width,v.height);}
  private get desktop(){return this.layout==='desktop';}
- private get floatingTasks(){const v=this.platform.viewport();return v.width>v.height&&v.width>=540;}
+ private get floatingTasks(){const v=this.currentViewport();return v.width>v.height&&v.width>=540;}
  // Primary navigation: five destinations plus settings. The puzzle room never shows it.
  private readonly navItems:readonly(readonly[Route,string,string])[]=[['chapter','故事','story'],['lobby','大厅','players'],['gallery','图库','underlay'],['collection','收藏','book'],['friends','好友','friendArt']];
  private get tabRoute(){return !this.room&&this.navItems.some(([route])=>route===this.route);}
@@ -297,7 +299,7 @@ export class GameApp{
   const count=route==='friends'?this.social.unread+this.social.requestCount:0;if(!count)return;const label=count>99?'99+':String(count),w=Math.max(17,s.measure(label,9,700)+8);s.frame({x:x-w/2,y:y-8,w,h:17},'segment-berry-selected');s.text(label,x-s.measure(label,9,700)/2,y-6,9,this.colors.onAccent,700);
  }
  private drawTabBar(){
-  const s=this.stage,v=this.platform.viewport(),y=s.h-v.bottom-64,tw=s.w/this.navItems.length;if(this.modalBlocksInput)return;
+  const s=this.stage,v=this.currentViewport(),y=s.h-v.bottom-64,tw=s.w/this.navItems.length;if(this.modalBlocksInput)return;
   s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(0,y,s.w,s.h-y);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(0,y,s.w,2);
   this.navItems.forEach(([route,label,icon],index)=>{const x=index*tw,selected=this.route===route;
    if(selected){s.ctx.fillStyle=s.color('#a85567');s.ctx.fillRect(Math.round(x+tw*.22),y,Math.round(tw*.56),3);}
@@ -306,7 +308,7 @@ export class GameApp{
    s.hit({x,y,w:tw,h:s.h-y},()=>this.openTab(route));});
  }
  private drawNavRail(){
-  const s=this.stage,v=this.platform.viewport(),w=64,top=v.top+6,itemH=Math.min(56,(s.h-top-v.bottom-6)/6);
+  const s=this.stage,v=this.currentViewport(),w=64,top=v.top+6,itemH=Math.min(56,(s.h-top-v.bottom-6)/6);
   s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(0,0,w,s.h);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(w-2,0,2,s.h);
   const item=(r:Rect,label:string,icon:string,selected:boolean,action:()=>void,route?:Route)=>{if(selected)s.frame(r,'button-cream-selected');const iy=r.y+(r.h-37)/2;s.icon(icon,{x:r.x+(r.w-24)/2,y:iy,w:24,h:24});s.text(label,r.x+(r.w-s.measure(label,10,700))/2,iy+26,10,selected?this.colors.ink:this.colors.muted,700);if(route)this.navBadge(route,r.x+r.w/2+14,iy+3);s.hit(r,action);};
   this.navItems.forEach(([route,label,icon],index)=>item({x:5,y:top+index*itemH,w:w-12,h:itemH-4},label,icon,this.route===route,()=>this.openTab(route),route));
@@ -1073,8 +1075,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  drawForRenderProbe(directPaper:boolean){const board=this.board;if(!board||!directPaper){this.draw();return;}const enabled=board.paperCacheEnabled;board.paperCacheEnabled=false;try{this.draw();}finally{board.paperCacheEnabled=enabled;}}
  draw(){
+  this.frameViewport=this.platform.viewport();
+  try{
   this.settingsTipAnchor=null;this.settingsTipDrawn=false;
-  const s=this.stage;if(this.route==='room'){s.ctx.fillStyle=boardThemeColors(s.theme).paper;s.ctx.fillRect(0,0,s.w,s.h);}else s.background();
+  const s=this.stage,view=this.frameViewport;if(this.route==='room'){s.ctx.fillStyle=boardThemeColors(s.theme).paper;s.ctx.fillRect(0,0,s.w,s.h);}else s.background();
   if(this.loginLogOpen){this.drawLoginLog();return;}
   if(this.needsPrivacyChoice||this.loginDialogActive||this.platform.tapAuthorizationPending?.()){this.drawPrivacyChoice();return;}
   // Once start-up finishes the bar fills to 100% before the first scene; an error screen drops it.
@@ -1083,15 +1087,15 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(loading||this.loadingDone&&Date.now()-this.loadingDone<300){this.drawLoading();return;}
   this.loadingStarted=this.loadingShown=this.loadingDone=0;
   this.sceneArea={x:0,y:0,w:s.w,h:s.h};this.listArea={...this.sceneArea};this.listColumn=null;this.albumListArea={x:0,y:0,w:0,h:0};
-  this.bodyBottom=s.h-this.platform.viewport().bottom-12;
+  this.bodyBottom=s.h-view.bottom-12;
   if(this.route==='room')this.drawRoom();
-  else if(this.offline?.active&&!this.ready){this.bodyTop=this.platform.viewport().top+12;this.extent=this.offline.drawPage(s,this.scroll,{paragraph:(...args)=>this.paragraph(...args),selectedChapter:view=>this.selectChapter(view),chapter:(chapter,view,height)=>{const top=this.bodyTop,bottom=this.bodyBottom,scroll=this.scroll;this.bodyTop=0;this.bodyBottom=height;this.scroll=0;this.drawChapter(chapter,view);this.bodyTop=top;this.bodyBottom=bottom;this.scroll=scroll;},asset:src=>this.client.asset(src),reconnect:()=>{this.offline.active=false;void this.start();},launch:input=>void this.run(()=>this.launchOffline(input)),invalidate:this.invalidate});this.clampListScroll();}
+  else if(this.offline?.active&&!this.ready){this.bodyTop=view.top+12;this.extent=this.offline.drawPage(s,this.scroll,{paragraph:(...args)=>this.paragraph(...args),selectedChapter:view=>this.selectChapter(view),chapter:(chapter,view,height)=>{const top=this.bodyTop,bottom=this.bodyBottom,scroll=this.scroll;this.bodyTop=0;this.bodyBottom=height;this.scroll=0;this.drawChapter(chapter,view);this.bodyTop=top;this.bodyBottom=bottom;this.scroll=scroll;},asset:src=>this.client.asset(src),reconnect:()=>{this.offline.active=false;void this.start();},launch:input=>void this.run(()=>this.launchOffline(input)),invalidate:this.invalidate});this.clampListScroll();}
   else if(this.desktop){if(this.ready)this.drawDesktopShell();else s.withoutInput(()=>this.drawDesktopShell());const area=this.sceneArea;if(this.route==='collection'){const width=Math.min(contentMaxWidth+24,area.w);area.x+=(area.w-width)/2;area.w=width;this.listArea={...area};}this.contentOrigin={x:area.x,y:area.y};s.withViewport(area,()=>{this.bodyTop=12;this.bodyBottom=s.h-12;this.drawScene();});this.bodyTop+=area.y;this.bodyBottom+=area.y;this.listArea={x:this.lobbyColumn()?.x??(this.listArea.x||area.x),y:this.bodyTop,w:this.lobbyColumn()?.w??(this.listArea.w||area.w),h:Math.max(0,this.bodyBottom-this.bodyTop)};}
   else{
    const layout=this.layout,rail=this.navVisible&&layout==='phoneLandscape',bar=this.navVisible&&layout==='phonePortrait',outer={x:rail?72:0,y:0,w:s.w-(rail?72:0),h:s.h-(bar?64:0)};
    if(rail)this.drawNavRail();
    // The page draws in local coordinates beside the rail or above the tab bar; hits stay in screen space.
-   const page=()=>{this.bodyBottom=s.h-this.platform.viewport().bottom-12;if(this.ready)this.drawHeader();else s.withoutInput(()=>this.drawHeader());const width=this.route==='collection'?Math.min(contentMaxWidth+24,s.w):s.w,x=(s.w-width)/2,local={x,y:0,w:width,h:s.h};this.sceneArea={...local,x:outer.x+x};this.contentOrigin={x:outer.x+x,y:0};if(x)s.withViewport(local,()=>this.drawScene());else this.drawScene();this.listArea={x:this.lobbyColumn()?.x??outer.x+x,y:this.bodyTop,w:this.lobbyColumn()?.w??width,h:Math.max(0,this.bodyBottom-this.bodyTop)};};
+   const page=()=>{this.bodyBottom=s.h-view.bottom-12;if(this.ready)this.drawHeader();else s.withoutInput(()=>this.drawHeader());const width=this.route==='collection'?Math.min(contentMaxWidth+24,s.w):s.w,x=(s.w-width)/2,local={x,y:0,w:width,h:s.h};this.sceneArea={...local,x:outer.x+x};this.contentOrigin={x:outer.x+x,y:0};if(x)s.withViewport(local,()=>this.drawScene());else this.drawScene();this.listArea={x:this.lobbyColumn()?.x??outer.x+x,y:this.bodyTop,w:this.lobbyColumn()?.w??width,h:Math.max(0,this.bodyBottom-this.bodyTop)};};
    if(rail||bar)s.withViewport(outer,page);else page();
    if(bar)this.drawTabBar();
   }
@@ -1099,7 +1103,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.modal)this.drawModal();
   this.noticeBottom=0;if(this.message&&Date.now()<=this.messageUntil)this.drawNotice();
   this.drawInviteBanner();
-  if(this.busy){const cancel=this.sharing&&!!this.platform.cancelShare,label=cancel?'等待分享 · 取消等待':'正在处理…',width=cancel?184:144,r={x:(s.w-width)/2,y:Math.max(this.platform.viewport().top+6,this.platform.config.id==='taptap'?44:0),w:width,h:28};s.panel(r,'cream');s.text(label,r.x+(width-s.measure(label,12))/2,r.y+6,12,this.colors.ink);if(cancel)s.hit(r,()=>this.platform.cancelShare?.());}
+  if(this.busy){const cancel=this.sharing&&!!this.platform.cancelShare,label=cancel?'等待分享 · 取消等待':'正在处理…',width=cancel?184:144,r={x:(s.w-width)/2,y:Math.max(view.top+6,this.platform.config.id==='taptap'?44:0),w:width,h:28};s.panel(r,'cream');s.text(label,r.x+(width-s.measure(label,12))/2,r.y+6,12,this.colors.ink);if(cancel)s.hit(r,()=>this.platform.cancelShare?.());}
+  }finally{this.frameViewport=null;}
  }
  private drawScene(){if(!this.ready){this.drawLobbyStartup();return;}switch(this.route){case'lobby':this.drawLobby();break;case'chapter':this.drawChapter();break;case'gallery':this.drawGallery();break;case'tasks':this.drawTasksPage();break;case'supplies':this.drawSupplies();break;case'collection':this.drawCollection();break;case'friends':this.drawFriends();break;default:this.drawPolicy();}this.clampListScroll();}
  private drawDesktopShell(){
@@ -1180,9 +1185,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private copyInvitationCode(code:string){if(!this.platform.copyText){this.note('邀请码：'+code);return;}void this.platform.copyText(code).then(ok=>this.note(ok?'已复制邀请码 '+code:'复制失败，请手动记下邀请码 '+code));}
  /** Headers draw beside the nav rail in local coordinates, but keep the same screen right edge. */
  /** Right-edge items end left of TapTap's ••• capsule; rows are never pushed below it (portrait since v31). */
- private menuReserve(row:Rect){const view=this.platform.viewport(),menu=view.menu;return menu&&row.y<menu.y+menu.h&&menu.y<row.y+row.h?Math.max(0,view.width-menu.x+8):0;}
+ private menuReserve(row:Rect){const view=this.currentViewport(),menu=view.menu;return menu&&row.y<menu.y+menu.h&&menu.y<row.y+row.h?Math.max(0,view.width-menu.x+8):0;}
  // Puzzle rooms get the same visible top gap as the lobby header (inset + 12).
- private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.platform.viewport().top+6;return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
+ private roomHeaderTop(){if(this.layout==='phoneLandscape'&&this.platform.config.id!=='web')return this.currentViewport().top+6;return this.headerSafeTop()+(this.platform.config.id==='web'?0:12);}
  private drawSettingsBadge(avatar:Rect,offsetX=0){
   const s=this.stage,c=s.ctx,cx=avatar.x+avatar.w-9,cy=avatar.y+avatar.h-10;
   c.save();c.fillStyle=this.colors.cream;c.beginPath();c.arc(cx,cy,11,0,Math.PI*2);c.fill();c.restore();
@@ -1198,9 +1203,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   c.save();c.fillStyle=this.colors.cream;c.strokeStyle=this.colors.ink;c.lineWidth=2;c.beginPath();c.moveTo(tipX-9,y+3);c.lineTo(tipX,y-10);c.lineTo(tipX+9,y+3);c.fill();c.stroke();c.restore();
   s.panel({x,y,w,h},'cream');lines.forEach((text,index)=>s.text(text,x+12,y+9+index*18,size,this.colors.ink,600,w-24));this.settingsTipDrawn=true;
  }
- private headerSafeTop(){const view=this.platform.viewport();return this.platform.config.id==='web'?view.top:view.top+2;}
+ private headerSafeTop(){const view=this.currentViewport();return this.platform.config.id==='web'?view.top:view.top+2;}
  private drawHeader(){
-  const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.platform.viewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360,reserve=this.menuReserve({x:0,y:top,w:s.w,h:wide?74:56});
+  const s=this.stage,p=this.client.profile,safe=this.route==='lobby'||this.route==='chapter'?this.headerSafeTop():this.currentViewport().top,top=safe+12+(this.formalWeb?23:0),wide=s.w>=640&&s.h>560,small=s.w<360,reserve=this.menuReserve({x:0,y:top,w:s.w,h:wide?74:56});
   if(this.formalWeb){s.text('测试版',13,safe+7,10,this.colors.muted);this.drawWebLinks(Math.max(75,s.w-224),safe+7,Math.min(212,s.w-87));}
   if(this.platform.config?.id==='wechat'&&safe>=30)s.text(this.platform.config.gameName,14,safe-26,13,this.colors.ink,700,Math.max(100,s.w-160));
   const line=(y:number)=>{s.ctx.fillStyle=s.color('#c99586');s.ctx.fillRect(12,Math.round(y),s.w-24,1);};
@@ -1228,7 +1233,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
 
  private levelColor(level:number){return level>=1000?'#a34f8c':level>=500?'#4a4277':level>=300?'#ac5f82':level>=180?'#9971a7':level>=120?'#b6863c':level>=80?'#758795':level>=50?'#b16984':level>=30?'#ad843b':level>=20?'#8c6bac':level>=10?'#638ca7':level>=5?'#749866':this.colors.ink;}
  private drawNotice(){
-  const s=this.stage,view=this.platform.viewport(),size=13,w=Math.min(s.w-24,340,Math.max(136,s.measure(this.message.replace(/\n/g,' '),size,600)+52)),textWidth=w-52,lines:string[]=[];
+  const s=this.stage,view=this.currentViewport(),size=13,w=Math.min(s.w-24,340,Math.max(136,s.measure(this.message.replace(/\n/g,' '),size,600)+52)),textWidth=w-52,lines:string[]=[];
   let line='';for(const char of this.message){if(char==='\n'||s.measure(line+char,size,600)>textWidth){lines.push(line);line=char==='\n'?'':char;}else line+=char;}if(line)lines.push(line);
   const shown=lines.slice(0,3);if(lines.length>3){let last=shown[2];while(last&&s.measure(last+'…',size,600)>textWidth)last=last.slice(0,-1);shown[2]=last+'…';}
   const h=Math.max(35,shown.length*19+16),x=(s.w-w)/2,y=Math.max(view.top+10,this.platform.config.id==='taptap'?44:0)+(this.busy?34:0);this.noticeBottom=y+h;s.ctx.save();s.ctx.globalAlpha=.94;s.ctx.fillStyle='#573b40';s.ctx.fillRect(x,y,w,h);s.ctx.restore();
@@ -1570,7 +1575,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.modal==='redeem'){this.drawRedeem();return;}
   if(this.modal==='chat'){this.drawPublicChat();return;}
   if(this.modal==='packPreview'){this.drawPackPreview();return;}
-  const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.platform.viewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
+  const s=this.stage,currencyHelp=this.modal==='coins'||this.modal==='fragments',v=this.currentViewport(),w=Math.min(s.w-24,currencyHelp?440:this.modal==='completion'?560:540),x=(s.w-w)/2,h=currencyHelp?Math.min(520,s.h-v.top-v.bottom-39):s.h-Math.max(v.top+15,s.h*.1)-v.bottom-24,y=currencyHelp?v.top+15+(s.h-v.top-v.bottom-39-h)/2:Math.max(v.top+15,s.h*.1);
   s.ctx.fillStyle=this.colors.overlay;s.ctx.fillRect(0,0,s.w,s.h);s.hit({x:0,y:0,w:s.w,h:s.h},()=>{});s.panel({x,y,w,h});
   const titles:Record<Exclude<Modal,null>,string>={weeklyGift:'七日礼',levelComic:'小窝的故事',orientation:'选择屏幕方向',welcome:'欢迎回家',members:'同桌玩家',playerCard:'玩家名片',privacyRequests:'个人资料申请',redeem:'兑换码',coins:'金币说明',fragments:'装饰碎片说明',tasks:'任务与礼包',albums:'选择相册',filters:this.route==='gallery'?'筛选图片':'筛选房间',settings:'玩家与设置',history:'历史拼图',manage:this.formalWeb?'我的房间':'自己的房间',invite:'邀请好友',tools:'拼图工具',chat:'同桌交流',social:this.social.title,completion:'拼图完成',purchase:'解锁主题图包',packPreview:this.previewPack?.title??'图包预览'};
   s.text(titles[this.modal!],x+17,y+18,20,this.colors.ink,700,w-73);s.button({x:x+w-45,y:y+12,w:30,h:30},'',()=>{this.closeModal();this.invalidate();});
@@ -1755,7 +1760,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(this.route==='room'&&!this.boardInputBlocked&&input.keyDown&&!input.repeat&&input.key){const key=input.key.toLowerCase();if(key==='t'&&this.layout==='desktop'){this.setDesktopToolsOpen(!this.desktopToolsOpen);return true;}const tool=({e:'edge',h:'hint',b:'underlay',f:'fit',l:'locate',r:'organize'} as Record<string,string>)[key];if(tool&&(tool!=='organize'||this.soloRoom)&&(tool!=='locate'||this.platform.config.id!=='web')){this.roomTool(tool);return true;}}
    return this.route==='room'&&!this.boardInputBlocked?this.board?.input(input)??false:false;
   }
-  if(input.type==='move'&&this.platform.canvas.style&&point){this.platform.canvas.style.cursor=this.pointer?.board?'grabbing':this.stage.hasHit(point.x,point.y)?'pointer':this.route==='room'&&inside(this.roomArea,point.x,point.y)&&!this.modalBlocksInput?'grab':'default';}
+  if(input.type==='move'&&this.platform.canvas.style&&point){const next=this.pointer?.board?'grabbing':this.stage.hasHit(point.x,point.y)?'pointer':this.route==='room'&&inside(this.roomArea,point.x,point.y)&&!this.modalBlocksInput?'grab':'default';if(this.platform.canvas.style.cursor!==next)this.platform.canvas.style.cursor=next;}
   if(this.modal==='levelComic')return this.inputComic(input);
   if(this.modal==='social'){this.pointer=null;this.cancelChatPress();return this.social.input(input)||this.stage.input(input);}
   if(input.type==='wheel'){

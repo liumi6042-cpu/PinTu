@@ -9,7 +9,7 @@ import {type AppHost,type RoomListing,type SharedPhoto,clamp,orientation,photoMa
 export function drawInviteBannerPanel(this:AppHost){
   if(!this.inviteBanner&&this.incomingInvite&&this.inviteBannerAllowed){const next=this.incomingInvite;this.incomingInvite=null;if(!this.inviteSeen.has(next.message.id)&&next.message.roomId!==this.room?.ticket.room.id){this.inviteSeen.add(next.message.id);this.inviteBanner={...next,until:Date.now()+60000};}}
   const banner=this.inviteBanner;if(!banner)return;if(Date.now()>banner.until){this.inviteBanner=null;return;}if(!this.inviteBannerAllowed)return;
-  const s=this.stage,view=this.platform.viewport(),w=Math.min(s.w-24,400),h=62,x=(s.w-w)/2,top=Math.max(view.top+10,this.platform.config.id==='taptap'?44:0)+(this.busy?34:0),y=Math.max(top,this.noticeBottom?this.noticeBottom+6:0),r={x,y,w,h};
+  const s=this.stage,view=this.currentViewport(),w=Math.min(s.w-24,400),h=62,x=(s.w-w)/2,top=Math.max(view.top+10,this.platform.config.id==='taptap'?44:0)+(this.busy?34:0),y=Math.max(top,this.noticeBottom?this.noticeBottom+6:0),r={x,y,w,h};
   s.panel(r,'gold');s.hit(r,()=>{});const joinW=58,laterW=52,joinX=x+w-10-joinW,laterX=joinX-6-laterW,tx=x+46,tw=Math.max(40,laterX-8-tx);
   s.icon('invite',{x:x+10,y:y+16,w:28,h:28});s.text(banner.peer.name+' 邀请你一起拼',tx,y+11,13,this.colors.ink,800,tw);
   s.text('「'+(banner.message.title??'一起拼图')+'」',tx,y+33,12,this.colors.muted,600,tw);
@@ -181,9 +181,10 @@ export function drawLobbyActionsPanel(this:AppHost,r:Rect){
   this.drawPictureButton({x:r.x+half+10,y:r.y,w:half,h:r.h},'开一桌',()=>this.navigate('gallery'),'berry','create',font,icon);
  }
 
-export function drawRoomHeaderPanel(this:AppHost,x:number,y:number,_w:number,compact:boolean){
-  const s=this.stage,count=this.lobbyRooms.length,label=(this.lobbyCursor?count+'+':String(count))+' 桌在拼',size=compact?16:20;
+export function drawRoomHeaderPanel(this:AppHost,x:number,y:number,w:number,compact:boolean){
+  const s=this.stage,count=this.lobbyRooms.length,label=(this.lobbyCursor?count+'+':String(count))+' 桌在拼',size=compact?16:20,quickLabel='快速加入',quickSize=12,qw=Math.ceil(s.measure(quickLabel,quickSize,750))+Math.min(19,quickSize+5)+(compact?16:22);
   s.text('公开房间',x,y+2,size,this.colors.ink,800);s.text(label,x+s.measure('公开房间',size,800)+10,y+(compact?5:8),12,this.colors.muted,600);
+  s.button({x:x+w-qw-2,y:y-2,w:qw,h:compact?26:30},quickLabel,()=>this.quickJoin(),{tone:'berry',icon:'players',fontSize:quickSize,disabled:this.busy||!this.client.profile});
   return y+(compact?28:34);
  }
 
@@ -250,7 +251,7 @@ export function drawGalleryPanel(this:AppHost){
   y=this.drawChips(left,y,gridW,portrait||landscape?30:34,chips,true)+10;
   if(pack){s.icon('book',{x:left+2,y,w:23,h:25});s.text(pack.title,left+30,y+5,13,this.colors.ink,700,gridW-130);s.text('查看所有图片',left+gridW-90,y+6,12,this.colors.muted,600);s.hit({x:left+gridW-98,y,w:98,h:30},()=>this.changeListView(()=>{this.packId=null;this.selected=null;}));y+=34;}
   const photos=this.availableGallery().filter(photo=>(this.direction==='all'||orientation(photo.id)===this.direction)&&(this.category==='全部'||this.category===photo.category)&&photo.title.includes(this.search)&&(!pack||pack.imageIds.includes(photo.id))&&(this.source==='all'||this.source==='free'&&!!this.freeGalleryIds?.has(photo.id)||this.source==='owned'&&owned.has(photo.id))&&(!this.unplayedOnly||!completed.has(photo.id)));
-  const selected=this.selected?photoMap.get(this.selected)??null:null,sheetH=portrait&&selected?this.createPanelHeight(true):0,v=this.platform.viewport(),bottom=s.h-v.bottom-12-(sheetH?sheetH+4:0);
+  const selected=this.selected?photoMap.get(this.selected)??null:null,sheetH=portrait&&selected?this.createPanelHeight(true):0,v=this.currentViewport(),bottom=s.h-v.bottom-12-(sheetH?sheetH+4:0);
   const columns=portrait?(gridW>=520?3:2):landscape?3:Math.max(2,Math.min(5,Math.floor(gridW/235))),gap=landscape?8:portrait?10:14,cw=(gridW-gap*(columns-1))/columns,imageHeight=(cw-12)/1.38,ch=imageHeight+(cw<170?56:60);
   this.bodyTop=y;this.bodyBottom=bottom;this.listColumn={x:this.contentOrigin.x+left-6,w:gridW+12};this.extent=Math.ceil(photos.length/columns)*(ch+gap)+12;
   this.scrolled(()=>{

@@ -9,7 +9,7 @@ import {type AppHost,type PublicMessage,clamp,photoMap,phrases,seatLimit} from '
 
 export function drawRoomPanelView(this:AppHost){
   if(this.nineGridRoom){this.drawNineGrid();return;}
-  const s=this.stage,room=this.room,board=this.board,view=this.platform.viewport(),p=this.client.profile;
+  const s=this.stage,room=this.room,board=this.board,view=this.currentViewport(),p=this.client.profile;
   if(!room||!board){s.text('尚未加入房间',20,view.top+35,18);this.button(20,view.top+81,s.w-40,'返回大厅',()=>this.navigate('lobby'));return;}
   const visible=!this.hidden&&!this.modalBlocksInput;if(visible!==this.cursorVisible){this.cursorVisible=visible;if(visible)this.cursor?.refresh();else this.clearRoomPointer();}
   const layout=this.layout,c=s.ctx,safeBottom=s.h-view.bottom,headerTop=this.roomHeaderTop();
@@ -66,7 +66,7 @@ export function drawToolColumnPanel(this:AppHost,r:Rect){
    items.forEach(([kind,label],index)=>{const b={x:r.x+5,y:r.y+index*h,w:r.w-10,h:h-5},active=this.toolActive(kind),disabled=(kind==='hint'||kind==='underlay')&&this.assistanceUnavailable(kind);
     if(active)s.frame(b,'button-cream-selected');s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+4,w:22,h:22});s.text(label,b.x+(b.w-s.measure(label,12,700))/2,b.y+b.h-17,12,disabled?this.colors.disabled:this.colors.ink,700);if(!disabled)s.hit(b,()=>this.roomTool(kind));});return;
   }
-  const s=this.stage,c=s.ctx,menu=this.platform.viewport().menu;
+  const s=this.stage,c=s.ctx,menu=this.currentViewport().menu;
   if(menu){const y=Math.max(r.y,menu.y+menu.h+8);r={...r,y,h:Math.max(0,r.y+r.h-y)};}
   const toggle={x:(this.landscapeToolsOpen?r.x:s.w)-48,y:this.roomHeaderTop()+57,w:36,h:36};toggle.x-=this.menuReserve(toggle);this.landscapeToggle=toggle;this.roomToolsArea=this.landscapeToolsOpen?{...r}:toggle;
   if(this.landscapeToolsOpen){

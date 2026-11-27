@@ -102,6 +102,9 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
  const storageMemory=new Map<string,string>();
  // Every pointer, touch and wheel position is divided by the same zoom used for the viewport.
  let uiSize=readUiSize(),scale=uiScale(uiSize);const resizeListeners=new Set<()=>void>();
+ let cachedCanvasRect:DOMRect|null=null;
+ const readCanvasRect=(fresh=false)=>{if(fresh||!cachedCanvasRect)cachedCanvasRect=canvas.getBoundingClientRect();return cachedCanvasRect;};
+ const invalidateCanvasRect=()=>{cachedCanvasRect=null;};
  let shareDiagnostic='尚未尝试分享',shareLog:string[]=[],shareStarted=Date.now();
  let shareController:AbortController|undefined;
  const tap=()=>config.id==='taptap'?(window as unknown as {tap?:TapHost}).tap:undefined;
@@ -223,7 +226,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   catch(error){loginLog.add(label+' · 网络失败 · '+(Date.now()-started)+'ms');throw error;}
  };
  const platform:Platform={config,canvas,viewport,request:loggedRequest,audio:audioPlayback.audio,loginLog,...(config.id==='taptap'?{onBack:createComicBack(window,tap),tapAuthorizationDebug,tapNicknameUnavailable:()=>identityController?.nicknameUnavailable()===true}:{}),
-  uiSize:()=>uiSize,setUiSize(size){if(!Object.hasOwn(uiSizeFactor,size))return;uiSize=size;try{localStorage.setItem(uiSizeKey,size);}catch{}for(const fn of resizeListeners)fn();},
+  uiSize:()=>uiSize,setUiSize(size){if(!Object.hasOwn(uiSizeFactor,size))return;uiSize=size;invalidateCanvasRect();try{localStorage.setItem(uiSizeKey,size);}catch{}for(const fn of resizeListeners)fn();},
   networkDiagnostics:()=>({http:config.id==='taptap'&&tap()?.request?apiTransport:'browser'}),
   openSocket(url,handlers){
    const socket=new WebSocket(platformSocketUrl(url,config));let closed=false;
@@ -280,7 +283,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
      if(event.isPrimary)primaryPointers.set(event.pointerType,event.pointerId);
     }
     if(type==='move'&&event.pointerType==='mouse'&&event.buttons===0&&active.has(event.pointerId)){up(event);return;}
-    const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=canvas.getBoundingClientRect(),point={id:event.pointerId,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale};
+    const hover=type==='move'&&event.pointerType==='mouse'&&!active.has(event.pointerId);if(type!=='down'&&!active.has(event.pointerId)&&!hover)return;event.preventDefault();const r=readCanvasRect(type==='down'),point={id:event.pointerId,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale};
     if(hover){fn({type,points:[],changed:[point]});return;}
     if(type==='down'){canvas.focus({preventScroll:true});if(event.button===1||(event.pointerType==='mouse'&&space))panPointers.add(event.pointerId);}
     const pan=panPointers.has(event.pointerId);
@@ -291,7 +294,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
    };
    const down=handle('down'),move=handle('move'),up=handle('up'),cancel=handle('cancel');
    const leave=(event:PointerEvent)=>{if(event.pointerType==='mouse'&&!active.has(event.pointerId))fn({type:'cancel',points:[],changed:[{id:event.pointerId,x:0,y:0}]});};
-   const wheel=(event:WheelEvent)=>{event.preventDefault();const r=canvas.getBoundingClientRect(),unit=event.deltaMode===1?16:event.deltaMode===2?Math.max(1,r.height):1;fn({type:'wheel',points:[],changed:[{id:-1,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale}],deltaX:event.deltaX*unit,deltaY:event.deltaY*unit});};
+   const wheel=(event:WheelEvent)=>{event.preventDefault();const r=readCanvasRect(true),unit=event.deltaMode===1?16:event.deltaMode===2?Math.max(1,r.height):1;fn({type:'wheel',points:[],changed:[{id:-1,x:(event.clientX-r.left)/scale,y:(event.clientY-r.top)/scale}],deltaX:event.deltaX*unit,deltaY:event.deltaY*unit});};
    const key=(keyDown:boolean)=>(event:KeyboardEvent)=>{
     if(!keyDown&&event.code==='Space')space=false;
     // Native text dialogs own their keyboard; game shortcuts must not consume typing.
@@ -313,7 +316,7 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
     if(!touchInputMode)return;
     if(event.cancelable)event.preventDefault();
     if(type==='cancel'){reset();return;}
-    const r=canvas.getBoundingClientRect(),point=(t:Touch)=>({id:-t.identifier-1,x:(t.clientX-r.left)/scale,y:(t.clientY-r.top)/scale});
+    const r=readCanvasRect(type==='down'),point=(t:Touch)=>({id:-t.identifier-1,x:(t.clientX-r.left)/scale,y:(t.clientY-r.top)/scale});
     const changed=Array.from(event.changedTouches).map(point);
     if(type==='down'){
      const present=new Set(Array.from(event.touches,t=>-t.identifier-1));
@@ -333,9 +336,9 @@ export function createWebPlatform(input:PlatformConfig,canvas:HTMLCanvasElement)
   },
   ...(config.id==='web'?{fullscreen:webFullscreen(document)}:{}),
   ...(config.id==='taptap'?{setOrientation:(value:'portrait'|'landscape')=>{const lock=(screen as {orientation?:{lock?:(value:string)=>unknown}}).orientation;return setTapOrientation(tap(),value,{current:()=>{const w=window.innerWidth,h=window.innerHeight;return w>0&&h>0?w>h?'landscape':'portrait':null;},common:(globalThis as {common?:TapOrientationHost}).common,lock:typeof lock?.lock==='function'?target=>lock.lock!(target):undefined,viewport:()=>window.innerWidth+'×'+window.innerHeight,log:line=>loginLog.add(line)});},orientationChoiceAvailable,tapPcHost}:{}),
-  onResize(fn){const host=tap(),nativeChange=()=>{identityController?.refreshLayout();fn();};let nativeListening=false;if(host?.onDeviceOrientationChange&&host.offDeviceOrientationChange){try{host.onDeviceOrientationChange(nativeChange);nativeListening=true;}catch{}}window.addEventListener('resize',nativeChange);document.addEventListener('fullscreenchange',nativeChange);const observer=typeof ResizeObserver==='function'?new ResizeObserver(nativeChange):null;observer?.observe(canvas);resizeListeners.add(nativeChange);return()=>{resizeListeners.delete(nativeChange);window.removeEventListener('resize',nativeChange);document.removeEventListener('fullscreenchange',nativeChange);if(nativeListening)try{host?.offDeviceOrientationChange?.(nativeChange);}catch{}observer?.disconnect();};},
+  onResize(fn){const host=tap(),nativeChange=()=>{invalidateCanvasRect();identityController?.refreshLayout();fn();};let nativeListening=false;if(host?.onDeviceOrientationChange&&host.offDeviceOrientationChange){try{host.onDeviceOrientationChange(nativeChange);nativeListening=true;}catch{}}window.addEventListener('resize',nativeChange);document.addEventListener('fullscreenchange',nativeChange);const observer=typeof ResizeObserver==='function'?new ResizeObserver(nativeChange):null;observer?.observe(canvas);resizeListeners.add(nativeChange);return()=>{resizeListeners.delete(nativeChange);window.removeEventListener('resize',nativeChange);document.removeEventListener('fullscreenchange',nativeChange);if(nativeListening)try{host?.offDeviceOrientationChange?.(nativeChange);}catch{}observer?.disconnect();};},
   onHide(fn){const hide=()=>{if(document.hidden){identityController?.setHidden(true);audioPlayback.setHidden(true);fn();}};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},
-  onShow(fn){const show=()=>{if(!document.hidden){identityController?.refreshLayout();identityController?.setHidden(!identityVisible);audioPlayback.setHidden(false);fn(query());}};document.addEventListener('visibilitychange',show);window.addEventListener('hashchange',show);return()=>{document.removeEventListener('visibilitychange',show);window.removeEventListener('hashchange',show);};},
+  onShow(fn){const show=()=>{if(!document.hidden){invalidateCanvasRect();identityController?.refreshLayout();identityController?.setHidden(!identityVisible);audioPlayback.setHidden(false);fn(query());}};document.addEventListener('visibilitychange',show);window.addEventListener('hashchange',show);return()=>{document.removeEventListener('visibilitychange',show);window.removeEventListener('hashchange',show);};},
   shareDiagnostics:()=>shareDiagnostic,
   ...(config.id==='taptap'?{cancelShare:()=>shareController?.abort()}:{}),
   adDiagnostics:()=>adDiagnostic,
