@@ -75,13 +75,14 @@ export function drawToolColumnPanel(this:AppHost,r:Rect){
    items.forEach(([kind,label],index)=>{const b={x:r.x+6,y:top+index*(height+gap),w:r.w-12,h:height},badge=kind==='hint'||kind==='underlay',active=this.toolActive(kind),disabled=badge&&this.assistanceUnavailable(kind);
     if(active||s.isPressed(b))this.drawLandscapeSurface(b,8,roomColors.roseL);
     s.icon(this.roomIcon(kind),{x:b.x+(b.w-22)/2,y:b.y+Math.min(10,Math.max(0,height-39)),w:22,h:22},roomColors.ink);s.text(label,b.x+(b.w-s.measure(label,11,700))/2,b.y+Math.min(38,height-11),11,roomColors.ink,700);
-    if(badge){const grant=this.activeAid(kind),free=this.aid?.freeRemaining?.[kind]??0,text=grant?this.aidBadge(kind):!this.aid?'读取中':this.aid.newcomerProtected||free>0?'免费':'看广告',bw=s.measure(text,8.5,700)+6;
-     this.drawLandscapeSurface({x:b.x,y:b.y,w:bw,h:13},3,roomColors.goldL);s.text(text,b.x+3,b.y+2,8.5,'#7a4d10',700);
+    if(badge){const grant=this.activeAid(kind),paused=kind==='underlay'&&!grant?this.pausedUnderlay():undefined,free=this.aid?.freeRemaining?.[kind]??0,text=grant||paused?this.aidBadge(kind):!this.aid?'读取中':this.aid.newcomerProtected||free>0?'免费':'看广告',bw=s.measure(text,8.5,700)+6;
+     this.drawLandscapeSurface({x:b.x,y:b.y,w:bw,h:13},3,paused?'#e6f0e1':roomColors.goldL);s.text(text,b.x+3,b.y+2,8.5,paused?'#3c6b42':'#7a4d10',700);
     }if(!disabled)s.hit(b,()=>this.roomTool(kind));
    });
   }
   if(this.board?.previewZoomed)return;
   this.drawLandscapeSurface(toggle,18,roomColors.card,roomColors.ink,2,2);s.icon(this.landscapeToolsOpen?'close':'tools',{x:toggle.x+8,y:toggle.y+8,w:20,h:20},roomColors.ink);s.hit(toggle,()=>this.setLandscapeToolsOpen(!this.landscapeToolsOpen));
+  if(!this.landscapeToolsOpen&&this.activeAid('underlay')){const text=this.aidBadge('underlay'),bw=s.measure(text,8.5,700)+8,bx=toggle.x+(toggle.w-bw)/2,by=toggle.y-10;this.drawLandscapeSurface({x:bx,y:by,w:bw,h:14},4,roomColors.goldL,roomColors.ink,1);s.text(text,bx+4,by+2,8.5,'#7a4d10',700);}
  }
 
 export function drawLandscapeSurfacePanel(this:AppHost,r:Rect,radius:number,fill:string,border?:string,width=0,shadow=0){
@@ -260,6 +261,7 @@ export function drawRoomToolTogglePanel(this:AppHost,toggle:Rect,open:boolean,ch
   circle([18,3,36,3,36,5,42,5,42,8,46,8,46,12,49,12,49,18,51,18,51,36,49,36,49,42,46,42,46,46,42,46,42,49,36,49,36,51,18,51,18,49,12,49,12,46,8,46,8,42,5,42,5,36,3,36,3,18,5,18,5,12,8,12,8,8,12,8,12,5,18,5],'#e3bda4');
   circle([19,5,35,5,35,7,41,7,41,10,44,10,44,13,47,13,47,19,49,19,49,35,47,35,47,41,44,41,44,44,41,44,41,47,35,47,35,49,19,49,19,47,13,47,13,44,10,44,10,41,7,41,7,35,5,35,5,19,7,19,7,13,10,13,10,10,13,10,13,7,19,7],open?'#f4e7db':'#fff8ef');c.restore();
   const inset=toggle.w*12/50,size=toggle.w*26/50;s.icon(open?'close':'tools',{x:toggle.x+inset,y:toggle.y+inset,w:size,h:size});s.hit(toggle,change);
+  if(!open&&this.activeAid('underlay')){const text=this.aidBadge('underlay'),bw=s.measure(text,9.5,700)+8,bx=toggle.x+(toggle.w-bw)/2,by=toggle.y-10;c.fillStyle=s.color('#fae7b8');c.fillRect(Math.round(bx),Math.round(by),Math.round(bw),15);c.strokeStyle=s.color('#83542f');c.lineWidth=1;c.strokeRect?.(Math.round(bx)+.5,Math.round(by)+.5,Math.round(bw)-1,14);s.text(text,bx+4,by+2,9.5,'#83542f',700);}
  }
 
 export function drawRoomToolsPanel(this:AppHost,toggle:Rect,landscape:boolean){
