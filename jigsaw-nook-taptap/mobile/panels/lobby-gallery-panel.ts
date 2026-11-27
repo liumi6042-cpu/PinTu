@@ -99,7 +99,7 @@ export function drawLoadingPanel(this:AppHost){
   const name=this.platform.config.gameName||'拼图小窝',nameSize=Math.min(34,s.w/9);s.text(name,cx-s.measure(name,nameSize,800)/2,top+size+18,nameSize,ink,800);
   const slogan='和朋友一起拼拼拼';s.text(slogan,cx-s.measure(slogan,15,600)/2,top+size+nameSize+30,15,muted,600);
   const barW=Math.min(320,s.w-64),barY=top+size+nameSize+76;s.meter({x:cx-barW/2,y:barY,w:barW,h:10},progress);const percent=Math.round(progress*100)+'%';s.text(percent,cx-s.measure(percent,13,700)/2,barY+18,13,ink,700);
-  const tips=['先把边缘拼好，框架出来就快多了','双指缩放，拖空白处可以移动桌面','拼完的图会自动收进图集','公开房免费，叫上朋友一起拼','卡住的时候，试试提示和底图','每天都有一张新的每日拼图','集齐一个图包，有金币和装饰'],tip=tips[Math.floor(elapsed/3)%tips.length];
+  const tips=['先把边缘拼好，框架出来就快多了','双指缩放，拖空白处可以移动桌面','拼完的图会自动收进图集','公开房免费，叫上朋友一起拼','卡住的时候，试试提示和底图','每天都有一张新的每日拼图','集齐一个图包，有金币和装饰',...(this.communityGroupVisible?['欢迎加入玩家 QQ 群 397229653，领兑换码和反馈建议']:[])],tip=tips[Math.floor(elapsed/3)%tips.length];
   s.text(tip,cx-Math.min(s.w-32,s.measure(tip,13,600))/2,Math.min(s.h-v.bottom-40,barY+64),13,muted,600,s.w-32);
   setTimeout(()=>{if(!this.destroyed)this.invalidate();},this.loadingDone?16:120);
  }
@@ -127,7 +127,9 @@ export function drawLobbyPanel(this:AppHost){
    this.scrolled(()=>{
     const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
     const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
-    this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
+    this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap;
+    if(this.communityGroupVisible){this.drawCommunityBanner({x:left,y,w:width,h:44});y+=44+gap;}
+    y+=4;
     y=this.drawRoomSection(left,y,width,columns,top,bottom);
    },top,bottom);
    this.extent=y+this.scroll-top+12;return;
@@ -138,9 +140,15 @@ export function drawLobbyPanel(this:AppHost){
   y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
   if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
   this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
+  const desktopGroup=this.communityGroupVisible&&!landscape&&bottom-(y+actionH+gap)>=46;
+  if(desktopGroup)this.drawCommunityBanner({x:left,y:y+actionH+gap,w:leftW,h:44});
   const header=this.drawRoomHeader(rightX,top,rightW,landscape),columns=landscape?3:rightW>=900?4:3;
   this.bodyTop=header;this.listColumn={x:this.contentOrigin.x+rightX-6,w:rightW+12};
-  let end=header;this.scrolled(()=>{end=this.drawRoomGrid(rightX,header-this.scroll+4,rightW,columns,header,bottom);},header,bottom);
+  let end=header;this.scrolled(()=>{
+   let listY=header-this.scroll+4;
+   if(this.communityGroupVisible&&!desktopGroup){this.drawCommunityBanner({x:rightX,y:listY,w:rightW,h:40});listY+=46;}
+   end=this.drawRoomGrid(rightX,listY,rightW,columns,header,bottom);
+  },header,bottom);
   this.extent=end+this.scroll-header+12;
  }
 
@@ -179,6 +187,17 @@ export function drawLobbyActionsPanel(this:AppHost,r:Rect){
   const half=(r.w-10)/2,font=r.h<42?13:15,icon=r.h<42?17:21;
   this.drawPictureButton({x:r.x,y:r.y,w:half,h:r.h},'历史记录',()=>this.showModal('history'),'cream','piece',font,icon);
   this.drawPictureButton({x:r.x+half+10,y:r.y,w:half,h:r.h},'开一桌',()=>this.navigate('gallery'),'berry','create',font,icon);
+ }
+
+export function drawCommunityBannerPanel(this:AppHost,r:Rect){
+  if(!this.communityGroupVisible)return;
+  const s=this.stage,compact=r.h<=40,bw=compact?64:74,tx=r.x+36,tw=Math.max(40,r.w-bw-48);
+  s.panel(r,'cream');
+  s.icon('chat',{x:r.x+10,y:r.y+(r.h-20)/2,w:20,h:20});
+  s.text('玩家交流 QQ 群：397229653',tx,r.y+(compact?5:6),compact?12:13,this.colors.ink,800,tw);
+  s.text('领兑换码 · 找拼友 · 卡顿反馈',tx,r.y+(compact?22:24),compact?10:11,this.colors.muted,600,tw);
+  s.button({x:r.x+r.w-bw-8,y:r.y+(r.h-(compact?26:30))/2,w:bw,h:compact?26:30},'复制群号',()=>void this.copyQqGroup(),{tone:'berry',fontSize:compact?11:12});
+  s.hit({x:r.x,y:r.y,w:r.w-bw-12,h:r.h},()=>void this.copyQqGroup());
  }
 
 export function drawRoomHeaderPanel(this:AppHost,x:number,y:number,w:number,compact:boolean){

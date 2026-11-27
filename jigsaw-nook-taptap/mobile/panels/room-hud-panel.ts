@@ -42,7 +42,8 @@ export function drawRoomPanelView(this:AppHost){
    s.panel({x,y,w,h:43});s.text('联机自测 D4：'+label,x+8,y+6,10,this.colors.ink,600,w-16);
    s.text(available?'目标 '+(d.previewTargetHz??'—')+'/秒 · 实发 '+(d.platformSendRate??0)+' · 成功 '+(d.platformSucceeded??0)+' · 失败 '+(d.platformFailed??0)+' · 收 '+(d.platformReceived??0):'平台统计未启用 · 点击查看原因',x+8,y+24,9,this.colors.muted,600,w-16);
    s.hit({x,y,w,h:43},()=>this.showModal('settings'));
-  }else if(this.adminDiagnosticsAllowed&&this.adminDiagEnabled)this.drawAdminDiagnostics();
+  }else if(this.adminDiagEnabled)this.drawAdminDiagnostics();
+  this.drawLagAlertBanner?.();
   if(this.completionFx)this.drawCompletionTransition();this.drawSettleButton();
   if(!room.connected)this.drawReconnectBanner(room);
   this.drawStoryIntro();
@@ -326,21 +327,52 @@ export function drawAdminDiagnosticsPanel(this:AppHost){
   const label=snap.pill+(this.adminDiagExpanded?' ▴':' ▾');
   const pillW=Math.min(this.roomArea.w-16,Math.max(150,s.measure(label,10,700)+20));
   const pill={x:this.roomArea.x+(this.roomArea.w-pillW)/2,y:topY,w:pillW,h:24};
-  this.drawLandscapeSurface(pill,12,'rgba(34,26,22,0.84)',snap.wsConnected?'#e8c47a':'#f08a8a',1);
+  const hasLag=snap.lag?.slowFrames5s>=3||snap.lag?.slowNet15s>=2||!snap.wsConnected;
+  this.drawLandscapeSurface(pill,12,'rgba(34,26,22,0.84)',hasLag?'#f08a8a':'#e8c47a',1);
   s.text(label,pill.x+10,pill.y+6,10,'#fff8ee',700,pill.w-20);
   s.hit(pill,()=>{this.adminDiagExpanded=!this.adminDiagExpanded;this.invalidate();});
   if(!this.adminDiagExpanded)return;
-  const cardW=Math.min(this.roomArea.w-16,380),lineH=15,cardH=14+snap.lines.length*lineH+36;
+  const showQq=this.communityGroupVisible===true;
+  const displayLines=showQq?[...snap.lines,'遇到卡顿请复制诊断发到玩家 QQ 群 397229653']:snap.lines;
+  const cardW=Math.min(this.roomArea.w-16,380),lineH=15,cardH=14+displayLines.length*lineH+36;
   const card={x:this.roomArea.x+(this.roomArea.w-cardW)/2,y:topY+28,w:cardW,h:cardH};
   this.drawLandscapeSurface(card,10,'rgba(28,22,19,0.92)','#e8c47a88',1);
   s.hit(card,()=>{});
-  snap.lines.forEach((line:string,index:number)=>s.text(line,card.x+10,card.y+8+index*lineH,10,'#f7efe2',600,card.w-20));
-  const by=card.y+card.h-30,bw=(card.w-28)/2;
-  const copyBtn={x:card.x+10,y:by,w:bw,h:22},closeBtn={x:card.x+18+bw,y:by,w:bw,h:22};
+  displayLines.forEach((line:string,index:number)=>s.text(line,card.x+10,card.y+8+index*lineH,10,showQq&&index===displayLines.length-1?'#f7d996':'#f7efe2',600,card.w-20));
+  const by=card.y+card.h-30,cols=showQq?3:2,gap=6,bw=(card.w-20-gap*(cols-1))/cols;
+  const copyBtn={x:card.x+10,y:by,w:bw,h:22};
   this.drawLandscapeSurface(copyBtn,6,'rgba(176,84,111,0.92)','#fff2e288',1);
   s.text('复制诊断',copyBtn.x+(bw-s.measure('复制诊断',10,700))/2,copyBtn.y+5,10,'#fff8ee',700,bw-6);
   s.hit(copyBtn,()=>void this.copyRoomDiagnostics());
+  if(showQq){
+   const qqBtn={x:card.x+10+bw+gap,y:by,w:bw,h:22};
+   this.drawLandscapeSurface(qqBtn,6,'rgba(184,132,58,0.92)','#fff2e288',1);
+   s.text('复制QQ群',qqBtn.x+(bw-s.measure('复制QQ群',10,700))/2,qqBtn.y+5,10,'#fff8ee',700,bw-6);
+   s.hit(qqBtn,()=>void this.copyQqGroup());
+  }
+  const closeBtn={x:card.x+10+(bw+gap)*(cols-1),y:by,w:bw,h:22};
   this.drawLandscapeSurface(closeBtn,6,'rgba(82,68,60,0.92)','#fff2e255',1);
   s.text('收起',closeBtn.x+(bw-s.measure('收起',10,700))/2,closeBtn.y+5,10,'#fff8ee',700,bw-6);
   s.hit(closeBtn,()=>{this.adminDiagExpanded=false;this.invalidate();});
+ }
+
+export function drawLagAlertBannerPanel(this:AppHost){
+  if(this.modal||this.completionFx||this.nineGridRoom)return;
+  const alert=this.lagSnapshot?.activeAlert;if(!alert)return;
+  const s=this.stage,baseY=this.layout==='phoneLandscape'?this.roomHeaderTop()+56:this.roomArea.y+6;
+  const y=baseY+(this.adminDiagEnabled?(this.adminDiagExpanded?206:30):0);
+  const w=Math.min(this.roomArea.w-16,410),h=46,x=this.roomArea.x+(this.roomArea.w-w)/2,r={x,y,w,h};
+  this.drawLandscapeSurface(r,10,'rgba(44,29,28,0.92)','#f0967e',1.5);
+  s.hit(r,()=>this.showModal('lagFeedback'));
+  const closeW=24,copyW=62,closeX=x+w-closeW-6,copyX=closeX-copyW-6,textW=Math.max(60,copyX-x-16);
+  s.text(alert.title,x+10,y+7,11,'#fff3e6',800,textW);
+  const sub=this.communityGroupVisible?'点此查看或复制日志，加 QQ 群 397229653 反馈':'点此查看或一键复制诊断日志';
+  s.text(sub,x+10,y+25,9.5,'#f4d5b4',600,textW);
+  const copyBtn={x:copyX,y:y+11,w:copyW,h:24};
+  this.drawLandscapeSurface(copyBtn,6,'rgba(176,84,111,0.96)','#fff2e288',1);
+  s.text('复制日志',copyBtn.x+(copyW-s.measure('复制日志',10,700))/2,copyBtn.y+6,10,'#fff8ee',700,copyW-4);
+  s.hit(copyBtn,()=>void this.copyRoomDiagnostics(true));
+  const closeBtn={x:closeX,y:y+11,w:closeW,h:24};
+  s.text('×',closeBtn.x+6,closeBtn.y+3,14,'#f4d5b4',700);
+  s.hit(closeBtn,()=>{this.lag.dismissAlert();this.invalidate();});
  }

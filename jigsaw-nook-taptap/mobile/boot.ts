@@ -27,11 +27,11 @@ export function boot(platform:Platform){
   if(probe||!app.diagnosticsAvailable||platform.config.id!=='taptap'||!app.renderProbeAvailable)return;
   app.input({type:'cancel',points:[],changed:[]});probe=new RenderProbe(clock,()=>platform.inputDiagnostics?.());probeResultPainted=false;
  };
- let sampleStart:number|null=null;
+ let sampleStart:number|null=null,lagLastAt=0;
  const paints:{at:number;ms:number}[]=[],inputs:number[]=[];
  const callbacks:number[]=[],nativeSamples:{at:number;pointerMoves:number;touchMoves:number}[]=[];
  let lastViewport=platform.viewport();
- const resetSamples=()=>{sampleStart=null;paints.length=0;inputs.length=0;callbacks.length=0;nativeSamples.length=0;};
+ const resetSamples=()=>{sampleStart=null;lagLastAt=0;paints.length=0;inputs.length=0;callbacks.length=0;nativeSamples.length=0;};
  // Scene mutations and board animation ticks invalidate the stage. A room
  // staying open by itself is not a reason to clear and paint the whole canvas.
  const draw=(time:number)=>{
@@ -49,12 +49,14 @@ export function boot(platform:Platform){
    if(alive&&!hidden)frame=platform.frame(draw);return;
   }
   if(mode!==lastMode||now<lastFrameAt)nextPaintAt=now;lastMode=mode;lastFrameAt=now;
-  if(app.performanceInfoVisible){const at=clock();if(sampleStart===null)sampleStart=at;callbacks.push(at);while(callbacks.length&&callbacks[0]<at-1000)callbacks.shift();if(callbacks.length>500)callbacks.shift();const native=platform.inputDiagnostics?.();if(native){nativeSamples.push({at,...native});while(nativeSamples.length>1&&nativeSamples[0].at<at-1000)nativeSamples.shift();if(nativeSamples.length>500)nativeSamples.shift();}}
+  const tickAt=clock(),gapMs=lagLastAt>0?Math.max(0,tickAt-lagLastAt):0;lagLastAt=tickAt;
+  if(app.performanceInfoVisible){if(sampleStart===null)sampleStart=tickAt;callbacks.push(tickAt);while(callbacks.length&&callbacks[0]<tickAt-1000)callbacks.shift();if(callbacks.length>500)callbacks.shift();const native=platform.inputDiagnostics?.();if(native){nativeSamples.push({at:tickAt,...native});while(nativeSamples.length>1&&nativeSamples[0].at<tickAt-1000)nativeSamples.shift();if(nativeSamples.length>500)nativeSamples.shift();}}
   // Keep the full backing resolution. Only continuous paints are capped;
   // dirty work remains pending, so the final feedback frame is never lost.
   if(stage.dirty&&(!interval||now+.1>=nextPaintAt)){
-   const measure=app.performanceInfoVisible,started=measure?clock():0;
-   if(!measure)resetSamples();else if(sampleStart===null)sampleStart=started;
+   const measure=app.performanceInfoVisible,started=clock();
+   if(!measure){sampleStart=null;paints.length=0;inputs.length=0;callbacks.length=0;nativeSamples.length=0;}else if(sampleStart===null)sampleStart=started;
+   let drawMs=0;
    try{stage.begin();app.draw();drawCount++;
     if(measure){
      const cutoff=started-1000;while(paints.length&&paints[0].at<cutoff)paints.shift();while(inputs.length&&inputs[0]<cutoff)inputs.shift();
@@ -65,7 +67,11 @@ export function boot(platform:Platform){
      const x=10,y=platform.viewport().top+110,w=Math.min(290,stage.w-20);stage.panel({x,y,w,h:lines.length*17+12});lines.forEach((line,i)=>stage.text(line,x+7,y+6+i*17,11,stage.palette.ink,500,w-14));
     }
    }catch(error){if(!reported){reported=true;console.error('[shared-game] render failed',error);platform.alert('画面暂时遇到问题，请退出后重试');}}
-   finally{stage.endFrame();if(measure){paints.push({at:started,ms:clock()-started});if(paints.length>240)paints.shift();}}nextPaintAt=interval?(nextPaintAt>0&&now-nextPaintAt<interval?nextPaintAt+interval:now+interval):now;
+   finally{stage.endFrame();drawMs=Math.max(0,clock()-started);if(measure){paints.push({at:started,ms:drawMs});if(paints.length>240)paints.shift();}}
+   app.recordFrameSample?.(gapMs,drawMs,true);
+   nextPaintAt=interval?(nextPaintAt>0&&now-nextPaintAt<interval?nextPaintAt+interval:now+interval):now;
+  }else if(gapMs>0){
+   app.recordFrameSample?.(gapMs,0,false);
   }
   if(alive&&!hidden)frame=platform.frame(draw);
  };

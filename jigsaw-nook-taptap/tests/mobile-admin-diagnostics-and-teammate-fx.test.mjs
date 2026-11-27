@@ -165,8 +165,9 @@ test('teammate sound toggle defaults ON and persists + updates live board when t
  assert.equal(app.teammateSoundEnabled,false);
  assert.equal(app.board.teammateSoundEnabled,false);
  assert.equal(memory.get(TEAMMATE_SOUND_KEY),'0');
- // Non-admin must NOT see admin room diagnostic toggle.
- assert.equal(buttons.some(b=>b.label.includes('房间网络诊断浮窗')),false);
+ // Normal player can now see the opt-in room diagnostic toggle, while admin-only tools stay hidden.
+ assert.equal(buttons.some(b=>b.label.includes('房间网络诊断浮窗')),true);
+ assert.equal(buttons.some(b=>b.label.includes('九格拼合测试')),false);
 });
 
 test('PuzzleBoard smoothly interpolates remote teammate dragged pieces at 60fps and snaps immediately on release',()=>{
@@ -215,19 +216,21 @@ test('PuzzleBoard smoothly interpolates remote teammate dragged pieces at 60fps 
  assert.equal(afterDrop.dx,220);assert.equal(afterDrop.dy,160);
 });
 
-test('admin room network diagnostics pill is hidden for normal players and works end-to-end for whitelisted admins',async()=>{
- // Normal player cannot see diagnostics even if storage flag is set.
+test('room network diagnostics pill is open to all players while admin-only tools remain restricted',async()=>{
+ // Normal player can open diagnostics when opted in, while adminDiagnosticsAllowed stays false for admin-only tools.
  const normal=appFixture({admin:false,development:false,storageInit:{[ADMIN_DIAG_KEY]:'1'}});
  assert.equal(normal.app.adminDiagnosticsAllowed,false);
- assert.equal(normal.texts.length,0);
+ assert.equal(normal.app.adminDiagEnabled,true);
+ normal.app.drawAdminDiagnostics();
+ assert.ok(normal.texts.some(t=>t.includes('WS✓')&&t.includes('42ms')),'normal player sees diagnostics pill when enabled');
 
- // Whitelisted admin on production build (development: false) can enable, expand, copy, and collapse.
+ // Player or admin can enable, expand, copy, copy QQ group, and collapse.
  const {app,memory,texts,hits,buttons,copied,notes}=appFixture({admin:true,development:false});
  assert.equal(app.adminDiagnosticsAllowed,true);
  app.modal='settings';
  app.drawModal();
  const diagToggle=buttons.find(b=>b.label==='房间网络诊断浮窗');
- assert.ok(diagToggle,'whitelisted admin sees 房间网络诊断浮窗 toggle in Settings');
+ assert.ok(diagToggle,'Settings exposes 房间网络诊断浮窗 toggle');
  diagToggle.action();
  assert.equal(app.adminDiagEnabled,true);
  assert.equal(memory.get(ADMIN_DIAG_KEY),'1');
@@ -237,7 +240,7 @@ test('admin room network diagnostics pill is hidden for normal players and works
  app.drawAdminDiagnostics();
  assert.ok(texts.some(t=>t.includes('WS✓')&&t.includes('平台✓')&&t.includes('42ms')&&t.includes('rev18')&&t.includes('2人')),'pill summarizes live connection, RTT, revision and seats: '+JSON.stringify(texts));
 
- // Clicking pill expands details card with copy & collapse actions.
+ // Clicking pill expands details card with copy, QQ group copy & collapse actions.
  hits[0].action();
  assert.equal(app.adminDiagExpanded,true);
  texts.length=0;hits.length=0;
@@ -245,8 +248,9 @@ test('admin room network diagnostics pill is hidden for normal players and works
  assert.ok(texts.some(t=>t.includes('abcdef12')&&t.includes('租约1')&&t.includes('光标1')));
  assert.ok(texts.some(t=>t.includes('图片缓存：8张/12.0MB')));
  assert.ok(texts.some(t=>t.includes('复制诊断')));
+ assert.ok(texts.some(t=>t.includes('复制QQ群')));
 
- // Clicking copy button copies full report and notifies admin.
+ // Clicking copy button copies full report and notifies user.
  const copyHit=hits[2];
  copyHit.action();
  await new Promise(resolve=>setTimeout(resolve,0));
@@ -256,10 +260,11 @@ test('admin room network diagnostics pill is hidden for normal players and works
  assert.match(copied[0],/previewStats=callbacks:36 recovery:1 ignored:notReady=1/);
  assert.match(copied[0],/previewPeers=队友:35\(5\/s\)/);
  assert.match(copied[0],/previewDetail=ok/);
+ assert.match(copied[0],/397229653/);
  assert.deepEqual(notes,['已复制房间诊断信息']);
 
- // Clicking collapse button folds card back to pill.
- hits[3].action();
+ // Clicking collapse button (last hit) folds card back to pill.
+ hits.at(-1).action();
  assert.equal(app.adminDiagExpanded,false);
 
  // Hybrid Tap mode renders 混合✓ pill and 混合接通 details line.
