@@ -24,7 +24,7 @@ import {dirname,resolve} from 'node:path';
 import * as engine from '../outputs/mobile/engine.mjs';
 import {guestName} from './guest-names.mjs';
 const DEFAULT_PLAYER_NAME='拼图朋友';
-import {MOBILE_COUNTS,effectiveEnergyCap,inviteCapBonus,xpForLevel,newProfile,restoreEnergy,applyContribution,completionDistribution} from './mobile-economy.mjs';
+import {MOBILE_COUNTS,ENERGY_AD_DAILY_LIMIT,effectiveEnergyCap,inviteCapBonus,xpForLevel,newProfile,restoreEnergy,applyContribution,completionDistribution} from './mobile-economy.mjs';
 
 // A first-time mobile player starts with three creation tickets. Web play needs none,
 // so the runtime decides the amount instead of baking it into the profile factory.
@@ -91,6 +91,11 @@ export function createMobileService(options={}){
  // 分享领体力包: once per game day (the same day as the daily puzzle, which flips at dailyTurnoverHour Beijing time).
  const SHARE_ENERGY_DAILY_TEXT='今天已经分享领过体力包了，每天限 1 次，北京时间 '+dailyTurnoverHour+' 点后可以再领';
  const shareEnergyDay=now=>new Date(dailyClock(now)+8*3600000).toISOString().slice(0,10);
+ // 每日观看 5 次补满体力包广告后，当日（北京时间 0 点重置）无限体力，不再消耗体力也不再需要看体力广告。
+ const energyAdDay=now=>new Date(now+8*3600000).toISOString().slice(0,10);
+ const energyAdCountToday=(p,now)=>p.energyAdDay===energyAdDay(now)?Math.max(0,Number(p.energyAdCount)||0):0;
+ const unlimitedEnergyToday=(p,now)=>energyEnabled&&energyAdCountToday(p,now)>=ENERGY_AD_DAILY_LIMIT;
+ const ENERGY_UNLIMITED_TODAY_TEXT='今日已看满 '+ENERGY_AD_DAILY_LIMIT+' 次补满体力包广告，当日可无限使用体力';
  // Receipts keep the real time, but never before their own Beijing date, so the web service (midnight turnover) reads them as valid.
  const dailyActivation=clock=>Math.max(Date.parse(new Date(clock+8*3600000).toISOString().slice(0,10)+'T00:00:00+08:00'),clock-dailyShift);
  const onDailyClock=content=>content&&dailyShift?{...content,...Object.fromEntries(['tick','select','albumEntries','managedImageIds','releasedImageIds','galleryPhotos'].filter(name=>typeof content[name]==='function').map(name=>[name,(now=clock(),...rest)=>content[name](dailyClock(now),...rest)]))}:content;
@@ -248,7 +253,7 @@ export function createMobileService(options={}){
  const needsName=p=>guestNames&&!p.nameSource&&(typeof p.name!=='string'||!p.name.trim()||p.name===DEFAULT_PLAYER_NAME);
  const readProfile=(identity,now)=>{const row=db.prepare('SELECT data FROM mobile_profiles WHERE id=?').get(identity);if(requestProfileData&&!requestProfileData.has(identity))requestProfileData.set(identity,row?.data??null);const p=row?JSON.parse(row.data):newProfile(identity,now,operationGameSettings,{creationTickets:web?0:NEWCOMER_CREATION_TICKETS});if(!row&&guestNames)p.name=randomName(identity);if(energyEnabled)restoreEnergy(p,now,operationGameSettings,{inviteBonus:readInviteCapBonus(p.id).count});else if(!row)p.energy=0;return p;};
  const saveProfile=p=>{const data=JSON.stringify(p);if(requestProfileData?.get(p.id)===data)return;const result=db.prepare('INSERT INTO mobile_profiles VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data WHERE mobile_profiles.data<>excluded.data').run(p.id,data);requestProfileData?.set(p.id,data);return result;};
- const tasks=createMobileTasks({db,readProfile,saveProfile,energyEnabled,readInviteCapBonus,invalidateInviteCapBonus:owner=>requestInviteBonuses?.delete(owner),areFriends:(owner,peer)=>social.areFriends(owner,peer),readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings,awardCoins:(owner,source,coins,now)=>collection.awardTaskCoins(owner,source,coins,now)});
+ const tasks=createMobileTasks({db,readProfile,saveProfile,energyEnabled,isEnergyUnlimited:(p,now)=>unlimitedEnergyToday(p,now),readInviteCapBonus,invalidateInviteCapBonus:owner=>requestInviteBonuses?.delete(owner),areFriends:(owner,peer)=>social.areFriends(owner,peer),readSettings:()=>operationTaskRewards,readGameSettings:()=>operationGameSettings,awardCoins:(owner,source,coins,now)=>collection.awardTaskCoins(owner,source,coins,now)});
  const dailyContent=onDailyClock(managedContent?createManagedDailyContent({readSnapshot:()=>requestRelease===undefined?managedContent.read():requestRelease,legacy:options.dailyContent??null,photos:engine.RESTORABLE_PHOTOS,galleryPhotos:engine.GALLERY_VISIBLE_PHOTOS,fallback:engine.dailyPuzzle,appearanceDir:options.dailyAppearanceDir??resolve('work/daily-appearances'),now:()=>dailyClock(clock()),activationTime:dailyActivation}):options.dailyContent??null);
  const collection=createMobileCollection({db,photos:dailyContent?.collectiblePhotos()??(operationAlbums?engine.RESTORABLE_PHOTOS:engine.GALLERY_VISIBLE_PHOTOS),dailyContent,readSettings:()=>operationGameSettings,readAlbums:()=>operationAlbums,albumTarget:capabilities.albumTarget});
  const levels=createMobileLevels({db,photos:engine.RESTORABLE_PHOTOS,collection,configuration:levelConfiguration});
@@ -307,7 +312,7 @@ export function createMobileService(options={}){
   value=identity?{contribution:room.achievements?.contributors?.[identity]?.count??0,code:social.person(identity,now).code,level:readProfile(identity,now).level,decoration:collection.equipped(identity)}:{contribution:0,code:null,level:0,decoration:null};
   cards.set(member.id,value);return value;
  };
- const profileView=(p,now)=>({capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id)}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,shareEnergyClaimedToday:p.shareEnergyDay===shareEnergyDay(now),autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)});
+ const profileView=(p,now)=>{const energyAdCount=energyAdCountToday(p,now),energyUnlimited=unlimitedEnergyToday(p,now);return {capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id),energyAdToday:{count:energyAdCount,limit:ENERGY_AD_DAILY_LIMIT,unlimited:energyUnlimited},unlimitedEnergyToday:energyUnlimited}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,shareEnergyClaimedToday:p.shareEnergyDay===shareEnergyDay(now),autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&!energyUnlimited&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)};};
  const photoOf=room=>engine.roomArtworkPhoto(room,engine.RESTORABLE_PHOTOS);
  const displayPhoto=(photo,request)=>photo&&request.artworkSnapshot===true?engine.activeArtworkPhoto(photo):photo;
  const creationArtwork=(photo,pieces,request)=>engine.currentRoomArtwork(engine.RESTORABLE_PHOTOS.find(item=>item.id===photo.id)??photo,pieces,request.artworkSnapshot!==true);
@@ -393,8 +398,17 @@ export function createMobileService(options={}){
   if(existing){if(existing.kind!==kind||existing.auth_hash!==hash(authorization))fail(409,'REQUEST_CONFLICT','广告请求与当前操作不匹配');if(existing.used||existing.expires_at<=now)fail(409,'AD_EXPIRED','本次广告机会已失效');return {rewardToken:existing.token,expiresAt:existing.expires_at};}
   if(context==='supply'||context==='share:supply'){
    if(!['energy','create'].includes(kind))fail(400,'INVALID_SUPPLY','补给种类无效');
-   const pending=db.prepare('SELECT COUNT(*) n FROM mobile_ad_challenges WHERE owner=? AND context=? AND kind=? AND used=0 AND expires_at>?').get(p.id,context,kind,now).n;
-   if(p.supply[kind]+pending>=3)fail(409,'SUPPLY_FULL','库存已满或已有待领取奖励');
+   if(context==='supply'&&kind==='energy'){
+    if(!energyEnabled)fail(409,'ENERGY_UNAVAILABLE','网页版无需体力补给');
+    const todayCount=energyAdCountToday(p,now);
+    if(todayCount>=ENERGY_AD_DAILY_LIMIT)fail(409,'ENERGY_UNLIMITED_TODAY',ENERGY_UNLIMITED_TODAY_TEXT);
+    const pending=db.prepare('SELECT COUNT(*) n FROM mobile_ad_challenges WHERE owner=? AND context=? AND kind=? AND used=0 AND expires_at>?').get(p.id,context,kind,now).n;
+    if(todayCount+pending>=ENERGY_AD_DAILY_LIMIT)fail(409,'ENERGY_AD_DAILY_LIMIT','今日补满体力包广告次数已达上限或已有待领取奖励');
+    if(p.supply[kind]+pending>=3)fail(409,'SUPPLY_FULL','库存已满或已有待领取奖励');
+   }else{
+    const pending=db.prepare('SELECT COUNT(*) n FROM mobile_ad_challenges WHERE owner=? AND context=? AND kind=? AND used=0 AND expires_at>?').get(p.id,context,kind,now).n;
+    if(p.supply[kind]+pending>=3)fail(409,'SUPPLY_FULL','库存已满或已有待领取奖励');
+   }
   }
   const recent=db.prepare('SELECT COUNT(*) n FROM mobile_ad_challenges WHERE owner=? AND expires_at>?').get(p.id,now+540000).n;if(recent>=20)fail(429,'AD_RATE_LIMIT','请稍后再试');
   const token=randomBytes(32).toString('hex'),expiresAt=now+600000;db.prepare('INSERT INTO mobile_ad_challenges VALUES(?,?,?,?,?,?,?,0)').run(token,p.id,kind,requestId,context,hash(authorization),expiresAt);return {rewardToken:token,expiresAt};
@@ -628,7 +642,20 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/supply/redeem'&&method==='POST')return replay(p,'supply-redeem',input,now,()=>{
    if(!adsEnabled&&!(!web&&input.adSkipped===true))fail(503,'ADS_UNAVAILABLE','当前平台暂未开放广告，请稍后再试');
    if(!['energy','create'].includes(input.kind))fail(400,'INVALID_SUPPLY','补给种类无效');
-   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');consumeChallenge(p,input,'supply','',now);p.supply[input.kind]=input.kind==='create'?3:p.supply[input.kind]+1;saveProfile(p);return profileView(p,now);
+   if(input.kind==='energy'){
+    if(!energyEnabled)fail(409,'ENERGY_UNAVAILABLE','网页版无需体力补给');
+    if(unlimitedEnergyToday(p,now))fail(409,'ENERGY_UNLIMITED_TODAY',ENERGY_UNLIMITED_TODAY_TEXT);
+   }
+   if(p.supply[input.kind]>=3)fail(409,'SUPPLY_FULL','库存已满');
+   consumeChallenge(p,input,'supply','',now);
+   p.supply[input.kind]=input.kind==='create'?3:p.supply[input.kind]+1;
+   if(input.kind==='energy'){
+    const day=energyAdDay(now);
+    p.energyAdCount=(p.energyAdDay===day?Math.max(0,Number(p.energyAdCount)||0):0)+1;
+    p.energyAdDay=day;
+    if(p.energyAdCount>=ENERGY_AD_DAILY_LIMIT){p.energy=Math.max(p.energy,playerEnergyCap(p));p.energyAt=now;}
+   }
+   saveProfile(p);return profileView(p,now);
   });
   if(path==='/api/mobile/supply/cancel'&&method==='POST'){
    if(!['energy','create'].includes(input.kind)||!requestKey(input.requestId)||typeof input.rewardToken!=='string')fail(400,'INVALID_SUPPLY','补给请求无效');
@@ -639,7 +666,7 @@ export function createMobileService(options={}){
   }
   if(path==='/api/mobile/supply/use'&&method==='POST')return replay(p,'supply-use',input,now,()=>{
    if(!energyEnabled)fail(409,'ENERGY_UNAVAILABLE','网页版无需体力补给');
-   if(input.kind!=='energy')fail(400,'INVALID_SUPPLY','建房券会在创建成功时使用');if(p.energy>=playerEnergyCap(p))fail(409,'ENERGY_FULL','体力已满，无需使用');if(p.supply.energy<1)fail(409,'SUPPLY_EMPTY','没有体力包');p.supply.energy--;p.energy=playerEnergyCap(p);p.energyAt=now;saveProfile(p);return profileView(p,now);
+   if(input.kind!=='energy')fail(400,'INVALID_SUPPLY','建房券会在创建成功时使用');if(unlimitedEnergyToday(p,now))fail(409,'ENERGY_UNLIMITED_TODAY','今日已解锁无限体力，补满体力包已为你保留');if(p.energy>=playerEnergyCap(p))fail(409,'ENERGY_FULL','体力已满，无需使用');if(p.supply.energy<1)fail(409,'SUPPLY_EMPTY','没有体力包');p.supply.energy--;p.energy=playerEnergyCap(p);p.energyAt=now;saveProfile(p);return profileView(p,now);
   });
   if(path==='/api/rewarded/challenge'&&method==='POST'){
    if(typeof input.context!=='string'||!/^room\/[a-f0-9]{32}$/.test(input.context)||!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','广告工具请求无效');
@@ -782,7 +809,7 @@ export function createMobileService(options={}){
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
    if(added&&room.diagnostic!==true){
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,freeRoom:room.mobileMode==='postcard',now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
+    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,freeRoom:room.mobileMode==='postcard',unlimitedEnergy:unlimitedEnergyToday(p,now),now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
     room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
     p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
     if(retention&&room.mobileMode==='daily')try{

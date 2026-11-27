@@ -12,6 +12,7 @@ export type MobileProfile = {
  name:string; level:number; xp:number; totalXp:number; xpToNext:number; energy:number; energyCap:number; inviteCapBonus?:{count:number;maximum:number}; giftProgress:number; giftCount?:number;
  economy?:{contributionCost:number;contributionXp:number;firstRoomFree:boolean;upgradeRefill:'full'|'fixed'|'none';upgradeEnergy:number;naturalRecoveryMinutes:number};
  supply:{energy:number;create:number}; autoSupply:boolean; adEligible:boolean; ownedRooms:MobileOwnedRoom[];
+ energyAdToday?:{count:number;limit:number;unlimited:boolean}; unlimitedEnergyToday?:boolean;
  firstSelectionAvailable?:boolean; newcomer?:boolean; firstRoomId?:string|null; serverTime?:number; updatedAt?:number;
  taptap?:{provider:'taptap';bound:boolean;nickname?:string|null;diagnostics?:boolean};
  lastReward?:{id?:string;type?:string;energy?:number;amount?:number;xp?:number;levelUp?:boolean;message?:string;levelClear?:{levelId:string;energy:number;firstClear:boolean;nextLevelId:string|null};[key:string]:unknown}|null;

@@ -49,7 +49,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.33';
+const CLIENT_PACKAGE_VERSION='v53.34';
 /** Server /api/mobile/gifts/open validates 1..20 gifts per request; larger bulk opens are split into sequential batches. */
 const GIFT_OPEN_BATCH_LIMIT=20;
 
@@ -789,7 +789,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision,()=>{
    if(this.room===room)this.note('与 TapTap 的实时连接已断开，改用游戏服务器同步');
   })??null;this.realtime=realtime;
-  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>this.adminDiagnosticsAllowed&&this.adminDiagEnabled,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:(p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id)||this.energyUnlimitedToday};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>this.adminDiagnosticsAllowed&&this.adminDiagEnabled,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:local-play-error'&&this.room===room)this.platform.loginLog?.add('本地拼图出错，改为联网拼 · '+String((detail as {message?:string})?.message??'').slice(0,80));
    if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
    if(name==='puzzle:successful-drop'&&this.room===room){this.board?.confirmMobileContribution(detail as MobileContributionReceipt);if(!this.nineGridRoom)this.telemetry?.milestone('new_user','完成首次拼合');}
@@ -908,6 +908,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   await this.claimSupplyAd(kind);
  }
  private get energyAdAvailable(){return this.client.config.adRewardEnabled===true&&!!this.client.config.rewardedAdUnitId;}
+ private get energyUnlimitedToday(){const p=this.client.profile;return this.energyEnabled&&(p?.unlimitedEnergyToday===true||p?.energyAdToday?.unlimited===true);}
+ private get energyAdCountToday(){return this.client.profile?.energyAdToday?.count??0;}
+ private get energyAdLimitToday(){return this.client.profile?.energyAdToday?.limit??5;}
  /** Rewarded video pays out supplies on TapTap and, once it has its own adunit placement, on WeChat. */
  private get supplyAdAvailable(){const id=this.platform.config?.id;return (id==='taptap'||id==='wechat')&&this.energyAdAvailable;}
  /** 建房券与体力包统一通过观看 TapTap 广告获取（与 TapTap 断连时自动跳过广告）。 */
@@ -933,13 +936,25 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   await this.run(async()=>{const profile=this.client.profile;if(!profile)throw Error('玩家信息尚未就绪，请稍后再试');
    const storageKey='jigsaw:shared:supply-ad:v1:'+this.platform.config.apiBase+':'+profile.code;let pending:any=null;try{pending=JSON.parse(this.platform.storage.get(storageKey)||'null');}catch{}
    // A video already watched is redeemed first, whichever supply it was for.
-   if(!pending?.completed){const name=kind==='energy'?'体力包':'建房券';if(profile.supply[kind]>=3)throw Error('库存已满，使用后再领取');
+   if(!pending?.completed){const name=kind==='energy'?'体力包':'建房券';
+    if(kind==='energy'&&this.energyUnlimitedToday)throw Error('今日已解锁无限体力，当日可无限使用体力，无需再看广告');
+    if(profile.supply[kind]>=3)throw Error('库存已满，使用后再领取');
     const adResult=await this.watchTapTapAd(name,kind==='energy'?'supply_energy':'supply_create_ticket',{supply_kind:kind});
     const requestId=this.platform.randomId(),challenge=await this.client.post<{rewardToken:string}>('/api/mobile/supply/challenge',{kind,requestId,...(adResult.skipped?{adSkipped:true}:{})},5000);
     pending={kind,requestId,rewardToken:challenge.rewardToken,completed:true,...(adResult.skipped?{adSkipped:true}:{})};
     this.platform.storage.set(storageKey,JSON.stringify(pending));
    }
-   try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.telemetry?.milestone('new_user','使用补给或看广告');this.note(pending.kind==='create'?'建房券已补满，可以开桌了':'体力包 +1，已存入库存');
+   try{await this.client.post('/api/mobile/supply/redeem',pending);}catch(error){if([400,401,403,409,410].includes((error as{status?:number}).status??0))this.platform.storage.remove(storageKey);throw error;}this.platform.storage.remove(storageKey);await this.client.refresh();this.telemetry?.milestone('new_user','使用补给或看广告');
+   if(pending.kind==='create'){this.note('建房券已补满，可以开桌了');return;}
+   if(this.energyUnlimitedToday){
+    const limit=this.energyAdLimitToday;
+    try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}
+    this.note('已解锁今日无限体力！当日可无限使用体力（次日 0 点重置）',true);
+    this.platform.alert?.('今日已看满 '+limit+' 次补满体力包广告，已解锁「今日无限体力」！\n当日拼图不再限制体力，可无限使用（次日 0 点重置），剩余体力包已为你保留。');
+   }else if(this.client.profile?.energyAdToday){
+    const count=this.energyAdCountToday,limit=this.energyAdLimitToday;
+    this.note('体力包 +1，已存入库存（今日广告 '+count+'/'+limit+'，满 '+limit+' 次今日无限体力）');
+   }else this.note('体力包 +1，已存入库存');
   });
  }
  /** Completed rewarded ads advance an ad-album picture (2 watches = permanent unlock, max 2 watches / 1 picture per day).
@@ -999,7 +1014,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.invalidate();
   });
  }
- private async useEnergy(){await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
+ private async useEnergy(){if(this.energyUnlimitedToday){this.note('今日已解锁无限体力，补满体力包已为你保留');return;}await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
  private async openGiftRequest(kind:string,quantity:number){
   const key='gift:'+kind+':'+quantity;
   try{
@@ -1160,7 +1175,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   s.hit({x:18,y:18,w:nav-26,h:96},()=>this.showModal('settings'));
   s.icon('avatar',{x:24,y:26,w:44,h:48});s.text(p?.name??'读取玩家信息…',76,29,16,ink,800,nav-88);s.text(p?'Lv.'+p.level:'—',76,53,12,this.levelColor(p?.level??1),700,40);s.meter({x:116,y:57,w:nav-130,h:6},(p?.xp??0)/Math.max(1,p?.xpToNext??1));
   this.drawSettingsBadge({x:24,y:26,w:44,h:48});
-  const cy=88;if(this.energyEnabled){s.icon('lightning',{x:24,y:cy-2,w:17,h:24});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=s.measure(label,14,800);s.text(label,45,cy+2,14,ink,800,70);s.button({x:49+tw,y:cy,w:20,h:20},'',()=>this.navigate('supplies'),{tone:'gold'});s.text('+',54+tw,cy+1,16,'#fffaf0',700);}
+  const cy=88;if(this.energyEnabled){s.icon('lightning',{x:24,y:cy-2,w:17,h:24});const unlimited=this.energyUnlimitedToday,label=unlimited?'今日无限':p?p.energy+'/'+p.energyCap:'—/—',tw=s.measure(label,14,800);s.text(label,45,cy+2,14,unlimited?this.colors.berry:ink,800,70);if(unlimited)s.hit({x:20,y:cy-4,w:88,h:28},()=>this.navigate('supplies'));else{s.button({x:49+tw,y:cy,w:20,h:20},'',()=>this.navigate('supplies'),{tone:'gold'});s.text('+',54+tw,cy+1,16,'#fffaf0',700);}}
   else{s.icon('coin',{x:24,y:cy,w:19,h:21});s.text(p?(p.collection?.coins??0):'—',47,cy+3,14,ink,800,56);s.hit({x:20,y:cy-4,w:84,h:28},()=>this.showModal('coins'));}
   s.icon('fragment',{x:112,y:cy,w:19,h:21});s.text(p?(p.collection?.fragments??0):'—',135,cy+3,14,ink,800,nav-147);s.hit({x:108,y:cy-4,w:nav-118,h:28},()=>this.showModal('fragments'));
   s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(22,122,nav-34,1);
@@ -1255,7 +1270,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.formalWeb){s.text('测试版',13,safe+7,10,this.colors.muted);this.drawWebLinks(Math.max(75,s.w-224),safe+7,Math.min(212,s.w-87));}
   if(this.platform.config?.id==='wechat'&&safe>=30)s.text(this.platform.config.gameName,14,safe-26,13,this.colors.ink,700,Math.max(100,s.w-160));
   const line=(y:number)=>{s.ctx.fillStyle=s.color('#c99586');s.ctx.fillRect(12,Math.round(y),s.w-24,1);};
-  const energy=(x:number,y:number,width:number,size=16)=>{if(!this.energyEnabled){s.icon('coin',{x,y:y+7,w:24,h:26});s.text(p?(p.collection?.coins??0):'—',x+29,y+13,size,this.colors.ink,800,Math.max(24,width-30));s.hit({x:x-3,y,w:Math.max(24,width+3),h:42},()=>this.showModal('coins'));return;}const compact=width<90;if(compact)size=Math.min(size,12);s.icon('lightning',{x,y:y+(compact?7:3),w:compact?17:22,h:compact?24:31});const label=p?p.energy+'/'+p.energyCap:'—/—',tw=Math.min(s.measure(label,size,800),Math.max(24,width-(compact?40:49)));s.text(label,x+(compact?20:25),y+12,size,this.colors.ink,800,tw+1);s.frame({x:x+(compact?24:29)+tw,y:y+10,w:compact?16:19,h:21},'plus-gold-normal');s.text('+',x+(compact?27:33)+tw,y+11,17,'#fffaf0',700);s.hit({x,y,w:width,h:42},()=>this.navigate('supplies'));};
+  const energy=(x:number,y:number,width:number,size=16)=>{if(!this.energyEnabled){s.icon('coin',{x,y:y+7,w:24,h:26});s.text(p?(p.collection?.coins??0):'—',x+29,y+13,size,this.colors.ink,800,Math.max(24,width-30));s.hit({x:x-3,y,w:Math.max(24,width+3),h:42},()=>this.showModal('coins'));return;}const compact=width<90,unlimited=this.energyUnlimitedToday;if(compact)size=Math.min(size,12);s.icon('lightning',{x,y:y+(compact?7:3),w:compact?17:22,h:compact?24:31});const label=unlimited?(compact?'无限':'今日无限'):p?p.energy+'/'+p.energyCap:'—/—',tw=Math.min(s.measure(label,size,800),Math.max(24,width-(unlimited?(compact?22:28):(compact?40:49))));s.text(label,x+(compact?20:25),y+12,size,unlimited?this.colors.berry:this.colors.ink,800,tw+1);if(!unlimited){s.frame({x:x+(compact?24:29)+tw,y:y+10,w:compact?16:19,h:21},'plus-gold-normal');s.text('+',x+(compact?27:33)+tw,y+11,17,'#fffaf0',700);}s.hit({x,y,w:width,h:42},()=>this.navigate('supplies'));};
   if(this.route==='lobby'||this.route==='gallery'||this.route==='chapter'){
    let y=top;const gallery=this.route==='gallery';
    if(gallery){s.text('图库',14,y+3,small?22:24,this.colors.ink,800,s.w-150);if(this.layout==='phonePortrait')s.button({x:s.w-136-reserve,y,w:124,h:32},'随机开一桌',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),{icon:'dice',fontSize:13,disabled:this.busy||!p});line(y+37);y+=43;if(this.layout==='phoneLandscape'){this.bodyTop=y;return;}}
