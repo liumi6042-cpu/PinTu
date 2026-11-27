@@ -46,16 +46,22 @@
           <div class="p-sub" id="plaque-sub">初秋午后 · 晴风</div>
         </div>
 
-        <button class="craft-btn wood-fish" id="btn-fish-tip" title="小鱼干数量">
+        <button class="craft-btn wood-fish" id="btn-coins-tip" title="拼图小窝金币">
           <img class="plate" src="./assets/uikit/wood-oval.webp" alt="" />
-          <img class="ico" src="./assets/icons/fish.webp" alt="小鱼干" />
-          <span id="hud-fish">16</span>
+          <img class="ico" src="./assets/icons/coin.webp" alt="金币" />
+          <span id="hud-coins">180</span>
         </button>
 
-        <!-- 窗台晒好的小鱼干（动态出现） -->
-        <button class="craft-btn sill-drop" id="btn-sill" style="display:none;">
+        <!-- 窗台晒好的香酥小鱼干零食（点击收入零食罐，可投喂团子或装包） -->
+        <button class="craft-btn sill-drop" id="btn-sill" style="display:none;" title="收下晒好的小鱼干零食">
           <img src="./assets/icons/fish.webp" alt="" />
-          <span id="sill-gain">+4</span>
+          <span id="sill-gain">收小鱼干 +2</span>
+        </button>
+
+        <!-- 喂一条香酥小鱼干零食（仅团子在家且有小鱼干零食时轻浮在右下木桌旁） -->
+        <button class="craft-btn sill-drop" id="btn-feed-snack" style="top:auto; left:auto; right:16px; bottom:146px; display:none;" title="喂团子一条香酥小鱼干零食">
+          <img src="./assets/icons/fish.webp" alt="" />
+          <span id="snack-count">喂小鱼干 (3)</span>
         </button>
 
         <!-- 久别拂尘轻提示（仅 dustLevel > 0 显示） -->

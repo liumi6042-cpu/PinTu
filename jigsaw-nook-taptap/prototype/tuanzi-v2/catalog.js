@@ -84,11 +84,24 @@ export function getCalendarInfo(ts) {
 }
 
 export const ITEMS = {
+  fish: {
+    id: 'fish',
+    name: '香酥小鱼干',
+    slot: 'food',
+    price: 25,
+    hours: [2, 4],
+    icon: './assets/icons/fish.webp',
+    trait: 'water',
+    shortDesc: '猫零食 · 投喂或短途',
+    flavor: '窗台晒得酥香的小鱼干，既能直接喂给团子解馋，也是阿胖最爱。',
+    treatTarget: 'apang',
+    isSnack: true,
+  },
   onigiri: {
     id: 'onigiri',
     name: '海苔饭团',
     slot: 'food',
-    price: 3,
+    price: 20,
     hours: [3, 5],
     icon: './assets/icons/onigiri.webp',
     trait: 'town',
@@ -100,7 +113,7 @@ export const ITEMS = {
     id: 'bento',
     name: '鱼肉便当',
     slot: 'food',
-    price: 8,
+    price: 45,
     hours: [6, 10],
     icon: './assets/icons/bento.webp',
     trait: 'water',
@@ -112,7 +125,7 @@ export const ITEMS = {
     id: 'osmanthus',
     name: '桂花甜糕',
     slot: 'food',
-    price: 10,
+    price: 60,
     hours: [8, 14],
     icon: './assets/icons/osmanthus.webp',
     trait: 'street',
@@ -124,7 +137,7 @@ export const ITEMS = {
     id: 'camera',
     name: '旧胶片相机',
     slot: 'tool',
-    price: 14,
+    price: 150,
     permanent: true,
     icon: './assets/icons/camera.webp',
     trait: 'wild',
@@ -135,7 +148,7 @@ export const ITEMS = {
     id: 'umbrella',
     name: '油纸小雨伞',
     slot: 'tool',
-    price: 12,
+    price: 120,
     permanent: true,
     icon: './assets/icons/umbrella.webp',
     trait: 'street',
@@ -170,7 +183,7 @@ export const ITEMS = {
     id: 'wish-grandma',
     name: '奶奶旧邮票',
     slot: 'wish',
-    price: 6,
+    price: 80,
     permanent: true,
     icon: './assets/icons/envelope.webp',
     trait: 'town',
@@ -181,6 +194,14 @@ export const ITEMS = {
 };
 
 export const SYNERGIES = [
+  {
+    id: 'fish-umbrella',
+    food: 'fish',
+    tool: 'umbrella',
+    whisper: '酥香小鱼干配油纸伞，旧书巷屋檐下阿胖闻着味就来了',
+    cardId: 'rainy-bookshop',
+    npcId: 'apang',
+  },
   {
     id: 'bento-camera',
     food: 'bento',

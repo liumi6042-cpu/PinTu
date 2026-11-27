@@ -21,19 +21,20 @@ export const DEFAULT_START_TS = Date.parse('2026-10-18T15:20:00+08:00');
 
 export function createInitialState(startTs = DEFAULT_START_TS) {
   return {
-    version: 2,
+    version: 3,
     startedAt: startTs,
     now: startTs,
     lastActiveAt: startTs,
     lastSimAt: startTs,
-    fish: 16,
+    coins: 180, // 与《拼图小窝》主游戏统一使用金币（完成一局 48 片拼图约得 72 金币）
     status: 'home', // 'home' | 'away'
     pack: { food: null, tool: null, wish: null },
     pantry: ['onigiri', null, null], // 玄关备品篮（最多 3 份，离线多日自动续行）
-    treatDish: 'osmanthus', // 窗台招待碟
+    treatDish: 'fish', // 窗台招待碟（摆上小鱼干零食，最吸引大橘阿胖来串门）
     trip: null,
     trips: 0,
     inventory: {
+      fish: 3, // 小鱼干现在是团子的专属零食，可投喂、装包或摆招待碟
       onigiri: 2,
       bento: 1,
       osmanthus: 1,
@@ -42,7 +43,7 @@ export function createInitialState(startTs = DEFAULT_START_TS) {
       'token-apang': 1,
       'wish-grandma': 1,
     },
-    sill: { lastClaimedAt: startTs - 6 * HOUR }, // 初始窗台正好晒好 +4 小鱼干可领
+    sill: { lastClaimedAt: startTs - 6 * HOUR }, // 初始窗台正好晒好 2 条香酥小鱼干零食可收
     plantGrowth: 6, // 0..100（6=双叶小苗，45=抽枝，75=含苞，90+=垂蔓开冬花）
     dustLevel: 0, // 0..1（离家 >= 7 天浮起温暖阳光金尘，可手势拂去）
     winterScarfUnlocked: false,
@@ -377,7 +378,7 @@ export function simulateTo(prevState, targetNow) {
         photoCapRight: endCal.cnDate,
         prose: `离开的这 ${roundedDays} 天里，团子没有一刻孤单，却一直在窗台等你推门。它和福爷爷、阿胖一起为你备好了一份重逢礼——戴上暖绒红围巾，它正跑过来蹭你的手呢。`,
         stampPortrait: NPCS.grandpa.portrait,
-        stampTitle: '等你的礼物 · 冬日红绒围巾 & +18 条小鱼干',
+        stampTitle: '等你的礼物 · 冬日红绒围巾 & +120 金币',
         stampSub: '小窝已点亮所有收藏与红丝带信捆。',
         isGiftPage: true,
       },
@@ -389,7 +390,7 @@ export function simulateTo(prevState, targetNow) {
       fromLabel: `${startCal.cnDate}（${startCal.seasonLabel}）`,
       toLabel: `${endCal.cnDate}（${endCal.seasonLabel}）`,
       pages,
-      giftFish: Math.min(24, 10 + Math.floor(awayDays * 0.4)),
+      giftCoins: Math.min(180, 60 + Math.floor(awayDays * 2)),
       seen: false,
       claimed: false,
     };
@@ -490,29 +491,44 @@ export function setTreatDish(prevState, foodId) {
   return state;
 }
 
-/** 玩家行为：杂货铺用小鱼干购买 */
+/** 玩家行为：杂货铺用主游戏金币购买 */
 export function buyItem(prevState, itemId) {
   const item = ITEMS[itemId];
   if (!item || item.price <= 0) return { state: prevState, ok: false, reason: '不可购买' };
   if (item.permanent && prevState.inventory[itemId] > 0) return { state: prevState, ok: false, reason: '已经拥有这件器物啦' };
-  if (prevState.fish < item.price) return { state: prevState, ok: false, reason: '小鱼干还差一点，拼张明信片或等窗台晒好吧' };
+  if (prevState.coins < item.price) return { state: prevState, ok: false, reason: '金币不够啦，拼一张图或显影明信片就能攒到' };
   const state = structuredClone(prevState);
-  state.fish -= item.price;
+  state.coins -= item.price;
   state.inventory[itemId] = (state.inventory[itemId] || 0) + 1;
   const cal = getCalendarInfo(state.now);
-  state.logs = [`[${cal.cnDate}] 在杂货铺换了「${item.name}」（-${item.price} 鱼干）。`, ...state.logs].slice(0, 16);
+  state.logs = [`[${cal.cnDate}] 在杂货铺换了「${item.name}」（-${item.price} 金币）。`, ...state.logs].slice(0, 16);
   return { state, ok: true };
 }
 
-/** 玩家行为：收下窗台晒好的小鱼干 */
+/** 玩家行为：收下窗台晒好的香酥小鱼干零食（进入零食库，不再是货币） */
 export function claimSill(prevState) {
   const portions = getSillPortions(prevState);
   if (portions <= 0) return { state: prevState, gained: 0 };
   const state = structuredClone(prevState);
-  const gained = portions * 2;
-  state.fish += gained;
+  const gained = portions; // 每 3 小时晒好 1 条香酥小鱼干，最多叠 3 条
+  state.inventory.fish = (state.inventory.fish || 0) + gained;
   state.sill.lastClaimedAt = state.now;
+  const cal = getCalendarInfo(state.now);
+  state.logs = [`[${cal.cnDate}] 收下窗台晒好的 ${gained} 条香酥小鱼干零食。`, ...state.logs].slice(0, 16);
   return { state, gained };
+}
+
+/** 玩家行为：直接投喂一条香酥小鱼干零食给团子 */
+export function feedSnack(prevState) {
+  if (prevState.status === 'away') return { state: prevState, ok: false, reason: '团子出门旅行中，回来再喂它吃小鱼干吧' };
+  if ((prevState.inventory.fish || 0) <= 0) return { state: prevState, ok: false, reason: '小鱼干零食吃完啦，等窗台晒好或去杂货铺买一点吧' };
+  const state = structuredClone(prevState);
+  state.inventory.fish -= 1;
+  state.traits.town = (state.traits.town || 0) + 1;
+  addBondXp(state, 'apang', 4);
+  const cal = getCalendarInfo(state.now);
+  state.logs = [`[${cal.cnDate}] 给团子喂了一条香酥小鱼干，它开心得直呼噜。`, ...state.logs].slice(0, 16);
+  return { state, ok: true };
 }
 
 export function getSillPortions(state) {
@@ -520,7 +536,7 @@ export function getSillPortions(state) {
   return Math.min(3, Math.floor(elapsed / (3 * HOUR)));
 }
 
-/** 玩家行为：完成明信片显影拼图 */
+/** 玩家行为：完成明信片显影拼图（奖励主游戏金币） */
 export function completePostcard(prevState, uid) {
   const state = structuredClone(prevState);
   const card = state.postcards.find(c => c.uid === uid);
@@ -530,12 +546,12 @@ export function completePostcard(prevState, uid) {
   card.developed = true;
   let reward = 0;
   if (newly) {
-    reward = 4;
-    state.fish += reward;
+    reward = 30;
+    state.coins += reward;
     const tpl = POSTCARD_POOL[card.templateId];
     if (tpl) state.traits[tpl.region] = (state.traits[tpl.region] || 0) + 1;
     const cal = getCalendarInfo(state.now);
-    state.logs = [`[${cal.cnDate}] 显影完成了明信片《${tpl?.title || '旅拍'}》（+4 小鱼干）。`, ...state.logs].slice(0, 16);
+    state.logs = [`[${cal.cnDate}] 显影完成了明信片《${tpl?.title || '旅拍'}》（+30 金币）。`, ...state.logs].slice(0, 16);
   }
   return { state, reward };
 }
@@ -567,15 +583,15 @@ export function replyLetter(prevState, uid, choiceId) {
 /** 玩家行为：拆开重逢手账礼物 */
 export function claimReunionGift(prevState) {
   const state = structuredClone(prevState);
-  if (!state.reunion || state.reunion.claimed) return { state, fish: 0 };
+  if (!state.reunion || state.reunion.claimed) return { state, coins: 0 };
   state.reunion.seen = true;
   state.reunion.claimed = true;
-  const fish = state.reunion.giftFish || 18;
-  state.fish += fish;
+  const coins = state.reunion.giftCoins || 120;
+  state.coins += coins;
   state.winterScarfUnlocked = true;
   const cal = getCalendarInfo(state.now);
-  state.logs = [`[${cal.cnDate}] 拆开重逢礼物：获得冬日红绒围巾与 +${fish} 条小鱼干。`, ...state.logs].slice(0, 16);
-  return { state, fish };
+  state.logs = [`[${cal.cnDate}] 拆开重逢礼物：获得冬日红绒围巾与 +${coins} 金币。`, ...state.logs].slice(0, 16);
+  return { state, coins };
 }
 
 /** 玩家行为：拂去阳光金尘 */

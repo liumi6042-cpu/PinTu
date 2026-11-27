@@ -4,21 +4,21 @@ import {
 } from './catalog.js';
 import {
   buyItem, claimReunionGift, claimSill, clearDust, completePostcard,
-  createInitialState, getDerivedView, packBag, replyLetter, sendOffNow,
+  createInitialState, feedSnack, getDerivedView, packBag, replyLetter, sendOffNow,
   setTreatDish, simulateTo, togglePantrySlot,
 } from './engine.js';
 import { NookAtmosphere } from './particles.js';
 import { sound } from './audio.js';
 import { mountPostcardPuzzle } from './puzzle.js';
 
-const STORAGE_KEY = 'jigsaw:tuanzi-v2-prototype:v1';
+const STORAGE_KEY = 'jigsaw:tuanzi-v2-prototype:v3';
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 2) return parsed;
+      if (parsed?.version === 3) return parsed;
     }
   } catch {}
   return createInitialState();
@@ -119,20 +119,27 @@ function renderNook() {
   canvas.classList.toggle('interactive-dust', state.dustLevel > 0);
   $('dust-cue').style.display = state.dustLevel > 0 ? 'flex' : 'none';
 
-  // 3. 顶部麻绳木牌日历 & 橡木鱼干牌
+  // 3. 顶部麻绳木牌日历 & 橡木金币牌
   $('plaque-date').textContent = view.cal.cnDate;
   const plaqueSub = view.hasPendingReunion
     ? `${view.cal.seasonLabel}${view.cal.isNight ? '雪夜' : view.cal.period} · 别${state.reunion.awayDays}日`
     : view.cal.plaqueSub;
   $('plaque-sub').textContent = plaqueSub;
-  $('hud-fish').textContent = String(state.fish);
+  $('hud-coins').textContent = String(state.coins);
 
-  // 4. 窗台小鱼干
+  // 4. 窗台晒好的香酥小鱼干零食 + 直接投喂团子零食按钮
   if (view.sillPortions > 0 && !view.hasPendingReunion) {
     $('btn-sill').style.display = 'flex';
-    $('sill-gain').textContent = `+${view.sillPortions * 2}`;
+    $('sill-gain').textContent = `小鱼干 +${view.sillPortions}`;
   } else {
     $('btn-sill').style.display = 'none';
+  }
+  const fishCount = state.inventory.fish || 0;
+  if (state.status === 'home' && !view.hasPendingReunion && fishCount > 0) {
+    $('btn-feed-snack').style.display = 'flex';
+    $('snack-count').textContent = `喂小鱼干 (${fishCount})`;
+  } else {
+    $('btn-feed-snack').style.display = 'none';
   }
 
   // 5. 门口红丝带信捆火漆（重逢或有积压未读信件时显示）
@@ -258,7 +265,7 @@ function renderBagScreen() {
           ? '已装好口粮，可再添一件器物或心愿信物试试化学反应'
           : '先放一份口粮进布包，再配器物会触发意外旅途故事';
 
-    const order = ['onigiri', 'bento', 'osmanthus', 'camera', 'umbrella', 'token-apang', 'wish-grandma', 'token-manman'];
+    const order = ['fish', 'onigiri', 'bento', 'osmanthus', 'camera', 'umbrella', 'token-apang', 'wish-grandma'];
     trayEl.innerHTML = order.map(id => {
       const item = ITEMS[id];
       const inBag = state.pack[item.slot] === id;
@@ -312,7 +319,7 @@ function renderBagScreen() {
     });
 
     whisperEl.textContent = '玄关备品篮：你离开多日时，团子会自己叼一份续行';
-    const foods = ['onigiri', 'bento', 'osmanthus'];
+    const foods = ['fish', 'onigiri', 'bento', 'osmanthus'];
     trayEl.innerHTML = foods.map(id => {
       const item = ITEMS[id];
       const cnt = state.inventory[id] || 0;
@@ -358,7 +365,7 @@ function renderBagScreen() {
       ? `窗台摆着「${cur.name}」，离线期间会吸引${NPCS[cur.treatTarget].name}来串门`
       : '在窗台小瓷碟放一份点心，路过的拾光镇熟人会进来留信';
 
-    const treats = ['onigiri', 'bento', 'osmanthus'];
+    const treats = ['fish', 'onigiri', 'bento', 'osmanthus'];
     trayEl.innerHTML = treats.map(id => {
       const item = ITEMS[id];
       const cnt = state.inventory[id] || 0;
@@ -473,7 +480,7 @@ function renderReunionBook(el) {
         commit(res.state);
         setScreen('nook');
         atmosphere.spawnBurst(195, 580, 'reunion');
-        showCatRibbon(`欢迎回家！收下红绒围巾和 +${res.fish} 条小鱼干`, 4200);
+        showCatRibbon(`欢迎回家！收下红绒围巾和 +${res.coins} 金币`, 4200);
       } else {
         setScreen('nook');
       }
@@ -537,7 +544,7 @@ function renderMailboxBook(el) {
           playingPuzzleUid = null;
           sound.celebrate();
           commit(res.state);
-          showToast(res.reward ? `明信片显影成功！+${res.reward} 条小鱼干` : '明信片重新拼好啦');
+          showToast(res.reward ? `明信片显影成功！+${res.reward} 金币` : '明信片重新拼好啦');
         },
       });
       $('pz-back').addEventListener('click', () => { playingPuzzleUid = null; renderMailboxBook(el); });
@@ -594,7 +601,7 @@ function renderMailboxBook(el) {
           </div>
         ` : `
           <div class="pc-hint-strip">
-            未显影明信片不耗体力，拼完后将高清收进《拾光剪贴簿》，并得 +4 条小鱼干。
+            未显影明信片不耗体力，拼完后将高清收进《拾光剪贴簿》，并得 +30 金币。
           </div>
         `}
       </div>
@@ -602,7 +609,7 @@ function renderMailboxBook(el) {
       <div class="book-cta-center">
         <button class="craft-btn book-wax-ribbon-btn" id="btn-play-pc">
           <img class="rb" src="./assets/uikit/paper-ribbon.webp" alt="" />
-          <span>${card.developed ? '再拼一次明信片' : '开始拼图显影 (+4 鱼干)'}</span>
+          <span>${card.developed ? '再拼一次明信片' : '开始拼图显影 (+30 金币)'}</span>
           <img class="sl" src="./assets/uikit/wax-paw.webp" alt="" />
         </button>
       </div>
@@ -711,18 +718,18 @@ function renderMailboxBook(el) {
 }
 
 function renderShopBook(el) {
-  const shopIds = ['onigiri', 'bento', 'osmanthus', 'camera', 'umbrella', 'wish-grandma'];
+  const shopIds = ['fish', 'onigiri', 'bento', 'osmanthus', 'camera', 'umbrella'];
   el.innerHTML = `
     <div class="book-top-bar">
       <button class="craft-btn ink-return" id="bk-close">
         <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
         <span>回小窝</span>
       </button>
-      <div class="book-folio">现有小鱼干 · ${state.fish}</div>
+      <div class="book-folio">现有金币 · ${state.coins}</div>
     </div>
     <div class="book-heading">
       <h3>拾光杂货铺</h3>
-      <div class="date-line">口粮各有风味 · 永久器物买一次反复用</div>
+      <div class="date-line">通用主游戏金币 · 小鱼干可作团子零食</div>
     </div>
     <div class="book-scroll">
       <div class="shop-grid">
@@ -730,7 +737,7 @@ function renderShopBook(el) {
           const item = ITEMS[id];
           const owned = state.inventory[id] || 0;
           const lockedPerm = item.permanent && owned > 0;
-          const poor = state.fish < item.price;
+          const poor = state.coins < item.price;
           return `
             <div class="shop-card">
               ${lockedPerm ? `<span class="sc-tag owned">已拥有</span>` : owned > 0 ? `<span class="sc-tag">余 ${owned}</span>` : ''}
@@ -739,7 +746,7 @@ function renderShopBook(el) {
               <p>${item.shortDesc}</p>
               <button class="craft-btn shop-buy-btn ${lockedPerm || poor ? 'disabled' : ''}" data-buy="${id}">
                 <img class="bg" src="./assets/uikit/wood-oval.webp" alt="" />
-                ${lockedPerm ? `<span>已备妥</span>` : `<img class="f" src="./assets/icons/fish.webp" alt="" /><span>${item.price} 鱼干</span>`}
+                ${lockedPerm ? `<span>已备妥</span>` : `<img class="f" src="./assets/icons/coin.webp" alt="" /><span>${item.price} 金币</span>`}
               </button>
             </div>
           `;
@@ -1024,10 +1031,25 @@ $('btn-sill').addEventListener('click', () => {
   const res = claimSill(state);
   if (res.gained > 0) {
     sound.fishChime();
-    atmosphere.spawnBurst(96, 352, 'fish');
-    showToast(`收下窗台晒好的 +${res.gained} 条小鱼干`);
+    atmosphere.spawnBurst(96, 372, 'fish');
+    showToast(`收下窗台晒好的 +${res.gained} 条香酥小鱼干零食`);
     commit(res.state);
   }
+});
+
+$('btn-feed-snack').addEventListener('click', () => {
+  const res = feedSnack(state);
+  if (!res.ok) return showToast(res.reason);
+  const actor = $('tuanzi-actor');
+  actor.classList.remove('petting');
+  void actor.offsetWidth;
+  actor.classList.add('petting');
+  sound.petCat();
+  const rect = actor.getBoundingClientRect();
+  const phoneRect = phoneEl.getBoundingClientRect();
+  atmosphere.spawnBurst(rect.left - phoneRect.left + rect.width * 0.5, rect.top - phoneRect.top + rect.height * 0.35, 'pet');
+  showCatRibbon('咔哧咔哧……窗台晒好的小鱼干最香啦！', 3400);
+  commit(res.state);
 });
 
 $('hotspot-windchime').addEventListener('click', () => {
@@ -1066,8 +1088,8 @@ $('btn-mute').addEventListener('click', () => {
   showToast(sound.muted ? '已静音' : '已开启治愈微音效');
 });
 
-$('btn-fish-tip').addEventListener('click', () => {
-  showToast('拼明信片、收窗台晒鱼干或完成主线拼图都可获得小鱼干');
+$('btn-coins-tip').addEventListener('click', () => {
+  showToast('通用主游戏金币：拼图、完成图鉴里程碑或显影明信片都能获得');
 });
 
 // 手势滑动拂去阳光金尘

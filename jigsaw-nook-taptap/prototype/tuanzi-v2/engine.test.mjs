@@ -9,6 +9,7 @@ import {
   clearDust,
   completePostcard,
   createInitialState,
+  feedSnack,
   getDerivedView,
   packBag,
   replyLetter,
@@ -73,7 +74,7 @@ test('30-day offline lazy simulation evolves room, plant, bonds, scarf, reunion 
 
   // Claim reunion gift + wipe dust + reply to letter + develop postcard
   const gifted = claimReunionGift(s30);
-  assert.ok(gifted.fish > 0);
+  assert.ok(gifted.coins >= 120);
   assert.equal(gifted.state.reunion.claimed, true);
 
   const wiped = clearDust(gifted.state);
@@ -89,17 +90,22 @@ test('30-day offline lazy simulation evolves room, plant, bonds, scarf, reunion 
   const undeveloped = replied.state.postcards.find(c => !c.developed);
   assert.ok(undeveloped);
   const dev = completePostcard(replied.state, undeveloped.uid);
-  assert.equal(dev.reward, 4);
+  assert.equal(dev.reward, 30);
 });
 
-test('sill fish collection and shop purchase update economy cleanly', () => {
+test('sill harvests dried fish snack, feeding consumes snack, and shop spends main-game Coins', () => {
   const s0 = createInitialState();
   const sillRes = claimSill(s0);
-  assert.equal(sillRes.gained, 4);
-  assert.equal(sillRes.state.fish, s0.fish + 4);
+  assert.equal(sillRes.gained, 2);
+  assert.equal(sillRes.state.inventory.fish, s0.inventory.fish + 2);
+  assert.equal(sillRes.state.coins, s0.coins, 'sill harvests snack, not coins');
 
-  const bought = buyItem(sillRes.state, 'onigiri');
+  const fed = feedSnack(sillRes.state);
+  assert.equal(fed.ok, true);
+  assert.equal(fed.state.inventory.fish, sillRes.state.inventory.fish - 1);
+
+  const bought = buyItem(fed.state, 'onigiri');
   assert.equal(bought.ok, true);
-  assert.equal(bought.state.fish, sillRes.state.fish - 3);
+  assert.equal(bought.state.coins, fed.state.coins - 20);
   assert.equal(bought.state.inventory.onigiri, s0.inventory.onigiri + 1);
 });
