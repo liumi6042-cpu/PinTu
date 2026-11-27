@@ -49,7 +49,9 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.31';
+const CLIENT_PACKAGE_VERSION='v53.32';
+/** Server /api/mobile/gifts/open validates 1..20 gifts per request; larger bulk opens are split into sequential batches. */
+const GIFT_OPEN_BATCH_LIMIT=20;
 
 /** One scene graph and one set of game rules for both mobile platforms. */
 export class GameApp{
@@ -998,7 +1000,51 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   });
  }
  private async useEnergy(){await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
- private async openGift(kind:string,quantity=1){await this.run(async()=>{const key='gift:'+kind;const data=await this.client.post<MobileGiftOpenResult>('/api/mobile/gifts/open',{kind,quantity,requestId:this.attempt(key)});this.attempts.delete(key);this.applyTasks(data);if((data.opened.coins??0)>0){try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}}await this.client.refresh();this.telemetry?.milestone('new_user','开启任务礼包');this.checkLevelMilestone();this.note(this.rewardText(data.opened.energy,data.opened.xp,data.opened.coins??0));});}
+ private async openGiftRequest(kind:string,quantity:number){
+  const key='gift:'+kind+':'+quantity;
+  try{
+   const data=await this.client.post<MobileGiftOpenResult>('/api/mobile/gifts/open',{kind,quantity,requestId:this.attempt(key)});
+   this.attempts.delete(key);
+   return data;
+  }catch(error){
+   const status=(error as {status?:number}|null)?.status??0;
+   if(status>=400&&status<500)this.attempts.delete(key);
+   throw error;
+  }
+ }
+ private async openGiftItems(items:Array<{kind:string;count:number}>,showCount:boolean){
+  await this.run(async()=>{
+   let opened=0,energy=0,xp=0,coins=0;
+   const finish=async(interrupted?:unknown)=>{
+    if(coins>0){try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}}
+    await this.client.refresh().catch(()=>{});
+    this.telemetry?.milestone('new_user','开启任务礼包');this.checkLevelMilestone();
+    const reward=this.rewardText(energy,xp,coins);
+    if(interrupted)this.note('已开启 '+opened+' 份礼包（'+reward+'），其余中断：'+errorText(interrupted));
+    else this.note(showCount||opened>1?'已开启 '+opened+' 份礼包 · '+reward:reward);
+   };
+   try{
+    for(const item of items){
+     let remaining=Math.max(0,Math.floor(item.count));
+     while(remaining>0&&!this.destroyed){
+      const batch=Math.min(GIFT_OPEN_BATCH_LIMIT,remaining);
+      const data=await this.openGiftRequest(item.kind,batch);
+      this.applyTasks(data);
+      opened+=data.opened.quantity??batch;
+      energy+=data.opened.energy??0;
+      xp+=data.opened.xp??0;
+      coins+=data.opened.coins??0;
+      remaining-=batch;
+     }
+    }
+   }catch(error){
+    if(opened>0){await finish(error);return;}
+    throw error;
+   }
+   if(opened>0)await finish();
+  });
+ }
+ private async openGift(kind:string,quantity=1){await this.openGiftItems([{kind,count:Math.max(1,Math.floor(quantity))}],quantity>1);}
  private async shareInvitation(){await this.run(async()=>{
   if(this.platform.config.id==='web'){const result=await this.platform.share({title:'来'+this.platform.config.gameName+'一起拼图',roomId:this.room?.ticket.room.id,inviteCode:this.tasks?.invitation.code});this.note(result==='copied'?'邀请链接已复制，可以粘贴给好友':result==='shared'?'已分享邀请链接':result==='cancelled'?'本次分享已取消':'浏览器暂不支持分享或复制，请使用邀请码');return;}
   const apply=async(data:MobileInviteShareResult)=>{this.applyTasks(data);await this.client.refresh();this.checkLevelMilestone();this.note(data.shared.alreadyRewarded?'今天的分享奖励已领完，仍可邀请好友':'分享奖励已到账：'+this.rewardText(data.shared.energy,data.shared.xp,data.shared.coins??0));};
@@ -1324,7 +1370,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawPictureButton(r:Rect,label:string,fn:()=>void,tone='cream',icon='',fontSize=11,iconSize=16,disabled=false,selected=false){return drawPictureButtonPanel.call(this.host,r,label,fn,tone,icon,fontSize,iconSize,disabled,selected);}
  private drawTasks(inWindow=false){return drawTasksPanel.call(this.host,inWindow);}
  private supplyFocus=false;
- private async openAllGifts(){const gifts=(this.tasks?.inventory??[]).filter(gift=>gift.count>0&&this.giftVisible(gift)&&!(this.energyEnabled&&gift.effect==='full-energy'));for(const gift of gifts)await this.openGift(gift.kind,gift.count);}
+ private async openAllGifts(){
+  const gifts=(this.tasks?.inventory??[]).filter(gift=>gift.count>0&&this.giftVisible(gift)&&!(this.energyEnabled&&gift.effect==='full-energy'));
+  if(!gifts.length){this.note('补满体力包请按需单个开启');return;}
+  await this.openGiftItems(gifts.map(gift=>({kind:gift.kind,count:gift.count})),true);
+ }
  private drawTasksPage(){return drawTasksPagePanel.call(this.host);}
  private drawSupplies(){return drawSuppliesPanel.call(this.host);}
  private drawWebSupplies(){return drawWebSuppliesPanel.call(this.host);}
