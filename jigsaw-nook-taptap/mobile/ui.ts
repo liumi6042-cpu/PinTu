@@ -19,6 +19,18 @@ type Hit={r:Rect;fn:()=>void};
 const inside=(r:Rect,x:number,y:number)=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;
 const intersection=(a:Rect,b:Rect):Rect=>({x:Math.max(a.x,b.x),y:Math.max(a.y,b.y),w:Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)),h:Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y))});
 const fitInside=(r:Rect,width:number,height:number):Rect=>{const scale=Math.min(r.w/width,r.h/height),w=width*scale,h=height*scale;return{x:r.x+(r.w-w)/2,y:r.y+(r.h-h)/2,w,h};};
+const ICON_ALIASES:Record<string,string>={quick:'players',star:'xpStar',tasks:'gift',supplies:'store',puzzle:'piece',collection:'book',refill:'refillGift',energyPack:'energy'};
+const ICON_EXTRAS:Record<string,{file:string;rect:readonly number[]}>={
+ ...Object.fromEntries(Object.entries(cardAtlas.bounds).map(([key,rect])=>['card'+key[0].toUpperCase()+key.slice(1),{file:'b2-card-icons1023.png',rect}])),
+ supplyEnergy:{file:'b2-supply-scenes.png',rect:[0,0,887,887]},
+ supplyTicket:{file:'b2-supply-scenes.png',rect:[887,0,887,887]},
+ moon:{file:'b2-pixel-atlas.png',rect:[679,955,209,243]},
+ lantern:{file:'b2-pixel-atlas.png',rect:[988,937,188,269]},
+ paw:{file:'b2-reward-cursors.png',rect:[0,0,215,215]},
+ hairpin:{file:'b2-reward-cursors.png',rect:[215,0,215,215]},
+};
+const DECORATION_CATALOG=new Map<string,{id:string;artKey:string;color:string}>([...collectionCatalog.decorations,...collectionCatalog.rewardDecorations].map(item=>[item.id,item]));
+const TAPTAP_MOBILE_MAX_DPR=2;
 
 /** One immediate-mode UI renderer used by both platforms. Coordinates are logical pixels. */
 export class Stage{
@@ -27,22 +39,23 @@ export class Stage{
  private hits:Hit[]=[];private clips:Rect[]=[];private offset={x:0,y:0};private inputSuspended=0;
  private readonly images:StageImageCache;
  private decorationTints=new Map<string,{image:HTMLCanvasElement;art:Rect}>();
+ private bgCache:{canvas:HTMLCanvasElement;theme:ThemeId;landscape:boolean}|null=null;
  private down:{x:number;y:number;target:Hit|undefined}|null=null;
  private pixelScaleX=1;private pixelScaleY=1;
  private currentTheme:ThemeId='light';
- constructor(readonly platform:Platform,readonly asset:(path:string)=>string){const ctx=platform.canvas.getContext('2d');if(!ctx)throw Error('画布暂不可用');this.ctx=ctx;this.images=new StageImageCache(platform,this.invalidate);this.resize();if(platform.config.id==='taptap')this.load('/mobile-icons/b2-supply-scenes.png');}
+ constructor(readonly platform:Platform,readonly asset:(path:string)=>string){const ctx=platform.canvas.getContext('2d',{alpha:false})??platform.canvas.getContext('2d');if(!ctx)throw Error('画布暂不可用');this.ctx=ctx;this.images=new StageImageCache(platform,this.invalidate);this.resize();if(platform.config.id==='taptap')this.load('/mobile-icons/b2-supply-scenes.png');}
  get theme(){return this.currentTheme;}
  get palette(){return themeColors(this.currentTheme);}
  setTheme(theme:ThemeId){if(this.currentTheme===theme)return;this.currentTheme=theme;this.invalidate();}
  color(value:string){return themeUiColor(this.currentTheme,value);}
- resize(){const v=this.platform.viewport();this.w=v.width;this.h=v.height;const width=Math.round(v.width*v.dpr),height=Math.round(v.height*v.dpr);if(this.platform.canvas.width!==width)this.platform.canvas.width=width;if(this.platform.canvas.height!==height)this.platform.canvas.height=height;this.pixelScaleX=this.platform.canvas.width/Math.max(1,this.w);this.pixelScaleY=this.platform.canvas.height/Math.max(1,this.h);this.dirty=true;}
+ resize(){const v=this.platform.viewport();this.w=v.width;this.h=v.height;const maxDpr=this.platform.config?.id==='taptap'&&this.platform.tapPcHost?.()!==true?TAPTAP_MOBILE_MAX_DPR:Infinity,dpr=Math.min(maxDpr,v.dpr||1);const width=Math.round(v.width*dpr),height=Math.round(v.height*dpr);if(this.platform.canvas.width!==width)this.platform.canvas.width=width;if(this.platform.canvas.height!==height)this.platform.canvas.height=height;this.pixelScaleX=this.platform.canvas.width/Math.max(1,this.w);this.pixelScaleY=this.platform.canvas.height/Math.max(1,this.h);this.dirty=true;}
  invalidate=()=>{this.dirty=true;};
- begin(){this.images.beginFrame();const c=this.ctx;c.setTransform(this.pixelScaleX,0,0,this.pixelScaleY,0,0);c.globalAlpha=1;c.clearRect(0,0,this.w,this.h);c.fillStyle=this.palette.paper;c.fillRect(0,0,this.w,this.h);this.hits=[];this.clips=[];this.offset={x:0,y:0};this.dirty=false;}
+ begin(){this.images.beginFrame();const c=this.ctx;c.setTransform(this.pixelScaleX,0,0,this.pixelScaleY,0,0);c.globalAlpha=1;c.fillStyle=this.palette.paper;c.fillRect(0,0,this.w,this.h);this.hits=[];this.clips=[];this.offset={x:0,y:0};this.dirty=false;}
  endFrame(){this.images.endFrame();}
  imageDiagnostics(){return this.images.diagnostics();}
  /** Paint a loading shell without registering actions for an unknown identity. */
  withoutInput(draw:()=>void){this.inputSuspended++;try{draw();}finally{this.inputSuspended--;}}
- destroy(){this.images.destroy();this.decorationTints.clear();this.hits=[];this.down=null;}
+ destroy(){this.images.destroy();this.decorationTints.clear();if(this.bgCache){this.bgCache.canvas.width=this.bgCache.canvas.height=1;this.bgCache=null;}this.hits=[];this.down=null;}
  /** Reuse a scene inside a desktop pane while retaining screen-space input. */
  withViewport(r:Rect,draw:()=>void){
   const previous={w:this.w,h:this.h,offset:this.offset};
@@ -67,9 +80,10 @@ export class Stage{
   // Only the middle stretches; corners keep the same logical pixel size.
   // Frame rects use Stage coordinates (as do their hit areas), not local transforms.
   const map=(v:number,source:number,target:number)=>v<=k?v:v>=source-k?target-source+v:k+(v-k)*(target-2*k)/(source-2*k);
+  let lastFill='';
   const paint=(left:number,top:number,right:number,bottom:number,color:string)=>{
    const px=Math.round(left*this.pixelScaleX),py=Math.round(top*this.pixelScaleY),pw=Math.round(right*this.pixelScaleX)-px,ph=Math.round(bottom*this.pixelScaleY)-py;
-   if(pw>0&&ph>0){c.fillStyle=themeFrameColor(this.currentTheme,id,color);c.fillRect(px,py,pw,ph);}
+   if(pw>0&&ph>0){const fill=themeFrameColor(this.currentTheme,id,color);if(fill!==lastFill){c.fillStyle=fill;lastFill=fill;}c.fillRect(px,py,pw,ph);}
   };
   c.save();c.setTransform(1,0,0,1,0,0);
   paint(x+k,y+k,x+w-k,y+h-k,spec.surface);
@@ -123,9 +137,9 @@ export class Stage{
   const c=this.ctx,box=fitInside(r,sw,sh),t=typeof c.getTransform==='function'?c.getTransform():null;let {x,y,w,h}=box;
   if(t&&typeof t.a==='number'&&!t.b&&!t.c&&t.a>0&&t.d>0){const left=Math.round(t.a*x+t.e),top=Math.round(t.d*y+t.f);w=Math.max(1,Math.round(t.a*w))/t.a;h=Math.max(1,Math.round(t.d*h))/t.d;x=(left-t.e)/t.a;y=(top-t.f)/t.d;}
   const smoothing=c.imageSmoothingEnabled,quality=c.imageSmoothingQuality,enlarged=!!t&&typeof t.a==='number'&&Math.abs(t.a)*w>=sw;
-  c.imageSmoothingEnabled=!enlarged;if(!enlarged)c.imageSmoothingQuality='high';c.drawImage(image,sx,sy,sw,sh,x,y,w,h);c.imageSmoothingEnabled=smoothing;if(quality)c.imageSmoothingQuality=quality;
+  c.imageSmoothingEnabled=!enlarged;if(!enlarged)c.imageSmoothingQuality='medium';c.drawImage(image,sx,sy,sw,sh,x,y,w,h);c.imageSmoothingEnabled=smoothing;if(quality)c.imageSmoothingQuality=quality;
  }
- icon(kind:string,r:Rect,color?:string){const aliases:Record<string,string>={quick:'players',star:'xpStar',tasks:'gift',supplies:'store',puzzle:'piece',collection:'book',refill:'refillGift',energyPack:'energy'};kind=aliases[kind]||kind;const extras:Record<string,{file:string;rect:number[]}>= {...Object.fromEntries(Object.entries(cardAtlas.bounds).map(([key,rect])=>['card'+key[0].toUpperCase()+key.slice(1),{file:'b2-card-icons1023.png',rect}])),supplyEnergy:{file:'b2-supply-scenes.png',rect:[0,0,887,887]},supplyTicket:{file:'b2-supply-scenes.png',rect:[887,0,887,887]},moon:{file:'b2-pixel-atlas.png',rect:[679,955,209,243]},lantern:{file:'b2-pixel-atlas.png',rect:[988,937,188,269]},paw:{file:'b2-reward-cursors.png',rect:[0,0,215,215]},hairpin:{file:'b2-reward-cursors.png',rect:[215,0,215,215]}};const extra=extras[kind];if(extra){const e=this.load('/mobile-icons/'+extra.file);if(e.loaded){const[sx,sy,sw,sh]=extra.rect;this.sprite(e.image,sx,sy,sw,sh,r);}return;}const core=(coreBounds as Record<string,readonly number[]>)[kind],task=(taskBounds as Record<string,readonly number[]>)[kind],bound=core||task,c=this.ctx;if(bound){const e=this.load('/mobile-icons/'+(core?'b2-core-icons23.png':'b2-task-icons23.png'));if(e.loaded){const [sx,sy,sw,sh]=bound;this.sprite(e.image,sx,sy,sw,sh,r);}return;}
+ icon(kind:string,r:Rect,color?:string){kind=ICON_ALIASES[kind]||kind;const extra=ICON_EXTRAS[kind];if(extra){const e=this.load('/mobile-icons/'+extra.file);if(e.loaded){const[sx,sy,sw,sh]=extra.rect;this.sprite(e.image,sx,sy,sw,sh,r);}return;}const core=(coreBounds as Record<string,readonly number[]>)[kind],task=(taskBounds as Record<string,readonly number[]>)[kind],bound=core||task,c=this.ctx;if(bound){const e=this.load('/mobile-icons/'+(core?'b2-core-icons23.png':'b2-task-icons23.png'));if(e.loaded){const [sx,sy,sw,sh]=bound;this.sprite(e.image,sx,sy,sw,sh,r);}return;}
   // Utility symbols share the original 24×24 SVG viewBox, including its padding.
   const box=fitInside(r,24,24),scale=box.w/24;
   c.save();c.translate(box.x,box.y);c.scale(scale,scale);c.fillStyle=color?themeTextColor(this.currentTheme,color):(['person','players','quick'].includes(kind)?this.color('#876158'):kind==='create'?this.palette.gold:['piece','fragment'].includes(kind)?this.palette.rose:this.palette.ink);c.strokeStyle=c.fillStyle;c.lineWidth=2;
@@ -147,7 +161,7 @@ export class Stage{
   else{c.strokeRect(4,4,16,16);c.fillRect(8,8,8,8);}c.restore();
  }
  decoration(value:{id?:string;artKey:string;color:string},r:Rect){
-  const original=[...collectionCatalog.decorations,...collectionCatalog.rewardDecorations].find(item=>item.id===value.id);
+  const original=value.id?DECORATION_CATALOG.get(value.id):undefined;
   if(original?.color.toLowerCase()===value.color.toLowerCase()&&original.artKey===value.artKey){this.icon(value.artKey,r);return;}
   const kind=value.artKey==='star'?'xpStar':value.artKey,key=kind+':'+value.color.toLowerCase();
   let tint=this.decorationTints.get(key);
@@ -187,7 +201,23 @@ export class Stage{
   }
  }
 
- background(){const c=this.ctx;c.fillStyle=this.palette.paper;c.fillRect(0,0,this.w,this.h);const g=c.createRadialGradient(this.w*.24,this.h*.15,0,this.w*.24,this.h*.15,Math.max(this.w,this.h)*.68);g.addColorStop(0,this.palette.highlight);g.addColorStop(1,this.palette.highlight+'00');c.fillStyle=g;c.fillRect(0,0,this.w,this.h);}
+ background(){
+  const c=this.ctx,landscape=this.w>this.h;
+  if(typeof this.platform.createCanvas==='function'&&typeof c.drawImage==='function'){
+   let bg=this.bgCache;
+   if(!bg||bg.theme!==this.currentTheme||bg.landscape!==landscape){
+    const canvas=bg?.canvas??this.platform.createCanvas(),bw=landscape?160:128,bh=landscape?128:160;
+    canvas.width=bw;canvas.height=bh;const bc=canvas.getContext?.('2d');
+    if(bc&&typeof bc.createRadialGradient==='function'){
+     bc.fillStyle=this.palette.paper;bc.fillRect(0,0,bw,bh);
+     const g=bc.createRadialGradient(bw*.24,bh*.15,0,bw*.24,bh*.15,Math.max(bw,bh)*.68);g.addColorStop(0,this.palette.highlight);g.addColorStop(1,this.palette.highlight+'00');
+     bc.fillStyle=g;bc.fillRect(0,0,bw,bh);bg={canvas,theme:this.currentTheme,landscape};this.bgCache=bg;
+    }else bg=null;
+   }
+   if(bg){c.drawImage(bg.canvas,0,0,this.w,this.h);return;}
+  }
+  c.fillStyle=this.palette.paper;c.fillRect(0,0,this.w,this.h);const g=c.createRadialGradient(this.w*.24,this.h*.15,0,this.w*.24,this.h*.15,Math.max(this.w,this.h)*.68);g.addColorStop(0,this.palette.highlight);g.addColorStop(1,this.palette.highlight+'00');c.fillStyle=g;c.fillRect(0,0,this.w,this.h);
+ }
  meter(r:Rect,value:number,_color=this.palette.rose){
   const c=this.ctx,path=(x:number,y:number,w:number,h:number)=>{const radius=Math.min(h/2,w/2);c.beginPath();c.moveTo(x+radius,y);c.lineTo(x+w-radius,y);c.quadraticCurveTo(x+w,y,x+w,y+radius);c.lineTo(x+w,y+h-radius);c.quadraticCurveTo(x+w,y+h,x+w-radius,y+h);c.lineTo(x+radius,y+h);c.quadraticCurveTo(x,y+h,x,y+h-radius);c.lineTo(x,y+radius);c.quadraticCurveTo(x,y,x+radius,y);c.closePath();};
   c.save();path(r.x+.5,r.y+.5,r.w-1,r.h-1);const track=c.createLinearGradient(0,r.y,0,r.y+r.h);track.addColorStop(0,this.color('#fffdf6'));track.addColorStop(1,this.color('#fff6eb'));c.fillStyle=track;c.fill();c.strokeStyle=this.color('#c49a8d');c.lineWidth=1;c.stroke();c.clip();const fill=Math.max(0,Math.min(1,value))*(r.w-2);if(fill>0){path(r.x+1,r.y+1,fill,r.h-2);const tint=c.createLinearGradient(0,r.y,0,r.y+r.h);tint.addColorStop(0,this.color('#d99ba4'));tint.addColorStop(1,this.palette.rose);c.fillStyle=tint;c.fill();c.save();c.clip();c.fillStyle=this.color('#efc6c9');c.fillRect(r.x+2,r.y+1,Math.max(0,fill-2),1);c.fillStyle=this.color('#a862732b');c.fillRect(r.x+2,r.y+r.h-2,Math.max(0,fill-2),1);c.restore();}c.restore();

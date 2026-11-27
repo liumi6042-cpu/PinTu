@@ -58,7 +58,7 @@ test('the lobby tip follows the avatar through the landscape rail and fits narro
  }
 });
 
-test('lobby replaces quick-join with 历史记录, drops room-header filter chips, and settings keeps 历史拼图',()=>{
+test('lobby puts 历史记录 in top actions, moves 快速加入 to the public-room header, drops room-header filter chips, and settings keeps 历史拼图',()=>{
  for(const compact of [false,true]){
   const f=fixture({width:844,height:390});
   const actionButtons=[];
@@ -69,11 +69,16 @@ test('lobby replaces quick-join with 历史记录, drops room-header filter chip
   actionButtons[0].fn();assert.equal(f.app.modal,'history');
 
   f.clear();
-  const chipsDrawn=[];
+  const chipsDrawn=[];let quickJoined=0;
   f.app.drawChips=(...args)=>{chipsDrawn.push(args);return args[1]+args[3];};
+  f.app.quickJoin=()=>{quickJoined++;};
   f.app.drawRoomHeader(20,100,360,compact);
   assert.equal(chipsDrawn.length,0,'public room header renders no filter chips below it');
   assert.equal(f.buttons.some(button=>button.label==='历史拼图'),false,'no duplicate history button in room header');
+  const quick=f.buttons.find(button=>button.label==='快速加入');
+  assert.ok(quick,'快速加入 replaces the old 历史拼图 slot beside 公开房间');
+  assert.ok(quick.r.x>200,'快速加入 aligns on the right side of the room header');
+  quick.fn();assert.equal(quickJoined,1);
   assert.ok(f.texts.includes('公开房间'));
 
   f.clear();f.stage.segments=()=>{};f.app.modal='settings';f.app.drawModal();assert.ok(f.buttons.some(button=>button.label==='历史拼图'));assert.ok(!f.buttons.some(button=>button.label==='拼图历史'));

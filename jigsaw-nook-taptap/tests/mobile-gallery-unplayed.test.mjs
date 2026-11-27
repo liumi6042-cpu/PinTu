@@ -237,13 +237,23 @@ test('gallery chips fill the full row edge-to-edge with zero trailing gap, and l
  actionButtons[0].fn();
  assert.equal(state.modalOpened,'history');
 
- // Lobby public-room header renders no filter chips below it.
- let lobbyChipsCalled=0;
+ // Lobby public-room header renders 快速加入 on the right and zero filter chips below it.
+ let lobbyChipsCalled=0,quickJoined=0;
+ const headerButtons=[];
+ app.stage.button=(r,label,fn,opts)=>headerButtons.push({r,label,fn,opts});
+ app.quickJoin=()=>{quickJoined++;};
  app.drawChips=(_x,y,_w,h)=>{lobbyChipsCalled++;return y+h;};
  app.rooms=[{id:'r1',title:'测试房',imageId:'img-done',pieces:108,placed:10,players:1,acceptingNew:true,completed:false}];
  app.lobbyPieces='all';app.lobbyUnplayedOnly=false;app.lobbyCursor=null;
  const nextY=app.drawRoomHeader(12,80,366,false);
  assert.equal(lobbyChipsCalled,0,'public room header renders zero filter chips');
+ assert.equal(headerButtons.length,1);
+ assert.equal(headerButtons[0].label,'快速加入');
+ assert.equal(headerButtons[0].opts.icon,'players');
+ assert.equal(headerButtons[0].opts.tone,'berry');
+ assert.equal(headerButtons[0].opts.disabled,false);
+ headerButtons[0].fn();
+ assert.equal(quickJoined,1);
  assert.equal(nextY,80+34);
 });
 
