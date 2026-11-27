@@ -120,7 +120,7 @@ function galleryFixture({layout='phonePortrait',completedGalleryIds=null,collect
  return {app,state,render};
 }
 
-test('gallery 未拼过 chip filters completed images, clears completed selection, and resets cleanly',()=>{
+test('gallery Scheme B 5-chip bar keeps 未拼过 orthogonal to source, shows filter count, and resets cleanly',()=>{
  const {app,render}=galleryFixture({
   layout:'phonePortrait',
   completedGalleryIds:['p-free-done'],
@@ -131,18 +131,18 @@ test('gallery 未拼过 chip filters completed images, clears completed selectio
   ownedImageIds:['p-owned-done','p-owned-new'],
  });
 
- // Portrait bar stays compact at 7 chips and puts 未拼过 right after 全部.
+ // Portrait bar stays uncluttered at 5 chips: 全部 / 免费 / 我的图包 / 未拼过 / 筛选.
  let view=render();
- assert.deepEqual(view.chips.map(c=>c.label),['全部','未拼过','竖图','横图','免费','我的图包','更多']);
+ assert.deepEqual(view.chips.map(c=>c.label),['全部','免费','我的图包','未拼过','筛选']);
  assert.deepEqual(view.drawnPhotos,['p-free-done','p-free-new']);
 
- // Selecting a completed image and enabling 未拼过 hides it and clears selection.
+ // Selecting a completed image and enabling 未拼过 hides it, clears selection, and shows ✓ 未拼过.
  app.selected='p-free-done';
  view.chips.find(c=>c.label==='未拼过').action();
  assert.equal(app.unplayedOnly,true);
  assert.equal(app.selected,null);
  view=render();
- assert.equal(view.chips.find(c=>c.label==='未拼过').selected,true);
+ assert.equal(view.chips.find(c=>c.label==='✓ 未拼过').selected,true);
  assert.deepEqual(view.drawnPhotos,['p-free-new']);
 
  // Switching to 我的图包 keeps 未拼过 active and also honours collection.albums collected fallback.
@@ -152,23 +152,120 @@ test('gallery 未拼过 chip filters completed images, clears completed selectio
  assert.equal(app.unplayedOnly,true);
  assert.deepEqual(view.drawnPhotos,['p-owned-new']);
 
- // Toggling 未拼过 while viewing a specific pack keeps packId intact.
+ // Clicking 全部 switches source to all while keeping ✓ 未拼过 active (independent overlay toggle).
+ view.chips.find(c=>c.label==='全部').action();
+ view=render();
+ assert.equal(app.source,'all');
+ assert.equal(app.unplayedOnly,true);
+ assert.equal(view.chips.find(c=>c.label==='全部').selected,true);
+ assert.deepEqual(view.drawnPhotos,['p-free-new','p-owned-new']);
+
+ // Active direction/category/search filters surface a count badge on 筛选.
+ app.direction='portrait';
+ app.category='风景';
+ view=render();
+ assert.equal(view.chips.at(-1).label,'筛选·2');
+ assert.equal(view.chips.at(-1).selected,true);
+ app.direction='all';app.category='全部';
+
+ // Toggling ✓ 未拼过 while viewing a specific pack keeps packId intact.
  app.packId='owned-pack';
- view.chips.find(c=>c.label==='未拼过').action();
+ view=render();
+ view.chips.find(c=>c.label==='✓ 未拼过').action();
  assert.equal(app.unplayedOnly,false);
  assert.equal(app.packId,'owned-pack');
  view=render();
  assert.deepEqual(view.drawnPhotos,['p-owned-done','p-owned-new']);
+});
 
- // Clicking 全部 resets both source and unplayedOnly.
- app.unplayedOnly=true;
- view=render();
- view.chips.find(c=>c.label==='全部').action();
- assert.equal(app.source,'all');
- assert.equal(app.unplayedOnly,false);
- view=render();
- assert.equal(view.chips.find(c=>c.label==='全部').selected,true);
- assert.equal(view.drawnPhotos.length,4);
+test('gallery photo card and lobby room card render 已拼 corner badge for completed images (including unowned joined rooms)',()=>{
+ const {app}=galleryFixture({
+  layout:'phonePortrait',
+  completedGalleryIds:['p-free-done','p-locked-done'],
+  ownedImageIds:[],
+ });
+ const texts=[];
+ app.stage.text=value=>texts.push(String(value));
+ app.stage.meter=()=>{};
+ app.stage.icon=()=>{};
+ app.stage.decoration=()=>{};
+
+ // Gallery card: completed unowned/locked photo still displays 已拼; unplayed photo does not.
+ const cardProto=GameApp.prototype.drawPhotoCard;
+ cardProto.call(app,{id:'p-locked-done',title:'蹭房拼完的图包图',src:'/a.webp',thumbSrc:'/a-t.webp',category:'治愈'},{x:0,y:0,w:170,h:180},120,new Set());
+ assert.ok(texts.includes('已拼'),'completed gallery card renders 已拼 badge');
+ texts.length=0;
+ cardProto.call(app,{id:'p-free-new',title:'未拼免费图',src:'/b.webp',thumbSrc:'/b-t.webp',category:'风景'},{x:0,y:0,w:170,h:180},120,new Set());
+ assert.equal(texts.includes('已拼'),false,'unplayed gallery card omits 已拼 badge');
+
+ // Lobby room card: completed image room displays 已拼; unplayed image room does not.
+ const roomCardProto=GameApp.prototype.drawRoomCard;
+ texts.length=0;
+ roomCardProto.call(app,{id:'r1',title:'蹭过的房间',imageId:'p-locked-done',pieces:108,placed:20,players:2,acceptingNew:true,completed:false},{x:0,y:0,w:170,h:210});
+ assert.ok(texts.includes('已拼'),'completed lobby room card renders 已拼 badge');
+ texts.length=0;
+ roomCardProto.call(app,{id:'r2',title:'新图房间',imageId:'p-free-new',pieces:108,placed:20,players:2,acceptingNew:true,completed:false},{x:0,y:0,w:170,h:210});
+ assert.equal(texts.includes('已拼'),false,'unplayed lobby room card omits 已拼 badge');
+});
+
+test('lobby 5-chip bar and filter modal support 未拼过 filtering and one-tap reset without wiping loaded rooms',()=>{
+ const {app}=galleryFixture({layout:'phonePortrait',completedGalleryIds:['img-done']});
+ const chips=[],modalButtons=[];
+ let loadLobbyCalls=0;
+ Object.assign(app,{
+  route:'lobby',
+  lobbyPieces:'all',
+  lobbyUnplayedOnly:false,
+  openOnly:true,
+  activeOnly:false,
+  filterCount:0,
+  direction:'all',
+  lobbyCursor:null,
+  lobbyLoading:false,
+  lobbyQuiet:false,
+  rooms:[
+   {id:'r-done',title:'拼过的图',imageId:'img-done',pieces:108,placed:10,players:1,acceptingNew:true,completed:false},
+   {id:'r-new',title:'没拼过的图',imageId:'img-new',pieces:300,placed:5,players:2,acceptingNew:true,completed:false},
+  ],
+  stage:{...app.stage,button(){}},
+  drawChips(_x,y,_w,h,list){chips.length=0;chips.push(...list.map(([label,selected,action])=>({label,selected,action})));return y+h;},
+  loadLobby(){loadLobbyCalls++;},
+  button(_x,_y,_w,label,action){modalButtons.push({label,action});},
+  rowOptions(){},
+  modalHeader(){},
+  stagePanel(){},
+ });
+ app.stage.panel=()=>{};
+
+ app.drawRoomHeader(12,80,366,false);
+ assert.deepEqual(chips.map(c=>c.label),['全部','≤108片','300片+','未拼过','筛选']);
+ assert.deepEqual(app.lobbyRooms.map(r=>r.id),['r-done','r-new']);
+
+ // Toggle 未拼过 chip on lobby: filters out completed room immediately with zero server reload.
+ chips.find(c=>c.label==='未拼过').action();
+ assert.equal(app.lobbyUnplayedOnly,true);
+ assert.equal(loadLobbyCalls,0);
+ assert.deepEqual(app.lobbyRooms.map(r=>r.id),['r-new']);
+ app.drawRoomHeader(12,80,366,false);
+ assert.equal(chips.find(c=>c.label==='✓ 未拼过').selected,true);
+
+ // Direction filter surfaces count badge on 筛选 and modal exposes 只看未拼过的图片 + 重置筛选.
+ app.direction='portrait';
+ app.drawRoomHeader(12,80,366,false);
+ assert.equal(chips.at(-1).label,'筛选·1');
+ assert.equal(chips.at(-1).selected,true);
+
+ app.modal='filters';
+ app.filterView=app.captureListView();
+ modalButtons.length=0;
+ app.drawModal();
+ assert.ok(modalButtons.some(b=>b.label==='✓ 只看未拼过的图片'),'lobby filter modal shows active unplayed toggle');
+ const resetBtn=modalButtons.find(b=>b.label==='重置筛选');
+ assert.ok(resetBtn,'lobby filter modal offers 重置筛选 when filters are active');
+ resetBtn.action();
+ assert.equal(app.direction,'all');
+ assert.equal(app.lobbyUnplayedOnly,false);
+ assert.deepEqual(app.lobbyRooms.map(r=>r.id),['r-done','r-new']);
 });
 
 test('gallery shows friendly empty state when every visible image is completed, including owned packs',()=>{

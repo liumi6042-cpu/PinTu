@@ -75,7 +75,7 @@ export class GameApp{
  private welcome:{slot:WelcomeSlot;line:string;tie:WelcomeTieIn|null;openedAt:number;storyChapterId:string|null}|null=null;private welcomePending=false;private welcomeEnabled=true;private welcomeLastVisit:number|null=null;private welcomeFrame:number|null=null;
  private orientationEntryPending:Promise<void>|null=null;private orientationEntryResolve:(()=>void)|null=null;
  private settingsTipSeen=false;private settingsTipDrawn=false;private settingsTipAnchor:Rect|null=null;
- private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;
+ private direction:Direction='all';private filterCount=0;private openOnly=true;private activeOnly=false;private lobbyUnplayedOnly=false;
  private rooms:RoomListing[]=[];private lobbyCursor:string|null=null;private lobbyLoading=false;private lobbyQuiet=false;private lobbySerial=0;private lobbyReload=false;
  private lobbyPieces:'all'|'small'|'large'='all';private dailyPhoto:SharedPhoto|null=null;private serverOffset=0;private listColumn:{x:number;w:number}|null=null;private lobbyMinute='';private lobbyOnline:number|null=null;private dailyFinished:number|null=null;
  private pieces:48|108|300|500=108;private selected:string|null=null;private visibility:'public'|'private'='public';private category='全部';private search='';private source:'free'|'owned'|'all'='free';private unplayedOnly=false;private packId:string|null=null;
@@ -454,7 +454,7 @@ export class GameApp{
   if(room&&/^[a-f0-9]{32}$/.test(room)){await this.enterRoom(room,query.roomInvite||query.code);if(this.pendingInvitation)this.showModal('invite');}
  }
  private pendingInvitation='';
- private defaultListView(route:Route):ListView{return {route,scroll:0,albumListScroll:0,direction:'all',filterCount:0,openOnly:true,activeOnly:false,category:'全部',search:'',source:'free',unplayedOnly:false,packId:null,selected:null,collectionTab:'albums',albumId:'',decorationId:'',decorationOwnedOnly:false,taskTab:'tasks'};}
+ private defaultListView(route:Route):ListView{return {route,scroll:0,albumListScroll:0,direction:'all',filterCount:0,openOnly:true,activeOnly:false,lobbyUnplayedOnly:false,category:'全部',search:'',source:'free',unplayedOnly:false,packId:null,selected:null,collectionTab:'albums',albumId:'',decorationId:'',decorationOwnedOnly:false,taskTab:'tasks'};}
  private ensureListOwner(){
   const owner=this.ownerKey();this.savedRoutes??=new Map();this.routeFrames??=[];this.routeStack??=[];
   if(this.listOwner===undefined){this.listOwner=owner;return;}
@@ -462,16 +462,16 @@ export class GameApp{
   this.restoreListView(this.defaultListView(this.route));this.taskTab='tasks';this.lobbySerial=(this.lobbySerial??0)+1;this.rooms=[];this.lobbyCursor=null;if(this.ready)void this.loadLevels().then(()=>this.checkLevelEntry());
  }
  private captureListView():ListView{const base=this.defaultListView(this.route);for(const key of Object.keys(base) as Array<keyof ListView>){const value=this[key as keyof this];if(value!==undefined)(base as any)[key]=value;}return base;}
- private listViewKey(view=this.captureListView()){switch(view.route){case'lobby':return JSON.stringify(['lobby',view.direction,view.filterCount,view.openOnly,view.activeOnly]);case'gallery':return JSON.stringify(['gallery',view.direction,view.category,view.search,view.source,view.unplayedOnly,view.packId]);case'collection':return JSON.stringify(['collection',view.collectionTab,view.collectionTab==='albums'?view.albumId:view.collectionTab==='decorations'?view.decorationOwnedOnly:'']);case'tasks':return 'tasks:'+view.taskTab;default:return view.route;}}
+ private listViewKey(view=this.captureListView()){switch(view.route){case'lobby':return JSON.stringify(['lobby',view.direction,view.filterCount,view.openOnly,view.activeOnly,view.lobbyUnplayedOnly]);case'gallery':return JSON.stringify(['gallery',view.direction,view.category,view.search,view.source,view.unplayedOnly,view.packId]);case'collection':return JSON.stringify(['collection',view.collectionTab,view.collectionTab==='albums'?view.albumId:view.collectionTab==='decorations'?view.decorationOwnedOnly:'']);case'tasks':return 'tasks:'+view.taskTab;default:return view.route;}}
  private saveListView(){this.ensureListOwner();const view=this.captureListView();if(view.route!=='room')this.savedRoutes.set(view.route,view);return view;}
  private restoreListView(view:ListView){
   this.route=view.route;this.scroll=view.scroll;this.extent=0;
-  if(view.route==='lobby')Object.assign(this,{direction:view.direction,filterCount:view.filterCount,openOnly:view.openOnly,activeOnly:view.activeOnly});
+  if(view.route==='lobby')Object.assign(this,{direction:view.direction,filterCount:view.filterCount,openOnly:view.openOnly,activeOnly:view.activeOnly,lobbyUnplayedOnly:view.lobbyUnplayedOnly});
   if(view.route==='gallery')Object.assign(this,{direction:view.direction,category:view.category,search:view.search,source:view.source,unplayedOnly:view.unplayedOnly,packId:view.packId,selected:view.selected});
   if(view.route==='collection')Object.assign(this,{collectionTab:view.collectionTab,albumId:view.albumId,albumListScroll:view.albumListScroll,decorationId:view.decorationId,decorationOwnedOnly:view.decorationOwnedOnly});
   if(view.route==='tasks')this.taskTab=view.taskTab;
  }
- private refreshRoute(){if(this.offline?.active&&!this.ready||this.offlineRoom)return;if(this.route==='chapter')void this.loadLevels();if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
+ private refreshRoute(){if(this.offline?.active&&!this.ready||this.offlineRoom)return;if(this.route==='chapter')void this.loadLevels();if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);if(!this.completedGalleryIds)void this.loadGallery();if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
  private finishNavigation(){if(this.modal==='completion')this.showModal(null);else this.modal=null;this.filterView=null;this.toolsOpen=false;this.message='';if(this.route==='friends')void this.loadRecentPlayers();if(this.route==='lobby'||this.route==='chapter')void this.loadRetention();this.invalidate();this.refreshRoute();}
  private navigate(route:Route,context?:Partial<ListView>){
   if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}
@@ -495,7 +495,7 @@ export class GameApp{
 const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels.some(item=>item.status!=='cleared'):!!this.beginnerChapter);if(resume&&played)this.storyChapterId=played.id;this.navigate(nextLevelId||resume?'chapter':'lobby');}else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
  private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
- private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}this.filterView=null;}
+ private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){const serverChanged=this.filterView!.direction!==this.direction||this.filterView!.filterCount!==this.filterCount||this.filterView!.openOnly!==this.openOnly||this.filterView!.activeOnly!==this.activeOnly;if(serverChanged){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}}this.filterView=null;}
  /** Phones: a drag that starts on a control floating over the table (任务, chat bubble, tools button, landscape top bar)
   * hands the finger to the table once it travels DRAG_SLOP: the press is cancelled and the board gets the landing point,
   * so a piece under the control can still be picked up. Not inside modals, the portrait tools popup or the open landscape tools column. */
@@ -1300,7 +1300,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawLobbyActions(r:Rect){return drawLobbyActionsPanel.call(this.host,r);}
  private get lobbyRooms(){
   const pieces=(room:RoomListing)=>room.actualPieces??room.pieces,open=(room:RoomListing)=>room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed;
-  const rooms=this.rooms.filter(room=>this.lobbyPieces==='small'?pieces(room)<=108:this.lobbyPieces==='large'?pieces(room)>=300:true);
+  const completed=this.lobbyUnplayedOnly?this.completedPhotoIds():null;
+  const rooms=this.rooms.filter(room=>(this.lobbyPieces==='small'?pieces(room)<=108:this.lobbyPieces==='large'?pieces(room)>=300:true)&&(!completed||!room.imageId||!completed.has(room.imageId)));
   return [...rooms.filter(open),...rooms.filter(room=>!open(room))];
  }
  private setLobbyChip(change:()=>void){const before=JSON.stringify([this.direction,this.filterCount,this.lobbyPieces]);change();if(JSON.stringify([this.direction,this.filterCount,this.lobbyPieces])===before)return;this.scroll=0;this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();this.invalidate();}
@@ -1308,11 +1309,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawChips(x:number,y:number,w:number,h:number,chips:readonly(readonly[string,boolean,()=>void])[]){return drawChipsPanel.call(this.host,x,y,w,h,chips);}
  private drawRoomSection(x:number,y:number,w:number,columns:number,top:number,bottom:number){return this.drawRoomGrid(x,this.drawRoomHeader(x,y,w,false),w,columns,top,bottom);}
  private drawRoomGrid(x:number,y:number,w:number,columns:number,top:number,bottom:number){return drawRoomGridPanel.call(this.host,x,y,w,columns,top,bottom);}
- private drawRoomCard(room:RoomListing,r:Rect){return drawRoomCardPanel.call(this.host,room,r);}
+ private drawRoomCard(room:RoomListing,r:Rect,completed?:Set<string>){return drawRoomCardPanel.call(this.host,room,r,completed);}
  private drawGallery(){return drawGalleryPanel.call(this.host);}
  private galleryPack(id:string){return this.collection?.packs.find(pack=>pack.imageIds.includes(id))??collectionCatalog.packs.find(pack=>pack.imageIds.includes(id))??null;}
  private photoTag(id:string,owned:Set<string>){if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack&&(pack as CollectionPack).unlock==='ad'){const full=this.collection?.packs.find(item=>item.id===pack.id),img=full?.images.find(item=>item.id===id),req=img?.adRequired??full?.adRequired??2,prog=img?.adProgress??0;return {label:prog>0?'看广告解锁 '+prog+'/'+req:'看'+req+'次广告解锁',tone:'locked',ad:true,price:0};}if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
- private drawPhotoCard(photo:SharedPhoto,r:Rect,imageHeight:number,owned:Set<string>){return drawPhotoCardPanel.call(this.host,photo,r,imageHeight,owned);}
+ private drawPhotoCard(photo:SharedPhoto,r:Rect,imageHeight:number,owned:Set<string>,completed?:Set<string>){return drawPhotoCardPanel.call(this.host,photo,r,imageHeight,owned,completed);}
  private createPanelHeight(sheet:boolean){const rooms=this.selected?this.rooms.filter(room=>room.imageId===this.selected).length:0;return 14+64+12+(sheet?32:58)+8+(sheet?32:58)+8+(rooms?26:0)+(this.usesCreationTickets?42:0)+46+14;}
  private drawCreatePanel(r:Rect,photo:SharedPhoto|null,owned:Set<string>,sheet:boolean){return drawCreatePanelView.call(this.host,r,photo,owned,sheet);}
  private drawPictureButton(r:Rect,label:string,fn:()=>void,tone='cream',icon='',fontSize=11,iconSize=16,disabled=false,selected=false){return drawPictureButtonPanel.call(this.host,r,label,fn,tone,icon,fontSize,iconSize,disabled,selected);}
@@ -1608,9 +1609,23 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    }
    case'filters':{
     s.text('图片方向',left,cy,14,this.colors.ink,700);cy+=30;this.rowOptions(directions,this.direction,left,cy,width,v=>{this.direction=v;this.invalidate();});cy+=52;
-    if(this.route==='lobby'){s.text('拼图片数',left,cy,14,this.colors.ink,700);cy+=30;this.rowOptions([[0,'不限'],...this.pieceCounts.map(n=>[n,n+'片'] as const)],this.filterCount,left,cy,width,n=>{this.filterCount=n;this.invalidate();});cy+=51;this.button(left,cy,width,(this.openOnly?'✓ ':'')+'只看可加入房间',()=>{this.openOnly=!this.openOnly;this.invalidate();});cy+=47;this.button(left,cy,width,(this.activeOnly?'✓ ':'')+'有人正在拼图',()=>{this.activeOnly=!this.activeOnly;this.invalidate();});cy+=54;}
-    else{this.button(left,cy,width,(this.unplayedOnly?'✓ ':'')+'只看未拼过的图片',()=>{this.unplayedOnly=!this.unplayedOnly;if(this.unplayedOnly&&this.selected&&this.completedPhotoIds().has(this.selected))this.selected=null;this.invalidate();});cy+=47;this.button(left,cy,width,this.search?'搜索：'+this.search:'搜索图片名称',()=>void this.run(async()=>{const result=await this.platform.prompt('搜索图片名称',this.search);if(result!==null)this.search=result.trim();}));cy+=51;s.text('图片分类',left,cy,14,this.colors.ink,700);cy+=30;CATEGORIES.forEach((category,index)=>{const bw=(width-12)/3;this.button(left+(index%3)*(bw+6),cy+Math.floor(index/3)*43,bw,category,()=>{this.category=category;this.invalidate();},category===this.category?'berry':'cream',34);});cy+=Math.ceil(CATEGORIES.length/3)*43+10;}
-    this.button(left,cy,width,'应用筛选',()=>this.showModal(null),'berry',43);cy+=57;break;
+    if(this.route==='lobby'){
+     s.text('拼图片数',left,cy,14,this.colors.ink,700);cy+=30;this.rowOptions([[0,'不限'],...this.pieceCounts.map(n=>[n,n+'片'] as const)],this.filterCount,left,cy,width,n=>{this.filterCount=n;if(n)this.lobbyPieces='all';this.invalidate();});cy+=51;
+     this.button(left,cy,width,(this.lobbyUnplayedOnly?'✓ ':'')+'只看未拼过的图片',()=>{this.lobbyUnplayedOnly=!this.lobbyUnplayedOnly;if(this.lobbyUnplayedOnly&&!this.completedGalleryIds)void this.loadGallery();this.invalidate();},this.lobbyUnplayedOnly?'berry':'cream');cy+=47;
+     this.button(left,cy,width,(this.openOnly?'✓ ':'')+'只看可加入房间',()=>{this.openOnly=!this.openOnly;this.invalidate();});cy+=47;
+     this.button(left,cy,width,(this.activeOnly?'✓ ':'')+'有人正在拼图',()=>{this.activeOnly=!this.activeOnly;this.invalidate();});cy+=54;
+     const dirty=this.direction!=='all'||this.filterCount!==0||this.lobbyPieces!=='all'||!this.openOnly||this.activeOnly||this.lobbyUnplayedOnly;
+     if(dirty){const rw=Math.floor((width-10)*.4);this.button(left,cy,rw,'重置筛选',()=>{this.direction='all';this.filterCount=0;this.lobbyPieces='all';this.openOnly=true;this.activeOnly=false;this.lobbyUnplayedOnly=false;this.showModal(null);},'cream',43);this.button(left+rw+10,cy,width-rw-10,'应用筛选',()=>this.showModal(null),'berry',43);}
+     else this.button(left,cy,width,'应用筛选',()=>this.showModal(null),'berry',43);
+     cy+=57;break;
+    }
+    this.button(left,cy,width,(this.unplayedOnly?'✓ ':'')+'只看未拼过的图片',()=>{this.unplayedOnly=!this.unplayedOnly;if(this.unplayedOnly&&this.selected&&this.completedPhotoIds().has(this.selected))this.selected=null;this.invalidate();},this.unplayedOnly?'berry':'cream');cy+=47;
+    this.button(left,cy,width,this.search?'搜索：'+this.search:'搜索图片名称',()=>void this.run(async()=>{const result=await this.platform.prompt('搜索图片名称',this.search);if(result!==null)this.search=result.trim();}));cy+=51;
+    s.text('图片分类',left,cy,14,this.colors.ink,700);cy+=30;CATEGORIES.forEach((category,index)=>{const bw=(width-12)/3;this.button(left+(index%3)*(bw+6),cy+Math.floor(index/3)*43,bw,category,()=>{this.category=category;this.invalidate();},category===this.category?'berry':'cream',34);});cy+=Math.ceil(CATEGORIES.length/3)*43+10;
+    const galleryDirty=this.direction!=='all'||this.category!=='全部'||!!this.search||this.unplayedOnly;
+    if(galleryDirty){const rw=Math.floor((width-10)*.4);this.button(left,cy,rw,'重置筛选',()=>{this.direction='all';this.category='全部';this.search='';this.unplayedOnly=false;this.showModal(null);},'cream',43);this.button(left+rw+10,cy,width-rw-10,'应用筛选',()=>this.showModal(null),'berry',43);}
+    else this.button(left,cy,width,'应用筛选',()=>this.showModal(null),'berry',43);
+    cy+=57;break;
    }
    case'settings':{
     const p=this.client.profile,canRename=this.formalWeb||this.client.config.capabilities.customNames===true,heading=(label:string)=>{s.text(label,left,cy,15,this.colors.ink,800);cy+=28;};
