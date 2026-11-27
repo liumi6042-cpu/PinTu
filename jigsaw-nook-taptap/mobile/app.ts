@@ -33,7 +33,7 @@ import {MOBILE_PRIVACY_VERSION,MOBILE_PRIVACY_CONSENT_KEY,MOBILE_PRIVACY_CONTACT
 import {placedCount} from '../lib/puzzle-engine';
 import collectionCatalog from '../lib/mobile-collection-catalog.json';
 import {STREAK_SEEN_KEY,WEEKLY_GIFT_KEY,beijingDay,breathScale,completionFooter,readShownDay,readStreakSeen,streakToast,weeklyGiftAutoShow,weeklyGrantText,type RetentionSummary,type RetentionView,type WeeklyGrant} from './retention';
-import type {MobileProfile,MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom,MobileLevelsView,MobileLevelClear,MobileChapter,MobileLevel} from '../h5/mobile-api';
+import type {AutoSupplyUsed,MobileProfile,MobileTaskView,MobileGiftOpenResult,MobileInviteShareResult,MobileRoomInput,MobileOwnedRoom,MobileLevelsView,MobileLevelClear,MobileChapter,MobileLevel} from '../h5/mobile-api';
 import type {MobileCollectionView,CollectionPack,CollectionAlbum} from '../h5/mobile-collection-api';
 import type {AssistanceGrant} from '../lib/assistance-policy';
 import {REDEEM_GROUP_HINT,REDEEM_WECHAT_HINT,CAT_PAW_WECHAT_TEXT,REDEEM_MAX_LENGTH,redeemAnswered,redeemErrorText,redeemInput,redeemSummary,type RedeemGrant} from './redeem';
@@ -49,7 +49,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.34';
+const CLIENT_PACKAGE_VERSION='v53.35';
 /** Server /api/mobile/gifts/open validates 1..20 gifts per request; larger bulk opens are split into sequential batches. */
 const GIFT_OPEN_BATCH_LIMIT=20;
 
@@ -789,10 +789,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision,()=>{
    if(this.room===room)this.note('与 TapTap 的实时连接已断开，改用游戏服务器同步');
   })??null;this.realtime=realtime;
-  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:(p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id)||this.energyUnlimitedToday};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>this.adminDiagnosticsAllowed&&this.adminDiagEnabled,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,autoGiftCount:p.autoEnergyGiftCount??p.giftCount??0,free:(p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id)||this.energyUnlimitedToday};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>this.adminDiagnosticsAllowed&&this.adminDiagEnabled,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:local-play-error'&&this.room===room)this.platform.loginLog?.add('本地拼图出错，改为联网拼 · '+String((detail as {message?:string})?.message??'').slice(0,80));
    if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
    if(name==='puzzle:successful-drop'&&this.room===room){this.board?.confirmMobileContribution(detail as MobileContributionReceipt);if(!this.nineGridRoom)this.telemetry?.milestone('new_user','完成首次拼合');}
+   if(name==='mobile:auto-supply'&&this.room===room)this.announceAutoSupply(detail as AutoSupplyUsed);
    if(name==='mobile:profile')this.invalidate();
    if(name==='room:request-timing'&&this.room===room){const timing=detail as RoomRequestTiming;if(timing.action==='drop-start'){for(const key of ['drop','drop-queue','drop-total'])this.nineTimings?.delete(key);}this.nineTimings?.set(timing.action,timing);(this.roomTimings??=new Map()).set(timing.action,{...timing,at:Date.now()});this.invalidate();}
    if(name==='mobile:gameplay-error')this.note((detail as {message?:string})?.message||'操作暂未完成');
@@ -1013,6 +1014,23 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.note(data.doubled.alreadyClaimed?'这次完图奖励已经翻倍领取过了':'双倍奖励已到账：'+(parts||'已翻倍'));
    this.invalidate();
   });
+ }
+ private announcedAutoSupplyIds=new Set<string>();
+ private announceAutoSupply(item:AutoSupplyUsed|null|undefined){
+  if(!item||typeof item.title!=='string')return;
+  const key=item.id||item.source+':'+item.kind+':'+item.energy+':'+(item.xp??0)+':'+(item.coins??0);
+  if(this.announcedAutoSupplyIds.has(key))return;
+  this.announcedAutoSupplyIds.add(key);
+  if(this.announcedAutoSupplyIds.size>40)this.announcedAutoSupplyIds.delete(this.announcedAutoSupplyIds.values().next().value!);
+  if((item.coins??0)>0){try{this.platform.playSound?.('assets/audio/mobile-coin.wav');}catch{}}
+  if(item.fullEnergy){
+   const extra=[item.xp?'经验 +'+item.xp:'',item.coins?'金币 +'+item.coins:''].filter(Boolean).join(' · ');
+   this.note('体力已用完，已自动使用「'+item.title+'」，体力已补满'+(extra?'（'+extra+'）':''));
+  }else{
+   const parts=[item.energy?'体力 +'+item.energy:'',item.xp?'经验 +'+item.xp:'',item.coins?'金币 +'+item.coins:''].filter(Boolean).join(' · ');
+   this.note('体力已用完，已自动开启「'+item.title+'」'+(parts?'：'+parts:''));
+  }
+  if(this.tasks)void this.loadTasks();
  }
  private async useEnergy(){if(this.energyUnlimitedToday){this.note('今日已解锁无限体力，补满体力包已为你保留');return;}await this.run(async()=>{const key='use-energy';await this.client.post('/api/mobile/supply/use',{kind:'energy',requestId:this.attempt(key)});this.attempts.delete(key);await this.client.refresh();this.note('体力已补满');});}
  private async openGiftRequest(kind:string,quantity:number){
@@ -1739,7 +1757,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
     heading('账号与记录');
     this.button(left,cy,width,(this.formalWeb?'好友':'好友与消息')+(this.social.unread?' · '+this.social.unread+' 条未读':''),()=>{if(this.room)this.showModal('social');else this.navigate('friends');},'cream',39);cy+=50;
     if(!this.formalWeb){s.button({x:left,y:cy,w:width,h:39},'兑换码',()=>this.openRedeem(),{icon:'gift',fontSize:14});cy+=50;}
-    if(this.energyEnabled){this.button(left,cy,width,(p?.autoSupply?'✓ ':'')+'体力耗尽自动使用库存包',()=>void this.run(async()=>{await this.client.json('/api/mobile/profile','PATCH',{autoSupply:!p?.autoSupply},{'Content-Type':'application/json'});await this.client.refresh();}));cy+=47;cy=this.paragraph('只消耗已有体力包，不会自动播放广告。',left,cy,width,12)+18;}
+    if(this.energyEnabled){this.button(left,cy,width,(p?.autoSupply?'✓ ':'')+'体力耗尽自动开启礼包与补给',()=>void this.run(async()=>{await this.client.json('/api/mobile/profile','PATCH',{autoSupply:!p?.autoSupply},{'Content-Type':'application/json'});await this.client.refresh();}));cy+=47;cy=this.paragraph('默认开启。优先开启任务礼包与十格小礼，用完后再用库存补满体力包，不会自动播放广告。',left,cy,width,12)+18;}
     const policyActions=this.formalWeb?[["隐私说明",()=>this.openWeb('privacy')],["服务说明",()=>this.openWeb('terms')]] as const:[["服务与隐私说明",()=>this.navigate('privacy')]] as const;
     if(this.formalWeb){this.button(left,cy,width,'用我的图片开一桌',()=>this.openWeb('uploads'),'berry',42);cy+=52;cy=this.paragraph('上传一张图片，选好片数，开一张自己的公开拼图桌。图片只在房间有效期内保留。',left,cy,width,12)+18;}
     for(const [label,action]of [['历史拼图',()=>this.showModal('history')],['玩法帮助',()=>this.navigate('help')],...policyActions] as const){this.button(left,cy,width,label,action);cy+=48;}

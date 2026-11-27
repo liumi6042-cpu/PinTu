@@ -17,7 +17,7 @@ export function inviteCapBonus(db,ownerId){
 }
 export const effectiveEnergyCap=(level,settings=DEFAULT_GAME_SETTINGS,inviteBonus=0)=>energyCap(level,settings)+inviteBonus;
 export const giftMaximum=level=>level>=50?7:level>=20?6:5;
-export function newProfile(id,now,settings=DEFAULT_GAME_SETTINGS,{creationTickets=0}={}){return {id,name:'拼图朋友',level:0,xp:0,totalXp:0,energy:settings.energy.initial,energyAt:now,giftProgress:0,supply:{energy:0,create:Math.max(0,Math.min(3,Number(creationTickets)||0))},autoSupply:false,createdAt:now,firstRoomId:null,firstRoomCompleted:false,starterSelectionAvailable:false,lastReward:null};}
+export function newProfile(id,now,settings=DEFAULT_GAME_SETTINGS,{creationTickets=0}={}){return {id,name:'拼图朋友',level:0,xp:0,totalXp:0,energy:settings.energy.initial,energyAt:now,giftProgress:0,supply:{energy:0,create:Math.max(0,Math.min(3,Number(creationTickets)||0))},autoSupply:true,createdAt:now,firstRoomId:null,firstRoomCompleted:false,starterSelectionAvailable:false,lastReward:null};}
 export function restoreEnergy(profile,now,settings=DEFAULT_GAME_SETTINGS,{inviteBonus=0}={}){
  const cap=effectiveEnergyCap(profile.level,settings,inviteBonus),interval=settings.energy.naturalRecoveryMinutes*60000;
  if(profile.energy>=cap){profile.energyAt=now;return;}
@@ -38,16 +38,26 @@ export function applyExperience(profile,xp,now,settings=DEFAULT_GAME_SETTINGS,{e
  }
  return levels;
 }
-export function applyContribution(profile,{protectedRoom=false,freeRoom=false,unlimitedEnergy=false,now,randomInt,taskRewards=DEFAULT_TASK_REWARD_SETTINGS,gameSettings=DEFAULT_GAME_SETTINGS,energyEnabled=true,inviteBonus=0}){
- if(energyEnabled)restoreEnergy(profile,now,gameSettings,{inviteBonus});let autoUsed=false;
+export function applyContribution(profile,{protectedRoom=false,freeRoom=false,unlimitedEnergy=false,autoRefill=null,now,randomInt,taskRewards=DEFAULT_TASK_REWARD_SETTINGS,gameSettings=DEFAULT_GAME_SETTINGS,energyEnabled=true,inviteBonus=0}){
+ if(energyEnabled)restoreEnergy(profile,now,gameSettings,{inviteBonus});let autoUsed=false,autoSupplyUsed=null;
  const cap=effectiveEnergyCap(profile.level,gameSettings,inviteBonus);
  const free=!energyEnabled||freeRoom||unlimitedEnergy||protectedRoom&&gameSettings.energy.firstRoomFree,cost=free?0:gameSettings.energy.contributionCost;
- if(profile.energy<cost&&profile.autoSupply&&profile.supply.energy>0&&cap>=cost){profile.supply.energy--;profile.energy=Math.max(profile.energy,cap);profile.energyAt=now;autoUsed=true;}
+ if(profile.energy<cost&&profile.autoSupply){
+  if(typeof autoRefill==='function'){
+   const refilled=autoRefill(profile,{cost,cap,now});
+   if(refilled){autoUsed=true;autoSupplyUsed=refilled;}
+  }else if(profile.supply.energy>0&&cap>=cost){
+   const gained=Math.max(0,cap-profile.energy);
+   profile.supply.energy--;profile.energy=Math.max(profile.energy,cap);profile.energyAt=now;autoUsed=true;
+   autoSupplyUsed={source:'supply',kind:'energy',title:'补满体力包',energy:gained,xp:0,coins:0,levels:0,fullEnergy:true};
+  }
+ }
  if(profile.energy<cost)return null;
- if(cost){if(profile.energy>=cap)profile.energyAt=now;profile.energy-=cost;}
+ const latestCap=effectiveEnergyCap(profile.level,gameSettings,inviteBonus);
+ if(cost){if(profile.energy>=latestCap)profile.energyAt=now;profile.energy-=cost;}
  const levels=applyExperience(profile,gameSettings.energy.contributionXp,now,gameSettings,{energyEnabled,inviteBonus});profile.giftProgress++;let pendingGift=null;
  if(profile.giftProgress>=10){profile.giftProgress-=10;profile.giftSequence=(profile.giftSequence??0)+1;const reward=tenGridReward(taskRewards,profile.level);pendingGift={energy:randomInt(reward.energyMin,reward.energyMax+1),maximum:reward.tierMaximum,energyMin:reward.energyMin,energyMax:reward.energyMax,xp:reward.xp,coins:reward.coins,sequence:profile.giftSequence};}
- const reward={xp:gameSettings.energy.contributionXp,energySpent:cost,gift:0,giftsAdded:0,levels,autoUsed,at:now};profile.lastReward=reward;return {...reward,pendingGift};
+ const reward={xp:gameSettings.energy.contributionXp,energySpent:cost,gift:0,giftsAdded:0,levels,autoUsed,...(autoSupplyUsed?{autoSupplyUsed}:{}),at:now};profile.lastReward=reward;return {...reward,pendingGift};
 }
 export function completionDistribution(contributions,pieces,settings=DEFAULT_GAME_SETTINGS){
  const entries=Object.entries(contributions).filter(([,n])=>Number.isSafeInteger(n)&&n>0).sort(([a],[b])=>a.localeCompare(b));
