@@ -49,7 +49,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.32';
+const CLIENT_PACKAGE_VERSION='v53.33';
 /** Server /api/mobile/gifts/open validates 1..20 gifts per request; larger bulk opens are split into sequential batches. */
 const GIFT_OPEN_BATCH_LIMIT=20;
 
@@ -1370,9 +1370,26 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawPictureButton(r:Rect,label:string,fn:()=>void,tone='cream',icon='',fontSize=11,iconSize=16,disabled=false,selected=false){return drawPictureButtonPanel.call(this.host,r,label,fn,tone,icon,fontSize,iconSize,disabled,selected);}
  private drawTasks(inWindow=false){return drawTasksPanel.call(this.host,inWindow);}
  private supplyFocus=false;
+ private batchableGifts(){
+  return (this.tasks?.inventory??[]).filter(gift=>gift.count>0&&this.giftVisible(gift)&&!(this.energyEnabled&&gift.effect==='full-energy'));
+ }
+ private onlyLargeTenGifts(gifts=this.batchableGifts()){
+  return gifts.length>0&&gifts.every(gift=>gift.kind.startsWith('ten-'))&&gifts.reduce((sum,gift)=>sum+gift.count,0)>GIFT_OPEN_BATCH_LIMIT;
+ }
  private async openAllGifts(){
-  const gifts=(this.tasks?.inventory??[]).filter(gift=>gift.count>0&&this.giftVisible(gift)&&!(this.energyEnabled&&gift.effect==='full-energy'));
+  const gifts=this.batchableGifts();
   if(!gifts.length){this.note('补满体力包请按需单个开启');return;}
+  if(this.onlyLargeTenGifts(gifts)){
+   let quota=GIFT_OPEN_BATCH_LIMIT;
+   const step:Array<{kind:string;count:number}>=[];
+   for(const gift of gifts){
+    if(quota<=0)break;
+    const take=Math.min(gift.count,quota);
+    if(take>0){step.push({kind:gift.kind,count:take});quota-=take;}
+   }
+   await this.openGiftItems(step,true);
+   return;
+  }
   await this.openGiftItems(gifts.map(gift=>({kind:gift.kind,count:gift.count})),true);
  }
  private drawTasksPage(){return drawTasksPagePanel.call(this.host);}
