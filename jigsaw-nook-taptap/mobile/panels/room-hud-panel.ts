@@ -45,7 +45,7 @@ export function drawRoomPanelView(this:AppHost){
   }else if(this.adminDiagEnabled)this.drawAdminDiagnostics();
   this.drawLagAlertBanner?.();
   if(this.completionFx)this.drawCompletionTransition();this.drawSettleButton();
-  if(!room.connected)this.drawReconnectBanner(room);
+  if(!room.connected||room.networkDegraded)this.drawReconnectBanner(room);
   this.drawStoryIntro();
   if(!this.storyIntro){if(this.roomGuideStep)this.drawRoomGuide();else if(this.imageReady&&!this.modal&&!this.roomGuideSeen()){this.roomGuideStep=1;this.invalidate();}}
  }
@@ -142,7 +142,7 @@ export function drawLandscapeRoomControlsPanel(this:AppHost,board:PuzzleBoard,he
  }
 
 export function drawBoardQuickToolsPanel(this:AppHost,x:number,bottom:number){
-  const board=this.board,room=this.room;if(!this.lockButtonEnabled||!board||!room||this.layout==='desktop'||!this.imageReady||room.snapshot.completedAt||this.completionFx||board.previewZoomed)return;
+  const board=this.board,room=this.room;if(!this.lockButtonEnabled||!board||!room||this.layout==='desktop'||!this.imageReady||(room.completedAt??room.snapshot?.completedAt)||this.completionFx||board.previewZoomed)return;
   const s=this.stage,size=46,items=[[this.viewLocked?'lock':'unlock',this.viewLocked?'已锁定':'锁定',this.viewLocked,()=>this.toggleViewLock()]] as const;
   items.forEach(([icon,label,active,action],index)=>{const b={x,y:bottom-(index+1)*(size+8),w:size,h:size};s.frame(b,active?'button-gold-normal':'button-cream-normal');s.icon(icon,{x:b.x+(size-22)/2,y:b.y+5,w:22,h:22});s.text(label,b.x+(size-s.measure(label,10,700))/2,b.y+size-16,10,this.colors.ink,700);s.hit(b,action);});
  }
@@ -203,7 +203,18 @@ export function drawRoomSidePanel(this:AppHost,r:Rect){
  }
 
 export function drawReconnectBannerPanel(this:AppHost,room:RoomClient){
-  const s=this.stage,area=this.roomArea,w=Math.min(area.w-24,440),x=area.x+(area.w-w)/2,y=area.y+(this.layout==='phonePortrait'?44:this.layout==='phoneLandscape'?this.platform.viewport().top+60:10),r={x,y,w,h:58};s.panel(r);
+  const s=this.stage,area=this.roomArea;
+  if(room.localPlay){
+   const pending=room.pendingSoloOps,w=Math.min(area.w-24,380),x=area.x+(area.w-w)/2,y=area.y+(this.layout==='phonePortrait'?8:this.layout==='phoneLandscape'?this.platform.viewport().top+60:10),r={x,y,w,h:44};
+   s.panel(r,'cream');
+   s.ctx.fillStyle=this.colors.gold;s.ctx.fillRect(Math.round(x+13),Math.round(y+19),6,6);
+   const title=room.offlineFallback?'离线本地继续拼':'网络波动 · 本地继续拼';
+   const sub=pending>0?'已暂存 '+pending+' 步，恢复后自动同步':'拼好的进度会自动保存';
+   s.text(title,x+28,y+6,12,this.colors.ink,800,w-102);s.text(sub,x+28,y+24,10,this.colors.muted,600,w-102);
+   s.button({x:x+w-68,y:y+8,w:58,h:28},'重连',()=>{room.retryNow();this.invalidate();},{fontSize:11});
+   return;
+  }
+  const w=Math.min(area.w-24,440),x=area.x+(area.w-w)/2,y=area.y+(this.layout==='phonePortrait'?44:this.layout==='phoneLandscape'?this.platform.viewport().top+60:10),r={x,y,w,h:58};s.panel(r);
   const t=Math.floor(Date.now()/250)%8;for(let i=0;i<8;i++){const angle=i*Math.PI/4;s.ctx.globalAlpha=i===t?1:.3;s.ctx.fillStyle=this.colors.berry;s.ctx.fillRect(Math.round(x+24+Math.cos(angle)*8)-2,Math.round(y+29+Math.sin(angle)*8)-2,4,4);}s.ctx.globalAlpha=1;
   s.text('房间同步中断，正在重连…',x+44,y+11,14,this.colors.ink,800,w-130);s.text('已确认的拼图进度会保留',x+44,y+33,12,this.colors.muted,500,w-130);
   s.button({x:x+w-76,y:y+12,w:64,h:34},'重试',()=>{room.retryNow();this.invalidate();},{fontSize:13});

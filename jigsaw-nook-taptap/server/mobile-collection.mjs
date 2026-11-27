@@ -266,6 +266,26 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const source='contribution:'+roomId+':'+requestId;if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return 0;
   const coins=readSettings().collection.contributionCoins;return change(owner,source,coins,0,now)?coins:0;
  }
+ function awardMilestones(owner,settings,now){
+  const albumRewards=[];
+  const collected=new Set(db.prepare('SELECT DISTINCT image_id FROM mobile_collection_artworks WHERE owner=?').all(owner).map(row=>row.image_id));
+  const managed=managedAlbums(now);
+  for(const album of managed??catalog.packs){
+   const imageIds=managed?album.imageIds:packImages(album,now);if(!imageIds.length)continue;
+   const count=imageIds.filter(id=>collected.has(id)).length;
+   const milestones=managed?album.milestones:settings.milestones.map(m=>({...m,decorationId:m.albumDecoration?album.decorationId:null}));
+   for(const m of milestones){
+    if(count<m.target)continue;
+    const decorationId=availableDecorationId(m.decorationId),reward={target:m.target,coins:m.coins,...(decorationId?{decorationId}:{})};
+    const awarded=db.prepare('INSERT OR IGNORE INTO mobile_collection_milestone_rewards VALUES(?,?,?,?,?)').run(owner,album.id,m.id,JSON.stringify(reward),now);if(!awarded.changes)continue;
+    db.prepare('INSERT OR IGNORE INTO mobile_collection_milestones VALUES(?,?,?,?)').run(owner,album.id,m.target,now);
+    change(owner,'album-milestone:'+album.id+':'+m.id,m.coins,0,now);
+    if(decorationId)db.prepare('INSERT OR IGNORE INTO mobile_collection_owned VALUES(?,?,?,?)').run(owner,'decoration',decorationId,now);
+    albumRewards.push({albumId:album.id,title:album.title,target:m.target,coins:m.coins,...(decorationId?{decorationId}: {})});
+   }
+  }
+  return albumRewards;
+ }
  function complete(owner,room,contribution,now){
   const old=db.prepare('SELECT data FROM mobile_collection_completions WHERE room_id=? AND owner=?').get(room.id,owner);if(old)return JSON.parse(old.data);
   if(db.prepare('SELECT 1 FROM mobile_collection_legacy_rooms WHERE room_id=?').get(room.id)||!room.completedAt||!Number.isSafeInteger(contribution)||contribution<=0)return null;
@@ -274,27 +294,30 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   change(owner,'completion:'+room.id,coins,fragments,now);
   const imageId=room.puzzle.imageId,pieces=room.mobilePieces,qualifies=contribution>=tuning.catalogMinimumContributions&&photoById.has(imageId),hadImage=!!db.prepare('SELECT 1 FROM mobile_collection_artworks WHERE owner=? AND image_id=?').get(owner,imageId);
   if(qualifies)db.prepare('INSERT OR IGNORE INTO mobile_collection_artworks VALUES(?,?,?,?)').run(owner,imageId,pieces,now);
-  const albumRewards=[];
-  if(qualifies){
-   const collected=new Set(db.prepare('SELECT DISTINCT image_id FROM mobile_collection_artworks WHERE owner=?').all(owner).map(row=>row.image_id));
-   const managed=managedAlbums(now);
-   for(const album of managed??catalog.packs){
-    const imageIds=managed?album.imageIds:packImages(album,now);if(!imageIds.length)continue;
-    const count=imageIds.filter(id=>collected.has(id)).length;
-    const milestones=managed?album.milestones:settings.milestones.map(m=>({...m,decorationId:m.albumDecoration?album.decorationId:null}));
-    for(const m of milestones){
-     if(count<m.target)continue;
-     const decorationId=availableDecorationId(m.decorationId),reward={target:m.target,coins:m.coins,...(decorationId?{decorationId}:{})};
-     const awarded=db.prepare('INSERT OR IGNORE INTO mobile_collection_milestone_rewards VALUES(?,?,?,?,?)').run(owner,album.id,m.id,JSON.stringify(reward),now);if(!awarded.changes)continue;
-     db.prepare('INSERT OR IGNORE INTO mobile_collection_milestones VALUES(?,?,?,?)').run(owner,album.id,m.target,now);
-     change(owner,'album-milestone:'+album.id+':'+m.id,m.coins,0,now);
-     if(decorationId)db.prepare('INSERT OR IGNORE INTO mobile_collection_owned VALUES(?,?,?,?)').run(owner,'decoration',decorationId,now);
-     albumRewards.push({albumId:album.id,title:album.title,target:m.target,coins:m.coins,...(decorationId?{decorationId}: {})});
-    }
-   }
-  }
+  const albumRewards=qualifies?awardMilestones(owner,settings,now):[];
   const result={coins,fragments,catalog:{imageId,qualified:qualifies,minimumContributions:tuning.catalogMinimumContributions,newlyCollected:qualifies&&!hadImage,difficulty:qualifies?pieces:null,albumRewards}};
   db.prepare('INSERT INTO mobile_collection_completions VALUES(?,?,?,?)').run(room.id,owner,JSON.stringify(result),now);return result;
+ }
+ function upgradeCompletion(owner,room,contribution,now){
+  const row=db.prepare('SELECT data FROM mobile_collection_completions WHERE room_id=? AND owner=?').get(room.id,owner);
+  if(!row)return complete(owner,room,contribution,now);
+  if(db.prepare('SELECT 1 FROM mobile_collection_legacy_rooms WHERE room_id=?').get(room.id)||!room.completedAt||!Number.isSafeInteger(contribution)||contribution<=0)return JSON.parse(row.data);
+  const existing=JSON.parse(row.data),settings=readSettings(),tuning=settings.collection;
+  const doubled=!!db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,'completion-double:'+room.id);
+  const targetCoins=Math.ceil(contribution*tuning.completionCoinRatio),targetFragments=Math.min(tuning.completionFragmentMaximum,Math.max(tuning.completionFragmentMinimum,Math.floor(contribution/tuning.fragmentContributionStep)));
+  const deltaCoins=doubled?0:Math.max(0,targetCoins-(Number(existing.coins)||0)),deltaFragments=doubled?0:Math.max(0,targetFragments-(Number(existing.fragments)||0));
+  if(deltaCoins>0||deltaFragments>0)change(owner,'completion-late:'+room.id+':'+contribution,deltaCoins,deltaFragments,now);
+  let catalogState=existing.catalog;
+  const imageId=room.puzzle.imageId,pieces=room.mobilePieces,qualifies=contribution>=tuning.catalogMinimumContributions&&photoById.has(imageId);
+  if(qualifies&&!catalogState?.qualified){
+   const hadImage=!!db.prepare('SELECT 1 FROM mobile_collection_artworks WHERE owner=? AND image_id=?').get(owner,imageId);
+   db.prepare('INSERT OR IGNORE INTO mobile_collection_artworks VALUES(?,?,?,?)').run(owner,imageId,pieces,now);
+   const albumRewards=awardMilestones(owner,settings,now);
+   catalogState={imageId,qualified:true,minimumContributions:tuning.catalogMinimumContributions,newlyCollected:!hadImage,difficulty:pieces,albumRewards};
+  }
+  const updated={...existing,coins:(Number(existing.coins)||0)+deltaCoins,fragments:(Number(existing.fragments)||0)+deltaFragments,catalog:catalogState};
+  db.prepare('UPDATE mobile_collection_completions SET data=? WHERE room_id=? AND owner=?').run(JSON.stringify(updated),room.id,owner);
+  return updated;
  }
  function completionDoubleState(owner,roomId){
   const row=db.prepare('SELECT data FROM mobile_collection_completions WHERE room_id=? AND owner=?').get(roomId,owner);
@@ -330,6 +353,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,adUnlockAlbum,adUnlocked,adDailyState,assertAdUnlockAllowed,unlockAdImage,craft,equip,contribution,complete,completion,completedImageIds,assertCompletionDoubleAllowed,claimCompletionDouble,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
+ return {view,summary,buy,adUnlockAlbum,adUnlocked,adDailyState,assertAdUnlockAllowed,unlockAdImage,craft,equip,contribution,complete,upgradeCompletion,completion,completedImageIds,assertCompletionDoubleAllowed,claimCompletionDouble,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
 }
 

@@ -105,7 +105,7 @@ export async function getDigest(request:Request){const token=request.headers.get
 export function json(value:unknown,status=200){return Response.json(value,{status,headers:{'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});}
 export async function body(request:Request){
  const reader=request.body?.getReader(),chunks:Uint8Array[]=[];let length=0;
- if(reader){try{for(;;){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>4096){await reader.cancel();throw new RoomError('请求内容过长',413);}chunks.push(value);}}finally{reader.releaseLock();}}
+ if(reader){try{for(;;){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>32768){await reader.cancel();throw new RoomError('请求内容过长',413);}chunks.push(value);}}finally{reader.releaseLock();}}
  const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}const raw=new TextDecoder().decode(bytes);
  const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)throw new RoomError('请从本网站加入房间',403);
  if(!request.headers.get('Content-Type')?.includes('application/json'))throw new RoomError('请求格式无效');

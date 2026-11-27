@@ -74,6 +74,22 @@ async function dropContribution(ctx:Context,roomId:string,revision:unknown,input
  if(!receipt||receipt.at!==event.occurredAt||!Number.isSafeInteger(receipt.xp)||receipt.xp<=0)return undefined;
  return {requestId:input.requestId,groupId:input.groupId,creditedXp:receipt.xp};
 }
+async function batchContributions(ctx:Context,roomId:string,revision:unknown,contributedOps:unknown){
+ if(!Array.isArray(contributedOps)||!contributedOps.length||!Number.isSafeInteger(revision))return [];
+ const eventId='room:'+roomId+':'+revision,row=await localDb().prepare('SELECT payload,settled_at FROM puzzle_managed_reward_events WHERE id=? AND room_id=? AND revision=?').bind(eventId,roomId,revision).first<{payload:string;settled_at:number|null}>();
+ if(!row?.settled_at)return [];
+ const event=JSON.parse(row.payload) as Data,contribution=event.owners?.find((value:Data)=>value.owner===ctx.player.id),settlement=ctx.state.settlements?.[eventId];
+ if(event.room?.id!==roomId||event.room?.revision!==revision||!contribution||!Number.isSafeInteger(contribution.count)||contribution.count<=contribution.previousCount||settlement?.occurredAt!==event.occurredAt)return [];
+ const delta=contribution.count-contribution.previousCount,receipt=ctx.state.receipts?.['snap:'+roomId+':'+contribution.count];
+ if(!receipt||receipt.at!==event.occurredAt)return [];
+ const perXp=delta>0?Math.floor((receipt.xp??0)/delta):0,perCoins=delta>0?Math.floor((receipt.coins??0)/delta):0;
+ return contributedOps.filter((item:any)=>item&&typeof item.requestId==='string'&&Number.isSafeInteger(item.groupId)).map((item:any)=>({requestId:item.requestId,groupId:item.groupId,creditedXp:perXp,creditedCoins:perCoins,...(item.forgiving?{forgiving:true}:{})}));
+}
+function completionTotals(receipts:Data,roomId:string){
+ let coins=receipts['completion:'+roomId]?.coins??0,fragments=receipts['completion:'+roomId]?.fragments??0;
+ for(const [key,value] of Object.entries(receipts))if(key.startsWith('completion-late:'+roomId+':')){coins+=(value as Data).coins??0;fragments+=(value as Data).fragments??0;}
+ return {coins,fragments};
+}
 async function socialPeople(items:Data[]){
  const codes=[...new Set<string>(items.map((p:Data)=>p.code))],levels=new Map<string,number>();
  if(codes.length){const rows=await localDb().prepare(`SELECT c.code,COALESCE(json_extract(p.data,'$.level'),0) level FROM puzzle_managed_invitation_codes c LEFT JOIN puzzle_managed_players p ON p.owner=c.owner WHERE c.code IN (${codes.map(()=>'?').join(',')})`).bind(...codes).all<{code:string;level:number}>();for(const row of rows.results)levels.set(row.code,row.level);}
@@ -138,7 +154,11 @@ async function sharedRoom(request:Request,path:string,input:Data){
  const route:( {GET?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>;POST?:(request:Request,context:{params:Promise<{id:string}>})=>Promise<Response>})=part==='join'?joinRoute:part==='chat'?chatRoute:part==='cursors'?cursorRoute:part==='cheers'?cheersRoute:part==='assistance'?assistanceRoute:roomRoute;
  if(part==='chat'&&method==='POST'&&input.phraseId!==undefined){if(!Number.isSafeInteger(input.phraseId)||!phrases[input.phraseId])throw new RoomError('快捷消息无效');input={...input,text:phrases[input.phraseId]};}
  if(method==='GET'&&route.GET)response=await route.GET(forwarded(request,path+new URL(request.url).search),params);
- else if(method==='POST'&&route.POST)response=await route.POST(forwarded(request,path+new URL(request.url).search,input),params);
+ else if(method==='POST'&&route.POST){
+  let forwardReq=forwarded(request,path+new URL(request.url).search,input);
+  if(!part&&input.type==='batch'){const headers=new Headers(forwardReq.headers);headers.set('X-Jigsaw-Shared-Client','1');forwardReq=new Request(forwardReq,{headers});}
+  response=await route.POST(forwardReq,params);
+ }
  else return json({error:'请求方式无效'},405);
  if(!response.ok)return response;
  if(method==='POST'&&(part==='join'||!part&&input.type==='heartbeat'&&input.historyJoin===true)){
@@ -155,15 +175,18 @@ async function sharedRoom(request:Request,path:string,input:Data){
  if(part==='cursors')response.headers.set('x-jigsaw-realtime-actions','normal');
  // The original room mutation commits its reward outbox before this DTO refresh.
  const effectiveInput=input.type==='realtime-action'?{...input.envelope?.action,requestId:input.envelope?.id}:input;
- if(target&&(target.completedAt||!part&&method==='POST'&&effectiveInput.type==='drop')){
-  try{const ctx=await context(request);if(!part&&method==='POST'&&effectiveInput.type==='drop'){data.mobileProfile=ctx.profile;const contribution=data.realtimeActionReplayed?undefined:await dropContribution(ctx,id,data.realtimeActionRevision??data.revision,effectiveInput);if(contribution)data.mobileContribution=contribution;}
-   if(target.completedAt){const receipts=ctx.state.receipts??{},result=receipts['completion:'+id]??{};target.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:result.coins??0,fragments:result.fragments??0,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0),ranking:contributionView!.ranking};
+ if(target&&(target.completedAt||!part&&method==='POST'&&(effectiveInput.type==='drop'||effectiveInput.type==='batch'))){
+  try{const ctx=await context(request);
+   if(!part&&method==='POST'&&effectiveInput.type==='drop'){data.mobileProfile=ctx.profile;const contribution=data.realtimeActionReplayed?undefined:await dropContribution(ctx,id,data.realtimeActionRevision??data.revision,effectiveInput);if(contribution)data.mobileContribution=contribution;}
+   else if(!part&&method==='POST'&&effectiveInput.type==='batch'){data.mobileProfile=ctx.profile;data.mobileContributions=await batchContributions(ctx,id,data.revision,data.batchContributed);}
+   if(target.completedAt){const receipts=ctx.state.receipts??{},totals=completionTotals(receipts,id);target.mobileResult={roomId:id,contribution:ctx.state.rooms?.[id]?.rewarded??0,coins:totals.coins,fragments:totals.fragments,energy:0,xp:Object.entries(receipts).filter(([key])=>key.startsWith('snap:'+id+':')).reduce((sum,[,receipt])=>sum+((receipt as Data).xp??0),0),ranking:contributionView!.ranking};
     if(current.levelId&&current.ownerId===ctx.player.id){const progress=(await levelProgress(ctx.player.id)).find(row=>row.level_id===current.levelId);target.mobileResult.levelClear={levelId:current.levelId,energy:0,firstClear:progress?.room_id===id,...destination(current.levelId)};}
    }
   }catch{/* A committed room move must stay successful if optional profile reads fail. */}
  }
  delete data.realtimeActionRevision;
  delete data.realtimeActionReplayed;
+ delete data.batchContributed;
  return replaceResponse(response,data);
 }
 async function createSharedRoom(request:Request,input:Data){

@@ -12,6 +12,7 @@ import { DEFAULT_PIECES } from '@/lib/piece-policy';
 import { nextTableChoice } from '@/lib/next-table';
 import { RoomClient, saveTicket } from '@/lib/room-client';
 import type { RoomTicket } from '@/lib/room-client';
+import { browserSoloStorage, cachedRoomTicket } from '@/lib/solo-play';
 import { apiJson, joinPuzzle } from '@/lib/community-client';
 import LanguageSwitch from './language-switch';
 import { accountLoginUrl, SOLO_LOGIN_REQUIRED } from '@/lib/account-return';
@@ -37,8 +38,18 @@ export default function RoomPlay({ roomId }: {
       setMissing(false);setCountdown(5);
       if(!admission.current||admission.current.roomId!==roomId||admission.current.attempt!==attempt)admission.current={roomId,attempt,promise:joinPuzzle(roomId)};
       void admission.current.promise.then(ticket => { if (!canceled)
-        setClient(new RoomClient(ticket)); }).catch(error => { if (!canceled)
-        { if(error instanceof Error && error.message === SOLO_LOGIN_REQUIRED) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } const status=(error as {status?:number})?.status; if(status===404||(status===410&&error instanceof Error&&error.message.includes('房间已过期'))){setMissing(true);return;} setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
+        setClient(new RoomClient(ticket, { solo: true, storage: browserSoloStorage() })); }).catch(error => { if (!canceled)
+        { if(error instanceof Error && error.message === SOLO_LOGIN_REQUIRED) { window.location.replace(accountLoginUrl('/room/'+roomId)); return; } const status=(error as {status?:number})?.status; if(status===404||(status===410&&error instanceof Error&&error.message.includes('房间已过期'))){setMissing(true);return;}
+          const storage = browserSoloStorage();
+          const cached = storage && (status === undefined || status >= 500) ? cachedRoomTicket(storage, roomId) : null;
+          if (cached) { setClient(new RoomClient(cached, { solo: true, storage })); return; }
+          setError(error instanceof Error ? error.message : '暂时无法加入房间'); } }); return () => { canceled = true; }; }, [roomId, attempt]);
+    useEffect(() => {
+      if (!client) return;
+      const onHide = () => { if (document.hidden) client.flushSoloNow(); };
+      document.addEventListener('visibilitychange', onHide);
+      return () => document.removeEventListener('visibilitychange', onHide);
+    }, [client]);
     const lobbyHref = language === 'zh' ? '/zh/lobby' : '/lobby';
     useEffect(() => { if(!missing)return; const started=Date.now(),timer=window.setInterval(()=>{const left=5-Math.floor((Date.now()-started)/1000);if(left<=0){window.clearInterval(timer);window.location.assign(lobbyHref);}else setCountdown(left);},200); return () => window.clearInterval(timer); }, [missing,lobbyHref]);
     if (client) {
