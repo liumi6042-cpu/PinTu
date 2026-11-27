@@ -284,7 +284,7 @@ export class RoomClient {
         if(this.stopped)return;const room=applyRoomUpdate(this.snapshot,update);
         if(room)this.receive(room);else{this.forcePoll=true;this.schedulePoll(0);}
       }),this.deps.realtime.subscribeState(connected=>{
-        if(this.stopped)return;if(!connected)this.forcePoll=true;this.schedulePoll(connected?Math.max(0,5001-(this.deps.now()-this.heartbeatAt)):0);
+        if(this.stopped)return;if(!connected){if(this.backgroundSuspended()){this.schedulePoll(4000);return;}this.forcePoll=true;}this.schedulePoll(connected?Math.max(0,5001-(this.deps.now()-this.heartbeatAt)):0);
       }));
     }
     this.receive(this.snapshot, true);
@@ -294,8 +294,23 @@ export class RoomClient {
     void this.poll();
     return () => { this.stop(); this.table = null; };
   }
+  private backgroundSuspended(){
+    return this.deps.hidden()&&this.drags.size===0&&this.pendingDrags.size===0&&!this.diagnosticPipeline?.hasActive()&&this.soloOps.length===0;
+  }
+  /** Pause background heartbeats while hidden so idle backgrounded clients age out cleanly; resume immediately on foreground return. */
+  setHidden(hidden:boolean){
+    if(this.stopped)return;
+    if(hidden){
+      if(this.backgroundSuspended()&&this.pollTimer){clearTimeout(this.pollTimer);this.pollTimer=null;this.schedulePoll(4000);}
+      return;
+    }
+    this.heartbeatAt=0;this.forcePoll=true;this.retryAt=0;
+    this.schedulePoll(0);
+  }
   private async poll() {
-    if (this.stopped||this.polling) return;this.polling=true;
+    if (this.stopped||this.polling) return;
+    if (this.backgroundSuspended()) { this.schedulePoll(4000); return; }
+    this.polling=true;
     try {
       const now = this.deps.now(); let data: RoomSnapshot;
       const force=this.forcePoll;this.forcePoll=false;

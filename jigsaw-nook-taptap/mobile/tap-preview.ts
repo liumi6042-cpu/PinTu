@@ -69,10 +69,10 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
  private timer:ReturnType<typeof setTimeout>|null=null;private renewal:ReturnType<typeof setInterval>|null=null;
  private listeners:Record<string,(data:any)=>void>|null=null;private cleanups:Array<()=>void>=[];private releaseManager:(()=>void)|null=null;private unsafeNative=false;private cleaning=false;
  private seq=0;private cursor:CursorInput|null=null;private drag:{groupId:number;dx:number;dy:number;leaseId:string}|null=null;private dirty=false;private sentAt=-Infinity;
- private moves=new Map<string,MovePreview>();private cursors=new Map<string,SharedCursor>();private receivedSeq=new Map<string,number>();
+ private moves=new Map<string,MovePreview>();private cursors=new Map<string,SharedCursor>();private authorityCursors:SharedCursor[]=[];private receivedSeq=new Map<string,number>();
  private heard=new Map<string,{nonce:string;at:number}>();private confirmed=new Map<string,number>();private probingAt:number|null=null;
  private moveListeners=new Set<(moves:MovePreview[])=>void>();private cursorListeners=new Set<(snapshot:{cursors:SharedCursor[];serverTime?:number})=>void>();
- private counts={platformSent:0,platformSucceeded:0,platformFailed:0,platformDragSent:0,platformReceived:0,platformCallbacks:0,rejected:0,platformBytesSent:0,platformBytesReceived:0};private error='';private errorInfo:PreviewFailure|null=null;private phase='idle';private lastReady=false;private responseInfo='';
+ private counts={platformSent:0,platformSucceeded:0,platformFailed:0,platformDragSent:0,platformReceived:0,platformCallbacks:0,rejected:0,platformBytesSent:0,platformBytesReceived:0};private error='';private errorInfo:PreviewFailure|null=null;private phase='idle';private lastReady=false;private lastFull=false;private lastConfirmedKey='';private responseInfo='';
  private eventShape='';private ignored={notReady:0,payload:0,sender:0,binding:0,duplicate:0,frame:0};
  private sendHz:number|null=null;private statsSince=0;private statsGeneration=0;private sendTimes:number[]=[];private sendPeak=0;private lastSendError='';
  private peerStats=new Map<string,{name:string;total:number;times:number[]}>();
@@ -84,7 +84,7 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
   this.opts=options;this.room=options.room;this.observedAt=this.now();this.clientId=options.randomId();this.nonce=options.randomId();this.acceptMeta((options.room as PreviewSnapshot).tapPreview);
   this.statsSince=this.now();if([4,10,15].includes(options.sendHz!))this.sendHz=options.sendHz!;
   const owner=this;this.preview={get connected(){return owner.previewReady;},sendMove:(...args)=>this.sendMove(...args),clearMove:id=>this.clearMove(id),observe:s=>this.observe(s),subscribeMoves:fn=>this.subscribeMoves(fn)};
-  this.cleanups.push(options.authority.subscribeRoom(update=>{const room=applyRoomUpdate(this.room,update);if(room)this.observe(room);}),options.authority.subscribeCursors(data=>{if(!this.previewReady)for(const fn of this.cursorListeners)fn(data);}),options.authority.subscribeState(connected=>{if(!connected)this.deactivate();else{this.refresh();this.scheduleRecovery();}}));
+  this.cleanups.push(options.authority.subscribeRoom(update=>{const room=applyRoomUpdate(this.room,update);if(room)this.observe(room);}),options.authority.subscribeCursors(data=>{this.authorityCursors=data.cursors;if(!this.previewReady){for(const fn of this.cursorListeners)fn(data);return;}if(this.fullPreviewReady)return;this.emitCursors(data.serverTime);}),options.authority.subscribeState(connected=>{if(!connected)this.deactivate();else{this.refresh();this.scheduleRecovery();}}));
  }
  private now(){return this.opts.now?.()??Date.now();}
  // Room/action availability always means the authoritative connection, never a platform ACK.
@@ -92,11 +92,36 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
  get actionsReady(){return this.opts.authority.actionsReady;}
  get actionsDiagnosticOnly(){return this.opts.authority.actionsDiagnosticOnly;}
  get pendingActionCount(){return this.opts.authority.pendingActionCount;}
- private get rosterReady(){
-  if(this.stopped||this.hidden||!this.joined||!this.connected||this.room.completedAt!==null||!this.meta?.channelId)return false;
-  const members=this.activeMembers();return members.length>0&&members.every(m=>this.meta!.peers.filter(p=>p.playerId===m.id&&p.ready).length===1)&&this.meta.peers.some(p=>p.clientId===this.clientId&&p.playerId===this.opts.playerId&&p.ready);
+ private get sessionReady(){
+  return !this.stopped&&!this.hidden&&this.joined&&this.connected&&this.room.completedAt===null&&!!this.meta?.channelId&&this.meta.peers.some(p=>p.clientId===this.clientId&&p.playerId===this.opts.playerId&&p.ready);
  }
- get previewReady(){return this.rosterReady&&this.meta!.peers.filter(p=>p.ready&&p.clientId!==this.clientId&&this.activeMembers().some(m=>m.id===p.playerId)).every(p=>this.now()-(this.confirmed.get(p.clientId)??-Infinity)<3500);}
+ private readyOtherPeers(){
+  if(!this.sessionReady)return [];
+  const members=this.activeMembers();
+  return members.filter(m=>m.id!==this.opts.playerId).flatMap(m=>{
+   const peers=this.meta!.peers.filter(p=>p.playerId===m.id&&p.ready);
+   return peers.length===1?peers:[];
+  });
+ }
+ private confirmedPeers(){return this.readyOtherPeers().filter(p=>this.now()-(this.confirmed.get(p.clientId)??-Infinity)<3500);}
+ private get fullRosterReady(){
+  if(!this.sessionReady)return false;
+  const members=this.activeMembers();
+  return members.length>0&&members.every(m=>this.meta!.peers.filter(p=>p.playerId===m.id&&p.ready).length===1);
+ }
+ private get rosterReady(){
+  if(!this.sessionReady)return false;
+  const members=this.activeMembers();
+  return members.length===1?this.fullRosterReady:this.readyOtherPeers().length>0;
+ }
+ get fullPreviewReady(){
+  if(!this.fullRosterReady)return false;
+  return this.readyOtherPeers().every(p=>this.now()-(this.confirmed.get(p.clientId)??-Infinity)<3500);
+ }
+ get previewReady(){
+  if(!this.rosterReady)return false;
+  return this.activeMembers().length===1?this.fullRosterReady:this.confirmedPeers().length>0;
+ }
  private serverNow(){return this.room.serverTime+Math.max(0,this.now()-this.observedAt);}
  private activeMembers(){return this.room.members.filter(m=>m.lastSeen>0&&this.serverNow()-m.lastSeen<22000);}
  subscribeRoom:ManagedRoomRealtime['subscribeRoom']=fn=>this.opts.authority.subscribeRoom(fn);
@@ -111,11 +136,11 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
   return reply;
  }
  resetActions(){this.opts.authority.resetActions?.();this.deactivate();}
- sendCursor(data:CursorInput){this.cursor=data;if(this.previewReady){this.dirty=true;this.scheduleTick();return true;}return this.opts.authority.sendCursor(data);}
+ sendCursor(data:CursorInput){this.cursor=data;if(this.previewReady){this.dirty=true;this.scheduleTick();if(this.fullPreviewReady)return true;}return this.opts.authority.sendCursor(data);}
  sendMove(groupId:number,dx:number,dy:number){
   const lease=this.room.leases[groupId];
   if(!this.previewReady||lease?.playerId!==this.opts.playerId||lease.expires<=this.serverNow()||!id(lease.previewId)||!point([dx,dy]))return false;
-  this.drag={groupId,dx,dy,leaseId:lease.previewId};this.dirty=true;this.scheduleTick();return true;
+  this.drag={groupId,dx,dy,leaseId:lease.previewId};this.dirty=true;this.scheduleTick();return this.fullPreviewReady;
  }
  clearMove(groupId:number){if(this.drag?.groupId===groupId){this.drag=null;this.dirty=true;this.scheduleTick();}}
  // 频率切换仅由独立自测设置入口调用；握手/心跳也计入同一个发送预算。
@@ -238,7 +263,7 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
   if(!platformId(from)){this.ignored.sender++;return;}
   try{
    const frame=JSON.parse(raw),binding=this.meta!.peers.find(p=>p.ready&&p.tapPlayerId===from&&p.clientId===frame.c);
-   if(!binding||binding.playerId===this.opts.playerId){this.ignored.binding++;return;}
+   if(!binding||binding.playerId===this.opts.playerId||this.meta!.peers.filter(p=>p.playerId===binding.playerId&&p.ready).length!==1){this.ignored.binding++;return;}
    if(frame.v!==1||frame.e!==this.meta!.epoch||!id(frame.n)||!Array.isArray(frame.a)||frame.a.length>8||!frame.a.every(id)||!Number.isSafeInteger(frame.s)||frame.s<=0||Object.keys(frame).some(k=>!['v','e','c','s','p','d','n','a'].includes(k)))throw Error();
    if(frame.s<=(this.receivedSeq.get(frame.c)??0)){this.ignored.duplicate++;return;}
    if(frame.p!==null&&!point(frame.p))throw Error();
@@ -246,8 +271,11 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
    this.receivedSeq.set(frame.c,frame.s);this.counts.platformReceived++;this.counts.platformBytesReceived+=raw.length;
    const member=this.activeMembers().find(m=>m.id===binding.playerId);if(!member)return;
    const stats=this.peerStats.get(member.id)??{name:member.name,total:0,times:[]};stats.name=member.name;stats.total++;stats.times.push(this.now());this.recent(stats.times);this.peerStats.set(member.id,stats);
-   this.heard.set(frame.c,{nonce:frame.n,at:this.now()});if(frame.a.includes(this.nonce))this.confirmed.set(frame.c,this.now());
-   if(!this.previewReady){this.refresh();return;}
+   const prevHeard=this.heard.get(frame.c);
+   this.heard.set(frame.c,{nonce:frame.n,at:this.now()});if(prevHeard?.nonce!==frame.n){this.dirty=true;this.scheduleTick();}
+   if(frame.a.includes(this.nonce))this.confirmed.set(frame.c,this.now());
+   const peerConfirmed=this.now()-(this.confirmed.get(frame.c)??-Infinity)<3500;
+   if(!this.previewReady||!peerConfirmed){this.refresh();return;}
    if(frame.p)this.cursors.set(frame.c,enrichCursorFromMember({playerId:member.id,name:member.name,color:member.color,x:frame.p[0],y:frame.p[1],updatedAt:this.now()},member as CursorMemberMeta,true));else this.cursors.delete(frame.c);
    if(frame.d){const [groupId,dx,dy,leaseId]=frame.d,lease=this.room.leases[groupId],group=this.room.puzzle.groups.find(g=>g.id===groupId);
     if(lease?.playerId===member.id&&lease.expires>this.serverNow()&&lease.previewId===leaseId&&group&&!group.locked)this.moves.set(frame.c,{playerId:member.id,groupId,dx,dy,leaseId,receivedAt:this.now()});
@@ -271,11 +299,21 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
    if(this.live(sendGeneration))this.fail('send-failed',error);
   }).finally(()=>{this.sending=false;this.scheduleTick();});
  }
+ private emitCursors(serverTime=this.now()){
+  const ready=this.previewReady;
+  if(!ready){if(!this.connected)for(const fn of this.cursorListeners)fn({cursors:[],serverTime});return;}
+  const confirmedPlayerIds=new Set(this.confirmedPeers().map(p=>p.playerId));
+  const merged=[...[...this.cursors.values()].filter(c=>confirmedPlayerIds.has(c.playerId)),...(this.fullPreviewReady?[]:this.authorityCursors.filter(c=>!confirmedPlayerIds.has(c.playerId)))];
+  for(const fn of this.cursorListeners)fn({cursors:merged,serverTime});
+ }
  private refresh(force=false){
-  const ready=this.previewReady;let changed=force;
-  for(const [key,move]of this.moves){const lease=this.room.leases[move.groupId];if(!ready||this.now()-move.receivedAt>2500||lease?.playerId!==move.playerId||lease.expires<=this.serverNow()||lease.previewId!==move.leaseId){this.moves.delete(key);changed=true;}}
+  for(const key of this.receivedSeq.keys())if(!this.meta?.peers.some(p=>p.clientId===key))this.receivedSeq.delete(key);
+  for(const [key,value]of this.heard)if(this.now()-value.at>3500||!this.meta?.peers.some(p=>p.clientId===key)){this.heard.delete(key);this.confirmed.delete(key);}
+  const ready=this.previewReady,full=this.fullPreviewReady,confirmedList=ready?this.confirmedPeers():[],confirmedClients=new Set(confirmedList.map(p=>p.clientId)),confirmedKey=[...confirmedClients].sort().join(',');
+  let changed=force;
+  for(const [key,move]of this.moves){const lease=this.room.leases[move.groupId];if(!confirmedClients.has(key)||this.now()-move.receivedAt>2500||lease?.playerId!==move.playerId||lease.expires<=this.serverNow()||lease.previewId!==move.leaseId){this.moves.delete(key);changed=true;}}
   for(const [key,cursor]of this.cursors){
-   if(!ready||this.now()-cursor.updatedAt>2500){this.cursors.delete(key);changed=true;continue;}
+   if(!confirmedClients.has(key)||this.now()-cursor.updatedAt>2500){this.cursors.delete(key);changed=true;continue;}
    const member=this.room.members.find(m=>m.id===cursor.playerId) as CursorMemberMeta|undefined;
    if(!member)continue;
    const next=enrichCursorFromMember(cursor,member,true);
@@ -283,12 +321,16 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
     this.cursors.set(key,next);changed=true;
    }
   }
-  for(const key of this.receivedSeq.keys())if(!this.meta?.peers.some(p=>p.clientId===key))this.receivedSeq.delete(key);
-  for(const [key,value]of this.heard)if(this.now()-value.at>3500||!this.meta?.peers.some(p=>p.clientId===key)){this.heard.delete(key);this.confirmed.delete(key);}
-  if(ready!==this.lastReady){this.lastReady=ready;changed=true;this.dirty=true;if(!ready){this.drag=null;if(this.cursor)this.opts.authority.sendCursor(this.cursor);}this.scheduleTick();}
-  if(changed){for(const fn of this.moveListeners)fn([...this.moves.values()]);if(ready||!this.connected)for(const fn of this.cursorListeners)fn({cursors:[...this.cursors.values()],serverTime:this.now()});}
+  if(ready!==this.lastReady||full!==this.lastFull||confirmedKey!==this.lastConfirmedKey){
+   const droppedFull=this.lastFull&&!full,droppedReady=this.lastReady&&!ready;
+   this.lastReady=ready;this.lastFull=full;this.lastConfirmedKey=confirmedKey;changed=true;this.dirty=true;
+   if(!ready)this.drag=null;
+   if((droppedReady||droppedFull)&&this.cursor)this.opts.authority.sendCursor(this.cursor);
+   this.scheduleTick();
+  }
+  if(changed){for(const fn of this.moveListeners)fn([...this.moves.values()]);this.emitCursors();}
  }
- private deactivate(){this.lastReady=false;this.drag=null;this.moves.clear();this.cursors.clear();for(const fn of this.moveListeners)fn([]);for(const fn of this.cursorListeners)fn({cursors:[],serverTime:this.now()});}
+ private deactivate(){this.lastReady=false;this.lastFull=false;this.lastConfirmedKey='';this.drag=null;this.moves.clear();this.cursors.clear();this.authorityCursors=[];for(const fn of this.moveListeners)fn([]);for(const fn of this.cursorListeners)fn({cursors:[],serverTime:this.now()});}
  private fail(code:string,info?:PreviewFailure){
   if(this.cleaning||this.stopped)return;this.error=code;this.errorInfo=info??null;this.generation++;this.joined=false;
   if(this.timer)clearTimeout(this.timer);if(this.renewal)clearInterval(this.renewal);this.timer=this.renewal=null;
@@ -311,8 +353,10 @@ export class TapPreviewRealtime implements ManagedRoomRealtime{
  }
  diagnostics(){
   const members=this.activeMembers(),missing=members.filter(m=>!this.meta?.peers.some(p=>p.playerId===m.id&&p.ready));
-  const state=this.previewReady?'平台消息已双向验证':this.joined&&!this.connected?'等待原服务器连接':this.joined&&missing.length?'等待 '+missing.length+' 位玩家完成平台入房绑定':(phaseNames[this.phase]??this.phase);
-  return {...this.opts.authority.diagnostics(),preview:'taptap-test',previewConnected:this.previewReady,previewRosterReady:this.rosterReady,previewSessionJoined:this.joined,previewMembersReady:members.length-missing.length,previewMembersTotal:members.length,previewMissingBindings:missing.map(m=>m.id===this.opts.playerId?'本机':m.name),previewPeersConfirmed:this.confirmed.size,previewError:this.error,previewStage:this.errorInfo?.previewStage??this.phase,previewDetail:(this.errorInfo?detail(this.errorInfo):this.error?(fallbackDetails[this.error]??'平台已回退：'+this.error):state)+(this.retryAt?'；'+Math.max(0,Math.ceil((this.retryAt-this.now())/1000))+'秒后自动重试':this.unsafeNative?'；平台调用未结束，请退出自测包后重进':''),previewErrno:this.errorInfo?.platformErrno??'',previewResponse:this.responseInfo,previewRecoveryCount:this.recoveryCount,previewRetrySeconds:this.retryAt?Math.max(0,Math.ceil((this.retryAt-this.now())/1000)):0,previewRecoveryBlocked:this.unsafeNative,...this.counts,previewEventShape:this.eventShape,previewIgnored:{...this.ignored},previewPeersExpected:Math.max(0,members.length-1),previewTargetHz:this.sendHz??Math.max(1,Math.min(4,Math.floor(10/Math.max(1,members.length)))),previewStatsSeconds:Math.floor((this.now()-this.statsSince)/1000),platformSendRate:this.recent(this.sendTimes),platformSendPeak:this.sendPeak,platformSendPending:this.sending,platformLastSendError:this.lastSendError,platformPeerReceives:[...this.peerStats.values()].map(p=>({name:p.name,total:p.total,hz:this.recent(p.times)}))};
+  const readyOthers=this.readyOtherPeers(),confirmed=this.confirmedPeers(),full=this.fullPreviewReady,hybrid=this.previewReady&&!full;
+  const fallbackOthers=Math.max(0,members.length-1-confirmed.length);
+  const state=full?'平台消息已双向验证':hybrid?'混合通道：已接通 '+confirmed.length+' 位拼友，其余 '+fallbackOthers+' 位走原通道':this.joined&&!this.connected?'等待原服务器连接':this.joined&&!this.rosterReady&&missing.length?'等待 '+missing.length+' 位玩家完成平台入房绑定':(phaseNames[this.phase]??this.phase);
+  return {...this.opts.authority.diagnostics(),preview:'taptap-test',previewConnected:this.previewReady,previewFullRoster:full,previewHybrid:hybrid,previewRosterReady:this.rosterReady,previewSessionJoined:this.joined,previewMembersReady:members.length-missing.length,previewMembersTotal:members.length,previewMissingBindings:missing.map(m=>m.id===this.opts.playerId?'本机':m.name),previewPeersConfirmed:confirmed.length,previewPeersReady:readyOthers.length,previewError:this.error,previewStage:this.errorInfo?.previewStage??this.phase,previewDetail:(this.errorInfo?detail(this.errorInfo):this.error?(fallbackDetails[this.error]??'平台已回退：'+this.error):state)+(this.retryAt?'；'+Math.max(0,Math.ceil((this.retryAt-this.now())/1000))+'秒后自动重试':this.unsafeNative?'；平台调用未结束，请退出自测包后重进':''),previewErrno:this.errorInfo?.platformErrno??'',previewResponse:this.responseInfo,previewRecoveryCount:this.recoveryCount,previewRetrySeconds:this.retryAt?Math.max(0,Math.ceil((this.retryAt-this.now())/1000)):0,previewRecoveryBlocked:this.unsafeNative,...this.counts,previewEventShape:this.eventShape,previewIgnored:{...this.ignored},previewPeersExpected:Math.max(0,members.length-1),previewTargetHz:this.sendHz??Math.max(1,Math.min(4,Math.floor(10/Math.max(1,members.length)))),previewStatsSeconds:Math.floor((this.now()-this.statsSince)/1000),platformSendRate:this.recent(this.sendTimes),platformSendPeak:this.sendPeak,platformSendPending:this.sending,platformLastSendError:this.lastSendError,platformPeerReceives:[...this.peerStats.values()].map(p=>({name:p.name,total:p.total,hz:this.recent(p.times)}))};
  }
  close(){if(this.closed)return;this.closed=true;this.stopped=true;this.generation++;this.joined=false;if(this.timer)clearTimeout(this.timer);if(this.renewal)clearInterval(this.renewal);if(this.retryTimer)clearTimeout(this.retryTimer);this.retryTimer=null;this.retryAt=0;this.deactivate();void this.cleanupNative();for(const cleanup of this.cleanups)cleanup();this.cleanups=[];this.moveListeners.clear();this.cursorListeners.clear();this.opts.authority.close();}
 }
