@@ -31,7 +31,7 @@ function fixture({inventory,post,energyEnabled=true}={}){
    post:async(path,body)=>{posts.push({path,body});return post(body);},
    refresh:async()=>{refreshes++;},
   },
-  applyTasks(data){applied.push(data);},
+  applyTasks(data){applied.push(data);if(Array.isArray(data?.inventory))this.tasks={...this.tasks,inventory:data.inventory};},
   checkLevelMilestone(){},
   invalidate(){},
   note:text=>notes.push(text),
@@ -39,28 +39,74 @@ function fixture({inventory,post,energyEnabled=true}={}){
  return {app,posts,notes,applied,counts:()=>({refreshes,sounds,milestones})};
 }
 
-test('openAllGifts batches a 152-gift stack into 20-item requests, refreshes once, and summarizes total rewards',async()=>{
+test('when only 十格小礼 (>20) is present, each tap of 全部开启 opens 20 at a time until <=20 remain',async()=>{
+ let remaining=52;
  const f=fixture({
-  inventory:[{kind:'ten-7',title:'十格小礼',count:152,effect:'reward',energyMin:1,energyMax:7,xp:2,coins:3}],
+  inventory:[{kind:'ten-7',title:'十格小礼',count:remaining,effect:'reward',energyMin:1,energyMax:7,xp:2,coins:3}],
   post:body=>{
-   assert.ok(body.quantity>=1&&body.quantity<=20,'each batch obeys server 1..20 limit');
+   assert.ok(body.quantity>=1&&body.quantity<=20,'each request obeys server 1..20 limit');
+   remaining-=body.quantity;
    return {
     opened:{kind:body.kind,quantity:body.quantity,energy:body.quantity*5,xp:body.quantity*2,coins:body.quantity*3},
-    inventory:[],tasks:[],invitation:{},
+    inventory:remaining>0?[{kind:'ten-7',title:'十格小礼',count:remaining,effect:'reward',energyMin:1,energyMax:7,xp:2,coins:3}]:[],
+    tasks:[],invitation:{},
    };
   },
  });
 
+ // 52 > 20 -> onlyLargeTenGifts is true; 1st click opens exactly 20 (52 -> 32).
+ assert.equal(f.app.onlyLargeTenGifts(),true);
  await f.app.openAllGifts();
+ assert.deepEqual(f.posts.map(p=>p.body.quantity),[20]);
+ assert.equal(f.app.tasks.inventory[0].count,32);
+ assert.equal(f.notes.at(-1),'已开启 20 份礼包 · 体力 +100 · 经验 +40 · 金币 +60');
 
- assert.deepEqual(f.posts.map(p=>p.body.quantity),[20,20,20,20,20,20,20,12]);
- assert.equal(new Set(f.posts.map(p=>p.body.requestId)).size,8,'every batch uses a distinct requestId');
- assert.equal(f.app.attempts.size,0,'all completed attempt keys are cleared');
- assert.deepEqual(f.counts(),{refreshes:1,sounds:1,milestones:1});
- assert.deepEqual(f.notes,['已开启 152 份礼包 · 体力 +760 · 经验 +304 · 金币 +456']);
+ // 32 > 20 -> 2nd click opens next 20 (32 -> 12).
+ assert.equal(f.app.onlyLargeTenGifts(),true);
+ await f.app.openAllGifts();
+ assert.deepEqual(f.posts.map(p=>p.body.quantity),[20,20]);
+ assert.equal(f.app.tasks.inventory[0].count,12);
+
+ // 12 <= 20 -> onlyLargeTenGifts turns false; 3rd click opens all remaining 12 (12 -> 0).
+ assert.equal(f.app.onlyLargeTenGifts(),false);
+ await f.app.openAllGifts();
+ assert.deepEqual(f.posts.map(p=>p.body.quantity),[20,20,12]);
+ assert.equal(f.app.tasks.inventory.length,0);
+ assert.equal(new Set(f.posts.map(p=>p.body.requestId)).size,3,'each click uses a distinct requestId');
+ assert.equal(f.app.attempts.size,0);
+ assert.deepEqual(f.counts(),{refreshes:3,sounds:3,milestones:3});
 });
 
-test('openAllGifts opens multiple gift types, skips full-energy packs when energy is enabled, and notifies when only full-energy remains',async()=>{
+test('tasks page shows 全部开启（每次 20 份） only when solely 十格小礼 with >20 count is present',()=>{
+ const buttons=[];
+ const f=fixture({
+  inventory:[{kind:'ten-7',title:'十格小礼',count:152,effect:'reward',energyMin:1,energyMax:7,xp:1,coins:0}],
+  post:()=>{},
+ });
+ Object.defineProperty(f.app,'colors',{value:{ink:'#111',muted:'#666',cream:'#fff',line:'#ddd',berry:'#a46'},configurable:true});
+ Object.defineProperty(f.app,'usesCreationTickets',{value:false,configurable:true});
+ Object.defineProperty(f.app,'inviteRewardsHidden',{value:true,configurable:true});
+ Object.assign(f.app,{
+  scroll:0,extent:0,bodyTop:80,bodyBottom:800,supplyFocus:false,
+  stage:{
+   w:390,h:844,ctx:{save(){},restore(){},fillRect(){},globalAlpha:1,fillStyle:''},
+   panel(){},frame(){},icon(){},text(){},meter(){},hit(){},measure:t=>String(t).length*10,
+   button(_r,label){buttons.push(label);},
+  },
+  scrolled(fn){fn();},invalidate(){},
+ });
+ f.app.client.profile.supply={energy:0,create:0};
+ f.app.drawTasksPage();
+ assert.ok(buttons.includes('全部开启（每次 20 份）'));
+
+ buttons.length=0;
+ f.app.tasks.inventory=[{kind:'ten-7',title:'十格小礼',count:20,effect:'reward',energyMin:1,energyMax:7,xp:1,coins:0}];
+ f.app.drawTasksPage();
+ assert.ok(buttons.includes('全部开启'));
+ assert.equal(buttons.includes('全部开启（每次 20 份）'),false);
+});
+
+test('openAllGifts opens multiple gift types (auto-batching >20), skips full-energy packs, and notifies when only full-energy remains',async()=>{
  const f=fixture({
   inventory:[
    {kind:'ten-7',title:'十格小礼',count:25,effect:'reward',energyMin:1,energyMax:7,xp:1,coins:0},
@@ -73,6 +119,7 @@ test('openAllGifts opens multiple gift types, skips full-energy packs when energ
   }),
  });
 
+ assert.equal(f.app.onlyLargeTenGifts(),false);
  await f.app.openAllGifts();
  assert.deepEqual(f.posts.map(p=>[p.body.kind,p.body.quantity]),[['ten-7',20],['ten-7',5],['coop-10',4]]);
  assert.deepEqual(f.notes,['已开启 29 份礼包 · 体力 +58 · 经验 +29 · 金币 +20']);
@@ -89,7 +136,9 @@ test('openAllGifts opens multiple gift types, skips full-energy packs when energ
 test('mid-batch failure refreshes partial rewards and clears 4xx keys while retaining network-error keys for retry',async()=>{
  let call=0;
  const f=fixture({
-  inventory:[{kind:'ten-7',title:'十格小礼',count:50,effect:'reward',energyMin:1,energyMax:7,xp:1,coins:2}],
+  inventory:[
+   {kind:'coop-10',title:'今日拼合礼',count:50,effect:'reward',energyMin:1,energyMax:7,xp:1,coins:2},
+  ],
   post:body=>{
    call++;
    if(call===2)throw Object.assign(Error('剩余礼包数量不足，请刷新后重试'),{status:409,code:'GIFT_EMPTY'});

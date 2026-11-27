@@ -54,7 +54,8 @@ export function drawTasksPagePanel(this:AppHost){
     gifts.forEach((gift,index)=>{const gx=x+(index%giftCols)*(giftW+10),gy=y+Math.floor(index/giftCols)*136,r={x:gx,y:gy,w:giftW,h:126},art=gift.effect==='full-energy'&&this.energyEnabled?'refillGift':gift.kind.startsWith('ten')?'pouch':gift.kind.startsWith('friend')?'goldGift':'xpChest',blocked=this.energyEnabled&&gift.effect==='full-energy'&&full;
      s.frame(r,'button-linen-normal');s.icon(art,{x:gx+(giftW-52)/2,y:gy+8,w:52,h:50});const title=(!this.energyEnabled&&gift.effect==='full-energy'?'邀请礼包':gift.title)+' ×'+gift.count;s.text(title,gx+(giftW-Math.min(giftW-12,s.measure(title,13,700)))/2,gy+62,13,ink,700,giftW-12);
      s.button({x:gx+8,y:gy+84,w:giftW-16,h:34},blocked?'体力已满':'开启',()=>void this.openGift(gift.kind),{tone:'berry',fontSize:13,disabled:this.busy||blocked});});
-    s.button({x,y:y+giftRows*136+4,w:cw,h:38},'全部开启',()=>void this.openAllGifts(),{tone:'berrydark',fontSize:14,disabled:this.busy});});
+    const allLabel=this.onlyLargeTenGifts?.()?'全部开启（每次 20 份）':'全部开启';
+    s.button({x,y:y+giftRows*136+4,w:cw,h:38},allLabel,()=>void this.openAllGifts(),{tone:'berrydark',fontSize:14,disabled:this.busy});});
    // 5. 补给
    const tickets=this.usesCreationTickets,energy=this.energyEnabled,wechat=this.platform.config?.id==='wechat',adLabel=wechat?'观看广告':'观看 TapTap 广告';
    // Narrow portrait: the energy buttons move to their own row when space beside the title is tight.
