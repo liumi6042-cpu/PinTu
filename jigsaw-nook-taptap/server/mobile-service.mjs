@@ -454,45 +454,113 @@ export function createMobileService(options={}){
   room.mobileSettled=true;
  }
  // v53.10+ clients send lasting=true (POST body) / ?lasting=1 (GET): 提示 stays until its pieces are placed;
- // 底图 always lasts 30 seconds (LEGACY_TOOL_MS) per activation and disappears automatically afterwards.
+ // v53.36+: 底图 grants 30 seconds (LEGACY_TOOL_MS) of cumulative visible time that can be paused and resumed within the room.
  // Each account gets NEWCOMER_FREE_TOOL_USES lifetime free uses per tool kind (hint / underlay), starting from the first room.
  const LASTING_TOOL_MS=400*86400000,LEGACY_TOOL_MS=30000,NEWCOMER_FREE_TOOL_USES=2;
  const toolFreeUses=(owner,kind)=>Number(db.prepare('SELECT COALESCE(SUM(uses),0) n FROM mobile_tool_uses WHERE owner=? AND kind=?').get(owner,kind)?.n??0);
+ const underlayRemaining=(g,now)=>{
+  if(g.pausable===true){
+   const base=Math.max(0,Math.min(LEGACY_TOOL_MS,Number(g.remainingMs)||0));
+   return g.active?Math.max(0,base-Math.max(0,now-(g.activeSince??now))):base;
+  }
+  const limit=g.lasting?Math.min(g.expiresAt,(g.startedAt??now)+LEGACY_TOOL_MS):g.expiresAt;
+  return Math.max(0,Math.min(LEGACY_TOOL_MS,limit-now));
+ };
+ const pauseUnderlayGrants=(room,ownerId,now,clientRemainingMs)=>{
+  const rows=db.prepare("SELECT rowid,data FROM mobile_tool_grants WHERE room_id=? AND owner=? AND kind='underlay' AND expires_at>? ORDER BY rowid DESC").all(room.id,ownerId,now);
+  let changed=false;
+  for(const row of rows){
+   const g=JSON.parse(row.data),live=underlayRemaining(g,now);
+   if(live<=0){
+    db.prepare('UPDATE mobile_tool_grants SET expires_at=?,data=? WHERE rowid=?').run(now,JSON.stringify({requestId:g.requestId,kind:'underlay',pieceIds:[],pausable:true,active:false,remainingMs:0,expiresAt:0}),row.rowid);
+    continue;
+   }
+   if(g.pausable===true&&g.active===false)continue;
+   const remainingMs=Number.isFinite(clientRemainingMs)?Math.max(0,Math.min(live,Math.round(clientRemainingMs))):live;
+   const next={requestId:g.requestId,kind:'underlay',pieceIds:[],pausable:true,active:false,remainingMs,expiresAt:0};
+   db.prepare('UPDATE mobile_tool_grants SET expires_at=?,data=? WHERE rowid=?').run(remainingMs>0?Math.max(now+remainingMs,room.expiresAt):now,JSON.stringify(next),row.rowid);
+   changed=true;
+  }
+  return changed;
+ };
  function help(room,p,request,input,now,url){
   authorize(room,request,now);
-  const lastingClient=request.method==='GET'?url?.searchParams.get('lasting')==='1':input.lasting===true;
+  const lastingClient=request.method==='GET'?url?.searchParams.get('lasting')==='1':input.lasting===true||input.action==='pause'||input.action==='resume';
   const used=kind=>toolFreeUses(p.id,kind);
   const locked=new Set(room.puzzle.groups.filter(g=>g.locked).flatMap(g=>g.pieces));
-  const grants=()=>{
+  const grants=(includePaused=lastingClient)=>{
    const rows=db.prepare('SELECT data FROM mobile_tool_grants WHERE room_id=? AND owner=? AND expires_at>? ORDER BY rowid').all(room.id,p.id,now).map(r=>JSON.parse(r.data));
    // Only the newest lasting hint counts, and only while one of its pieces is still unplaced.
-   // Underlay always expires 30s after activation, including any legacy lasting underlay rows.
+   // Underlay provides 30s cumulative display time and can be paused/resumed on v53.36+.
    const lastHint=rows.findLast(g=>g.lasting&&g.kind==='hint');
    return rows.filter(g=>!g.lasting||g.kind!=='hint'||g===lastHint&&g.pieceIds.some(id=>!locked.has(id)))
-    .map(g=>{
-     if(g.lasting&&(g.kind==='underlay'||!lastingClient)){const {lasting:_lasting,...timed}=g;return {...timed,expiresAt:Math.min(g.expiresAt,(g.startedAt??now)+LEGACY_TOOL_MS)};}
-     return g;
-    }).filter(g=>g.expiresAt>now);
+    .flatMap(g=>{
+     if(g.kind==='underlay'){
+      const remainingMs=underlayRemaining(g,now);
+      if(remainingMs<=0)return [];
+      if(g.pausable===true&&g.active===false)return includePaused?[{requestId:g.requestId,kind:'underlay',pieceIds:[],pausable:true,active:false,remainingMs,expiresAt:0}]:[];
+      return [{requestId:g.requestId,kind:'underlay',pieceIds:[],pausable:true,active:true,remainingMs,expiresAt:now+remainingMs}];
+     }
+     if(g.lasting&&!lastingClient){const {lasting:_lasting,...timed}=g;return [{...timed,expiresAt:Math.min(g.expiresAt,(g.startedAt??now)+LEGACY_TOOL_MS)}];}
+     return [g];
+    }).filter(g=>g.pausable&&g.active===false?g.remainingMs>0:g.expiresAt>now);
   };
   const view=()=>({grants:grants(),serverTime:now,freeRemaining:{hint:Math.max(0,NEWCOMER_FREE_TOOL_USES-used('hint')),underlay:Math.max(0,NEWCOMER_FREE_TOOL_USES-used('underlay'))},newcomerProtected:false});
   if(request.method==='GET')return view();if(request.method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
+  if(input.action!==undefined){
+   if(input.action!=='pause'&&input.action!=='resume')fail(400,'INVALID_TOOL','工具操作无效');
+   if(input.kind!=='underlay')fail(400,'INVALID_TOOL','仅底图支持暂停与继续');
+   if(input.action==='pause'){pauseUnderlayGrants(room,p.id,now,input.remainingMs);return view();}
+   const rows=db.prepare("SELECT rowid,data FROM mobile_tool_grants WHERE room_id=? AND owner=? AND kind='underlay' AND expires_at>? ORDER BY rowid DESC").all(room.id,p.id,now);
+   for(const row of rows){
+    const g=JSON.parse(row.data),remainingMs=underlayRemaining(g,now);
+    if(remainingMs<=0){
+     db.prepare('UPDATE mobile_tool_grants SET expires_at=?,data=? WHERE rowid=?').run(now,JSON.stringify({requestId:g.requestId,kind:'underlay',pieceIds:[],pausable:true,active:false,remainingMs:0,expiresAt:0}),row.rowid);
+     continue;
+    }
+    const next={requestId:g.requestId,kind:'underlay',pieceIds:[],pausable:true,active:true,remainingMs,activeSince:now,expiresAt:now+remainingMs};
+    db.prepare('UPDATE mobile_tool_grants SET expires_at=?,data=? WHERE rowid=?').run(next.expiresAt,JSON.stringify(next),row.rowid);
+    return view();
+   }
+   fail(409,'TOOL_EXPIRED','底图剩余时长已用完，请重新开启',{freeRemaining:view().freeRemaining});
+  }
   return replay(p,'help:'+room.id,input,now,()=>{
    if(!['hint','underlay'].includes(input.kind))fail(400,'INVALID_TOOL','工具无效');
    const grantLasting=lastingClient&&input.kind==='hint';
+   const currentGrants=grants(true);
+   if(input.kind==='underlay'){
+    const existing=currentGrants.findLast(g=>g.kind==='underlay');
+    if(existing){
+     if(existing.active===false&&!input.rewardToken){
+      const rows=db.prepare("SELECT rowid,data FROM mobile_tool_grants WHERE room_id=? AND owner=? AND kind='underlay' AND expires_at>? ORDER BY rowid DESC").all(room.id,p.id,now);
+      for(const row of rows){
+       const g=JSON.parse(row.data),remainingMs=underlayRemaining(g,now);
+       if(remainingMs<=0)continue;
+       const next={requestId:g.requestId,kind:'underlay',pieceIds:[],pausable:true,active:true,remainingMs,activeSince:now,expiresAt:now+remainingMs};
+       db.prepare('UPDATE mobile_tool_grants SET expires_at=?,data=? WHERE rowid=?').run(next.expiresAt,JSON.stringify(next),row.rowid);
+       return view();
+      }
+     }
+     fail(409,'TOOL_ACTIVE',existing.active===false?'底图仍有剩余时长，无需重复开启':'该功能正在生效');
+    }
+   }
    // A lasting hint may be replaced by a fresh one (its pieces may have been moved by teammates).
-   if(grants().some(g=>g.kind===input.kind&&!grantLasting))fail(409,'TOOL_ACTIVE','该功能正在生效');
+   if(currentGrants.some(g=>g.kind===input.kind&&!grantLasting))fail(409,'TOOL_ACTIVE','该功能正在生效');
    const free=used(input.kind)<NEWCOMER_FREE_TOOL_USES;
    // Option A compatibility: new clients pass toolAd=true (expecting AD_REQUIRED + /api/rewarded/challenge);
    // legacy TapTap/WeChat clients omit toolAd and only handle SHARE_REQUIRED + /api/mobile/share/challenge.
    const adToolClient=input.toolAd===true||!shareRewards;
-   if(!free&&!input.rewardToken)fail(402,adToolClient?'AD_REQUIRED':'SHARE_REQUIRED',adToolClient?(grantLasting?'免费次数已用完，观看 TapTap 广告后可开启':'免费次数已用完，观看 TapTap 广告后可开启30秒'):(grantLasting?'免费次数已用完，分享后可开启':'免费次数已用完，分享后可开启30秒'),{freeRemaining:view().freeRemaining});
+   if(!free&&!input.rewardToken)fail(402,adToolClient?'AD_REQUIRED':'SHARE_REQUIRED',adToolClient?(grantLasting?'免费次数已用完，观看 TapTap 广告后可开启':'免费次数已用完，观看 TapTap 广告后可开启30秒（可随时暂停）'):(grantLasting?'免费次数已用完，分享后可开启':'免费次数已用完，分享后可开启30秒'),{freeRemaining:view().freeRemaining});
    let pieceIds=[];if(input.kind==='hint'){const held=new Set(Object.keys(room.leases).map(Number));pieceIds=room.puzzle.groups.filter(g=>!g.locked&&!held.has(g.id)).flatMap(g=>g.pieces).slice(0,3);if(!pieceIds.length)fail(409,'NO_HINT_AVAILABLE','暂时没有可提示的拼块');}
    if(!free){
     const tokenContext=shareRewards&&typeof input.rewardToken==='string'&&db.prepare('SELECT context FROM mobile_ad_challenges WHERE token=?').get(input.rewardToken)?.context==='share:room/'+room.id?'share:room/'+room.id:'room/'+room.id;
     consumeChallenge(p,input,tokenContext,request.authorization,now);
    }
    if(free)db.prepare('INSERT INTO mobile_tool_uses VALUES(?,?,?,1) ON CONFLICT(room_id,owner,kind) DO UPDATE SET uses=uses+1').run(room.id,p.id,input.kind);
-   const grant={requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+(grantLasting?LASTING_TOOL_MS:LEGACY_TOOL_MS),...(grantLasting?{lasting:true,startedAt:now}:{})};db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
+   const grant=input.kind==='underlay'
+    ?{requestId:input.requestId,kind:'underlay',pieceIds:[],expiresAt:now+LEGACY_TOOL_MS,pausable:true,active:true,remainingMs:LEGACY_TOOL_MS,activeSince:now}
+    :{requestId:input.requestId,kind:input.kind,pieceIds,expiresAt:now+(grantLasting?LASTING_TOOL_MS:LEGACY_TOOL_MS),...(grantLasting?{lasting:true,startedAt:now}:{})};
+   db.prepare('INSERT INTO mobile_tool_grants VALUES(?,?,?,?,?,?)').run(room.id,p.id,input.requestId,input.kind,grant.expiresAt,JSON.stringify(grant));return view();
   });
  }
  function route(request,p,input,url,now){
@@ -814,7 +882,7 @@ export function createMobileService(options={}){
    member.name=p.name;engine.applyAction(room,member,input,now);
    if(input.type==='claim'&&tapPreview.allowed(room))room.leases[input.groupId].previewId=id();
    if(input.type==='heartbeat'&&input.historyJoin===true)roomHistory.joined(p.id,room,now);
-   if(input.type==='leave'){room.lastLeftAt=now;tapPreview.releaseMember(room.id,member.id);}
+   if(input.type==='leave'){room.lastLeftAt=now;tapPreview.releaseMember(room.id,member.id);pauseUnderlayGrants(room,p.id,now);}
    const streamState=room.diagnostic===true?room.diagnosticActions:room.roomActions;
    if(streamState?.leases&&['claim','drop','release'].includes(input.type))delete streamState.leases[input.groupId];
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
