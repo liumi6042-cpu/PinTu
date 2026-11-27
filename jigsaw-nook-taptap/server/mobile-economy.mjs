@@ -3,6 +3,7 @@ import {DEFAULT_TASK_REWARD_SETTINGS,tenGridReward} from './task-reward-settings
 import {DEFAULT_GAME_SETTINGS} from './game-settings.mjs';
 export const MOBILE_COUNTS=[48,108,300,500];
 export const COMPLETION_POOLS={48:10,108:25,300:60,500:100};
+export const ENERGY_AD_DAILY_LIMIT=5;
 export const xpForLevel=(level,settings=DEFAULT_GAME_SETTINGS)=>level<=10?settings.progression.earlyXp[Math.max(0,level-1)]:Math.min(settings.progression.laterXpMaximum,settings.progression.earlyXp[9]+settings.progression.laterXpStep*(level-10));
 export const energyCap=(level,settings=DEFAULT_GAME_SETTINGS)=>Math.min(settings.energy.maximumCap,settings.energy.baseCap+settings.energy.capPerLevel*level);
 // null counts all history; a timestamp limits eligibility to qualifications at/after it.
@@ -37,10 +38,10 @@ export function applyExperience(profile,xp,now,settings=DEFAULT_GAME_SETTINGS,{e
  }
  return levels;
 }
-export function applyContribution(profile,{protectedRoom=false,freeRoom=false,now,randomInt,taskRewards=DEFAULT_TASK_REWARD_SETTINGS,gameSettings=DEFAULT_GAME_SETTINGS,energyEnabled=true,inviteBonus=0}){
+export function applyContribution(profile,{protectedRoom=false,freeRoom=false,unlimitedEnergy=false,now,randomInt,taskRewards=DEFAULT_TASK_REWARD_SETTINGS,gameSettings=DEFAULT_GAME_SETTINGS,energyEnabled=true,inviteBonus=0}){
  if(energyEnabled)restoreEnergy(profile,now,gameSettings,{inviteBonus});let autoUsed=false;
  const cap=effectiveEnergyCap(profile.level,gameSettings,inviteBonus);
- const free=!energyEnabled||freeRoom||protectedRoom&&gameSettings.energy.firstRoomFree,cost=free?0:gameSettings.energy.contributionCost;
+ const free=!energyEnabled||freeRoom||unlimitedEnergy||protectedRoom&&gameSettings.energy.firstRoomFree,cost=free?0:gameSettings.energy.contributionCost;
  if(profile.energy<cost&&profile.autoSupply&&profile.supply.energy>0&&cap>=cost){profile.supply.energy--;profile.energy=Math.max(profile.energy,cap);profile.energyAt=now;autoUsed=true;}
  if(profile.energy<cost)return null;
  if(cost){if(profile.energy>=cap)profile.energyAt=now;profile.energy-=cost;}

@@ -24,7 +24,7 @@ export const mobileTaskDay=now=>new Date(now+8*3600000).toISOString().slice(0,10
 const reject=(status,code,message)=>{throw Object.assign(new Error(message),{status,code});};
 
 /** Called only from the service's IMMEDIATE transaction, with verified identities. */
-export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>false,readSettings=()=>DEFAULT_TASK_REWARD_SETTINGS,readGameSettings=()=>DEFAULT_GAME_SETTINGS,energyEnabled=true,readInviteCapBonus=owner=>inviteCapBonus(db,owner),invalidateInviteCapBonus=()=>{},awardCoins=(_owner,_source,coins)=>{if(coins)throw new Error('Task coin wallet unavailable');return 0;}}){
+export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>false,readSettings=()=>DEFAULT_TASK_REWARD_SETTINGS,readGameSettings=()=>DEFAULT_GAME_SETTINGS,energyEnabled=true,isEnergyUnlimited=()=>false,readInviteCapBonus=owner=>inviteCapBonus(db,owner),invalidateInviteCapBonus=()=>{},awardCoins=(_owner,_source,coins)=>{if(coins)throw new Error('Task coin wallet unavailable');return 0;}}){
  db.exec(`
  CREATE TABLE IF NOT EXISTS mobile_task_events(owner TEXT NOT NULL,room_id TEXT NOT NULL,request_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(owner,room_id,request_id));
  CREATE INDEX IF NOT EXISTS mobile_task_activity ON mobile_task_events(room_id,created_at,owner);
@@ -152,6 +152,7 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
   const gifts=db.prepare("SELECT g.id,g.energy,g.xp,COALESCE(json_extract(r.metadata,'$.coins'),0) coins FROM mobile_task_gifts g LEFT JOIN mobile_task_gift_rewards r ON r.gift_id=g.id WHERE g.owner=? AND g.kind=? AND g.opened_at IS NULL ORDER BY g.created_at,g.id LIMIT ?").all(p.id,input.kind,input.quantity);
   if(gifts.length!==input.quantity)reject(409,'GIFT_EMPTY','剩余礼包数量不足，请刷新后重试');
   const gameSettings=readGameSettings(),inviteBonus=bonusFor(p);
+  if(energyEnabled&&effect==='full-energy'&&isEnergyUnlimited(p,now))reject(409,'ENERGY_UNLIMITED_TODAY','今日已解锁无限体力，补满体力包已为你保留');
   if(energyEnabled&&effect==='full-energy'&&p.energy>=effectiveEnergyCap(p.level,gameSettings,inviteBonus))reject(409,'ENERGY_FULL','体力已满，补满体力包已为你保留');
   const xp=gifts.reduce((sum,g)=>sum+g.xp,0),levels=applyExperience(p,xp,now,gameSettings,{energyEnabled,inviteBonus}),energy=!energyEnabled?0:effect==='full-energy'?Math.max(0,effectiveEnergyCap(p.level,gameSettings,inviteBonus)-p.energy):gifts.reduce((sum,g)=>sum+g.energy,0);
   const effectResult=effect?{effect}:{};
