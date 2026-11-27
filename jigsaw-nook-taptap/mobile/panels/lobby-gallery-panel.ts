@@ -177,29 +177,21 @@ export function drawContinueRoomPanel(this:AppHost,room:MobileOwnedRoom,r:Rect){
 
 export function drawLobbyActionsPanel(this:AppHost,r:Rect){
   const half=(r.w-10)/2,font=r.h<42?13:15,icon=r.h<42?17:21;
-  this.drawPictureButton({x:r.x,y:r.y,w:half,h:r.h},'快速加入',()=>this.quickJoin(),'berry','players',font,icon,this.busy||!this.client.profile);
-  this.drawPictureButton({x:r.x+half+10,y:r.y,w:half,h:r.h},'开一桌',()=>this.navigate('gallery'),'cream','create',font,icon);
+  this.drawPictureButton({x:r.x,y:r.y,w:half,h:r.h},'历史记录',()=>this.showModal('history'),'cream','piece',font,icon);
+  this.drawPictureButton({x:r.x+half+10,y:r.y,w:half,h:r.h},'开一桌',()=>this.navigate('gallery'),'berry','create',font,icon);
  }
 
-export function drawRoomHeaderPanel(this:AppHost,x:number,y:number,w:number,compact:boolean){
-  const s=this.stage,count=this.lobbyRooms.length,label=(this.lobbyCursor?count+'+':String(count))+' 桌在拼',size=compact?16:20,historyLabel='历史拼图',historySize=12,hw=Math.ceil(s.measure(historyLabel,historySize,750))+Math.min(19,historySize+5)+(compact?16:22);
+export function drawRoomHeaderPanel(this:AppHost,x:number,y:number,_w:number,compact:boolean){
+  const s=this.stage,count=this.lobbyRooms.length,label=(this.lobbyCursor?count+'+':String(count))+' 桌在拼',size=compact?16:20;
   s.text('公开房间',x,y+2,size,this.colors.ink,800);s.text(label,x+s.measure('公开房间',size,800)+10,y+(compact?5:8),12,this.colors.muted,600);
-  s.button({x:x+w-hw-2,y:y-2,w:hw,h:compact?26:30},historyLabel,()=>this.showModal('history'),{icon:'piece',fontSize:historySize});
-  y+=compact?28:36;
-  const extraCount=(this.direction!=='all'?1:0)+(this.filterCount?1:0)+(this.activeOnly?1:0)+(!this.openOnly?1:0);
-  const filterLabel=extraCount?'筛选·'+extraCount:'筛选';
-  const chips:[string,boolean,()=>void][]=[
-   ['全部',this.lobbyPieces==='all'&&!this.filterCount,()=>this.setLobbyChip(()=>{this.lobbyPieces='all';this.filterCount=0;})],
-   ['≤108片',this.lobbyPieces==='small',()=>this.setLobbyChip(()=>{this.lobbyPieces=this.lobbyPieces==='small'?'all':'small';this.filterCount=0;})],
-   ['300片+',this.lobbyPieces==='large',()=>this.setLobbyChip(()=>{this.lobbyPieces=this.lobbyPieces==='large'?'all':'large';this.filterCount=0;})],
-   [this.lobbyUnplayedOnly?'✓ 未拼过':'未拼过',this.lobbyUnplayedOnly===true,()=>this.changeListView(()=>{this.lobbyUnplayedOnly=!this.lobbyUnplayedOnly;if(this.lobbyUnplayedOnly&&!this.completedGalleryIds)void this.loadGallery?.();})],
-   [filterLabel,extraCount>0,()=>this.showModal('filters')]];
-  return this.drawChips(x,y,w,compact?28:32,chips)+(compact?8:12);
+  return y+(compact?28:34);
  }
 
-export function drawChipsPanel(this:AppHost,x:number,y:number,w:number,h:number,chips:readonly(readonly[string,boolean,()=>void])[]){
-  const s=this.stage,font=12,chipGap=6,natural=chips.map(([label])=>s.measure(label,font,700)+(w<360?14:22)),scale=Math.min(1,(w-chipGap*(chips.length-1))/natural.reduce((a,b)=>a+b,0));
-  let cx=x;chips.forEach(([label,selected,action],index)=>{const cw=Math.floor(natural[index]*scale),r={x:cx,y,w:cw,h};s.frame(r,selected?'segment-berry-selected':'button-linen-normal');s.text(label,cx+(cw-s.measure(label,font,700))/2,y+(h-font)/2-1,font,selected?this.colors.onAccent:this.colors.ink,700,cw-4);s.hit(r,action);cx+=cw+chipGap;});
+export function drawChipsPanel(this:AppHost,x:number,y:number,w:number,h:number,chips:readonly(readonly[string,boolean,()=>void])[],fill=false){
+  const s=this.stage,font=12,chipGap=6,natural=chips.map(([label])=>s.measure(label,font,700)+(w<360?14:22));
+  const avail=Math.max(0,w-chipGap*(chips.length-1)),total=natural.reduce((a,b)=>a+b,0);
+  const scale=total>0?Math.min(1,avail/total):1,extra=fill&&total<avail?(avail-total)/Math.max(1,chips.length):0;
+  let cx=x;chips.forEach(([label,selected,action],index)=>{const last=index===chips.length-1,cw=fill&&last?Math.max(24,Math.round(x+w-cx)):Math.floor(natural[index]*scale+extra),r={x:cx,y,w:cw,h};s.frame(r,selected?'segment-berry-selected':'button-linen-normal');s.text(label,cx+(cw-s.measure(label,font,700))/2,y+(h-font)/2-1,font,selected?this.colors.onAccent:this.colors.ink,700,cw-4);s.hit(r,action);cx+=cw+chipGap;});
   return y+h;
  }
 
@@ -255,7 +247,7 @@ export function drawGalleryPanel(this:AppHost){
    ['我的图包',this.source==='owned',()=>view(()=>{this.source=this.source==='owned'?'all':'owned';})],
    [this.unplayedOnly?'✓ 未拼过':'未拼过',this.unplayedOnly,()=>this.changeListView(()=>{this.unplayedOnly=!this.unplayedOnly;if(this.unplayedOnly&&this.selected&&completed.has(this.selected))this.selected=null;})],
    [filterLabel,extraCount>0,()=>this.showModal('filters')]];
-  y=this.drawChips(left,y,gridW,portrait||landscape?30:34,chips)+10;
+  y=this.drawChips(left,y,gridW,portrait||landscape?30:34,chips,true)+10;
   if(pack){s.icon('book',{x:left+2,y,w:23,h:25});s.text(pack.title,left+30,y+5,13,this.colors.ink,700,gridW-130);s.text('查看所有图片',left+gridW-90,y+6,12,this.colors.muted,600);s.hit({x:left+gridW-98,y,w:98,h:30},()=>this.changeListView(()=>{this.packId=null;this.selected=null;}));y+=34;}
   const photos=this.availableGallery().filter(photo=>(this.direction==='all'||orientation(photo.id)===this.direction)&&(this.category==='全部'||this.category===photo.category)&&photo.title.includes(this.search)&&(!pack||pack.imageIds.includes(photo.id))&&(this.source==='all'||this.source==='free'&&!!this.freeGalleryIds?.has(photo.id)||this.source==='owned'&&owned.has(photo.id))&&(!this.unplayedOnly||!completed.has(photo.id)));
   const selected=this.selected?photoMap.get(this.selected)??null:null,sheetH=portrait&&selected?this.createPanelHeight(true):0,v=this.platform.viewport(),bottom=s.h-v.bottom-12-(sheetH?sheetH+4:0);
