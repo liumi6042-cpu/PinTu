@@ -261,6 +261,62 @@ test('admin room network diagnostics pill is hidden for normal players and works
  // Clicking collapse button folds card back to pill.
  hits[3].action();
  assert.equal(app.adminDiagExpanded,false);
+
+ // Hybrid Tap mode renders 混合✓ pill and 混合接通 details line.
+ app.realtime.diagnostics=()=>({connected:true,connections:1,reconnects:0,roomMessages:12,pendingActions:0,lastError:'',preview:'taptap-test',previewConnected:true,previewHybrid:true,previewFullRoster:false,previewMembersReady:2,previewMembersTotal:3,previewPeersConfirmed:1,previewPeersExpected:2,platformSendRate:6,platformSendPeak:10,platformSucceeded:40,platformFailed:0,platformReceived:35,platformCallbacks:36,previewRecoveryCount:0,previewIgnored:{notReady:0,payload:0,sender:0,binding:0,duplicate:0,frame:0},platformPeerReceives:[{name:'队友',total:35,hz:5}],previewMissingBindings:['挂机拼友'],previewDetail:'混合通道：已接通 1 位拼友，其余 1 位走原通道'});
+ texts.length=0;hits.length=0;
+ app.drawAdminDiagnostics();
+ assert.ok(texts.some(t=>t.includes('WS✓')&&t.includes('混合✓')),'hybrid pill shows 混合✓: '+JSON.stringify(texts));
+ const hybridReport=app.roomDiagnosticSnapshot().copyText;
+ assert.match(hybridReport,/平台：混合接通 · 绑定2\/3 · 确认1\/2/);
+ assert.match(hybridReport,/previewMissing=挂机拼友/);
+});
+
+test('RoomClient pauses background HTTP heartbeats while hidden and sends an immediate heartbeat on foreground return',async t=>{
+ t.mock.timers.enable({apis:['setTimeout','Date'],now:100000});
+ let isHidden=false,stateListener=null;
+ const calls=[];
+ const makeRoom=rev=>({id:'a'.repeat(32),title:'t',revision:rev,serverTime:Date.now(),completedAt:null,startedAt:100000,members:[{id:'p1',name:'我',color:'#f00',lastSeen:Date.now()}],leases:{},puzzle:{version:1,layout:'square',imageId:'x',cols:2,rows:2,seed:1,elapsed:0,groups:[{id:0,pieces:[0],dx:10,dy:10,locked:false}]}});
+ const realtime={
+  connected:true,
+  subscribeRoom:()=>()=>{},
+  subscribeCursors:()=>()=>{},
+  subscribeState:fn=>{stateListener=fn;return()=>{stateListener=null;};},
+  sendCursor:()=>true,
+ };
+ const client=new RoomClient({token:'t'.repeat(32),playerId:'p1',room:makeRoom(1)},{
+  realtime,
+  hidden:()=>isHidden,
+  now:()=>Date.now(),
+  performanceNow:()=>Date.now(),
+  randomId:()=>'b'.repeat(32),
+  emit(){},
+  fetch:async(_url,init)=>{
+   calls.push({method:init?.method??'GET',body:init?.body?JSON.parse(init.body):null,at:Date.now()});
+   return {ok:true,status:200,headers:{get:()=>null},json:async()=>makeRoom(calls.length+1)};
+  },
+ });
+ const detach=client.attach({network:null,networkReady:true,syncRemote(){},cancelNetworkDrag(){},playConnectionSound(){},fit(){}});
+ t.after(()=>detach());
+ for(let i=0;i<10;i++)await Promise.resolve();
+ assert.equal(calls.length,1,'initial foreground attach sends one heartbeat');
+ assert.equal(calls[0].body?.type,'heartbeat');
+
+ // Hide app + drop WS (just like mobile onHide): zero HTTP heartbeats or polls should fire while backgrounded.
+ isHidden=true;
+ client.setHidden(true);
+ realtime.connected=false;
+ stateListener?.(false);
+ for(let i=0;i<10;i++){t.mock.timers.tick(5000);for(let k=0;k<10;k++)await Promise.resolve();}
+ assert.equal(calls.length,1,'no background HTTP heartbeats/polls are sent for 50s while hidden');
+
+ // Return to foreground: immediate fresh heartbeat fires right away.
+ isHidden=false;
+ client.setHidden(false);
+ t.mock.timers.tick(1);
+ for(let k=0;k<15;k++)await Promise.resolve();
+ assert.equal(calls.length,2,'foreground return immediately sends fresh heartbeat');
+ assert.equal(calls[1].body?.type,'heartbeat');
 });
 
 test('enrichCursorsFromMembers fills missing level/decoration for slim cursors without overwriting explicit fields',()=>{

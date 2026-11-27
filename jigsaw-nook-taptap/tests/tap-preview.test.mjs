@@ -93,7 +93,7 @@ function transportFixture(t,{missing=false,stallSend=false,dropMessages=false,pl
   return {adapter,authority,manager,fallback,actions,emitCursors:data=>{for(const fn of cursorListeners)fn(data);}};
  }
  t.after(async()=>{for(const adapter of adapters)adapter.close();await settle();});
- return {get coordinator(){return coordinator;},restartCoordinator(){coordinator=createTapPreview(coordinatorOptions);for(const authority of authorities)authority.emit();},room,actor,records,sent,held,listeners,view,dropMessages:value=>{dropMessages=value;},async advance(ms){t.mock.timers.tick(ms);await settle();},async ready(){for(let n=0;n<30&&!adapters.every(a=>a.preview.connected);n++){await settle();t.mock.timers.tick(100);}await settle();assert.ok(adapters.every(a=>a.preview.connected));},get requestCount(){return requestCount;}};
+ return {get coordinator(){return coordinator;},restartCoordinator(){coordinator=createTapPreview(coordinatorOptions);for(const authority of authorities)authority.emit();},room,actor,records,sent,held,listeners,view,dropMessages:value=>{dropMessages=value;},async advance(ms){t.mock.timers.tick(ms);await settle();},async ready(){for(let n=0;n<30&&!adapters.every(a=>a.fullPreviewReady);n++){await settle();t.mock.timers.tick(100);}await settle();assert.ok(adapters.every(a=>a.fullPreviewReady));},get requestCount(){return requestCount;}};
 }
 
 test('two platform peers combine latest cursor/drag, bound message rate, ignore duplicate callbacks and never ACK or mutate a puzzle',async t=>{
@@ -162,11 +162,49 @@ test('a slow native send has one in-flight message and retains only the most rec
  f.held.shift()();await settle();await f.advance(100);assert.equal(moves().length,2);assert.equal(JSON.parse(moves()[1].msg).d[1],19);
 });
 
-test('an admitted legacy player causes all production peers to use the original transport',async t=>{
- const f=transportFixture(t,{production:true}),a=f.actor(0),b=f.actor(1);a.adapter.start();b.adapter.start();await f.ready();
- f.room.members.push({id:key(200),name:'普通客户端',color:'#123456',lastSeen:Date.now()});f.room.revision++;
- for(const actor of [a,b])actor.authority.emit();await settle();assert.equal(a.adapter.preview.connected,false);assert.equal(b.adapter.preview.connected,false);
- assert.equal(a.adapter.preview.sendMove(0,30,40),false);a.adapter.sendCursor({clientId:key(100),seq:1,point:{x:3,y:4}});assert.equal(a.fallback.length,1);
+test('an admitted non-Tap or backgrounded player switches Tap peers to per-peer hybrid mode instead of tearing down Tap',async t=>{
+ const f=transportFixture(t,{production:true}),a=f.actor(0),b=f.actor(1);
+ const seenA=[],seenB=[],movesB=[];
+ a.adapter.subscribeCursors(v=>seenA.push(v.cursors));
+ b.adapter.subscribeCursors(v=>seenB.push(v.cursors));
+ b.adapter.preview.subscribeMoves(v=>movesB.push(v));
+ a.adapter.start();b.adapter.start();await f.ready();
+
+ // A 3rd player (Web / old SDK / backgrounded) is present without Tap binding.
+ const legacyId=key(200);
+ f.room.members.push({id:legacyId,name:'普通客户端',color:'#123456',lastSeen:Date.now()});f.room.revision++;
+ for(const actor of [a,b])actor.authority.emit();await settle();
+
+ // Tap peers stay connected in hybrid mode: Tap stays active between a and b, while WS fallback still feeds the 3rd peer.
+ assert.equal(a.adapter.preview.connected,true);assert.equal(b.adapter.preview.connected,true);
+ assert.equal(a.adapter.diagnostics().previewHybrid,true);assert.equal(a.adapter.diagnostics().previewFullRoster,false);
+ assert.match(a.adapter.diagnostics().previewDetail,/混合通道：已接通 1 位拼友，其余 1 位走原通道/);
+ assert.equal(a.adapter.preview.sendMove(0,30,40),false,'hybrid sendMove also allows authoritative WS move for non-Tap peers');
+ a.adapter.sendCursor({clientId:key(100),seq:1,point:{x:3,y:4}});assert.equal(a.fallback.length,1,'hybrid sendCursor also forwards to WS for non-Tap peers');
+ await f.advance(300);
+ assert.ok(movesB.flat().some(m=>m.dx===30&&m.dy===40),'Tap peer still receives 10Hz Tap drag previews in hybrid mode');
+ assert.ok(seenB.at(-1)?.some(c=>c.playerId===f.room.members[0].id&&c.x===3&&c.y===4),'Tap peer still receives Tap cursor in hybrid mode');
+
+ // WS cursors from the non-Tap peer merge alongside Tap peer cursors without duplicating confirmed Tap peers.
+ b.adapter.sendCursor({clientId:key(101),seq:1,point:{x:70,y:80}});
+ await f.advance(300);
+ a.emitCursors({cursors:[
+  {playerId:f.room.members[1].id,name:'乙',color:'#654321',x:999,y:999,updatedAt:Date.now()},
+  {playerId:legacyId,name:'普通客户端',color:'#123456',x:15,y:25,updatedAt:Date.now()},
+ ],serverTime:Date.now()});
+ const merged=seenA.at(-1);
+ assert.equal(merged?.filter(c=>c.playerId===f.room.members[1].id).length,1,'confirmed Tap peer is not duplicated by WS');
+ assert.equal(merged?.find(c=>c.playerId===f.room.members[1].id)?.x,70,'confirmed Tap peer uses fresh Tap cursor');
+ assert.equal(merged?.find(c=>c.playerId===legacyId)?.x,15,'non-Tap peer cursor merges cleanly from WS');
+
+ // Once the backgrounded/legacy peer ages out (>22s without heartbeat), Tap peers upgrade back to full Tap offload.
+ const later=Date.now()+23000;
+ f.room.members[0].lastSeen=later;f.room.members[1].lastSeen=later;f.room.serverTime=later;f.room.leases[0].expires=later+10000;f.room.revision++;
+ for(const actor of [a,b])actor.authority.emit();await f.advance(100);
+ assert.equal(a.adapter.diagnostics().previewFullRoster,true);assert.equal(a.adapter.diagnostics().previewHybrid,false);
+ const fallbackBefore=a.fallback.length;
+ assert.equal(a.adapter.preview.sendMove(0,55,66),true,'full Tap roster suppresses redundant WS moves again');
+ a.adapter.sendCursor({clientId:key(100),seq:2,point:{x:8,y:9}});assert.equal(a.fallback.length,fallbackBefore);
 });
 
 test('an uncompleted native call times out to the original stream and cannot overlap a second singleton connection',async t=>{
@@ -403,13 +441,16 @@ test('a timed-out native call remains blocked from automatic singleton reuse',as
  for(let n=0;n<100;n++)await f.advance(100);assert.equal(calls,1);assert.equal(a.adapter.diagnostics().previewRecoveryBlocked,true);assert.match(a.adapter.diagnostics().previewDetail,/退出自测包/);
 });
 
-test('waiting for a late player binding is distinct from message timeout and restarts the handshake deadline',async t=>{
+test('waiting for a late player binding is distinct from message timeout and upgrades cleanly when bound',async t=>{
  const f=transportFixture(t),a=f.actor(0),b=f.actor(1);a.adapter.start();b.adapter.start();await f.ready();
  f.dropMessages(true);for(let n=0;n<50;n++)await f.advance(100);assert.equal(a.adapter.preview.connected,false);
- f.room.members.push({id:key(4),name:'迟到拼友',color:'#123456',lastSeen:Date.now()});f.room.revision++;a.authority.emit();b.authority.emit();await settle();
+ // When no other active peer has a ready Tap binding yet (b becomes inactive, late player joins unbound), handshake timer resets instead of timing out.
+ b.adapter.close();f.room.members[1].lastSeen=0;f.room.members.push({id:key(4),name:'迟到拼友',color:'#123456',lastSeen:Date.now()});f.room.revision++;a.authority.emit();await settle();
  for(let n=0;n<60;n++)await f.advance(100);
- const waiting=a.adapter.diagnostics();assert.equal(waiting.previewError,'');assert.equal(waiting.previewSessionJoined,true);assert.equal(waiting.previewMembersReady,2);assert.equal(waiting.previewMembersTotal,3);assert.deepEqual(waiting.previewMissingBindings,['迟到拼友']);assert.match(waiting.previewDetail,/等待 1 位玩家.*绑定/);
- f.dropMessages(false);const c=f.actor(2);c.adapter.start();await f.ready();assert.equal(a.adapter.preview.connected,true);assert.equal(c.adapter.preview.connected,true);assert.match(a.adapter.diagnostics().previewDetail,/双向验证/);
+ const waiting=a.adapter.diagnostics();assert.equal(waiting.previewError,'');assert.equal(waiting.previewSessionJoined,true);assert.equal(waiting.previewMembersReady,1);assert.equal(waiting.previewMembersTotal,2);assert.deepEqual(waiting.previewMissingBindings,['迟到拼友']);assert.match(waiting.previewDetail,/等待 1 位玩家.*绑定/);
+ f.dropMessages(false);const c=f.actor(2);c.adapter.start();
+ for(let n=0;n<30&&!(a.adapter.fullPreviewReady&&c.adapter.fullPreviewReady);n++){await settle();await f.advance(100);}
+ assert.equal(a.adapter.preview.connected,true);assert.equal(c.adapter.preview.connected,true);assert.match(a.adapter.diagnostics().previewDetail,/双向验证/);
 });
 
 test('platform preview cursors enrich level and decoration from local room members without enlarging wire frames and refresh on level-up',async t=>{
