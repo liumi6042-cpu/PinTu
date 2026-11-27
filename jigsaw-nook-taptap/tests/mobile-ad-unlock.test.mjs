@@ -90,19 +90,26 @@ test('splitting two ads across two pictures still enforces max one picture unloc
  }finally{f.close();}
 });
 
-test('redeem needs the matching completed challenge and pending challenges count toward daily cap until cancelled',()=>{
+test('redeem needs the matching completed challenge, failed/uncancelled challenges never consume daily cap, and redeem still enforces daily limit',()=>{
  const f=fixture();try{
   const u=f.unlock(ad1);
   assert.equal(u.redeem({completed:false}).data.code,'AD_EXPIRED');
   const other=f.call('/api/mobile/collection/unlock/redeem',{imageId:ad2,requestId:u.requestId,rewardToken:u.rewardToken,completed:true});assert.equal(other.status,403);assert.equal(other.data.code,'AD_REQUIRED');
   const stranger=f.call('/api/mobile/collection/unlock/redeem',{imageId:ad1,requestId:u.requestId,rewardToken:u.rewardToken,completed:true},'b'.repeat(64));assert.equal(stranger.status,403);
   const v=f.unlock(ad3);
-  // Two unredeemed challenges fill the daily pending budget until one is cancelled.
-  const third=f.call('/api/mobile/collection/unlock/challenge',{imageId:ad4,requestId:rid()});assert.equal(third.status,409);assert.equal(third.data.code,'AD_UNLOCK_DAILY_LIMIT');
+  // Two unredeemed/uncancelled challenges (e.g. failed ads whose /cancel dropped or raced) must NOT trip AD_UNLOCK_DAILY_LIMIT.
+  const w=f.unlock(ad4);
+  const x=f.unlock(ad1);
   assert.equal(f.call('/api/mobile/collection/unlock/cancel',{imageId:ad3,requestId:v.requestId,rewardToken:v.rewardToken}).status,200);
   assert.equal(v.redeem().data.code,'AD_EXPIRED','cancelled chance cannot be redeemed');
-  assert.equal(f.call('/api/mobile/collection/unlock/challenge',{imageId:ad4,requestId:rid()}).status,200,'cancelling frees the pending slot');
   assert.equal(f.db.prepare("SELECT COUNT(*) n FROM mobile_collection_owned WHERE kind='image'").get().n,0);
+  // Even with multiple open challenges, actual redemptions remain strictly capped at 2 watches / 1 unlock per Beijing day.
+  assert.equal(u.redeem().status,200);
+  assert.equal(x.redeem().status,200);
+  const over=w.redeem();
+  assert.equal(over.status,409);
+  assert.equal(over.data.code,'AD_UNLOCK_DAILY_LIMIT');
+  assert.equal(f.db.prepare("SELECT COUNT(*) n FROM mobile_collection_owned WHERE kind='image'").get().n,1);
  }finally{f.close();}
 });
 

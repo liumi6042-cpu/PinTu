@@ -543,10 +543,11 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/collection/craft'&&method==='POST')return replay(p,'collection-craft',input,now,()=>{const crafted=collection.craft(p.id,input.decorationId,now);return {...collectionView(),crafted};});
   if(path==='/api/mobile/collection/equip'&&method==='POST')return replay(p,'collection-equip',input,now,()=>{collection.equip(p.id,input.decorationId);return collectionView();});
   // 治愈时光: two completed rewarded ads unlock one picture permanently, capped at 2 unlock ads (1 picture) per Beijing day.
+  // Only redeemed watches/unlocks consume the daily quota; unredeemed challenges from failed/closed ads
+  // must not block retries, while /redeem atomically enforces the daily cap inside the DB transaction.
   if(path==='/api/mobile/collection/unlock/challenge'&&method==='POST'){
    if(typeof input.imageId!=='string')fail(400,'INVALID_AD_IMAGE','请选择要解锁的图片');
-   const pendingWatches=db.prepare("SELECT COUNT(*) n FROM mobile_ad_challenges WHERE owner=? AND kind='image' AND context LIKE 'unlock:%' AND used=0 AND expires_at>? AND request_id<>?").get(p.id,now,typeof input.requestId==='string'?input.requestId:'').n;
-   collection.assertAdUnlockAllowed(p.id,input.imageId,now,pendingWatches);
+   collection.assertAdUnlockAllowed(p.id,input.imageId,now,0);
    return challenge(p,{kind:'image',requestId:input.requestId,context:'unlock:'+input.imageId},now);
   }
   if(path==='/api/mobile/collection/unlock/redeem'&&method==='POST')return replay(p,'collection-unlock',input,now,()=>{
