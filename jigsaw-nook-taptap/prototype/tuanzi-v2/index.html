@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>团子去旅行 2.0 · 绘本风可玩交互原型</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="stage-shell">
+    <!-- 纯净 390×844 绘本风移动端游戏画面 -->
+    <section class="phone" id="phone-root" aria-label="团子去旅行 2.0 移动端画面">
+      <!-- 1. 小窝主场景 -->
+      <div class="screen-layer" id="screen-nook">
+        <img class="bg-full" id="room-bg-day1" src="./assets/rooms/day1-nocat.webp" alt="初秋小窝" />
+        <img class="bg-full" id="room-bg-day30" src="./assets/rooms/day30-nocat.webp" alt="初冬雪夜小窝" style="opacity:0;" />
+        <div class="vignette-soft"></div>
+
+        <!-- 窗外精准裁切雪花/细雨/春樱/秋叶 + 屋内台灯光晕与可拂金尘 -->
+        <canvas class="fx-canvas" id="atmosphere-canvas"></canvas>
+
+        <!-- 活态团子动画层（打盹呼吸 / 坐起等待 / 走去门口出发 / 纸条 / 归来扑怀 / 摸摸蹭手） -->
+        <div class="tuanzi-actor pose-nap" id="tuanzi-actor" title="点一点摸摸团子">
+          <img id="tuanzi-sprite" src="./assets/cat/tuanzi-nap.webp" alt="团子" />
+        </div>
+        <div class="zzz-layer show" id="zzz-layer">
+          <span>z</span><span>z</span><span>z</span>
+        </div>
+
+        <!-- 场景彩蛋交互热区（风铃轻响 / 常客阿胖） -->
+        <div class="windchime-hotspot" id="hotspot-windchime" title="轻碰贝壳风铃"></div>
+        <div class="apang-hotspot" id="hotspot-apang" title="摸摸来蹭午睡的大橘阿胖"></div>
+
+        <!-- 极简手作顶部 HUD -->
+        <button class="craft-btn wood-back" id="btn-mute" title="切换治愈音效">
+          <img src="./assets/uikit/wood-oval.webp" alt="" />
+          <svg id="icon-sound" viewBox="0 0 24 24">
+            <path d="M11 5L6 9H3v6h3l5 4V5z"/>
+            <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+          </svg>
+        </button>
+
+        <div class="hanging-plaque">
+          <img src="./assets/uikit/wood-sign.webp" alt="" />
+          <div class="p-date" id="plaque-date">十月十八</div>
+          <div class="p-sub" id="plaque-sub">初秋午后 · 晴风</div>
+        </div>
+
+        <button class="craft-btn wood-fish" id="btn-fish-tip" title="小鱼干数量">
+          <img class="plate" src="./assets/uikit/wood-oval.webp" alt="" />
+          <img class="ico" src="./assets/icons/fish.webp" alt="小鱼干" />
+          <span id="hud-fish">16</span>
+        </button>
+
+        <!-- 窗台晒好的小鱼干（动态出现） -->
+        <button class="craft-btn sill-drop" id="btn-sill" style="display:none;">
+          <img src="./assets/icons/fish.webp" alt="" />
+          <span id="sill-gain">+4</span>
+        </button>
+
+        <!-- 久别拂尘轻提示（仅 dustLevel > 0 显示） -->
+        <div class="dust-cue" id="dust-cue" style="display:none;">
+          <img src="./assets/uikit/paper-ribbon.webp" alt="" />
+          <span>轻滑画面，拂去阳光薄尘</span>
+        </div>
+
+        <!-- 门口红丝带信捆火漆标记（重逢待拆时发光） -->
+        <button class="craft-btn bundle-seal" id="btn-bundle-seal" style="display:none;" title="拆开咕咕扎好的信捆">
+          <img src="./assets/uikit/wax-paw.webp" alt="" />
+          <div class="cnt" id="bundle-count">5</div>
+        </button>
+
+        <!-- 团子轻语纸带（摸摸/出发/重逢弹出） -->
+        <div class="tuanzi-ribbon" id="tuanzi-ribbon">
+          <img src="./assets/uikit/paper-ribbon.webp" alt="" />
+          <span id="tuanzi-ribbon-text"></span>
+        </div>
+
+        <!-- 地毯上的手写状态轻语（无框呼吸感） -->
+        <div class="rug-whisper" id="rug-whisper">午后的阳光暖烘烘的，团子正在垫子上打盹。</div>
+
+        <!-- 底部 4 枚无边框水彩手作导航徽章（常规态） -->
+        <nav class="bottom-medallions" id="bottom-nav">
+          <button class="craft-btn medallion" data-open="bag">
+            <div class="medallion-disc"><img src="./assets/icons/bag.webp" alt="行囊" /></div>
+            <span class="medallion-label">行囊</span>
+          </button>
+          <button class="craft-btn medallion" data-open="shop">
+            <div class="medallion-disc"><img src="./assets/uikit/teapot.webp" alt="杂货" /></div>
+            <span class="medallion-label">杂货</span>
+          </button>
+          <button class="craft-btn medallion" data-open="mailbox">
+            <div class="medallion-disc">
+              <img src="./assets/icons/envelope.webp" alt="信箱" />
+              <div class="wax-dot" id="mail-badge" style="display:none;">
+                <img src="./assets/uikit/wax-paw.webp" alt="" />
+                <span id="mail-badge-num">1</span>
+              </div>
+            </div>
+            <span class="medallion-label">信箱</span>
+          </button>
+          <button class="craft-btn medallion" data-open="scrapbook">
+            <div class="medallion-disc"><img src="./assets/icons/journal.webp" alt="手账" /></div>
+            <span class="medallion-label">手账</span>
+          </button>
+        </nav>
+
+        <!-- 重逢专属底部火漆手账入口（离家 >= 7 天首次归来时替代底栏） -->
+        <div class="reunion-craft-cta" id="reunion-cta" style="display:none;">
+          <div class="sub-lyric" id="reunion-cta-sub">离开的三十天，已被记进了手账里</div>
+          <button class="craft-btn wax-cta-btn" id="btn-open-reunion">
+            <img class="ribbon-bg" src="./assets/uikit/paper-ribbon.webp" alt="" />
+            <span class="cta-text">翻开重逢手账</span>
+            <img class="seal-on" src="./assets/uikit/wax-paw.webp" alt="" />
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 奶奶的旧布包（摊在木桌上的实体装囊界面） -->
+      <div class="screen-layer hidden" id="screen-bag">
+        <img class="bg-full" src="./assets/rooms/bag-desk-bg.webp" alt="摊开的旧布包" />
+        <button class="craft-btn wood-back" data-close="nook">
+          <img src="./assets/uikit/wood-oval.webp" alt="" />
+          <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+
+        <div class="cloth-tabs" id="bag-tabs">
+          <button class="craft-btn cloth-tab active" data-bagtab="bag">旧布包</button>
+          <button class="craft-btn cloth-tab" data-bagtab="pantry">备品篮</button>
+          <button class="craft-btn cloth-tab" data-bagtab="treat">招待碟</button>
+        </div>
+
+        <div class="bag-pockets" id="bag-pockets"></div>
+
+        <div class="bag-whisper-ribbon">
+          <img src="./assets/uikit/paper-ribbon.webp" alt="" />
+          <span id="bag-whisper">放一份口粮进布包，团子就会出门旅行</span>
+        </div>
+
+        <div class="tray-items" id="bag-tray"></div>
+
+        <div class="bag-actions">
+          <button class="craft-btn wood-btn-sm" data-close="nook">
+            <img src="./assets/uikit/wood-oval.webp" alt="" />
+            <span>先放着</span>
+          </button>
+          <button class="craft-btn bag-go-btn" id="btn-send-off">
+            <img class="ribbon-bg" src="./assets/uikit/paper-ribbon.webp" alt="" />
+            <span>装好，送它出门</span>
+            <img class="seal-on" src="./assets/uikit/wax-paw.webp" alt="" />
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. 实体棉纸手账容器（复用给：重逢手账 / 信箱明信片与来信 / 杂货铺 / 拾光剪贴簿） -->
+      <div class="screen-layer hidden" id="screen-book">
+        <img class="bg-full" src="./assets/rooms/journal-bg.webp" alt="线装手工棉纸本" />
+        <div class="journal-page" id="book-content"></div>
+      </div>
+
+      <!-- 柔和纸带轻提示 -->
+      <div class="toast-ribbon" id="toast-ribbon">
+        <img src="./assets/uikit/paper-ribbon.webp" alt="" />
+        <span id="toast-text"></span>
+      </div>
+    </section>
+
+    <!-- 右侧独立「时光快进与动效测试器」（与手机画面分离，方便一键感受 4h/1天/7天/30天与各种天气/团子动效） -->
+    <aside class="debug-dock" aria-label="原型时光快进与动效调试面板">
+      <h1>时光快进控制台</h1>
+      <p class="d-sub">
+        用真实公历日期驱动离线世界。点下方按钮快进时光，亲手感受「离开 30 天跨入初冬雪夜、阿胖入住、重逢手账、窗外雪花粒子与团子动效」。
+      </p>
+
+      <div class="d-group">
+        <div class="d-group-title">
+          <span>离线时光快进（确定性惰性演进）</span>
+          <span id="dbg-days" style="color:#a94737;">相伴第 1 天</span>
+        </div>
+        <div class="d-btn-grid">
+          <button class="d-btn" data-skip-hours="4">+4 小时</button>
+          <button class="d-btn" data-skip-days="1">+1 天</button>
+          <button class="d-btn" data-skip-days="7">+7 天</button>
+          <button class="d-btn accent" data-skip-days="30">+30 天重逢</button>
+          <button class="d-btn" data-skip-days="90">+90 天跨季</button>
+          <button class="d-btn" id="btn-reset-day1">重置 Day 1</button>
+        </div>
+      </div>
+
+      <div class="d-group">
+        <div class="d-group-title">
+          <span>窗外粒子气候（精准裁切在窗格内）</span>
+          <span id="dbg-weather" style="color:#6d4f3d;">自动公历</span>
+        </div>
+        <div class="d-btn-grid">
+          <button class="d-btn active" data-weather="auto">自动公历</button>
+          <button class="d-btn" data-weather="snow">初冬飘雪</button>
+          <button class="d-btn" data-weather="rain">雨巷细雨</button>
+          <button class="d-btn" data-weather="sakura">春樱微风</button>
+          <button class="d-btn" data-weather="firefly">夏夜萤火</button>
+          <button class="d-btn" data-weather="autumn">秋日晴风</button>
+        </div>
+      </div>
+
+      <div class="d-group">
+        <div class="d-group-title"><span>团子动效演示</span></div>
+        <div class="d-btn-grid two">
+          <button class="d-btn" id="btn-demo-pet">摸摸团子蹭手</button>
+          <button class="d-btn" id="btn-demo-depart">演示小碎步出门</button>
+          <button class="d-btn" id="btn-demo-return">演示背包装满回家</button>
+          <button class="d-btn" id="btn-demo-day30">一键直达 30 天雪夜</button>
+        </div>
+      </div>
+
+      <div class="d-group">
+        <div class="d-group-title">
+          <span>世界演进日志</span>
+          <span id="dbg-plant" style="color:#5c7a57;">双叶时光小苗</span>
+        </div>
+        <div class="d-log" id="dbg-log"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
