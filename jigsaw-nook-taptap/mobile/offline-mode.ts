@@ -5,6 +5,8 @@ import type {MobileLevelsView} from '../h5/mobile-api';
 import type {RoomTicket,RoomClientDependencies} from '../lib/room-client';
 import {readOfflineCatalog} from '../lib/offline-catalog-types';
 import {cacheServerLevels,createOfflineRoomServer,offlineLevelsView,pendingOfflineClears,readCachedServerLevels,syncOfflineClears} from '../lib/offline-play';
+import {placedCount} from '../lib/puzzle-engine';
+import type {CachedRoomEntry} from '../lib/solo-play';
 
 export type OfflineInput={kind:'level';levelId:string}|{kind:'free';imageId:string;pieces:number};
 export const OFFLINE_REQUIRED='需要联网才能使用';
@@ -48,12 +50,26 @@ export class OfflineMode{
    if(result.accepted)note(result.energy>0?'离线通关已同步，体力 +'+result.energy:'离线通关已同步');
   }catch{}finally{this.syncing=false;}
  }
- drawPage(s:Stage,scroll:number,actions:{paragraph:(text:string,x:number,y:number,w:number,size:number)=>number;selectedChapter:(view:MobileLevelsView)=>MobileLevelsView['chapters'][number]|null;chapter:(chapter:MobileLevelsView['chapters'][number],view:MobileLevelsView,height:number)=>void;asset:(src:string)=>string;reconnect:()=>void;launch:(input:OfflineInput)=>void;invalidate:()=>void}){
+ drawPage(s:Stage,scroll:number,actions:{paragraph:(text:string,x:number,y:number,w:number,size:number)=>number;selectedChapter:(view:MobileLevelsView)=>MobileLevelsView['chapters'][number]|null;chapter:(chapter:MobileLevelsView['chapters'][number],view:MobileLevelsView,height:number)=>void;asset:(src:string)=>string;reconnect:()=>void;launch:(input:OfflineInput)=>void;invalidate:()=>void;cachedRooms?:CachedRoomEntry[];resumeCached?:(roomId:string)=>void}){
   const view=this.view;if(!view)return 0;
   const portrait=s.h>s.w,x=12,w=s.w-24,top=this.platform.viewport().top+12;
   let y=top-scroll;
   y=actions.paragraph('离线模式：故事关卡和免费图片可以直接玩，联网后自动同步通关',x,y,w,14)+12;
   s.button({x,y,w:132,h:36},'重新连接',actions.reconnect,{fontSize:13});y+=48;
+  const cached=actions.cachedRooms??[];
+  if(cached.length&&actions.resumeCached){
+   s.text('继续未完成的拼图',x,y,18,s.palette.ink,800,w);y+=30;
+   for(const entry of cached.slice(0,3)){
+    const total=entry.snapshot.puzzle.cols*entry.snapshot.puzzle.rows,placed=placedCount(entry.snapshot.puzzle);
+    const title=entry.snapshot.title||'上次拼图',r={x,y,w,h:54};
+    s.frame(r,'button-linen-normal');
+    s.text(title,x+12,y+8,14,s.palette.ink,800,w-116);
+    s.text(placed+'/'+total+' 片 · 离线可用，联网后自动同步',x+12,y+30,11,s.palette.muted,600,w-116);
+    s.button({x:x+w-92,y:y+10,w:80,h:34},'继续拼',()=>actions.resumeCached!(entry.roomId),{tone:'berry',fontSize:12});
+    y+=62;
+   }
+   y+=6;
+  }
   const chapter=actions.selectedChapter(view);if(chapter){
    const height=portrait?Math.ceil(chapter.levels.length/2)*((w-28)/2/1.5+8)+350:Math.max(300,s.h-top-70);
    s.withViewport({x:0,y,w:s.w,h:height},()=>actions.chapter(chapter,view,height));y+=height+18;

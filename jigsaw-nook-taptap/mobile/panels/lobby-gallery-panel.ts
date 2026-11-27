@@ -108,10 +108,16 @@ export function drawLobbyStartupPanel(this:AppHost){
   const s=this.stage,left=12,width=Math.min(1120,s.w-24),x=(s.w-width)/2,y=this.bodyTop+8;
   s.icon('piece',{x,y,w:28,h:28});s.text('拼图大厅',x+36,y+2,23,this.colors.ink,800,width-42);
   if(this.startupError||this.client.authRequired){
-   const w=Math.min(440,width),cx=x+(width-w)/2,cy=y+60;this.extent=250;
+   const w=Math.min(440,width),cx=x+(width-w)/2,cy=y+60;
    const by=this.paragraph(this.client.authRequired?'登录网站账号，即可继续使用已有进度与收藏。':this.startupError,cx+left,cy,w-24,15)+20;
-   const offline=!!this.offline.catalog&&!this.formalWeb,retry=()=>void this.start();if(offline)s.button({x:cx+12,y:by,w:w-24,h:40},'离线拼图',()=>this.enterOffline(),{tone:'berry'});s.button({x:cx+12,y:by+(offline?50:0),w:w-24,h:40},'重新连接',retry,{tone:offline?'cream':'berry'});
-   if(this.formalWeb){s.button({x:cx+12,y:by+50,w:w-24,h:38},'登录 / 注册',()=>this.openWeb('account'));this.drawWebLinks(cx+12,by+108,w-24);}else{let next=by+(offline?104:54);if(this.platform.config.tapAuthorizationTest){s.button({x:cx+12,y:next,w:w-24,h:40},this.authorizationTesting?'取消昵称授权测试':'重新走昵称授权',()=>void this.reauthorizeNickname(),{disabled:this.busy&&!this.authorizationTesting});next+=54;next=this.paragraph(this.platform.tapIdentityDiagnostics?.()??'昵称授权自测',cx+12,next,w-24,11)+20;}if(this.platform.config.buildVersion)s.text('版本 '+this.platform.config.buildVersion,cx+12,next,11,this.colors.muted,500,w-24);}return;
+   const cached=!this.client.authRequired?this.cachedOfflineRooms():[];
+   const offline=!!this.offline.catalog&&!this.formalWeb,retry=()=>void this.start();
+   let btnY=by;
+   if(cached.length){const first=cached[0];s.button({x:cx+12,y:btnY,w:w-24,h:40},'离线继续「'+(first.snapshot.title||'上次拼图')+'」',()=>void this.run(()=>this.resumeCachedRoom(first.roomId)),{tone:'gold'});btnY+=50;}
+   if(offline){s.button({x:cx+12,y:btnY,w:w-24,h:40},'离线拼图',()=>this.enterOffline(),{tone:'berry'});btnY+=50;}
+   s.button({x:cx+12,y:btnY,w:w-24,h:40},'重新连接',retry,{tone:offline||cached.length?'cream':'berry'});btnY+=50;
+   this.extent=Math.max(250,btnY-this.bodyTop+100);
+   if(this.formalWeb){s.button({x:cx+12,y:btnY,w:w-24,h:38},'登录 / 注册',()=>this.openWeb('account'));this.drawWebLinks(cx+12,btnY+58,w-24);}else{let next=btnY+4;if(this.platform.config.tapAuthorizationTest){s.button({x:cx+12,y:next,w:w-24,h:40},this.authorizationTesting?'取消昵称授权测试':'重新走昵称授权',()=>void this.reauthorizeNickname(),{disabled:this.busy&&!this.authorizationTesting});next+=54;next=this.paragraph(this.platform.tapIdentityDiagnostics?.()??'昵称授权自测',cx+12,next,w-24,11)+20;}if(this.platform.config.buildVersion)s.text('版本 '+this.platform.config.buildVersion,cx+12,next,11,this.colors.muted,500,w-24);}return;
   }
   s.text('正在读取房间与玩家信息…',x,y+43,13,this.colors.muted,500,width);
   const columns=this.desktop?Math.max(3,Math.min(4,Math.floor(width/240))):s.w>=640?3:2,gap=12,cw=(width-gap*(columns-1))/columns,h=Math.min(205,cw*.72+48),top=y+79;

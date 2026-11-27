@@ -174,3 +174,10 @@ export function isNetworkFailure(error:unknown){
  if(typeof status==='number'&&status>=400)return false;
  return status===undefined||status===null||status===0||error instanceof TypeError||['TimeoutError','AbortError'].includes((error as {name?:string}|null)?.name??'');
 }
+export function isServerUnavailable(error:unknown){
+ const status=(error as {status?:unknown}|null)?.status;
+ return typeof status==='number'&&status>=500&&status<=599;
+}
+export function isOfflineFallbackError(error:unknown){
+ return isNetworkFailure(error)||isServerUnavailable(error);
+}

@@ -3,7 +3,7 @@ import {settings} from './site-settings';
 
 /** Presentation-only DTOs. The existing managed store remains the only wallet. */
 type Data=Record<string,any>;
-export const SHARED_CAPABILITIES={energy:false,ads:false,albumTarget:'pc',createTickets:false,cheers:true,roomLimit:null,supportedPieces:[108,300,500],social:{friends:true,search:true,privateMessages:false,reports:false,blocking:false,remove:true,ignore:true,presence:false,codeFormat:'hex12'}} as const;
+export const SHARED_CAPABILITIES={energy:false,ads:false,soloLocalPlay:true,albumTarget:'pc',createTickets:false,cheers:true,roomLimit:null,supportedPieces:[108,300,500],social:{friends:true,search:true,privateMessages:false,reports:false,blocking:false,remove:true,ignore:true,presence:false,codeFormat:'hex12'}} as const;
 export const SHARED_COMPAT_URLS={account:'/account',security:'/account/security',membership:'/membership',uploads:'/upload',legacyLobby:'/play',legacyRoom:'/play?room={id}',largePuzzles:'/play',privacy:'/privacy',terms:'/terms',feedback:'/feedback'};
 export function sharedRequestAllowed(request:Request){
  const origin=new URL(request.url).origin,source=request.headers.get('Origin'),site=request.headers.get('Sec-Fetch-Site');

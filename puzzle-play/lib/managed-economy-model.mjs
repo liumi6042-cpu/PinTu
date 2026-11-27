@@ -94,9 +94,18 @@ export function recordManagedRoom(state,room,options){
   watermark.completed=true;
   if(room.completedAt>=activationAt&&watermark.rewarded>0){
    const tuning=settings.collection,n=watermark.rewarded;
-   managedReward(state,'completion:'+room.id,{coins:Math.ceil(n*tuning.completionCoinRatio),fragments:Math.min(tuning.completionFragmentMaximum,Math.max(tuning.completionFragmentMinimum,Math.floor(n/tuning.fragmentContributionStep)))},settings,now);
+   const coins=Math.ceil(n*tuning.completionCoinRatio),fragments=Math.min(tuning.completionFragmentMaximum,Math.max(tuning.completionFragmentMinimum,Math.floor(n/tuning.fragmentContributionStep)));
+   managedReward(state,'completion:'+room.id,{coins,fragments},settings,now);
+   watermark.completionCoins=coins;watermark.completionFragments=fragments;
    if(availableImage&&n>=tuning.catalogMinimumContributions){const levels=state.artworks[room.imageId]??=[];if(!levels.includes(pieces))levels.push(pieces);awardManagedMilestones(state,albums,settings,now);}
   }
+ }else if(room.completedAt&&watermark.completed&&delta>0&&room.completedAt>=activationAt&&watermark.rewarded>0){
+  const tuning=settings.collection,n=watermark.rewarded,prev=state.receipts['completion:'+room.id];
+  const paidCoins=watermark.completionCoins??prev?.coins??0,paidFragments=watermark.completionFragments??prev?.fragments??0;
+  const targetCoins=Math.ceil(n*tuning.completionCoinRatio),targetFragments=Math.min(tuning.completionFragmentMaximum,Math.max(tuning.completionFragmentMinimum,Math.floor(n/tuning.fragmentContributionStep)));
+  const deltaCoins=Math.max(0,targetCoins-paidCoins),deltaFragments=Math.max(0,targetFragments-paidFragments);
+  if(deltaCoins>0||deltaFragments>0){managedReward(state,'completion-late:'+room.id+':'+n,{coins:deltaCoins,fragments:deltaFragments},settings,now);watermark.completionCoins=paidCoins+deltaCoins;watermark.completionFragments=paidFragments+deltaFragments;}
+  if(availableImage&&n>=tuning.catalogMinimumContributions){const levels=state.artworks[room.imageId]??=[];if(!levels.includes(pieces))levels.push(pieces);awardManagedMilestones(state,albums,settings,now);}
  }
  if(delta)managedBeginnerTasks(state,settings,now);
  return delta;

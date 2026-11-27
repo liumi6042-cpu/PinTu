@@ -162,9 +162,9 @@ test('failed progress or replay receipt writes roll back the whole batch, profil
 test('GameClient parses the new capability like soloLocalPlay and syncOfflineClears consumes real server replies',async t=>{
  const bundled=await build({stdin:{contents:"export {GameClient} from './mobile/client.ts'; export {recordOfflineClear,pendingOfflineClears,syncOfflineClears} from './lib/offline-play.ts';",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node',logLevel:'silent'});
  const {GameClient,recordOfflineClear,pendingOfflineClears,syncOfflineClears}=await import('data:text/javascript;base64,'+Buffer.from(bundled.outputFiles[0].text+'\n//# sourceURL=offline-clears-client-test.mjs').toString('base64'));
- for(const [cookie,flag,expected]of [[false,true,true],[false,false,false],[false,undefined,false],[false,'true',false],[true,true,false]]){
+ for(const [cookie,flag,expectedOffline,expectedSolo]of [[false,true,true,true],[false,false,false,false],[false,undefined,false,false],[false,'true',false,false],[true,true,false,true]]){
   const values=new Map(),platform={config:{id:cookie?'web':'wechat',identityMode:cookie?'web-cookie':undefined,apiBase:'/h5'},storage:{get:key=>values.get(key)??null,set:(key,value)=>values.set(key,value)},request:async({url})=>({status:200,headers:{},data:url.endsWith('/config')?{mobileMode:cookie?'web-managed-shared':'mobile-v3-isolated',capabilities:{soloLocalPlay:flag,offlineLevelClears:flag}}:url.endsWith('/session')?{token:owner}:{level:1,energy:60,energyCap:60,supply:{}}})};
-  const client=new GameClient(platform);await client.start();assert.equal(client.config.capabilities.offlineLevelClears,expected);assert.equal(client.config.capabilities.soloLocalPlay,expected);
+  const client=new GameClient(platform);await client.start();assert.equal(client.config.capabilities.offlineLevelClears,expectedOffline);assert.equal(client.config.capabilities.soloLocalPlay,expectedSolo);
  }
  const f=fixture(t),values=new Map(),storage={get:key=>values.get(key)??null,set:(key,value)=>values.set(key,value),remove:key=>values.delete(key)};
  recordOfflineClear(storage,{...f.clear(),roomId:rid()});recordOfflineClear(storage,{...f.clear('ch1-3'),roomId:rid()});

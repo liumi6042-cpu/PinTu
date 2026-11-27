@@ -388,7 +388,7 @@ export function createMobileService(options={}){
   requireArtworkClient(room,request);room.playerLimit=seatLimit(room);
   if(room.diagnostic===true&&(room.ownerId!==p.id||!diagnosticAllowed(p.id)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
   if(room.visibility==='private'&&room.ownerId!==p.id&&!room.admitted?.[p.id]&&input.inviteCode!==room.mobileInviteCode)fail(403,'INVITE_REQUIRED','私人房间需要有效邀请码');
-  const token=id(),known=room.members.some(m=>m.guestId===p.id),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);tapPreview.releaseMember(room.id,member.id);if(!known)events.record(p.id,'room-join',room.id,{},now);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
+  const token=id(),known=room.members.some(m=>m.guestId===p.id),member=engine.addMember(room,id(),p.name,hash(token),now,undefined,p.id);room.mobileJoinedAt??={};if(room.mobileJoinedAt[p.id]==null)room.mobileJoinedAt[p.id]=known?member.joinedAt:now;tapPreview.releaseMember(room.id,member.id);if(!known)events.record(p.id,'room-join',room.id,{},now);social.recordTablemates(p.id,room.members.filter(m=>m.guestId&&m.guestId!==p.id&&now-m.lastSeen<engine.ONLINE_MS).map(m=>m.guestId),room,now);bindFirstRoom(p,room);room.revision++;saveRoom(room);roomHistory.joined(p.id,room,now);pruneRoomCursors(room);saveProfile(p);
   return {token,playerId:member.id,room:snapshotView(room,now,null,p.id),...(room.ownerId===p.id&&room.mobileInviteCode?{inviteCode:room.mobileInviteCode}:{})};
  }
  // With a receipt, only receipt.store(result) is kept (marked receipt:1) and a retry gets receipt.restore(stored).
@@ -401,7 +401,97 @@ export function createMobileService(options={}){
  }
  // A drop receipt keeps only the contribution; the whole room reply was ~12 KB per drop.
  const roomActionReceipt=result=>result.mobileContribution?{mobileContribution:result.mobileContribution}:{};
- const soloBatch=createSoloBatch({enabled:soloLocalPlay,roomActionReceipt,replay,snapshotView,profileView,engine,fail,requestKey});
+ function recordPlayerSnaps(room,ownerId,beforeGroups,groupId){
+  const beforeGroup=beforeGroups.find(g=>g.id===groupId),afterGroup=room.puzzle.groups.find(g=>g.id===groupId);
+  if(!beforeGroup||!afterGroup)return;
+  const snaps=(room.mobilePlayerSnaps??={})[ownerId]??={keys:[],forgiving:0};
+  const keySet=new Set(snaps.keys),{cols,rows}=room.puzzle,beforePieces=new Set(beforeGroup.pieces);
+  const addedPieces=afterGroup.pieces.filter(id=>!beforePieces.has(id));
+  if(addedPieces.length){
+   const addedSet=new Set(addedPieces);
+   for(const piece of beforePieces)for(const n of engine.neighbors(piece,cols,rows))if(addedSet.has(n))keySet.add('J:'+Math.min(piece,n)+':'+Math.max(piece,n));
+  }
+  if(afterGroup.locked){
+   const beforeLocked=new Set(beforeGroups.filter(g=>g.locked).flatMap(g=>g.pieces));
+   for(const piece of afterGroup.pieces)if(!beforeLocked.has(piece))keySet.add('L:'+piece);
+  }
+  snaps.keys=[...keySet];
+ }
+ function grantContribution(room,p,{requestId,groupId,beforeGroups,forgiving=false},now){
+  room.mobileContributionXp??=Object.fromEntries(Object.entries(room.achievements?.contributors??{}).map(([owner,value])=>[owner,value.count]));
+  const autoRefill=(profile,{cost,cap})=>{
+   const need=Math.max(1,cost-profile.energy);
+   const taskGift=tasks.openAutoGift(profile,{group:'task',minEnergy:need,cap,requestId,now});
+   if(taskGift)return taskGift;
+   const tenGift=tasks.openAutoGift(profile,{group:'ten',minEnergy:need,cap,requestId,now});
+   if(tenGift)return tenGift;
+   if(profile.supply.energy>0&&cap>=cost){
+    const gained=Math.max(0,cap-profile.energy);
+    profile.supply.energy--;profile.energy=Math.max(profile.energy,cap);profile.energyAt=now;
+    return {id:'supply:'+requestId,source:'supply',kind:'energy',title:'补满体力包',energy:gained,xp:0,coins:0,levels:0,fullEnergy:true};
+   }
+   if(cap>=cost){
+    const inviteRefill=tasks.openAutoGift(profile,{group:'invite-refill',minEnergy:need,cap,requestId,now});
+    if(inviteRefill)return inviteRefill;
+   }
+   return null;
+  };
+  const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,freeRoom:room.mobileMode==='postcard',unlimitedEnergy:unlimitedEnergyToday(p,now),autoRefill,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});
+  if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:beforeGroups})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
+  room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
+  p.lastReward.giftsAdded=tasks.record(p,room,requestId,reward.pendingGift,now,engine.ONLINE_MS);
+  if(retention&&room.mobileMode==='daily')try{
+   const date=engine.dailyPuzzleDate(dailyClock(now));if(room.mobileDay===date)retention.dailyMerge(p.id,date,now);
+  }catch(error){console.warn('mobile retention daily merge failed:',error.message);}
+  const coins=collection.contribution(p.id,room.id,requestId,now)+tasks.beginner(p.id,now).coins;p.lastReward.coins=coins;
+  return {requestId,groupId,creditedXp:reward.xp,creditedCoins:coins,...(reward.autoSupplyUsed?{autoSupplyUsed:reward.autoSupplyUsed}:{}),...(forgiving?{forgiving:true}:{})};
+ }
+ function settleLate(room,now,p){
+  if(room.diagnostic===true||!room.completedAt||!room.mobileSettled)return;
+  const contrib=room.achievements?.contributors?.[p.id]?.count??0;
+  if(contrib<=0)return;
+  const existing=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,p.id);
+  if(existing&&existing.contribution>=contrib)return;
+  if(!existing){
+   const inserted=db.prepare('INSERT OR IGNORE INTO mobile_settlements VALUES(?,?,?,?,?)').run(room.id,p.id,0,contrib,now);
+   if(inserted.changes){
+    settlementGeneration++;
+    events.record(p.id,'room-complete',room.id,{contribution:contrib,late:true},now);
+    const collected=collection.complete(p.id,room,contrib,now);
+    p.lastReward={...p.lastReward,completion:{roomId:room.id,id:p.id,contribution:contrib,energy:0,...(collected??{})},at:now};
+    tuanziSide('late-completion',()=>tuanzi.roomCompleted(room,[p.id],now));
+   }
+  }else{
+   db.prepare('UPDATE mobile_settlements SET contribution=? WHERE room_id=? AND owner=?').run(contrib,room.id,p.id);
+   settlementGeneration++;
+   const upgraded=collection.upgradeCompletion(p.id,room,contrib,now);
+   p.lastReward={...p.lastReward,completion:{roomId:room.id,id:p.id,contribution:contrib,energy:existing.energy,...(upgraded??{})},at:now};
+  }
+  if(p.firstRoomId===room.id&&!p.firstRoomCompleted)p.firstRoomCompleted=true;
+  saveProfile(p);
+ }
+ function awardForgiving({room,member,p,op,snapKey,now}){
+  if(room.diagnostic===true)return {};
+  const firstJoinedAt=room.mobileJoinedAt?.[p.id]??member.joinedAt??now;
+  if(room.completedAt!==null&&firstJoinedAt>room.completedAt)fail(409,'CONFLICT','拼图已完成，无法同步该步');
+  member.name=p.name;member.lastSeen=now;
+  (room.participants??={})[p.id]=member.name;
+  const totalPieces=room.puzzle.cols*room.puzzle.rows;
+  const snaps=(room.mobilePlayerSnaps??={})[p.id]??={keys:[],forgiving:0};
+  const currentContrib=room.achievements?.contributors?.[p.id]?.count??0;
+  if(snaps.keys.includes(snapKey)||currentContrib>=totalPieces||snaps.forgiving>=totalPieces){
+   saveRoom(room);
+   return {};
+  }
+  const beforeGroups=room.puzzle.groups;
+  engine.recordRoomContribution(room,member,now);
+  const mobileContribution=grantContribution(room,p,{requestId:op.requestId,groupId:op.groupId,beforeGroups,forgiving:true},now);
+  snaps.keys.push(snapKey);snaps.forgiving++;
+  room.revision++;engine.recordRoomChange(room,beforeGroups);
+  saveRoom(room);saveProfile(p);
+  return {mobileContribution};
+ }
+ const soloBatch=createSoloBatch({enabled:soloLocalPlay,roomActionReceipt,replay,snapshotView,profileView,engine,fail,requestKey,awardForgiving,onBatchFinished({room,p,now}){if(room.completedAt!==null){if(room.mobileSettled)settleLate(room,now,p);else{settle(room,now,p);saveRoom(room);}}}});
  function challenge(p,{kind,requestId,context='supply',authorization='',allowSkip=false},now){
   if(!requestKey(requestId))fail(400,'REQUEST_ID_REQUIRED','请求编号无效');
   const sharing=context.startsWith('share:');if(sharing?!shareRewards:!adsEnabled&&!(allowSkip&&!web))fail(503,sharing?'SHARE_UNAVAILABLE':'ADS_UNAVAILABLE',sharing?'当前平台未开放分享奖励':'当前平台未开放广告');
@@ -888,31 +978,8 @@ export function createMobileService(options={}){
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
    if(added&&room.diagnostic!==true){
-    const autoRefill=(profile,{cost,cap})=>{
-     const need=Math.max(1,cost-profile.energy);
-     const taskGift=tasks.openAutoGift(profile,{group:'task',minEnergy:need,cap,requestId:input.requestId,now});
-     if(taskGift)return taskGift;
-     const tenGift=tasks.openAutoGift(profile,{group:'ten',minEnergy:need,cap,requestId:input.requestId,now});
-     if(tenGift)return tenGift;
-     if(profile.supply.energy>0&&cap>=cost){
-      const gained=Math.max(0,cap-profile.energy);
-      profile.supply.energy--;profile.energy=Math.max(profile.energy,cap);profile.energyAt=now;
-      return {id:'supply:'+input.requestId,source:'supply',kind:'energy',title:'补满体力包',energy:gained,xp:0,coins:0,levels:0,fullEnergy:true};
-     }
-     if(cap>=cost){
-      const inviteRefill=tasks.openAutoGift(profile,{group:'invite-refill',minEnergy:need,cap,requestId:input.requestId,now});
-      if(inviteRefill)return inviteRefill;
-     }
-     return null;
-    };
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,freeRoom:room.mobileMode==='postcard',unlimitedEnergy:unlimitedEnergyToday(p,now),autoRefill,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
-    room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
-    p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
-    if(retention&&room.mobileMode==='daily')try{
-     const date=engine.dailyPuzzleDate(dailyClock(now));if(room.mobileDay===date)retention.dailyMerge(p.id,date,now);
-    }catch(error){console.warn('mobile retention daily merge failed:',error.message);}
-    const coins=collection.contribution(p.id,room.id,input.requestId,now)+tasks.beginner(p.id,now).coins;p.lastReward.coins=coins;
-    mobileContribution={requestId:input.requestId,groupId:input.groupId,creditedXp:reward.xp,creditedCoins:coins,...(reward.autoSupplyUsed?{autoSupplyUsed:reward.autoSupplyUsed}:{})};
+    mobileContribution=grantContribution(room,p,{requestId:input.requestId,groupId:input.groupId,beforeGroups:before},now);
+    recordPlayerSnaps(room,p.id,before,input.groupId);
    }
    room.revision++;engine.recordRoomChange(room,before);settle(room,now,p);saveRoom(room);if(input.type==='leave')pruneRoomCursors(room);saveProfile(p);return {...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(mobileContribution?{mobileContribution}:{})};
   };

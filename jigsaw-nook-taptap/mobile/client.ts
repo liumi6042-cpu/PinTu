@@ -76,7 +76,7 @@ export class GameClient{
     cheers:this.cookieIdentity?reply.data.capabilities?.cheers===true:reply.data.capabilities?.cheers!==false,
     privacyRequests:!this.cookieIdentity&&reply.data.capabilities?.privacyRequests===true,
     roomActionRevisionBody:!this.cookieIdentity&&reply.data.capabilities?.roomActionRevisionBody===true,
-    soloLocalPlay:!this.cookieIdentity&&reply.data.capabilities?.soloLocalPlay===true,
+    soloLocalPlay:reply.data.capabilities?.soloLocalPlay===true,
     offlineLevelClears:!this.cookieIdentity&&reply.data.capabilities?.offlineLevelClears===true,
     social:this.cookieIdentity?reply.data.capabilities?.social??{friends:false,privateMessages:false,reports:false,blocking:false,search:false,codeFormat:'hex12'}:{friends:true,privateMessageHistory:true,roomInvites:true,reports:true,blocking:true,search:true,presence:true,codeFormat:'digits9',...reply.data.capabilities?.social,privateMessages:!wechat&&reply.data.capabilities?.social?.privateMessages===true,...(wechat?{privateMessageHistory:false}:{})},
     ...(this.cookieIdentity?{supportedPieces:reply.data.capabilities?.supportedPieces??[108,300,500]}:{})};
@@ -162,6 +162,7 @@ export class GameClient{
  private ticketKey(id:string){return 'jigsaw:shared-room:'+this.platform.config.apiBase+':'+id;}
  private ownerIdentity(){return this.cookieIdentity?(this.account?'account:'+this.account.id:this.profile?'guest:'+(this.profile.code||'anonymous'):null):null;}
  private saveTicket(ticket:RoomTicket){if(!roomPattern.test(ticket?.room?.id)||!roomPattern.test(ticket?.token)||!ticket?.playerId)throw Error('房间凭证无效');this.ticket=ticket;this.ticketOwner=this.ownerIdentity();const saved=JSON.stringify({token:ticket.token,playerId:ticket.playerId,...(this.cookieIdentity?{ownerIdentity:this.ticketOwner}:{})});this.platform.storage.set(this.ticketKey(ticket.room.id),saved);if(this.cookieIdentity){const legacy='together-puzzle:room:'+ticket.room.id;this.platform.storage.setSession?.(legacy,saved);if(this.account)this.platform.storage.set(legacy+':account',saved);}this.onChange?.();return ticket;}
+ adoptCachedTicket(ticket:RoomTicket){if(!roomPattern.test(ticket?.room?.id)||!roomPattern.test(ticket?.token)||!ticket?.playerId)return ticket;this.ticket=ticket;this.ticketOwner=this.ownerIdentity();this.onChange?.();return ticket;}
  async createRoom(input:MobileRoomInput){if(this.cookieIdentity)await this.refresh();const raw=await this.post<RoomTicket|SeedRoomTicket>('/api/rooms',{...input,requestId:input.requestId||this.platform.randomId()});const ticket=expandCreatedTicket(raw);return this.saveTicket({...ticket,...('inviteCode'in raw?{inviteCode:raw.inviteCode}:{})});}
  async createDiagnosticRoom(){
   const allowed=this.platform.config.id==='taptap'&&this.profile?.taptap?.diagnostics===true||this.platform.config.id==='web'&&this.cookieIdentity&&this.profile?.diagnostics===true;

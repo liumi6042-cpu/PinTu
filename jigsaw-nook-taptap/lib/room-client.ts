@@ -6,8 +6,8 @@ import { successfulDrop,successfulRemoteConnection } from './connection-feedback
 import type {RealtimeRoomStream} from './room-realtime';
 import {DiagnosticDragPipeline} from './diagnostic-drag-pipeline';
 import type {MovePreview} from './room-preview';
-import type {PuzzleState} from './puzzle-engine';
-import {applySoloDrop,replaySoloOps,otherPlayersPresent,soloCanAfford,soloNeedsAutoSupply,loadSoloOutbox,saveSoloOutbox,acknowledgeSoloOps,SOLO_BATCH_MAX,SOLO_MAX_PENDING,type SoloOp,type SoloEnergy,type SoloStorage,type SoloBatchReceipt} from './solo-play';
+import {placedCount,type PuzzleState} from './puzzle-engine';
+import {applySoloDrop,replaySoloOps,otherPlayersPresent,soloCanAfford,soloNeedsAutoSupply,loadSoloOutbox,saveSoloOutbox,acknowledgeSoloOps,toWireSoloOp,saveCachedRoom,removeCachedRoom,SOLO_BATCH_MAX,SOLO_MAX_PENDING,type SoloOp,type SoloWireOp,type SoloEnergy,type SoloStorage,type SoloBatchReceipt} from './solo-play';
 /** The room protocol does not require a DOM table or browser networking. */
 export type RoomTable = Pick<PuzzleTable,'network'|'networkReady'|'syncRemote'|'cancelNetworkDrag'|'playConnectionSound'|'fit'>;
 export type RoomFetchReply = {ok:boolean;status:number;headers:{get(name:string):string|null};json():Promise<any>};
@@ -35,11 +35,11 @@ const browserDependencies:RoomClientDependencies={
 };
 const cloneRoomValue=<T>(value:T):T=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
 const requestTimeout=()=>typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'?AbortSignal.timeout(6500):undefined;
-export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
+export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot; cachedOffline?: boolean };
 type AutoSupplyReceipt = { id?: string; source: 'gift' | 'supply'; kind: string; title: string; energy: number; xp?: number; coins?: number; levels?: number; fullEnergy?: boolean };
-type MobileContribution = { requestId: string; groupId: number; creditedXp: number; creditedCoins?: number; autoSupplyUsed?: AutoSupplyReceipt };
-type MobileRoomSnapshot = RoomSnapshot & { mobileContribution?: MobileContribution;offline?:boolean;diagnostic?:boolean;diagnosticTiming?:{serverMs:number} };
-type ClientAction = RoomAction | {type:'batch';ops:Omit<SoloOp,'snapped'>[]};
+type MobileContribution = { requestId: string; groupId: number; creditedXp: number; creditedCoins?: number; autoSupplyUsed?: AutoSupplyReceipt; forgiving?: boolean };
+type MobileRoomSnapshot = RoomSnapshot & { mobileContribution?: MobileContribution;offline?:boolean;diagnostic?:boolean;levelId?:string;requestedPieces?:number;maxPlayers?:number;diagnosticTiming?:{serverMs:number} };
+type ClientAction = RoomAction | {type:'batch';ops:SoloWireOp[]};
 type RoomReplyData = RoomUpdate & {error?:string;code?:string;profile?:unknown;mobileProfile?:unknown;mobileContribution?:MobileContribution;mobileContributions?:MobileContribution[];soloBatch?:SoloBatchReceipt;diagnosticTiming?:{serverMs:number}};
 export type RoomRequestTiming={action:string;ms:number;status:number;serverMs?:number};
 type Position = { dx: number; dy: number };
@@ -79,6 +79,8 @@ export class RoomClient {
   private organizing = false;
   private diagnosticPipeline:DiagnosticDragPipeline|null=null;
   private localMode=false;
+  private disconnectedLocal=false;
+  private localCompletedAt:number|null=null;
   private exiting=false;
   private soloOps:SoloOp[]=[];
   private soloInflight=0;
@@ -95,6 +97,10 @@ export class RoomClient {
   private rejoinRequired=false;
   private exitWake:(()=>void)|null=null;
   get localPlay(){return this.localMode;}
+  get offlineFallback(){return this.disconnectedLocal;}
+  get networkDegraded(){return this.disconnectedLocal||!this.connected||(this.localMode&&this.failures>0);}
+  get completedAt(){return this.snapshot.completedAt??this.localCompletedAt;}
+  get pendingCompletionSync(){return this.snapshot.completedAt==null&&this.localCompletedAt!=null;}
   get pendingSoloOps(){return this.soloOps.length;}
   get diagnosticActionsActive(){return this.diagnosticPipeline?.inUse===true;}
 
@@ -111,12 +117,13 @@ export class RoomClient {
   elapsedNow(now = this.deps.now()) {
     const s = this.snapshot;
     if (s.completedAt != null || s.startedAt === null) return s.puzzle.elapsed;
+    const end = this.localCompletedAt ?? now;
     const start = s.startedAt ?? s.serverTime - s.puzzle.elapsed * 1000;
-    return Math.floor(Math.max(0, s.serverTime + Math.max(0, now - this.receivedAt) - start) / 1000);
+    return Math.floor(Math.max(0, s.serverTime + Math.max(0, end - this.receivedAt) - start) / 1000);
   }
   private emit() {
     // Presence timestamps and piece positions do not change the toolbar.
-    const key = JSON.stringify([this.connected, this.message, this.localMode, this.exiting, this.soloOps.length, this.snapshot.title, this.snapshot.acceptingNew, this.snapshot.completedAt, this.snapshot.achievementDays, this.snapshot.members.map(member => [member.id, member.name, member.color, (member as typeof member & {level?:number}).level,(member as typeof member & {decoration?:RoomDecoration|null}).decoration?.id])]);
+    const key = JSON.stringify([this.connected, this.message, this.localMode, this.disconnectedLocal, this.localCompletedAt, this.exiting, this.soloOps.length, this.snapshot.title, this.snapshot.acceptingNew, this.snapshot.completedAt, this.snapshot.achievementDays, this.snapshot.members.map(member => [member.id, member.name, member.color, (member as typeof member & {level?:number}).level,(member as typeof member & {decoration?:RoomDecoration|null}).decoration?.id])]);
     if (key === this.toolbarKey) return;
     this.toolbarKey = key;
     for (const fn of this.listeners) fn();
@@ -166,12 +173,17 @@ export class RoomClient {
     const beforeGroups=this.snapshot.puzzle.groups;
     const changed = s.puzzle.groups !== beforeGroups;
     const elapsedChanged = s.puzzle.elapsed !== this.state.elapsed;
+    const wasDisconnected=this.disconnectedLocal;
     this.revision = s.revision; this.snapshot = s; this.receivedAt = this.deps.now();
+    if(s.completedAt!=null)this.localCompletedAt=null;
     this.deps.realtime?.preview?.observe(s);
     this.diagnosticPipeline?.observe(s);
-    this.connected = true; this.failures = 0; this.message = '房间已连接';
+    this.connected = true; this.failures = 0; this.disconnectedLocal = false; this.message = '房间已连接';
+    this.persistCachedRoom();
     if(this.localMode){
+      if(wasDisconnected){this.retryAt=0;this.soloRetryAt=0;}
       if(otherPlayersPresent(s,this.ticket.playerId)||this.deps.solo?.enabled()!==true||(s as MobileRoomSnapshot).diagnostic===true||s.completedAt!=null)this.beginExit();
+      else if(wasDisconnected&&this.soloOps.length)this.scheduleSoloFlush(0);
       if(!this.soloInflight)this.rebaseSoloPuzzle();
       this.emit();return;
     }
@@ -215,11 +227,37 @@ export class RoomClient {
     if(!previews.size)return this.snapshot.puzzle;
     return {...this.snapshot.puzzle,groups:this.snapshot.puzzle.groups.map(group=>{const move=previews.get(group.id);return move&&!group.locked?{...group,dx:move.dx,dy:move.dy}:group;})};
   }
+  private canEnterDisconnectedLocal(){
+    return !this.stopped&&!this.soloRefused&&this.deps.solo?.enabled()===true&&!!this.table
+      &&(this.snapshot as MobileRoomSnapshot).diagnostic!==true&&this.snapshot.completedAt==null&&!this.organizing;
+  }
+  private enterDisconnectedLocal(message='网络中断，已切至本地继续拼，恢复后自动同步'){
+    this.connected=false;this.failures++;
+    for(const task of this.pendingDrags){task.canceled=true;task.grant(false);task.wake?.();}
+    this.drags.clear();this.pendingDrags.clear();this.active=null;
+    const holdingId=this.diagnosticPipeline?.holdingId;
+    if(holdingId!==undefined)this.diagnosticPipeline?.release(holdingId);
+    this.table?.cancelNetworkDrag();
+    this.localMode=true;this.disconnectedLocal=true;this.exiting=false;
+    this.pieceOwners={};this.ownersKey='{}';
+    this.localPuzzle=replaySoloOps(this.snapshot.puzzle,this.soloOps);
+    if(this.table)this.table.networkReady=true;
+    this.syncSoloPuzzle(false);
+    this.message=message;
+    this.emit();
+  }
   private fail(error: unknown) {
     if (this.stopped) return;
     const status = (error as { status?: number })?.status, code = (error as { code?: string })?.code;
-    if(this.localMode&&!this.exiting&&this.soloTransient(error)){
-      this.failures++;this.message='网络不稳，拼好的进度会自动保存';this.emit();return;
+    if(this.localMode&&this.soloTransient(error)){
+      this.failures++;
+      if(this.exiting){this.exiting=false;this.disconnectedLocal=true;this.connected=false;this.message='网络中断，已切至本地继续拼，恢复后自动同步';}
+      else this.message=this.disconnectedLocal?'网络中断，已切至本地继续拼，恢复后自动同步':'网络不稳，拼好的进度会自动保存';
+      this.emit();return;
+    }
+    if(!this.localMode&&this.soloTransient(error)&&this.canEnterDisconnectedLocal()){
+      this.enterDisconnectedLocal();
+      return;
     }
     if(this.localMode)this.leaveLocalMode();
     this.message = error instanceof Error ? error.message : '连接中断，正在重连';
@@ -291,12 +329,31 @@ export class RoomClient {
         if(this.stopped)return;if(!connected){if(this.backgroundSuspended()){this.schedulePoll(4000);return;}this.forcePoll=true;}this.schedulePoll(connected?Math.max(0,5001-(this.deps.now()-this.heartbeatAt)):0);
       }));
     }
+    if(this.ticket.cachedOffline===true&&this.canEnterDisconnectedLocal()){
+      this.connected=false;this.disconnectedLocal=true;this.localMode=true;this.exiting=false;
+      this.localPuzzle=replaySoloOps(this.snapshot.puzzle,this.soloOps);
+      this.message='离线继续拼，联网后自动同步';
+      table.networkReady=true;
+      this.syncSoloPuzzle(false);
+      if(placedCount(this.localPuzzle)===this.localPuzzle.cols*this.localPuzzle.rows)this.localCompletedAt=this.deps.now();
+      this.emit();
+      if(this.soloOps.length)this.scheduleSoloFlush(0);
+      void this.poll();
+      return () => { this.stop(); this.table = null; };
+    }
     this.receive(this.snapshot, true);
     // A lost completion ACK can leave an outbox for an already completed room,
     // which must drain even though completed rooms cannot enter local play.
     if(this.soloOps.length&&this.deps.solo?.enabled()===true&&(this.snapshot as MobileRoomSnapshot).diagnostic!==true)this.scheduleSoloFlush(0);
     void this.poll();
     return () => { this.stop(); this.table = null; };
+  }
+  private isDedicatedSolo(){
+    const snap=this.snapshot as MobileRoomSnapshot;
+    return snap.offline!==true&&snap.diagnostic!==true&&(snap.visibility==='solo'||typeof snap.levelId==='string'&&snap.levelId.length>0)&&!otherPlayersPresent(snap,this.ticket.playerId);
+  }
+  private soloHeartbeatMs(){
+    return this.localMode&&this.isDedicatedSolo()&&!this.soloOps.length?12000:5000;
   }
   private backgroundSuspended(){
     return this.deps.hidden()&&this.drags.size===0&&this.pendingDrags.size===0&&!this.diagnosticPipeline?.hasActive()&&this.soloOps.length===0;
@@ -318,7 +375,8 @@ export class RoomClient {
     try {
       const now = this.deps.now(); let data: RoomSnapshot;
       const force=this.forcePoll;this.forcePoll=false;
-      if (now - this.heartbeatAt > 5000) {
+      const heartbeatMs=this.soloHeartbeatMs();
+      if (now - this.heartbeatAt > heartbeatMs) {
         this.heartbeatAt = now;
         const holding = [...this.drags.values()].find(t => t.granted && !t.canceled && !t.ending);
         // Heartbeats never wait in the movement queue.
@@ -332,11 +390,11 @@ export class RoomClient {
     } catch (error) { this.fail(error); }
     finally {
       this.polling=false;
-      if(!this.stopped){const delay=this.forcePoll?0:this.localMode&&this.failures?Math.min(4000,800*this.failures):this.deps.realtime?.connected?Math.max(100,5001-(this.deps.now()-this.heartbeatAt)):this.connected?roomPollDelay(this.drags.size>0||Object.keys(this.snapshot.leases).length>0,this.idlePolls,this.deps.hidden()):Math.min(4000,800*this.failures);this.schedulePoll(Math.max(this.retryAt-this.deps.now(),delay));}
+      if(!this.stopped){const heartbeatMs=this.soloHeartbeatMs();const delay=this.forcePoll?0:this.localMode&&(this.failures||this.disconnectedLocal)?Math.min(4000,800*Math.max(1,this.failures)):this.deps.realtime?.connected?Math.max(100,heartbeatMs+1-(this.deps.now()-this.heartbeatAt)):this.localMode&&this.isDedicatedSolo()&&this.connected?Math.max(100,heartbeatMs+1-(this.deps.now()-this.heartbeatAt)):this.connected?roomPollDelay(this.drags.size>0||Object.keys(this.snapshot.leases).length>0,this.idlePolls,this.deps.hidden()):Math.min(4000,800*this.failures);this.schedulePoll(Math.max(this.retryAt-this.deps.now(),delay));}
     }
   }
   /** Ask for an immediate resynchronisation (the reconnect banner's 重试). */
-  retryNow(){this.retryAt=0;this.forcePoll=true;this.schedulePoll(0);}
+  retryNow(){this.retryAt=0;this.soloRetryAt=0;this.forcePoll=true;this.schedulePoll(0);if(this.soloOps.length)this.scheduleSoloFlush(0);}
   private schedulePoll(delay:number){if(this.pollTimer)clearTimeout(this.pollTimer);this.pollTimer=null;if(!this.stopped)this.pollTimer=setTimeout(()=>{this.pollTimer=null;void this.poll();},delay);}
   // Keep a group reserved until its drop/release request is acknowledged. A
   // second drag of the same group during that window can otherwise be replaced
@@ -414,10 +472,14 @@ export class RoomClient {
       if (this.active === task) this.active = null;
       // A refusal belongs to the drag it was sent for: it never cancels the newer one, which
       // hears about it through its own claim.
+      const capturedDrop=error&&!superseded&&!this.stopped&&task.ending?.type==='drop'&&this.soloTransient(error)&&this.canEnterDisconnectedLocal()?{id:task.id,dx:task.ending.dx,dy:task.ending.dy}:null;
       if (error) { if (!superseded) this.table?.cancelNetworkDrag(task.id); this.fail(error); }
-      // Reconcile denied/expired claims, including other players' authoritative offsets.
-      if (!this.stopped) {
-        if (error) { try { this.receive(await this.request(), true); } catch (failure) { this.fail(failure); } }
+      if (capturedDrop&&this.localMode&&!this.stopped) {
+        this.localDrag=capturedDrop.id;
+        void this.localDrop(capturedDrop.id,capturedDrop.dx,capturedDrop.dy).catch(failure=>this.localPlayFailed(failure));
+      } else if (!this.stopped) {
+        // Reconcile denied/expired claims, including other players' authoritative offsets.
+        if (error) { if(!this.disconnectedLocal){try { this.receive(await this.request(), true); } catch (failure) { this.fail(failure); }} }
         else this.receive(this.snapshot, true);
       }
       this.pendingDrags.delete(task); task.finish();
@@ -455,6 +517,12 @@ export class RoomClient {
     task.latest = null; task.ending = { type: 'release' };
     if (this.active === task) this.active = null;
     task.wake?.();
+  }
+  private persistCachedRoom(){
+    const storage=this.deps.solo?.storage,snap=this.snapshot as MobileRoomSnapshot;
+    if(!storage||snap.offline===true||snap.diagnostic===true)return;
+    if(snap.completedAt!=null&&!this.soloOps.length){removeCachedRoom(storage,this.ticket.room.id);return;}
+    saveCachedRoom(storage,{v:1,roomId:this.ticket.room.id,playerId:this.ticket.playerId,token:this.ticket.token,snapshot:snap,savedAt:this.deps.now()});
   }
   private persistSolo(){
     const storage=this.deps.solo?.storage;
@@ -518,7 +586,12 @@ export class RoomClient {
         if(!result.applied){this.syncSoloPuzzle(false);return;}
         if(result.snapped&&!canAfford()){this.syncSoloPuzzle(false);this.energyEmpty();return;}
       }
-      const op:SoloOp={requestId:this.deps.randomId(),groupId:id,dx:result.dx,dy:result.dy,snapped:result.snapped};
+      const op:SoloOp={
+        requestId:this.deps.randomId(),groupId:id,dx:result.dx,dy:result.dy,snapped:result.snapped,
+        ...(result.snapped&&result.pieceId!==undefined?{pieceId:result.pieceId}:{}),
+        ...(result.snapKind?{snapKind:result.snapKind}:{}),
+        ...(result.mergedPieces?.length?{mergedPieces:result.mergedPieces}:{}),
+      };
       const last=this.soloOps[this.soloOps.length-1];
       if(!op.snapped&&this.soloOps.length-1>=this.soloInflight&&last&&!last.snapped&&last.groupId===id)this.soloOps[this.soloOps.length-1]=op;
       else this.soloOps.push(op);
@@ -529,9 +602,11 @@ export class RoomClient {
         this.deps.emit('puzzle:successful-drop',{roomId:this.ticket.room.id,requestId:op.requestId,groupId:id,...(typeof xp==='number'&&Number.isInteger(xp)&&xp>0?{creditedXp:xp}:{})});
       }
       const now=this.deps.now();this.firstUnsentAt??=now;
+      if(result.completed&&(this.disconnectedLocal||!this.connected||this.soloFailures>0))this.localCompletedAt??=now;
       const unsent=this.soloOps.length-this.soloInflight;
       const needsAutoSupply=op.snapped&&soloNeedsAutoSupply(this.deps.solo?.energy()??null,this.soloOps.filter(item=>item.snapped).length);
-      this.scheduleSoloFlush(result.completed||needsAutoSupply||unsent>=25?0:Math.max(0,Math.min(800,3000-(now-this.firstUnsentAt))));
+      const lazy=this.isDedicatedSolo(),debounce=lazy?2500:800,maxDefer=lazy?10000:3000;
+      this.scheduleSoloFlush(result.completed||needsAutoSupply||unsent>=25?0:Math.max(0,Math.min(debounce,maxDefer-(now-this.firstUnsentAt))));
       this.emit();
     }finally{this.soloDropping=false;this.exitWake?.();}
   }
@@ -568,7 +643,7 @@ export class RoomClient {
     try{
       // Refresh the seat before acknowledging moves after a long background pause.
       if(this.deps.now()-this.receivedAt>15000)this.receive(await this.request({type:'heartbeat'}));
-      const {snapshot,data}=await this.requestWithData({type:'batch',ops:batch.map(({snapped,...op})=>op)},opts);
+      const {snapshot,data}=await this.requestWithData({type:'batch',ops:batch.map(toWireSoloOp)},opts);
       if(!data.soloBatch)throw new Error('Missing solo batch receipt');
       const remaining=acknowledgeSoloOps(this.soloOps,data.soloBatch);
       if(remaining.length===this.soloOps.length)throw new Error('Solo batch made no progress');
@@ -593,10 +668,14 @@ export class RoomClient {
         else discardBatch();
         try{this.receive(await this.request(),true);this.scheduleSoloFlush(0);return true;}catch(failure){this.fail(failure);}
       }else if(status===404||status===410){
-        this.soloOps=[];this.persistSolo();this.leaveLocalMode();this.fail(error);
+        this.soloOps=[];this.persistSolo();if(this.deps.solo?.storage)removeCachedRoom(this.deps.solo.storage,this.ticket.room.id);this.leaveLocalMode();this.fail(error);
       }else{
         this.soloFailures++;this.soloRetryAt=Math.max(this.retryAt,this.deps.now()+Math.min(15000,1000*2**this.soloFailures));
-        if(this.soloTransient(error)){this.message='网络不稳，拼好的进度会自动保存';this.emit();}
+        if(this.soloTransient(error)){
+          if(this.localPuzzle&&placedCount(this.localPuzzle)===this.localPuzzle.cols*this.localPuzzle.rows)this.localCompletedAt??=this.deps.now();
+          this.message=this.disconnectedLocal?'网络中断，已切至本地继续拼，恢复后自动同步':'网络不稳，拼好的进度会自动保存';
+          this.emit();
+        }
         else{this.leaveLocalMode();this.fail(error);}
         this.scheduleSoloFlush(0);
         if((status===401||status===403)&&!this.rejoinRequired){this.rejoinRequired=true;this.deps.emit('room:rejoin-required',{roomId:this.ticket.room.id});}
@@ -607,7 +686,7 @@ export class RoomClient {
   /** Flush on application hide without waiting for the debounce. */
   flushSoloNow(){void this.flushSolo({keepalive:true});}
   private leaveLocalMode(){
-    this.localMode=false;this.exiting=false;this.localPuzzle=null;this.localDrag=null;
+    this.localMode=false;this.disconnectedLocal=false;this.exiting=false;this.localPuzzle=null;this.localDrag=null;
     this.clearSoloTimer();this.exitWake?.();
   }
   private beginExit(){
