@@ -3,7 +3,7 @@ import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
 import {comicFor,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
-import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
+import {cacheServerLevels,isOfflineFallbackError,preferOfflineLevelRoom} from '../lib/offline-play';
 import {PuzzleBoard,DRAG_SLOP} from './puzzle-board';
 import {SocialPanel} from './social-panel';
 import {RoomInviteQueue,InviteSeenStore,pickIncomingInvite,type IncomingInvite,type InviteJob} from './friend-invite';
@@ -11,7 +11,7 @@ import type {SocialPlayer,SocialSnapshot} from './social-types';
 import {TaskShareReward} from './task-share-reward';
 import {boardThemeColors,isThemeId,type ThemeId} from './theme';
 import {RoomClient,type RoomTicket,type RoomRequestTiming} from '../lib/room-client';
-import {flushStoredSoloOutboxes,otherPlayersPresent} from '../lib/solo-play';
+import {cachedRoomTicket,flushStoredSoloOutboxes,listCachedRooms,otherPlayersPresent,type CachedRoomEntry} from '../lib/solo-play';
 import {boardVariant,type StoryVariant} from './story-variants';
 import {CursorClient} from '../lib/cursor-client';
 import {enrichCursorsFromMembers,type CursorMemberMeta} from '../lib/room-cursors';
@@ -68,6 +68,8 @@ export class GameApp{
  private syncOffline(){if(this.ready)void this.offline?.sync(this.client,levels=>{this.levels=levels;this.levelsOwner=this.ownerKey();this.invalidate();},message=>this.note(message));}
  private enterOffline(){this.offline.active=true;this.initTelemetryOnce(this.client.profile);this.route='chapter';this.scroll=0;this.modal=null;this.invalidate();}
  private async launchOffline(input:OfflineInput){await this.attachTicket(this.offline.createRoom(input));}
+ private cachedOfflineRooms():CachedRoomEntry[]{return listCachedRooms(this.platform.storage).filter(entry=>!this.offline?.isRoom(entry.roomId));}
+ private async resumeCachedRoom(roomId:string){const cached=cachedRoomTicket(this.platform.storage,roomId);if(!cached){this.note('本机缓存已失效，请联网后重试');this.invalidate();return;}this.client.adoptCachedTicket(cached);this.note('已用本机缓存打开，联网后自动同步进度');await this.attachTicket(cached);}
  private privacyAccepted=false;private privacyDocument:'privacy'|'terms'|null=null;private privacyRefused=false;private privacyEpoch=0;private authorizationTesting=false;private loginDialogActive=false;private authorizationNudged=false;private loginLogOpen=false;private loginLogReturnScroll=0;
  private identityHook=false;private consentPreparing=false;private consentError='';
  private privacyRequests:PrivacyRequest[]=[];private privacyRequestsLoading=false;
@@ -110,7 +112,7 @@ export class GameApp{
  }
  get completionPhase():CompletionPhase{return this.completionFlow.phase;}
  onCompletionPhase(listener:(event:CompletionPhaseEvent)=>void):()=>void{return this.completionFlow.subscribe(listener);}
- openCompletionPopup():boolean{if(!this.room?.snapshot.completedAt||this.nineGridRoom)return false;if(this.completionFx)this.finishCompletionTransition();else this.showModal('completion');return true;}
+ openCompletionPopup():boolean{if(!(this.room?.completedAt??this.room?.snapshot?.completedAt)||this.nineGridRoom)return false;if(this.completionFx)this.finishCompletionTransition();else this.showModal('completion');return true;}
  closeCompletionPopup():boolean{if(this.modal!=='completion')return false;this.showModal(null);return true;}
  registerCompletionAction(provider:(context:CompletionContext)=>CompletionAction|null):()=>void{const unregister=this.completionFlow.register(provider);this.invalidate();return()=>{unregister();this.invalidate();};}
  private completionContext():CompletionContext{const snapshot=this.room?.snapshot;return {roomId:snapshot?.id??'',level:!!snapshot?.levelId,levelId:snapshot?.levelId??null,levelClear:snapshot?.mobileResult?.levelClear??null};}
@@ -119,7 +121,7 @@ export class GameApp{
  private realtime:ManagedRoomRealtime|null=null;
  private roomPanelCollapsed=false;private roomMembersHighlight=0;private landscapeToolsOpen=false;private desktopToolsOpen=true;
  private cardCode='';private cardData:PlayerCard|null=null;private cardError='';private cardLoading=false;private cardSending=false;private cardRequestId='';private cardCache=new Map<string,{at:number;data:PlayerCard}>();private cardReturn:Modal=null;
- private roomArea:Rect={x:0,y:0,w:0,h:0};private landscapeToggle:Rect|null=null;private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';
+ private roomArea:Rect={x:0,y:0,w:0,h:0};private landscapeToggle:Rect|null=null;private roomImage='';private imageReady=false;private roomViewPending=false;private imageError='';private toolsOpen=false;private hidden=false;private completedId='';private pendingLocalCompletionId='';
  private aid:{grants:AssistanceGrant[];freeRemaining?:{hint:number;underlay:number};newcomerProtected?:boolean;serverTime:number}|null=null;
  private underlaySeq=0;private underlaySync:Promise<void>=Promise.resolve();
  private messages:PublicMessage[]=[];private chatCursor=0;private chatSeen=0;private chatLoading=false;private chatDraft='';
@@ -181,7 +183,7 @@ export class GameApp{
   const wsConnected=d?.connected===true,localSolo=room?.localPlay===true,offline=this.offlineRoom===true;
   const members=snap?.members?.length??0,leases=Object.keys(snap?.leases??{}).length,cursors=this.board?.remoteCursorCount??0,rev=snap?.revision??0;
   const pieces=snap?.puzzle?snap.puzzle.cols*snap.puzzle.rows:(this.board?.performanceDetails?.().pieces??0);
-  const mode=room?(offline?'离线':localSolo?'单人本地':'多人联机'):'大厅/未入房';
+  const mode=room?(offline?'离线':room.offlineFallback?'断连本地':localSolo?'单人本地':'多人联机'):'大厅/未入房';
   const latestTiming=[...(this.roomTimings?.values()??[])].sort((a,b)=>b.at-a.at)[0];
   const rttShort=latestTiming?Math.round(latestTiming.ms)+'ms':'—';
   const hasPreview=d?.preview==='taptap-test',previewOn=d?.previewConnected===true,previewHybrid=previewOn&&d?.previewHybrid===true;
@@ -548,7 +550,7 @@ export class GameApp{
  private openCollection(tab:ListView['collectionTab']){this.navigate('collection',{collectionTab:tab});}
  private openPackGallery(id:string){this.navigate('gallery',{packId:id,source:this.collection?.packs.find(pack=>pack.id===id)?.unlock==='ad'?'all':'owned',unplayedOnly:false});}
  private selectAlbum(id:string){this.changeListView(()=>{this.albumId=id;});}
- private exitRoom(){if(this.offlineRoom&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];this.enterOffline();return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,clear=this.room?.snapshot.mobileResult?.levelClear,complete=clear&&(clear.chapterComplete||clear.nextLevelId===null),nextLevelId=complete?clear?.nextLevelId:null,nextChapter=this.chapterForLevel(nextLevelId),target=this.roomReturn;if(nextLevelId)this.storyChapterId=nextChapter?.id??null;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level){// Back to the story page while the played chapter still has unfinished levels, in any chapter.
+ private exitRoom(){if((this.offlineRoom||this.room?.ticket.cachedOffline)&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];if(this.offline.catalog)this.enterOffline();else{this.route='lobby';this.scroll=0;this.modal=null;this.invalidate();}return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,clear=this.room?.snapshot.mobileResult?.levelClear,complete=clear&&(clear.chapterComplete||clear.nextLevelId===null),nextLevelId=complete?clear?.nextLevelId:null,nextChapter=this.chapterForLevel(nextLevelId),target=this.roomReturn;if(nextLevelId)this.storyChapterId=nextChapter?.id??null;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level){// Back to the story page while the played chapter still has unfinished levels, in any chapter.
 const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels.some(item=>item.status!=='cleared'):!!this.beginnerChapter);if(resume&&played)this.storyChapterId=played.id;this.navigate(nextLevelId||resume?'chapter':'lobby');}else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
  private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
@@ -619,7 +621,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  /** Where a finished story level leads: the server receipt, else the chapter order (offline rooms, or a
   * room whose receipt is missing, e.g. after the account changed during play). */
  private levelDestination():MobileLevelClear|null{
-  const snap=this.room?.snapshot;if(!snap?.completedAt)return null;const clear=snap.mobileResult?.levelClear;if(clear)return clear;
+  const snap=this.room?.snapshot;if(!snap||!(this.room?.completedAt??snap.completedAt))return null;const clear=snap.mobileResult?.levelClear;if(clear)return clear;
   const levelId=snap.levelId;if(!levelId)return null;
   const chapters=this.offlineRoom?this.offline.view?.chapters??[]:this.availableChapters,ordered=chapters.flatMap(chapter=>chapter.levels.map(level=>level.id)),index=ordered.indexOf(levelId);if(index<0)return null;
   return {levelId,energy:0,firstClear:false,nextLevelId:ordered[index+1]??null,chapterComplete:chapters.some(chapter=>chapter.levels.at(-1)?.id===levelId)};
@@ -805,10 +807,10 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    try{
     for(let retry=0;;retry++){
      try{ticket=await this.client.createRoom({...input,requestId});break;}
-     catch(error){if(input.mode!=='level'||!isNetworkFailure(error)||retry>=2)throw error;await new Promise(resolve=>setTimeout(resolve,[800,2000][retry]));}
+     catch(error){if(input.mode!=='level'||!isOfflineFallbackError(error)||retry>=2)throw error;await new Promise(resolve=>setTimeout(resolve,[800,2000][retry]));}
     }
    }catch(error){
-    if(input.mode!=='level'||!isNetworkFailure(error)||!this.offline.catalog?.chapters.some(chapter=>chapter.levels.some(level=>level.id===input.levelId)))throw error;
+    if(input.mode!=='level'||!isOfflineFallbackError(error)||!this.offline.catalog?.chapters.some(chapter=>chapter.levels.some(level=>level.id===input.levelId)))throw error;
     this.note('网络不可用，先离线拼，联网后自动同步通关');ticket=this.offline.createRoom({kind:'level',levelId:input.levelId!});
    }
    if(input.mode==='level'&&this.offline.server&&!this.offline.isRoom(ticket.room.id)&&preferOfflineLevelRoom(placedCount(ticket.room.puzzle),this.offline.server.rooms(),input.levelId!)){
@@ -817,7 +819,19 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    this.attempts.delete(key);await this.attachTicket(ticket);if(this.room?.ticket.room.id===ticket.room.id)this.sendTableInvite(input);
   });
  }
- private async enterRoom(id:string,invite?:string){if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}await this.run(async()=>{const ticket=await this.client.joinRoom(id,invite);await this.attachTicket(ticket);});}
+ private async enterRoom(id:string,invite?:string){
+  if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}
+  await this.run(async()=>{
+   try{const ticket=await this.client.joinRoom(id,invite);await this.attachTicket(ticket);}
+   catch(error){
+    const cached=isOfflineFallbackError(error)?cachedRoomTicket(this.platform.storage,id):null;
+    if(!cached)throw error;
+    this.client.adoptCachedTicket(cached);
+    this.note('网络不可用，已用本机缓存继续拼，联网后自动同步');
+    await this.attachTicket(cached);
+   }
+  });
+ }
  private async startNineGrid(){
   if(!this.nineGridAvailable)return;
   await this.run(async()=>{const ticket=await this.client.createDiagnosticRoom();this.nineTimings.clear();await this.attachTicket(ticket);});
@@ -838,11 +852,11 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   const offline=this.offline?.isRoom(ticket.room.id)??false;
   this.social.close();
   const source=this.saveListView();if(source.route!=='room'){this.roomReturn=source;this.roomReturnStack=[...this.routeStack];this.roomReturnFrames=[...this.routeFrames];}
-  this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;this.roomTimings?.clear();this.adminDiagExpanded=false;
+  this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.pendingLocalCompletionId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;this.roomTimings?.clear();this.adminDiagExpanded=false;
   const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision,()=>{
    if(this.room===room)this.note('与 TapTap 的实时连接已断开，改用游戏服务器同步');
   })??null;this.realtime=realtime;
-  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,autoGiftCount:p.autoEnergyGiftCount??p.giftCount??0,free:(p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id)||this.energyUnlimitedToday};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>true,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true||ticket.cachedOffline===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,autoGiftCount:p.autoEnergyGiftCount??p.giftCount??0,free:(p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id)||this.energyUnlimitedToday};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>true,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:local-play-error'&&this.room===room)this.platform.loginLog?.add('本地拼图出错，改为联网拼 · '+String((detail as {message?:string})?.message??'').slice(0,80));
    if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
    if(name==='puzzle:successful-drop'&&this.room===room){this.board?.confirmMobileContribution(detail as MobileContributionReceipt);if(!this.nineGridRoom)this.telemetry?.milestone('new_user','完成首次拼合');}
@@ -871,8 +885,29 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   try{if(!this.roomImage)throw Error('这张拼图的图片暂不可用');await board.setImage(this.roomImage);if(this.room!==room||this.board!==board)return;this.imageReady=board.imagePreparation.phase==='ready';this.roomViewPending=this.imageReady;if(this.imageReady)this.lag.markRoomReady(Date.now());}catch(error){if(this.room!==room||this.board!==board)return;this.imageError=errorText(error);this.note(this.imageError,true);}this.invalidate();
  }
  private syncCompletion(room:RoomClient){
-  if(this.room!==room)return;const chapter=this.chapterForLevel(this.room.snapshot.levelId??this.room.snapshot.mobileResult?.levelClear?.levelId);if(chapter)this.syncComicClear(chapter);if(!room.snapshot.completedAt)this.completionLive=true;
-  if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.telemetry?.endAttempt('win');this.telemetry?.milestone('new_user','完成首局拼图');this.telemetry?.milestone('global','完成任意拼图');const clearedLevelId=room.snapshot.levelId??room.snapshot.mobileResult?.levelClear?.levelId;if(clearedLevelId==='ch1-1')this.telemetry?.milestone('global','通关故事1-1');if(chapter?.id==='ch1'&&(room.snapshot.mobileResult?.levelClear?.chapterComplete===true||chapter.levels.every(lv=>lv.status==='cleared'||lv.id===clearedLevelId)))this.telemetry?.milestone('global','通关第一章');if(this.offlineRoom){room.flushSoloNow();}else{void this.client.refresh().then(()=>this.checkLevelMilestone()).catch(()=>{});void this.loadCollection();void this.loadGallery();}if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}}}if(this.offlineRoom&&room.snapshot.completedAt)this.syncOffline();this.invalidate();
+  if(this.room!==room)return;const chapter=this.chapterForLevel(this.room.snapshot.levelId??this.room.snapshot.mobileResult?.levelClear?.levelId);if(chapter)this.syncComicClear(chapter);
+  const completedAt=room.completedAt??room.snapshot.completedAt,serverCompletedAt=room.snapshot.completedAt;
+  if(!completedAt)this.completionLive=true;
+  if(completedAt&&this.completedId!==room.snapshot.id){
+   this.completedId=room.snapshot.id;
+   if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');
+   else{
+    this.telemetry?.endAttempt('win');this.telemetry?.milestone('new_user','完成首局拼图');this.telemetry?.milestone('global','完成任意拼图');
+    const clearedLevelId=this.room.snapshot.levelId??this.room.snapshot.mobileResult?.levelClear?.levelId;
+    if(clearedLevelId==='ch1-1')this.telemetry?.milestone('global','通关故事1-1');
+    if(chapter?.id==='ch1'&&(this.room.snapshot.mobileResult?.levelClear?.chapterComplete===true||chapter.levels.every(lv=>lv.status==='cleared'||lv.id===clearedLevelId)))this.telemetry?.milestone('global','通关第一章');
+    if(this.offlineRoom){room.flushSoloNow();}
+    else if(serverCompletedAt){void this.client.refresh().then(()=>this.checkLevelMilestone()).catch(()=>{});void this.loadCollection();void this.loadGallery();}
+    else{this.pendingLocalCompletionId=room.snapshot.id;}
+    if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();
+    else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}
+   }
+  }
+  if(serverCompletedAt&&!this.offlineRoom&&!this.nineGridRoom&&this.pendingLocalCompletionId===room.snapshot.id){
+   this.pendingLocalCompletionId='';
+   void this.client.refresh().then(()=>this.checkLevelMilestone()).catch(()=>{});void this.loadCollection();void this.loadGallery();
+  }
+  if(this.offlineRoom&&serverCompletedAt)this.syncOffline();this.invalidate();
  }
  private clearCompletionTransition(){if(this.completionFxFrame!=null)this.platform.cancelFrame(this.completionFxFrame);this.completionFxFrame=null;this.completionFx=null;this.completionFxRect=null;this.completionCheerQueue=[];this.completionLive=false;this.settleButtonRect=null;}
  private beginCompletionTransition(){
@@ -1259,14 +1294,14 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   if(this.loginLogOpen){this.drawLoginLog();return;}
   if(this.needsPrivacyChoice||this.loginDialogActive||this.platform.tapAuthorizationPending?.()){this.drawPrivacyChoice();return;}
   // Once start-up finishes the bar fills to 100% before the first scene; an error screen drops it.
-  const loading=!this.ready&&!this.startupError&&!this.client.authRequired&&!this.offline?.active&&!this.offlineRoom;
+  const loading=!this.ready&&!this.startupError&&!this.client.authRequired&&!this.offline?.active&&!this.offlineRoom&&!this.room;
   if(this.ready&&this.loadingStarted&&!this.loadingDone){this.loadingDone=Date.now();this.loadingFrom=this.loadingShown;}
   if(loading||this.loadingDone&&Date.now()-this.loadingDone<300){this.drawLoading();return;}
   this.loadingStarted=this.loadingShown=this.loadingDone=0;
   this.sceneArea={x:0,y:0,w:s.w,h:s.h};this.listArea={...this.sceneArea};this.listColumn=null;this.albumListArea={x:0,y:0,w:0,h:0};
   this.bodyBottom=s.h-view.bottom-12;
   if(this.route==='room')this.drawRoom();
-  else if(this.offline?.active&&!this.ready){this.bodyTop=view.top+12;this.extent=this.offline.drawPage(s,this.scroll,{paragraph:(...args)=>this.paragraph(...args),selectedChapter:view=>this.selectChapter(view),chapter:(chapter,view,height)=>{const top=this.bodyTop,bottom=this.bodyBottom,scroll=this.scroll;this.bodyTop=0;this.bodyBottom=height;this.scroll=0;this.drawChapter(chapter,view);this.bodyTop=top;this.bodyBottom=bottom;this.scroll=scroll;},asset:src=>this.client.asset(src),reconnect:()=>{this.offline.active=false;void this.start();},launch:input=>void this.run(()=>this.launchOffline(input)),invalidate:this.invalidate});this.clampListScroll();}
+  else if(this.offline?.active&&!this.ready){this.bodyTop=view.top+12;this.extent=this.offline.drawPage(s,this.scroll,{paragraph:(...args)=>this.paragraph(...args),selectedChapter:view=>this.selectChapter(view),chapter:(chapter,view,height)=>{const top=this.bodyTop,bottom=this.bodyBottom,scroll=this.scroll;this.bodyTop=0;this.bodyBottom=height;this.scroll=0;this.drawChapter(chapter,view);this.bodyTop=top;this.bodyBottom=bottom;this.scroll=scroll;},asset:src=>this.client.asset(src),reconnect:()=>{this.offline.active=false;void this.start();},launch:input=>void this.run(()=>this.launchOffline(input)),invalidate:this.invalidate,cachedRooms:this.cachedOfflineRooms(),resumeCached:id=>void this.run(()=>this.resumeCachedRoom(id))});this.clampListScroll();}
   else if(this.desktop){if(this.ready)this.drawDesktopShell();else s.withoutInput(()=>this.drawDesktopShell());const area=this.sceneArea;if(this.route==='collection'){const width=Math.min(contentMaxWidth+24,area.w);area.x+=(area.w-width)/2;area.w=width;this.listArea={...area};}this.contentOrigin={x:area.x,y:area.y};s.withViewport(area,()=>{this.bodyTop=12;this.bodyBottom=s.h-12;this.drawScene();});this.bodyTop+=area.y;this.bodyBottom+=area.y;this.listArea={x:this.lobbyColumn()?.x??(this.listArea.x||area.x),y:this.bodyTop,w:this.lobbyColumn()?.w??(this.listArea.w||area.w),h:Math.max(0,this.bodyBottom-this.bodyTop)};}
   else{
    const layout=this.layout,rail=this.navVisible&&layout==='phoneLandscape',bar=this.navVisible&&layout==='phonePortrait',outer={x:rail?72:0,y:0,w:s.w-(rail?72:0),h:s.h-(bar?64:0)};

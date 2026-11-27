@@ -34,6 +34,7 @@ export const TEST_GROUPS = {
     {file: 'tests/mobile-room-minimap.test.mjs', ts: true},
     {file: 'tests/team-merge.test.mjs', ts: true},
     {file: 'tests/mobile-solo-local.test.mjs', ts: true},
+    {file: 'tests/mobile-semi-offline-resilience.test.mjs', ts: true},
   ],
   completion: [
     {file: 'tests/mobile-level-completion.test.mjs', ts: true},

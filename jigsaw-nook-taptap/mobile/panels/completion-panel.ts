@@ -23,7 +23,7 @@ export function drawCompletionTransitionPanel(this:AppHost){
  }
 
 export function drawSettleButtonPanel(this:AppHost){
-  this.settleButtonRect=null;if(!this.room?.snapshot.completedAt||this.completionFx||this.modal!==null||this.nineGridRoom)return;
+  this.settleButtonRect=null;if(!(this.room?.completedAt??this.room?.snapshot?.completedAt)||this.completionFx||this.modal!==null||this.nineGridRoom)return;
   // A finished story level always shows the way on, also after its popup was closed.
   const destination=this.room.snapshot.levelId?this.levelDestination():null,label=destination?this.levelNextLabel(destination):'查看结算';
   const area=this.roomArea,safeBottom=this.stage.h-this.platform.viewport().bottom,x=area.x+(area.w-112)/2,y=safeBottom-(this.layout==='phoneLandscape'?12:14)-36;this.settleButtonRect={x,y,w:112,h:36};this.button(x,y,112,label,()=>{if(destination)this.continueLevel(destination);else this.openCompletionPopup();},'gold',36);
@@ -86,7 +86,7 @@ export function drawCompletionContentPanel(this:AppHost,left:number,cy:number,wi
   // A lifted landscape title shares the close button's row, so centre it in the space before the button.
   if(landscape&&panel&&cy<panel.y+36){const tw=width-28;s.text(title,left+Math.max(0,(tw-s.measure(title,17,800))/2),cy,17,ink,800,tw);}else center(title,cy,landscape?17:20,ink,800);cy+=levelLandscape?24:landscape?27:32;
   if(chapterComplete){center((this.levels?.chapters.find(chapter=>chapter.levels.some(level=>level.id===levelClear.levelId))?.title||'本章')+'完成！',cy,landscape?13:16,ink,800);cy+=landscape?18:26;}
-  const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
+  const pieces=room?room.state.cols*room.state.rows:0,started=snap?.startedAt,finished=room?.completedAt??snap?.completedAt,members=(snap?.members??[]).filter(member=>member.name),ranking=Array.isArray(result?.ranking)?result.ranking:null,contributors=ranking??members.filter(member=>(member.contribution??0)>0),together=contributors.length||members.length;
   const meta=[pieces?pieces+' 片':'',started&&finished&&finished>started?'用时 '+Math.max(1,Math.round((finished-started)/60000))+' 分钟':'',together?together+' 人同桌':''].filter(Boolean).join(' · ');  // Story clears: chapter progress + next album reward, then a teaser of the next level. The short landscape panel
   // shows the progress line in place of the table metadata and skips the teaser.
   const story=levelClear?this.storyCompletionLines(levelClear.levelId,this.availableChapters,Math.floor(width/13)):null,storyHead=story?story.progress+(story.reward?' · '+story.reward:''):'';
@@ -106,7 +106,7 @@ export function drawCompletionContentPanel(this:AppHost,left:number,cy:number,wi
      if(doubled&&(bonusCoins>0||bonusFragments>0)){const bonusText='已看广告双倍领取（额外 '+[bonusCoins>0?'+'+bonusCoins+' 金币':'',bonusFragments>0?'+'+bonusFragments+' 碎片':''].filter(Boolean).join('、')+'）';center(bonusText,cy,landscape?11:12,this.colors.berry,700);cy+=landscape?16:22;}
      if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,landscape?12:13,muted,600);cy+=levelLandscape?16:landscape?18:26;}
      for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,landscape?12:13,ink,700);cy+=landscape?18:24;}
-    }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
+    }else{cy=this.paragraph(room?.pendingCompletionSync?'离线已完成！进度已保存在本机，网络恢复后将自动同步并发放奖励。':'正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
     cy+=landscape?2:6;
     const extra=this.completionFlow.action(this.completionContext()),inlineDouble=canDouble&&landscape&&!extra;
     const doubleRewardParts=[baseCoins>0?'+'+baseCoins+(inlineDouble?'金':' 金币'):'',baseFragments>0?'+'+baseFragments+(inlineDouble?'碎':' 碎片'):''].filter(Boolean).join(' ');
