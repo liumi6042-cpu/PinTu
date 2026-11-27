@@ -49,7 +49,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.29';
+const CLIENT_PACKAGE_VERSION='v53.30';
 
 /** One scene graph and one set of game rules for both mobile platforms. */
 export class GameApp{
@@ -1306,7 +1306,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private setLobbyChip(change:()=>void){const before=JSON.stringify([this.direction,this.filterCount,this.lobbyPieces]);change();if(JSON.stringify([this.direction,this.filterCount,this.lobbyPieces])===before)return;this.scroll=0;this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();this.invalidate();}
  private drawRoomHeader(x:number,y:number,w:number,compact:boolean){return drawRoomHeaderPanel.call(this.host,x,y,w,compact);}
- private drawChips(x:number,y:number,w:number,h:number,chips:readonly(readonly[string,boolean,()=>void])[]){return drawChipsPanel.call(this.host,x,y,w,h,chips);}
+ private drawChips(x:number,y:number,w:number,h:number,chips:readonly(readonly[string,boolean,()=>void])[],fill=false){return drawChipsPanel.call(this.host,x,y,w,h,chips,fill);}
  private drawRoomSection(x:number,y:number,w:number,columns:number,top:number,bottom:number){return this.drawRoomGrid(x,this.drawRoomHeader(x,y,w,false),w,columns,top,bottom);}
  private drawRoomGrid(x:number,y:number,w:number,columns:number,top:number,bottom:number){return drawRoomGridPanel.call(this.host,x,y,w,columns,top,bottom);}
  private drawRoomCard(room:RoomListing,r:Rect,completed?:Set<string>){return drawRoomCardPanel.call(this.host,room,r,completed);}

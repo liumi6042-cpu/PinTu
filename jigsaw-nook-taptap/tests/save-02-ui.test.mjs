@@ -58,12 +58,24 @@ test('the lobby tip follows the avatar through the landscape rail and fits narro
  }
 });
 
-test('history buttons use the same full label and measure space for the piece icon',()=>{
+test('lobby replaces quick-join with 历史记录, drops room-header filter chips, and settings keeps 历史拼图',()=>{
  for(const compact of [false,true]){
-  const f=fixture({width:844,height:390}),measure=f.stage.measure,calls=[];
-  f.stage.measure=(...args)=>{calls.push(args);return measure(...args);};f.app.drawRoomHeader(20,100,360,compact);
-  const button=f.buttons.find(button=>button.label==='历史拼图');assert.ok(button);assert.equal(button.opts.icon,'piece');assert.ok(calls.some(([label,size,weight])=>label==='历史拼图'&&size===12&&weight===750));assert.ok(button.r.w>=measure(button.label)+17+12);assert.ok(button.r.x+button.r.w<=380);
-  button.fn();assert.equal(f.app.modal,'history');
+  const f=fixture({width:844,height:390});
+  const actionButtons=[];
+  f.app.drawPictureButton=(r,label,fn,tone,icon)=>{actionButtons.push({r,label,fn,tone,icon});};
+  f.app.drawLobbyActions({x:12,y:200,w:366,h:compact?38:46});
+  assert.deepEqual(actionButtons.map(b=>b.label),['历史记录','开一桌']);
+  assert.equal(actionButtons[0].icon,'piece');
+  actionButtons[0].fn();assert.equal(f.app.modal,'history');
+
+  f.clear();
+  const chipsDrawn=[];
+  f.app.drawChips=(...args)=>{chipsDrawn.push(args);return args[1]+args[3];};
+  f.app.drawRoomHeader(20,100,360,compact);
+  assert.equal(chipsDrawn.length,0,'public room header renders no filter chips below it');
+  assert.equal(f.buttons.some(button=>button.label==='历史拼图'),false,'no duplicate history button in room header');
+  assert.ok(f.texts.includes('公开房间'));
+
   f.clear();f.stage.segments=()=>{};f.app.modal='settings';f.app.drawModal();assert.ok(f.buttons.some(button=>button.label==='历史拼图'));assert.ok(!f.buttons.some(button=>button.label==='拼图历史'));
  }
 });

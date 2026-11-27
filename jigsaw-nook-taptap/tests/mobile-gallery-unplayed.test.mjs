@@ -208,64 +208,43 @@ test('gallery photo card and lobby room card render 已拼 corner badge for comp
  assert.equal(texts.includes('已拼'),false,'unplayed lobby room card omits 已拼 badge');
 });
 
-test('lobby 5-chip bar and filter modal support 未拼过 filtering and one-tap reset without wiping loaded rooms',()=>{
- const {app}=galleryFixture({layout:'phonePortrait',completedGalleryIds:['img-done']});
- const chips=[],modalButtons=[];
- let loadLobbyCalls=0;
- Object.assign(app,{
-  route:'lobby',
-  lobbyPieces:'all',
-  lobbyUnplayedOnly:false,
-  openOnly:true,
-  activeOnly:false,
-  filterCount:0,
-  direction:'all',
-  lobbyCursor:null,
-  lobbyLoading:false,
-  lobbyQuiet:false,
-  rooms:[
-   {id:'r-done',title:'拼过的图',imageId:'img-done',pieces:108,placed:10,players:1,acceptingNew:true,completed:false},
-   {id:'r-new',title:'没拼过的图',imageId:'img-new',pieces:300,placed:5,players:2,acceptingNew:true,completed:false},
-  ],
-  stage:{...app.stage,button(){}},
-  drawChips(_x,y,_w,h,list){chips.length=0;chips.push(...list.map(([label,selected,action])=>({label,selected,action})));return y+h;},
-  loadLobby(){loadLobbyCalls++;},
-  button(_x,_y,_w,label,action){modalButtons.push({label,action});},
-  rowOptions(){},
-  modalHeader(){},
-  stagePanel(){},
- });
- app.stage.panel=()=>{};
+test('gallery chips fill the full row edge-to-edge with zero trailing gap, and lobby hides room filter chips while replacing 快速加入 with 历史记录',()=>{
+ const {app,state}=galleryFixture({layout:'phonePortrait',completedGalleryIds:['img-done']});
+ const frames=[];
+ app.stage.frame=r=>frames.push(r);
+ app.stage.measure=text=>String(text).length*10;
 
- app.drawRoomHeader(12,80,366,false);
- assert.deepEqual(chips.map(c=>c.label),['全部','≤108片','300片+','未拼过','筛选']);
- assert.deepEqual(app.lobbyRooms.map(r=>r.id),['r-done','r-new']);
+ // Full-width gallery chips: start at left (12) and end exactly at left + gridW (12 + 366 = 378).
+ const chipDefs=[['全部',true,()=>{}],['免费',false,()=>{}],['我的图包',false,()=>{}],['未拼过',false,()=>{}],['筛选',false,()=>{}]];
+ GameApp.prototype.drawChips.call(app,12,80,366,30,chipDefs,true);
+ assert.equal(frames.length,5);
+ assert.equal(frames[0].x,12);
+ assert.equal(frames[4].x+frames[4].w,12+366,'last gallery chip aligns flush with the right edge');
+ for(let i=1;i<frames.length;i++)assert.equal(frames[i].x,frames[i-1].x+frames[i-1].w+6,'uniform 6px gap between full-width chips');
 
- // Toggle 未拼过 chip on lobby: filters out completed room immediately with zero server reload.
- chips.find(c=>c.label==='未拼过').action();
- assert.equal(app.lobbyUnplayedOnly,true);
- assert.equal(loadLobbyCalls,0);
- assert.deepEqual(app.lobbyRooms.map(r=>r.id),['r-new']);
- app.drawRoomHeader(12,80,366,false);
- assert.equal(chips.find(c=>c.label==='✓ 未拼过').selected,true);
+ // Gallery calls drawChips with fill=true.
+ let capturedFill=false;
+ app.drawChips=(_x,y,_w,h,_chips,fill)=>{capturedFill=fill===true;return y+h;};
+ app.drawGallery();
+ assert.equal(capturedFill,true,'drawGallery requests edge-to-edge full-width chip layout');
 
- // Direction filter surfaces count badge on 筛选 and modal exposes 只看未拼过的图片 + 重置筛选.
- app.direction='portrait';
- app.drawRoomHeader(12,80,366,false);
- assert.equal(chips.at(-1).label,'筛选·1');
- assert.equal(chips.at(-1).selected,true);
+ // Lobby actions replace 快速加入 with 历史记录 (opening history modal) alongside 开一桌.
+ const actionButtons=[];
+ app.drawPictureButton=(r,label,fn,tone,icon)=>actionButtons.push({r,label,fn,tone,icon});
+ app.drawLobbyActions({x:12,y:200,w:366,h:46});
+ assert.deepEqual(actionButtons.map(b=>b.label),['历史记录','开一桌']);
+ assert.equal(actionButtons[0].icon,'piece');
+ actionButtons[0].fn();
+ assert.equal(state.modalOpened,'history');
 
- app.modal='filters';
- app.filterView=app.captureListView();
- modalButtons.length=0;
- app.drawModal();
- assert.ok(modalButtons.some(b=>b.label==='✓ 只看未拼过的图片'),'lobby filter modal shows active unplayed toggle');
- const resetBtn=modalButtons.find(b=>b.label==='重置筛选');
- assert.ok(resetBtn,'lobby filter modal offers 重置筛选 when filters are active');
- resetBtn.action();
- assert.equal(app.direction,'all');
- assert.equal(app.lobbyUnplayedOnly,false);
- assert.deepEqual(app.lobbyRooms.map(r=>r.id),['r-done','r-new']);
+ // Lobby public-room header renders no filter chips below it.
+ let lobbyChipsCalled=0;
+ app.drawChips=(_x,y,_w,h)=>{lobbyChipsCalled++;return y+h;};
+ app.rooms=[{id:'r1',title:'测试房',imageId:'img-done',pieces:108,placed:10,players:1,acceptingNew:true,completed:false}];
+ app.lobbyPieces='all';app.lobbyUnplayedOnly=false;app.lobbyCursor=null;
+ const nextY=app.drawRoomHeader(12,80,366,false);
+ assert.equal(lobbyChipsCalled,0,'public room header renders zero filter chips');
+ assert.equal(nextY,80+34);
 });
 
 test('gallery shows friendly empty state when every visible image is completed, including owned packs',()=>{
