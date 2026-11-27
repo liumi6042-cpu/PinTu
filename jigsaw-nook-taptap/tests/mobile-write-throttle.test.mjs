@@ -59,8 +59,8 @@ test('instances share presence throttling and always read newly committed profil
   const initial=f.call().data;f.reset();
   f.now=start+9999;assert.equal(f.call(undefined,{instance:f.peer}).data.code,initial.code);assert.equal(f.writes('presence','update'),0);
   f.now++;assert.equal(f.call(undefined,{instance:f.peer}).status,200);assert.equal(f.call().status,200);assert.equal(f.writes('presence','update'),1);
-  const updated=f.call('/api/mobile/profile',{method:'PATCH',body:{name:'跨实例玩家',autoSupply:true},instance:f.peer});assert.equal(updated.status,200);
-  assert.equal(f.call().data.name,'跨实例玩家');assert.equal(f.call().data.autoSupply,true);assert.equal(f.writes('profile','update'),1);
+  const updated=f.call('/api/mobile/profile',{method:'PATCH',body:{name:'跨实例玩家',autoSupply:false},instance:f.peer});assert.equal(updated.status,200);
+  assert.equal(f.call().data.name,'跨实例玩家');assert.equal(f.call().data.autoSupply,false);assert.equal(f.writes('profile','update'),1);
   f.reset();for(let i=0;i<8;i++){f.now+=1000;assert.equal(f.call(undefined,{instance:i%2?f.peer:f.service}).status,200);}
   assert.equal(f.writes('profile','update'),0);assert.equal(f.writes('presence','update'),0);
  }finally{f.close();}

@@ -36,10 +36,10 @@ test('mobile public-test defaults reject direct free-text APIs; Web and explicit
   assert.equal(f.service.capabilities.customNames,false);
   assert.equal(f.service.capabilities.social.privateMessages,false);
   for(const key of ['friends','privateMessageHistory','roomInvites','reports','blocking','search','presence'])assert.equal(f.service.capabilities.social[key],true);
-  assert.equal(f.call(a,'/api/mobile/profile',{name:'不应保存',autoSupply:true},'PATCH').data.code,'CUSTOM_NAMES_UNAVAILABLE');
+  assert.equal(f.call(a,'/api/mobile/profile',{name:'不应保存',autoSupply:false},'PATCH').data.code,'CUSTOM_NAMES_UNAVAILABLE');
   {const name=f.call(a,'/api/mobile/profile').data.name;assert.notEqual(name,'不应保存');assert.equal(f.call(a,'/api/mobile/profile').data.name,name);}
-  assert.equal(f.call(a,'/api/mobile/profile').data.autoSupply,false); // Failed mixed updates roll back.
-  assert.equal(f.call(a,'/api/mobile/profile',{autoSupply:true},'PATCH').data.autoSupply,true);
+  assert.equal(f.call(a,'/api/mobile/profile').data.autoSupply,true); // Failed mixed updates roll back.
+  assert.equal(f.call(a,'/api/mobile/profile',{autoSupply:false},'PATCH').data.autoSupply,false);
   assert.equal(f.social(a,'/messages',{kind:'text',peer:'123456789',text:'旧客户端直连'}).data.code,'PRIVATE_MESSAGES_UNAVAILABLE');
   for(const target of [web,explicit]){
    assert.equal(target.service.capabilities.customNames,true);

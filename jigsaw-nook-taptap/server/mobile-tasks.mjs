@@ -42,6 +42,7 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
  `);
  const bonusFor=p=>energyEnabled?readInviteCapBonus(p.id).count:0;
  const giftCount=owner=>Number(db.prepare('SELECT COUNT(*) n FROM mobile_task_gifts WHERE owner=? AND opened_at IS NULL').get(owner).n);
+ const energyGiftCount=owner=>Number(db.prepare("SELECT COUNT(*) n FROM mobile_task_gifts WHERE owner=? AND opened_at IS NULL AND (energy>0 OR kind='invite-refill')").get(owner).n);
  function rewardFor(kind,settings){
   const baseline=KINDS.get(kind);if(!baseline)throw new Error('Unknown gift kind');
   const task=settings.tasks.find(task=>task.id===kind);
@@ -162,5 +163,26 @@ export function createMobileTasks({db,readProfile,saveProfile,areFriends=()=>fal
   p.lastReward={type:'gift-open',...effectResult,quantity:input.quantity,energy,xp,coins,levels,gift:0,giftsAdded:0,energySpent:0,autoUsed:false,at:now};
   return {kind:input.kind,...effectResult,quantity:input.quantity,energy,xp,coins,levels};
  }
- return {view,accept,record,open,share,giftCount,beginner};
+ /** Auto-open one unopened gift that can restore energy when stamina runs dry during play.
+  * Pre-checks energy yield before any SQLite write so solo-batch ENERGY_EMPTY stays rollback-free. */
+ function openAutoGift(p,{group,minEnergy=1,cap,requestId,now}){
+  if(!energyEnabled)return null;
+  const need=Math.max(1,Number(minEnergy)||1);
+  const where=group==='task'?"g.kind NOT LIKE 'ten-%' AND g.kind<>'invite-refill' AND g.energy>=?":group==='ten'?"g.kind LIKE 'ten-%' AND g.energy>=?":"g.kind='invite-refill'";
+  const params=group==='invite-refill'?[p.id]:[p.id,need];
+  const gift=db.prepare(`SELECT g.id,g.kind,g.energy,g.xp,COALESCE(json_extract(r.metadata,'$.coins'),0) coins FROM mobile_task_gifts g LEFT JOIN mobile_task_gift_rewards r ON r.gift_id=g.id WHERE g.owner=? AND g.opened_at IS NULL AND ${where} ORDER BY g.created_at,g.id LIMIT 1`).get(...params);
+  if(!gift)return null;
+  const baseline=KINDS.get(gift.kind),fullEnergy=baseline?.effect==='full-energy';
+  if(fullEnergy&&(isEnergyUnlimited(p,now)||cap<p.energy+need))return null;
+  const gameSettings=readGameSettings(),inviteBonus=bonusFor(p);
+  const change=db.prepare('UPDATE mobile_task_gifts SET opened_at=?,opened_request=? WHERE id=? AND owner=? AND opened_at IS NULL').run(now,'auto:'+requestId,gift.id,p.id);
+  if(change.changes!==1)return null;
+  const levels=applyExperience(p,gift.xp,now,gameSettings,{energyEnabled,inviteBonus});
+  const currentCap=effectiveEnergyCap(p.level,gameSettings,inviteBonus);
+  const energy=fullEnergy?Math.max(0,currentCap-p.energy):gift.energy;
+  const coins=awardCoins(p.id,'gift:'+gift.id,gift.coins,now);
+  p.energy+=energy;if(p.energy>=currentCap)p.energyAt=now;
+  return {id:gift.id,source:'gift',kind:gift.kind,title:baseline?.title??'任务礼包',energy,xp:gift.xp,coins,levels,fullEnergy};
+ }
+ return {view,accept,record,open,openAutoGift,share,giftCount,energyGiftCount,beginner};
 }

@@ -138,7 +138,18 @@ export function createMobileService(options={}){
  CREATE TABLE IF NOT EXISTS mobile_tool_grants(room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,kind TEXT NOT NULL,expires_at INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(room_id,owner,request_id));
  CREATE TABLE IF NOT EXISTS mobile_settlements(room_id TEXT NOT NULL,owner TEXT NOT NULL,energy INTEGER NOT NULL,contribution INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(room_id,owner));
  CREATE TABLE IF NOT EXISTS mobile_chat(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,data TEXT NOT NULL,sent_at INTEGER NOT NULL,UNIQUE(room_id,owner,request_id));
- CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));`);
+ CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));
+ CREATE TABLE IF NOT EXISTS mobile_migrations(id TEXT PRIMARY KEY,applied_at INTEGER NOT NULL);`);
+ if(!db.prepare("SELECT 1 FROM mobile_migrations WHERE id='auto-supply-default-on-v1'").get()){
+  db.exec('BEGIN IMMEDIATE');
+  try{
+   if(!db.prepare("SELECT 1 FROM mobile_migrations WHERE id='auto-supply-default-on-v1'").get()){
+    db.prepare("UPDATE mobile_profiles SET data=json_set(data,'$.autoSupply',json('true')) WHERE json_extract(data,'$.autoSupply') IS 0 OR json_extract(data,'$.autoSupply') IS NULL").run();
+    db.prepare("INSERT INTO mobile_migrations VALUES('auto-supply-default-on-v1',?)").run(clock());
+   }
+   db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+ }
  const events=createMobileEvents({db});
  // Energy rejection must survive the action's rollback (including savepoints).
  let requestEnergyEmpty=null;
@@ -312,7 +323,7 @@ export function createMobileService(options={}){
   value=identity?{contribution:room.achievements?.contributors?.[identity]?.count??0,code:social.person(identity,now).code,level:readProfile(identity,now).level,decoration:collection.equipped(identity)}:{contribution:0,code:null,level:0,decoration:null};
   cards.set(member.id,value);return value;
  };
- const profileView=(p,now)=>{const energyAdCount=energyAdCountToday(p,now),energyUnlimited=unlimitedEnergyToday(p,now);return {capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id),energyAdToday:{count:energyAdCount,limit:ENERGY_AD_DAILY_LIMIT,unlimited:energyUnlimited},unlimitedEnergyToday:energyUnlimited}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,shareEnergyClaimedToday:p.shareEnergyDay===shareEnergyDay(now),autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&!energyUnlimited&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)};};
+ const profileView=(p,now)=>{const energyAdCount=energyAdCountToday(p,now),energyUnlimited=unlimitedEnergyToday(p,now);return {capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id),energyAdToday:{count:energyAdCount,limit:ENERGY_AD_DAILY_LIMIT,unlimited:energyUnlimited},unlimitedEnergyToday:energyUnlimited}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),...(energyEnabled?{autoEnergyGiftCount:tasks.energyGiftCount(p.id)}:{}),supply:p.supply,shareEnergyClaimedToday:p.shareEnergyDay===shareEnergyDay(now),autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&!energyUnlimited&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)};};
  const photoOf=room=>engine.roomArtworkPhoto(room,engine.RESTORABLE_PHOTOS);
  const displayPhoto=(photo,request)=>photo&&request.artworkSnapshot===true?engine.activeArtworkPhoto(photo):photo;
  const creationArtwork=(photo,pieces,request)=>engine.currentRoomArtwork(engine.RESTORABLE_PHOTOS.find(item=>item.id===photo.id)??photo,pieces,request.artworkSnapshot!==true);
@@ -809,14 +820,31 @@ export function createMobileService(options={}){
    const added=(room.achievements?.contributors?.[p.id]?.count??0)-oldContrib;
    let mobileContribution;
    if(added&&room.diagnostic!==true){
-    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,freeRoom:room.mobileMode==='postcard',unlimitedEnergy:unlimitedEnergyToday(p,now),now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
+    const autoRefill=(profile,{cost,cap})=>{
+     const need=Math.max(1,cost-profile.energy);
+     const taskGift=tasks.openAutoGift(profile,{group:'task',minEnergy:need,cap,requestId:input.requestId,now});
+     if(taskGift)return taskGift;
+     const tenGift=tasks.openAutoGift(profile,{group:'ten',minEnergy:need,cap,requestId:input.requestId,now});
+     if(tenGift)return tenGift;
+     if(profile.supply.energy>0&&cap>=cost){
+      const gained=Math.max(0,cap-profile.energy);
+      profile.supply.energy--;profile.energy=Math.max(profile.energy,cap);profile.energyAt=now;
+      return {id:'supply:'+input.requestId,source:'supply',kind:'energy',title:'补满体力包',energy:gained,xp:0,coins:0,levels:0,fullEnergy:true};
+     }
+     if(cap>=cost){
+      const inviteRefill=tasks.openAutoGift(profile,{group:'invite-refill',minEnergy:need,cap,requestId:input.requestId,now});
+      if(inviteRefill)return inviteRefill;
+     }
+     return null;
+    };
+    const reward=applyContribution(p,{protectedRoom:p.firstRoomId===room.id&&!p.firstRoomCompleted,freeRoom:room.mobileMode==='postcard',unlimitedEnergy:unlimitedEnergyToday(p,now),autoRefill,now,randomInt,taskRewards:operationTaskRewards,gameSettings:operationGameSettings,energyEnabled,inviteBonus:readInviteCapBonus(p.id).count});if(!reward){requestEnergyEmpty=[p.id,'energy-empty',room.id,{progressPercent:Math.round(engine.placedCount({...room.puzzle,groups:before})/(room.puzzle.cols*room.puzzle.rows)*100)},now];fail(402,'ENERGY_EMPTY','体力不足，请使用补给或稍后再来',{profile:profileView(p,now)});}
     room.mobileContributionXp[p.id]=(room.mobileContributionXp[p.id]??0)+reward.xp;
     p.lastReward.giftsAdded=tasks.record(p,room,input.requestId,reward.pendingGift,now,engine.ONLINE_MS);
     if(retention&&room.mobileMode==='daily')try{
      const date=engine.dailyPuzzleDate(dailyClock(now));if(room.mobileDay===date)retention.dailyMerge(p.id,date,now);
     }catch(error){console.warn('mobile retention daily merge failed:',error.message);}
     const coins=collection.contribution(p.id,room.id,input.requestId,now)+tasks.beginner(p.id,now).coins;p.lastReward.coins=coins;
-    mobileContribution={requestId:input.requestId,groupId:input.groupId,creditedXp:reward.xp,creditedCoins:coins};
+    mobileContribution={requestId:input.requestId,groupId:input.groupId,creditedXp:reward.xp,creditedCoins:coins,...(reward.autoSupplyUsed?{autoSupplyUsed:reward.autoSupplyUsed}:{})};
    }
    room.revision++;engine.recordRoomChange(room,before);settle(room,now,p);saveRoom(room);if(input.type==='leave')pruneRoomCursors(room);saveProfile(p);return {...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(mobileContribution?{mobileContribution}:{})};
   };

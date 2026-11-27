@@ -5,11 +5,12 @@ import { saveTicket, roomSessionKey, type RoomTicket } from '../lib/room-client'
 export type SupplyKind = 'energy' | 'create';
 export type MobileLevelClear={levelId:string;energy:number;firstClear:boolean;nextLevelId:string|null;chapterComplete:boolean};
 export type MobileOwnedRoom = {id:string;title?:string;imageId?:string;pieces?:number;actualPieces?:number;placed?:number;players?:number;completed?:boolean;completedAt?:number|null;visibility?:string;inviteCode?:string;thumbSrc?:string;lastJoinedAt?:number;unavailable?:boolean;photo?:{title?:string;src?:string;thumbSrc?:string}|null;artwork?:{src?:string}|null};
+export type AutoSupplyUsed={id?:string;source:'gift'|'supply';kind:string;title:string;energy:number;xp?:number;coins?:number;levels?:number;fullEnergy?:boolean};
 export type MobileProfile = {
  diagnostics?:boolean;
  code?:string;
  collection?:{coins:number;fragments:number;ownedPackIds:string[];ownedImageIds:string[];equipped:{id:string;title:string;kind:string;artKey:string;color:string}|null};
- name:string; level:number; xp:number; totalXp:number; xpToNext:number; energy:number; energyCap:number; inviteCapBonus?:{count:number;maximum:number}; giftProgress:number; giftCount?:number;
+ name:string; level:number; xp:number; totalXp:number; xpToNext:number; energy:number; energyCap:number; inviteCapBonus?:{count:number;maximum:number}; giftProgress:number; giftCount?:number; autoEnergyGiftCount?:number;
  economy?:{contributionCost:number;contributionXp:number;firstRoomFree:boolean;upgradeRefill:'full'|'fixed'|'none';upgradeEnergy:number;naturalRecoveryMinutes:number};
  supply:{energy:number;create:number}; autoSupply:boolean; adEligible:boolean; ownedRooms:MobileOwnedRoom[];
  energyAdToday?:{count:number;limit:number;unlimited:boolean}; unlimitedEnergyToday?:boolean;

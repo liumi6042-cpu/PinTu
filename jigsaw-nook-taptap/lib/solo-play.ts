@@ -6,7 +6,7 @@ export const SOLO_ONLINE_MS = 22000;
 export const SOLO_BATCH_MAX = 40;
 export const SOLO_MAX_PENDING = 600;
 export type SoloOp = {requestId:string; groupId:number; dx:number; dy:number; snapped:boolean};
-export type SoloEnergy = {enabled:boolean; energy:number; cap:number; cost:number; xp:number; autoSupply:boolean; supplyEnergy:number; free:boolean};
+export type SoloEnergy = {enabled:boolean; energy:number; cap:number; cost:number; xp:number; autoSupply:boolean; supplyEnergy:number; autoGiftCount?:number; free:boolean};
 export type SoloStorage = {get(k:string):string|null; set(k:string,v:string):void; remove(k:string):void};
 export type SoloOutbox = {v:1; roomId:string; playerId:string; token:string; ops:SoloOp[]; savedAt:number};
 export type SoloBatchReceipt = {applied:string[]; skipped:{requestId:string;code:string}[]; stopped:null|{requestId:string;code:string;message?:string}};
@@ -38,7 +38,10 @@ export function otherPlayersPresent(snapshot:RoomSnapshot,playerId:string) {
     ||Object.values(snapshot.leases).some(lease=>lease.playerId!==playerId);
 }
 export function soloCanAfford(e:SoloEnergy|null,pendingSnaps:number) {
-  return !e||!e.enabled||e.free||e.cost<=0||e.energy-e.cost*pendingSnaps>=e.cost||e.autoSupply&&e.supplyEnergy>0&&e.cap>=e.cost;
+  return !e||!e.enabled||e.free||e.cost<=0||e.energy-e.cost*pendingSnaps>=e.cost||e.autoSupply&&((e.supplyEnergy>0&&e.cap>=e.cost)||(e.autoGiftCount??0)>0);
+}
+export function soloNeedsAutoSupply(e:SoloEnergy|null,pendingSnaps:number) {
+  return !!e&&e.enabled&&!e.free&&e.cost>0&&e.energy-e.cost*pendingSnaps<0&&e.autoSupply&&((e.supplyEnergy>0&&e.cap>=e.cost)||(e.autoGiftCount??0)>0);
 }
 
 // Shared by the live client and launch-time recovery. A stopped op invalidates

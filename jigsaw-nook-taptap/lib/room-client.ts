@@ -7,7 +7,7 @@ import type {RealtimeRoomStream} from './room-realtime';
 import {DiagnosticDragPipeline} from './diagnostic-drag-pipeline';
 import type {MovePreview} from './room-preview';
 import type {PuzzleState} from './puzzle-engine';
-import {applySoloDrop,replaySoloOps,otherPlayersPresent,soloCanAfford,loadSoloOutbox,saveSoloOutbox,acknowledgeSoloOps,SOLO_BATCH_MAX,SOLO_MAX_PENDING,type SoloOp,type SoloEnergy,type SoloStorage,type SoloBatchReceipt} from './solo-play';
+import {applySoloDrop,replaySoloOps,otherPlayersPresent,soloCanAfford,soloNeedsAutoSupply,loadSoloOutbox,saveSoloOutbox,acknowledgeSoloOps,SOLO_BATCH_MAX,SOLO_MAX_PENDING,type SoloOp,type SoloEnergy,type SoloStorage,type SoloBatchReceipt} from './solo-play';
 /** The room protocol does not require a DOM table or browser networking. */
 export type RoomTable = Pick<PuzzleTable,'network'|'networkReady'|'syncRemote'|'cancelNetworkDrag'|'playConnectionSound'|'fit'>;
 export type RoomFetchReply = {ok:boolean;status:number;headers:{get(name:string):string|null};json():Promise<any>};
@@ -36,10 +36,11 @@ const browserDependencies:RoomClientDependencies={
 const cloneRoomValue=<T>(value:T):T=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
 const requestTimeout=()=>typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'?AbortSignal.timeout(6500):undefined;
 export type RoomTicket = { token: string; playerId: string; room: RoomSnapshot };
-type MobileContribution = { requestId: string; groupId: number; creditedXp: number };
+type AutoSupplyReceipt = { id?: string; source: 'gift' | 'supply'; kind: string; title: string; energy: number; xp?: number; coins?: number; levels?: number; fullEnergy?: boolean };
+type MobileContribution = { requestId: string; groupId: number; creditedXp: number; creditedCoins?: number; autoSupplyUsed?: AutoSupplyReceipt };
 type MobileRoomSnapshot = RoomSnapshot & { mobileContribution?: MobileContribution;offline?:boolean;diagnostic?:boolean;diagnosticTiming?:{serverMs:number} };
 type ClientAction = RoomAction | {type:'batch';ops:Omit<SoloOp,'snapped'>[]};
-type RoomReplyData = RoomUpdate & {error?:string;code?:string;profile?:unknown;mobileProfile?:unknown;mobileContribution?:MobileContribution;soloBatch?:SoloBatchReceipt;diagnosticTiming?:{serverMs:number}};
+type RoomReplyData = RoomUpdate & {error?:string;code?:string;profile?:unknown;mobileProfile?:unknown;mobileContribution?:MobileContribution;mobileContributions?:MobileContribution[];soloBatch?:SoloBatchReceipt;diagnosticTiming?:{serverMs:number}};
 export type RoomRequestTiming={action:string;ms:number;status:number;serverMs?:number};
 type Position = { dx: number; dy: number };
 type DragTask = {
@@ -137,6 +138,8 @@ export class RoomClient {
     const data = await response.json().catch(()=>({error:'连接暂时中断'})) as RoomReplyData;
     this.trace(action?.type??'poll',started,response.status,data.diagnosticTiming?.serverMs);
     if (data.profile ?? data.mobileProfile) this.deps.emit('mobile:profile',data.profile ?? data.mobileProfile);
+    if (data.mobileContribution?.autoSupplyUsed) this.deps.emit('mobile:auto-supply',data.mobileContribution.autoSupplyUsed);
+    if (Array.isArray(data.mobileContributions)) for (const item of data.mobileContributions) if (item?.autoSupplyUsed) this.deps.emit('mobile:auto-supply',item.autoSupplyUsed);
     if (!response.ok) { if(response.status===429||response.status===503)this.retryAt=this.deps.now()+retryDelay(response.headers.get('Retry-After'));const error = new Error(data.error || '连接暂时中断') as Error & { status: number; code?: string }; error.status = response.status; error.code = data.code; throw error; }
     const receipt = data.mobileContribution;
     const contribution = actionWithId?.type === 'drop' && receipt
@@ -253,6 +256,7 @@ export class RoomClient {
         receive:(reply,input)=>{
           const action=input.action;
           const receipt=reply.data?.mobileContribution;
+          if(receipt?.autoSupplyUsed)this.deps.emit('mobile:auto-supply',receipt.autoSupplyUsed);
           const contribution=action.type==='drop'&&receipt?.requestId===input.id&&receipt.groupId===action.groupId&&Number.isFinite(receipt.creditedXp)&&receipt.creditedXp>0?receipt:undefined;
           const before=action.type==='drop'?this.snapshot.puzzle.groups.find(g=>g.id===action.groupId):undefined;
           const merged=applyRoomUpdate(this.snapshot,reply.data);
@@ -526,7 +530,8 @@ export class RoomClient {
       }
       const now=this.deps.now();this.firstUnsentAt??=now;
       const unsent=this.soloOps.length-this.soloInflight;
-      this.scheduleSoloFlush(result.completed||unsent>=25?0:Math.max(0,Math.min(800,3000-(now-this.firstUnsentAt))));
+      const needsAutoSupply=op.snapped&&soloNeedsAutoSupply(this.deps.solo?.energy()??null,this.soloOps.filter(item=>item.snapped).length);
+      this.scheduleSoloFlush(result.completed||needsAutoSupply||unsent>=25?0:Math.max(0,Math.min(800,3000-(now-this.firstUnsentAt))));
       this.emit();
     }finally{this.soloDropping=false;this.exitWake?.();}
   }
