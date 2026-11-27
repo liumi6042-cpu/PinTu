@@ -190,7 +190,8 @@ export function drawPolicyPanel(this:AppHost){const s=this.stage;let y=this.body
   [this.energyEnabled?'体力与经验':'拼合与经验',this.energyEnabled?contributionCopy(this.client.profile)+' '+recoveryCopy(this.client.profile)+' 体力耗尽后拼下一片时默认自动开启任务礼包或补满体力包（可在设置里关闭）。每日观看 5 次补满体力包广告后，当日解锁无限体力（次日 0 点重置）。':'浏览器拼图不消耗体力。有效拼合可获得经验，金币和装饰按统一奖励规则结算。'],
   ['房间与收藏','随机公开房免费创建。指定图片或私人房使用建房券；已购图包可免费创建公开房。同时最多保留'+this.ownRoomLimit+'个未结束的自建房间。'],
   ['邀请与礼包',this.inviteRewardsHidden?'和好友一起拼图，可以积累每日任务礼包；邀请好友不发放奖励。':this.energyEnabled?'好友首次接受邀请并完成3次有效拼合，邀请者可获得补满体力包，每日最多3位。与好友实际协作，还可积累每日任务礼包。':'与好友实际参与拼图，可以积累任务礼包；金币与经验奖励以任务页面展示为准。'],
- ];this.scrolled(()=>{for(const[title,text]of sections){s.text(title,20,y,18,this.colors.ink,700);y=this.paragraph(text,20,y+31,s.w-40,14)+24;}if(!this.formalWeb){this.button(20,y,s.w-40,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));y+=48;}this.button(20,y,s.w-40,'服务与隐私说明',()=>this.navigate('privacy'));y+=52;});this.extent=y-(this.bodyTop-this.scroll);}
+  ...(this.communityGroupVisible?[['玩家交流群与卡顿反馈','欢迎加入玩家交流 QQ 群 397229653，进群可领兑换码、约朋友一起拼图。如果游玩中遇到画面卡顿或网络波动，可在「设置」或房间「更多」里打开卡顿与网络诊断，一键复制日志发到群里反馈。']]:[['卡顿与网络诊断','如果游玩中遇到画面卡顿或网络波动，可在「设置」或房间「更多」里打开房间网络诊断浮窗或复制诊断日志。']]),
+ ];this.scrolled(()=>{for(const[title,text]of sections){s.text(title,20,y,18,this.colors.ink,700);y=this.paragraph(text,20,y+31,s.w-40,14)+24;}if(this.communityGroupVisible&&this.route==='help'){this.button(20,y,s.w-40,'复制玩家 QQ 群号：397229653',()=>void this.copyQqGroup(),'berry');y+=48;}if(!this.formalWeb){this.button(20,y,s.w-40,'个人资料访问与删除申请',()=>this.showModal('privacyRequests'));y+=48;}this.button(20,y,s.w-40,'服务与隐私说明',()=>this.navigate('privacy'));y+=52;});this.extent=y-(this.bodyTop-this.scroll);}
 
 export function drawWelcomeHeroPanel(this:AppHost,r:Rect,slot:WelcomeSlot){
   const s=this.stage,c=s.ctx,photo=this.dailyPhoto,tone=slot.tone;
