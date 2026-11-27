@@ -1,24 +1,24 @@
 // 「团子去旅行 2.0」手作绘本可玩交互原型主控制器
 import {
-  DAY, HOUR, ITEMS, NPCS, PET_WHISPERS, POSTCARD_POOL, SOUVENIRS,
+  DAY, DECOR_ITEMS, DECOR_SLOTS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PET_WHISPERS, POSTCARD_POOL, SOUVENIRS,
 } from './catalog.js';
 import {
   buyItem, claimReunionGift, claimSill, clearDust, completePostcard,
-  createInitialState, feedSnack, getDerivedView, packBag, replyLetter, sendOffNow,
-  setTreatDish, simulateTo, togglePantrySlot,
+  createInitialState, equipDecor, feedSnack, getDerivedView, packBag, replyLetter, sendOffNow,
+  setTreatDish, simulateTo, spinGacha, togglePantrySlot,
 } from './engine.js';
 import { NookAtmosphere } from './particles.js';
 import { sound } from './audio.js';
 import { mountPostcardPuzzle } from './puzzle.js';
 
-const STORAGE_KEY = 'jigsaw:tuanzi-v2-prototype:v3';
+const STORAGE_KEY = 'jigsaw:tuanzi-v2-prototype:v4';
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 3) return parsed;
+      if (parsed?.version === 4) return parsed;
     }
   } catch {}
   return createInitialState();
@@ -29,7 +29,13 @@ function saveState(state) {
 }
 
 let state = loadState();
-let activeScreen = 'nook'; // 'nook' | 'bag' | 'reunion' | 'mailbox' | 'shop' | 'scrapbook'
+let activeScreen = 'nook'; // 'nook' | 'bag' | 'gacha' | 'reunion' | 'mailbox' | 'shop' | 'scrapbook'
+let decorMode = false;
+let decorTab = 'desk'; // 'all' | 'desk' | 'shelf' | 'window' | 'outfit'
+let selectedDecorSlot = 'desk'; // null or slot id
+let decorNightPreview = false;
+let gachaSpinning = false;
+let lastGachaResults = null;
 let bagSubTab = 'bag'; // 'bag' | 'pantry' | 'treat'
 let mailSubTab = 'postcards'; // 'postcards' | 'letters'
 let scrapSubTab = 'overview'; // 'overview' | 'souvenirs' | 'memories'
@@ -85,12 +91,38 @@ function showCatRibbon(text, ms = 3400) {
 
 function setScreen(next) {
   activeScreen = next;
+  if (next !== 'nook') {
+    decorMode = false;
+    decorNightPreview = false;
+  }
   playingPuzzleUid = null;
   activePuzzleApi = null;
   $('screen-nook').classList.toggle('hidden', next !== 'nook');
   $('screen-bag').classList.toggle('hidden', next !== 'bag');
+  $('screen-gacha').classList.toggle('hidden', next !== 'gacha');
   const isBook = ['reunion', 'mailbox', 'shop', 'scrapbook'].includes(next);
   $('screen-book').classList.toggle('hidden', !isBook);
+  sound.paperTurn();
+  renderAll();
+}
+
+function enterDecorMode(slotId = 'desk') {
+  activeScreen = 'nook';
+  decorMode = true;
+  selectedDecorSlot = slotId;
+  const slotObj = DECOR_SLOTS.find(s => s.id === slotId);
+  decorTab = slotObj ? slotObj.tab : 'all';
+  $('screen-nook').classList.remove('hidden');
+  $('screen-bag').classList.add('hidden');
+  $('screen-gacha').classList.add('hidden');
+  $('screen-book').classList.add('hidden');
+  sound.paperTurn();
+  renderAll();
+}
+
+function exitDecorMode() {
+  decorMode = false;
+  decorNightPreview = false;
   sound.paperTurn();
   renderAll();
 }
@@ -102,30 +134,95 @@ function commit(nextState) {
 }
 
 /* =========================================================
-   RENDER: NOOK MAIN SCENE + LIVE TUANZI + PARTICLES
+   RENDER: NOOK MAIN SCENE + IN-SITU DECOR LAYERS + LIVE TUANZI
    ========================================================= */
+function renderInSituDecorLayers(showEvolved) {
+  const layersEl = $('decor-layers');
+  const slotsEl = $('decor-slots-overlay');
+  const eq = state.equippedDecor || {};
+
+  // 渲染 7 个原地融合羽化贴片（严格锁定原生 768×1376 百分比坐标，零贴纸漂移！）
+  const patchHtml = [];
+  for (const slot of DECOR_SLOTS) {
+    if (slot.id === 'outfit') continue;
+    const itemId = eq[slot.id];
+    const item = itemId ? DECOR_ITEMS[itemId] : null;
+    if (!item?.patch || !item?.rect) continue;
+    patchHtml.push(
+      `<img class="decor-patch" src="${item.patch}" alt="${item.name}" style="left:${item.rect.left}%; top:${item.rect.top}%; width:${item.rect.width}%; height:${item.rect.height}%;" />`
+    );
+  }
+  layersEl.innerHTML = patchHtml.join('');
+
+  // 仅装扮模式显示「一格一位」轻盈虚线框（不遮挡摆件本体与团子眼睛）
+  if (decorMode && !showEvolved) {
+    slotsEl.innerHTML = DECOR_SLOTS.map(slot => {
+      const isSel = selectedDecorSlot === slot.id;
+      const b = slot.box;
+      return `
+        <button class="craft-btn slot-frame ${isSel ? 'selected' : ''}" data-select-slot="${slot.id}"
+          style="left:${b.left}%; top:${b.top}%; width:${b.width}%; height:${b.height}%;"
+          title="布置${slot.label}">
+          <span class="sf-tag">${slot.short}${isSel ? ' · 选中' : ''}</span>
+        </button>
+      `;
+    }).join('');
+    slotsEl.querySelectorAll('[data-select-slot]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedDecorSlot = btn.dataset.selectSlot;
+        const slotObj = DECOR_SLOTS.find(s => s.id === selectedDecorSlot);
+        if (slotObj) decorTab = slotObj.tab;
+        sound.paperTurn();
+        renderNook();
+        renderDecorDrawer();
+      });
+    });
+  } else {
+    slotsEl.innerHTML = '';
+  }
+}
+
 function renderNook() {
   const view = getDerivedView(state);
+  const eq = state.equippedDecor || {};
+  const showEvolved = view.isEvolvedRoom && !decorMode;
 
-  // 1. Day 1 初秋底图 -> Day 30 成长雪夜底图自然交叉淡入
-  $('room-bg-day30').style.opacity = view.isEvolvedRoom ? '1' : '0';
+  // 1. 装扮模式时上移整个实景舞台，露出全部木架、左桌台灯与团子
+  $('nook-stage').classList.toggle('decor-mode', decorMode);
+  $('nook-hud-layer').classList.toggle('hidden', decorMode);
+  $('decor-ui-layer').classList.toggle('hidden', !decorMode);
+  $('night-preview-veil').classList.toggle('active', decorMode && decorNightPreview);
+  $('decor-night-label').textContent = decorNightPreview ? '切回初秋午后' : '试看雪夜灯效';
 
-  // 2. 更新窗外粒子气候 & 屋内微尘
+  // Day 1 原地融合画板 -> Day 30 重逢雪夜底图自然交叉淡入
+  $('room-bg-day30').style.opacity = showEvolved ? '1' : '0';
+  renderInSituDecorLayers(showEvolved);
+
+  // 2. 更新窗外粒子气候 & 屋内动态台灯/水母光晕 & 微尘
+  const deskItem = eq.desk ? DECOR_ITEMS[eq.desk] : null;
   atmosphere.setScene({
-    weather: view.weather,
-    isEvolved: view.isEvolvedRoom,
-    dustLevel: state.dustLevel,
+    weather: decorMode && decorNightPreview ? 'snow' : view.weather,
+    isEvolved: showEvolved,
+    dustLevel: decorMode ? 0 : state.dustLevel,
+    lampGlow: deskItem?.lampGlow || null,
+    hasJellyGlow: eq.shelf1L === 's1l-jellyfish',
+    nightPreview: decorMode && decorNightPreview,
   });
-  canvas.classList.toggle('interactive-dust', state.dustLevel > 0);
-  $('dust-cue').style.display = state.dustLevel > 0 ? 'flex' : 'none';
+  canvas.classList.toggle('interactive-dust', !decorMode && state.dustLevel > 0);
+  $('dust-cue').style.display = !decorMode && state.dustLevel > 0 ? 'flex' : 'none';
 
-  // 3. 顶部麻绳木牌日历 & 橡木金币牌
+  // 3. 顶部麻绳木牌日历 & 橡木金币牌 & 右上黄铜摇奖匣挂徽
   $('plaque-date').textContent = view.cal.cnDate;
   const plaqueSub = view.hasPendingReunion
     ? `${view.cal.seasonLabel}${view.cal.isNight ? '雪夜' : view.cal.period} · 别${state.reunion.awayDays}日`
     : view.cal.plaqueSub;
   $('plaque-sub').textContent = plaqueSub;
   $('hud-coins').textContent = String(state.coins);
+
+  const tickets = state.tickets || 0;
+  $('gacha-ticket-badge').style.display = tickets > 0 ? 'flex' : 'none';
+  $('gacha-ticket-num').textContent = String(tickets);
 
   // 4. 窗台晒好的香酥小鱼干零食 + 直接投喂团子零食按钮
   if (view.sillPortions > 0 && !view.hasPendingReunion) {
@@ -143,19 +240,24 @@ function renderNook() {
   }
 
   // 5. 门口红丝带信捆火漆（重逢或有积压未读信件时显示）
-  const showBundle = view.isEvolvedRoom && (view.hasPendingReunion || view.unreadTotal >= 2);
+  const showBundle = showEvolved && (view.hasPendingReunion || view.unreadTotal >= 2);
   $('btn-bundle-seal').style.display = showBundle ? 'flex' : 'none';
   $('bundle-count').textContent = String(Math.max(view.unreadTotal, view.hasPendingReunion ? 5 : 0));
 
-  // 6. 团子活态姿态与动画
+  // 6. 团子活态姿态与整猫无缝穿搭（零贴纸帽！）
   const actor = $('tuanzi-actor');
   const sprite = $('tuanzi-sprite');
   const zzz = $('zzz-layer');
+  const outfit = DECOR_ITEMS[eq.outfit] || DECOR_ITEMS['outfit-default'];
   actor.className = 'tuanzi-actor';
-  if (view.isEvolvedRoom) actor.classList.add('in-evolved');
+  if (showEvolved) actor.classList.add('in-evolved');
   if (state.winterScarfUnlocked) actor.classList.add('has-scarf');
 
-  if (animOverride === 'departing') {
+  if (decorMode) {
+    sprite.src = outfit.waitSprite || './assets/cat/tuanzi-wait.webp';
+    actor.classList.add('pose-wait');
+    zzz.classList.remove('show');
+  } else if (animOverride === 'departing') {
     sprite.src = './assets/cat/tuanzi-leave.webp';
     actor.classList.add('pose-departing');
     zzz.classList.remove('show');
@@ -173,11 +275,11 @@ function renderNook() {
     zzz.classList.remove('show');
     showCatRibbon('你回来啦，下雪那天我给你留了礼物。', 0);
   } else if (state.pack.food) {
-    sprite.src = './assets/cat/tuanzi-wait.webp';
+    sprite.src = outfit.waitSprite || './assets/cat/tuanzi-wait.webp';
     actor.classList.add('pose-wait');
     zzz.classList.remove('show');
   } else {
-    sprite.src = './assets/cat/tuanzi-nap.webp';
+    sprite.src = outfit.napSprite || './assets/cat/tuanzi-nap.webp';
     actor.classList.add('pose-nap');
     zzz.classList.add('show');
   }
@@ -197,8 +299,14 @@ function renderNook() {
       $('rug-whisper').textContent = `团子背着「${foodName}」出门旅行了，坐垫上留了一张爪印纸条。`;
     } else if (state.pack.food) {
       $('rug-whisper').textContent = '布包装好啦，你可以轻推小门送它走，或等离开后悄悄出发。';
-    } else if (view.isEvolvedRoom) {
+    } else if (showEvolved) {
       $('rug-whisper').textContent = '窗外飘着微雪，阿胖在角落蹭午睡，屋里暖融融的。';
+    } else if (deskItem) {
+      $('rug-whisper').textContent = `${deskItem.name}亮着暖光，团子在绿花垫子上安稳打盹。`;
+    } else if (outfit.id === 'outfit-postman') {
+      $('rug-whisper').textContent = '团子戴着云邮局小圆帽，在午后阳光里打起了呼噜。';
+    } else if (outfit.id === 'outfit-redscarf') {
+      $('rug-whisper').textContent = '团子把小爪子缩进红绒围巾里，暖烘烘地眯起了眼。';
     } else {
       $('rug-whisper').textContent = '午后的阳光暖烘烘的，团子正在垫子上打盹。';
     }
@@ -211,6 +319,312 @@ function renderNook() {
   } else {
     $('mail-badge').style.display = 'none';
   }
+}
+
+/* =========================================================
+   RENDER: LIVE IN-SITU DECORATION DRAWER (实景布置小窝抽屉)
+   ========================================================= */
+function spawnSlotSparkles(slotId) {
+  const slot = DECOR_SLOTS.find(s => s.id === slotId);
+  if (!slot) return;
+  const cx = -3 + ((slot.box.left + slot.box.width * 0.5) / 100) * 471;
+  const cy = ((slot.box.top + slot.box.height * 0.5) / 100) * 844;
+  atmosphere.spawnBurst(Math.max(24, Math.min(366, cx)), Math.max(80, Math.min(720, cy)), 'reunion');
+}
+
+function renderDecorDrawer() {
+  if (!decorMode) return;
+  document.querySelectorAll('#decor-tabs .d-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.dtab === decorTab);
+  });
+
+  const eq = state.equippedDecor || {};
+  const owned = state.ownedDecor || [];
+  const allItems = Object.values(DECOR_ITEMS);
+
+  // 若选中了具体槽位且与当前切签一致，则突出该槽位并展示该槽位的「暂空此位」按钮
+  const slotObj = selectedDecorSlot ? DECOR_SLOTS.find(s => s.id === selectedDecorSlot) : null;
+  let list;
+  if (decorTab === 'all') {
+    list = allItems;
+    $('decor-slot-hint').innerHTML = `<span>全部原地融合摆件与穿搭</span><span>点屋里虚线框可按位筛选</span>`;
+  } else if (slotObj && slotObj.tab === decorTab) {
+    list = allItems.filter(it => it.slot === slotObj.id);
+    $('decor-slot-hint').innerHTML = `<span>当前选中：<b>${slotObj.label}</b></span><span>点下方卡片立刻替换</span>`;
+  } else {
+    const matchingSlots = DECOR_SLOTS.filter(s => s.tab === decorTab).map(s => s.id);
+    list = allItems.filter(it => matchingSlots.includes(it.slot));
+    const names = DECOR_SLOTS.filter(s => s.tab === decorTab).map(s => s.short).join(' / ');
+    $('decor-slot-hint').innerHTML = `<span>范围：${names}</span><span>点击即原地融合换上</span>`;
+  }
+
+  // 把已拥有且已摆放的排在前面，未获得的放后面方便浏览收集目标
+  list = [...list].sort((a, b) => {
+    const ea = eq[a.slot] === a.id ? 2 : owned.includes(a.id) ? 1 : 0;
+    const eb = eq[b.slot] === b.id ? 2 : owned.includes(b.id) ? 1 : 0;
+    return eb - ea;
+  });
+
+  const cards = list.map(item => {
+    const isOwned = owned.includes(item.id);
+    const isEquipped = eq[item.slot] === item.id;
+    const stateCls = isEquipped ? 'on' : isOwned ? 'ready' : 'gacha';
+    const stateText = isEquipped ? '已摆放' : isOwned ? '点击换上' : item.source.replace('摇奖·暖金珍品', '摇奖·金珠');
+    return `
+      <button class="craft-btn decor-card ${isEquipped ? 'equipped' : ''} ${!isOwned ? 'locked' : ''}"
+        data-decor-id="${item.id}" data-decor-slot="${item.slot}">
+        <img class="thumb" src="${item.thumb}" alt="${item.name}" />
+        <div class="d-name">${item.name}</div>
+        <div class="d-state ${stateCls}">${stateText}</div>
+      </button>
+    `;
+  });
+
+  // 针对单槽位（非团子穿搭）提供「暂空此位」一键收起
+  if (slotObj && slotObj.id !== 'outfit' && slotObj.tab === decorTab) {
+    const isEmpty = !eq[slotObj.id];
+    cards.push(`
+      <button class="craft-btn decor-card ${isEmpty ? 'equipped' : ''}" data-decor-clear="${slotObj.id}">
+        <div class="empty-icon-ring">×</div>
+        <div class="d-name">暂空此位</div>
+        <div class="d-state empty">${isEmpty ? '已留白' : '收起摆件'}</div>
+      </button>
+    `);
+  }
+
+  const gridEl = $('decor-grid');
+  gridEl.innerHTML = cards.join('');
+  $('decor-progress').textContent = `已收集小窝珍品 ${owned.length} / ${allItems.length} 件`;
+
+  gridEl.querySelectorAll('[data-decor-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.decorId;
+      const slotId = btn.dataset.decorSlot;
+      const item = DECOR_ITEMS[id];
+      if (!state.ownedDecor?.includes(id)) {
+        showToast(`「${item.name}」可在奶奶的黄铜摇奖匣摇出哦`);
+        return;
+      }
+      selectedDecorSlot = slotId;
+      const res = equipDecor(state, slotId, id);
+      if (res.ok) {
+        sound.decorSnap();
+        spawnSlotSparkles(slotId);
+        commit(res.state);
+        showToast(`已换上「${item.name}」`);
+      }
+    });
+  });
+
+  gridEl.querySelectorAll('[data-decor-clear]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const slotId = btn.dataset.decorClear;
+      const res = equipDecor(state, slotId, null);
+      if (res.ok) {
+        sound.paperTurn();
+        commit(res.state);
+        showToast('已收起此处摆件，保留留白呼吸感');
+      }
+    });
+  });
+}
+
+/* =========================================================
+   RENDER: GRANDMA'S BRASS GARAPON GACHA (奶奶的黄铜摇奖匣)
+   ========================================================= */
+function renderGachaScreen() {
+  const tickets = state.tickets || 0;
+  const pityLeft = Math.max(1, GACHA_CONFIG.pityMax - (state.gachaPity || 0));
+
+  $('gacha-tickets').textContent = `${tickets} 券`;
+  $('gacha-coins').textContent = String(state.coins);
+  $('gacha-pity-text').innerHTML = pityLeft <= 1
+    ? `<b>下一次必出</b> 暖金·小窝珍品！`
+    : `再摇 <b>${pityLeft} 次</b> 必出暖金·小窝珍品`;
+
+  $('gacha-1-cost').innerHTML = tickets >= 1
+    ? `<img src="./assets/icons/raffle-ticket.webp" alt="" />消耗 1 副券`
+    : `<img src="./assets/icons/coin.webp" alt="" />${GACHA_CONFIG.singleCoins} 金币`;
+
+  $('gacha-5-cost').innerHTML = tickets >= 5
+    ? `<img src="./assets/icons/raffle-ticket.webp" alt="" />消耗 5 副券 · 必出红/金`
+    : `<img src="./assets/icons/coin.webp" alt="" />${GACHA_CONFIG.fiveCoins} 金币 · 必出红/金`;
+
+  renderGachaRevealModal();
+}
+
+function renderGachaRevealModal() {
+  const modal = $('gacha-reveal-modal');
+  if (!lastGachaResults || !lastGachaResults.length) {
+    modal.classList.add('hidden');
+    modal.innerHTML = '';
+    return;
+  }
+  modal.classList.remove('hidden');
+
+  if (lastGachaResults.length === 1) {
+    const r = lastGachaResults[0];
+    const ball = GACHA_CONFIG.balls[r.tier] || GACHA_CONFIG.balls.green;
+    const isPlaceable = Boolean(r.decorId && DECOR_ITEMS[r.decorId]);
+    modal.innerHTML = `
+      <div class="reveal-ball-header">
+        <img src="${ball.icon}" alt="${ball.name}" />
+        <div class="r-title">摇出${ball.badge}</div>
+      </div>
+      <div class="gift-slip">
+        <img class="tape-top" src="./assets/uikit/washi-tape.webp" alt="" />
+        <div class="rarity-stamp ${r.tier}">${ball.badge}${r.isNew ? ' · 新收录' : ''}</div>
+        <div class="gift-art-stage ${isPlaceable ? '' : 'icon-mode'}">
+          <img src="${r.thumb}" alt="${r.name}" />
+        </div>
+        <div class="gift-name">${r.name}</div>
+        <div class="gift-slot">${r.slotLabel}</div>
+        <div class="gift-story">“${r.story}”</div>
+        <div class="gift-bonus-note">
+          <img src="./assets/icons/fish.webp" alt="" />
+          <span>${r.bonusText}</span>
+        </div>
+      </div>
+      <div class="reveal-actions">
+        <button class="craft-btn btn-store-sm" id="btn-reveal-close">
+          <img src="./assets/uikit/wood-oval.webp" alt="" />
+          <span>${isPlaceable ? '先收进柜子' : '收进旧布包'}</span>
+        </button>
+        <button class="craft-btn btn-place-now" id="btn-reveal-primary">
+          <img class="ribbon" src="./assets/uikit/paper-ribbon.webp" alt="" />
+          <span>${isPlaceable ? '立刻摆进小窝' : '再摇一次'}</span>
+          <img class="seal" src="./assets/uikit/wax-paw.webp" alt="" />
+        </button>
+      </div>
+    `;
+    $('btn-reveal-close').addEventListener('click', () => {
+      lastGachaResults = null;
+      sound.paperTurn();
+      renderGachaRevealModal();
+    });
+    $('btn-reveal-primary').addEventListener('click', () => {
+      if (isPlaceable) {
+        const res = equipDecor(state, r.slot, r.decorId);
+        lastGachaResults = null;
+        if (res.ok) state = res.state;
+        saveState(state);
+        setScreen('nook');
+        sound.decorSnap();
+        spawnSlotSparkles(r.slot);
+        showCatRibbon(`哇！「${r.name}」摆进小窝里真好看！`, 3600);
+      } else {
+        lastGachaResults = null;
+        renderGachaRevealModal();
+        triggerGachaDraw(1);
+      }
+    });
+  } else {
+    const newDecorList = lastGachaResults.filter(r => r.decorId && DECOR_ITEMS[r.decorId]);
+    const topBall = lastGachaResults.some(r => r.tier === 'gold')
+      ? GACHA_CONFIG.balls.gold
+      : GACHA_CONFIG.balls.red;
+    modal.innerHTML = `
+      <div class="reveal-ball-header">
+        <img src="${topBall.icon}" alt="" />
+        <div class="r-title">五连福引礼单</div>
+      </div>
+      <div class="gift-slip" style="padding:18px 14px 14px;">
+        <img class="tape-top" src="./assets/uikit/washi-tape.webp" alt="" />
+        <div class="five-pull-list">
+          ${lastGachaResults.map(r => {
+            const b = GACHA_CONFIG.balls[r.tier] || GACHA_CONFIG.balls.green;
+            return `
+              <div class="five-row ${r.tier}">
+                <img class="f-ball" src="${b.icon}" alt="${b.name}" />
+                <img class="f-thumb" src="${r.thumb}" alt="${r.name}" />
+                <div class="f-info">
+                  <strong>${r.name}${r.isNew ? '（新）' : ''}</strong>
+                  <span>${r.slotLabel} · ${r.bonusText}</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+      <div class="reveal-actions">
+        <button class="craft-btn btn-store-sm" id="btn-reveal-close">
+          <img src="./assets/uikit/wood-oval.webp" alt="" />
+          <span>全部收下</span>
+        </button>
+        <button class="craft-btn btn-place-now" id="btn-reveal-primary">
+          <img class="ribbon" src="./assets/uikit/paper-ribbon.webp" alt="" />
+          <span>${newDecorList.length ? '一键摆进小窝' : '再去装扮小窝'}</span>
+          <img class="seal" src="./assets/uikit/wax-paw.webp" alt="" />
+        </button>
+      </div>
+    `;
+    $('btn-reveal-close').addEventListener('click', () => {
+      lastGachaResults = null;
+      sound.paperTurn();
+      renderGachaRevealModal();
+    });
+    $('btn-reveal-primary').addEventListener('click', () => {
+      for (const item of newDecorList) {
+        const res = equipDecor(state, item.slot, item.decorId);
+        if (res.ok) state = res.state;
+      }
+      lastGachaResults = null;
+      saveState(state);
+      if (newDecorList.length) {
+        setScreen('nook');
+        sound.celebrate();
+        spawnSlotSparkles(newDecorList[0].slot);
+        showCatRibbon(`小窝添了 ${newDecorList.length} 件新珍品，团子开心得转圈！`, 3800);
+      } else {
+        enterDecorMode('desk');
+      }
+    });
+  }
+}
+
+function triggerGachaDraw(count = 1) {
+  if (gachaSpinning) return;
+  const res = spinGacha(state, count);
+  if (!res.ok) {
+    showToast(res.reason);
+    return;
+  }
+  gachaSpinning = true;
+  state = res.state;
+  saveState(state);
+
+  const stage = $('gacha-machine-stage');
+  const trayBall = $('gacha-tray-ball');
+  const bestTier = res.results.some(r => r.tier === 'gold')
+    ? 'gold'
+    : res.results.some(r => r.tier === 'red')
+      ? 'red'
+      : res.results.some(r => r.tier === 'blue')
+        ? 'blue'
+        : 'green';
+
+  trayBall.src = GACHA_CONFIG.balls[bestTier].icon;
+  trayBall.classList.remove('drop-in');
+  trayBall.style.opacity = '0';
+  stage.classList.add('spinning');
+  sound.garaponCrank();
+  renderGachaScreen();
+  renderDebugDock();
+
+  setTimeout(() => {
+    stage.classList.remove('spinning');
+    trayBall.style.opacity = '1';
+    void trayBall.offsetWidth;
+    trayBall.classList.add('drop-in');
+    sound.ballDrop(bestTier);
+  }, 660);
+
+  setTimeout(() => {
+    gachaSpinning = false;
+    lastGachaResults = res.results;
+    renderGachaScreen();
+    renderNook();
+  }, 1160);
 }
 
 /* =========================================================
@@ -544,7 +958,7 @@ function renderMailboxBook(el) {
           playingPuzzleUid = null;
           sound.celebrate();
           commit(res.state);
-          showToast(res.reward ? `明信片显影成功！+${res.reward} 金币` : '明信片重新拼好啦');
+          showToast(res.reward ? `明信片显影成功！+${res.reward} 金币、+1 副券` : '明信片重新拼好啦');
         },
       });
       $('pz-back').addEventListener('click', () => { playingPuzzleUid = null; renderMailboxBook(el); });
@@ -938,6 +1352,7 @@ function renderDebugDock() {
   $('dbg-days').textContent = `相伴第 ${view.daysTogether} 天 · ${view.cal.shortDate}`;
   $('dbg-weather').textContent = state.weatherOverride ? `手动：${state.weatherOverride}` : `自动：${view.cal.weatherLabel}`;
   $('dbg-plant').textContent = `${view.plantStageLabel} (${Math.round(state.plantGrowth)}%)`;
+  $('dbg-decor-cnt').textContent = `${(state.ownedDecor || []).length} / ${Object.keys(DECOR_ITEMS).length} 件`;
 
   document.querySelectorAll('[data-weather]').forEach(btn => {
     const val = btn.dataset.weather;
@@ -950,7 +1365,9 @@ function renderDebugDock() {
 
 function renderAll() {
   renderNook();
+  if (decorMode) renderDecorDrawer();
   if (activeScreen === 'bag') renderBagScreen();
+  if (activeScreen === 'gacha') renderGachaScreen();
   if (['reunion', 'mailbox', 'shop', 'scrapbook'].includes(activeScreen)) renderBookScreen();
   renderDebugDock();
 }
@@ -1053,12 +1470,52 @@ $('btn-feed-snack').addEventListener('click', () => {
 });
 
 $('hotspot-windchime').addEventListener('click', () => {
+  if (decorMode) return;
   const view = getDerivedView(state);
-  if (!view.isEvolvedRoom && !state.souvenirs.some(s => s.id === 'windchime')) return;
+  const hasPlaced = state.equippedDecor?.window === 'win-windchime';
+  if (!view.isEvolvedRoom && !hasPlaced) return;
   sound.windchime();
-  atmosphere.spawnBurst(188, 340, 'chime');
-  showToast('叮当——贝壳风铃在暖光里轻轻摇晃');
+  atmosphere.spawnBurst(154, 240, 'chime');
+  showToast('叮当——海湾贝壳风铃在阳光里轻轻摇晃');
 });
+
+$('hotspot-musicbox').addEventListener('click', () => {
+  if (decorMode) return;
+  if (state.equippedDecor?.shelf1R !== 's1r-musicbox') return;
+  sound.musicBox();
+  atmosphere.spawnBurst(328, 232, 'reunion');
+  showToast('叮叮咚咚……三花猫黄铜八音盒奏起一小段摇篮曲');
+});
+
+// 实景装扮入口与抽屉事件
+$('btn-open-decor').addEventListener('click', () => enterDecorMode('desk'));
+$('btn-decor-done').addEventListener('click', () => exitDecorMode());
+$('btn-decor-night').addEventListener('click', () => {
+  decorNightPreview = !decorNightPreview;
+  sound.paperTurn();
+  renderNook();
+});
+$('btn-decor-to-gacha').addEventListener('click', () => {
+  decorMode = false;
+  decorNightPreview = false;
+  setScreen('gacha');
+});
+document.querySelectorAll('#decor-tabs .d-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    decorTab = btn.dataset.dtab;
+    const firstSlot = DECOR_SLOTS.find(s => s.tab === decorTab);
+    selectedDecorSlot = decorTab === 'all' ? null : (firstSlot ? firstSlot.id : null);
+    sound.paperTurn();
+    renderNook();
+    renderDecorDrawer();
+  });
+});
+
+// 奶奶的黄铜摇奖匣入口与摇把交互
+$('btn-open-gacha').addEventListener('click', () => setScreen('gacha'));
+$('btn-gacha-crank').addEventListener('click', () => triggerGachaDraw(1));
+$('btn-gacha-1').addEventListener('click', () => triggerGachaDraw(1));
+$('btn-gacha-5').addEventListener('click', () => triggerGachaDraw(5));
 
 $('hotspot-apang').addEventListener('click', () => {
   if (!getDerivedView(state).isEvolvedRoom) return;
@@ -1178,24 +1635,86 @@ $('btn-demo-day30').addEventListener('click', () => {
   skipTimeMs(30 * DAY + 6 * HOUR);
 });
 
-// 支持 URL ?demo=day30 和 ?screen=shop|mailbox|scrapbook|bag 直接预览指定页
+$('btn-demo-tickets').addEventListener('click', () => {
+  state = structuredClone(state);
+  state.tickets = (state.tickets || 0) + 5;
+  state.coins = (state.coins || 0) + 300;
+  saveState(state);
+  sound.fishChime();
+  renderAll();
+  showToast('已获赠 +5 旅途副券与 +300 金币，快去摇奖匣试试吧！');
+});
+
+$('btn-demo-unlock-decor').addEventListener('click', () => {
+  state = structuredClone(state);
+  state.ownedDecor = Object.keys(DECOR_ITEMS);
+  state.equippedDecor = {
+    desk: 'lamp-mushroom',
+    window: 'win-windchime',
+    shelf1L: 's1l-jellyfish',
+    shelf1R: 's1r-musicbox',
+    shelf2L: 's2l-vase',
+    shelf2R: 's2r-sailboat',
+    shelf3: 's3-map',
+    outfit: 'outfit-postman',
+  };
+  saveState(state);
+  sound.celebrate();
+  enterDecorMode('desk');
+  showToast('已解锁全部 18 件原地融合摆件与团子穿搭，自由混搭吧！');
+});
+
+// 支持 URL ?demo=day30|decorated 和 ?screen=gacha|decor|shop|mailbox|scrapbook|bag 直接预览指定页
 const urlParams = new URLSearchParams(location.search);
 if (urlParams.get('demo') === 'day30') {
   state = createInitialState();
   state = packBag(state, { food: 'bento', tool: 'camera', wish: 'token-apang' });
   state = togglePantrySlot(state, 1, 'osmanthus');
   state = simulateTo(state, state.now + 30 * DAY + 6 * HOUR).state;
+} else if (urlParams.get('demo') === 'decorated') {
+  state = createInitialState();
+  state.ownedDecor = Object.keys(DECOR_ITEMS);
+  state.equippedDecor = {
+    desk: 'lamp-mushroom',
+    window: 'win-windchime',
+    shelf1L: 's1l-jellyfish',
+    shelf1R: 's1r-musicbox',
+    shelf2L: 's2l-vase',
+    shelf2R: 's2r-sailboat',
+    shelf3: 's3-map',
+    outfit: 'outfit-postman',
+  };
+} else if (urlParams.get('demo') === 'crossmix') {
+  state = createInitialState();
+  state.ownedDecor = Object.keys(DECOR_ITEMS);
+  state.equippedDecor = {
+    desk: 'lamp-lantern',
+    window: 'win-herbs',
+    shelf1L: 's1l-teapot',
+    shelf1R: 's1r-camera',
+    shelf2L: 's2l-globe',
+    shelf2R: 's2r-journals',
+    shelf3: 's3-keepsakes',
+    outfit: 'outfit-redscarf',
+  };
 }
 const initScreen = urlParams.get('screen');
-if (['bag', 'shop', 'mailbox', 'scrapbook', 'reunion'].includes(initScreen)) {
+if (initScreen === 'decor') {
+  decorMode = true;
+  decorNightPreview = urlParams.get('night') === '1';
+  selectedDecorSlot = 'desk';
+  decorTab = 'desk';
+} else if (['bag', 'gacha', 'shop', 'mailbox', 'scrapbook', 'reunion'].includes(initScreen)) {
   activeScreen = initScreen;
   $('screen-nook').classList.toggle('hidden', true);
   $('screen-bag').classList.toggle('hidden', initScreen !== 'bag');
-  $('screen-book').classList.toggle('hidden', initScreen === 'bag');
+  $('screen-gacha').classList.toggle('hidden', initScreen !== 'gacha');
+  $('screen-book').classList.toggle('hidden', !['shop', 'mailbox', 'scrapbook', 'reunion'].includes(initScreen));
 }
 
 renderAll();
 requestAnimationFrame(() => {
   $('room-bg-day30').classList.add('smooth-fade');
+  $('tuanzi-actor').classList.add('smooth-actor');
   document.querySelectorAll('.screen-layer').forEach(el => el.classList.add('smooth-layer'));
 });

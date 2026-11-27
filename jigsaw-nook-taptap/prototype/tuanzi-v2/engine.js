@@ -1,6 +1,6 @@
 // 「团子去旅行 2.0」纯函数确定性离线世界演进引擎（浏览器 & Node.js 通用）
 import {
-  DAY, HOUR, ITEMS, NPCS, PERSONALITIES, POSTCARD_POOL, SOUVENIRS,
+  DAY, DECOR_ITEMS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PERSONALITIES, POSTCARD_POOL, SOUVENIRS,
   getCalendarInfo, matchSynergy,
 } from './catalog.js';
 
@@ -21,12 +21,26 @@ export const DEFAULT_START_TS = Date.parse('2026-10-18T15:20:00+08:00');
 
 export function createInitialState(startTs = DEFAULT_START_TS) {
   return {
-    version: 3,
+    version: 4,
     startedAt: startTs,
     now: startTs,
     lastActiveAt: startTs,
     lastSimAt: startTs,
     coins: 180, // 与《拼图小窝》主游戏统一使用金币（完成一局 48 片拼图约得 72 金币）
+    tickets: 3, // 奶奶摇奖匣「旅途副券」（初始赠 3 张，旅行归来/明信片显影/重逢都会送）
+    gachaPity: 2, // 初始距首次保底暖金仅 3 抽，新手用自带 3 张免费副券必得 1 件珍品摆件/穿搭！
+    gachaTotal: 0,
+    ownedDecor: ['win-teru', 's1l-teapot', 's2l-vase', 'outfit-default'],
+    equippedDecor: {
+      desk: null,
+      window: 'win-teru',
+      shelf1L: null,
+      shelf1R: null,
+      shelf2L: 's2l-vase',
+      shelf2R: null,
+      shelf3: null,
+      outfit: 'outfit-default',
+    },
     status: 'home', // 'home' | 'away'
     pack: { food: null, tool: null, wish: null },
     pantry: ['onigiri', null, null], // 玄关备品篮（最多 3 份，离线多日自动续行）
@@ -138,8 +152,24 @@ function ensureLetter(state, npcId, at) {
   return letter;
 }
 
+function unlockDecor(state, decorId, autoEquipIfEmpty = false) {
+  if (!DECOR_ITEMS[decorId]) return false;
+  if (!Array.isArray(state.ownedDecor)) state.ownedDecor = ['win-teru', 's1l-teapot', 's2l-vase', 'outfit-default'];
+  const newly = !state.ownedDecor.includes(decorId);
+  if (newly) state.ownedDecor.push(decorId);
+  const item = DECOR_ITEMS[decorId];
+  if (autoEquipIfEmpty && state.equippedDecor && !state.equippedDecor[item.slot]) {
+    state.equippedDecor[item.slot] = decorId;
+  }
+  return newly;
+}
+
 function ensureSouvenir(state, souvenirId, at, tripNo) {
   if (!SOUVENIRS[souvenirId]) return null;
+  // 旅途风物自动同步解锁对应的原地融合小窝摆件
+  const linked = Object.values(DECOR_ITEMS).find(d => d.souvenirLink === souvenirId);
+  if (linked) unlockDecor(state, linked.id, true);
+  if (souvenirId === 'red-scarf') unlockDecor(state, 'outfit-redscarf', false);
   if (state.souvenirs.some(s => s.id === souvenirId)) return null;
   const cal = getCalendarInfo(at);
   const entry = {
@@ -219,6 +249,8 @@ function settleTripAt(state, now, events) {
       const sv = ensureSouvenir(state, trip.souvenirId, trip.returnAt, state.trips);
       if (sv) events.push(`带回了风物「${SOUVENIRS[sv.id].name}」并摆上木架`);
     }
+    // 每次旅行归来获赠 1 张免费旅途副券
+    state.tickets = (state.tickets || 0) + 1;
     // 归来概率收到对应伙伴来信
     if (trip.npcId) {
       const lt = ensureLetter(state, trip.npcId, trip.returnAt + 20 * 60 * 1000);
@@ -545,15 +577,18 @@ export function completePostcard(prevState, uid) {
   card.read = true;
   card.developed = true;
   let reward = 0;
+  let ticketReward = 0;
   if (newly) {
     reward = 30;
+    ticketReward = 1;
     state.coins += reward;
+    state.tickets = (state.tickets || 0) + ticketReward;
     const tpl = POSTCARD_POOL[card.templateId];
     if (tpl) state.traits[tpl.region] = (state.traits[tpl.region] || 0) + 1;
     const cal = getCalendarInfo(state.now);
-    state.logs = [`[${cal.cnDate}] 显影完成了明信片《${tpl?.title || '旅拍'}》（+30 金币）。`, ...state.logs].slice(0, 16);
+    state.logs = [`[${cal.cnDate}] 显影完成了明信片《${tpl?.title || '旅拍'}》（+30 金币、+1 副券）。`, ...state.logs].slice(0, 16);
   }
-  return { state, reward };
+  return { state, reward, ticketReward };
 }
 
 /** 玩家行为：给拾光来信贴上折纸回信 */
@@ -583,15 +618,181 @@ export function replyLetter(prevState, uid, choiceId) {
 /** 玩家行为：拆开重逢手账礼物 */
 export function claimReunionGift(prevState) {
   const state = structuredClone(prevState);
-  if (!state.reunion || state.reunion.claimed) return { state, coins: 0 };
+  if (!state.reunion || state.reunion.claimed) return { state, coins: 0, tickets: 0 };
   state.reunion.seen = true;
   state.reunion.claimed = true;
   const coins = state.reunion.giftCoins || 120;
+  const tickets = 3;
   state.coins += coins;
+  state.tickets = (state.tickets || 0) + tickets;
   state.winterScarfUnlocked = true;
+  unlockDecor(state, 'outfit-redscarf', false);
+  if (state.equippedDecor) state.equippedDecor.outfit = 'outfit-redscarf';
   const cal = getCalendarInfo(state.now);
-  state.logs = [`[${cal.cnDate}] 拆开重逢礼物：获得冬日红绒围巾与 +${coins} 金币。`, ...state.logs].slice(0, 16);
-  return { state, coins };
+  state.logs = [`[${cal.cnDate}] 拆开重逢礼物：获得冬日红绒围巾、+${coins} 金币与 +${tickets} 张旅途副券。`, ...state.logs].slice(0, 16);
+  return { state, coins, tickets };
+}
+
+/** 玩家行为：实时装扮小窝（原地无痕切换任意摆件或团子穿搭） */
+export function equipDecor(prevState, slotId, decorId) {
+  const state = structuredClone(prevState);
+  if (!state.equippedDecor) state.equippedDecor = { outfit: 'outfit-default' };
+  if (decorId === null || decorId === '') {
+    if (slotId === 'outfit') {
+      state.equippedDecor.outfit = 'outfit-default';
+    } else {
+      state.equippedDecor[slotId] = null;
+    }
+    return { state, ok: true, cleared: true };
+  }
+  const item = DECOR_ITEMS[decorId];
+  if (!item || item.slot !== slotId) return { state: prevState, ok: false, reason: '该摆件不能放在这个位置' };
+  if (!state.ownedDecor?.includes(decorId)) return { state: prevState, ok: false, reason: '尚未获得这件珍品，去奶奶摇奖匣试试手气吧' };
+  state.equippedDecor[slotId] = decorId;
+  const cal = getCalendarInfo(state.now);
+  state.logs = [`[${cal.cnDate}] 将「${item.name}」布置到了小窝（${item.slotLabel}）。`, ...state.logs].slice(0, 16);
+  return { state, ok: true, item };
+}
+
+/** 玩家行为：转动奶奶的黄铜摇奖匣（1 次或 5 连，优先消耗免费旅途副券，无券用主游戏金币） */
+export function spinGacha(prevState, count = 1, randFn = null) {
+  const times = count === 5 ? 5 : 1;
+  const state = structuredClone(prevState);
+  state.tickets = state.tickets || 0;
+  state.gachaPity = state.gachaPity || 0;
+  state.gachaTotal = state.gachaTotal || 0;
+  if (!Array.isArray(state.ownedDecor)) state.ownedDecor = ['win-teru', 's1l-teapot', 's2l-vase', 'outfit-default'];
+
+  let costType = 'ticket';
+  let costAmount = times;
+  if (state.tickets >= times) {
+    state.tickets -= times;
+  } else {
+    costType = 'coins';
+    costAmount = times === 5 ? GACHA_CONFIG.fiveCoins : GACHA_CONFIG.singleCoins;
+    if (state.coins < costAmount) {
+      return {
+        state: prevState,
+        ok: false,
+        reason: times === 5
+          ? `需要 5 张副券或 ${GACHA_CONFIG.fiveCoins} 金币（当前 ${state.tickets} 券 / ${state.coins} 金币）`
+          : `需要 1 张副券或 ${GACHA_CONFIG.singleCoins} 金币（完成明信片显影可免费得副券和金币）`,
+        results: [],
+      };
+    }
+    state.coins -= costAmount;
+  }
+
+  const rng = randFn || seeded(((state.now & 0xffffffff) ^ ((state.gachaTotal + 17) * 2654435761)) >>> 0);
+  const goldCatalog = Object.values(DECOR_ITEMS).filter(d => d.gachaGold);
+  const results = [];
+  let sawHighTier = false;
+
+  for (let i = 0; i < times; i++) {
+    state.gachaTotal += 1;
+    state.gachaPity += 1;
+
+    let tier = 'green';
+    const roll = rng();
+    if (state.gachaPity >= GACHA_CONFIG.pityMax) {
+      tier = 'gold';
+    } else if (times === 5 && i === 4 && !sawHighTier) {
+      tier = roll < 0.45 ? 'gold' : 'red';
+    } else if (roll < 0.24) {
+      tier = 'gold';
+    } else if (roll < 0.48) {
+      tier = 'red';
+    } else if (roll < 0.78) {
+      tier = 'blue';
+    } else {
+      tier = 'green';
+    }
+
+    if (tier === 'gold' || tier === 'red') sawHighTier = true;
+
+    if (tier === 'gold') {
+      state.gachaPity = 0;
+      const unowned = goldCatalog.filter(d => !state.ownedDecor.includes(d.id));
+      const pool = unowned.length ? unowned : goldCatalog;
+      // 优先让首次出金容易抽到超惊艳的台灯 / 邮差帽 / 八音盒 / 水母瓶
+      const featured = unowned.find(d => ['lamp-mushroom', 'outfit-postman', 's1r-musicbox', 's1l-jellyfish', 'lamp-lantern'].includes(d.id));
+      const picked = featured && rng() < 0.68 ? featured : pool[Math.floor(rng() * pool.length)];
+      const isNew = !state.ownedDecor.includes(picked.id);
+      if (isNew) {
+        state.ownedDecor.push(picked.id);
+        state.inventory.fish = (state.inventory.fish || 0) + 1;
+      } else {
+        // 重复珍品绝不空手：折算 香酥小鱼干×3 + 30 金币
+        state.inventory.fish = (state.inventory.fish || 0) + 3;
+        state.coins += 30;
+      }
+      results.push({
+        tier: 'gold',
+        isNew,
+        decorId: picked.id,
+        slot: picked.slot,
+        name: picked.name,
+        slotLabel: picked.slotLabel,
+        thumb: picked.thumb,
+        story: picked.story,
+        bonusText: isNew ? '另赠附礼：香酥小鱼干零食 +1' : '已收录珍品自动折为：香酥小鱼干 ×3 与 +30 金币',
+      });
+    } else if (tier === 'red') {
+      const picked = GACHA_CONFIG.redPool[Math.floor(rng() * GACHA_CONFIG.redPool.length)];
+      if (picked.itemId && ITEMS[picked.itemId]) {
+        const it = ITEMS[picked.itemId];
+        if (it.permanent) {
+          if ((state.inventory[picked.itemId] || 0) > 0) {
+            state.inventory.fish = (state.inventory.fish || 0) + 2;
+          } else {
+            state.inventory[picked.itemId] = 1;
+          }
+        } else {
+          state.inventory[picked.itemId] = (state.inventory[picked.itemId] || 0) + (picked.qty || 1);
+        }
+      }
+      if (picked.bonusItem) state.inventory[picked.bonusItem] = (state.inventory[picked.bonusItem] || 0) + (picked.bonusQty || 1);
+      if (picked.bonusTicket) state.tickets += picked.bonusTicket;
+      results.push({
+        tier: 'red',
+        isNew: false,
+        name: picked.name,
+        slotLabel: '行囊心愿 / 稀有茶点',
+        thumb: picked.icon,
+        story: picked.story,
+        bonusText: '已放入奶奶的旧布包柜子里',
+      });
+    } else if (tier === 'blue') {
+      const picked = GACHA_CONFIG.bluePool[Math.floor(rng() * GACHA_CONFIG.bluePool.length)];
+      state.inventory[picked.itemId] = (state.inventory[picked.itemId] || 0) + (picked.qty || 1);
+      results.push({
+        tier: 'blue',
+        isNew: false,
+        name: picked.name,
+        slotLabel: '旅途手工口粮',
+        thumb: picked.icon,
+        story: picked.story,
+        bonusText: '装进布包或玄关备品篮随时可用',
+      });
+    } else {
+      const picked = GACHA_CONFIG.greenPool[0];
+      state.inventory.fish = (state.inventory.fish || 0) + (picked.qty || 3);
+      results.push({
+        tier: 'green',
+        isNew: false,
+        name: picked.name,
+        slotLabel: '团子的最爱零食',
+        thumb: picked.icon,
+        story: picked.story,
+        bonusText: '回小窝就能喂团子咔哧咔哧吃小鱼干',
+      });
+    }
+  }
+
+  const cal = getCalendarInfo(state.now);
+  const topNames = results.map(r => r.name).slice(0, 2).join('、');
+  state.logs = [`[${cal.cnDate}] 摇动奶奶的黄铜摇奖匣 ${times} 次：获得${topNames}${results.length > 2 ? '等' : ''}。`, ...state.logs].slice(0, 16);
+  return { state, ok: true, costType, costAmount, results };
 }
 
 /** 玩家行为：拂去阳光金尘 */

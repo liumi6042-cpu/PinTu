@@ -10,115 +10,179 @@
   <main class="stage-shell">
     <!-- 纯净 390×844 绘本风移动端游戏画面 -->
     <section class="phone" id="phone-root" aria-label="团子去旅行 2.0 移动端画面">
-      <!-- 1. 小窝主场景 -->
+      <!-- 1. 小窝主场景（内置无缝原地融合装扮模式） -->
       <div class="screen-layer" id="screen-nook">
-        <img class="bg-full" id="room-bg-day1" src="./assets/rooms/day1-nocat.webp" alt="初秋小窝" />
-        <img class="bg-full" id="room-bg-day30" src="./assets/rooms/day30-nocat.webp" alt="初冬雪夜小窝" style="opacity:0;" />
-        <div class="vignette-soft"></div>
+        <!-- 统一实景舞台：底图 + 7 层原地融合羽化贴片 + 装扮虚线框 + 粒子 + 活态团子同帧联动，零漂移 -->
+        <div class="nook-stage" id="nook-stage">
+          <!-- Day 1 原地融合画板（原生 768×1376 比例锁定，完整露出左桌台灯与整座木书架） -->
+          <div class="nook-plate-canvas" id="day1-plate-canvas">
+            <img class="plate-base" id="room-bg-day1" src="./assets/rooms/day1-nocat.webp" alt="初秋小窝" />
+            <div class="decor-layers" id="decor-layers"></div>
+            <div class="decor-slots-overlay" id="decor-slots-overlay"></div>
+          </div>
 
-        <!-- 窗外精准裁切雪花/细雨/春樱/秋叶 + 屋内台灯光晕与可拂金尘 -->
-        <canvas class="fx-canvas" id="atmosphere-canvas"></canvas>
+          <!-- Day 30 重逢演化雪夜底图（离家跨入初冬雪夜时自然淡入） -->
+          <img class="bg-full" id="room-bg-day30" src="./assets/rooms/day30-nocat.webp" alt="初冬雪夜小窝" style="opacity:0;" />
+          <!-- 装扮模式「试看雪夜灯效」专属夜幕柔蓝氛围层 -->
+          <div class="night-preview-veil" id="night-preview-veil"></div>
+          <div class="vignette-soft"></div>
 
-        <!-- 活态团子动画层（打盹呼吸 / 坐起等待 / 走去门口出发 / 纸条 / 归来扑怀 / 摸摸蹭手） -->
-        <div class="tuanzi-actor pose-nap" id="tuanzi-actor" title="点一点摸摸团子">
-          <img id="tuanzi-sprite" src="./assets/cat/tuanzi-nap.webp" alt="团子" />
-        </div>
-        <div class="zzz-layer show" id="zzz-layer">
-          <span>z</span><span>z</span><span>z</span>
-        </div>
+          <!-- 窗外精准裁切雪花/细雨/春樱/秋叶 + 屋内动态台灯光晕 + 可拂金尘 -->
+          <canvas class="fx-canvas" id="atmosphere-canvas"></canvas>
 
-        <!-- 场景彩蛋交互热区（风铃轻响 / 常客阿胖） -->
-        <div class="windchime-hotspot" id="hotspot-windchime" title="轻碰贝壳风铃"></div>
-        <div class="apang-hotspot" id="hotspot-apang" title="摸摸来蹭午睡的大橘阿胖"></div>
+          <!-- 活态团子动画层（无缝切换 奶奶旧绿领巾 / 云邮局小圆帽 / 冬日红绒围巾 整猫重绘版！） -->
+          <div class="tuanzi-actor pose-nap" id="tuanzi-actor" title="点一点摸摸团子">
+            <img id="tuanzi-sprite" src="./assets/cat/tuanzi-nap.webp" alt="团子" />
+          </div>
+          <div class="zzz-layer show" id="zzz-layer">
+            <span>z</span><span>z</span><span>z</span>
+          </div>
 
-        <!-- 极简手作顶部 HUD -->
-        <button class="craft-btn wood-back" id="btn-mute" title="切换治愈音效">
-          <img src="./assets/uikit/wood-oval.webp" alt="" />
-          <svg id="icon-sound" viewBox="0 0 24 24">
-            <path d="M11 5L6 9H3v6h3l5 4V5z"/>
-            <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
-          </svg>
-        </button>
-
-        <div class="hanging-plaque">
-          <img src="./assets/uikit/wood-sign.webp" alt="" />
-          <div class="p-date" id="plaque-date">十月十八</div>
-          <div class="p-sub" id="plaque-sub">初秋午后 · 晴风</div>
+          <!-- 场景彩蛋交互热区（风铃轻响 / 八音盒旋律 / 常客阿胖） -->
+          <div class="windchime-hotspot" id="hotspot-windchime" title="轻碰贝壳风铃"></div>
+          <div class="musicbox-hotspot" id="hotspot-musicbox" title="轻点三花猫八音盒"></div>
+          <div class="apang-hotspot" id="hotspot-apang" title="摸摸来蹭午睡的大橘阿胖"></div>
         </div>
 
-        <button class="craft-btn wood-fish" id="btn-coins-tip" title="拼图小窝金币">
-          <img class="plate" src="./assets/uikit/wood-oval.webp" alt="" />
-          <img class="ico" src="./assets/icons/coin.webp" alt="金币" />
-          <span id="hud-coins">180</span>
-        </button>
-
-        <!-- 窗台晒好的香酥小鱼干零食（点击收入零食罐，可投喂团子或装包） -->
-        <button class="craft-btn sill-drop" id="btn-sill" style="display:none;" title="收下晒好的小鱼干零食">
-          <img src="./assets/icons/fish.webp" alt="" />
-          <span id="sill-gain">收小鱼干 +2</span>
-        </button>
-
-        <!-- 喂一条香酥小鱼干零食（仅团子在家且有小鱼干零食时轻浮在右下木桌旁） -->
-        <button class="craft-btn sill-drop" id="btn-feed-snack" style="top:auto; left:auto; right:16px; bottom:146px; display:none;" title="喂团子一条香酥小鱼干零食">
-          <img src="./assets/icons/fish.webp" alt="" />
-          <span id="snack-count">喂小鱼干 (3)</span>
-        </button>
-
-        <!-- 久别拂尘轻提示（仅 dustLevel > 0 显示） -->
-        <div class="dust-cue" id="dust-cue" style="display:none;">
-          <img src="./assets/uikit/paper-ribbon.webp" alt="" />
-          <span>轻滑画面，拂去阳光薄尘</span>
-        </div>
-
-        <!-- 门口红丝带信捆火漆标记（重逢待拆时发光） -->
-        <button class="craft-btn bundle-seal" id="btn-bundle-seal" style="display:none;" title="拆开咕咕扎好的信捆">
-          <img src="./assets/uikit/wax-paw.webp" alt="" />
-          <div class="cnt" id="bundle-count">5</div>
-        </button>
-
-        <!-- 团子轻语纸带（摸摸/出发/重逢弹出） -->
-        <div class="tuanzi-ribbon" id="tuanzi-ribbon">
-          <img src="./assets/uikit/paper-ribbon.webp" alt="" />
-          <span id="tuanzi-ribbon-text"></span>
-        </div>
-
-        <!-- 地毯上的手写状态轻语（无框呼吸感） -->
-        <div class="rug-whisper" id="rug-whisper">午后的阳光暖烘烘的，团子正在垫子上打盹。</div>
-
-        <!-- 底部 4 枚无边框水彩手作导航徽章（常规态） -->
-        <nav class="bottom-medallions" id="bottom-nav">
-          <button class="craft-btn medallion" data-open="bag">
-            <div class="medallion-disc"><img src="./assets/icons/bag.webp" alt="行囊" /></div>
-            <span class="medallion-label">行囊</span>
+        <!-- 常规主场景 HUD（进入装扮模式时柔和隐藏） -->
+        <div class="nook-hud-layer" id="nook-hud-layer">
+          <button class="craft-btn wood-back" id="btn-mute" title="切换治愈音效">
+            <img src="./assets/uikit/wood-oval.webp" alt="" />
+            <svg id="icon-sound" viewBox="0 0 24 24">
+              <path d="M11 5L6 9H3v6h3l5 4V5z"/>
+              <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+            </svg>
           </button>
-          <button class="craft-btn medallion" data-open="shop">
-            <div class="medallion-disc"><img src="./assets/uikit/teapot.webp" alt="杂货" /></div>
-            <span class="medallion-label">杂货</span>
+
+          <div class="hanging-plaque">
+            <img src="./assets/uikit/wood-sign.webp" alt="" />
+            <div class="p-date" id="plaque-date">十月十八</div>
+            <div class="p-sub" id="plaque-sub">初秋午后 · 晴风</div>
+          </div>
+
+          <button class="craft-btn wood-fish" id="btn-coins-tip" title="拼图小窝金币">
+            <img class="plate" src="./assets/uikit/wood-oval.webp" alt="" />
+            <img class="ico" src="./assets/icons/coin.webp" alt="金币" />
+            <span id="hud-coins">180</span>
           </button>
-          <button class="craft-btn medallion" data-open="mailbox">
-            <div class="medallion-disc">
-              <img src="./assets/icons/envelope.webp" alt="信箱" />
-              <div class="wax-dot" id="mail-badge" style="display:none;">
+
+          <!-- 右上极简「奶奶摇奖匣」一键挂徽（不挡房间摆件，有免费副券亮朱砂火漆标） -->
+          <button class="craft-btn gacha-charm" id="btn-open-gacha" title="奶奶的黄铜摇奖匣">
+            <div class="gacha-charm-disc">
+              <img class="icon" src="./assets/icons/gacha-mini.webp" alt="摇奖匣" />
+              <div class="wax-dot" id="gacha-ticket-badge" style="display:none;">
                 <img src="./assets/uikit/wax-paw.webp" alt="" />
-                <span id="mail-badge-num">1</span>
+                <span id="gacha-ticket-num">3</span>
               </div>
             </div>
-            <span class="medallion-label">信箱</span>
+            <span class="charm-label">摇奖匣</span>
           </button>
-          <button class="craft-btn medallion" data-open="scrapbook">
-            <div class="medallion-disc"><img src="./assets/icons/journal.webp" alt="手账" /></div>
-            <span class="medallion-label">手账</span>
-          </button>
-        </nav>
 
-        <!-- 重逢专属底部火漆手账入口（离家 >= 7 天首次归来时替代底栏） -->
-        <div class="reunion-craft-cta" id="reunion-cta" style="display:none;">
-          <div class="sub-lyric" id="reunion-cta-sub">离开的三十天，已被记进了手账里</div>
-          <button class="craft-btn wax-cta-btn" id="btn-open-reunion">
-            <img class="ribbon-bg" src="./assets/uikit/paper-ribbon.webp" alt="" />
-            <span class="cta-text">翻开重逢手账</span>
-            <img class="seal-on" src="./assets/uikit/wax-paw.webp" alt="" />
+          <!-- 窗台晒好的香酥小鱼干零食 -->
+          <button class="craft-btn sill-drop" id="btn-sill" style="display:none;" title="收下晒好的小鱼干零食">
+            <img src="./assets/icons/fish.webp" alt="" />
+            <span id="sill-gain">小鱼干 +2</span>
           </button>
+
+          <!-- 喂一条香酥小鱼干零食 -->
+          <button class="craft-btn sill-drop feed-snack-btn" id="btn-feed-snack" style="display:none;" title="喂团子一条香酥小鱼干零食">
+            <img src="./assets/icons/fish.webp" alt="" />
+            <span id="snack-count">喂小鱼干 (3)</span>
+          </button>
+
+          <!-- 久别拂尘轻提示 -->
+          <div class="dust-cue" id="dust-cue" style="display:none;">
+            <img src="./assets/uikit/paper-ribbon.webp" alt="" />
+            <span>轻滑画面，拂去阳光薄尘</span>
+          </div>
+
+          <!-- 门口红丝带信捆火漆标记 -->
+          <button class="craft-btn bundle-seal" id="btn-bundle-seal" style="display:none;" title="拆开咕咕扎好的信捆">
+            <img src="./assets/uikit/wax-paw.webp" alt="" />
+            <div class="cnt" id="bundle-count">5</div>
+          </button>
+
+          <!-- 团子轻语纸带 -->
+          <div class="tuanzi-ribbon" id="tuanzi-ribbon">
+            <img src="./assets/uikit/paper-ribbon.webp" alt="" />
+            <span id="tuanzi-ribbon-text"></span>
+          </div>
+
+          <!-- 地毯上的手写状态轻语 -->
+          <div class="rug-whisper" id="rug-whisper">午后的阳光暖烘烘的，团子正在垫子上打盹。</div>
+
+          <!-- 底部 5 枚手作水彩圆徽（新增「装扮」一眼可见） -->
+          <nav class="bottom-medallions five" id="bottom-nav">
+            <button class="craft-btn medallion" data-open="bag">
+              <div class="medallion-disc"><img src="./assets/icons/bag.webp" alt="行囊" /></div>
+              <span class="medallion-label">行囊</span>
+            </button>
+            <button class="craft-btn medallion decor-medallion" id="btn-open-decor">
+              <div class="medallion-disc"><img src="./assets/icons/icon-decor.webp" alt="装扮" /></div>
+              <span class="medallion-label">装扮</span>
+            </button>
+            <button class="craft-btn medallion" data-open="shop">
+              <div class="medallion-disc"><img src="./assets/uikit/teapot.webp" alt="杂货" /></div>
+              <span class="medallion-label">杂货</span>
+            </button>
+            <button class="craft-btn medallion" data-open="mailbox">
+              <div class="medallion-disc">
+                <img src="./assets/icons/envelope.webp" alt="信箱" />
+                <div class="wax-dot" id="mail-badge" style="display:none;">
+                  <img src="./assets/uikit/wax-paw.webp" alt="" />
+                  <span id="mail-badge-num">1</span>
+                </div>
+              </div>
+              <span class="medallion-label">信箱</span>
+            </button>
+            <button class="craft-btn medallion" data-open="scrapbook">
+              <div class="medallion-disc"><img src="./assets/icons/journal.webp" alt="手账" /></div>
+              <span class="medallion-label">手账</span>
+            </button>
+          </nav>
+
+          <!-- 重逢专属底部火漆手账入口 -->
+          <div class="reunion-craft-cta" id="reunion-cta" style="display:none;">
+            <div class="sub-lyric" id="reunion-cta-sub">离开的三十天，已被记进了手账里</div>
+            <button class="craft-btn wax-cta-btn" id="btn-open-reunion">
+              <img class="ribbon-bg" src="./assets/uikit/paper-ribbon.webp" alt="" />
+              <span class="cta-text">翻开重逢手账</span>
+              <img class="seal-on" src="./assets/uikit/wax-paw.webp" alt="" />
+            </button>
+          </div>
+        </div>
+
+        <!-- 实景装扮模式专属覆盖层（顶部完成/试雪夜 + 底部胡桃木手工抽屉） -->
+        <div class="decor-ui-layer hidden" id="decor-ui-layer">
+          <div class="decor-top-bar">
+            <button class="craft-btn pill-wood-btn" id="btn-decor-done">
+              <img src="./assets/uikit/wood-oval.webp" alt="" />
+              <span>‹ 完成装扮</span>
+            </button>
+            <button class="craft-btn pill-wood-btn wide" id="btn-decor-night">
+              <img src="./assets/uikit/wood-oval.webp" alt="" />
+              <span id="decor-night-label">试看雪夜灯效</span>
+            </button>
+          </div>
+
+          <div class="decor-drawer" id="decor-drawer">
+            <div class="drawer-tabs" id="decor-tabs">
+              <button class="craft-btn d-tab active" data-dtab="all">全部</button>
+              <button class="craft-btn d-tab" data-dtab="desk">桌面台灯</button>
+              <button class="craft-btn d-tab" data-dtab="shelf">木架</button>
+              <button class="craft-btn d-tab" data-dtab="window">窗与展格</button>
+              <button class="craft-btn d-tab" data-dtab="outfit">团子穿搭</button>
+            </div>
+            <div class="decor-slot-hint" id="decor-slot-hint">点上方屋里任意虚线框，或点下方摆件立刻切换</div>
+            <div class="decor-grid" id="decor-grid"></div>
+            <div class="drawer-footer">
+              <span id="decor-progress">已收集小窝珍品 4 / 18 件</span>
+              <button class="craft-btn drawer-gacha-link" id="btn-decor-to-gacha">
+                <img src="./assets/icons/gacha-mini.webp" alt="" />
+                <span>去奶奶摇奖匣 ›</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -158,7 +222,93 @@
         </div>
       </div>
 
-      <!-- 3. 实体棉纸手账容器（复用给：重逢手账 / 信箱明信片与来信 / 杂货铺 / 拾光剪贴簿） -->
+      <!-- 3. 奶奶的黄铜摇奖匣（福引全屏手绘界面） -->
+      <div class="screen-layer hidden" id="screen-gacha">
+        <div class="gacha-machine-stage" id="gacha-machine-stage">
+          <img class="bg-full gacha-bg-img" src="./assets/rooms/gacha-bg.webp" alt="奶奶的黄铜摇奖匣" />
+          <!-- 可直接点击转动的黄铜摇把热点 -->
+          <button class="craft-btn gacha-crank-btn" id="btn-gacha-crank" title="轻点黄铜摇把摇 1 次">
+            <span class="crank-ring"></span>
+            <span class="crank-tag">轻点摇把</span>
+          </button>
+          <!-- 从黄铜滑道滚落托盘的木珠动画元素 -->
+          <img class="tray-ball" id="gacha-tray-ball" src="./assets/icons/ball-gold.webp" alt="" style="opacity:0;" />
+        </div>
+
+        <button class="craft-btn wood-back" data-close="nook">
+          <img src="./assets/uikit/wood-oval.webp" alt="" />
+          <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+
+        <div class="hanging-plaque gacha-plaque">
+          <img src="./assets/uikit/wood-sign.webp" alt="" />
+          <div class="p-date">奶奶的摇奖匣</div>
+          <div class="p-sub">拾光杂货铺 · 福引</div>
+        </div>
+
+        <div class="gacha-counters">
+          <div class="mini-wood-pill">
+            <img class="plate" src="./assets/uikit/wood-oval.webp" alt="" />
+            <img class="ico" src="./assets/icons/raffle-ticket.webp" alt="旅途副券" />
+            <span id="gacha-tickets">3 券</span>
+          </div>
+          <div class="mini-wood-pill">
+            <img class="plate" src="./assets/uikit/wood-oval.webp" alt="" />
+            <img class="ico" src="./assets/icons/coin.webp" alt="金币" />
+            <span id="gacha-coins">180</span>
+          </div>
+        </div>
+
+        <div class="pity-ribbon">
+          <img src="./assets/uikit/paper-ribbon.webp" alt="" />
+          <span id="gacha-pity-text">再摇 <b>3 次</b> 必出暖金·小窝珍品</span>
+        </div>
+
+        <div class="prize-card">
+          <div class="prize-card-head">
+            <span class="ttl">四色木珠一览</span>
+            <span class="sub">重复珍品必得小鱼干 · 绝不空手</span>
+          </div>
+          <div class="ball-grid">
+            <div class="ball-row">
+              <img src="./assets/icons/ball-gold.webp" alt="" />
+              <div class="b-txt"><strong>暖金木珠</strong><span>限定摆件 / 团子穿搭</span></div>
+            </div>
+            <div class="ball-row">
+              <img src="./assets/icons/ball-red.webp" alt="" />
+              <div class="b-txt"><strong>朱砂红珠</strong><span>心愿信物 / 秘境茶点</span></div>
+            </div>
+            <div class="ball-row">
+              <img src="./assets/icons/ball-blue.webp" alt="" />
+              <div class="b-txt"><strong>青瓷蓝珠</strong><span>节气手工口粮礼盒</span></div>
+            </div>
+            <div class="ball-row">
+              <img src="./assets/icons/ball-green.webp" alt="" />
+              <div class="b-txt"><strong>松绿木珠</strong><span>香酥小鱼干零食 ×3</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gacha-actions">
+          <button class="craft-btn btn-draw-one" id="btn-gacha-1">
+            <img class="plate" src="./assets/uikit/wood-oval.webp" alt="" />
+            <span class="t1">摇 1 次</span>
+            <span class="t2" id="gacha-1-cost"><img src="./assets/icons/raffle-ticket.webp" alt="" />消耗 1 副券</span>
+          </button>
+          <button class="craft-btn btn-draw-five" id="btn-gacha-5">
+            <img class="ribbon-bg" src="./assets/uikit/paper-ribbon.webp" alt="" />
+            <span class="t1">连摇 5 次</span>
+            <span class="t2" id="gacha-5-cost"><img src="./assets/icons/coin.webp" alt="" />280 金币 · 必出红/金</span>
+            <img class="seal-on" src="./assets/uikit/wax-paw.webp" alt="" />
+          </button>
+        </div>
+        <div class="gacha-footnote">旅行归来、明信片显影皆会获赠免费「旅途副券」</div>
+
+        <!-- 开球惊喜棉纸礼签弹窗 -->
+        <div class="gacha-reveal-modal hidden" id="gacha-reveal-modal"></div>
+      </div>
+
+      <!-- 4. 实体棉纸手账容器（复用给：重逢手账 / 信箱明信片与来信 / 杂货铺 / 拾光剪贴簿） -->
       <div class="screen-layer hidden" id="screen-book">
         <img class="bg-full" src="./assets/rooms/journal-bg.webp" alt="线装手工棉纸本" />
         <div class="journal-page" id="book-content"></div>
@@ -171,11 +321,11 @@
       </div>
     </section>
 
-    <!-- 右侧独立「时光快进与动效测试器」（与手机画面分离，方便一键感受 4h/1天/7天/30天与各种天气/团子动效） -->
+    <!-- 右侧独立「时光快进与动效测试器」 -->
     <aside class="debug-dock" aria-label="原型时光快进与动效调试面板">
       <h1>时光快进控制台</h1>
       <p class="d-sub">
-        用真实公历日期驱动离线世界。点下方按钮快进时光，亲手感受「离开 30 天跨入初冬雪夜、阿胖入住、重逢手账、窗外雪花粒子与团子动效」。
+        用真实公历日期驱动离线世界。点下方按钮快进时光，或直接体验「奶奶的黄铜摇奖匣」与「原地融合实景装扮小窝」。
       </p>
 
       <div class="d-group">
@@ -190,6 +340,17 @@
           <button class="d-btn accent" data-skip-days="30">+30 天重逢</button>
           <button class="d-btn" data-skip-days="90">+90 天跨季</button>
           <button class="d-btn" id="btn-reset-day1">重置 Day 1</button>
+        </div>
+      </div>
+
+      <div class="d-group">
+        <div class="d-group-title">
+          <span>摇奖匣 & 实景装扮快捷体验</span>
+          <span id="dbg-decor-cnt" style="color:#6d4f3d;">4 / 18 件</span>
+        </div>
+        <div class="d-btn-grid two">
+          <button class="d-btn" id="btn-demo-tickets">赠 +5 副券 +300 金币</button>
+          <button class="d-btn accent" id="btn-demo-unlock-decor">解锁全套原地融合摆件</button>
         </div>
       </div>
 

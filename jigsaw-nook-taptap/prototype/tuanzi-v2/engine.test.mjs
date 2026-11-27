@@ -9,12 +9,14 @@ import {
   clearDust,
   completePostcard,
   createInitialState,
+  equipDecor,
   feedSnack,
   getDerivedView,
   packBag,
   replyLetter,
   sendOffNow,
   simulateTo,
+  spinGacha,
   togglePantrySlot,
 } from './engine.js';
 
@@ -108,4 +110,48 @@ test('sill harvests dried fish snack, feeding consumes snack, and shop spends ma
   assert.equal(bought.ok, true);
   assert.equal(bought.state.coins, fed.state.coins - 20);
   assert.equal(bought.state.inventory.onigiri, s0.inventory.onigiri + 1);
+});
+
+test('brass Garapon gacha spends tickets first, guarantees Gold within pity, and equips won in-situ decor', () => {
+  let state = createInitialState();
+  assert.equal(state.tickets, 3);
+  assert.equal(state.gachaPity, 2, 'new players reach first pity gold within 3 free tickets');
+
+  // Force low-tier RNG (0.95) to verify soft pity still triggers Gold on spin #3
+  const fixedLow = () => 0.95;
+  const r1 = spinGacha(state, 1, fixedLow);
+  assert.equal(r1.ok, true);
+  assert.equal(r1.costType, 'ticket');
+  assert.equal(r1.state.tickets, 2);
+  assert.equal(r1.results[0].tier, 'green');
+  assert.equal(r1.state.inventory.fish, state.inventory.fish + 3, 'green ball rewards dried fish snacks');
+
+  const r2 = spinGacha(r1.state, 1, fixedLow);
+  assert.equal(r2.ok, true);
+  assert.equal(r2.state.tickets, 1);
+
+  const r3 = spinGacha(r2.state, 1, fixedLow);
+  assert.equal(r3.ok, true);
+  assert.equal(r3.state.tickets, 0);
+  assert.equal(r3.results[0].tier, 'gold', 'pity guarantees a Gold room decor or outfit on 3rd free ticket');
+  assert.equal(r3.state.gachaPity, 0);
+
+  // Immediately equip won gold prize into the room!
+  const won = r3.results[0];
+  const eq = equipDecor(r3.state, won.slot, won.decorId);
+  assert.equal(eq.ok, true);
+  assert.equal(eq.state.equippedDecor[won.slot], won.decorId);
+
+  // With 0 tickets, falls back cleanly to main-game Coins (60 coins single spin)
+  const r4 = spinGacha(eq.state, 1, fixedLow);
+  assert.equal(r4.ok, true);
+  assert.equal(r4.costType, 'coins');
+  assert.equal(r4.state.coins, eq.state.coins - 60);
+
+  // Clearing a room slot leaves it cleanly bare
+  if (won.slot !== 'outfit') {
+    const cleared = equipDecor(r4.state, won.slot, null);
+    assert.equal(cleared.ok, true);
+    assert.equal(cleared.state.equippedDecor[won.slot], null);
+  }
 });

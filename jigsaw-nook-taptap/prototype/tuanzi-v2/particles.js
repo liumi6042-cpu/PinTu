@@ -11,6 +11,9 @@ export class NookAtmosphere {
     this.weather = 'autumn';
     this.isEvolved = false;
     this.dustLevel = 0;
+    this.lampGlow = null; // null | 'amber' | 'candle'
+    this.hasJellyGlow = false;
+    this.nightPreview = false;
     this.dustClearedNotified = false;
     this.running = false;
     this.rafId = 0;
@@ -34,10 +37,13 @@ export class NookAtmosphere {
     this.canvas.style.height = `${h}px`;
   }
 
-  setScene({ weather, isEvolved, dustLevel }) {
+  setScene({ weather, isEvolved, dustLevel, lampGlow = null, hasJellyGlow = false, nightPreview = false }) {
     const weatherChanged = weather !== this.weather;
     this.weather = weather || 'autumn';
     this.isEvolved = Boolean(isEvolved);
+    this.lampGlow = lampGlow;
+    this.hasJellyGlow = Boolean(hasJellyGlow);
+    this.nightPreview = Boolean(nightPreview);
     if (dustLevel > 0.05 && this.dustLevel <= 0.05) {
       this.dustClearedNotified = false;
       this.seedDust(Math.round(48 * dustLevel));
@@ -163,9 +169,8 @@ export class NookAtmosphere {
       ctx.rect(w * 0.852, h * 0.068, w * 0.148, h * 0.056);
       ctx.rect(w * 0.895, h * 0.180, w * 0.105, h * 0.248);
     } else {
-      // Day 1 初秋底图的左窗格与右门玻璃格
-      ctx.rect(w * 0.030, h * 0.212, w * 0.375, h * 0.268);
-      ctx.rect(w * 0.928, h * 0.205, w * 0.072, h * 0.275);
+      // Day 1 原地融合画板（left:-3px，完整露出左桌台灯与右书架）的左木格窗玻璃区域
+      ctx.rect(w * 0.032, h * 0.214, w * 0.390, h * 0.278);
     }
     ctx.clip();
   }
@@ -341,30 +346,41 @@ export class NookAtmosphere {
     }
     ctx.restore();
 
-    // B. 屋内台灯柔和呼吸暖光 & 暖金浮尘
-    if (this.isEvolved) {
-      const pulse = 0.88 + 0.12 * Math.sin(t * 1.6);
-      const lx = this.w * 0.12;
-      const ly = this.h * 0.455;
-      const g = ctx.createRadialGradient(lx, ly, 8, lx, ly, 145 * pulse);
-      g.addColorStop(0, 'rgba(255, 218, 134, 0.24)');
-      g.addColorStop(0.5, 'rgba(255, 192, 102, 0.08)');
-      g.addColorStop(1, 'rgba(255, 180, 90, 0)');
+    // B. 屋内台灯与水母瓶实时动态光晕（装扮换灯或试看雪夜时实时变色温！）
+    const activeLamp = this.isEvolved ? 'amber' : this.lampGlow;
+    if (activeLamp) {
+      const pulse = 0.88 + 0.12 * Math.sin(t * (activeLamp === 'candle' ? 3.1 : 1.6));
+      const lx = this.isEvolved ? this.w * 0.12 : this.w * 0.075;
+      const ly = this.isEvolved ? this.h * 0.455 : this.h * 0.495;
+      const radius = (this.nightPreview || this.isEvolved ? 175 : 132) * pulse;
+      const alpha0 = this.nightPreview ? 0.38 : this.isEvolved ? 0.24 : 0.18;
+      const g = ctx.createRadialGradient(lx, ly, 8, lx, ly, radius);
+      if (activeLamp === 'candle') {
+        g.addColorStop(0, `rgba(255, 198, 102, ${alpha0})`);
+        g.addColorStop(0.5, `rgba(255, 158, 66, ${alpha0 * 0.38})`);
+        g.addColorStop(1, 'rgba(255, 145, 50, 0)');
+      } else {
+        g.addColorStop(0, `rgba(255, 224, 144, ${alpha0})`);
+        g.addColorStop(0.5, `rgba(255, 194, 104, ${alpha0 * 0.36})`);
+        g.addColorStop(1, 'rgba(255, 180, 90, 0)');
+      }
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(lx, ly, 145 * pulse, 0, Math.PI * 2);
+      ctx.arc(lx, ly, radius, 0, Math.PI * 2);
       ctx.fill();
+    }
 
-      // 水母玻璃瓶的微弱海蓝呼吸光
-      const jx = this.w * 0.505;
-      const jy = this.h * 0.27;
-      const jp = 0.75 + 0.25 * Math.sin(t * 2.1);
-      const jg = ctx.createRadialGradient(jx, jy, 2, jx, jy, 34 * jp);
-      jg.addColorStop(0, 'rgba(130, 218, 255, 0.30)');
+    if (this.isEvolved || this.hasJellyGlow) {
+      const jx = this.isEvolved ? this.w * 0.505 : this.w * 0.642;
+      const jy = this.isEvolved ? this.h * 0.27 : this.h * 0.272;
+      const jp = 0.78 + 0.22 * Math.sin(t * 2.1);
+      const jr = (this.nightPreview ? 48 : 36) * jp;
+      const jg = ctx.createRadialGradient(jx, jy, 2, jx, jy, jr);
+      jg.addColorStop(0, `rgba(130, 218, 255, ${this.nightPreview ? 0.42 : 0.28})`);
       jg.addColorStop(1, 'rgba(130, 218, 255, 0)');
       ctx.fillStyle = jg;
       ctx.beginPath();
-      ctx.arc(jx, jy, 34 * jp, 0, Math.PI * 2);
+      ctx.arc(jx, jy, jr, 0, Math.PI * 2);
       ctx.fill();
     }
 

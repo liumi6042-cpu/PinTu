@@ -72,6 +72,40 @@ class CozySound {
       this.tone(f, 0.42, 'triangle', 0.065, i * 0.09);
     });
   }
+
+  /** 奶奶的黄铜摇奖匣：胡桃木滚筒咔哒转动与木珠滚动声 */
+  garaponCrank() {
+    [220, 260, 210, 285, 240, 310, 265].forEach((f, i) => {
+      this.tone(f, 0.065, 'triangle', 0.055, i * 0.095, f * 0.78);
+    });
+  }
+
+  /** 木珠从黄铜滑道滚落托盘 */
+  ballDrop(tier = 'green') {
+    if (tier === 'gold') {
+      [587, 740, 880, 1175, 1480].forEach((f, i) => this.tone(f, 0.55, 'triangle', 0.07, i * 0.08));
+    } else if (tier === 'red') {
+      [523, 659, 988].forEach((f, i) => this.tone(f, 0.42, 'sine', 0.065, i * 0.09));
+    } else if (tier === 'blue') {
+      [440, 587, 784].forEach((f, i) => this.tone(f, 0.34, 'triangle', 0.055, i * 0.08));
+    } else {
+      this.tone(420, 0.14, 'triangle', 0.06, 0, 560);
+      this.tone(580, 0.22, 'sine', 0.05, 0.09);
+    }
+  }
+
+  /** 三花猫黄铜八音盒：清脆五声摇篮旋律 */
+  musicBox() {
+    [784, 988, 1175, 988, 1319, 1175, 784].forEach((f, i) => {
+      this.tone(f, 0.52, 'sine', 0.048, i * 0.15);
+    });
+  }
+
+  /** 布置小窝摆件落位轻响 */
+  decorSnap() {
+    this.tone(280, 0.08, 'triangle', 0.07, 0, 200);
+    this.tone(660, 0.22, 'sine', 0.045, 0.05);
+  }
 }
 
 export const sound = new CozySound();
