@@ -8,7 +8,7 @@ const REWARD_DECORATIONS=Object.freeze((catalog.rewardDecorations??[]).map(item=
 const reject=(status,code,message)=>{throw Object.assign(new Error(message),{status,code});};
 /** Albums whose pictures unlock one by one after rewarded ads (2026-11-05 「治愈时光」). The content admin stores
  * them as purchasable with price 1 so every server treats the pictures as locked; coins never buy them. */
-export const AD_UNLOCK_ALBUM_IDS=Object.freeze(new Set(['healing-time','four-seasons-table','curiosity-cabinet']));
+export const AD_UNLOCK_ALBUM_IDS=Object.freeze(new Set(['healing-time','four-seasons-table','curiosity-cabinet','mint-pastoral']));
 export const AD_UNLOCK_ADS_PER_IMAGE=2;
 export const AD_UNLOCK_DAILY_WATCH_LIMIT=2;
 export const AD_UNLOCK_DAILY_UNLOCK_LIMIT=1;

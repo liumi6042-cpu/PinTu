@@ -4,8 +4,8 @@ import {join} from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import {problem} from './store.mjs';
 
-// Same list as AD_UNLOCK_ALBUM_IDS in jigsaw-nook-taptap server/mobile-collection.mjs (治愈时光 2026-11-05; 四季食光手账、博物珍奇柜 2026-11-26).
-export const AD_UNLOCK_ALBUM_IDS = Object.freeze(new Set(['healing-time', 'four-seasons-table', 'curiosity-cabinet']));
+// Same list as AD_UNLOCK_ALBUM_IDS in jigsaw-nook-taptap server/mobile-collection.mjs (治愈时光 2026-11-05; 四季食光手账、博物珍奇柜 2026-11-26; 薄荷田园诗 2026-11-28).
+export const AD_UNLOCK_ALBUM_IDS = Object.freeze(new Set(['healing-time', 'four-seasons-table', 'curiosity-cabinet', 'mint-pastoral']));
 const IMAGE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const DIGEST = /^[a-f0-9]{64}$/;
 const DAY = 86_400_000, CHINA_OFFSET = 8 * 60 * 60 * 1000;

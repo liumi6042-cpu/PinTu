@@ -203,7 +203,12 @@ export function createAdminServer({projectRoot=resolve(appRoot,'..'),dataDir=joi
    if(path.startsWith('/api/assets/')){
     if([...url.searchParams.keys()].length)throw problem(400,'图片交付请求不接受额外参数');
     if(path==='/api/assets/status'&&method==='GET')return response(res,200,await assets.plan());
-    if(path==='/api/assets/deliver'&&method==='POST'){inputFields(await jsonBody(req),[]);return response(res,200,await assets.deliver({actor:current.username}));}
+    if(path==='/api/assets/deliver'&&method==='POST'){
+     inputFields(await jsonBody(req),[]);
+     const delivered=await assets.deliver({actor:current.username});
+     if(!providedSource&&delivered?.delivered>0){source=readSource(projectRoot);syncContent();}
+     return response(res,200,delivered);
+    }
     if(path==='/api/import/context'&&method==='GET'){
     if([...url.searchParams.keys()].length)throw problem(400,'请求不接受额外参数');
     let receipts=[];

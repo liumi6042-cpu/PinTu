@@ -3865,6 +3865,60 @@
         "width": 2227,
         "height": 2227
       }
+    ],
+    "album-mint-pastoral-01-20261128": [
+      {
+        "revision": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+        "src": "/puzzles/album-mint-pastoral-01-20261128-optimized-9bdb27f64290.webp",
+        "thumbSrc": "/puzzles/album-mint-pastoral-01-20261128-thumbnail-17ff114fbbeb.webp",
+        "width": 2229,
+        "height": 2229
+      }
+    ],
+    "album-mint-pastoral-02-20261128": [
+      {
+        "revision": "7ffac8a631838219cf38639c180fb2162cde4b0704c8a713c96a20484102d938",
+        "src": "/puzzles/album-mint-pastoral-02-20261128-optimized-ac288f4fa64c.webp",
+        "thumbSrc": "/puzzles/album-mint-pastoral-02-20261128-thumbnail-7d40cc1af10e.webp",
+        "width": 2229,
+        "height": 2229
+      }
+    ],
+    "album-mint-pastoral-03-20261128": [
+      {
+        "revision": "fb974c050734c057472328e8b2f5e5abdd7c4a098256412a6742435d14457fb7",
+        "src": "/puzzles/album-mint-pastoral-03-20261128-optimized-a3cf9437385a.webp",
+        "thumbSrc": "/puzzles/album-mint-pastoral-03-20261128-thumbnail-a0b3566eb136.webp",
+        "width": 2229,
+        "height": 2229
+      }
+    ],
+    "album-mint-pastoral-04-20261128": [
+      {
+        "revision": "924c40a4e5b83cbe199a5485cd6d13cfbb8489d00078f4f6566772c7619c8d45",
+        "src": "/puzzles/album-mint-pastoral-04-20261128-optimized-a7b2d959d8a6.webp",
+        "thumbSrc": "/puzzles/album-mint-pastoral-04-20261128-thumbnail-5182e0689f67.webp",
+        "width": 2229,
+        "height": 2229
+      }
+    ],
+    "album-mint-pastoral-05-20261128": [
+      {
+        "revision": "79acc6c7c6172dcf4c6f0ea7f2bcaccf7f033e9c1d6ff525e31b13754299bd98",
+        "src": "/puzzles/album-mint-pastoral-05-20261128-optimized-cf2966da2e87.webp",
+        "thumbSrc": "/puzzles/album-mint-pastoral-05-20261128-thumbnail-3f235a539fc5.webp",
+        "width": 2229,
+        "height": 2229
+      }
+    ],
+    "album-mint-pastoral-06-20261128": [
+      {
+        "revision": "82806762ee4a5ab73d708b24e2d2f63922eacd7904bbce584427d9792358f856",
+        "src": "/puzzles/album-mint-pastoral-06-20261128-optimized-0d4c794c7a3e.webp",
+        "thumbSrc": "/puzzles/album-mint-pastoral-06-20261128-thumbnail-ea9eaeb611e9.webp",
+        "width": 2225,
+        "height": 2225
+      }
     ]
   },
   "active": {
