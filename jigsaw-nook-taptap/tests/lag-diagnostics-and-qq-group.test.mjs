@@ -201,3 +201,40 @@ test('WeChat hides external QQ group copy everywhere while keeping local lag dia
  assert.equal(f.buttons.some(b=>b.label.includes('QQ')||b.label.includes(PLAYER_QQ_GROUP)),false,'wechat lag modal hides QQ group');
  assert.equal(f.app.roomDiagnosticSnapshot().copyText.includes(PLAYER_QQ_GROUP),false,'wechat copied report omits QQ group');
 });
+
+test('phoneLandscape docks room diagnostics vertically on the left edge below gift and expands to the right',()=>{
+ const f=uiFixture('taptap');
+ const surfaces=[];
+ f.app.platform.viewport=()=>({width:844,height:390,top:0,bottom:0,dpr:2});
+ f.app.stage.w=844;f.app.stage.h=390;
+ f.app.roomArea={x:0,y:0,w:772,h:390};
+ f.app.adminDiagEnabled=true;
+ f.app.adminDiagExpanded=false;
+ f.app.drawLandscapeSurface=(r,...rest)=>{surfaces.push({...r});};
+
+ // Collapsed: vertical slim card on the left margin (x=12, y>=116 below top bar + gift), taller than wide.
+ f.texts.length=0;f.hits.length=0;surfaces.length=0;
+ f.app.drawAdminDiagnostics();
+ assert.equal(surfaces.length,1);
+ const pill=surfaces[0];
+ assert.equal(pill.x,12,'docked on left margin');
+ assert.ok(pill.y>=116,'placed below landscape header & gift box: '+pill.y);
+ assert.ok(pill.w<=82&&pill.h>pill.w,'slim vertical dock instead of wide top bar: '+JSON.stringify(pill));
+ assert.ok(f.texts.some(t=>t==='诊断 ▸'));
+
+ // Clicking the left dock expands the details card to its right without covering the left dock.
+ f.hits[0].fn();
+ assert.equal(f.app.adminDiagExpanded,true);
+ f.texts.length=0;f.hits.length=0;surfaces.length=0;
+ f.app.drawAdminDiagnostics();
+ const card=surfaces[1];
+ assert.ok(card.x>=pill.x+pill.w,'expanded card opens to the right of left vertical dock');
+ assert.ok(f.texts.some(t=>t==='诊断 ◂'));
+ assert.ok(f.texts.some(t=>t==='复制诊断'));
+ assert.ok(f.texts.some(t=>t==='复制QQ群'));
+ assert.ok(f.texts.some(t=>t==='收起'));
+
+ // Clicking 收起 collapses back to the vertical dock.
+ f.hits.at(-1).fn();
+ assert.equal(f.app.adminDiagExpanded,false);
+});

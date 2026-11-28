@@ -50,7 +50,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.37';
+const CLIENT_PACKAGE_VERSION='v53.38';
 /** Server /api/mobile/gifts/open validates 1..20 gifts per request; larger bulk opens are split into sequential batches. */
 const GIFT_OPEN_BATCH_LIMIT=20;
 
@@ -189,6 +189,7 @@ export class GameApp{
   const previewTag=hasPreview?(previewHybrid?'混合✓':previewOn?'平台✓':'平台退'):'原通道';
   const fpsTag=lag.fps!==null?` · ${lag.fps}fps`:'';
   const pill=`诊断 · ${wsTag} · ${previewTag}${fpsTag} · ${rttShort} · rev${rev} · ${members}人`;
+  const verticalLines=[wsTag,previewTag,lag.fps!==null?`${lag.fps}fps`:'—fps',rttShort,`r${rev}·${members}人`];
   const fmtTiming=(key:string)=>{const t=this.roomTimings?.get(key);return t?`${Math.round(t.ms)}ms(${t.status})`:'—';};
   const img=this.stage.imageDiagnostics?.(),boardPerf=this.board?.performanceDetails?.();
   const imgText=img?`${img.entries}张/${(img.decodedBytes/1048576).toFixed(1)}MB(载入${img.loading})`:'—';
@@ -227,7 +228,7 @@ export class GameApp{
    `apiBase=${this.platform.config.apiBase}`,
    ...(this.communityGroupVisible?[`feedback=请粘贴发送至玩家交流 QQ 群 ${PLAYER_QQ_GROUP}`]:[]),
   ];
-  return {pill,lines,copyText:copyLines.join('\n'),wsConnected:wsConnected||localSolo||offline,lag};
+  return {pill,verticalLines,lines,copyText:copyLines.join('\n'),wsConnected:wsConnected||localSolo||offline,lag};
  }
  private async copyRoomDiagnostics(withGroupHint=false){
   const text=this.roomDiagnosticSnapshot().copyText;

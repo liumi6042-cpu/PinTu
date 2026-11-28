@@ -323,19 +323,47 @@ export function drawPublicChatPanel(this:AppHost){
 
 export function drawAdminDiagnosticsPanel(this:AppHost){
   const s=this.stage,snap=this.roomDiagnosticSnapshot();
-  const topY=this.layout==='phoneLandscape'?this.roomHeaderTop()+56:this.roomArea.y+6;
-  const label=snap.pill+(this.adminDiagExpanded?' ▴':' ▾');
-  const pillW=Math.min(this.roomArea.w-16,Math.max(150,s.measure(label,10,700)+20));
-  const pill={x:this.roomArea.x+(this.roomArea.w-pillW)/2,y:topY,w:pillW,h:24};
+  const landscape=this.layout==='phoneLandscape';
   const hasLag=snap.lag?.slowFrames5s>=3||snap.lag?.slowNet15s>=2||!snap.wsConnected;
-  this.drawLandscapeSurface(pill,12,'rgba(34,26,22,0.84)',hasLag?'#f08a8a':'#e8c47a',1);
-  s.text(label,pill.x+10,pill.y+6,10,'#fff8ee',700,pill.w-20);
-  s.hit(pill,()=>{this.adminDiagExpanded=!this.adminDiagExpanded;this.invalidate();});
-  if(!this.adminDiagExpanded)return;
+  const border=hasLag?'#f08a8a':'#e8c47a';
+  let pill:Rect,cardX:number,cardY:number,cardW:number;
   const showQq=this.communityGroupVisible===true;
   const displayLines=showQq?[...snap.lines,'遇到卡顿请复制诊断发到玩家 QQ 群 397229653']:snap.lines;
-  const cardW=Math.min(this.roomArea.w-16,380),lineH=15,cardH=14+displayLines.length*lineH+36;
-  const card={x:this.roomArea.x+(this.roomArea.w-cardW)/2,y:topY+28,w:cardW,h:cardH};
+  const lineH=15,cardH=14+displayLines.length*lineH+36;
+  if(landscape){
+   // Landscape room: dock vertically on the empty left margin below the gift icon so the center puzzle stays unobstructed.
+   const headerTop=this.roomHeaderTop(),map=this.board?.minimapFrame,giftY=map?map.y+map.h+8:headerTop+58;
+   const startY=this.platform.config.id==='web'?headerTop+58:giftY+58;
+   const rows=['诊断'+(this.adminDiagExpanded?' ◂':' ▸'),...(snap.verticalLines??[])];
+   const rowH=14,pillH=10+rows.length*rowH;
+   const pillW=Math.max(58,Math.min(82,Math.ceil(Math.max(...rows.map((row:string)=>s.measure(row,9.5,700))))+14));
+   const maxBottom=(this.board?.trayFrame?this.board.trayFrame.y-6:this.roomArea.y+this.roomArea.h-10);
+   const pillY=Math.max(headerTop+54,Math.min(startY,maxBottom-pillH));
+   pill={x:this.roomArea.x+12,y:pillY,w:pillW,h:pillH};
+   this.drawLandscapeSurface(pill,10,'rgba(34,26,22,0.84)',border,1);
+   rows.forEach((row:string,index:number)=>{
+    const color=index===0?border:'#fff8ee';
+    s.text(row,pill.x+7,pill.y+5+index*rowH,9.5,color,index===0?800:700,pill.w-14);
+   });
+   s.hit(pill,()=>{this.adminDiagExpanded=!this.adminDiagExpanded;this.invalidate();});
+   if(!this.adminDiagExpanded)return;
+   cardX=pill.x+pill.w+8;
+   cardW=Math.max(180,Math.min(this.roomArea.w-(cardX-this.roomArea.x)-10,360));
+   cardY=Math.max(headerTop+54,Math.min(pill.y,maxBottom-cardH));
+  }else{
+   const topY=this.roomArea.y+6;
+   const label=snap.pill+(this.adminDiagExpanded?' ▴':' ▾');
+   const pillW=Math.min(this.roomArea.w-16,Math.max(150,s.measure(label,10,700)+20));
+   pill={x:this.roomArea.x+(this.roomArea.w-pillW)/2,y:topY,w:pillW,h:24};
+   this.drawLandscapeSurface(pill,12,'rgba(34,26,22,0.84)',border,1);
+   s.text(label,pill.x+10,pill.y+6,10,'#fff8ee',700,pill.w-20);
+   s.hit(pill,()=>{this.adminDiagExpanded=!this.adminDiagExpanded;this.invalidate();});
+   if(!this.adminDiagExpanded)return;
+   cardW=Math.min(this.roomArea.w-16,380);
+   cardX=this.roomArea.x+(this.roomArea.w-cardW)/2;
+   cardY=topY+28;
+  }
+  const card={x:cardX,y:cardY,w:cardW,h:cardH};
   this.drawLandscapeSurface(card,10,'rgba(28,22,19,0.92)','#e8c47a88',1);
   s.hit(card,()=>{});
   displayLines.forEach((line:string,index:number)=>s.text(line,card.x+10,card.y+8+index*lineH,10,showQq&&index===displayLines.length-1?'#f7d996':'#f7efe2',600,card.w-20));
@@ -359,9 +387,13 @@ export function drawAdminDiagnosticsPanel(this:AppHost){
 export function drawLagAlertBannerPanel(this:AppHost){
   if(this.modal||this.completionFx||this.nineGridRoom)return;
   const alert=this.lagSnapshot?.activeAlert;if(!alert)return;
-  const s=this.stage,baseY=this.layout==='phoneLandscape'?this.roomHeaderTop()+56:this.roomArea.y+6;
-  const y=baseY+(this.adminDiagEnabled?(this.adminDiagExpanded?206:30):0);
-  const w=Math.min(this.roomArea.w-16,410),h=46,x=this.roomArea.x+(this.roomArea.w-w)/2,r={x,y,w,h};
+  const landscape=this.layout==='phoneLandscape';
+  if(landscape&&this.adminDiagEnabled&&this.adminDiagExpanded)return;
+  const s=this.stage,baseY=landscape?this.roomHeaderTop()+56:this.roomArea.y+6;
+  const y=landscape?baseY:baseY+(this.adminDiagEnabled?(this.adminDiagExpanded?206:30):0);
+  const leftReserve=landscape&&this.adminDiagEnabled?96:8;
+  const maxW=Math.max(180,this.roomArea.w-leftReserve-8);
+  const w=Math.min(maxW,410),h=46,x=Math.max(this.roomArea.x+leftReserve,this.roomArea.x+(this.roomArea.w-w)/2),r={x,y,w,h};
   this.drawLandscapeSurface(r,10,'rgba(44,29,28,0.92)','#f0967e',1.5);
   s.hit(r,()=>this.showModal('lagFeedback'));
   const closeW=24,copyW=62,closeX=x+w-closeW-6,copyX=closeX-copyW-6,textW=Math.max(60,copyX-x-16);
