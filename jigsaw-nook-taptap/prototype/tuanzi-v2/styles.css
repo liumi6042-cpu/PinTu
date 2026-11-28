@@ -306,6 +306,29 @@ html, body {
   width: 204px;
 }
 
+/* Outdoor sunset harbor veranda cushion sits centered on the warm timber porch planks */
+.tuanzi-actor.scene-veranda.pose-nap {
+  left: 54.5%;
+  bottom: 186px;
+  width: 266px;
+}
+.tuanzi-actor.scene-veranda.pose-note {
+  left: 54.5%;
+  bottom: 186px;
+  width: 258px;
+}
+.tuanzi-actor.scene-veranda.pose-wait {
+  left: 54.5%;
+  bottom: 190px;
+  width: 222px;
+}
+.nook-stage.decor-mode .tuanzi-actor.scene-veranda.pose-wait,
+.nook-stage.decor-mode .tuanzi-actor.in-evolved.pose-wait {
+  left: 52%;
+  bottom: 224px;
+  width: 174px;
+}
+
 /* State: Trotting away to the right wooden shop door! */
 .tuanzi-actor.pose-departing {
   left: 52%;
@@ -1831,6 +1854,28 @@ html, body {
   object-fit: cover;
   border: 1px solid rgba(140, 96, 62, 0.24);
 }
+.decor-card.scene-card {
+  min-height: 88px;
+  padding: 4px 4px 4px;
+}
+.decor-card.scene-card .thumb {
+  width: 100%;
+  height: 44px;
+  border-radius: 7px;
+}
+#screen-nook.is-veranda .sill-drop:not(.feed-snack-btn) {
+  top: 492px;
+  left: 14px;
+}
+.scene-auto-link {
+  padding: 1.5px 8px;
+  border-radius: 99px;
+  background: rgba(255, 250, 240, 0.9);
+  border: 1px solid rgba(146, 108, 76, 0.42);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vermilion-deep);
+}
 .decor-card.locked .thumb {
   opacity: 0.56;
   filter: grayscale(28%);
@@ -2277,6 +2322,16 @@ html, body {
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+.d-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .d-btn-grid {
   display: grid;

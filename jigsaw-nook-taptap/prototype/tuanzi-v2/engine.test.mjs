@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { MOBILE_COLLECTION_CATALOG, createMobileCollection } from '../../server/mobile-collection.mjs';
-import { DAY, HOUR, NPCS, getCalendarInfo, matchSynergy } from './catalog.js';
+import { DAY, HOUR, NPCS, ROOM_SCENES, getCalendarInfo, matchSynergy } from './catalog.js';
 import {
   DEFAULT_START_TS,
   buyItem,
@@ -17,6 +17,7 @@ import {
   packBag,
   replyLetter,
   sendOffNow,
+  setSceneOverride,
   simulateTo,
   spinGacha,
   syncWalletCoins,
@@ -199,4 +200,31 @@ test('Tuanzi coin earn/spend flows directly through the main game mobile_collect
   );
   assert.equal(collection.coinsOf(owner), 135);
   db.close();
+});
+
+test('6 hand-painted storybook room scenes auto-resolve by season/weather and support manual switching', () => {
+  assert.equal(ROOM_SCENES.length, 6);
+
+  // Spring morning -> spring-sakura
+  const springState = createInitialState(Date.parse('2026-04-08T09:30:00+08:00'));
+  assert.equal(getDerivedView(springState).activeSceneId, 'spring-sakura');
+
+  // Summer afternoon -> sunset-veranda; Summer evening -> summer-firefly
+  const summerDay = createInitialState(Date.parse('2026-07-15T16:30:00+08:00'));
+  assert.equal(getDerivedView(summerDay).activeSceneId, 'sunset-veranda');
+  const summerNight = createInitialState(Date.parse('2026-07-15T20:30:00+08:00'));
+  assert.equal(getDerivedView(summerNight).activeSceneId, 'summer-firefly');
+
+  // Manual override switches directly to any of the 6 scenes with matching default weather
+  let s = createInitialState();
+  s = setSceneOverride(s, 'rainy-alley');
+  assert.equal(getDerivedView(s).activeSceneId, 'rainy-alley');
+  assert.equal(getDerivedView(s).weather, 'rain');
+
+  s = setSceneOverride(s, 'sunset-veranda');
+  assert.equal(getDerivedView(s).activeSceneId, 'sunset-veranda');
+
+  s = setSceneOverride(s, 'auto');
+  assert.equal(s.sceneOverride, null);
+  assert.equal(getDerivedView(s).activeSceneId, 'autumn-day');
 });

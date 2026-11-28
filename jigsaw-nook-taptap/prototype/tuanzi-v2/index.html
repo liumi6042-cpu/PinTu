@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>团子去旅行 2.0 · 绘本风可玩交互原型</title>
-  <link rel="stylesheet" href="./styles.css?v=20261128c" />
+  <link rel="stylesheet" href="./styles.css?v=20261128d" />
 </head>
 <body>
   <main class="stage-shell">
@@ -167,11 +167,11 @@
 
           <div class="decor-drawer" id="decor-drawer">
             <div class="drawer-tabs" id="decor-tabs">
-              <button class="craft-btn d-tab active" data-dtab="all">全部</button>
-              <button class="craft-btn d-tab" data-dtab="desk">桌面台灯</button>
+              <button class="craft-btn d-tab" data-dtab="scene">场景</button>
+              <button class="craft-btn d-tab active" data-dtab="desk">桌面</button>
               <button class="craft-btn d-tab" data-dtab="shelf">木架</button>
-              <button class="craft-btn d-tab" data-dtab="window">窗与展格</button>
-              <button class="craft-btn d-tab" data-dtab="outfit">团子穿搭</button>
+              <button class="craft-btn d-tab" data-dtab="window">窗格</button>
+              <button class="craft-btn d-tab" data-dtab="outfit">穿搭</button>
             </div>
             <div class="decor-slot-hint" id="decor-slot-hint">点上方屋里任意虚线框，或点下方摆件立刻切换</div>
             <div class="decor-grid" id="decor-grid"></div>
@@ -360,7 +360,22 @@
 
       <div class="d-group">
         <div class="d-group-title">
-          <span>窗外粒子气候（精准裁切在窗格内）</span>
+          <span>手绘实景场景（6 套一键切换）</span>
+          <button class="d-link-btn" data-scene="auto" id="dbg-scene" style="color:#a94737;">自动：初秋午后</button>
+        </div>
+        <div class="d-btn-grid">
+          <button class="d-btn" data-scene="autumn-day">初秋午后</button>
+          <button class="d-btn" data-scene="spring-sakura">仲春樱窗</button>
+          <button class="d-btn" data-scene="rainy-alley">雨巷听雨</button>
+          <button class="d-btn" data-scene="summer-firefly">盛夏萤夜</button>
+          <button class="d-btn" data-scene="sunset-veranda">落日木廊</button>
+          <button class="d-btn" data-scene="winter-snow">初冬雪夜</button>
+        </div>
+      </div>
+
+      <div class="d-group">
+        <div class="d-group-title">
+          <span>窗外粒子气候（联动实景与窗格裁切）</span>
           <span id="dbg-weather" style="color:#6d4f3d;">自动公历</span>
         </div>
         <div class="d-btn-grid">
@@ -393,6 +408,6 @@
     </aside>
   </main>
 
-  <script type="module" src="./app.js?v=20261128c"></script>
+  <script type="module" src="./app.js?v=20261128d"></script>
 </body>
 </html>

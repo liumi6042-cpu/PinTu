@@ -10,8 +10,9 @@ export class NookAtmosphere {
     this.h = 844;
     this.weather = 'autumn';
     this.isEvolved = false;
+    this.windowMode = 'plate'; // 'plate' | 'plate-firefly' | 'evolved' | 'veranda'
     this.dustLevel = 0;
-    this.lampGlow = null; // null | 'amber' | 'candle'
+    this.lampGlow = null; // null | 'amber' | 'candle' | 'rain-amber' | 'firefly-lantern' | 'veranda-lantern' | 'evolved-amber'
     this.hasJellyGlow = false;
     this.nightPreview = false;
     this.dustClearedNotified = false;
@@ -37,10 +38,11 @@ export class NookAtmosphere {
     this.canvas.style.height = `${h}px`;
   }
 
-  setScene({ weather, isEvolved, dustLevel, lampGlow = null, hasJellyGlow = false, nightPreview = false }) {
+  setScene({ weather, isEvolved, windowMode = null, dustLevel, lampGlow = null, hasJellyGlow = false, nightPreview = false }) {
     const weatherChanged = weather !== this.weather;
     this.weather = weather || 'autumn';
     this.isEvolved = Boolean(isEvolved);
+    this.windowMode = windowMode || (this.isEvolved ? 'evolved' : 'plate');
     this.lampGlow = lampGlow;
     this.hasJellyGlow = Boolean(hasJellyGlow);
     this.nightPreview = Boolean(nightPreview);
@@ -158,18 +160,24 @@ export class NookAtmosphere {
     }
   }
 
-  /** 精准裁切到左木格窗玻璃与右木门玻璃格（雪/雨/樱花只在窗外飘落！） */
+  /** 精准裁切到当前场景的窗格玻璃或木廊天空海面（粒子严守实景透视边界！） */
   applyWindowClip(ctx) {
     const w = this.w;
     const h = this.h;
     ctx.beginPath();
-    if (this.isEvolved) {
+    if (this.windowMode === 'evolved') {
       // Day 30 雪夜底图的左窗格与右门玻璃格
       ctx.rect(0, h * 0.078, w * 0.365, h * 0.352);
       ctx.rect(w * 0.852, h * 0.068, w * 0.148, h * 0.056);
       ctx.rect(w * 0.895, h * 0.180, w * 0.105, h * 0.248);
+    } else if (this.windowMode === 'veranda') {
+      // 后院落日木廊：栏杆上方与木柱之间的整片海湾天空与海面
+      ctx.rect(w * 0.065, h * 0.115, w * 0.87, h * 0.415);
+    } else if (this.windowMode === 'plate-firefly') {
+      // 盛夏萤夜：竹帘下方至窗台的木格玻璃窗
+      ctx.rect(w * 0.032, h * 0.268, w * 0.390, h * 0.224);
     } else {
-      // Day 1 原地融合画板（left:-3px，完整露出左桌台灯与右书架）的左木格窗玻璃区域
+      // 初秋 / 仲春樱窗 / 雨巷听雨：同视角 768×1376 室内画板的左木格窗玻璃区域
       ctx.rect(w * 0.032, h * 0.214, w * 0.390, h * 0.278);
     }
     ctx.clip();
@@ -346,18 +354,26 @@ export class NookAtmosphere {
     }
     ctx.restore();
 
-    // B. 屋内台灯与水母瓶实时动态光晕（装扮换灯或试看雪夜时实时变色温！）
-    const activeLamp = this.isEvolved ? 'amber' : this.lampGlow;
+    // B. 屋内台灯 / 廊灯 / 水母瓶实时动态光晕（按当前场景灯具精确坐标呼吸发光！）
+    const activeLamp = this.lampGlow || (this.windowMode === 'evolved' ? 'evolved-amber' : null);
     if (activeLamp) {
-      const pulse = 0.88 + 0.12 * Math.sin(t * (activeLamp === 'candle' ? 3.1 : 1.6));
-      const lx = this.isEvolved ? this.w * 0.12 : this.w * 0.075;
-      const ly = this.isEvolved ? this.h * 0.455 : this.h * 0.495;
-      const radius = (this.nightPreview || this.isEvolved ? 175 : 132) * pulse;
-      const alpha0 = this.nightPreview ? 0.38 : this.isEvolved ? 0.24 : 0.18;
-      const g = ctx.createRadialGradient(lx, ly, 8, lx, ly, radius);
-      if (activeLamp === 'candle') {
-        g.addColorStop(0, `rgba(255, 198, 102, ${alpha0})`);
-        g.addColorStop(0.5, `rgba(255, 158, 66, ${alpha0 * 0.38})`);
+      const isWarmCandle = activeLamp === 'candle' || activeLamp === 'firefly-lantern' || activeLamp === 'veranda-lantern';
+      const pulse = 0.88 + 0.12 * Math.sin(t * (isWarmCandle ? 2.6 : 1.6));
+      const lampCoords = {
+        'evolved-amber':   { lx: this.w * 0.12,  ly: this.h * 0.455, r: 175, a: 0.24 },
+        'rain-amber':      { lx: this.w * 0.072, ly: this.h * 0.478, r: 158, a: 0.24 },
+        'firefly-lantern': { lx: this.w * 0.082, ly: this.h * 0.525, r: 156, a: 0.28 },
+        'veranda-lantern': { lx: this.w * 0.228, ly: this.h * 0.205, r: 128, a: 0.30 },
+        candle:            { lx: this.w * 0.075, ly: this.h * 0.495, r: this.nightPreview ? 175 : 132, a: this.nightPreview ? 0.38 : 0.18 },
+        amber:             { lx: this.w * 0.075, ly: this.h * 0.495, r: this.nightPreview ? 175 : 132, a: this.nightPreview ? 0.38 : 0.18 },
+      };
+      const cfg = lampCoords[activeLamp] || lampCoords.amber;
+      const radius = cfg.r * pulse;
+      const alpha0 = cfg.a;
+      const g = ctx.createRadialGradient(cfg.lx, cfg.ly, 8, cfg.lx, cfg.ly, radius);
+      if (isWarmCandle) {
+        g.addColorStop(0, `rgba(255, 202, 108, ${alpha0})`);
+        g.addColorStop(0.5, `rgba(255, 162, 72, ${alpha0 * 0.38})`);
         g.addColorStop(1, 'rgba(255, 145, 50, 0)');
       } else {
         g.addColorStop(0, `rgba(255, 224, 144, ${alpha0})`);
@@ -366,17 +382,18 @@ export class NookAtmosphere {
       }
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(lx, ly, radius, 0, Math.PI * 2);
+      ctx.arc(cfg.lx, cfg.ly, radius, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    if (this.isEvolved || this.hasJellyGlow) {
-      const jx = this.isEvolved ? this.w * 0.505 : this.w * 0.642;
-      const jy = this.isEvolved ? this.h * 0.27 : this.h * 0.272;
+    if (this.hasJellyGlow) {
+      const isEvolvedPos = this.windowMode === 'evolved';
+      const jx = isEvolvedPos ? this.w * 0.505 : this.w * 0.642;
+      const jy = isEvolvedPos ? this.h * 0.27 : this.h * 0.276;
       const jp = 0.78 + 0.22 * Math.sin(t * 2.1);
-      const jr = (this.nightPreview ? 48 : 36) * jp;
+      const jr = (this.nightPreview || this.windowMode === 'plate-firefly' ? 46 : 36) * jp;
       const jg = ctx.createRadialGradient(jx, jy, 2, jx, jy, jr);
-      jg.addColorStop(0, `rgba(130, 218, 255, ${this.nightPreview ? 0.42 : 0.28})`);
+      jg.addColorStop(0, `rgba(130, 218, 255, ${this.nightPreview || this.windowMode === 'plate-firefly' ? 0.38 : 0.26})`);
       jg.addColorStop(1, 'rgba(130, 218, 255, 0)');
       ctx.fillStyle = jg;
       ctx.beginPath();

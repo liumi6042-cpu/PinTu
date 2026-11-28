@@ -1,6 +1,6 @@
 // 「团子去旅行 2.0」纯函数确定性离线世界演进引擎（浏览器 & Node.js 通用）
 import {
-  DAY, DECOR_ITEMS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PERSONALITIES, POSTCARD_POOL, SOUVENIRS,
+  DAY, DECOR_ITEMS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PERSONALITIES, POSTCARD_POOL, ROOM_SCENE_MAP, SOUVENIRS,
   getCalendarInfo, matchSynergy,
 } from './catalog.js';
 
@@ -94,6 +94,7 @@ export function createInitialState(startTs = DEFAULT_START_TS) {
     reunion: null, // { awayDays, pages: [...], giftId, seen: false, claimed: false }
     logs: ['十月十八 初秋午后 · 团子搬进了奶奶的小店。'],
     weatherOverride: null, // null = 随真实公历自动，或 'snow' | 'rain' | 'autumn' | 'sakura' | 'firefly'
+    sceneOverride: null, // null = 随公历与气候自动切换，或 6 套 ROOM_SCENES id 之一
   };
 }
 
@@ -829,12 +830,52 @@ export function clearDust(prevState) {
   return state;
 }
 
-/** 计算派生视图：主导性格、房间演化阶段、有效天气、未读数等 */
+/** 玩家行为：手动切换小窝实景场景（null / 'auto' 恢复随四季节气自动变化） */
+export function setSceneOverride(prevState, sceneId) {
+  const state = structuredClone(prevState);
+  if (!sceneId || sceneId === 'auto' || !ROOM_SCENE_MAP[sceneId]) {
+    state.sceneOverride = null;
+  } else {
+    state.sceneOverride = sceneId;
+  }
+  return state;
+}
+
+/** 计算派生视图：主导性格、房间演化阶段、有效场景与天气、未读数等 */
 export function getDerivedView(state) {
   const cal = getCalendarInfo(state.now);
   const daysTogether = Math.max(1, Math.floor((state.now - state.startedAt) / DAY) + 1);
   const isEvolvedRoom = daysTogether >= 14 || state.souvenirs.length >= 2 || state.apangHouseguest || cal.season === 'winter';
-  const weather = state.weatherOverride || cal.defaultWeather;
+  const hasPendingReunion = Boolean(state.reunion && !state.reunion.claimed);
+
+  // 智能解析当前实景场景：优先手动选定 -> 其次手动气候 -> 其次真实公历四季与演化阶段
+  let activeSceneId = null;
+  if (state.sceneOverride && ROOM_SCENE_MAP[state.sceneOverride]) {
+    activeSceneId = state.sceneOverride;
+  } else if (state.weatherOverride) {
+    activeSceneId = {
+      sakura: 'spring-sakura',
+      rain: 'rainy-alley',
+      firefly: 'summer-firefly',
+      snow: 'winter-snow',
+      autumn: 'autumn-day',
+    }[state.weatherOverride] || 'autumn-day';
+  } else if (hasPendingReunion || cal.season === 'winter') {
+    activeSceneId = 'winter-snow';
+  } else if (cal.season === 'spring') {
+    activeSceneId = cal.defaultWeather === 'rain' ? 'rainy-alley' : 'spring-sakura';
+  } else if (cal.season === 'summer') {
+    activeSceneId = cal.isNight || cal.defaultWeather === 'firefly' ? 'summer-firefly' : 'sunset-veranda';
+  } else if (cal.defaultWeather === 'rain') {
+    activeSceneId = 'rainy-alley';
+  } else if (isEvolvedRoom) {
+    activeSceneId = 'winter-snow';
+  } else {
+    activeSceneId = 'autumn-day';
+  }
+
+  const activeScene = ROOM_SCENE_MAP[activeSceneId] || ROOM_SCENE_MAP['autumn-day'];
+  const weather = state.weatherOverride || (state.sceneOverride ? activeScene.defaultWeather : cal.defaultWeather);
 
   // 主导气质（用于手盖红泥印章，摒弃冰冷百分比）
   const entries = Object.entries(state.traits);
@@ -855,6 +896,8 @@ export function getDerivedView(state) {
     cal,
     daysTogether,
     isEvolvedRoom,
+    activeSceneId,
+    activeScene,
     weather,
     personality,
     sillPortions: getSillPortions(state),
@@ -863,6 +906,6 @@ export function getDerivedView(state) {
     unreadTotal: unreadPostcards + unreadLetters,
     plantStageLabel,
     synergy: matchSynergy(state.pack),
-    hasPendingReunion: Boolean(state.reunion && !state.reunion.claimed),
+    hasPendingReunion,
   };
 }

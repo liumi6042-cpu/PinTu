@@ -1,11 +1,12 @@
 // 「团子去旅行 2.0」手作绘本可玩交互原型主控制器
 import {
-  DAY, DECOR_ITEMS, DECOR_SLOTS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PET_WHISPERS, POSTCARD_POOL, SOUVENIRS,
+  DAY, DECOR_ITEMS, DECOR_SLOTS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PET_WHISPERS, POSTCARD_POOL,
+  ROOM_SCENES, ROOM_SCENE_MAP, SOUVENIRS,
 } from './catalog.js';
 import {
   buyItem, claimReunionGift, claimSill, clearDust, completePostcard,
   createInitialState, equipDecor, feedSnack, getDerivedView, packBag, replyLetter, sendOffNow,
-  setTreatDish, simulateTo, spinGacha, syncWalletCoins, togglePantrySlot,
+  setSceneOverride, setTreatDish, simulateTo, spinGacha, syncWalletCoins, togglePantrySlot,
 } from './engine.js';
 import { NookAtmosphere } from './particles.js';
 import { sound } from './audio.js';
@@ -192,24 +193,37 @@ function commit(nextState) {
 }
 
 /* =========================================================
-   RENDER: NOOK MAIN SCENE + IN-SITU DECOR LAYERS + LIVE TUANZI
+   RENDER: NOOK MAIN SCENE + 6 SCENES + IN-SITU DECOR + LIVE TUANZI
    ========================================================= */
-function renderInSituDecorLayers(showEvolved) {
+function renderInSituDecorLayers(activeScene) {
   const plateEl = $('day1-plate-canvas');
+  const plateImg = $('room-bg-day1');
+  const coverImg = $('room-bg-day30');
   const layersEl = $('decor-layers');
   const slotsEl = $('decor-slots-overlay');
   const eq = state.equippedDecor || {};
 
-  // Day 30 / 跨季重逢雪夜使用独立全绘雪夜底图，严禁 Day 1 原地摆件贴片透出叠压
-  if (showEvolved) {
+  if (activeScene.layout === 'cover') {
+    if (coverImg.getAttribute('src') !== activeScene.bg) coverImg.setAttribute('src', activeScene.bg);
+    coverImg.style.opacity = '1';
     if (plateEl) plateEl.style.opacity = '0';
     layersEl.innerHTML = '';
     slotsEl.innerHTML = '';
     return;
   }
-  if (plateEl) plateEl.style.opacity = '1';
 
-  // 渲染 7 个原地融合羽化贴片（严格锁定原生 768×1376 百分比坐标，零贴纸漂移！）
+  // 同视角 768×1376 室内画板（初秋 / 仲春樱窗 / 雨巷听雨 / 盛夏萤夜 共用同一精确坐标系）
+  if (plateImg.getAttribute('src') !== activeScene.bg) plateImg.setAttribute('src', activeScene.bg);
+  if (plateEl) plateEl.style.opacity = '1';
+  coverImg.style.opacity = '0';
+
+  if (!activeScene.supportsDecor) {
+    layersEl.innerHTML = '';
+    slotsEl.innerHTML = '';
+    return;
+  }
+
+  // 仅初秋自由装扮画板渲染 7 个原地融合羽化贴片（严格锁定原生 768×1376 百分比坐标，零贴纸漂移！）
   const patchHtml = [];
   for (const slot of DECOR_SLOTS) {
     if (slot.id === 'outfit') continue;
@@ -222,8 +236,8 @@ function renderInSituDecorLayers(showEvolved) {
   }
   layersEl.innerHTML = patchHtml.join('');
 
-  // 仅装扮模式显示「一格一位」轻盈虚线框（不遮挡摆件本体与团子眼睛）
-  if (decorMode && !showEvolved) {
+  // 仅装扮模式（切到摆件页签时）显示「一格一位」轻盈虚线框
+  if (decorMode && decorTab !== 'scene' && decorTab !== 'outfit') {
     slotsEl.innerHTML = DECOR_SLOTS.map(slot => {
       const isSel = selectedDecorSlot === slot.id;
       const b = slot.box;
@@ -254,37 +268,52 @@ function renderInSituDecorLayers(showEvolved) {
 function renderNook() {
   const view = getDerivedView(state);
   const eq = state.equippedDecor || {};
-  const showEvolved = view.isEvolvedRoom && !decorMode;
+  // 在装扮抽屉编辑家具摆件时，自动展示「初秋午后」可摆件底图；在「场景 / 穿搭」页签下则实时预览当前选定场景！
+  const activeScene = (decorMode && decorTab !== 'scene' && decorTab !== 'outfit')
+    ? ROOM_SCENE_MAP['autumn-day']
+    : view.activeScene;
+  const isSnowRoom = activeScene.id === 'winter-snow';
 
   // 1. 装扮模式时上移整个实景舞台，露出全部木架、左桌台灯与团子
+  $('screen-nook').classList.toggle('is-veranda', activeScene.id === 'sunset-veranda');
   $('nook-stage').classList.toggle('decor-mode', decorMode);
   $('nook-hud-layer').classList.toggle('hidden', decorMode);
   $('decor-ui-layer').classList.toggle('hidden', !decorMode);
-  $('night-preview-veil').classList.toggle('active', decorMode && decorNightPreview);
+  const canNightPreview = activeScene.supportsDecor;
+  $('btn-decor-night').style.display = canNightPreview ? 'inline-flex' : 'none';
+  $('night-preview-veil').classList.toggle('active', decorMode && canNightPreview && decorNightPreview);
   $('decor-night-label').textContent = decorNightPreview ? '切回初秋午后' : '试看雪夜灯效';
 
-  // Day 1 原地融合画板 -> Day 30 重逢雪夜底图自然交叉淡入
-  $('room-bg-day30').style.opacity = showEvolved ? '1' : '0';
-  renderInSituDecorLayers(showEvolved);
+  renderInSituDecorLayers(activeScene);
 
-  // 2. 更新窗外粒子气候 & 屋内动态台灯/水母光晕 & 微尘
+  // 2. 更新窗外粒子气候 & 屋内动态台灯/廊灯/水母光晕 & 微尘
   const deskItem = eq.desk ? DECOR_ITEMS[eq.desk] : null;
+  const effectiveLampGlow = activeScene.supportsDecor ? (deskItem?.lampGlow || null) : activeScene.lampGlow;
+  const effectiveJellyGlow = activeScene.supportsDecor ? (eq.shelf1L === 's1l-jellyfish') : activeScene.hasJellyGlow;
+  const effectiveWeather = (decorMode && canNightPreview && decorNightPreview) ? 'snow' : view.weather;
+
   atmosphere.setScene({
-    weather: decorMode && decorNightPreview ? 'snow' : view.weather,
-    isEvolved: showEvolved,
+    weather: effectiveWeather,
+    isEvolved: isSnowRoom,
+    windowMode: activeScene.windowMode,
     dustLevel: decorMode ? 0 : state.dustLevel,
-    lampGlow: showEvolved ? null : (deskItem?.lampGlow || null),
-    hasJellyGlow: showEvolved ? false : (eq.shelf1L === 's1l-jellyfish'),
-    nightPreview: decorMode && decorNightPreview,
+    lampGlow: effectiveLampGlow,
+    hasJellyGlow: effectiveJellyGlow,
+    nightPreview: decorMode && canNightPreview && decorNightPreview,
   });
   canvas.classList.toggle('interactive-dust', !decorMode && state.dustLevel > 0);
   $('dust-cue').style.display = !decorMode && state.dustLevel > 0 ? 'flex' : 'none';
 
   // 3. 顶部麻绳木牌日历 & 橡木金币牌 & 右上黄铜摇奖匣挂徽
   $('plaque-date').textContent = view.cal.cnDate;
+  const weatherZh = {
+    sun: '晴', autumn: '晴风', rain: '细雨', snow: '飘雪', sakura: '樱风', firefly: '夏夜',
+  }[effectiveWeather] || '晴';
   const plaqueSub = view.hasPendingReunion
     ? `${view.cal.seasonLabel}${view.cal.isNight ? '雪夜' : view.cal.period} · 别${state.reunion.awayDays}日`
-    : view.cal.plaqueSub;
+    : (state.sceneOverride || state.weatherOverride)
+      ? `${activeScene.name} · ${activeScene.id === 'sunset-veranda' ? '橘海落日' : weatherZh}`
+      : view.cal.plaqueSub;
   $('plaque-sub').textContent = plaqueSub;
   $('hud-coins').textContent = String(state.coins);
 
@@ -308,18 +337,18 @@ function renderNook() {
     $('btn-feed-snack').style.display = 'none';
   }
 
-  // 5. 门口红丝带信捆火漆（重逢或有积压未读信件时显示）
-  const showBundle = showEvolved && (view.hasPendingReunion || view.unreadTotal >= 2);
+  // 5. 门口红丝带信捆火漆（重逢雪夜房或有积压未读信件时显示）
+  const showBundle = isSnowRoom && (view.hasPendingReunion || view.unreadTotal >= 2);
   $('btn-bundle-seal').style.display = showBundle ? 'flex' : 'none';
   $('bundle-count').textContent = String(Math.max(view.unreadTotal, view.hasPendingReunion ? 5 : 0));
 
-  // 6. 团子活态姿态与整猫无缝穿搭（零贴纸帽！）
+  // 6. 团子活态姿态与整猫无缝穿搭（零贴纸帽！自动贴合当前场景坐垫坐标）
   const actor = $('tuanzi-actor');
   const sprite = $('tuanzi-sprite');
   const zzz = $('zzz-layer');
   const outfit = DECOR_ITEMS[eq.outfit] || DECOR_ITEMS['outfit-default'];
   actor.className = 'tuanzi-actor';
-  if (showEvolved) actor.classList.add('in-evolved');
+  if (activeScene.actorClass) actor.classList.add(activeScene.actorClass);
   if (state.winterScarfUnlocked) actor.classList.add('has-scarf');
 
   if (decorMode) {
@@ -368,8 +397,8 @@ function renderNook() {
       $('rug-whisper').textContent = `团子背着「${foodName}」出门旅行了，坐垫上留了一张爪印纸条。`;
     } else if (state.pack.food) {
       $('rug-whisper').textContent = '布包装好啦，你可以轻推小门送它走，或等离开后悄悄出发。';
-    } else if (showEvolved) {
-      $('rug-whisper').textContent = '窗外飘着微雪，阿胖在角落蹭午睡，屋里暖融融的。';
+    } else if (!activeScene.supportsDecor) {
+      $('rug-whisper').textContent = activeScene.whisper;
     } else if (deskItem) {
       $('rug-whisper').textContent = `${deskItem.name}亮着暖光，团子在绿花垫子上安稳打盹。`;
     } else if (outfit.id === 'outfit-postman') {
@@ -377,7 +406,7 @@ function renderNook() {
     } else if (outfit.id === 'outfit-redscarf') {
       $('rug-whisper').textContent = '团子把小爪子缩进红绒围巾里，暖烘烘地眯起了眼。';
     } else {
-      $('rug-whisper').textContent = '午后的阳光暖烘烘的，团子正在垫子上打盹。';
+      $('rug-whisper').textContent = activeScene.whisper;
     }
   }
 
@@ -406,6 +435,49 @@ function renderDecorDrawer() {
   document.querySelectorAll('#decor-tabs .d-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.dtab === decorTab);
   });
+
+  const view = getDerivedView(state);
+  const gridEl = $('decor-grid');
+
+  // 专属「场景」图鉴页签：6 套手绘实景小窝一键切换！
+  if (decorTab === 'scene') {
+    const isAuto = !state.sceneOverride;
+    $('decor-slot-hint').innerHTML = `
+      <span>当前实景：<b>${view.activeScene.name}</b>${isAuto ? '（随节气自动）' : ''}</span>
+      ${isAuto ? '<span>点卡片随时切换</span>' : '<button class="craft-btn scene-auto-link" id="btn-scene-auto">恢复随节气自动</button>'}
+    `;
+    gridEl.innerHTML = ROOM_SCENES.map(sc => {
+      const isCur = view.activeSceneId === sc.id;
+      return `
+        <button class="craft-btn decor-card scene-card ${isCur ? 'equipped' : ''}" data-pick-scene="${sc.id}">
+          <img class="thumb" src="${sc.thumb}" alt="${sc.name}" />
+          <div class="d-name">${sc.name}</div>
+          <div class="d-state ${isCur ? 'on' : 'ready'}">${isCur ? '当前实景' : sc.badge}</div>
+        </button>
+      `;
+    }).join('');
+    $('decor-progress').textContent = `已收录手绘实景 ${ROOM_SCENES.length} / ${ROOM_SCENES.length} 套`;
+
+    $('btn-scene-auto')?.addEventListener('click', () => {
+      sound.paperTurn();
+      commit(setSceneOverride(state, null));
+      showToast('已恢复随公历四季与天气自动变换场景');
+    });
+    gridEl.querySelectorAll('[data-pick-scene]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sid = btn.dataset.pickScene;
+        const sc = ROOM_SCENE_MAP[sid];
+        if (!sc) return;
+        sound.decorSnap();
+        let next = setSceneOverride(state, sid);
+        next.weatherOverride = null;
+        commit(next);
+        atmosphere.spawnBurst(195, 360, 'chime');
+        showToast(`已切换至「${sc.fullTitle}」`);
+      });
+    });
+    return;
+  }
 
   const eq = state.equippedDecor || {};
   const owned = state.ownedDecor || [];
@@ -461,7 +533,6 @@ function renderDecorDrawer() {
     `);
   }
 
-  const gridEl = $('decor-grid');
   gridEl.innerHTML = cards.join('');
   $('decor-progress').textContent = `已收集小窝珍品 ${owned.length} / ${allItems.length} 件`;
 
@@ -1423,6 +1494,10 @@ function bindBookCommon(el) {
 function renderDebugDock() {
   const view = getDerivedView(state);
   $('dbg-days').textContent = `相伴第 ${view.daysTogether} 天 · ${view.cal.shortDate}`;
+  const sceneEl = $('dbg-scene');
+  if (sceneEl) {
+    sceneEl.textContent = state.sceneOverride ? `手动：${view.activeScene.name}` : `自动：${view.activeScene.name}`;
+  }
   $('dbg-weather').textContent = state.weatherOverride ? `手动：${state.weatherOverride}` : `自动：${view.cal.weatherLabel}`;
   $('dbg-plant').textContent = `${view.plantStageLabel} (${Math.round(state.plantGrowth)}%)`;
   $('dbg-decor-cnt').textContent = `${(state.ownedDecor || []).length} / ${Object.keys(DECOR_ITEMS).length} 件`;
@@ -1433,6 +1508,11 @@ function renderDebugDock() {
       : `本地钱包 · ${state.coins} 金币`;
   }
 
+  document.querySelectorAll('[data-scene]').forEach(btn => {
+    const val = btn.dataset.scene;
+    if (val === 'auto') return;
+    btn.classList.toggle('active', view.activeSceneId === val);
+  });
   document.querySelectorAll('[data-weather]').forEach(btn => {
     const val = btn.dataset.weather;
     const isAct = val === 'auto' ? !state.weatherOverride : state.weatherOverride === val;
@@ -1551,23 +1631,43 @@ $('btn-feed-snack').addEventListener('click', () => {
 $('hotspot-windchime').addEventListener('click', () => {
   if (decorMode) return;
   const view = getDerivedView(state);
-  const hasPlaced = state.equippedDecor?.window === 'win-windchime';
-  if (!view.isEvolvedRoom && !hasPlaced) return;
+  const sid = view.activeSceneId;
+  const hasPlaced = sid === 'autumn-day' && state.equippedDecor?.window === 'win-windchime';
+  const hasBuiltIn = ['winter-snow', 'spring-sakura', 'summer-firefly', 'sunset-veranda'].includes(sid);
+  if (!hasBuiltIn && !hasPlaced) return;
   sound.windchime();
-  atmosphere.spawnBurst(154, 240, 'chime');
-  showToast('叮当——海湾贝壳风铃在阳光里轻轻摇晃');
+  atmosphere.spawnBurst(sid === 'sunset-veranda' ? 278 : 154, sid === 'sunset-veranda' ? 190 : 240, 'chime');
+  showToast(sid === 'summer-firefly' ? '叮铃——玻璃风铃在夏夜微风里清脆轻响' : '叮当——海湾贝壳风铃在微风里轻轻摇晃');
 });
 
 $('hotspot-musicbox').addEventListener('click', () => {
   if (decorMode) return;
-  if (state.equippedDecor?.shelf1R !== 's1r-musicbox') return;
+  const sid = getDerivedView(state).activeSceneId;
+  const hasBox = (sid === 'autumn-day' && state.equippedDecor?.shelf1R === 's1r-musicbox') || sid === 'rainy-alley';
+  if (!hasBox) return;
   sound.musicBox();
   atmosphere.spawnBurst(328, 232, 'reunion');
-  showToast('叮叮咚咚……三花猫黄铜八音盒奏起一小段摇篮曲');
+  showToast('叮叮咚咚……黄铜木八音盒奏起一小段摇篮曲');
 });
 
 // 实景装扮入口与抽屉事件
-$('btn-open-decor').addEventListener('click', () => enterDecorMode('desk'));
+$('btn-open-decor').addEventListener('click', () => {
+  const cur = getDerivedView(state).activeScene;
+  if (!cur.supportsDecor) {
+    activeScreen = 'nook';
+    decorMode = true;
+    selectedDecorSlot = null;
+    decorTab = 'scene';
+    $('screen-nook').classList.remove('hidden');
+    $('screen-bag').classList.add('hidden');
+    $('screen-gacha').classList.add('hidden');
+    $('screen-book').classList.add('hidden');
+    sound.paperTurn();
+    renderAll();
+    return;
+  }
+  enterDecorMode('desk');
+});
 $('btn-decor-done').addEventListener('click', () => exitDecorMode());
 $('btn-decor-night').addEventListener('click', () => {
   decorNightPreview = !decorNightPreview;
@@ -1583,7 +1683,7 @@ document.querySelectorAll('#decor-tabs .d-tab').forEach(btn => {
   btn.addEventListener('click', () => {
     decorTab = btn.dataset.dtab;
     const firstSlot = DECOR_SLOTS.find(s => s.tab === decorTab);
-    selectedDecorSlot = decorTab === 'all' ? null : (firstSlot ? firstSlot.id : null);
+    selectedDecorSlot = (decorTab === 'all' || decorTab === 'scene') ? null : (firstSlot ? firstSlot.id : null);
     sound.paperTurn();
     renderNook();
     renderDecorDrawer();
@@ -1597,7 +1697,7 @@ $('btn-gacha-1').addEventListener('click', () => triggerGachaDraw(1));
 $('btn-gacha-5').addEventListener('click', () => triggerGachaDraw(5));
 
 $('hotspot-apang').addEventListener('click', () => {
-  if (!getDerivedView(state).isEvolvedRoom) return;
+  if (!getDerivedView(state).activeScene.hasApang) return;
   sound.petCat();
   atmosphere.spawnBurst(316, 750, 'pet');
   showToast('大橘阿胖在角落蒲团上翻了个身，呼噜呼噜睡得正香');
@@ -1695,10 +1795,25 @@ $('btn-reset-day1').addEventListener('click', () => {
   showToast('已回到 Day 1（保留主游戏共享金币余额）');
 });
 
+document.querySelectorAll('[data-scene]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const sid = btn.dataset.scene;
+    state = setSceneOverride(state, sid);
+    state.weatherOverride = null;
+    saveState(state);
+    sound.paperTurn();
+    if (activeScreen !== 'nook') setScreen('nook');
+    else renderAll();
+    const sc = ROOM_SCENE_MAP[sid];
+    showToast(sc ? `已切换至「${sc.fullTitle}」` : '已恢复随四季节气自动切换实景');
+  });
+});
+
 document.querySelectorAll('[data-weather]').forEach(btn => {
   btn.addEventListener('click', () => {
     const w = btn.dataset.weather;
     state.weatherOverride = w === 'auto' ? null : w;
+    state.sceneOverride = null;
     saveState(state);
     renderAll();
   });
@@ -1797,12 +1912,18 @@ if (urlParams.get('demo') === 'day30') {
     outfit: 'outfit-redscarf',
   };
 }
+const urlScene = urlParams.get('scene');
+if (urlScene && ROOM_SCENE_MAP[urlScene]) {
+  state = setSceneOverride(state, urlScene);
+  state.weatherOverride = null;
+}
 const initScreen = urlParams.get('screen');
 if (initScreen === 'decor') {
   decorMode = true;
   decorNightPreview = urlParams.get('night') === '1';
-  selectedDecorSlot = 'desk';
-  decorTab = 'desk';
+  const initTab = urlParams.get('tab');
+  selectedDecorSlot = initTab === 'scene' ? null : 'desk';
+  decorTab = ['scene', 'desk', 'shelf', 'window', 'outfit'].includes(initTab) ? initTab : 'desk';
 } else if (['bag', 'gacha', 'shop', 'mailbox', 'scrapbook', 'reunion'].includes(initScreen)) {
   activeScreen = initScreen;
   $('screen-nook').classList.toggle('hidden', true);
