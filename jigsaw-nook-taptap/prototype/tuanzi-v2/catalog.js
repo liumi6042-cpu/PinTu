@@ -1078,6 +1078,57 @@ export const ROOM_SCENES = [
 
 export const ROOM_SCENE_MAP = Object.fromEntries(ROOM_SCENES.map(s => [s.id, s]));
 
+export const AD_PLACEMENTS = {
+  gachaFree: {
+    id: 'gachaFree',
+    adUnitId: 'tuanzi_gacha_free',
+    title: '帮奶奶擦亮摇奖匣',
+    rewardLabel: '免费获赠 +1 张旅途副券（计入 5 抽暖金保底）',
+    dailyLimit: 3,
+    tier: 'P0',
+  },
+  puzzleDouble: {
+    id: 'puzzleDouble',
+    adUnitId: 'tuanzi_puzzle_double',
+    title: '咕咕加盖双倍邮戳',
+    rewardLabel: '本局显影金币翻倍并加赠 +1 张旅途副券',
+    dailyLimit: 3,
+    tier: 'P0',
+  },
+  tripRush: {
+    id: 'tripRush',
+    adUnitId: 'tuanzi_trip_rush',
+    title: '咕咕加急飞鸽传书',
+    rewardLabel: '立刻带回本趟中国明信片，团子提前平安到家',
+    dailyLimit: 2,
+    tier: 'P1',
+  },
+  chinaWish: {
+    id: 'chinaWish',
+    adUnitId: 'tuanzi_china_wish',
+    title: '求一张「顺风定向签」',
+    rewardLabel: '团子下一次出门旅行必去你心仪的这座中国城市',
+    dailyLimit: 1,
+    tier: 'P1',
+  },
+  puzzleHint: {
+    id: 'puzzleHint',
+    adUnitId: 'tuanzi_puzzle_hint',
+    title: '团子伸爪帮忙找拼图块',
+    rewardLabel: '立即自动精准拼好 2 块异形拼图',
+    dailyLimit: 3,
+    tier: 'P2',
+  },
+  sillDouble: {
+    id: 'sillDouble',
+    adUnitId: 'tuanzi_sill_double',
+    title: '趁阳光好再晒一盘小鱼干',
+    rewardLabel: '本次窗台收获的香酥小鱼干零食直接翻倍',
+    dailyLimit: 2,
+    tier: 'P2',
+  },
+};
+
 export const GACHA_CONFIG = {
   singleCoins: 60,
   fiveCoins: 280,

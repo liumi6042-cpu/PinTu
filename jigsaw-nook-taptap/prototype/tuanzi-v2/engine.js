@@ -1,7 +1,7 @@
 // 「团子去旅行 2.0」纯函数确定性离线世界演进引擎（浏览器 & Node.js 通用）
 import {
-  CHINA_POSTCARD_IDS, DAY, DECOR_ITEMS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PERSONALITIES, POSTCARD_POOL,
-  ROOM_SCENE_MAP, SOUVENIRS, getCalendarInfo, matchSynergy,
+  AD_PLACEMENTS, CHINA_POSTCARD_IDS, DAY, DECOR_ITEMS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PERSONALITIES,
+  POSTCARD_POOL, ROOM_SCENE_MAP, SOUVENIRS, getCalendarInfo, matchSynergy,
 } from './catalog.js';
 
 /** 确定性伪随机生成器 (mulberry32) */
@@ -104,6 +104,10 @@ export function createInitialState(startTs = DEFAULT_START_TS) {
     logs: ['十月十八 初秋午后 · 团子搬进了奶奶的小店。'],
     weatherOverride: null, // null = 随真实公历自动，或 'snow' | 'rain' | 'autumn' | 'sakura' | 'firefly'
     sceneOverride: null, // null = 随公历与气候自动切换，或 6 套 ROOM_SCENES id 之一
+    nextGuaranteedCardId: null, // 激励广告「顺风定向签」锁定的下一趟中国目的地
+    unlockedMainGallery: ['grandma-shop'], // 24 片显影后已同步解锁到主游戏大厅高片数图集的明信片 ID
+    cleared48Postcards: [], // 已在团子独立拼图台完成 48 片进阶挑战的明信片 ID
+    adClaims: { dayKey: '2026-10-18', counts: {} }, // 各激励视频点位每日已领次数
   };
 }
 
@@ -202,7 +206,13 @@ function planTrip(state, at, pack, source = 'manual') {
   const hours = food.hours[0] + (food.hours[1] - food.hours[0]) * r();
   const returnAt = Math.round(at + hours * HOUR);
 
-  let cardId = syn?.cardId;
+  let cardId = null;
+  // 若玩家通过「顺风定向签」许愿了心仪的中国城市，本次出行必达该地！
+  if (state.nextGuaranteedCardId && POSTCARD_POOL[state.nextGuaranteedCardId]) {
+    cardId = state.nextGuaranteedCardId;
+    state.nextGuaranteedCardId = null;
+  }
+  if (!cardId) cardId = syn?.cardId;
   if (!cardId) {
     const cal = getCalendarInfo(at);
     const byFood = food.id === 'bento'
@@ -594,33 +604,193 @@ export function getSillPortions(state) {
   return Math.min(3, Math.floor(elapsed / (3 * HOUR)));
 }
 
-/** 玩家行为：完成明信片显影拼图（奖励主游戏金币） */
-export function completePostcard(prevState, uid) {
+/** 玩家行为：完成独立拼图台的明信片拼图（24 片显影解锁高片数 / 48 片进阶挑战） */
+export function completePostcard(prevState, uid, pieceCount = 24) {
   const state = structuredClone(prevState);
   const card = state.postcards.find(c => c.uid === uid);
-  if (!card) return { state, reward: 0 };
-  const newly = !card.developed;
+  if (!card) return { state, reward: 0, ticketReward: 0, unlockedHigherPieces: false };
+  const tpl = POSTCARD_POOL[card.templateId];
+  const cal = getCalendarInfo(state.now);
+  if (!Array.isArray(state.unlockedMainGallery)) state.unlockedMainGallery = ['grandma-shop'];
+  if (!Array.isArray(state.cleared48Postcards)) state.cleared48Postcards = [];
+
+  const newlyDeveloped = !card.developed;
+  const is48 = pieceCount >= 48;
+  const newlyCleared48 = is48 && !state.cleared48Postcards.includes(card.templateId);
+
   card.read = true;
   card.developed = true;
+
+  let unlockedHigherPieces = false;
+  if (!state.unlockedMainGallery.includes(card.templateId)) {
+    state.unlockedMainGallery.push(card.templateId);
+    unlockedHigherPieces = true;
+  }
+
   let reward = 0;
   let ticketReward = 0;
-  if (newly) {
+  let ledgerSource = null;
+
+  if (newlyDeveloped) {
     reward = 30;
     ticketReward = 1;
     state.coins += reward;
     state.tickets = (state.tickets || 0) + ticketReward;
-    const tpl = POSTCARD_POOL[card.templateId];
     if (tpl) state.traits[tpl.region] = (state.traits[tpl.region] || 0) + 1;
-    const cal = getCalendarInfo(state.now);
-    state.logs = [`[${cal.cnDate}] 显影完成了明信片《${tpl?.title || '旅拍'}》（+30 金币、+1 副券）。`, ...state.logs].slice(0, 16);
+    ledgerSource = `tuanzi:postcard:${uid}`;
+    state.logs = [`[${cal.cnDate}] 24 片异形显影《${tpl?.title || '旅拍'}》（+30 金币、+1 副券，已解锁 48 片与主游戏高片数大图）。`, ...state.logs].slice(0, 16);
   }
+  if (newlyCleared48) {
+    state.cleared48Postcards.push(card.templateId);
+    const bonus48 = 50;
+    reward += bonus48;
+    ticketReward += 1;
+    state.coins += bonus48;
+    state.tickets = (state.tickets || 0) + 1;
+    ledgerSource = ledgerSource ? `${ledgerSource}:48p` : `tuanzi:postcard48:${uid}`;
+    state.logs = [`[${cal.cnDate}] 通关《${tpl?.title || '旅拍'}》48 片异形进阶拼图（+${bonus48} 金币、+1 副券）。`, ...state.logs].slice(0, 16);
+  }
+
   return {
     state,
     reward,
     ticketReward,
+    newlyDeveloped,
+    newlyCleared48,
+    unlockedHigherPieces,
+    pieceCount: is48 ? 48 : 24,
     coinDelta: reward,
-    ledgerSource: reward > 0 ? `tuanzi:postcard:${uid}` : null,
+    ledgerSource,
   };
+}
+
+/* =========================================================
+   激励视频广告经济结算（纯函数，日上限追踪，零强制插屏）
+   ========================================================= */
+function adDayKey(state) {
+  const d = new Date(state.now);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function ensureAdClaims(state) {
+  const key = adDayKey(state);
+  if (!state.adClaims || state.adClaims.dayKey !== key) {
+    state.adClaims = { dayKey: key, counts: {} };
+  }
+  return state.adClaims;
+}
+
+export function getAdRemaining(state, placementId) {
+  const cfg = AD_PLACEMENTS[placementId];
+  if (!cfg) return 0;
+  const key = adDayKey(state);
+  const used = state.adClaims?.dayKey === key ? (state.adClaims.counts?.[placementId] || 0) : 0;
+  return Math.max(0, cfg.dailyLimit - used);
+}
+
+/** 广告位 1（P0）：摇奖匣看视频免费领 1 张旅途副券 */
+export function claimAdGachaTicket(prevState) {
+  if (getAdRemaining(prevState, 'gachaFree') <= 0) {
+    return { state: prevState, ok: false, reason: '今日免费副券已领完，明天再来帮奶奶擦亮摇奖匣吧' };
+  }
+  const state = structuredClone(prevState);
+  const claims = ensureAdClaims(state);
+  claims.counts.gachaFree = (claims.counts.gachaFree || 0) + 1;
+  state.tickets = (state.tickets || 0) + 1;
+  const cal = getCalendarInfo(state.now);
+  state.logs = [`[${cal.cnDate}] 帮奶奶擦亮黄铜摇奖匣，获赠 +1 张免费旅途副券。`, ...state.logs].slice(0, 16);
+  return { state, ok: true, tickets: 1 };
+}
+
+/** 广告位 2（P0）：明信片拼图结算双倍邮戳奖励（金币翻倍 + 额外 1 副券） */
+export function claimAdPuzzleDouble(prevState, uid, baseCoins = 30) {
+  if (getAdRemaining(prevState, 'puzzleDouble') <= 0) {
+    return { state: prevState, ok: false, reason: '今日双倍邮戳次数已用完' };
+  }
+  const state = structuredClone(prevState);
+  const claims = ensureAdClaims(state);
+  claims.counts.puzzleDouble = (claims.counts.puzzleDouble || 0) + 1;
+  const extraCoins = Math.max(30, Number(baseCoins) || 30);
+  state.coins += extraCoins;
+  state.tickets = (state.tickets || 0) + 1;
+  state.walletTxSeq = (state.walletTxSeq || 0) + 1;
+  const cal = getCalendarInfo(state.now);
+  state.logs = [`[${cal.cnDate}] 咕咕加盖双倍邮戳：额外入账 +${extraCoins} 主游戏金币与 +1 副券。`, ...state.logs].slice(0, 16);
+  return {
+    state,
+    ok: true,
+    extraCoins,
+    extraTickets: 1,
+    coinDelta: extraCoins,
+    ledgerSource: `tuanzi:ad:double:${uid}:${state.walletTxSeq}`,
+  };
+}
+
+/** 广告位 3（P1）：咕咕加急飞鸽传书，立刻带回在途明信片并提前回家 */
+export function claimAdTripRush(prevState) {
+  if (prevState.status !== 'away' || !prevState.trip) {
+    return { state: prevState, ok: false, reason: '团子正在小窝里，出发旅行后才需要咕咕加急哦' };
+  }
+  if (getAdRemaining(prevState, 'tripRush') <= 0) {
+    return { state: prevState, ok: false, reason: '咕咕局长今天已经飞了两趟加急件，休息一下明天再来吧' };
+  }
+  const state = structuredClone(prevState);
+  const claims = ensureAdClaims(state);
+  claims.counts.tripRush = (claims.counts.tripRush || 0) + 1;
+  const events = [];
+  const arrivalAt = Math.max(state.now, state.trip.returnAt);
+  settleTripAt(state, arrivalAt, events);
+  const cal = getCalendarInfo(state.now);
+  const newCard = state.postcards[0] || null;
+  state.logs = [`[${cal.cnDate}] 咕咕加急飞鸽带回了明信片《${POSTCARD_POOL[newCard?.templateId]?.title || '旅途风物'}》，团子提前到家！`, ...state.logs].slice(0, 16);
+  return { state, ok: true, postcard: newCard, events };
+}
+
+/** 广告位 4（P1）：《华夏行记》顺风定向签，锁定下一趟必去的中国城市 */
+export function claimAdChinaWish(prevState, cardId) {
+  if (!POSTCARD_POOL[cardId]?.isChina) {
+    return { state: prevState, ok: false, reason: '请选择一座中国城市求签' };
+  }
+  if (getAdRemaining(prevState, 'chinaWish') <= 0) {
+    return { state: prevState, ok: false, reason: '今日顺风定向签已求过，明日可再求一张' };
+  }
+  const state = structuredClone(prevState);
+  const claims = ensureAdClaims(state);
+  claims.counts.chinaWish = (claims.counts.chinaWish || 0) + 1;
+  state.nextGuaranteedCardId = cardId;
+  const tpl = POSTCARD_POOL[cardId];
+  const cal = getCalendarInfo(state.now);
+  state.logs = [`[${cal.cnDate}] 求得「顺风定向签」：团子下一次出门必去【${tpl.fullTitle}】！`, ...state.logs].slice(0, 16);
+  return { state, ok: true, cardId, title: tpl.fullTitle };
+}
+
+/** 广告位 5A（P2）：独立拼图台看视频自动拼好 2 块 */
+export function claimAdPuzzleHint(prevState) {
+  if (getAdRemaining(prevState, 'puzzleHint') <= 0) {
+    return { state: prevState, ok: false, reason: '今日广告拼图提示已用完' };
+  }
+  const state = structuredClone(prevState);
+  const claims = ensureAdClaims(state);
+  claims.counts.puzzleHint = (claims.counts.puzzleHint || 0) + 1;
+  return { state, ok: true, hintPieces: 2 };
+}
+
+/** 广告位 5B（P2）：窗台晒好的小鱼干零食看视频直接双倍收获 */
+export function claimAdSillDouble(prevState) {
+  const portions = getSillPortions(prevState);
+  if (portions <= 0) return { state: prevState, ok: false, reason: '窗台还没有晒好小鱼干' };
+  if (getAdRemaining(prevState, 'sillDouble') <= 0) {
+    return { state: prevState, ok: false, reason: '今日双倍晒鱼干次数已用完' };
+  }
+  const state = structuredClone(prevState);
+  const claims = ensureAdClaims(state);
+  claims.counts.sillDouble = (claims.counts.sillDouble || 0) + 1;
+  const gained = portions * 2;
+  state.inventory.fish = (state.inventory.fish || 0) + gained;
+  state.sill.lastClaimedAt = state.now;
+  const cal = getCalendarInfo(state.now);
+  state.logs = [`[${cal.cnDate}] 趁好阳光再晒一盘，双倍收下 +${gained} 条香酥小鱼干零食！`, ...state.logs].slice(0, 16);
+  return { state, ok: true, gained };
 }
 
 /** 玩家行为：给拾光来信贴上折纸回信 */

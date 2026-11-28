@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>团子去旅行 2.0 · 绘本风可玩交互原型</title>
-  <link rel="stylesheet" href="./styles.css?v=20261128e" />
+  <link rel="stylesheet" href="./styles.css?v=20261128f" />
 </head>
 <body>
   <main class="stage-shell">
@@ -78,10 +78,24 @@
             <span class="charm-label">摇奖匣</span>
           </button>
 
-          <!-- 窗台晒好的香酥小鱼干零食 -->
-          <button class="craft-btn sill-drop" id="btn-sill" style="display:none;" title="收下晒好的小鱼干零食">
-            <img src="./assets/icons/fish.webp" alt="" />
-            <span id="sill-gain">小鱼干 +2</span>
+          <!-- 窗台晒好的香酥小鱼干零食（含看视频双倍晒鱼干小徽） -->
+          <div class="sill-drop-group" id="sill-drop-group" style="display:none;">
+            <button class="craft-btn sill-drop" id="btn-sill" title="收下晒好的小鱼干零食">
+              <img src="./assets/icons/fish.webp" alt="" />
+              <span id="sill-gain">小鱼干 +2</span>
+            </button>
+            <button class="craft-btn sill-ad-pill" id="btn-sill-ad" title="看激励视频双倍收小鱼干">
+              <span class="ad-play-dot">▶</span><span id="sill-ad-label">双倍</span>
+            </button>
+          </div>
+
+          <!-- 团子旅行中专属：咕咕加急飞鸽传书（激励广告 P1） -->
+          <button class="craft-btn gugu-rush-pill" id="btn-trip-rush" style="display:none;" title="请咕咕加急飞鸽立刻带回明信片">
+            <img src="./assets/uikit/portrait-gugu.webp" alt="咕咕局长" />
+            <div class="gr-txt">
+              <strong>咕咕加急送信</strong>
+              <span id="trip-rush-sub">▶ 看视频立刻带回明信片</span>
+            </div>
           </button>
 
           <!-- 喂一条香酥小鱼干零食 -->
@@ -302,6 +316,10 @@
             <img class="seal-on" src="./assets/uikit/wax-paw.webp" alt="" />
           </button>
         </div>
+        <button class="craft-btn gacha-ad-bar" id="btn-gacha-ad">
+          <span class="ad-play-dot">▶</span>
+          <span id="gacha-ad-text">帮奶奶擦亮摇奖匣 · 看视频免费领 1 张副券 (今日 3/3)</span>
+        </button>
         <div class="gacha-footnote">旅行归来、明信片显影皆会获赠免费「旅途副券」</div>
 
         <!-- 开球惊喜棉纸礼签弹窗 -->
@@ -313,6 +331,48 @@
         <img class="bg-full" src="./assets/rooms/journal-bg.webp" alt="线装手工棉纸本" />
         <div class="journal-page" id="book-content"></div>
       </div>
+
+      <!-- 5. 独立全屏「明信片异形拼图工作台」（24 片默认显影 / 48 片解锁进阶） -->
+      <div class="screen-layer hidden" id="screen-puzzle">
+        <div class="wb-shell">
+          <header class="wb-topbar">
+            <button class="craft-btn wb-back-btn" id="btn-wb-back">
+              <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+              <span>返回</span>
+            </button>
+            <div class="wb-title-block">
+              <div class="wb-title" id="wb-title">杭州 · 西湖断桥残荷</div>
+              <div class="wb-sub" id="wb-progress">24 片异形拼图 · 已归位 0 / 24</div>
+            </div>
+            <span class="wb-tier-pill" id="wb-tier-pill">24 片显影</span>
+          </header>
+
+          <div class="wb-stage" id="wb-stage">
+            <canvas class="wb-canvas" id="workbench-canvas"></canvas>
+            <div class="wb-stamp-pop hidden" id="wb-stamp-pop">
+              <span id="wb-stamp-city">杭州西湖</span>
+              <small>显影已收录</small>
+            </div>
+          </div>
+
+          <section class="wb-dock">
+            <div class="wb-tools">
+              <button class="craft-btn wb-tool-btn active" id="btn-wb-ghost">底图透视</button>
+              <button class="craft-btn wb-tool-btn" id="btn-wb-edges">仅看边角</button>
+              <button class="craft-btn wb-tool-btn accent" id="btn-wb-hint">免费提示 1 块</button>
+              <button class="craft-btn wb-tool-btn" id="btn-wb-solve">一键显影</button>
+            </div>
+            <div class="wb-tray-tip">按住下方异形拼图块直接拖进上方木框，靠近正确格位自动磁吸归位</div>
+            <div class="wb-tray" id="workbench-tray"></div>
+          </section>
+
+          <!-- 显影通关与更多片数解锁结算弹窗 -->
+          <div class="wb-complete-modal hidden" id="wb-complete-modal"></div>
+        </div>
+      </div>
+
+      <!-- 6. 激励视频广告模拟弹窗（生产环境自动桥接 TapTap/微信 tap-rewarded.ts） -->
+      <div class="ad-sim-modal hidden" id="ad-sim-modal"></div>
 
       <!-- 柔和纸带轻提示 -->
       <div class="toast-ribbon" id="toast-ribbon">
@@ -409,6 +469,6 @@
     </aside>
   </main>
 
-  <script type="module" src="./app.js?v=20261128e"></script>
+  <script type="module" src="./app.js?v=20261128f"></script>
 </body>
 </html>

@@ -1,16 +1,17 @@
 // 「团子去旅行 2.0」手作绘本可玩交互原型主控制器
 import {
-  CHINA_POSTCARD_IDS, CHINA_REGIONS, DAY, DECOR_ITEMS, DECOR_SLOTS, GACHA_CONFIG, HOUR, ITEMS, NPCS,
-  PET_WHISPERS, POSTCARD_POOL, ROOM_SCENES, ROOM_SCENE_MAP, SOUVENIRS,
+  AD_PLACEMENTS, CHINA_POSTCARD_IDS, CHINA_REGIONS, DAY, DECOR_ITEMS, DECOR_SLOTS, GACHA_CONFIG, HOUR,
+  ITEMS, NPCS, PET_WHISPERS, POSTCARD_POOL, ROOM_SCENES, ROOM_SCENE_MAP, SOUVENIRS,
 } from './catalog.js';
 import {
-  buyItem, claimReunionGift, claimSill, clearDust, completePostcard,
-  createInitialState, equipDecor, feedSnack, getChinaCollectionStats, getDerivedView, packBag, replyLetter,
-  sendOffNow, setSceneOverride, setTreatDish, simulateTo, spinGacha, syncWalletCoins, togglePantrySlot,
+  buyItem, claimAdChinaWish, claimAdGachaTicket, claimAdPuzzleDouble, claimAdPuzzleHint, claimAdSillDouble,
+  claimAdTripRush, claimReunionGift, claimSill, clearDust, completePostcard, createInitialState, equipDecor,
+  feedSnack, getAdRemaining, getChinaCollectionStats, getDerivedView, packBag, replyLetter, sendOffNow,
+  setSceneOverride, setTreatDish, simulateTo, spinGacha, syncWalletCoins, togglePantrySlot,
 } from './engine.js';
 import { NookAtmosphere } from './particles.js';
 import { sound } from './audio.js';
-import { mountPostcardPuzzle } from './puzzle.js';
+import { PUZZLE_TIERS, mountWorkbenchPuzzle } from './puzzle.js';
 
 const STORAGE_KEY = 'jigsaw:tuanzi-v2-prototype:v4';
 
@@ -101,8 +102,7 @@ let scrapSubTab = 'china'; // 'china' | 'overview' | 'souvenirs' | 'memories'
 let chinaRegionFilter = 'all'; // 'all' | 'jiangnan' | 'southwest' | 'north' | 'coast'
 let selectedPostcardUid = null;
 let selectedLetterUid = null;
-let playingPuzzleUid = null;
-let activePuzzleApi = null;
+let activeWorkbench = null; // { uid, pieceCount, returnScreen, freeHintUsed, doubleClaimed, lastResult, api }
 let reunionPageIdx = 0;
 let animOverride = null; // 'departing' | 'returning' | null
 let ribbonTimer = 0;
@@ -149,21 +149,319 @@ function showCatRibbon(text, ms = 3400) {
   }
 }
 
+function destroyWorkbench() {
+  if (activeWorkbench?.api) {
+    activeWorkbench.api.destroy();
+  }
+  activeWorkbench = null;
+  $('wb-complete-modal')?.classList.add('hidden');
+  $('wb-stamp-pop')?.classList.add('hidden');
+}
+
 function setScreen(next) {
+  if (next !== 'puzzle') destroyWorkbench();
   activeScreen = next;
   if (next !== 'nook') {
     decorMode = false;
     decorNightPreview = false;
   }
-  playingPuzzleUid = null;
-  activePuzzleApi = null;
   $('screen-nook').classList.toggle('hidden', next !== 'nook');
   $('screen-bag').classList.toggle('hidden', next !== 'bag');
   $('screen-gacha').classList.toggle('hidden', next !== 'gacha');
+  $('screen-puzzle').classList.toggle('hidden', next !== 'puzzle');
   const isBook = ['reunion', 'mailbox', 'shop', 'scrapbook'].includes(next);
   $('screen-book').classList.toggle('hidden', !isBook);
   sound.paperTurn();
   renderAll();
+}
+
+/** 统一激励视频桥接：宿主已接 TapTap/微信 tap-rewarded.ts 时直调真广告，原型预览时展示可交互模拟播放器 */
+function watchRewardedAd(placementId, customDesc = null) {
+  const cfg = AD_PLACEMENTS[placementId];
+  if (!cfg) return Promise.resolve({ completed: false });
+  if (getAdRemaining(state, placementId) <= 0) {
+    showToast('今日该点位激励视频次数已达上限，明天再来吧');
+    return Promise.resolve({ completed: false });
+  }
+  if (window.jigsawRewardedAd?.watch) {
+    return Promise.resolve(window.jigsawRewardedAd.watch(cfg.adUnitId, placementId))
+      .then(outcome => ({ completed: outcome === 'completed' || outcome === true }));
+  }
+
+  return new Promise((resolve) => {
+    const modal = $('ad-sim-modal');
+    modal.classList.remove('hidden');
+    let left = 3;
+    let settled = false;
+    const rewardText = customDesc || cfg.rewardLabel;
+
+    modal.innerHTML = `
+      <div class="ad-sim-box">
+        <div class="ad-sim-badge">▶ 激励视频预览 · TapTap / 微信位 ${cfg.adUnitId}</div>
+        <h3>${cfg.title}</h3>
+        <div class="ad-sim-reward">${rewardText}</div>
+        <div class="ad-sim-screen">
+          <div class="ad-sim-timer" id="ad-sim-timer">${left}s</div>
+          <div class="ad-sim-bar"><div class="ad-sim-fill" id="ad-sim-fill" style="width:8%;"></div></div>
+          <div class="ad-sim-meta" id="ad-sim-meta">正在播放绘本治愈赞助短片，完播即可领奖（正式包自动接 tap-rewarded.ts）</div>
+        </div>
+        <div class="ad-sim-actions">
+          <button class="craft-btn ad-sim-btn" id="ad-sim-close">提前关闭（无奖励）</button>
+          <button class="craft-btn ad-sim-btn ready" id="ad-sim-claim" disabled>等待完播 (${left}s)</button>
+        </div>
+      </div>
+    `;
+
+    const finish = (completed) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(iv);
+      modal.classList.add('hidden');
+      modal.innerHTML = '';
+      resolve({ completed });
+    };
+
+    const claimBtn = $('ad-sim-claim');
+    const timerEl = $('ad-sim-timer');
+    const fillEl = $('ad-sim-fill');
+    const metaEl = $('ad-sim-meta');
+
+    const iv = setInterval(() => {
+      left = Math.max(0, left - 1);
+      const pct = Math.round(((3 - left) / 3) * 100);
+      if (fillEl) fillEl.style.width = `${pct}%`;
+      if (left > 0) {
+        if (timerEl) timerEl.textContent = `${left}s`;
+        if (claimBtn) claimBtn.textContent = `等待完播 (${left}s)`;
+      } else {
+        clearInterval(iv);
+        if (timerEl) timerEl.textContent = '已完播 ✓';
+        if (metaEl) metaEl.textContent = '完播校验已通过（isEnded: true），点击立即领奖！';
+        if (claimBtn) {
+          claimBtn.disabled = false;
+          claimBtn.textContent = '领取奖励';
+        }
+      }
+    }, 900);
+
+    $('ad-sim-close')?.addEventListener('click', () => {
+      showToast('提前关闭视频，未发放奖励');
+      finish(false);
+    });
+    claimBtn?.addEventListener('click', () => finish(true));
+  });
+}
+
+/** 启动独立全屏异形拼图工作台（默认 24 片显影 / 已解锁可玩 48 片进阶！） */
+function openPuzzleWorkbench(uid, pieceCount = 24, returnScreen = 'mailbox') {
+  const card = state.postcards.find(c => c.uid === uid);
+  if (!card) return;
+  const tpl = POSTCARD_POOL[card.templateId];
+  if (!tpl) return;
+  const tier = PUZZLE_TIERS[pieceCount] || PUZZLE_TIERS[24];
+
+  destroyWorkbench();
+  activeScreen = 'puzzle';
+  decorMode = false;
+  decorNightPreview = false;
+  $('screen-nook').classList.add('hidden');
+  $('screen-bag').classList.add('hidden');
+  $('screen-gacha').classList.add('hidden');
+  $('screen-book').classList.add('hidden');
+  $('screen-puzzle').classList.remove('hidden');
+
+  $('wb-title').textContent = tpl.fullTitle || tpl.title;
+  $('wb-tier-pill').textContent = tier.label;
+  $('wb-progress').textContent = `${tier.count} 片异形拼图 · 已归位 0 / ${tier.count}`;
+  $('wb-stamp-city').textContent = tpl.postmark || '拾光镇';
+  $('wb-stamp-pop').classList.add('hidden');
+  $('wb-complete-modal').classList.add('hidden');
+
+  let edgeOnly = false;
+  let ghostStep = 1; // 0: 0, 1: 0.24, 2: 0.46
+  const ghostLevels = [0, 0.24, 0.46];
+  const ghostLabels = ['底图关闭', '底图透视', '高清底图'];
+
+  const wb = {
+    uid,
+    templateId: card.templateId,
+    pieceCount: tier.count,
+    returnScreen,
+    freeHintUsed: false,
+    doubleClaimed: false,
+    lastResult: null,
+    api: null,
+  };
+  activeWorkbench = wb;
+
+  const updateHintBtn = () => {
+    const btn = $('btn-wb-hint');
+    if (!btn) return;
+    if (!wb.freeHintUsed) {
+      btn.textContent = '免费提示 1 块';
+      btn.classList.add('accent');
+    } else {
+      const rem = getAdRemaining(state, 'puzzleHint');
+      btn.textContent = rem > 0 ? `▶ 广告 +2块 (${rem})` : '今日提示已完';
+      btn.classList.toggle('accent', rem > 0);
+    }
+  };
+
+  $('btn-wb-ghost').textContent = ghostLabels[ghostStep];
+  $('btn-wb-ghost').classList.add('active');
+  $('btn-wb-edges').classList.remove('active');
+  updateHintBtn();
+
+  sound.paperTurn();
+  wb.api = mountWorkbenchPuzzle({
+    canvas: $('workbench-canvas'),
+    trayEl: $('workbench-tray'),
+    imageSrc: tpl.src,
+    seedKey: `${card.templateId}:${tier.count}`,
+    cols: tier.cols,
+    rows: tier.rows,
+    onSnap: () => sound.waxSnap(),
+    onProgress: (placed, total) => {
+      $('wb-progress').textContent = `${total} 片异形拼图 · 已归位 ${placed} / ${total}`;
+    },
+    onComplete: () => {
+      const res = completePostcard(state, uid, tier.count);
+      wb.lastResult = res;
+      sound.celebrate();
+      $('wb-stamp-pop').classList.remove('hidden');
+      commit(res.state);
+      if (res.coinDelta && res.ledgerSource) void pushMainWalletDelta(res.ledgerSource, res.coinDelta);
+      setTimeout(() => {
+        if (activeWorkbench === wb) renderWorkbenchCompleteModal(wb, tpl);
+      }, 620);
+    },
+  });
+
+  // 绑定工具栏按钮（用 onclick 覆盖旧监听，干净无泄漏）
+  $('btn-wb-back').onclick = () => setScreen(wb.returnScreen || 'mailbox');
+  $('btn-wb-ghost').onclick = () => {
+    ghostStep = (ghostStep + 1) % ghostLevels.length;
+    wb.api?.setGhostMode(ghostLevels[ghostStep]);
+    $('btn-wb-ghost').textContent = ghostLabels[ghostStep];
+    $('btn-wb-ghost').classList.toggle('active', ghostStep > 0);
+    sound.paperTurn();
+  };
+  $('btn-wb-edges').onclick = () => {
+    edgeOnly = !edgeOnly;
+    wb.api?.setEdgeOnly(edgeOnly);
+    $('btn-wb-edges').classList.toggle('active', edgeOnly);
+    sound.paperTurn();
+  };
+  $('btn-wb-hint').onclick = async () => {
+    if (!wb.freeHintUsed) {
+      const placed = wb.api?.hint(1) || 0;
+      if (placed > 0) {
+        wb.freeHintUsed = true;
+        sound.fishChime();
+        updateHintBtn();
+        showToast('团子帮你把 1 块异形拼图归位啦！');
+      }
+      return;
+    }
+    const ad = await watchRewardedAd('puzzleHint');
+    if (!ad.completed) return;
+    const res = claimAdPuzzleHint(state);
+    if (!res.ok) return showToast(res.reason);
+    commit(res.state);
+    wb.api?.hint(res.hintPieces);
+    sound.celebrate();
+    updateHintBtn();
+    showToast('团子伸爪一口气帮你拼好了 2 块！');
+  };
+  $('btn-wb-solve').onclick = () => wb.api?.autoSolve();
+}
+
+function renderWorkbenchCompleteModal(wb, tpl) {
+  const modal = $('wb-complete-modal');
+  if (!modal) return;
+  const res = wb.lastResult || { reward: 0, ticketReward: 0, pieceCount: wb.pieceCount };
+  const adRem = getAdRemaining(state, 'puzzleDouble');
+  const baseCoins = Math.max(30, res.reward || (wb.pieceCount >= 48 ? 50 : 30));
+  const cleared48 = (state.cleared48Postcards || []).includes(tpl.id);
+
+  modal.classList.remove('hidden');
+  modal.innerHTML = `
+    <div class="wb-complete-card">
+      <h3>${wb.pieceCount >= 48 ? '48 片进阶通关！' : '记忆显影完成！'}</h3>
+      <div class="wb-complete-sub">${tpl.fullTitle || tpl.title} · 已盖「${tpl.postmark || '拾光镇'}」邮戳</div>
+      <div class="wb-complete-photo">
+        <img src="${tpl.src}" alt="${tpl.title}" />
+      </div>
+      <div class="wb-reward-strip">
+        ${res.reward > 0
+          ? `<span class="wb-reward-chip"><img src="./assets/icons/coin.webp" alt="" />+${res.reward} 主游戏金币</span>
+             <span class="wb-reward-chip"><img src="./assets/icons/raffle-ticket.webp" alt="" />+${res.ticketReward} 旅途副券</span>`
+          : `<span class="wb-reward-chip">温故知新 · 记忆愈发清晰</span>`}
+      </div>
+
+      <button class="craft-btn wb-ad-double-btn ${wb.doubleClaimed || adRem <= 0 ? 'claimed' : ''}" id="btn-wb-ad-double" ${wb.doubleClaimed || adRem <= 0 ? 'disabled' : ''}>
+        <span class="ad-play-dot">▶</span>
+        <span>${wb.doubleClaimed
+          ? '已领取双倍邮戳奖励 ✓'
+          : adRem > 0
+            ? `咕咕加盖双倍邮戳：再得 +${baseCoins} 金币 & +1 副券 (${adRem}/3)`
+            : '今日双倍邮戳次数已用完'}</span>
+      </button>
+
+      <div class="wb-unlock-box">
+        <div class="u-head">已解锁该明信片更多片数拼图</div>
+        <div class="u-desc">
+          24 片显影后已自动入库《拼图小窝》主大厅《华夏行记》图集（支持 108 / 300 / 500 片大画布），也可在此直接挑战 48 片异形拼图！
+        </div>
+        <div class="wb-unlock-btns">
+          <button class="craft-btn wb-u-btn" id="btn-wb-try-48">${cleared48 ? '再玩 48 片异形' : '挑战 48 片 (+50币)'}</button>
+          <button class="craft-btn wb-u-btn main-sync" id="btn-wb-open-main">去主大厅拼 108/300 片</button>
+        </div>
+      </div>
+
+      <div class="wb-complete-foot">
+        <button class="craft-btn wb-foot-btn" id="btn-wb-to-mail">查看手记后记</button>
+        <button class="craft-btn wb-foot-btn primary" id="btn-wb-to-china">收进《华夏集》</button>
+      </div>
+    </div>
+  `;
+
+  $('btn-wb-ad-double')?.addEventListener('click', async () => {
+    const ad = await watchRewardedAd('puzzleDouble', `咕咕加盖双倍邮戳：额外获赠 +${baseCoins} 主游戏金币与 +1 旅途副券`);
+    if (!ad.completed) return;
+    const dRes = claimAdPuzzleDouble(state, wb.uid, baseCoins);
+    if (!dRes.ok) return showToast(dRes.reason);
+    wb.doubleClaimed = true;
+    sound.celebrate();
+    commit(dRes.state);
+    if (dRes.coinDelta && dRes.ledgerSource) void pushMainWalletDelta(dRes.ledgerSource, dRes.coinDelta);
+    showToast(`双倍邮戳生效！额外入账 +${dRes.extraCoins} 主游戏金币与 +1 副券`);
+    renderWorkbenchCompleteModal(wb, tpl);
+  });
+
+  $('btn-wb-try-48')?.addEventListener('click', () => {
+    openPuzzleWorkbench(wb.uid, 48, wb.returnScreen);
+  });
+
+  $('btn-wb-open-main')?.addEventListener('click', () => {
+    if (window.jigsawHost?.openPuzzle) {
+      window.jigsawHost.openPuzzle({ photoId: tpl.id, title: tpl.fullTitle || tpl.title, imageSrc: tpl.src, pieces: 108 });
+      return;
+    }
+    sound.fishChime();
+    showToast(`「${tpl.fullTitle || tpl.title}」已同步至《拼图小窝》主大厅图库，可开 108 / 300 / 500 片房间！`);
+  });
+
+  $('btn-wb-to-mail')?.addEventListener('click', () => {
+    selectedPostcardUid = wb.uid;
+    mailSubTab = 'postcards';
+    setScreen('mailbox');
+  });
+
+  $('btn-wb-to-china')?.addEventListener('click', () => {
+    scrapSubTab = 'china';
+    setScreen('scrapbook');
+  });
 }
 
 function enterDecorMode(slotId = 'desk') {
@@ -323,12 +621,15 @@ function renderNook() {
   $('gacha-ticket-badge').style.display = tickets > 0 ? 'flex' : 'none';
   $('gacha-ticket-num').textContent = String(tickets);
 
-  // 4. 窗台晒好的香酥小鱼干零食 + 直接投喂团子零食按钮
+  // 4. 窗台晒好的香酥小鱼干零食（含看视频双倍）+ 投喂按钮 + 旅途中咕咕加急飞鸽
   if (view.sillPortions > 0 && !view.hasPendingReunion) {
-    $('btn-sill').style.display = 'flex';
+    $('sill-drop-group').style.display = 'flex';
     $('sill-gain').textContent = `小鱼干 +${view.sillPortions}`;
+    const sillAdRem = getAdRemaining(state, 'sillDouble');
+    $('btn-sill-ad').style.display = sillAdRem > 0 ? 'inline-flex' : 'none';
+    $('sill-ad-label').textContent = `×2 (${sillAdRem})`;
   } else {
-    $('btn-sill').style.display = 'none';
+    $('sill-drop-group').style.display = 'none';
   }
   const fishCount = state.inventory.fish || 0;
   if (state.status === 'home' && !view.hasPendingReunion && fishCount > 0) {
@@ -336,6 +637,14 @@ function renderNook() {
     $('snack-count').textContent = `喂小鱼干 (${fishCount})`;
   } else {
     $('btn-feed-snack').style.display = 'none';
+  }
+  // 团子在旅途中时，显示咕咕加急飞鸽传书（激励广告 P1）
+  const rushRem = getAdRemaining(state, 'tripRush');
+  if (state.status === 'away' && state.trip && !view.hasPendingReunion && rushRem > 0) {
+    $('btn-trip-rush').style.display = 'flex';
+    $('trip-rush-sub').textContent = `▶ 看视频立刻带回明信片 (${rushRem}/2)`;
+  } else {
+    $('btn-trip-rush').style.display = 'none';
   }
 
   // 5. 门口红丝带信捆火漆（重逢雪夜房或有积压未读信件时显示）
@@ -590,6 +899,15 @@ function renderGachaScreen() {
   $('gacha-5-cost').innerHTML = tickets >= 5
     ? `<img src="./assets/icons/raffle-ticket.webp" alt="" />消耗 5 副券 · 必出红/金`
     : `<img src="./assets/icons/coin.webp" alt="" />${GACHA_CONFIG.fiveCoins} 金币 · 必出红/金`;
+
+  const gachaAdRem = getAdRemaining(state, 'gachaFree');
+  const gachaAdBtn = $('btn-gacha-ad');
+  if (gachaAdBtn) {
+    gachaAdBtn.classList.toggle('exhausted', gachaAdRem <= 0);
+    $('gacha-ad-text').textContent = gachaAdRem > 0
+      ? `帮奶奶擦亮摇奖匣 · 看视频免费领 1 张副券 (今日 ${gachaAdRem}/3)`
+      : '今日帮奶奶擦亮摇奖匣已领完，明日再来吧';
+  }
 
   renderGachaRevealModal();
 }
@@ -1070,48 +1388,9 @@ function renderMailboxBook(el) {
     selectedPostcardUid = card.uid;
     const tpl = POSTCARD_POOL[card.templateId];
 
-    // 正在玩 3×3 显影拼图
-    if (playingPuzzleUid === card.uid) {
-      el.innerHTML = `
-        ${topTabs}
-        <div class="book-heading">
-          <h3>显影拼图 · ${tpl.title}</h3>
-          <div class="date-line">点击两块互换归位，拼好即可显影清晰画面</div>
-        </div>
-        <div class="pc-stage-card" style="margin-top:14px;">
-          <div id="puzzle-mount"></div>
-        </div>
-        <div class="hand-prose" style="font-size:13.5px; text-indent:0; text-align:center; color:var(--ink-mid);">
-          “${tpl.line}”
-        </div>
-        <div class="book-footer">
-          <button class="craft-btn ink-turn" id="pz-back">← 稍后再拼</button>
-          <button class="craft-btn wax-turn" id="pz-quick">
-            <span>一键体验显影</span>
-            <img src="./assets/uikit/wax-paw.webp" alt="" />
-          </button>
-        </div>
-      `;
-      bindBookCommon(el);
-      activePuzzleApi = mountPostcardPuzzle($('puzzle-mount'), {
-        imageSrc: tpl.src,
-        onSnap: () => sound.waxSnap(),
-        onComplete: () => {
-          const res = completePostcard(state, card.uid);
-          playingPuzzleUid = null;
-          sound.celebrate();
-          commit(res.state);
-          if (res.coinDelta && res.ledgerSource) void pushMainWalletDelta(res.ledgerSource, res.coinDelta);
-          showToast(res.reward ? `明信片显影成功！+${res.reward} 主游戏金币、+1 副券` : '明信片重新拼好啦');
-        },
-      });
-      $('pz-back').addEventListener('click', () => { playingPuzzleUid = null; renderMailboxBook(el); });
-      $('pz-quick').addEventListener('click', () => activePuzzleApi?.autoSolve());
-      return;
-    }
-
     const cardIdx = cards.findIndex(c => c.uid === card.uid);
     const chinaStats = getChinaCollectionStats(state);
+    const unlockedMore = card.developed || (state.unlockedMainGallery || []).includes(card.templateId);
     el.innerHTML = `
       ${topTabs}
       <div class="book-scroll">
@@ -1131,7 +1410,7 @@ function renderMailboxBook(el) {
             ${card.developed ? '' : `
               <div class="pc-mist-overlay">
                 <strong style="font-size:17px;">记忆尚未显影</strong>
-                <span style="font-size:13px; line-height:1.5;">拼完 9 片轻拼图即可看清全画<br/>并收录进《华夏行记》集邮册</span>
+                <span style="font-size:13px; line-height:1.5;">进入独立异形拼图台拼完 24 片<br/>即可看清全画并解锁更多片数</span>
               </div>
             `}
             <div class="pc-postmark-mini">
@@ -1159,13 +1438,13 @@ function renderMailboxBook(el) {
           <div class="margin-stamp-row" style="margin-top:4px; padding-top:10px;">
             <img class="portrait" src="${NPCS[tpl.npcId].portrait}" alt="" style="width:48px; height:48px;" />
             <div>
-              <div class="ms-title">隐形墨水后记已显现</div>
+              <div class="ms-title">隐形墨水后记已显现 · 已同步主大厅大图</div>
               <div class="ms-sub">${tpl.hiddenNote}</div>
             </div>
           </div>
         ` : `
           <div class="pc-hint-strip">
-            未显影明信片不耗体力，拼完后将高清收进《拾光剪贴簿》，并得 +30 金币。
+            未显影明信片不耗体力：进入全屏拼图台完成 24 片异形显影可得 +30 金币，并解锁 48 片与主大厅 108/300 片。
           </div>
         `}
       </div>
@@ -1173,7 +1452,7 @@ function renderMailboxBook(el) {
       <div class="book-cta-center">
         <button class="craft-btn book-wax-ribbon-btn" id="btn-play-pc">
           <img class="rb" src="./assets/uikit/paper-ribbon.webp" alt="" />
-          <span>${card.developed ? '再拼一次明信片' : '开始拼图显影 (+30 金币)'}</span>
+          <span>${unlockedMore ? '挑战 48 片异形拼图' : '全屏 24 片显影 (+30 金币)'}</span>
           <img class="sl" src="./assets/uikit/wax-paw.webp" alt="" />
         </button>
       </div>
@@ -1190,9 +1469,7 @@ function renderMailboxBook(el) {
       setScreen('scrapbook');
     });
     $('btn-play-pc').addEventListener('click', () => {
-      playingPuzzleUid = card.uid;
-      sound.paperTurn();
-      renderMailboxBook(el);
+      openPuzzleWorkbench(card.uid, unlockedMore ? 48 : 24, 'mailbox');
     });
   } else {
     // 拾光来信（一屏一事，真实折纸回信）
@@ -1361,6 +1638,8 @@ function renderScrapbookBook(el) {
       ? stats.items
       : stats.items.filter(it => it.tpl.chinaRegion === chinaRegionFilter);
     const pct = Math.round((stats.collected / stats.total) * 100);
+    const wishedTpl = state.nextGuaranteedCardId ? POSTCARD_POOL[state.nextGuaranteedCardId] : null;
+    const wishAdRem = getAdRemaining(state, 'chinaWish');
 
     el.innerHTML = `
       ${topTabs}
@@ -1374,6 +1653,12 @@ function renderScrapbookBook(el) {
         </div>
         <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%;"></div></div>
       </div>
+
+      ${wishedTpl ? `
+        <div class="china-wish-banner">
+          <span>顺风定向签已生效：下趟必去【${wishedTpl.fullTitle}】</span>
+        </div>
+      ` : ''}
 
       <div class="china-region-pills">
         ${CHINA_REGIONS.map(r => `
@@ -1391,7 +1676,7 @@ function renderScrapbookBook(el) {
                   <div class="cc-photo-wrap">
                     <img src="${t.src}" alt="${t.fullTitle}" />
                     <span class="cc-postmark">${t.postmark}</span>
-                    ${item.developed ? '' : '<span class="cc-mist-tag">拼图显影 +30币</span>'}
+                    ${item.developed ? '' : '<span class="cc-mist-tag">24片显影 +30币</span>'}
                   </div>
                   <div class="cc-meta">
                     <div class="cc-city">${t.province} · ${t.city}</div>
@@ -1400,12 +1685,13 @@ function renderScrapbookBook(el) {
                 </button>
               `;
             }
+            const isWished = state.nextGuaranteedCardId === t.id;
             return `
               <button class="craft-btn china-card locked" data-china-hint="${t.id}">
                 <div class="cc-photo-wrap silhouette">
                   <div class="cc-stamp-icon">
                     <svg viewBox="0 0 24 24"><path d="M3 18l5.5-8 4 5.5 3-4L21 18H3z"/><circle cx="16.5" cy="7.5" r="2"/></svg>
-                    <span>尚未寄达</span>
+                    <span>${isWished ? '已许愿必达 ✓' : (wishAdRem > 0 ? '▶ 求顺风签' : '尚未寄达')}</span>
                   </div>
                 </div>
                 <div class="cc-meta">
@@ -1429,18 +1715,36 @@ function renderScrapbookBook(el) {
     });
     el.querySelectorAll('[data-china-open]').forEach(btn => {
       btn.addEventListener('click', () => {
-        selectedPostcardUid = btn.dataset.chinaOpen;
+        const uid = btn.dataset.chinaOpen;
+        if (btn.dataset.chinaDev === '0') {
+          openPuzzleWorkbench(uid, 24, 'scrapbook');
+          return;
+        }
+        selectedPostcardUid = uid;
         mailSubTab = 'postcards';
-        playingPuzzleUid = btn.dataset.chinaDev === '0' ? selectedPostcardUid : null;
         setScreen('mailbox');
       });
     });
     el.querySelectorAll('[data-china-hint]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const tpl = POSTCARD_POOL[btn.dataset.chinaHint];
         if (!tpl) return;
-        sound.paperTurn();
-        showToast(`「${tpl.fullTitle}」尚未寄达：${tpl.hint}`);
+        if (state.nextGuaranteedCardId === tpl.id) {
+          showToast(`已锁定顺风定向签！装好口粮送团子出门，必去【${tpl.fullTitle}】`);
+          return;
+        }
+        if (getAdRemaining(state, 'chinaWish') <= 0) {
+          sound.paperTurn();
+          showToast(`「${tpl.fullTitle}」尚未寄达：${tpl.hint}`);
+          return;
+        }
+        const ad = await watchRewardedAd('chinaWish', `求一张「顺风定向签」：团子下一次出门必去【${tpl.fullTitle}】！（${tpl.hint}）`);
+        if (!ad.completed) return;
+        const res = claimAdChinaWish(state, tpl.id);
+        if (!res.ok) return showToast(res.reason);
+        sound.celebrate();
+        commit(res.state);
+        showToast(`顺风签求成！下趟送团子出门必去【${tpl.fullTitle}】`);
       });
     });
     return;
@@ -1577,7 +1881,6 @@ function bindBookCommon(el) {
   el.querySelectorAll('[data-mtab]').forEach(btn => {
     btn.addEventListener('click', () => {
       mailSubTab = btn.dataset.mtab;
-      playingPuzzleUid = null;
       sound.paperTurn();
       renderMailboxBook(el);
     });
@@ -1716,6 +2019,29 @@ $('btn-sill').addEventListener('click', () => {
   }
 });
 
+$('btn-sill-ad').addEventListener('click', async () => {
+  const ad = await watchRewardedAd('sillDouble');
+  if (!ad.completed) return;
+  const res = claimAdSillDouble(state);
+  if (!res.ok) return showToast(res.reason);
+  sound.celebrate();
+  atmosphere.spawnBurst(96, 372, 'reunion');
+  showToast(`阳光双倍晒好！收下 +${res.gained} 条香酥小鱼干零食`);
+  commit(res.state);
+});
+
+$('btn-trip-rush').addEventListener('click', async () => {
+  const ad = await watchRewardedAd('tripRush');
+  if (!ad.completed) return;
+  const res = claimAdTripRush(state);
+  if (!res.ok) return showToast(res.reason);
+  state = res.state;
+  saveState(state);
+  playReturnAnimation();
+  const title = POSTCARD_POOL[res.postcard?.templateId]?.fullTitle || '新明信片';
+  showToast(`咕咕加急送到！团子带着《${title}》提前到家啦`);
+});
+
 $('btn-feed-snack').addEventListener('click', () => {
   const res = feedSnack(state);
   if (!res.ok) return showToast(res.reason);
@@ -1798,6 +2124,15 @@ $('btn-open-gacha').addEventListener('click', () => setScreen('gacha'));
 $('btn-gacha-crank').addEventListener('click', () => triggerGachaDraw(1));
 $('btn-gacha-1').addEventListener('click', () => triggerGachaDraw(1));
 $('btn-gacha-5').addEventListener('click', () => triggerGachaDraw(5));
+$('btn-gacha-ad').addEventListener('click', async () => {
+  const ad = await watchRewardedAd('gachaFree');
+  if (!ad.completed) return;
+  const res = claimAdGachaTicket(state);
+  if (!res.ok) return showToast(res.reason);
+  sound.celebrate();
+  commit(res.state);
+  showToast('奶奶递来 +1 张免费「旅途副券」，快去摇摇看吧！');
+});
 
 $('hotspot-apang').addEventListener('click', () => {
   if (!getDerivedView(state).activeScene.hasApang) return;
@@ -2064,7 +2399,17 @@ if (urlScene && ROOM_SCENE_MAP[urlScene]) {
   state.weatherOverride = null;
 }
 const initScreen = urlParams.get('screen');
-if (initScreen === 'decor') {
+if (initScreen === 'puzzle') {
+  const pieceParam = Number(urlParams.get('pieces') || 24);
+  const targetUid = state.postcards[0]?.uid;
+  if (targetUid) {
+    renderAll();
+    openPuzzleWorkbench(targetUid, pieceParam === 48 ? 48 : 24, 'mailbox');
+    if (urlParams.get('solved') === '1') {
+      setTimeout(() => activeWorkbench?.api?.autoSolve(), 300);
+    }
+  }
+} else if (initScreen === 'decor') {
   decorMode = true;
   decorNightPreview = urlParams.get('night') === '1';
   const initTab = urlParams.get('tab');

@@ -6,6 +6,11 @@ import { CHINA_POSTCARD_IDS, DAY, HOUR, NPCS, POSTCARD_POOL, ROOM_SCENES, getCal
 import {
   DEFAULT_START_TS,
   buyItem,
+  claimAdChinaWish,
+  claimAdGachaTicket,
+  claimAdPuzzleDouble,
+  claimAdSillDouble,
+  claimAdTripRush,
   claimReunionGift,
   claimSill,
   clearDust,
@@ -13,6 +18,7 @@ import {
   createInitialState,
   equipDecor,
   feedSnack,
+  getAdRemaining,
   getChinaCollectionStats,
   getDerivedView,
   packBag,
@@ -250,4 +256,52 @@ test('8 China travel postcards collect cleanly via travel synergies and track al
   const stats2 = getChinaCollectionStats(after);
   assert.equal(stats2.collected, 2);
   assert.ok(stats2.items.find(i => i.id === 'cn-chengdu')?.collected);
+});
+
+test('24-piece postcard completion unlocks 48-piece & main-game gallery, and all 5 rewarded ads respect daily caps', () => {
+  let s = createInitialState();
+  const hzUid = s.postcards[0].uid;
+
+  // 1. 24-piece develop grants +30 coins, +1 ticket, and unlocks higher pieces / main gallery
+  const dev24 = completePostcard(s, hzUid, 24);
+  assert.equal(dev24.reward, 30);
+  assert.equal(dev24.unlockedHigherPieces, true);
+  assert.ok(dev24.state.unlockedMainGallery.includes('cn-hangzhou'));
+
+  // 2. Completing unlocked 48-piece tier grants +50 bonus coins
+  const dev48 = completePostcard(dev24.state, hzUid, 48);
+  assert.equal(dev48.reward, 50);
+  assert.ok(dev48.state.cleared48Postcards.includes('cn-hangzhou'));
+
+  // 3. Ad P0: Puzzle double reward & Gacha free ticket
+  const dbl = claimAdPuzzleDouble(dev48.state, hzUid, 30);
+  assert.equal(dbl.ok, true);
+  assert.equal(dbl.coinDelta, 30);
+  assert.equal(getAdRemaining(dbl.state, 'puzzleDouble'), 2);
+
+  const gAd = claimAdGachaTicket(dbl.state);
+  assert.equal(gAd.ok, true);
+  assert.equal(gAd.state.tickets, dbl.state.tickets + 1);
+  assert.equal(getAdRemaining(gAd.state, 'gachaFree'), 2);
+
+  // 4. Ad P1: China destination wish guarantees next trip goes to Harbin + Gugu express rush settles instantly
+  const wished = claimAdChinaWish(gAd.state, 'cn-harbin');
+  assert.equal(wished.ok, true);
+  assert.equal(wished.state.nextGuaranteedCardId, 'cn-harbin');
+  assert.equal(getAdRemaining(wished.state, 'chinaWish'), 0);
+  assert.equal(claimAdChinaWish(wished.state, 'cn-beijing').ok, false, 'respects daily cap 1/day');
+
+  const packed = packBag(wished.state, { food: 'onigiri', tool: null, wish: null });
+  const sent = sendOffNow(packed);
+  assert.equal(sent.state.trip.cardId, 'cn-harbin', 'guaranteed wish overrides default destination');
+
+  const rushed = claimAdTripRush(sent.state);
+  assert.equal(rushed.ok, true);
+  assert.equal(rushed.state.status, 'home');
+  assert.ok(rushed.state.postcards.some(c => c.templateId === 'cn-harbin'));
+
+  // 5. Ad P2: Sill double fish snack
+  const sillDbl = claimAdSillDouble(rushed.state);
+  assert.equal(sillDbl.ok, true);
+  assert.equal(sillDbl.gained, 4);
 });
