@@ -64,6 +64,7 @@ export const TEST_GROUPS = {
   economy: [
     {file: 'tests/mobile-ad-unlock.test.mjs', ts: false},
     {file: 'tests/mobile-ad-unlock-client.test.mjs', ts: false},
+    {file: 'tests/mobile-collection-layout.test.mjs', ts: false},
     {file: 'tests/tap-rewarded.test.mjs', ts: false},
     {file: 'tests/mobile-piece-level.test.mjs', ts: false},
     {file: 'tests/mobile-tuanzi.test.mjs', ts: false},
