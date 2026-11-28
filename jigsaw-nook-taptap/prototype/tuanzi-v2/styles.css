@@ -108,6 +108,11 @@ html, body {
   left: -3px;
   height: 100%;
   aspect-ratio: 768 / 1376;
+  z-index: 1;
+  transition: opacity 0.55s ease;
+}
+#room-bg-day30 {
+  z-index: 6;
 }
 .nook-plate-canvas .plate-base {
   position: absolute;
@@ -211,6 +216,7 @@ html, body {
 .vignette-soft {
   position: absolute;
   inset: 0;
+  z-index: 10;
   background:
     linear-gradient(180deg, rgba(35, 19, 10, 0.34) 0%, rgba(35, 19, 10, 0) 16%, rgba(35, 19, 10, 0) 74%, rgba(30, 16, 9, 0.56) 100%);
   pointer-events: none;
@@ -639,16 +645,17 @@ html, body {
 /* Dust wipe gentle whisper cue */
 .dust-cue {
   position: absolute;
-  top: 112px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 214px;
+  top: 104px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 208px;
   height: 44px;
   z-index: 22;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 28px;
+  padding: 0 24px;
   pointer-events: none;
   animation: gentleBob 3.2s ease-in-out infinite;
 }

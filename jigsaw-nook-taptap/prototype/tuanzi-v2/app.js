@@ -195,9 +195,19 @@ function commit(nextState) {
    RENDER: NOOK MAIN SCENE + IN-SITU DECOR LAYERS + LIVE TUANZI
    ========================================================= */
 function renderInSituDecorLayers(showEvolved) {
+  const plateEl = $('day1-plate-canvas');
   const layersEl = $('decor-layers');
   const slotsEl = $('decor-slots-overlay');
   const eq = state.equippedDecor || {};
+
+  // Day 30 / 跨季重逢雪夜使用独立全绘雪夜底图，严禁 Day 1 原地摆件贴片透出叠压
+  if (showEvolved) {
+    if (plateEl) plateEl.style.opacity = '0';
+    layersEl.innerHTML = '';
+    slotsEl.innerHTML = '';
+    return;
+  }
+  if (plateEl) plateEl.style.opacity = '1';
 
   // 渲染 7 个原地融合羽化贴片（严格锁定原生 768×1376 百分比坐标，零贴纸漂移！）
   const patchHtml = [];
@@ -263,8 +273,8 @@ function renderNook() {
     weather: decorMode && decorNightPreview ? 'snow' : view.weather,
     isEvolved: showEvolved,
     dustLevel: decorMode ? 0 : state.dustLevel,
-    lampGlow: deskItem?.lampGlow || null,
-    hasJellyGlow: eq.shelf1L === 's1l-jellyfish',
+    lampGlow: showEvolved ? null : (deskItem?.lampGlow || null),
+    hasJellyGlow: showEvolved ? false : (eq.shelf1L === 's1l-jellyfish'),
     nightPreview: decorMode && decorNightPreview,
   });
   canvas.classList.toggle('interactive-dust', !decorMode && state.dustLevel > 0);
@@ -278,6 +288,7 @@ function renderNook() {
   $('plaque-sub').textContent = plaqueSub;
   $('hud-coins').textContent = String(state.coins);
 
+  $('btn-open-gacha').style.display = view.hasPendingReunion ? 'none' : 'flex';
   const tickets = state.tickets || 0;
   $('gacha-ticket-badge').style.display = tickets > 0 ? 'flex' : 'none';
   $('gacha-ticket-num').textContent = String(tickets);
