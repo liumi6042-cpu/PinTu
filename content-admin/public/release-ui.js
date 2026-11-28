@@ -101,6 +101,7 @@ export function createReleasePanel({api, hasUnsavedEdits}) {
     try {
       await api('/api/assets/deliver', {method:'POST',body:{}});
       assets = await readAssets();
+      if (prepared) prepared = await api('/api/releases/prepare', {method:'POST',body:{}});
       pending = false;
       if (prepared) render(renderReleasePreview(prepared,status,assets), '图片已上传');
       else render(`<p class="release-success">图片已上传到两端。</p><div class="modal-footer"><button class="primary" data-release="prepare">继续提交设置</button><button data-release="close">关闭</button></div>`, '图片已上传');
@@ -113,12 +114,15 @@ export function createReleasePanel({api, hasUnsavedEdits}) {
     if (pending || !prepared || !status?.configured) return;
     if (hasUnsavedEdits()) { await prepare(); return; }
     pending = true;
-    const needsAssets = pendingAssets(assets) > 0;
-    render(needsAssets ? '<p class="release-wait">正在上传图片…</p><p class="muted">图片完成后会继续同步设置，请保持本窗口打开。</p>' : '<p class="release-wait">正在同步到两端，请稍候…</p><p class="muted">完成后会显示 Web 和小程序各自的结果。请保持本窗口打开。</p>');
+    const needsAssets = pendingAssets(assets) > 0 || (assets?.reachable === true && (prepared.summary?.pendingImageCount ?? 0) > 0);
+    render(needsAssets ? '<p class="release-wait">正在上传图片…</p><p class="muted">图片完成后会重新校验清单并继续同步设置，请保持本窗口打开。</p>' : '<p class="release-wait">正在同步到两端，请稍候…</p><p class="muted">完成后会显示 Web 和小程序各自的结果。请保持本窗口打开。</p>');
     try {
       if (needsAssets) {
-        await api('/api/assets/deliver', {method:'POST',body:{}});
-        render('<p class="release-wait">图片已上传，正在同步运营设置…</p>');
+        const delivered = await api('/api/assets/deliver', {method:'POST',body:{}});
+        render('<p class="release-wait">图片已就绪，正在更新发布清单并同步运营设置…</p>');
+        if (delivered?.delivered > 0 || pendingAssets(assets) > 0) {
+          prepared = await api('/api/releases/prepare', {method:'POST',body:{}});
+        }
       }
       const result = await api('/api/releases/confirm', {method:'POST',body:{releaseId:prepared.releaseId,manifestSha256:prepared.manifestSha256}});
       pending = false;

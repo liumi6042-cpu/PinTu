@@ -184,7 +184,9 @@ export function createAssetDelivery({projectRoot,dataDir,configPath,localPuzzles
    const applied=await remoteJson('python3 '+quote(REMOTE_TOOL)+' --batch '+quote(remoteDir)+' --apply --restart');
    if(!applied?.ok)throw failure(applied?.message??'服务器未接受这批图片。');
    await runner('ssh',[...options,'-T',host,'rm -rf -- '+quote(remoteDir)],{timeoutMs:60000});
-   const delivered=recordDelivered({catalog,plan:planResult,applied,actor});
+   const uploadedUrls=new Set(upload.map(item=>item.url));
+   const remainingMissing=planResult.missing.filter(item=>!uploadedUrls.has(item.url));
+   const delivered=recordDelivered({catalog,plan:{...planResult,missing:remainingMissing},applied,actor});
    recordReceipt({batchId,plan:planResult,applied,actor,delivered});
    return {skipped:false,batchId,...planResult,applied,delivered,actor};
   }finally{

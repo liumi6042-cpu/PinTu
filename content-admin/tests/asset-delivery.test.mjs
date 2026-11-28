@@ -130,3 +130,46 @@ test('plan tolerates a UTF-8 BOM in publish-config.json', async () => {
     rmSync(root, {recursive: true, force: true});
   }
 });
+
+test('deliver immediately records newly uploaded pending assets in delivered-assets.json', async () => {
+  const {root, delivery, worktree} = fixture({
+    existing: [],
+    catalog: [
+      {id: 'fresh-v1', src: '/puzzles/fresh-v1.png', thumbSrc: '/puzzles/fresh-v1-thumbnail-bb.webp', optimizedSrc: '/puzzles/fresh-v1-optimized-cc.webp'},
+    ],
+  });
+  try {
+    const thumbBytes = readFileSync(join(worktree, 'public/puzzles/fresh-v1-thumbnail-bb.webp'));
+    const optBytes = readFileSync(join(worktree, 'public/puzzles/fresh-v1-optimized-cc.webp'));
+    const sha = buf => createHash('sha256').update(buf).digest('hex');
+    mkdirSync(join(root, 'content-admin/work/pending-assets'), {recursive: true});
+    writeFileSync(join(root, 'content-admin/work/pending-assets/registry.json'), JSON.stringify({
+      schema: 'jigsaw-pending-assets/v1',
+      assets: [{
+        id: 'fresh-v1',
+        source: {sha256: 'a'.repeat(64)},
+        delivery: {
+          thumbnail: {path: 'batch/delivery/fresh-v1-thumbnail-bb.webp', bytes: thumbBytes.length, sha256: sha(thumbBytes)},
+          optimized: {path: 'batch/delivery/fresh-v1-optimized-cc.webp', bytes: optBytes.length, sha256: sha(optBytes)},
+        },
+      }],
+    }));
+    writeFileSync(join(root, 'content-admin/work/delivered-assets.json'), JSON.stringify({
+      schema: 'jigsaw-delivered-assets/v1',
+      webRelease: 'test-web',
+      mobileRelease: 'test-mobile',
+      verifiedAt: '2026-01-01T00:00:00.000Z',
+      images: [],
+    }));
+    const result = await delivery.deliver({actor: 'tester'});
+    assert.equal(result.skipped, false);
+    assert.equal(result.delivered, 1);
+    const deliveredReceipt = JSON.parse(readFileSync(join(root, 'content-admin/work/delivered-assets.json'), 'utf8'));
+    assert.equal(deliveredReceipt.images.length, 1);
+    assert.equal(deliveredReceipt.images[0].id, 'fresh-v1');
+    const uploadReceipt = JSON.parse(readFileSync(join(root, 'content-admin/work/asset-uploads.json'), 'utf8'));
+    assert.equal(uploadReceipt.entries.at(-1).markedDelivered, 1);
+  } finally {
+    rmSync(root, {recursive: true, force: true});
+  }
+});
