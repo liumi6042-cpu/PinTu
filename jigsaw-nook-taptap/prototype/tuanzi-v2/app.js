@@ -1767,6 +1767,22 @@ if (urlParams.get('demo') === 'day30') {
     shelf3: 's3-map',
     outfit: 'outfit-postman',
   };
+} else if (urlParams.get('demo') === 'day90-post') {
+  state = createInitialState();
+  state = packBag(state, { food: 'bento', tool: 'camera', wish: 'token-apang' });
+  state = togglePantrySlot(state, 1, 'osmanthus');
+  state = simulateTo(state, state.now + 90 * DAY + 6 * HOUR).state;
+  state = claimReunionGift(state).state;
+  state.ownedDecor = Object.keys(DECOR_ITEMS);
+  state.equippedDecor = {
+    ...state.equippedDecor,
+    desk: 'lamp-mushroom',
+    window: 'win-teru',
+    shelf1L: 's1l-jellyfish',
+    shelf2L: 's2l-vase',
+    shelf2R: 's2r-sailboat',
+    outfit: 'outfit-redscarf',
+  };
 } else if (urlParams.get('demo') === 'crossmix') {
   state = createInitialState();
   state.ownedDecor = Object.keys(DECOR_ITEMS);

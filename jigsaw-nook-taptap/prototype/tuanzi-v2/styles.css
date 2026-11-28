@@ -289,17 +289,21 @@ html, body {
   animation: noteGentle 5s ease-in-out infinite;
 }
 
-/* Evolved room cushion sits slightly further left & higher */
-.tuanzi-actor.in-evolved.pose-nap,
+/* Evolved room cushion sits slightly further left & higher — aligned cleanly over day30 cushion */
+.tuanzi-actor.in-evolved.pose-nap {
+  left: 50.5%;
+  bottom: 184px;
+  width: 238px;
+}
 .tuanzi-actor.in-evolved.pose-note {
   left: 50.5%;
-  bottom: 192px;
-  width: 222px;
+  bottom: 184px;
+  width: 232px;
 }
 .tuanzi-actor.in-evolved.pose-wait {
   left: 50.5%;
-  bottom: 194px;
-  width: 198px;
+  bottom: 188px;
+  width: 204px;
 }
 
 /* State: Trotting away to the right wooden shop door! */
@@ -642,14 +646,14 @@ html, body {
   box-shadow: 0 2px 5px rgba(20, 10, 4, 0.35);
 }
 
-/* Dust wipe gentle whisper cue */
+/* Dust wipe gentle whisper cue — sits cleanly below hanging plaque with wide clearance from gacha charm */
 .dust-cue {
   position: absolute;
-  top: 104px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 208px;
+  top: 102px;
+  left: 32px;
+  right: auto;
+  margin: 0;
+  width: 212px;
   height: 44px;
   z-index: 22;
   display: flex;

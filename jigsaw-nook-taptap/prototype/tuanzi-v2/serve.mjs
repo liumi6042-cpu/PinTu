@@ -173,7 +173,9 @@ export function createServer({ dbPath = process.env.MOBILE_DB || DEFAULT_DB_PATH
       const data = await readFile(full);
       res.writeHead(200, {
         'Content-Type': MIME[extname(full).toLowerCase()] || 'application/octet-stream',
-        'Cache-Control': 'no-store',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
       });
       res.end(data);
     } catch {
