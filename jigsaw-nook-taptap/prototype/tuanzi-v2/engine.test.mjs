@@ -236,11 +236,12 @@ test('6 hand-painted storybook room scenes auto-resolve by season/weather and su
   assert.equal(getDerivedView(s).activeSceneId, 'autumn-day');
 });
 
-test('8 China travel postcards collect cleanly via travel synergies and track album milestones', () => {
-  assert.equal(CHINA_POSTCARD_IDS.length, 8);
+test('50 China travel postcards collect cleanly via travel synergies and track 6-region album milestones', () => {
+  assert.equal(CHINA_POSTCARD_IDS.length, 50);
+  assert.equal(new Set(CHINA_POSTCARD_IDS).size, 50);
   for (const id of CHINA_POSTCARD_IDS) {
     const p = POSTCARD_POOL[id];
-    assert.ok(p?.isChina && p.province && p.city && p.postmark && p.hint);
+    assert.ok(p?.isChina && p.province && p.city && p.postmark && p.hint && p.chinaRegion);
   }
 
   let s = createInitialState();

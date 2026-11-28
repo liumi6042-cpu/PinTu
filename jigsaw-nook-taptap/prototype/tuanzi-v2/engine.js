@@ -215,17 +215,19 @@ function planTrip(state, at, pack, source = 'manual') {
   if (!cardId) cardId = syn?.cardId;
   if (!cardId) {
     const cal = getCalendarInfo(at);
-    const byFood = food.id === 'bento'
-      ? ['cn-guilin', 'cn-xiamen', 'cn-harbin', 'cn-dali']
-      : food.id === 'osmanthus'
-        ? ['cn-hangzhou', 'cn-chengdu', 'cn-beijing', 'cn-suzhou']
-        : food.id === 'fish'
-          ? ['cn-chengdu', 'cn-xiamen', 'cn-suzhou', 'cn-guilin']
-          : ['cn-suzhou', 'cn-dali', 'cn-hangzhou', 'cn-chengdu'];
-    const seasonalLead = cal.season === 'winter' ? ['cn-beijing', 'cn-harbin'] : [];
-    const candidates = [...new Set([...seasonalLead, ...byFood, ...CHINA_POSTCARD_IDS])];
-    cardId = candidates.find(id => !state.postcards.some(c => c.templateId === id))
-      || candidates[Math.floor(r() * candidates.length)];
+    const byAffinity = CHINA_POSTCARD_IDS.filter(id => POSTCARD_POOL[id]?.foodAffinity === food.id);
+    const seasonalLead = cal.season === 'winter'
+      ? ['cn-beijing', 'cn-harbin', 'cn-changbaishan', 'cn-xuexiang', 'cn-wusong', 'cn-mohe', 'cn-shenyang']
+      : cal.season === 'spring'
+        ? ['cn-hangzhou', 'cn-suzhou', 'cn-yangzhou', 'cn-luoyang', 'cn-linzhi', 'cn-wuhan']
+        : cal.season === 'summer'
+          ? ['cn-dali', 'cn-qinghai', 'cn-chaka', 'cn-sailimu', 'cn-hulunbuir', 'cn-sanya', 'cn-qingdao']
+          : ['cn-nanjing', 'cn-wuyuan', 'cn-greatwall', 'cn-jiuzhaigou', 'cn-kanas', 'cn-huangshan'];
+    const candidates = [...new Set([...seasonalLead, ...byAffinity, ...CHINA_POSTCARD_IDS])];
+    const uncollected = candidates.filter(id => !state.postcards.some(c => c.templateId === id));
+    cardId = uncollected.length
+      ? uncollected[Math.floor(r() * Math.min(4, uncollected.length))]
+      : candidates[Math.floor(r() * candidates.length)];
   }
   const tpl = POSTCARD_POOL[cardId];
   const souvenirOrder = ['windchime', 'sailboat', 'jellyfish'];
@@ -1036,12 +1038,16 @@ export function getChinaCollectionStats(state) {
   const developed = items.filter(x => x.developed).length;
   const total = items.length;
   const rankSeal = collected >= total
-    ? '华夏漫游大师'
-    : collected >= 4
-      ? '半壁山河旅猫'
-      : collected >= 1
-        ? '初踏华夏行记'
-        : '整装待发';
+    ? '九州漫游宗师'
+    : collected >= 35
+      ? '万里山河旅猫'
+      : collected >= 20
+        ? '半壁华夏行者'
+        : collected >= 8
+          ? '初游四方旅猫'
+          : collected >= 1
+            ? '初踏华夏行记'
+            : '整装待发';
   return { total, collected, developed, items, rankSeal };
 }
 

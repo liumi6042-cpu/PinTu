@@ -1647,7 +1647,7 @@ function renderScrapbookBook(el) {
         <div class="cp-head">
           <div>
             <h3>华夏行记 · 集邮册</h3>
-            <div class="cp-sub">已集齐 <b>${stats.collected} / ${stats.total}</b> 城 · 已显影 ${stats.developed} 张</div>
+            <div class="cp-sub">集齐 <b>${stats.collected}/${stats.total}</b> 城 · 显影 ${stats.developed} 张</div>
           </div>
           <span class="cp-rank-seal">${stats.rankSeal}</span>
         </div>
@@ -1661,9 +1661,12 @@ function renderScrapbookBook(el) {
       ` : ''}
 
       <div class="china-region-pills">
-        ${CHINA_REGIONS.map(r => `
-          <button class="craft-btn cr-pill ${chinaRegionFilter === r.id ? 'active' : ''}" data-creg="${r.id}">${r.label}</button>
-        `).join('')}
+        ${CHINA_REGIONS.map(r => {
+          const cnt = r.id === 'all'
+            ? `${stats.collected}/${stats.total}`
+            : `${stats.items.filter(it => it.tpl.chinaRegion === r.id && it.collected).length}/${stats.items.filter(it => it.tpl.chinaRegion === r.id).length}`;
+          return `<button class="craft-btn cr-pill ${chinaRegionFilter === r.id ? 'active' : ''}" data-creg="${r.id}">${r.label} ${cnt}</button>`;
+        }).join('')}
       </div>
 
       <div class="book-scroll">
@@ -2302,20 +2305,23 @@ $('btn-demo-unlock-decor').addEventListener('click', () => {
 
 $('btn-demo-china-album')?.addEventListener('click', () => {
   state = structuredClone(state);
+  const totalChina = CHINA_POSTCARD_IDS.length;
+  const keepMistyCount = 2;
   CHINA_POSTCARD_IDS.forEach((cid, idx) => {
+    const dev = idx < totalChina - keepMistyCount;
     const existing = state.postcards.find(c => c.templateId === cid);
     if (existing) {
-      existing.developed = idx < 6; // 保留最后 2 张待拼图显影方便体验！
-      existing.read = idx < 6;
+      existing.developed = dev;
+      existing.read = dev;
     } else {
       state.postcards.unshift({
         uid: `pc-demo-${cid}`,
         templateId: cid,
         arrivedAt: state.now - (idx + 1) * HOUR,
         seasonLabel: POSTCARD_POOL[cid].seasonTag,
-        cnDate: ['十月十八', '三月十二', '五月廿四', '六月初八', '十一月雪', '腊月十五', '七月初六', '四月廿一'][idx] || '十月十八',
-        read: idx < 6,
-        developed: idx < 6,
+        cnDate: ['十月十八', '三月十二', '五月廿四', '六月初八', '十一月雪', '腊月十五', '七月初六', '四月廿一'][idx % 8] || '十月十八',
+        read: dev,
+        developed: dev,
       });
     }
   });
@@ -2324,15 +2330,15 @@ $('btn-demo-china-album')?.addEventListener('click', () => {
   scrapSubTab = 'china';
   chinaRegionFilter = 'all';
   setScreen('scrapbook');
-  showToast('已集齐 8 城《华夏行记》中国明信片（留 2 张可体验拼图显影）');
+  showToast(`已集齐全部 ${totalChina} 城《华夏行记》中国明信片（留 2 张可体验 24 片显影）`);
 });
 
-// 支持 URL ?demo=day30|decorated|china-album|china-partial 和 ?screen=gacha|decor|shop|mailbox|scrapbook|bag 直接预览指定页
+// 支持 URL ?demo=day30|decorated|china-album|china-partial 和 ?screen=gacha|decor|shop|mailbox|scrapbook|bag|puzzle 直接预览指定页
 const urlParams = new URLSearchParams(location.search);
 if (urlParams.get('demo') === 'china-album' || urlParams.get('demo') === 'china-partial') {
   state = createInitialState();
   const isFull = urlParams.get('demo') === 'china-album';
-  const count = isFull ? CHINA_POSTCARD_IDS.length : 4;
+  const count = isFull ? CHINA_POSTCARD_IDS.length : 12;
   state.postcards = [];
   CHINA_POSTCARD_IDS.slice(0, count).forEach((cid, idx) => {
     state.postcards.push({
@@ -2340,11 +2346,15 @@ if (urlParams.get('demo') === 'china-album' || urlParams.get('demo') === 'china-
       templateId: cid,
       arrivedAt: state.now - (idx + 1) * HOUR,
       seasonLabel: POSTCARD_POOL[cid].seasonTag,
-      cnDate: ['十月十八', '三月十二', '五月廿四', '六月初八', '十一月雪', '腊月十五', '七月初六', '四月廿一'][idx] || '十月十八',
-      read: isFull ? true : idx < 3,
-      developed: isFull ? true : idx < 3,
+      cnDate: ['十月十八', '三月十二', '五月廿四', '六月初八', '十一月雪', '腊月十五', '七月初六', '四月廿一'][idx % 8] || '十月十八',
+      read: isFull ? true : idx < 10,
+      developed: isFull ? true : idx < 10,
     });
   });
+  const regParam = urlParams.get('region');
+  if (regParam && CHINA_REGIONS.some(r => r.id === regParam)) {
+    chinaRegionFilter = regParam;
+  }
 } else if (urlParams.get('demo') === 'day30') {
   state = createInitialState();
   state = packBag(state, { food: 'bento', tool: 'camera', wish: 'token-apang' });
