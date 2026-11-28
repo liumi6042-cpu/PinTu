@@ -67,7 +67,7 @@ test('story-level, ad-unlock and mobile-hidden albums keep their pictures out of
  const existingHealing=draft.albums.find(album=>album.id==='healing-time'&&album!==level);
  if(existingHealing){existingHealing.showOnMobile=true;existingHealing.imageIds=[...existingHealing.imageIds,thirdImage];draft.albums=draft.albums.filter(album=>album!==level);}
  assert.equal(buildDailyConfiguration(validateDraft(draft,source),source).fallbackImageIds.includes(thirdImage),false);
- for(const adId of ['four-seasons-table','curiosity-cabinet']){
+ for(const adId of ['four-seasons-table','curiosity-cabinet','mint-pastoral']){
   const d=document();
   for(const album of d.albums){album.imageIds=album.imageIds.filter(id=>id!==thirdImage);if(!album.imageIds.includes(album.coverImageId))album.coverImageId=album.imageIds[0]??null;}
   const adAlbum={...emptyAlbum(adId),showOnMobile:true,purchasable:true,price:1,imageIds:[thirdImage],coverImageId:thirdImage};

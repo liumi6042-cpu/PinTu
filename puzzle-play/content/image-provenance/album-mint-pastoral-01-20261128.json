@@ -1,0 +1,102 @@
+{
+  "id": "album-mint-pastoral-01-20261128",
+  "origin": "project-ai-generated",
+  "width": 2229,
+  "height": 2229,
+  "sha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+  "master": {
+    "format": "webp",
+    "quality": 90,
+    "src": "/puzzles/album-mint-pastoral-01-20261128.webp",
+    "sha256": "b59ac8b67e186a5741a7eb45d2f2be66d8b978c2755c3fd0cf3fd229452f8269",
+    "bytes": 827242,
+    "width": 2229,
+    "height": 2229,
+    "originalPngSha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21"
+  },
+  "nativeResolution": true,
+  "upscaled": false,
+  "generation": {
+    "provider": "OpenAI",
+    "tool": "image_gen",
+    "generatedDate": "2026-11-28",
+    "generatedAt": "2026-11-28T09:59:00.000Z",
+    "threadId": "codex-cli-20261128",
+    "promptPath": "content/image-prompts/album-mint-pastoral-01-20261128.txt",
+    "referenceImages": [],
+    "native": {
+      "path": "content/artwork/gallery-hd/album-mint-pastoral-01-20261128/native.png",
+      "sha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+      "bytes": 10357737,
+      "width": 2229,
+      "height": 2229,
+      "format": "png",
+      "master": {
+        "format": "webp",
+        "quality": 90,
+        "path": "content/artwork/gallery-hd/album-mint-pastoral-01-20261128/native.webp",
+        "sha256": "b59ac8b67e186a5741a7eb45d2f2be66d8b978c2755c3fd0cf3fd229452f8269",
+        "bytes": 827242,
+        "width": 2229,
+        "height": 2229
+      }
+    },
+    "originalFile": "public/puzzles/album-mint-pastoral-01-20261128.png",
+    "importedRegistrySha256": "1f16b8e8721b4e08f1cdf1cc9ea118fcbf71b77a1c0ac9d4221b21ea9ed53cb0"
+  },
+  "resolutionNote": "原始生成 2229×2229；保存成品 2229×2229，未放大。",
+  "review": {
+    "status": "reviewed",
+    "reviewer": "Codex",
+    "reviewedAt": "2026-11-28T10:01:00.000Z",
+    "notes": "用户确认的四区重绘拼接高清成图，已完成底图及 100% 中心十字拼缝质检（缝线均值 <=1.83）。原始无损 PNG 归档于 assets/artwork-unimported/薄荷田园诗-20261128/01-晨光山坡与小白羊.png。"
+  },
+  "commercialUse": {
+    "basis": "provider-output-terms",
+    "termsUrl": "https://openai.com/policies/row-terms-of-use/",
+    "exclusiveRightsGuaranteed": false
+  },
+  "delivery": {
+    "sourceSha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+    "thumbnail": {
+      "src": "/puzzles/album-mint-pastoral-01-20261128-thumbnail-17ff114fbbeb.webp",
+      "width": 384,
+      "height": 384,
+      "sha256": "17ff114fbbeb9d0f03facf919f910f2057c50048221a42869e2e785c7b1ef3ef",
+      "bytes": 11918,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+      "inputSha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+      "quality": 82,
+      "upscaled": false,
+      "effort": 6,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6
+      }
+    },
+    "optimized": {
+      "src": "/puzzles/album-mint-pastoral-01-20261128-optimized-9bdb27f64290.webp",
+      "width": 2229,
+      "height": 2229,
+      "sha256": "9bdb27f64290df1ff5a021ae2c9a88c2f49b7fcf9d920927de0a83877cef9c61",
+      "bytes": 193150,
+      "format": "webp",
+      "lossless": false,
+      "sourceSha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+      "inputSha256": "b2b9d06bc684d41034a7161954d915d6dfab69678bc4de45abccdc1c5126ea21",
+      "quality": 70,
+      "upscaled": false,
+      "effort": 6,
+      "smartSubsample": true,
+      "encoding": {
+        "library": "sharp",
+        "version": "0.34.5",
+        "effort": 6,
+        "smartSubsample": true
+      }
+    }
+  }
+}
