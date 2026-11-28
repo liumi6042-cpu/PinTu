@@ -50,7 +50,7 @@ import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscap
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.40';
+const CLIENT_PACKAGE_VERSION='v53.41';
 /** Server /api/mobile/gifts/open validates 1..20 gifts per request; larger bulk opens are split into sequential batches. */
 const GIFT_OPEN_BATCH_LIMIT=20;
 

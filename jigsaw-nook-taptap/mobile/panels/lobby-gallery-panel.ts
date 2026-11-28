@@ -162,8 +162,28 @@ export function drawDailyHeroPanel(this:AppHost,r:Rect,compact:boolean){
   if(badge&&hasImage){const bw=s.measure(badge,12,800)+22,bx=r.x+r.w-14-bw,by=r.y+14;s.frame({x:bx,y:by,w:bw,h:26},'panel-gold');s.text(badge,bx+11,by+7,12,ink,800,bw-14);
    if(hint&&imageH>=64){const hw=s.measure(hint,11,600)+18,hx=r.x+r.w-14-hw;s.frame({x:hx,y:by+30,w:hw,h:24},'button-cream-normal');s.text(hint,hx+9,by+36,11,this.colors.muted,600,hw-12);}}
   let y=r.y+(hasImage?imageH+8:0)+(compact?8:10);const x=r.x+14,w=r.w-28,left=this.dailyLeft,leftW=s.measure(left,11,600);
-  const finished=this.dailyFinished?' · 今天已有 '+this.dailyFinished+' 人拼完':'';s.text(this.dailyLabel+(badge&&!hasImage?' · '+badge:'')+finished,x,y,11,this.colors.muted,700,w-leftW-10);s.text(left,x+w-leftW,y,11,this.colors.muted,600);y+=compact?16:18;
-  const title=photo?.title??'正在读取今日拼图…',size=compact?15:22;s.text(title,x,y,size,ink,800,w);y+=size+(compact?6:8);
+  s.text(this.dailyLabel+(badge&&!hasImage?' · '+badge:''),x,y,11,this.colors.muted,700,Math.max(40,w-leftW-10));s.text(left,x+w-leftW,y,11,this.colors.muted,600);y+=compact?16:18;
+  const title=photo?.title??'正在读取今日拼图…',size=compact?15:22;
+  const finishedCount=typeof this.dailyFinished==='number'&&this.dailyFinished>0?this.dailyFinished:0;
+  if(finishedCount){
+   const finishedLabel='已有 '+finishedCount+' 人拼完',badgeFont=compact?10:11,badgeH=compact?18:22,iconSize=compact?0:10,gap=compact?6:8;
+   const badgeTextW=Math.ceil(s.measure(finishedLabel,badgeFont,700)),padLeft=iconSize?iconSize+11:8,padRight=8;
+   const minTitleW=compact?72:108,maxBadgeW=Math.max(0,w-minTitleW-gap);
+   const badgeW=Math.min(badgeTextW+padLeft+padRight,maxBadgeW);
+   if(badgeW>=48){
+    const titleMaxW=Math.max(minTitleW,w-badgeW-gap),naturalTitleW=s.measure(title,size,800);
+    const titleSize=naturalTitleW>titleMaxW?Math.max(compact?12:15,Math.floor(size*titleMaxW/Math.max(1,naturalTitleW))):size;
+    s.text(title,x,y+Math.round((size-titleSize)/2),titleSize,ink,800,titleMaxW);
+    const bx=x+w-badgeW,by=y+Math.round((size-badgeH)/2),accent=typeof s.color==='function'?s.color('#a54860'):this.colors.berry;
+    s.frame({x:bx,y:by,w:badgeW,h:badgeH},'button-cream-selected');
+    const c=s.ctx;if(c){
+     c.save?.();c.globalAlpha=(c.globalAlpha??1)*.1;c.fillStyle=accent;c.fillRect(bx+3,by+3,Math.max(0,badgeW-6),Math.max(0,badgeH-6));c.restore?.();
+     if(iconSize){const ix=Math.round(bx+7),iy=Math.round(by+(badgeH-iconSize)/2);c.save?.();c.fillStyle=accent;c.fillRect(ix+1,iy,iconSize-2,iconSize);c.fillRect(ix,iy+1,iconSize,iconSize-2);c.fillStyle=this.colors.onAccent;c.fillRect(ix+2,iy+5,1,2);c.fillRect(ix+3,iy+6,2,2);c.fillRect(ix+5,iy+5,1,2);c.fillRect(ix+6,iy+4,1,2);c.fillRect(ix+7,iy+3,1,2);c.restore?.();}
+    }
+    s.text(finishedLabel,bx+padLeft,by+Math.round((badgeH-badgeFont)/2),badgeFont,accent,700,Math.max(12,badgeW-padLeft-padRight+2));
+   }else{s.text(title,x,y,size,ink,800,w);}
+  }else{s.text(title,x,y,size,ink,800,w);}
+  y+=size+(compact?6:8);
   const description=(photo as {description?:unknown}|null)?.description;if(!compact&&typeof description==='string'&&description){s.text(description,x,y,12,this.colors.muted,500,w);y+=20;}
   const bh=compact?34:40,primary=Math.round(w*.58);
   s.button({x,y,w:primary,h:bh},'开始拼 · 108 片',()=>this.launchDaily(),{tone:'berrydark',icon:'daily',fontSize:compact?12:14,disabled:busy});
