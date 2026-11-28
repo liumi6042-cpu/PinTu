@@ -17,9 +17,16 @@ export type TuanziMainPuzzleRequest={
  pieces:number;
 };
 
+export type TuanziGalleryPhotoRequest={
+ photoId:string;
+ cardId:string;
+ title?:string;
+ imageSrc?:string;
+};
+
 interface HostBridgeGlobal{
  loadState:()=>Promise<{ok?:boolean;state?:unknown;coins?:number;playerName?:string;owner?:string}>;
- saveState:(state:unknown)=>Promise<{ok?:boolean;coins?:number}>;
+ saveState:(state:unknown)=>Promise<{ok?:boolean;coins?:number;unlockedImageIds?:string[]}>;
  wallet:{
   read:()=>Promise<{ok?:boolean;coins?:number;owner?:string}>;
   apply:(source:string,delta:number)=>Promise<{ok?:boolean;coins?:number;delta?:number}>;
@@ -30,6 +37,7 @@ interface HostBridgeGlobal{
  host:{
   close:()=>void;
   openPuzzle:(req:TuanziMainPuzzleRequest)=>void;
+  openGalleryPhoto:(req:TuanziGalleryPhotoRequest)=>void;
  };
  reportSummary:(summary:Partial<TuanziV2Summary>)=>void;
 }
@@ -68,6 +76,8 @@ export class TuanziV2Controller{
   private readonly hooks:{
    onChange:()=>void;
    onOpenMainPuzzle:(req:TuanziMainPuzzleRequest)=>void;
+   onOpenGalleryPhoto?:(req:TuanziGalleryPhotoRequest)=>void;
+   onClose?:()=>void;
    onNote:(msg:string)=>void;
    watchRewardedAd:()=>Promise<'completed'|'closed'|'failed'|'unavailable'>;
   },
@@ -162,6 +172,10 @@ export class TuanziV2Controller{
      this.close();
      this.hooks.onOpenMainPuzzle(req);
     },
+    openGalleryPhoto:(req:TuanziGalleryPhotoRequest)=>{
+     this.close();
+     this.hooks.onOpenGalleryPhoto?.(req);
+    },
    },
    reportSummary:(partial:Partial<TuanziV2Summary>)=>{
     this.summary={...this.summary,...partial,loaded:true};
@@ -206,6 +220,7 @@ export class TuanziV2Controller{
    this.overlay=null;
   }
   void this.client.refresh().catch(()=>{});
+  this.hooks.onClose?.();
   this.hooks.onChange();
  }
 

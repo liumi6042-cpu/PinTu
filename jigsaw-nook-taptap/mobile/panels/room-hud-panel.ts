@@ -97,21 +97,23 @@ export function drawLandscapeButtonPanel(this:AppHost,r:Rect,label:string,action
 export function drawRoomTopBarPanel(this:AppHost,r:Rect,mode:'desktop'|'portrait'|'landscape'){
   if(mode!=='portrait')r={...r,w:Math.min(r.w,this.stage.w-this.menuReserve(r)-r.x)};
   const s=this.stage,room=this.room!,photo=activeRoomPhoto(room.snapshot,photoMap.get(room.state.imageId)),title=room.snapshot.title||photo?.title||'一起拼图',total=room.state.cols*room.state.rows,placed=placedCount(room.state),percent=Math.floor(placed/Math.max(1,total)*100),members=room.snapshot.members,kind=total+' 片 · '+(room.snapshot.visibility==='private'?'私人房':'公开房'),ink=this.colors.ink;
+  const tuanziOrigin=(room.snapshot as {tuanziOrigin?:string}).tuanziOrigin??(photo as {tuanziOrigin?:string}|undefined)?.tuanziOrigin??'';
+  const showTuanziOrigin=()=>this.note('获得方式：'+tuanziOrigin+'，解锁后可在图库自建房');
   const back=(x:number,y:number)=>{s.button({x,y,w:36,h:36},'',()=>this.exitRoom());s.icon('back',{x:x+7,y:y+7,w:22,h:22});};
   const avatars=(right:number,y:number,size:number)=>{const shown=members.slice(0,3),label=members.length+'/'+seatLimit(room.snapshot),lw=s.measure(label,13,700);let x=right-lw;s.text(label,x,y+(size-13)/2,13,ink,700);x-=6+(shown.length?size+(shown.length-1)*(size*.62):0);const start=x;shown.forEach((_member,index)=>s.icon('avatar',{x:x+index*size*.62,y,w:size,h:size*1.08}));return start;};
   if(mode==='desktop'){
-   back(r.x+12,r.y+12);s.text(title,r.x+58,r.y+11,18,ink,800,300);s.text(kind,r.x+58,r.y+35,12,this.colors.muted,600,300);
+   back(r.x+12,r.y+12);s.text(title,r.x+58,r.y+11,18,ink,800,300);s.text(tuanziOrigin?kind+' · 团子明信片（团子旅行寄回解锁）':kind,r.x+58,r.y+35,12,tuanziOrigin?'#9a531e':this.colors.muted,tuanziOrigin?700:600,340);if(tuanziOrigin)s.hit({x:r.x+56,y:r.y+6,w:300,h:48},showTuanziOrigin);
    const count=placed+' / '+total+'  '+percent+'%',cw=s.measure(count,18,800),mid=84+(s.w-84-300)/2;s.icon('piece',{x:mid-cw/2-28,y:r.y+9,w:22,h:24});s.text(count,mid-cw/2,r.y+10,18,ink,800);s.meter({x:mid-170,y:r.y+38,w:340,h:9},placed/Math.max(1,total));
    const inviteW=118;s.button({x:r.x+r.w-inviteW-14,y:r.y+12,w:inviteW,h:36},'＋ 邀请朋友',()=>this.showModal('invite'),{tone:'berry',fontSize:14});
    const start=avatars(r.x+r.w-inviteW-28,r.y+14,28);this.roomMembersArea={x:start-6,y:r.y+6,w:r.x+r.w-start,h:48};s.hit({x:start-6,y:r.y+6,w:r.x+r.w-inviteW-22-start,h:48},()=>this.focusRoomMembers());
   }else if(mode==='portrait'){
    back(r.x+8,r.y+4);const inviteX=r.x+r.w-44-this.menuReserve({...r,h:44});s.button({x:inviteX,y:r.y+6,w:34,h:34},'',()=>this.showModal('invite'),{tone:'berry'});s.icon('plus',{x:inviteX+9,y:r.y+15,w:16,h:16},this.colors.onAccent);
    const start=avatars(inviteX-8,r.y+9,24);this.roomMembersArea={x:start-4,y:r.y+2,w:inviteX+34-start,h:42};s.hit({x:start-4,y:r.y+2,w:inviteX-start,h:42},()=>this.showModal('chat'));
-   s.text(title,r.x+50,r.y+5,16,ink,800,start-r.x-58);s.text(kind,r.x+50,r.y+26,11,this.colors.muted,600,start-r.x-58);
+   s.text(title,r.x+50,r.y+5,16,ink,800,start-r.x-58);s.text(tuanziOrigin?'团子明信片 · 团子旅行寄回解锁':kind,r.x+50,r.y+26,11,tuanziOrigin?'#9a531e':this.colors.muted,tuanziOrigin?700:600,start-r.x-58);if(tuanziOrigin)s.hit({x:r.x+48,y:r.y+4,w:Math.max(80,start-r.x-54),h:38},showTuanziOrigin);
    const line=placed+' / '+total+' · '+percent+'%',lw=s.measure(line,14,800);s.icon('piece',{x:r.x+12,y:r.y+48,w:18,h:20});s.text(line,r.x+34,r.y+50,14,ink,800);s.meter({x:r.x+44+lw,y:r.y+55,w:Math.max(20,r.w-58-lw),h:9},placed/Math.max(1,total));
   }else if(this.platform.config.id==='web'){
    const panel={x:r.x+6,y:r.y+4,w:Math.min(320,r.w*.48),h:r.h-6};s.frame(panel,'button-linen-normal');back(panel.x+5,panel.y+5);
-   s.text(title,panel.x+48,panel.y+5,14,ink,800,panel.w-56);const line=placed+'/'+total+' · '+percent+'%',lw=s.measure(line,12,800);s.text(line,panel.x+48,panel.y+25,12,ink,800);s.meter({x:panel.x+56+lw,y:panel.y+29,w:Math.max(20,panel.w-66-lw),h:7},placed/Math.max(1,total));
+   s.text(title,panel.x+48,panel.y+5,14,ink,800,panel.w-56);if(tuanziOrigin)s.hit({x:panel.x+46,y:panel.y+2,w:panel.w-52,h:22},showTuanziOrigin);const line=placed+'/'+total+' · '+percent+'%',lw=s.measure(line,12,800);s.text(line,panel.x+48,panel.y+25,12,ink,800);s.meter({x:panel.x+56+lw,y:panel.y+29,w:Math.max(20,panel.w-66-lw),h:7},placed/Math.max(1,total));
    const right=r.x+r.w-8,inviteW=64,box={x:right-inviteW-130,y:r.y+4,w:inviteW+130,h:r.h-6};s.frame(box,'button-linen-normal');s.button({x:right-inviteW-4,y:box.y+5,w:inviteW,h:box.h-10},'邀请',()=>this.showModal('invite'),{tone:'berry',icon:'invite',fontSize:13});
    avatars(right-inviteW-12,box.y+8,24);this.roomMembersArea={...box};s.hit({x:box.x,y:box.y,w:box.w-inviteW-8,h:box.h},()=>this.showModal('chat'));
   }else{
@@ -123,7 +125,7 @@ export function drawRoomTopBarPanel(this:AppHost,r:Rect,mode:'desktop'|'portrait
    const capsule={x:r.x+r.w/2-capsuleW/2,y:r.y+2,w:capsuleW,h:25},backRect={x:r.x+12,y:r.y,w:36,h:36},textX=backRect.x+44;
    const stacked=capsule.x<textX+28||capsule.x+capsule.w+gap>avatarX;if(stacked)capsule.y=r.y+44;
    const titleRight=stacked?avatarX-gap:capsule.x-gap;
-   this.drawLandscapeButton(backRect,'<',()=>this.exitRoom(),roomColors.card,20);s.text(title,textX,r.y+2,15,roomColors.ink,900,Math.max(1,titleRight-textX));s.text(total+' 片',textX,r.y+21,10.5,roomColors.muted,500,Math.max(1,titleRight-textX));
+   this.drawLandscapeButton(backRect,'<',()=>this.exitRoom(),roomColors.card,20);s.text(title,textX,r.y+2,15,roomColors.ink,900,Math.max(1,titleRight-textX));s.text(tuanziOrigin?total+' 片 · 团子旅行寄回解锁':total+' 片',textX,r.y+21,10.5,tuanziOrigin?'#9a531e':roomColors.muted,tuanziOrigin?700:500,Math.max(1,titleRight-textX));if(tuanziOrigin)s.hit({x:textX,y:r.y,w:Math.max(80,titleRight-textX),h:36},showTuanziOrigin);
    this.drawLandscapeSurface(capsule,16,'rgba(255,250,243,.92)',roomColors.lineD,1.5);
    s.textMiddle(count,capsule.x+12,capsule.y+capsule.h/2,13,roomColors.ink,900,'0123456789');
    const meter={x:capsule.x+12+countW+8,y:capsule.y+capsule.h/2-4,w:180,h:8};this.drawLandscapeSurface(meter,4,roomColors.meterTrack);const fill=placed/Math.max(1,total);if(fill>0)this.drawLandscapeSurface({...meter,w:meter.w*fill},4,roomColors.green);
@@ -186,6 +188,23 @@ export function drawPlayerCardPanel(this:AppHost){
 export function drawRoomSidePanel(this:AppHost,r:Rect){
   const s=this.stage,room=this.room!,ink=this.colors.ink,x=r.x+12,w=r.w-24;s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(r.x,r.y,r.w,r.h);s.ctx.fillStyle=this.colors.line;s.ctx.fillRect(r.x,r.y,1,r.h);s.hit(r,()=>{});
   let y=r.y+40;const ratio=room.state.cols/Math.max(1,room.state.rows),artH=Math.min(170,Math.max(40,r.h-500),w/Math.max(.6,ratio)),art={x,y,w,h:artH};s.frame(art,'button-linen-normal');if(this.roomImage)s.image(this.roomImage,{x:x+5,y:y+5,w:w-10,h:artH-10},'contain');y+=artH+6;s.text('参考图',x,y,12,this.colors.muted,700);y+=24;
+  const sidePhoto=activeRoomPhoto(room.snapshot,photoMap.get(room.state.imageId));
+  const sideOrigin=(room.snapshot as {tuanziOrigin?:string}).tuanziOrigin??(sidePhoto as {tuanziOrigin?:string}|undefined)?.tuanziOrigin??'';
+  if(sideOrigin){
+   const ownsCard=!!this.tuanziGalleryIds?.has(room.state.imageId);
+   const copy=sideOrigin+(ownsCard?'（已入你的图库，可随时建房）':'（解锁后才能在图库找到并建房）');
+   const textH=s.wrap(copy,-9999,0,w-20,11,ink,16);
+   const boxH=26+textH+(ownsCard?8:26);
+   s.frame({x,y,w,h:boxH},'panel-gold');
+   s.text('团子明信片 · 获得方式',x+10,y+7,12,'#8c4a19',800,w-20);
+   s.wrap(copy,x+10,y+24,w-20,11,ink,16);
+   if(!ownsCard&&this.tuanziV2?.available){
+    const cta='去团子小窝收集明信片 ›';
+    s.text(cta,x+10,y+boxH-20,11,this.colors.berry,700,w-20);
+    s.hit({x:x+6,y:y+boxH-24,w:w-12,h:22},()=>{this.exitRoom();this.openTuanziV2();});
+   }
+   y+=boxH+10;
+  }
   const members=room.snapshot.members as Array<(typeof room.snapshot.members)[number]&{code?:string;level?:number;contribution?:number}>,me=this.client.profile?.code;
   const columns=r.h<680?2:1,rowW=w/columns;
   if(Date.now()<this.roomMembersHighlight)s.frame({x:x-4,y:y-4,w:w+8,h:28+Math.ceil(members.length/columns)*34},'panel-gold');

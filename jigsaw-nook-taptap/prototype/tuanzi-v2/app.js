@@ -50,10 +50,14 @@ function reportHostSummary(nextState) {
 }
 
 function flushCloudStateNow(nextState) {
-  if (!hostBridge?.saveState || !nextState) return;
+  if (!hostBridge?.saveState || !nextState) return Promise.resolve();
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = 0;
-  try { void hostBridge.saveState(nextState); } catch {}
+  try {
+    return Promise.resolve(hostBridge.saveState(nextState)).catch(() => {});
+  } catch {
+    return Promise.resolve();
+  }
 }
 
 function loadState() {
@@ -349,9 +353,6 @@ function openPuzzleWorkbench(uid, pieceCount = 24, returnScreen = 'mailbox') {
   $('wb-complete-modal').classList.add('hidden');
 
   let edgeOnly = false;
-  let ghostStep = 1; // 0: 0, 1: 0.24, 2: 0.46
-  const ghostLevels = [0, 0.24, 0.46];
-  const ghostLabels = ['底图关闭', '底图透视', '高清底图'];
 
   const wb = {
     uid,
@@ -378,8 +379,6 @@ function openPuzzleWorkbench(uid, pieceCount = 24, returnScreen = 'mailbox') {
     }
   };
 
-  $('btn-wb-ghost').textContent = ghostLabels[ghostStep];
-  $('btn-wb-ghost').classList.add('active');
   $('btn-wb-edges').classList.remove('active');
   updateHintBtn();
 
@@ -401,6 +400,7 @@ function openPuzzleWorkbench(uid, pieceCount = 24, returnScreen = 'mailbox') {
       sound.celebrate();
       $('wb-stamp-pop').classList.remove('hidden');
       commit(res.state);
+      void flushCloudStateNow(res.state);
       if (res.coinDelta && res.ledgerSource) void pushMainWalletDelta(res.ledgerSource, res.coinDelta);
       setTimeout(() => {
         if (activeWorkbench === wb) renderWorkbenchCompleteModal(wb, tpl);
@@ -410,13 +410,6 @@ function openPuzzleWorkbench(uid, pieceCount = 24, returnScreen = 'mailbox') {
 
   // 绑定工具栏按钮（用 onclick 覆盖旧监听，干净无泄漏）
   $('btn-wb-back').onclick = () => setScreen(wb.returnScreen || 'mailbox');
-  $('btn-wb-ghost').onclick = () => {
-    ghostStep = (ghostStep + 1) % ghostLevels.length;
-    wb.api?.setGhostMode(ghostLevels[ghostStep]);
-    $('btn-wb-ghost').textContent = ghostLabels[ghostStep];
-    $('btn-wb-ghost').classList.toggle('active', ghostStep > 0);
-    sound.paperTurn();
-  };
   $('btn-wb-edges').onclick = () => {
     edgeOnly = !edgeOnly;
     wb.api?.setEdgeOnly(edgeOnly);
@@ -444,7 +437,26 @@ function openPuzzleWorkbench(uid, pieceCount = 24, returnScreen = 'mailbox') {
     updateHintBtn();
     showToast('团子伸爪一口气帮你拼好了 2 块！');
   };
-  $('btn-wb-solve').onclick = () => wb.api?.autoSolve();
+}
+
+async function openUnlockedInMainGallery(tpl) {
+  await flushCloudStateNow(state);
+  const galleryPhotoId = `tuanzi-${tpl.id}`;
+  if (window.jigsawHost?.openGalleryPhoto) {
+    window.jigsawHost.openGalleryPhoto({
+      photoId: galleryPhotoId,
+      cardId: tpl.id,
+      title: tpl.fullTitle || tpl.title,
+      imageSrc: tpl.src,
+    });
+    return;
+  }
+  if (window.jigsawHost?.openPuzzle) {
+    window.jigsawHost.openPuzzle({ photoId: tpl.id, title: tpl.fullTitle || tpl.title, imageSrc: tpl.src, pieces: 108 });
+    return;
+  }
+  sound.fishChime();
+  showToast(`「${tpl.fullTitle || tpl.title}」已解锁至主游戏图库，可去图库选 48 / 108 / 300 / 500 片建房！`);
 }
 
 function renderWorkbenchCompleteModal(wb, tpl) {
@@ -452,13 +464,12 @@ function renderWorkbenchCompleteModal(wb, tpl) {
   if (!modal) return;
   const res = wb.lastResult || { reward: 0, ticketReward: 0, pieceCount: wb.pieceCount };
   const adRem = getAdRemaining(state, 'puzzleDouble');
-  const baseCoins = Math.max(30, res.reward || (wb.pieceCount >= 48 ? 50 : 30));
-  const cleared48 = (state.cleared48Postcards || []).includes(tpl.id);
+  const baseCoins = Math.max(30, res.reward || 30);
 
   modal.classList.remove('hidden');
   modal.innerHTML = `
     <div class="wb-complete-card">
-      <h3>${wb.pieceCount >= 48 ? '48 片进阶通关！' : '记忆显影完成！'}</h3>
+      <h3>记忆显影完成！</h3>
       <div class="wb-complete-sub">${tpl.fullTitle || tpl.title} · 已盖「${tpl.postmark || '拾光镇'}」邮戳</div>
       <div class="wb-complete-photo">
         <img src="${tpl.src}" alt="${tpl.title}" />
@@ -480,13 +491,12 @@ function renderWorkbenchCompleteModal(wb, tpl) {
       </button>
 
       <div class="wb-unlock-box">
-        <div class="u-head">已解锁该明信片更多片数拼图</div>
+        <div class="u-head">已解锁至主游戏「图库」建房资格</div>
         <div class="u-desc">
-          24 片显影后已自动入库《拼图小窝》主大厅《华夏行记》图集（支持 108 / 300 / 500 片大画布），也可在此直接挑战 48 片异形拼图！
+          这张明信片已加入你的专属图库！可前往主图库选择 48 / 108 / 300 / 500 片创建公开或私人多人房（其他玩家也能加入你的房间一起拼，但只有拥有此明信片的玩家才能在图库建房）。
         </div>
-        <div class="wb-unlock-btns">
-          <button class="craft-btn wb-u-btn" id="btn-wb-try-48">${cleared48 ? '再玩 48 片异形' : '挑战 48 片 (+50币)'}</button>
-          <button class="craft-btn wb-u-btn main-sync" id="btn-wb-open-main">去主大厅拼 108/300 片</button>
+        <div class="wb-unlock-btns" style="grid-template-columns:1fr;">
+          <button class="craft-btn wb-u-btn main-sync" id="btn-wb-open-main">去图库建房（48 / 108 / 300 / 500 片）</button>
         </div>
       </div>
 
@@ -510,17 +520,8 @@ function renderWorkbenchCompleteModal(wb, tpl) {
     renderWorkbenchCompleteModal(wb, tpl);
   });
 
-  $('btn-wb-try-48')?.addEventListener('click', () => {
-    openPuzzleWorkbench(wb.uid, 48, wb.returnScreen);
-  });
-
   $('btn-wb-open-main')?.addEventListener('click', () => {
-    if (window.jigsawHost?.openPuzzle) {
-      window.jigsawHost.openPuzzle({ photoId: tpl.id, title: tpl.fullTitle || tpl.title, imageSrc: tpl.src, pieces: 108 });
-      return;
-    }
-    sound.fishChime();
-    showToast(`「${tpl.fullTitle || tpl.title}」已同步至《拼图小窝》主大厅图库，可开 108 / 300 / 500 片房间！`);
+    void openUnlockedInMainGallery(tpl);
   });
 
   $('btn-wb-to-mail')?.addEventListener('click', () => {
@@ -1509,29 +1510,34 @@ function renderMailboxBook(el) {
           <div class="margin-stamp-row" style="margin-top:4px; padding-top:10px;">
             <img class="portrait" src="${NPCS[tpl.npcId].portrait}" alt="" style="width:48px; height:48px;" />
             <div>
-              <div class="ms-title">隐形墨水后记已显现 · 已同步主大厅大图</div>
+              <div class="ms-title">隐形墨水后记已显现 · 已解锁至主图库</div>
               <div class="ms-sub">${tpl.hiddenNote}</div>
             </div>
           </div>
         ` : `
           <div class="pc-hint-strip">
-            未显影明信片不耗体力：进入全屏拼图台完成 24 片异形显影可得 +30 金币，并解锁 48 片与主大厅 108/300 片。
+            未显影明信片不耗体力：进入全屏拼图台完成 24 片异形显影可得 +30 金币，并解锁至主游戏图库建房（支持 48 / 108 / 300 / 500 片多人共拼）。
           </div>
         `}
       </div>
 
       <div class="book-cta-center">
-        <button class="craft-btn book-wax-ribbon-btn" id="btn-play-pc">
-          <img class="rb" src="./assets/uikit/paper-ribbon.webp" alt="" />
-          <span>${unlockedMore ? '挑战 48 片异形拼图' : '全屏 24 片显影 (+30 金币)'}</span>
-          <img class="sl" src="./assets/uikit/wax-paw.webp" alt="" />
-        </button>
         ${unlockedMore ? `
+          <button class="craft-btn book-wax-ribbon-btn" id="btn-pc-open-gallery">
+            <img class="rb" src="./assets/uikit/paper-ribbon.webp" alt="" />
+            <span>去图库建房 (48/108/300/500片)</span>
+            <img class="sl" src="./assets/uikit/wax-paw.webp" alt="" />
+          </button>
           <div class="pc-main-sync-row">
-            <button class="craft-btn pc-main-sync-btn" id="btn-pc-main-108">主游戏 108 片大图</button>
-            <button class="craft-btn pc-main-sync-btn gold" id="btn-pc-main-300">主游戏 300 片挑战</button>
+            <button class="craft-btn pc-main-sync-btn" id="btn-play-pc" style="width:100%;">重温 24 片异形拼图</button>
           </div>
-        ` : ''}
+        ` : `
+          <button class="craft-btn book-wax-ribbon-btn" id="btn-play-pc">
+            <img class="rb" src="./assets/uikit/paper-ribbon.webp" alt="" />
+            <span>全屏 24 片显影 (+30 金币)</span>
+            <img class="sl" src="./assets/uikit/wax-paw.webp" alt="" />
+          </button>
+        `}
       </div>
     `;
     bindBookCommon(el);
@@ -1545,20 +1551,12 @@ function renderMailboxBook(el) {
       scrapSubTab = 'china';
       setScreen('scrapbook');
     });
-    $('btn-play-pc').addEventListener('click', () => {
-      openPuzzleWorkbench(card.uid, unlockedMore ? 48 : 24, 'mailbox');
+    $('btn-play-pc')?.addEventListener('click', () => {
+      openPuzzleWorkbench(card.uid, 24, 'mailbox');
     });
-    const launchInMain = (pieces) => {
-      flushCloudStateNow(state);
-      if (window.jigsawHost?.openPuzzle) {
-        window.jigsawHost.openPuzzle({ photoId: tpl.id, title: tpl.fullTitle || tpl.title, imageSrc: tpl.src, pieces });
-        return;
-      }
-      sound.fishChime();
-      showToast(`「${tpl.fullTitle || tpl.title}」已同步主游戏画廊，可开 ${pieces} 片拼图桌！`);
-    };
-    $('btn-pc-main-108')?.addEventListener('click', () => launchInMain(108));
-    $('btn-pc-main-300')?.addEventListener('click', () => launchInMain(300));
+    $('btn-pc-open-gallery')?.addEventListener('click', () => {
+      void openUnlockedInMainGallery(tpl);
+    });
   } else {
     // 拾光来信（一屏一事，真实折纸回信）
     const letters = state.letters;

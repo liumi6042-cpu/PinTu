@@ -18,6 +18,7 @@ import {createDiagnosticActions} from './diagnostic-actions.mjs';
 import {createSoloBatch} from './mobile-solo-batch.mjs';
 import {createTapPreview} from './tap-preview.mjs';
 import chatPhrases from '../config/social-phrases.json' with {type:'json'};
+import tuanziV2Postcards from '../config/tuanzi-v2-postcards.json' with {type:'json'};
 import {randomBytes,randomInt as secureRandomInt,createHash} from 'node:crypto';
 import {mkdirSync,chmodSync} from 'node:fs';
 import {dirname,resolve} from 'node:path';
@@ -51,6 +52,10 @@ export function mobileGridForPhoto(photo,count,mode='gallery'){
  if(!best)return null;const {score:_score,...grid}=best;return grid;
 }
 export const CHAT_PHRASES=Object.freeze(chatPhrases);
+const TUANZI_V2_POSTCARD_LIST=Object.freeze(tuanziV2Postcards.map(card=>Object.freeze({...card})));
+const TUANZI_V2_BY_ID=new Map(TUANZI_V2_POSTCARD_LIST.map(card=>[card.id,card]));
+const TUANZI_V2_BY_CARD=new Map(TUANZI_V2_POSTCARD_LIST.map(card=>[card.cardId,card]));
+const TUANZI_POSTCARD_LOCKED_TEXT='这张图需通过「团子去旅行」收到团子寄回的明信片并完成24片显影解锁';
 
 /** All state changes execute without await inside one SQLite IMMEDIATE transaction.
  * The gateway passes its verified opaque identity directly; clients cannot select it.
@@ -134,7 +139,39 @@ export function createMobileService(options={}){
  CREATE TABLE IF NOT EXISTS mobile_settlements(room_id TEXT NOT NULL,owner TEXT NOT NULL,energy INTEGER NOT NULL,contribution INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(room_id,owner));
  CREATE TABLE IF NOT EXISTS mobile_chat(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,data TEXT NOT NULL,sent_at INTEGER NOT NULL,UNIQUE(room_id,owner,request_id));
  CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));
- CREATE TABLE IF NOT EXISTS mobile_tuanzi_v2_state(owner TEXT PRIMARY KEY,data TEXT NOT NULL,updated_at INTEGER NOT NULL);`);
+ CREATE TABLE IF NOT EXISTS mobile_tuanzi_v2_state(owner TEXT PRIMARY KEY,data TEXT NOT NULL,updated_at INTEGER NOT NULL);
+ CREATE TABLE IF NOT EXISTS mobile_tuanzi_v2_unlocked(owner TEXT NOT NULL,card_id TEXT NOT NULL,unlocked_at INTEGER NOT NULL,PRIMARY KEY(owner,card_id));`);
+ const syncTuanziUnlocked=(owner,state,now)=>{
+  if(!state||typeof state!=='object')return;
+  const ids=new Set();
+  if(Array.isArray(state.postcards)){
+   for(const item of state.postcards){
+    if(item&&item.developed===true&&typeof item.templateId==='string'&&TUANZI_V2_BY_CARD.has(item.templateId))ids.add(item.templateId);
+   }
+  }
+  if(Array.isArray(state.unlockedMainGallery)){
+   for(const cid of state.unlockedMainGallery){
+    if(typeof cid==='string'&&TUANZI_V2_BY_CARD.has(cid))ids.add(cid);
+   }
+  }
+  for(const cardId of ids){
+   db.prepare('INSERT OR IGNORE INTO mobile_tuanzi_v2_unlocked(owner,card_id,unlocked_at) VALUES(?,?,?)').run(owner,cardId,now);
+  }
+ };
+ const tuanziUnlockedCards=owner=>{
+  const rows=db.prepare('SELECT card_id FROM mobile_tuanzi_v2_unlocked WHERE owner=? ORDER BY unlocked_at DESC, card_id ASC').all(owner);
+  const list=[];
+  for(const row of rows){
+   const card=TUANZI_V2_BY_CARD.get(row.card_id);
+   if(card)list.push(card);
+  }
+  return list;
+ };
+ const isTuanziPhotoUnlocked=(owner,photoId)=>{
+  const card=TUANZI_V2_BY_ID.get(photoId);
+  if(!card)return false;
+  return Boolean(db.prepare('SELECT 1 FROM mobile_tuanzi_v2_unlocked WHERE owner=? AND card_id=?').get(owner,card.cardId));
+ };
  const events=createMobileEvents({db});
  // Energy rejection must survive the action's rollback (including savepoints).
  let requestEnergyEmpty=null;
@@ -309,12 +346,12 @@ export function createMobileService(options={}){
   cards.set(member.id,value);return value;
  };
  const profileView=(p,now)=>({capabilities,...(retention?{retention:retention.summary(p.id,now,engine.dailyPuzzleDate(dailyClock(now)))}:{}),code:social.person(p.id,now).code,collection:collection.summary(p.id,now),level:p.level,pieceLevels,xp:p.xp,totalXp:p.totalXp,xpToNext:xpForLevel(p.level+1,operationGameSettings),energy:p.energy,energyCap:playerEnergyCap(p),...(energyEnabled?{inviteCapBonus:readInviteCapBonus(p.id)}:{}),economy:{contributionCost:energyEnabled?operationGameSettings.energy.contributionCost:0,contributionXp:operationGameSettings.energy.contributionXp,firstRoomFree:operationGameSettings.energy.firstRoomFree,upgradeRefill:operationGameSettings.energy.upgradeRefill,upgradeEnergy:operationGameSettings.energy.upgradeEnergy,naturalRecoveryMinutes:operationGameSettings.energy.naturalRecoveryMinutes},giftProgress:p.giftProgress,giftCount:tasks.giftCount(p.id),supply:p.supply,shareEnergyClaimedToday:p.shareEnergyDay===shareEnergyDay(now),autoSupply:p.autoSupply,adEligible:adsEnabled,name:p.name,newcomer:!p.firstRoomCompleted,firstRoomId:p.firstRoomId,starterSelectionAvailable:p.starterSelectionAvailable,firstSelectionAvailable:p.starterSelectionAvailable,lastReward:p.lastReward,taptap:taptapView(p.id),naturalRecoveryAt:energyEnabled&&operationGameSettings.energy.naturalRecoveryMinutes>0&&p.energy<playerEnergyCap(p)?p.energyAt+operationGameSettings.energy.naturalRecoveryMinutes*60000:null,serverTime:now,ownedRooms:ownedRoomCards(p.id,now)});
- const photoOf=room=>engine.roomArtworkPhoto(room,engine.RESTORABLE_PHOTOS);
+ const photoOf=room=>room.tuanziPostcard?{...room.tuanziPostcard,optimizedSrc:room.tuanziPostcard.src,optimizedStandardSrc:room.tuanziPostcard.src,standardSrc:room.tuanziPostcard.src,playSrc:room.tuanziPostcard.src}:engine.roomArtworkPhoto(room,engine.RESTORABLE_PHOTOS);
  const displayPhoto=(photo,request)=>photo&&request.artworkSnapshot===true?engine.activeArtworkPhoto(photo):photo;
  const creationArtwork=(photo,pieces,request)=>engine.currentRoomArtwork(engine.RESTORABLE_PHOTOS.find(item=>item.id===photo.id)??photo,pieces,request.artworkSnapshot!==true);
  function requireArtworkClient(room,request){if(engine.roomUsesUpgradedArtwork(room)&&request.artworkSnapshot!==true)fail(409,'ARTWORK_CLIENT_UPDATE_REQUIRED','这间拼图使用新版图片，请刷新页面或更新小游戏后重新进入');}
- function card(room,now){const photo=photoOf(room);return {id:room.id,title:room.title||photo?.title||'一起拼图',imageId:room.puzzle.imageId,pieces:room.mobilePieces,actualPieces:room.puzzle.cols*room.puzzle.rows,visibility:room.visibility,players:room.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length,maxPlayers:seatLimit(room),placed:engine.placedCount(room.puzzle),completed:room.completedAt!==null,acceptingNew:room.acceptingNew!==false,started:room.startedAt!==null,startedAt:room.startedAt,createdAt:room.createdAt,expiresAt:room.expiresAt,lastPlayedAt:room.lastPlayedAt,direction:photo?directionOf(photo):'landscape',artwork:engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS),photo,thumbSrc:photo?.thumbSrc};}
- function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;result.maxPlayers=seatLimit(room);if(room.mobileMode==='level')result.levelId=room.mobileLevelId;const preview=tapPreview.descriptor(room);if(preview)result.tapPreview=preview;if(room.diagnostic===true)result.diagnostic=true;result.artwork=engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS);result.photo=photoOf(room);if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),extra=member?memberCard(room,member,now):null;return {...m,contribution:extra?.contribution??0,code:extra?.code??null,level:extra?.level??0,decoration:extra?.decoration??null};});if(identity&&room.completedAt!==null&&room.diagnostic!==true){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id),ranking:Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).sort((x,y)=>y[1].count-x[1].count).slice(0,8).map(([owner,c])=>({name:readProfile(owner,now).name,code:social.person(owner,now).code,contribution:c.count,mine:owner===identity}))};if(room.mobileMode==='level'&&identity===room.ownerId){const progress=levels.progress(identity).find(row=>row.level_id===room.mobileLevelId),firstClear=progress?.room_id===room.id;result.mobileResult.levelClear={levelId:room.mobileLevelId,energy:firstClear?progress.energy:0,firstClear,...levels.destination(room.mobileLevelId)};}}return result;}
+ function card(room,now){const photo=photoOf(room);return {id:room.id,title:room.title||photo?.title||'一起拼图',imageId:room.puzzle.imageId,pieces:room.mobilePieces,actualPieces:room.puzzle.cols*room.puzzle.rows,visibility:room.visibility,players:room.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length,maxPlayers:seatLimit(room),placed:engine.placedCount(room.puzzle),completed:room.completedAt!==null,acceptingNew:room.acceptingNew!==false,started:room.startedAt!==null,startedAt:room.startedAt,createdAt:room.createdAt,expiresAt:room.expiresAt,lastPlayedAt:room.lastPlayedAt,direction:photo?directionOf(photo):'landscape',artwork:engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS),photo,thumbSrc:photo?.thumbSrc,...(room.tuanziPostcard?{tuanziOrigin:room.tuanziPostcard.tuanziOrigin,tuanziCardId:room.tuanziPostcard.cardId}:{})};}
+ function snapshotView(room,now,since=null,identity=null){const result=engine.roomUpdate(room,now,since);result.requestedPieces=room.mobilePieces;result.maxPlayers=seatLimit(room);if(room.mobileMode==='level')result.levelId=room.mobileLevelId;const preview=tapPreview.descriptor(room);if(preview)result.tapPreview=preview;if(room.diagnostic===true)result.diagnostic=true;result.artwork=engine.resolveRoomArtwork(room,engine.RESTORABLE_PHOTOS);result.photo=photoOf(room);if(room.tuanziPostcard){result.tuanziOrigin=room.tuanziPostcard.tuanziOrigin;result.tuanziCardId=room.tuanziPostcard.cardId;}if(identity===room.ownerId&&room.mobileInviteCode)result.inviteCode=room.mobileInviteCode;result.members=result.members.map(m=>{const member=room.members.find(p=>p.id===m.id),extra=member?memberCard(room,member,now):null;return {...m,contribution:extra?.contribution??0,code:extra?.code??null,level:extra?.level??0,decoration:extra?.decoration??null};});if(identity&&room.completedAt!==null&&room.diagnostic!==true){const award=db.prepare('SELECT energy,contribution FROM mobile_settlements WHERE room_id=? AND owner=?').get(room.id,identity);result.mobileResult={roomId:room.id,contribution:award?.contribution??0,xp:room.mobileContributionXp?.[identity]??award?.contribution??0,energy:award?.energy??0,...collection.completion(identity,room.id),ranking:Object.entries(room.achievements?.contributors??{}).filter(([,c])=>c.count>0).sort((x,y)=>y[1].count-x[1].count).slice(0,8).map(([owner,c])=>({name:readProfile(owner,now).name,code:social.person(owner,now).code,contribution:c.count,mine:owner===identity}))};if(room.mobileMode==='level'&&identity===room.ownerId){const progress=levels.progress(identity).find(row=>row.level_id===room.mobileLevelId),firstClear=progress?.room_id===room.id;result.mobileResult.levelClear={levelId:room.mobileLevelId,energy:firstClear?progress.energy:0,firstClear,...levels.destination(room.mobileLevelId)};}}return result;}
  function authorize(room,request,now){
   request.identity=resolveIdentity(request.identity);
   if(room.diagnostic===true&&(room.ownerId!==request.identity||!diagnosticAllowed(request.identity)))fail(403,'DIAGNOSTIC_FORBIDDEN','该测试房间仅对指定账号开放');
@@ -491,7 +528,7 @@ export function createMobileService(options={}){
   if(path==='/api/mobile/privacy-request')return privacy.route(request,input,now);
   if(path==='/api/mobile/social'||path.startsWith('/api/mobile/social/'))return social.route(request,p,input,url,now);
   if(path==='/api/daily'&&method==='GET'){const photo=displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request);return {date:engine.dailyPuzzleDate(dailyClock(now)),photo:{id:photo.id,title:photo.title,src:photo.src,thumbSrc:photo.thumbSrc,width:photo.width,height:photo.height},serverTime:now};}
-  if(path==='/api/mobile/gallery'&&method==='GET'){const photos=galleryPhotos(now);return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),completedImageIds:collection.completedImageIds(p.id),...(request.artworkSnapshot===true?{photos:photos.map(photo=>displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request)}:{}),serverTime:dailyClock(now)};}
+  if(path==='/api/mobile/gallery'&&method==='GET'){const basePhotos=galleryPhotos(now),tuanziPhotos=tuanziUnlockedCards(p.id),photos=[...tuanziPhotos,...basePhotos];return {imageIds:photos.map(photo=>photo.id),freeImageIds:collection.freeImageIds(now),packedImageIds:collection.packedImageIds(now),tuanziImageIds:tuanziPhotos.map(photo=>photo.id),completedImageIds:collection.completedImageIds(p.id),...(request.artworkSnapshot===true?{photos:photos.map(photo=>photo.tuanziOrigin?photo:displayPhoto(photo,request)),daily:displayPhoto(dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now)),request)}:{}),serverTime:dailyClock(now)};}
   if(path==='/api/levels'&&method==='GET')return levels.view(p.id,now);
   if(path==='/api/levels/offline-clears'&&method==='POST'){
    if(!offlineLevelClears)fail(503,'OFFLINE_CLEARS_UNAVAILABLE','离线通关同步暂不可用');
@@ -693,24 +730,30 @@ export function createMobileService(options={}){
    if(!level&&p.level<pieceLevel(pieces))fail(403,'PIECES_LEVEL_LOCKED',pieceLevel(pieces)+'级解锁'+pieces+'片房间，先拼小一点的吧',{requiredLevel:pieceLevel(pieces),level:p.level});
    if(mode==='daily'&&visibility!=='public')fail(400,'INVALID_ROOM_OPTIONS','每日拼图为公开房间');
    const direction=input.direction??'all';if(!['all','portrait','landscape','square'].includes(direction))fail(400,'INVALID_DIRECTION','图片方向无效');
-   let photo;
+   let photo,tuanziPostcard=null;
    if(level)photo=engine.RESTORABLE_PHOTOS.find(photo=>photo.id===level.imageId);
    else if(mode==='daily')photo=dailyContent?.select(now)??engine.dailyPuzzle(dailyClock(now));
    else if(mode==='random'){
     if(input.imageId)fail(400,'RANDOM_IMAGE_NOT_SELECTABLE','随机模式不能指定图片');
     const pool=galleryPhotos(now).filter(photo=>{const bound={...photo,...creationArtwork(photo,pieces,request)};return collection.randomAllowed(p.id,photo.id,now)&&mobileGridForPhoto(bound,pieces)&&(direction==='all'||directionOf(bound)===direction);});if(!pool.length)fail(400,'NO_IMAGE_AVAILABLE','该条件下没有可用图片');photo=pool[randomInt(0,pool.length)];
-   }else photo=galleryPhotos(now).find(p=>p.id===input.imageId);
+   }else{
+    const candidateTuanzi=typeof input.imageId==='string'?TUANZI_V2_BY_ID.get(input.imageId):null;
+    if(candidateTuanzi){
+     if(!isTuanziPhotoUnlocked(p.id,candidateTuanzi.id))fail(403,'TUANZI_POSTCARD_LOCKED',TUANZI_POSTCARD_LOCKED_TEXT);
+     photo=candidateTuanzi;tuanziPostcard=candidateTuanzi;
+    }else photo=galleryPhotos(now).find(p=>p.id===input.imageId);
+   }
    if(!photo)fail(400,'INVALID_IMAGE','请选择可用图片');
-   if(!web&&mode==='selected'&&collection.packedImageIds(now).includes(photo.id)&&!collection.freeImageIds(now).includes(photo.id)&&!collection.ownsImage(p.id,photo.id,now))fail(403,'PACK_LOCKED',collection.albumOf(photo.id,now)?.id&&AD_UNLOCK_ALBUM_IDS.has(collection.albumOf(photo.id,now).id)?'这张图看两次广告就能解锁（每日限 1 张），解锁后再来开拼':'这张图在未解锁的图包里，请先解锁图包');
-   const artwork=creationArtwork(photo,pieces,request),grid=mobileGridForPhoto({...photo,...artwork},pieces,mode);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
+   if(!web&&mode==='selected'&&!tuanziPostcard&&collection.packedImageIds(now).includes(photo.id)&&!collection.freeImageIds(now).includes(photo.id)&&!collection.ownsImage(p.id,photo.id,now))fail(403,'PACK_LOCKED',collection.albumOf(photo.id,now)?.id&&AD_UNLOCK_ALBUM_IDS.has(collection.albumOf(photo.id,now).id)?'这张图看两次广告就能解锁（每日限 1 张），解锁后再来开拼':'这张图在未解锁的图包里，请先解锁图包');
+   const artwork=tuanziPostcard?undefined:creationArtwork(photo,pieces,request),grid=mobileGridForPhoto(artwork?{...photo,...artwork}:photo,pieces,mode);if(!grid)fail(400,'UNSUPPORTED_RESOLUTION','图片不支持该片数');
    if(mode==='daily'){
     const existing=db.prepare("SELECT data FROM mobile_rooms WHERE visibility='public' AND completed_at IS NULL AND closed_at IS NULL ORDER BY created_at DESC").all().map(r=>JSON.parse(r.data)).find(r=>r.mobileDay===engine.dailyPuzzleDate(dailyClock(now))&&r.mobileMode==='daily'&&r.expiresAt>now&&r.members.filter(m=>now-m.lastSeen<engine.ONLINE_MS).length<seatLimit(r)&&r.acceptingNew!==false&&engine.resolveRoomArtwork(r,engine.RESTORABLE_PHOTOS)?.revision===artwork.revision);
     if(existing)return join(existing,p,{},now,request);
    }
    const owned=db.prepare('SELECT COUNT(*) n FROM mobile_rooms WHERE owner=? AND completed_at IS NULL AND closed_at IS NULL AND COALESCE(json_extract(data,\'$.mobileMode\'),\'\') NOT IN (\'level\',\'postcard\') AND json_extract(data,\'$.diagnostic\') IS NOT 1 AND NOT EXISTS(SELECT 1 FROM mobile_room_list_removals x WHERE x.owner=mobile_rooms.owner AND x.room_id=mobile_rooms.id)').get(p.id).n;const ownLimit=web?3:5;if(mode!=='level'&&owned>=ownLimit)fail(409,'ROOM_LIMIT','最多保留'+ownLimit+'个未完成的自创房间入口，请先从自己的房间列表删除一间',{ownedRooms:profileView(p,now).ownedRooms});
-   const needsTicket=mode!=='level'&&!web&&(visibility==='private'||mode==='selected'&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
+   const needsTicket=mode!=='level'&&!web&&(visibility==='private'||mode==='selected'&&!tuanziPostcard&&!collection.ownsImage(p.id,photo.id,now)),starter=needsTicket&&p.starterSelectionAvailable;
    if(needsTicket&&!starter&&p.supply.create<1)fail(402,'CREATE_TICKET_REQUIRED','需要1张建房券');
-   const room={id:id(),ownerId:p.id,visibility,title:photo.title,artwork,puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(dailyClock(now)):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
+   const room={id:id(),ownerId:p.id,visibility,title:photo.title,...(artwork?{artwork}:{}),...(tuanziPostcard?{tuanziPostcard}:{}),puzzle:engine.createFittedPuzzle(photo.id,grid.cols,grid.rows),mobilePieces:pieces,mobileMode:mode,mobileDay:mode==='daily'?engine.dailyPuzzleDate(dailyClock(now)):null,mobileInviteCode:visibility==='private'?randomBytes(16).toString('hex'):null,revision:0,createdAt:now,expiresAt:now+30*86400000,completedAt:null,retentionVersion:2,lastPlayedAt:now,members:[],leases:{},startedAt:null,participants:{}};
    if(level)room.mobileLevelId=level.id;
    if(starter)p.starterSelectionAvailable=false;else if(needsTicket)p.supply.create--;saveRoom(room);events.record(p.id,'room-create',room.id,{mode,pieces,visibility},now);if(level)events.record(p.id,'level-start',room.id,{levelId:level.id,pieces},now);return join(room,p,{},now,request);
   });
@@ -809,7 +852,8 @@ export function createMobileService(options={}){
    const row=db.prepare('SELECT data,updated_at FROM mobile_tuanzi_v2_state WHERE owner=?').get(p.id);
    let state=null;
    if(row?.data){try{state=JSON.parse(row.data);}catch{state=null;}}
-   return {ok:true,state,updatedAt:row?.updated_at??null,coins:collection.coinsOf(p.id),playerName:p.name,adEligible:adsEnabled,profile:profileView(p,now)};
+   if(state)syncTuanziUnlocked(p.id,state,row?.updated_at??now);
+   return {ok:true,state,updatedAt:row?.updated_at??null,coins:collection.coinsOf(p.id),unlockedImageIds:tuanziUnlockedCards(p.id).map(c=>c.id),playerName:p.name,adEligible:adsEnabled,profile:profileView(p,now)};
   }
   if(method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
   if(path==='/api/mobile/tuanzi-v2/sync'){
@@ -817,7 +861,8 @@ export function createMobileService(options={}){
    const encoded=JSON.stringify(input.state);
    if(encoded.length>262144)fail(413,'TUANZI_V2_STATE_TOO_LARGE','存档体积过大');
    db.prepare('INSERT INTO mobile_tuanzi_v2_state(owner,data,updated_at) VALUES(?,?,?) ON CONFLICT(owner) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at').run(p.id,encoded,now);
-   return {ok:true,coins:collection.coinsOf(p.id),updatedAt:now,profile:profileView(p,now)};
+   syncTuanziUnlocked(p.id,input.state,now);
+   return {ok:true,coins:collection.coinsOf(p.id),unlockedImageIds:tuanziUnlockedCards(p.id).map(c=>c.id),updatedAt:now,profile:profileView(p,now)};
   }
   if(path==='/api/mobile/tuanzi-v2/wallet'){
    const rawSource=typeof input?.source==='string'?input.source.trim():'';

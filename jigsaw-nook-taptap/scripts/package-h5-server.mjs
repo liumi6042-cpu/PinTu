@@ -24,6 +24,7 @@ files.add('server/diagnostic-actions.mjs');
 files.add('server/guest-names.mjs');
 files.add('scripts/check-artwork-revisions.mjs');
 files.add('config/levels.json');
+files.add('config/tuanzi-v2-postcards.json');
 files.add('outputs/mobile/room-realtime.mjs');
 files.add('server/room-realtime.LICENSE.txt');
 for(const path of build.fontNotices){if(!/^licenses\/fonts\/[A-Za-z0-9._-]+$/.test(path))throw Error('Unsafe font notice path');files.add('outputs/h5/'+path);}

@@ -111,7 +111,7 @@ export function mountWorkbenchPuzzle({
   let img = null;
   let imgReady = false;
   let spriteCache = new Map();
-  let ghostOpacity = 0.24; // 0 | 0.24 | 0.46
+  let ghostOpacity = 0; // 不显示透视底图，仅保留淡雅咬合线底纹
   let edgeOnly = false;
   let solved = false;
   let destroyed = false;

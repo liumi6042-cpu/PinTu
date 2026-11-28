@@ -83,7 +83,7 @@ export function drawCompletionContentPanel(this:AppHost,left:number,cy:number,wi
    s.button({x:left,y:cy,w:width,h:42},'回到团子的小窝',()=>{this.exitRoom();this.openTuanziV2('scrapbook');},{tone:'berry',fontSize:15});cy+=50;
    s.button({x:left,y:cy,w:width,h:40},'返回大厅',()=>this.exitRoom(),{fontSize:14});return cy+48;
   }
-  const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
+  const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;tuanziOrigin?:string;photo?:{title?:string;tuanziOrigin?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
   const seats=this.completionSeats(),levelClear=(result?.levelClear??this.levelDestination()??undefined) as import('../../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
   if(!landscape&&!this.completionOutsideSeats(left-20,width+40)){this.completionAvatarRects.clear();this.completionSlotRects.clear();}
   if(landscape&&panel){const side=Math.min(240,panel.h-134,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+40,w:side,h:side});left=panel.x+16+side+16;width=panel.x+panel.w-16-left;
@@ -119,6 +119,23 @@ export function drawCompletionContentPanel(this:AppHost,left:number,cy:number,wi
      if(result.catalog?.newlyCollected){center('这张画作已收进图集',cy,landscape?12:13,muted,600);cy+=levelLandscape?16:landscape?18:26;}
      for(const reward of result.catalog?.albumRewards??[]){center(reward.title+'：'+(reward.coins?'金币 +'+reward.coins:'专属装饰已获得'),cy,landscape?12:13,ink,700);cy+=landscape?18:24;}
     }else{cy=this.paragraph('正在同步本次收获…奖励以服务器结算为准。',left,cy,width,14)+15;}
+    const tuanziOrigin=snap?.tuanziOrigin??snap?.photo?.tuanziOrigin??'';
+    if(tuanziOrigin){
+     const ownsTuanzi=!!snap?.puzzle?.imageId&&!!this.tuanziGalleryIds?.has(snap.puzzle.imageId);
+     const head=ownsTuanzi?'团子明信片 · 已收录至你的图库':'团子明信片 · 获得方式说明';
+     const body=ownsTuanzi?'通过「团子去旅行」寄回并显影解锁，随时可在图库免费再开公开房。':'获得方式：'+tuanziOrigin+'，解锁后即可在图库找到并自建房！';
+     const textH=s.wrap(body,-9999,0,width-20,landscape?11:12,ink,landscape?15:17);
+     const showBtn=!ownsTuanzi&&!!this.tuanziV2?.available;
+     const boxH=(landscape?24:28)+textH+(showBtn?(landscape?34:42):8);
+     s.frame({x:left,y:cy,w:width,h:boxH},'panel-gold');
+     s.text(head,left+10,cy+(landscape?5:7),landscape?11.5:13,'#8c4a19',800,width-20);
+     s.wrap(body,left+10,cy+(landscape?21:25),width-20,landscape?11:12,ink,landscape?15:17);
+     if(showBtn){
+      const bh=landscape?26:32;
+      s.button({x:left+10,y:cy+boxH-bh-6,w:width-20,h:bh},'去团子小窝收集明信片',()=>{this.leaveRoom();this.openTuanziV2();},{tone:'gold',fontSize:landscape?11.5:13});
+     }
+     cy+=boxH+(landscape?6:10);
+    }
     cy+=landscape?2:6;
     const extra=this.completionFlow.action(this.completionContext()),inlineDouble=canDouble&&landscape&&!extra;
     const doubleRewardParts=[baseCoins>0?'+'+baseCoins+(inlineDouble?'金':' 金币'):'',baseFragments>0?'+'+baseFragments+(inlineDouble?'碎':' 碎片'):''].filter(Boolean).join(' ');

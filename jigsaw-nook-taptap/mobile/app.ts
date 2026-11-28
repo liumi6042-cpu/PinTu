@@ -4,7 +4,7 @@ import {Stage} from './ui';
 import {comicFor,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
 import {createPostcardRooms,settlePostcard} from '../lib/postcard-play';
-import {TuanziV2Controller,type TuanziMainPuzzleRequest} from './tuanzi-v2-bridge';
+import {TuanziV2Controller,type TuanziGalleryPhotoRequest,type TuanziMainPuzzleRequest} from './tuanzi-v2-bridge';
 import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
 import {PuzzleBoard,DRAG_SLOP} from './puzzle-board';
 import {SocialPanel} from './social-panel';
@@ -73,6 +73,19 @@ export class GameApp{
   if(!this.tuanziV2?.available){this.note('团子的小窝当前平台暂未开放');return;}
   this.tuanziV2.open(screen);
  }
+ private async openGalleryForTuanziPhoto(req:TuanziGalleryPhotoRequest){
+  if(!req||!req.photoId)return;
+  await this.loadGallery();
+  const targetId=req.photoId;
+  this.navigate('gallery',{source:'all',category:'全部',direction:'all',search:'',unplayedOnly:false,packId:null});
+  if(this.availableGallery().some(photo=>photo.id===targetId)){
+   this.selected=targetId;
+   this.note('已定位到「'+(req.title||'团子明信片')+'」，选好片数即可建房');
+  }else{
+   this.note('完成 24 片显影后即可在图库找到这张明信片建房');
+  }
+  this.invalidate();
+ }
  private async openTuanziMainPuzzle(req:TuanziMainPuzzleRequest){
   if(!req||!req.photoId)return;
   const pieces=req.pieces>=300?300:req.pieces>=108?108:48;
@@ -106,7 +119,7 @@ export class GameApp{
  private rooms:RoomListing[]=[];private lobbyCursor:string|null=null;private lobbyLoading=false;private lobbyQuiet=false;private lobbySerial=0;private lobbyReload=false;
  private lobbyPieces:'all'|'small'|'large'='all';private dailyPhoto:SharedPhoto|null=null;private serverOffset=0;private listColumn:{x:number;w:number}|null=null;private lobbyMinute='';private lobbyOnline:number|null=null;private dailyFinished:number|null=null;
  private pieces:48|108|300|500=108;private selected:string|null=null;private visibility:'public'|'private'='public';private category='全部';private search='';private source:'free'|'owned'|'all'='free';private unplayedOnly=false;private packId:string|null=null;
- private galleryIds:Set<string>|null=null;private freeGalleryIds:Set<string>|null=null;private completedGalleryIds:Set<string>|null=null;private packedIds=packed;
+ private galleryIds:Set<string>|null=null;private freeGalleryIds:Set<string>|null=null;private tuanziGalleryIds:Set<string>=new Set();private completedGalleryIds:Set<string>|null=null;private packedIds=packed;
  private sharedPhotos:SharedPhoto[]|null=null;
  private levels:MobileLevelsView|null=null;private levelsOwner='';private levelsSerial=0;private autoLevelChecked=false;
  private chapterEntryChecked=false;private storyChapterId:string|null=null;
@@ -237,6 +250,8 @@ export class GameApp{
   this.tuanziV2=new TuanziV2Controller(platform,client,{
    onChange:()=>this.invalidate(),
    onOpenMainPuzzle:req=>void this.openTuanziMainPuzzle(req),
+   onOpenGalleryPhoto:req=>void this.openGalleryForTuanziPhoto(req),
+   onClose:()=>{void this.loadGallery();void this.tuanziV2.refreshSummary(this.ownerKey(),true);},
    onNote:msg=>this.note(msg),
    watchRewardedAd:async()=>{
     if(!this.supplyAdAvailable)return 'unavailable';
@@ -439,7 +454,7 @@ export class GameApp{
   if(this.destroyed)return;if(this.startupPending)return this.startupPending;if(this.startupHooks&&this.ready)return;
   if(!this.startupHooks){
    this.startupHooks=true;
-   this.client.onChange=()=>{if(this.destroyed)return;const owner=this.ownerKey();this.ensureListOwner();if(owner!==this.lastDataOwner){this.lastDataOwner=owner;this.pendingViews?.invalidate();this.historyRooms=null;this.historySerial++;this.historyLoading=false;this.historyError='';this.tasks=null;this.collection=null;this.galleryIds=null;this.freeGalleryIds=null;this.completedGalleryIds=null;this.sharedPhotos=null;this.selected=null;}if(this.formalWeb&&this.client.authRequired){this.ready=false;this.stage.input?.({type:'cancel',points:[],changed:[]});this.pointer=null;this.modal=null;this.leaveRoom();this.route='lobby';}else if(this.formalWeb&&this.room&&!this.client.ticket){this.modal=null;this.leaveRoom();this.navigate('lobby');this.note('账号已切换，请重新进入房间');}this.invalidate();};
+   this.client.onChange=()=>{if(this.destroyed)return;const owner=this.ownerKey();this.ensureListOwner();if(owner!==this.lastDataOwner){this.lastDataOwner=owner;this.pendingViews?.invalidate();this.historyRooms=null;this.historySerial++;this.historyLoading=false;this.historyError='';this.tasks=null;this.collection=null;this.galleryIds=null;this.freeGalleryIds=null;this.tuanziGalleryIds=new Set();this.completedGalleryIds=null;this.sharedPhotos=null;this.selected=null;}if(this.formalWeb&&this.client.authRequired){this.ready=false;this.stage.input?.({type:'cancel',points:[],changed:[]});this.pointer=null;this.modal=null;this.leaveRoom();this.route='lobby';}else if(this.formalWeb&&this.room&&!this.client.ticket){this.modal=null;this.leaveRoom();this.navigate('lobby');this.note('账号已切换，请重新进入房间');}this.invalidate();};
    this.cleanups.push(this.platform.onHide(()=>{this.hidden=true;this.room?.flushSoloNow();this.room?.setHidden?.(true);this.realtime?.setHidden(true);this.pointer=null;this.cancelChatPress();}),this.platform.onShow(query=>{this.hidden=false;this.room?.setHidden?.(false);this.realtime?.setHidden(false);if(!this.ready){if(Object.keys(query).length)this.startupQuery=query;void this.start();}else if(this.orientationEntryPending){if(Object.keys(query).length)this.startupQuery=query;}else{void this.client.refresh().catch(error=>{if(!this.destroyed)this.note(errorText(error));});this.syncOffline();if(!this.offlineRoom){void this.social.refresh();void this.handleQuery(query);}}this.invalidate();}));
   }
   this.startupError='';this.invalidate();
@@ -773,7 +788,7 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  }
  private async loadTasks(){try{await this.loadView('tasks',()=>this.client.json<MobileTaskView>('/api/mobile/tasks'),data=>{this.tasks=this.platformTasks(data);});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private async loadCollection(){try{await this.loadView('collection',()=>this.client.json<MobileCollectionView>('/api/mobile/collection'),data=>{this.collection=data;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
- private async loadGallery(){try{await this.loadView('gallery',()=>this.client.json<{imageIds?:string[];accessibleImageIds?:string[];freeImageIds?:string[];packedImageIds:string[];completedImageIds?:string[];photos?:SharedPhoto[];daily?:SharedPhoto|null;serverTime?:number}>('/api/mobile/gallery'),data=>{if(typeof data.serverTime==='number')this.serverOffset=data.serverTime-Date.now();if(data.daily?.id)this.dailyPhoto=data.daily;this.galleryIds=new Set(data.imageIds??data.accessibleImageIds??[]);this.packedIds=new Set(data.packedImageIds);this.freeGalleryIds=Array.isArray(data.freeImageIds)?new Set(data.freeImageIds):new Set([...this.galleryIds].filter(id=>!this.packedIds.has(id)));this.completedGalleryIds=Array.isArray(data.completedImageIds)?new Set(data.completedImageIds):null;if(Array.isArray(data.photos)){this.sharedPhotos=data.photos.filter(photo=>!!photo&&typeof photo.id==='string'&&typeof photo.src==='string'&&typeof photo.thumbSrc==='string').map(photo=>({...photo,title:photo.title||photo.id,category:photo.category||'其他'}));for(const photo of this.sharedPhotos)photoMap.set(photo.id,photo);if(data.daily?.id)photoMap.set(data.daily.id,data.daily);}if(this.selected&&(!this.galleryIds.has(this.selected)||this.unplayedOnly&&this.completedPhotoIds().has(this.selected)))this.selected=null;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
+ private async loadGallery(){try{await this.loadView('gallery',()=>this.client.json<{imageIds?:string[];accessibleImageIds?:string[];freeImageIds?:string[];tuanziImageIds?:string[];packedImageIds:string[];completedImageIds?:string[];photos?:SharedPhoto[];daily?:SharedPhoto|null;serverTime?:number}>('/api/mobile/gallery'),data=>{if(typeof data.serverTime==='number')this.serverOffset=data.serverTime-Date.now();if(data.daily?.id)this.dailyPhoto=data.daily;this.galleryIds=new Set(data.imageIds??data.accessibleImageIds??[]);this.packedIds=new Set(data.packedImageIds);this.tuanziGalleryIds=new Set(Array.isArray(data.tuanziImageIds)?data.tuanziImageIds:[]);this.freeGalleryIds=Array.isArray(data.freeImageIds)?new Set(data.freeImageIds):new Set([...this.galleryIds].filter(id=>!this.packedIds.has(id)&&!this.tuanziGalleryIds.has(id)));this.completedGalleryIds=Array.isArray(data.completedImageIds)?new Set(data.completedImageIds):null;if(Array.isArray(data.photos)){this.sharedPhotos=data.photos.filter(photo=>!!photo&&typeof photo.id==='string'&&typeof photo.src==='string'&&typeof photo.thumbSrc==='string').map(photo=>({...photo,title:photo.title||photo.id,category:photo.category||'其他'}));for(const photo of this.sharedPhotos)photoMap.set(photo.id,photo);if(data.daily?.id)photoMap.set(data.daily.id,data.daily);}if(this.selected&&(!this.galleryIds.has(this.selected)||this.unplayedOnly&&this.completedPhotoIds().has(this.selected)))this.selected=null;});}catch(error){if(!this.destroyed)this.note(errorText(error));}}
  private availableGallery():SharedPhoto[]{if(this.sharedPhotos)return this.sharedPhotos.filter(photo=>!this.galleryIds||this.galleryIds.has(photo.id));if(!this.galleryIds)return GALLERY_PHOTOS;const baseIds=new Set(GALLERY_PHOTOS.map(photo=>photo.id));return [...GALLERY_PHOTOS,...RESTORABLE_PHOTOS.filter(photo=>!baseIds.has(photo.id))].filter(photo=>this.galleryIds!.has(photo.id));}
  private completedPhotoIds(){
   const ids=new Set<string>(this.completedGalleryIds??[]);
@@ -1355,9 +1370,9 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private drawRoomCard(room:RoomListing,r:Rect,completed?:Set<string>){return drawRoomCardPanel.call(this.host,room,r,completed);}
  private drawGallery(){return drawGalleryPanel.call(this.host);}
  private galleryPack(id:string){return this.collection?.packs.find(pack=>pack.imageIds.includes(id))??collectionCatalog.packs.find(pack=>pack.imageIds.includes(id))??null;}
- private photoTag(id:string,owned:Set<string>){if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack&&(pack as CollectionPack).unlock==='ad'){const full=this.collection?.packs.find(item=>item.id===pack.id),img=full?.images.find(item=>item.id===id),req=img?.adRequired??full?.adRequired??2,prog=img?.adProgress??0;return {label:prog>0?'看广告解锁 '+prog+'/'+req:'看'+req+'次广告解锁',tone:'locked',ad:true,price:0};}if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
+ private photoTag(id:string,owned:Set<string>){if(this.tuanziGalleryIds?.has(id)||photoMap.get(id)?.tuanziOrigin)return {label:'团子明信片',tone:'tuanzi'};if(this.freeGalleryIds?.has(id))return {label:'免费',tone:'free'};if(owned.has(id))return {label:'已拥有',tone:'owned'};const pack=this.galleryPack(id);if(pack&&(pack as CollectionPack).unlock==='ad'){const full=this.collection?.packs.find(item=>item.id===pack.id),img=full?.images.find(item=>item.id===id),req=img?.adRequired??full?.adRequired??2,prog=img?.adProgress??0;return {label:prog>0?'看广告解锁 '+prog+'/'+req:'看'+req+'次广告解锁',tone:'locked',ad:true,price:0};}if(pack)return {label:'图包「'+pack.title+'」',tone:'locked',price:pack.price};return {label:this.client.profile?.firstSelectionAvailable?'首次免费':'建房券',tone:'free'};}
  private drawPhotoCard(photo:SharedPhoto,r:Rect,imageHeight:number,owned:Set<string>,completed?:Set<string>){return drawPhotoCardPanel.call(this.host,photo,r,imageHeight,owned,completed);}
- private createPanelHeight(sheet:boolean){const rooms=this.selected?this.rooms.filter(room=>room.imageId===this.selected).length:0;return 14+64+12+(sheet?32:58)+8+(sheet?32:58)+8+(rooms?26:0)+(this.usesCreationTickets?42:0)+46+14;}
+ private createPanelHeight(sheet:boolean){const rooms=this.selected?this.rooms.filter(room=>room.imageId===this.selected).length:0,hasTuanziOrigin=!!(this.selected&&photoMap.get(this.selected)?.tuanziOrigin);return 14+64+12+(hasTuanziOrigin?42:0)+(sheet?32:58)+8+(sheet?32:58)+8+(rooms?26:0)+(this.usesCreationTickets?42:0)+46+14;}
  private drawCreatePanel(r:Rect,photo:SharedPhoto|null,owned:Set<string>,sheet:boolean){return drawCreatePanelView.call(this.host,r,photo,owned,sheet);}
  private drawPictureButton(r:Rect,label:string,fn:()=>void,tone='cream',icon='',fontSize=11,iconSize=16,disabled=false,selected=false){return drawPictureButtonPanel.call(this.host,r,label,fn,tone,icon,fontSize,iconSize,disabled,selected);}
  private drawTasks(inWindow=false){return drawTasksPanel.call(this.host,inWindow);}

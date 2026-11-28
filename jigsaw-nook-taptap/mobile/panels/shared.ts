@@ -22,6 +22,9 @@ export type PanelRoom = Omit<RoomClient, 'snapshot'> & {
  snapshot: RoomClient['snapshot'] & {
   levelId?: string;
   maxPlayers?: number;
+  tuanziOrigin?: string;
+  tuanziCardId?: string;
+  photo?: SharedPhoto;
   mobileResult?: {roomId?: string; levelClear?: MobileLevelClear; ranking?: any; coins?: number; fragments?: number; energy?: number; catalog?: any; doubleClaimed?: boolean; doubleBonus?: {coins: number; fragments: number}};
  };
 };
@@ -67,7 +70,7 @@ export type PerformanceMode='smooth'|'power-saving';
 export type Modal='orientation'|'weeklyGift'|'welcome'|'members'|'playerCard'|'history'|'filters'|'settings'|'manage'|'invite'|'tools'|'chat'|'social'|'completion'|'levelComic'|'purchase'|'packPreview'|'albums'|'tasks'|'coins'|'fragments'|'privacyRequests'|'redeem'|null;
 export type PrivacyRequest={requestId:string;type:'access'|'delete';status:string;createdAt:number;verificationCode:string};
 export type RecentPlayer={code:string;name:string;level:number;online:boolean;lastSeenAt:number;roomTitle:string;seenAt:number;requested:boolean};
-export type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
+export type RoomListing=RoomCard&{actualPieces?:number;photo?:SharedPhoto;thumbSrc?:string;tuanziOrigin?:string;tuanziCardId?:string;members?:{name:string;level:number;decoration?:{id?:string;artKey:string;color:string}|null}[]};
 export const directions:[Direction,string][]=[['all','全部'],['portrait','竖图'],['landscape','横图'],['square','方图']];
 export const themeOptions:[ThemeId,string][]=[['light','浅色'],['dark','夜间'],['wood','仿木']];
 export const counts=[48,108,300,500] as const;
@@ -77,7 +80,7 @@ export const phrases=publicPhrases;
 /** Phrases from this id on are newer than some live servers; show them only once the server lists them. */
 export const NEWER_PHRASE_ID=16;
 export type PublicMessage={id:number;name:string;text:string;playerId:string;code:string;level?:number;sentAt?:number};
-export type SharedPhoto={id:string;title:string;src:string;thumbSrc:string;category:string;width?:number;height?:number};
+export type SharedPhoto={id:string;title:string;src:string;thumbSrc:string;category:string;width?:number;height?:number;tuanziOrigin?:string;tuanziCardId?:string};
 export type WebPage=Exclude<keyof WebLinks,'legacyLobby'|'legacyRoom'|'largePuzzles'>;
 export type ListView={route:Route;scroll:number;albumListScroll:number;direction:Direction;filterCount:number;openOnly:boolean;activeOnly:boolean;lobbyUnplayedOnly:boolean;category:string;search:string;source:'free'|'owned'|'all';unplayedOnly:boolean;packId:string|null;selected:string|null;collectionTab:'albums'|'packs'|'decorations';albumId:string;decorationId:string;decorationOwnedOnly:boolean;taskTab:'tasks'|'gifts'};
 export const photoMap=new Map<string,SharedPhoto>(RESTORABLE_PHOTOS.map(photo=>[photo.id,photo]));

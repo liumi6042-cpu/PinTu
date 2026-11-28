@@ -134,7 +134,7 @@ export function drawTuanziLobbyCardPanel(this:AppHost,r:Rect,compact:boolean){
   const title=compact?'团子的小窝 · 华夏行记':'团子的小窝 · 华夏行记 50 城';
   const sub=sum.unread>0
    ?`有 ${sum.unread} 封新来信 · 华夏集 ${sum.collected}/${sum.total} 城`
-   :`已集齐 ${sum.collected}/${sum.total} 城 · 24/48/108片明信片`;
+   :`已集齐 ${sum.collected}/${sum.total} 城 · 显影解锁图库多人建房`;
   s.text(title,tx,r.y+(compact?10:13),compact?13:15,ink,800,tw);
   s.text(sub,tx,r.y+(compact?30:37),compact?11:12,muted,600,tw);
   s.button({x:r.x+r.w-bw-10,y:r.y+(r.h-bh)/2,w:bw,h:bh},'进小窝',()=>this.openTuanziV2(),{tone:'berry',fontSize:compact?12:13});
@@ -248,7 +248,9 @@ export function drawRoomGridPanel(this:AppHost,x:number,y:number,w:number,column
 export function drawRoomCardPanel(this:AppHost,room:RoomListing,r:Rect,completed?:Set<string>){
   const s=this.stage,{x,y:cy,w:cw,h:ch}=r,narrow=cw<170,photo=room.photo??photoMap.get(room.imageId),thumb=room.thumbSrc??photo?.thumbSrc,total=room.actualPieces??room.pieces,percent=clamp(Math.round(room.placed/Math.max(1,total)*100),0,100),art={x:x+6,y:cy+6,w:cw-12,h:ch-82};
   const done=!!room.imageId&&(completed??this.completedPhotoIds?.())?.has(room.imageId)===true;
+  const tuanziOrigin=room.tuanziOrigin??photo?.tuanziOrigin;
   s.frame(r,'button-linen-normal');s.ctx.fillStyle=this.colors.cream;s.ctx.fillRect(x+6,cy+6,cw-12,ch-12);if(thumb)s.image(this.client.asset(thumb),art);
+  if(tuanziOrigin){const badge='团子明信片',bw=Math.ceil(s.measure(badge,10,800))+12,bh=18,bx=art.x+5,by=art.y+5;s.ctx.fillStyle='rgba(198,118,38,0.92)';s.ctx.fillRect(bx,by,bw,bh);s.text(badge,bx+6,by+3,10,'#fffaf0',800);}
   if(done){const badge='已拼',bw=Math.ceil(s.measure(badge,10,800))+12,bh=18,bx=art.x+art.w-bw-5,by=art.y+5;s.ctx.fillStyle='rgba(89,122,80,0.9)';s.ctx.fillRect(bx,by,bw,bh);s.text(badge,bx+6,by+3,10,'#fffaf0',800);}
   const copyY=art.y+art.h+7;s.text(room.title,x+11,copyY,narrow?14:16,this.colors.ink,800,cw-22);const metaY=copyY+23;s.icon('piece',{x:x+11,y:metaY,w:14,h:16});s.text(total+'片',x+28,metaY+2,12,this.colors.ink,600);
   const seats=room.players+'/'+seatLimit(room),seatsW=s.measure(seats,12,700),stack=Math.min(3,room.players),stackX=x+cw-11-seatsW-4-(stack?14+stack*10:0);
@@ -259,7 +261,7 @@ export function drawRoomCardPanel(this:AppHost,room:RoomListing,r:Rect,completed
  }
 
 export function drawGalleryPanel(this:AppHost){
-  const s=this.stage,layout=this.layout,portrait=layout==='phonePortrait',landscape=layout==='phoneLandscape',width=Math.min(1400,s.w-24),left=(s.w-width)/2,owned=new Set(this.client.profile?.collection?.ownedImageIds??[]);
+  const s=this.stage,layout=this.layout,portrait=layout==='phonePortrait',landscape=layout==='phoneLandscape',width=Math.min(1400,s.w-24),left=(s.w-width)/2,owned=new Set([...(this.client.profile?.collection?.ownedImageIds??[]),...(this.tuanziGalleryIds??[])]);
   const pack=this.packId?(this.collection?.packs.find(p=>p.id===this.packId)??collectionCatalog.packs.find(p=>p.id===this.packId)):null;
   const panelW=portrait?0:landscape?260:340,gridW=width-(panelW?panelW+14:0);let y=this.bodyTop;
   const completed=this.completedPhotoIds();
@@ -274,7 +276,7 @@ export function drawGalleryPanel(this:AppHost){
    [filterLabel,extraCount>0,()=>this.showModal('filters')]];
   y=this.drawChips(left,y,gridW,portrait||landscape?30:34,chips,true)+10;
   if(pack){s.icon('book',{x:left+2,y,w:23,h:25});s.text(pack.title,left+30,y+5,13,this.colors.ink,700,gridW-130);s.text('查看所有图片',left+gridW-90,y+6,12,this.colors.muted,600);s.hit({x:left+gridW-98,y,w:98,h:30},()=>this.changeListView(()=>{this.packId=null;this.selected=null;}));y+=34;}
-  const photos=this.availableGallery().filter(photo=>(this.direction==='all'||orientation(photo.id)===this.direction)&&(this.category==='全部'||this.category===photo.category)&&photo.title.includes(this.search)&&(!pack||pack.imageIds.includes(photo.id))&&(this.source==='all'||this.source==='free'&&!!this.freeGalleryIds?.has(photo.id)||this.source==='owned'&&owned.has(photo.id))&&(!this.unplayedOnly||!completed.has(photo.id)));
+  const photos=this.availableGallery().filter(photo=>(this.direction==='all'||orientation(photo.id)===this.direction)&&(this.category==='全部'||this.category===photo.category)&&photo.title.includes(this.search)&&(!pack||pack.imageIds.includes(photo.id))&&(this.source==='all'||this.source==='free'&&(!!this.freeGalleryIds?.has(photo.id)||!!this.tuanziGalleryIds?.has(photo.id))||this.source==='owned'&&owned.has(photo.id))&&(!this.unplayedOnly||!completed.has(photo.id)));
   const selected=this.selected?photoMap.get(this.selected)??null:null,sheetH=portrait&&selected?this.createPanelHeight(true):0,v=this.platform.viewport(),bottom=s.h-v.bottom-12-(sheetH?sheetH+4:0);
   const columns=portrait?(gridW>=520?3:2):landscape?3:Math.max(2,Math.min(5,Math.floor(gridW/235))),gap=landscape?8:portrait?10:14,cw=(gridW-gap*(columns-1))/columns,imageHeight=(cw-12)/1.38,ch=imageHeight+(cw<170?56:60);
   this.bodyTop=y;this.bodyBottom=bottom;this.listColumn={x:this.contentOrigin.x+left-6,w:gridW+12};this.extent=Math.ceil(photos.length/columns)*(ch+gap)+12;
@@ -296,7 +298,7 @@ export function drawPhotoCardPanel(this:AppHost,photo:SharedPhoto,r:Rect,imageHe
   const tagY=ty+(small?21:23);
   if(tag.tone==='locked'&&'ad' in tag){s.icon('lock',{x:r.x+9,y:tagY,w:13,h:14},this.colors.berry);s.text(tag.label,r.x+25,tagY+1,12,this.colors.berry,700,r.w-35);}
   else if(tag.tone==='locked'){s.icon('lock',{x:r.x+9,y:tagY,w:13,h:14},this.colors.muted);const price=String(tag.price)+' 金币',pw=s.measure(price,12,700);s.text(tag.label,r.x+25,tagY+1,12,this.colors.muted,600,r.w-pw-46);s.icon('coin',{x:r.x+r.w-pw-27,y:tagY,w:14,h:15});s.text(price,r.x+r.w-pw-10,tagY+1,12,this.colors.ink,700);}
-  else{const tw=s.measure(tag.label,12,700)+12;s.ctx.fillStyle=s.color(tag.tone==='owned'?'#cc8996':'#f2d5ad');s.ctx.fillRect(r.x+10,tagY-1,tw,18);s.text(tag.label,r.x+16,tagY+1,12,tag.tone==='owned'?'#fff8ec':'#674625',700);}
+  else{const tw=s.measure(tag.label,12,700)+12;s.ctx.fillStyle=s.color(tag.tone==='tuanzi'?'#c67626':tag.tone==='owned'?'#cc8996':'#f2d5ad');s.ctx.fillRect(r.x+10,tagY-1,tw,18);s.text(tag.label,r.x+16,tagY+1,12,tag.tone==='tuanzi'||tag.tone==='owned'?'#fff8ec':'#674625',700);}
   s.hit(r,()=>{this.selected=photo.id;this.invalidate();});
  }
 
@@ -320,12 +322,20 @@ export function drawCreatePanelView(this:AppHost,r:Rect,photo:SharedPhoto|null,o
   else{s.icon('piece',{x,y:y+8,w:26,h:29});this.paragraph('点选一张喜欢的图片',x+34,y+10,w-34,13);}
   if(sheet){s.button({x:r.x+r.w-46,y:r.y+10,w:34,h:34},'',()=>{this.selected=null;this.invalidate();});s.icon('close',{x:r.x+r.w-41,y:r.y+15,w:24,h:24},ink);}
   y+=thumb+12;
+  if(photo?.tuanziOrigin){
+   const originText='获得方式：'+photo.tuanziOrigin;
+   const originH=s.wrap(originText,-9999,0,w-12,11,'#8c4a19',15);
+   const boxH=originH+10;
+   s.ctx.fillStyle=s.color('#fdf1dc');s.ctx.fillRect(x,y-4,w,boxH);
+   s.wrap(originText,x+6,y+1,w-12,11,'#8c4a19',15);
+   y+=boxH+4;
+  }
   const row=(label:string,draw:(rr:Rect)=>void)=>{if(sheet){const lw=56;s.text(label,x,y+8,13,this.colors.muted,700);draw({x:x+lw,y,w:w-lw,h:32});y+=40;}else{s.text(label,x,y,13,this.colors.muted,700);draw({x,y:y+20,w,h:34});y+=66;}};
   row('片数',rr=>s.segments(rr,this.pieceCounts.map(n=>[n,this.pieceLevel(n)?n+'·'+this.pieceLevel(n)+'级':String(n)] as const),this.pieces,n=>{if(this.pieceLevel(n)){this.note(this.pieceLevel(n)+'级解锁'+n+'片房间，你现在 Lv.'+(this.client.profile?.level??0));return;}this.pieces=n;this.invalidate();},this.pieceCounts.filter(n=>this.pieceLevel(n))));
   row('谁能加入',rr=>s.segments(rr,[['public','公开'],['private','私人']] as const,this.visibility,v=>{this.visibility=v;this.invalidate();}));
   const tables=this.selected?this.rooms.filter(room=>room.imageId===this.selected&&room.players<seatLimit(room)&&room.acceptingNew!==false&&!room.completed):[];
   if(tables.length){const label='这张图有 '+tables.length+' 桌公开房正在拼 · 去加入 ›';s.text(label,x,y,12,this.colors.berry,700,w);s.hit({x:x-4,y:y-6,w,h:26},()=>{const best=[...tables].sort((a,b)=>b.placed/Math.max(1,b.actualPieces??b.pieces)-a.placed/Math.max(1,a.actualPieces??a.pieces))[0];if(best)void this.enterRoom(best.id);});y+=26;}
-  if(this.usesCreationTickets){const cost=freeOwned?'这张图的公开房免费':freeFirst?'首次开桌免费':'需要 1 张建房券';s.text(cost+' · 私人房或其他图用 1 张建房券',x,y,12,this.colors.ink,600,w);y+=19;const stock='建房券 '+(p?.supply.create??0)+'/3';s.text(stock,x,y,12,this.colors.muted,700);if(this.ticketClaimAvailable){const lx=x+s.measure(stock,12,700)+8,label='· 观看 TapTap 广告';s.text(label,lx,y,12,this.colors.berry,700);s.hit({x:lx-4,y:y-6,w:s.measure(label,12,700)+8,h:26},()=>void this.claimSupply('create'));}y+=23;}
+  if(this.usesCreationTickets){const costLine=photo?.tuanziOrigin&&freeOwned?'明信片已解锁 · 公开房免费（私人房用 1 券）':(freeOwned?'这张图的公开房免费':freeFirst?'首次开桌免费':'需要 1 张建房券')+' · 私人房或其他图用 1 张建房券';s.text(costLine,x,y,12,this.colors.ink,600,w);y+=19;const stock='建房券 '+(p?.supply.create??0)+'/3';s.text(stock,x,y,12,this.colors.muted,700);if(this.ticketClaimAvailable){const lx=x+s.measure(stock,12,700)+8,label='· 观看 TapTap 广告';s.text(label,lx,y,12,this.colors.berry,700);s.hit({x:lx-4,y:y-6,w:s.measure(label,12,700)+8,h:26},()=>void this.claimSupply('create'));}y+=23;}
   this.drawPictureButton({x,y,w,h:44},createLabel,createAction,'berrydark','players',16,19,disabled);y+=54;
   if(!sheet)this.drawPictureButton({x,y,w,h:38},'随机开一桌（公开 · 免费）',()=>void this.launch({mode:'random',pieces:this.pieces,visibility:'public',direction:this.direction}),'cream','dice',compact?12:13,16,this.busy||!p);
  }

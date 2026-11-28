@@ -157,6 +157,10 @@ export class GameClient{
   // The CDN contains public catalog pictures only; authenticated/private routes
   // and other origin resources must not accidentally move to public storage.
   if(/^puzzles\/[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(relative))return this.platform.config.assetBase.replace(/\/$/,'')+'/'+relative;
+  if(/^tuanzi-v2\/[a-zA-Z0-9/._-]+$/.test(relative)){
+   if(typeof document!=='undefined'&&document.baseURI){try{return new URL(relative,document.baseURI).href;}catch{}}
+   return '/'+relative;
+  }
   if(this.cookieIdentity)return new URL('/'+relative,apiBase).href;
   return apiBase+(relative.startsWith('api/')?'/':'/assets/')+relative;
  }
