@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { MOBILE_COLLECTION_CATALOG, createMobileCollection } from '../../server/mobile-collection.mjs';
-import { DAY, HOUR, NPCS, ROOM_SCENES, getCalendarInfo, matchSynergy } from './catalog.js';
+import { CHINA_POSTCARD_IDS, DAY, HOUR, NPCS, POSTCARD_POOL, ROOM_SCENES, getCalendarInfo, matchSynergy } from './catalog.js';
 import {
   DEFAULT_START_TS,
   buyItem,
@@ -13,6 +13,7 @@ import {
   createInitialState,
   equipDecor,
   feedSnack,
+  getChinaCollectionStats,
   getDerivedView,
   packBag,
   replyLetter,
@@ -227,4 +228,26 @@ test('6 hand-painted storybook room scenes auto-resolve by season/weather and su
   s = setSceneOverride(s, 'auto');
   assert.equal(s.sceneOverride, null);
   assert.equal(getDerivedView(s).activeSceneId, 'autumn-day');
+});
+
+test('8 China travel postcards collect cleanly via travel synergies and track album milestones', () => {
+  assert.equal(CHINA_POSTCARD_IDS.length, 8);
+  for (const id of CHINA_POSTCARD_IDS) {
+    const p = POSTCARD_POOL[id];
+    assert.ok(p?.isChina && p.province && p.city && p.postmark && p.hint);
+  }
+
+  let s = createInitialState();
+  const initialStats = getChinaCollectionStats(s);
+  assert.equal(initialStats.collected, 1, 'starts with Hangzhou West Lake ready to develop');
+  assert.equal(initialStats.developed, 0);
+
+  // Packing Osmanthus Cake + Camera guides Tuanzi to Chengdu Bamboo Teahouse
+  s = packBag(s, { food: 'osmanthus', tool: 'camera', wish: null });
+  const sent = sendOffNow(s);
+  assert.equal(sent.state.trip.cardId, 'cn-chengdu');
+  const after = simulateTo(sent.state, sent.state.now + 15 * HOUR).state;
+  const stats2 = getChinaCollectionStats(after);
+  assert.equal(stats2.collected, 2);
+  assert.ok(stats2.items.find(i => i.id === 'cn-chengdu')?.collected);
 });

@@ -1,7 +1,7 @@
 // 「团子去旅行 2.0」纯函数确定性离线世界演进引擎（浏览器 & Node.js 通用）
 import {
-  DAY, DECOR_ITEMS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PERSONALITIES, POSTCARD_POOL, ROOM_SCENE_MAP, SOUVENIRS,
-  getCalendarInfo, matchSynergy,
+  CHINA_POSTCARD_IDS, DAY, DECOR_ITEMS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PERSONALITIES, POSTCARD_POOL,
+  ROOM_SCENE_MAP, SOUVENIRS, getCalendarInfo, matchSynergy,
 } from './catalog.js';
 
 /** 确定性伪随机生成器 (mulberry32) */
@@ -71,13 +71,22 @@ export function createInitialState(startTs = DEFAULT_START_TS) {
     },
     postcards: [
       {
-        uid: 'pc-init-1',
-        templateId: 'grandma-shop',
-        arrivedAt: startTs - 2 * HOUR,
+        uid: 'pc-init-cn-hz',
+        templateId: 'cn-hangzhou',
+        arrivedAt: startTs - 1 * HOUR,
         seasonLabel: '初秋',
         cnDate: '十月十八',
         read: false,
         developed: false,
+      },
+      {
+        uid: 'pc-init-1',
+        templateId: 'grandma-shop',
+        arrivedAt: startTs - 3 * HOUR,
+        seasonLabel: '初秋',
+        cnDate: '十月十八',
+        read: true,
+        developed: true,
       },
     ],
     letters: [],
@@ -117,7 +126,8 @@ function ensurePostcard(state, templateId, at, { allowFallback = true } = {}) {
   const existing = state.postcards.find(c => c.templateId === templateId);
   if (existing) {
     if (!allowFallback) return null;
-    const unseen = Object.keys(POSTCARD_POOL).find(id => !state.postcards.some(c => c.templateId === id));
+    const unseenChina = CHINA_POSTCARD_IDS.find(id => !state.postcards.some(c => c.templateId === id));
+    const unseen = unseenChina || Object.keys(POSTCARD_POOL).find(id => !state.postcards.some(c => c.templateId === id));
     if (unseen) return ensurePostcard(state, unseen, at, { allowFallback: false });
     return null;
   }
@@ -194,11 +204,16 @@ function planTrip(state, at, pack, source = 'manual') {
 
   let cardId = syn?.cardId;
   if (!cardId) {
-    const candidates = food.id === 'bento'
-      ? ['misty-lake', 'rainy-bookshop', 'moon-aquarium']
+    const cal = getCalendarInfo(at);
+    const byFood = food.id === 'bento'
+      ? ['cn-guilin', 'cn-xiamen', 'cn-harbin', 'cn-dali']
       : food.id === 'osmanthus'
-        ? ['breakfast-street', 'cloud-post', 'starry-camp']
-        : ['misty-lake', 'breakfast-street', 'starry-camp'];
+        ? ['cn-hangzhou', 'cn-chengdu', 'cn-beijing', 'cn-suzhou']
+        : food.id === 'fish'
+          ? ['cn-chengdu', 'cn-xiamen', 'cn-suzhou', 'cn-guilin']
+          : ['cn-suzhou', 'cn-dali', 'cn-hangzhou', 'cn-chengdu'];
+    const seasonalLead = cal.season === 'winter' ? ['cn-beijing', 'cn-harbin'] : [];
+    const candidates = [...new Set([...seasonalLead, ...byFood, ...CHINA_POSTCARD_IDS])];
     cardId = candidates.find(id => !state.postcards.some(c => c.templateId === id))
       || candidates[Math.floor(r() * candidates.length)];
   }
@@ -344,10 +359,10 @@ export function simulateTo(prevState, targetNow) {
     addBondXp(state, 'gugu', awayDays >= 20 ? 35 : 20);
     addBondXp(state, 'manman', awayDays >= 20 ? 20 : 12);
 
-    if (state.postcards.length < 6) ensurePostcard(state, 'misty-lake', state.lastActiveAt + 2 * DAY, { allowFallback: false });
-    if (state.postcards.length < 6) ensurePostcard(state, 'rainy-bookshop', state.lastActiveAt + Math.max(3, Math.floor(awayDays * 0.45)) * DAY, { allowFallback: false });
+    if (state.postcards.length < 6) ensurePostcard(state, 'cn-beijing', state.lastActiveAt + 2 * DAY, { allowFallback: false });
+    if (state.postcards.length < 6) ensurePostcard(state, 'cn-guilin', state.lastActiveAt + Math.max(3, Math.floor(awayDays * 0.45)) * DAY, { allowFallback: false });
     if (awayDays >= 14 && state.postcards.length < 6) {
-      ensurePostcard(state, 'starry-camp', targetNow - 3 * DAY, { allowFallback: false });
+      ensurePostcard(state, 'cn-harbin', targetNow - 3 * DAY, { allowFallback: false });
     }
     ensureSouvenir(state, 'windchime', state.lastActiveAt + 4 * DAY, Math.max(2, state.trips));
     if (awayDays >= 14) {
@@ -828,6 +843,36 @@ export function clearDust(prevState) {
   const state = structuredClone(prevState);
   state.dustLevel = 0;
   return state;
+}
+
+/** 计算《华夏行记》中国各地明信片收集进度与称号印章 */
+export function getChinaCollectionStats(state) {
+  const byId = new Map();
+  for (const c of state.postcards || []) {
+    if (!byId.has(c.templateId) || c.developed) byId.set(c.templateId, c);
+  }
+  const items = CHINA_POSTCARD_IDS.map(id => {
+    const tpl = POSTCARD_POOL[id];
+    const owned = byId.get(id) || null;
+    return {
+      id,
+      tpl,
+      owned,
+      collected: Boolean(owned),
+      developed: Boolean(owned?.developed),
+    };
+  });
+  const collected = items.filter(x => x.collected).length;
+  const developed = items.filter(x => x.developed).length;
+  const total = items.length;
+  const rankSeal = collected >= total
+    ? '华夏漫游大师'
+    : collected >= 4
+      ? '半壁山河旅猫'
+      : collected >= 1
+        ? '初踏华夏行记'
+        : '整装待发';
+  return { total, collected, developed, items, rankSeal };
 }
 
 /** 玩家行为：手动切换小窝实景场景（null / 'auto' 恢复随四季节气自动变化） */

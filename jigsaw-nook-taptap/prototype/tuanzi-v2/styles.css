@@ -920,6 +920,242 @@ html, body {
   z-index: 3;
 }
 
+.book-top-bar.compact-tabs {
+  padding: 0 2px 0 14px;
+}
+.book-tabs.compact {
+  gap: 9px;
+}
+.book-tabs.compact .book-tab {
+  font-size: 13px;
+}
+.cn-place-pill {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: rgba(169, 71, 55, 0.12);
+  color: var(--vermilion-deep);
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 3px;
+}
+.china-jump-link {
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(255, 250, 240, 0.9);
+  border: 1px solid rgba(169, 71, 55, 0.42);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--vermilion-deep);
+}
+
+/* =========================================================
+   CHINA POSTCARD COLLECTIBLE ALBUM (《华夏行记》明信片集邮册)
+   ========================================================= */
+.china-progress-box {
+  margin: 10px 0 7px;
+  padding: 9px 11px 8px;
+  border-radius: 12px;
+  background: rgba(255, 251, 243, 0.85);
+  border: 1.5px solid rgba(154, 113, 81, 0.32);
+  flex-shrink: 0;
+}
+.cp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.cp-head h3 {
+  font-family: var(--font-hand);
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #3a2115;
+  letter-spacing: 0.5px;
+}
+.cp-sub {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--ink-mid);
+  font-weight: 600;
+}
+.cp-sub b { color: var(--vermilion-deep); }
+.cp-rank-seal {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border: 1.5px solid rgba(169, 71, 55, 0.78);
+  border-radius: 4px;
+  font-family: var(--font-hand);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vermilion);
+  background: rgba(169, 71, 55, 0.06);
+  transform: rotate(-3deg);
+}
+.cp-bar-track {
+  margin-top: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(146, 108, 76, 0.2);
+  overflow: hidden;
+}
+.cp-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #d58b42 0%, #b54534 100%);
+  transition: width 0.35s ease;
+}
+.china-region-pills {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.cr-pill {
+  flex: 1;
+  padding: 4px 2px;
+  border-radius: 99px;
+  background: rgba(255, 250, 240, 0.78);
+  border: 1px solid rgba(146, 108, 76, 0.32);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-mid);
+  text-align: center;
+}
+.cr-pill.active {
+  background: var(--vermilion);
+  border-color: var(--vermilion-deep);
+  color: #fff9ee;
+}
+.china-album-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+  padding: 2px 1px 10px;
+}
+.china-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  background: #fffefa;
+  border: 1.5px solid rgba(146, 108, 76, 0.32);
+  border-radius: 10px;
+  padding: 5px;
+  box-shadow: 0 3px 9px rgba(68, 40, 22, 0.11);
+  overflow: hidden;
+}
+.china-card.developed {
+  border-color: rgba(154, 113, 81, 0.45);
+}
+.china-card.misty {
+  border-color: rgba(169, 71, 55, 0.56);
+  background: #fff9f2;
+}
+.china-card.locked {
+  background: rgba(248, 240, 226, 0.72);
+  border: 1.5px dashed rgba(146, 108, 76, 0.42);
+  box-shadow: none;
+}
+.cc-photo-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #efe2cb;
+}
+.cc-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.china-card.misty .cc-photo-wrap img {
+  filter: blur(4px) sepia(0.28) brightness(1.04) saturate(0.6);
+  transform: scale(1.06);
+}
+.cc-postmark {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  padding: 1.5px 5px;
+  border-radius: 99px;
+  background: rgba(255, 248, 238, 0.9);
+  border: 1px solid rgba(169, 71, 55, 0.78);
+  color: var(--vermilion-deep);
+  font-size: 9.5px;
+  font-weight: 800;
+  transform: rotate(-4deg);
+}
+.cc-mist-tag {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 3px 7px;
+  border-radius: 99px;
+  background: rgba(169, 71, 55, 0.92);
+  color: #fff8eb;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(68, 24, 16, 0.35);
+}
+.cc-photo-wrap.silhouette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(218, 198, 168, 0.22) 0px,
+    rgba(218, 198, 168, 0.22) 6px,
+    rgba(248, 240, 226, 0.45) 6px,
+    rgba(248, 240, 226, 0.45) 12px
+  );
+  border: 1px dashed rgba(154, 113, 81, 0.36);
+}
+.cc-stamp-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: #9b7c63;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.cc-stamp-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: rgba(155, 124, 99, 0.45);
+}
+.cc-meta {
+  padding: 5px 2px 1px;
+}
+.cc-city {
+  font-size: 12px;
+  font-weight: 800;
+  color: #3d2417;
+  line-height: 1.25;
+}
+.cc-title {
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-hint {
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8c5c22;
+  line-height: 1.3;
+}
+
 /* =========================================================
    REAL OPEN COTTON-PAPER JOURNAL SCREENS (Upgraded Legibility & Balance)
    ========================================================= */

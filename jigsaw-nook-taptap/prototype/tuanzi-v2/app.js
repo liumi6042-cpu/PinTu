@@ -1,12 +1,12 @@
 // 「团子去旅行 2.0」手作绘本可玩交互原型主控制器
 import {
-  DAY, DECOR_ITEMS, DECOR_SLOTS, GACHA_CONFIG, HOUR, ITEMS, NPCS, PET_WHISPERS, POSTCARD_POOL,
-  ROOM_SCENES, ROOM_SCENE_MAP, SOUVENIRS,
+  CHINA_POSTCARD_IDS, CHINA_REGIONS, DAY, DECOR_ITEMS, DECOR_SLOTS, GACHA_CONFIG, HOUR, ITEMS, NPCS,
+  PET_WHISPERS, POSTCARD_POOL, ROOM_SCENES, ROOM_SCENE_MAP, SOUVENIRS,
 } from './catalog.js';
 import {
   buyItem, claimReunionGift, claimSill, clearDust, completePostcard,
-  createInitialState, equipDecor, feedSnack, getDerivedView, packBag, replyLetter, sendOffNow,
-  setSceneOverride, setTreatDish, simulateTo, spinGacha, syncWalletCoins, togglePantrySlot,
+  createInitialState, equipDecor, feedSnack, getChinaCollectionStats, getDerivedView, packBag, replyLetter,
+  sendOffNow, setSceneOverride, setTreatDish, simulateTo, spinGacha, syncWalletCoins, togglePantrySlot,
 } from './engine.js';
 import { NookAtmosphere } from './particles.js';
 import { sound } from './audio.js';
@@ -97,7 +97,8 @@ let gachaSpinning = false;
 let lastGachaResults = null;
 let bagSubTab = 'bag'; // 'bag' | 'pantry' | 'treat'
 let mailSubTab = 'postcards'; // 'postcards' | 'letters'
-let scrapSubTab = 'overview'; // 'overview' | 'souvenirs' | 'memories'
+let scrapSubTab = 'china'; // 'china' | 'overview' | 'souvenirs' | 'memories'
+let chinaRegionFilter = 'all'; // 'all' | 'jiangnan' | 'southwest' | 'north' | 'coast'
 let selectedPostcardUid = null;
 let selectedLetterUid = null;
 let playingPuzzleUid = null;
@@ -1110,12 +1111,17 @@ function renderMailboxBook(el) {
     }
 
     const cardIdx = cards.findIndex(c => c.uid === card.uid);
+    const chinaStats = getChinaCollectionStats(state);
     el.innerHTML = `
       ${topTabs}
       <div class="book-scroll">
-        <div class="book-heading" style="margin-top:10px;">
-          <h3 style="font-size:22px;">${tpl.title}</h3>
-          <div class="date-line">${card.seasonLabel} · ${card.cnDate} · 寄自${tpl.place}</div>
+        <div class="book-heading" style="margin-top:8px;">
+          <h3 style="font-size:21px;">${tpl.fullTitle || tpl.title}</h3>
+          <div class="date-line">
+            ${tpl.isChina
+              ? `<span class="cn-place-pill">${tpl.regionLabel}</span>${card.cnDate} · 寄自${tpl.place}`
+              : `${card.seasonLabel} · ${card.cnDate} · 寄自${tpl.place}`}
+          </div>
         </div>
 
         <div class="pc-stage-card">
@@ -1125,7 +1131,7 @@ function renderMailboxBook(el) {
             ${card.developed ? '' : `
               <div class="pc-mist-overlay">
                 <strong style="font-size:17px;">记忆尚未显影</strong>
-                <span style="font-size:13px; line-height:1.5;">拼完 9 片轻拼图即可看清全画<br/>并显现背面隐藏后记</span>
+                <span style="font-size:13px; line-height:1.5;">拼完 9 片轻拼图即可看清全画<br/>并收录进《华夏行记》集邮册</span>
               </div>
             `}
             <div class="pc-postmark-mini">
@@ -1135,13 +1141,14 @@ function renderMailboxBook(el) {
           </div>
         </div>
 
-        ${cards.length > 1 ? `
-          <div class="pc-pager-row">
-            <button class="craft-btn ink-turn" id="pc-prev" style="${cardIdx <= 0 ? 'opacity:0.35' : ''}">← 上一张</button>
-            <span>第 ${cardIdx + 1} / ${cards.length} 张</span>
-            <button class="craft-btn ink-turn" id="pc-next" style="${cardIdx >= cards.length - 1 ? 'opacity:0.35' : ''}">下一张 →</button>
-          </div>
-        ` : ''}
+        <div class="pc-pager-row">
+          ${cards.length > 1
+            ? `<button class="craft-btn ink-turn" id="pc-prev" style="${cardIdx <= 0 ? 'opacity:0.35' : ''}">← 上一张</button>
+               <span>第 ${cardIdx + 1} / ${cards.length} 张</span>
+               <button class="craft-btn ink-turn" id="pc-next" style="${cardIdx >= cards.length - 1 ? 'opacity:0.35' : ''}">下一张 →</button>`
+            : `<span>共 ${cards.length} 张明信片</span>`}
+          <button class="craft-btn china-jump-link" id="pc-open-china">华夏集 ${chinaStats.collected}/${chinaStats.total} ›</button>
+        </div>
 
         <div class="pc-quote-card">
           <div class="pc-quote-text">“${tpl.line}”</div>
@@ -1177,6 +1184,10 @@ function renderMailboxBook(el) {
     });
     $('pc-next')?.addEventListener('click', () => {
       if (cardIdx < cards.length - 1) { selectedPostcardUid = cards[cardIdx + 1].uid; sound.paperTurn(); renderMailboxBook(el); }
+    });
+    $('pc-open-china')?.addEventListener('click', () => {
+      scrapSubTab = 'china';
+      setScreen('scrapbook');
     });
     $('btn-play-pc').addEventListener('click', () => {
       playingPuzzleUid = card.uid;
@@ -1330,18 +1341,110 @@ function renderShopBook(el) {
 function renderScrapbookBook(el) {
   const view = getDerivedView(state);
   const topTabs = `
-    <div class="book-top-bar">
+    <div class="book-top-bar compact-tabs">
       <button class="craft-btn ink-return" id="bk-close">
         <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
         <span>回小窝</span>
       </button>
-      <div class="book-tabs">
+      <div class="book-tabs compact">
+        <button class="craft-btn book-tab ${scrapSubTab === 'china' ? 'active' : ''}" data-stab="china">华夏集</button>
         <button class="craft-btn book-tab ${scrapSubTab === 'overview' ? 'active' : ''}" data-stab="overview">拾光记</button>
         <button class="craft-btn book-tab ${scrapSubTab === 'souvenirs' ? 'active' : ''}" data-stab="souvenirs">风物</button>
         <button class="craft-btn book-tab ${scrapSubTab === 'memories' ? 'active' : ''}" data-stab="memories">经历</button>
       </div>
     </div>
   `;
+
+  if (scrapSubTab === 'china') {
+    const stats = getChinaCollectionStats(state);
+    const filtered = chinaRegionFilter === 'all'
+      ? stats.items
+      : stats.items.filter(it => it.tpl.chinaRegion === chinaRegionFilter);
+    const pct = Math.round((stats.collected / stats.total) * 100);
+
+    el.innerHTML = `
+      ${topTabs}
+      <div class="china-progress-box">
+        <div class="cp-head">
+          <div>
+            <h3>华夏行记 · 集邮册</h3>
+            <div class="cp-sub">已集齐 <b>${stats.collected} / ${stats.total}</b> 城 · 已显影 ${stats.developed} 张</div>
+          </div>
+          <span class="cp-rank-seal">${stats.rankSeal}</span>
+        </div>
+        <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%;"></div></div>
+      </div>
+
+      <div class="china-region-pills">
+        ${CHINA_REGIONS.map(r => `
+          <button class="craft-btn cr-pill ${chinaRegionFilter === r.id ? 'active' : ''}" data-creg="${r.id}">${r.label}</button>
+        `).join('')}
+      </div>
+
+      <div class="book-scroll">
+        <div class="china-album-grid">
+          ${filtered.map(item => {
+            const t = item.tpl;
+            if (item.collected) {
+              return `
+                <button class="craft-btn china-card ${item.developed ? 'developed' : 'misty'}" data-china-open="${item.owned.uid}" data-china-dev="${item.developed ? '1' : '0'}">
+                  <div class="cc-photo-wrap">
+                    <img src="${t.src}" alt="${t.fullTitle}" />
+                    <span class="cc-postmark">${t.postmark}</span>
+                    ${item.developed ? '' : '<span class="cc-mist-tag">拼图显影 +30币</span>'}
+                  </div>
+                  <div class="cc-meta">
+                    <div class="cc-city">${t.province} · ${t.city}</div>
+                    <div class="cc-title">${t.title}</div>
+                  </div>
+                </button>
+              `;
+            }
+            return `
+              <button class="craft-btn china-card locked" data-china-hint="${t.id}">
+                <div class="cc-photo-wrap silhouette">
+                  <div class="cc-stamp-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 18l5.5-8 4 5.5 3-4L21 18H3z"/><circle cx="16.5" cy="7.5" r="2"/></svg>
+                    <span>尚未寄达</span>
+                  </div>
+                </div>
+                <div class="cc-meta">
+                  <div class="cc-city">${t.province} · ${t.city}</div>
+                  <div class="cc-hint">${t.hint}</div>
+                </div>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+    bindBookCommon(el);
+    el.querySelectorAll('[data-creg]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        chinaRegionFilter = btn.dataset.creg;
+        sound.paperTurn();
+        renderScrapbookBook(el);
+      });
+    });
+    el.querySelectorAll('[data-china-open]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedPostcardUid = btn.dataset.chinaOpen;
+        mailSubTab = 'postcards';
+        playingPuzzleUid = btn.dataset.chinaDev === '0' ? selectedPostcardUid : null;
+        setScreen('mailbox');
+      });
+    });
+    el.querySelectorAll('[data-china-hint]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tpl = POSTCARD_POOL[btn.dataset.chinaHint];
+        if (!tpl) return;
+        sound.paperTurn();
+        showToast(`「${tpl.fullTitle}」尚未寄达：${tpl.hint}`);
+      });
+    });
+    return;
+  }
 
   if (scrapSubTab === 'overview') {
     const uniqueTemplates = [...new Set(state.postcards.map(c => c.templateId))];
@@ -1862,9 +1965,52 @@ $('btn-demo-unlock-decor').addEventListener('click', () => {
   showToast('已解锁全部 18 件原地融合摆件与团子穿搭，自由混搭吧！');
 });
 
-// 支持 URL ?demo=day30|decorated 和 ?screen=gacha|decor|shop|mailbox|scrapbook|bag 直接预览指定页
+$('btn-demo-china-album')?.addEventListener('click', () => {
+  state = structuredClone(state);
+  CHINA_POSTCARD_IDS.forEach((cid, idx) => {
+    const existing = state.postcards.find(c => c.templateId === cid);
+    if (existing) {
+      existing.developed = idx < 6; // 保留最后 2 张待拼图显影方便体验！
+      existing.read = idx < 6;
+    } else {
+      state.postcards.unshift({
+        uid: `pc-demo-${cid}`,
+        templateId: cid,
+        arrivedAt: state.now - (idx + 1) * HOUR,
+        seasonLabel: POSTCARD_POOL[cid].seasonTag,
+        cnDate: ['十月十八', '三月十二', '五月廿四', '六月初八', '十一月雪', '腊月十五', '七月初六', '四月廿一'][idx] || '十月十八',
+        read: idx < 6,
+        developed: idx < 6,
+      });
+    }
+  });
+  saveState(state);
+  sound.celebrate();
+  scrapSubTab = 'china';
+  chinaRegionFilter = 'all';
+  setScreen('scrapbook');
+  showToast('已集齐 8 城《华夏行记》中国明信片（留 2 张可体验拼图显影）');
+});
+
+// 支持 URL ?demo=day30|decorated|china-album|china-partial 和 ?screen=gacha|decor|shop|mailbox|scrapbook|bag 直接预览指定页
 const urlParams = new URLSearchParams(location.search);
-if (urlParams.get('demo') === 'day30') {
+if (urlParams.get('demo') === 'china-album' || urlParams.get('demo') === 'china-partial') {
+  state = createInitialState();
+  const isFull = urlParams.get('demo') === 'china-album';
+  const count = isFull ? CHINA_POSTCARD_IDS.length : 4;
+  state.postcards = [];
+  CHINA_POSTCARD_IDS.slice(0, count).forEach((cid, idx) => {
+    state.postcards.push({
+      uid: `pc-demo-${cid}`,
+      templateId: cid,
+      arrivedAt: state.now - (idx + 1) * HOUR,
+      seasonLabel: POSTCARD_POOL[cid].seasonTag,
+      cnDate: ['十月十八', '三月十二', '五月廿四', '六月初八', '十一月雪', '腊月十五', '七月初六', '四月廿一'][idx] || '十月十八',
+      read: isFull ? true : idx < 3,
+      developed: isFull ? true : idx < 3,
+    });
+  });
+} else if (urlParams.get('demo') === 'day30') {
   state = createInitialState();
   state = packBag(state, { food: 'bento', tool: 'camera', wish: 'token-apang' });
   state = togglePantrySlot(state, 1, 'osmanthus');
