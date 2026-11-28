@@ -40,17 +40,17 @@ import {REDEEM_GROUP_HINT,REDEEM_WECHAT_HINT,CAT_PAW_WECHAT_TEXT,REDEEM_MAX_LENG
 import {LagMonitor,PLAYER_QQ_GROUP,PLAYER_QQ_GROUP_COPY_HINT,deviceEnvironmentSummary} from './lag-monitor';
 import {WELCOME_ENABLED_KEY,WELCOME_STORAGE_KEY,pickWelcomeLine,readWelcomeRecord,welcomeDue,welcomeSlot,welcomeSlotKey,welcomeStart,welcomeTieIn,type WelcomeSlot,type WelcomeTieIn} from './welcome-greeting';
 
-import {type AppHost,type Direction,type PerformanceMode,type Modal,type PrivacyRequest,type RecentPlayer,type RoomListing,type PublicMessage,type SharedPhoto,type WebPage,type ListView,directions,themeOptions,counts,contentMaxWidth,settingsTipKey,phrases,NEWER_PHRASE_ID,photoMap,packed,errorText,taskCoinsText,clamp,seatLimit,VIEW_LOCK_KEY,LOCK_BUTTON_KEY,MINIMAP_KEY,TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY,WECHAT_PACKAGE_VERSION,CHAT_BUBBLE_ARM_MS,ORGANIZE_CONFIRM_MS,inside,roomListKey,messageListKey} from './panels/shared';
+import {type AlbumFilter,type AppHost,type Direction,type PerformanceMode,type Modal,type PrivacyRequest,type RecentPlayer,type RoomListing,type PublicMessage,type SharedPhoto,type WebPage,type ListView,directions,themeOptions,counts,contentMaxWidth,settingsTipKey,phrases,NEWER_PHRASE_ID,photoMap,packed,errorText,taskCoinsText,clamp,seatLimit,VIEW_LOCK_KEY,LOCK_BUTTON_KEY,MINIMAP_KEY,TEAMMATE_SOUND_KEY,ADMIN_DIAG_KEY,WECHAT_PACKAGE_VERSION,CHAT_BUBBLE_ARM_MS,ORGANIZE_CONFIRM_MS,inside,roomListKey,messageListKey} from './panels/shared';
 import {drawSavedRoomPanel,drawHistoryGridPanel,drawHistoryPreviewPanel,drawHistoryWindowPanel,drawRedeemPanel,drawWeeklyGiftPanel,drawLoginLogPanel,drawPrivacyChoicePanel,drawPolicyPanel,drawWelcomeHeroPanel,drawWelcomeArtPanel,drawWelcomePanel,drawOrientationPickerPanel} from './panels/modals-panel';
 import {drawInviteBannerPanel,drawInviteFriendsPanel,drawFriendsPanel,drawLoadingPanel,drawLobbyStartupPanel,drawLobbyPanel,drawDailyHeroPanel,drawContinueRoomPanel,drawLobbyActionsPanel,drawCommunityBannerPanel,drawRoomHeaderPanel,drawChipsPanel,drawRoomGridPanel,drawRoomCardPanel,drawGalleryPanel,drawPhotoCardPanel,drawCreatePanelView,drawPictureButtonPanel} from './panels/lobby-gallery-panel';
 import {drawChapterPanel,openLevelComicPanel,turnComicPanel,advanceComicPanel,drawLevelComicPanel,inputComicPanel,beginStoryIntroPanel,storyRoomVariantPanel,drawStoryIntroPanel} from './panels/story-panel';
 import {drawTasksPanel,drawTasksPagePanel,drawSuppliesPanel,drawWebSuppliesPanel,drawTaskWindowPanel} from './panels/tasks-supplies-panel';
-import {drawCollectionPanel,drawAlbumCardPanel,drawAlbumHeaderPanel,drawAlbumRewardsPanel,drawAlbumImagesPanel,drawAlbumDetailPanel,drawDecorationsPanel,drawPackPreviewPanel} from './panels/collection-panel';
+import {drawCollectionPanel,drawAlbumCardPanel,drawAlbumHeaderPanel,drawAlbumRewardsPanel,drawAlbumImagesPanel,drawAlbumDetailPanel,drawDecorationsPanel,drawPackPreviewPanel,sortCollectionAlbums} from './panels/collection-panel';
 import {drawRoomPanelView,drawDesktopToolsPanel,drawToolColumnPanel,drawLandscapeSurfacePanel,drawLandscapeButtonPanel,drawRoomTopBarPanel,drawLandscapeRoomControlsPanel,drawBoardQuickToolsPanel,drawChatBubblePanel,drawRoomGiftPanel,drawZoomControlPanel,drawPlayerCardPanel,drawRoomSidePanel,drawReconnectBannerPanel,drawRoomGuidePanel,drawNineGridPanel,drawRoomChatEntryPanel,drawRoomToolTogglePanel,drawRoomToolsPanel,drawPublicChatPanel,drawAdminDiagnosticsPanel,drawLagAlertBannerPanel} from './panels/room-hud-panel';
 import {storyCompletionLinesPanel,drawCompletionTransitionPanel,drawSettleButtonPanel,drawCompletionSeatPanel,drawCompletionSeatsPanel,drawCompletionPicturePanel,drawCompletionBarPanel,drawCompletionContentPanel,drawLandscapeCompletionPanel,drawCompletionEffectsPanel} from './panels/completion-panel';
 
 /** Shown under 更多 so testers can tell which package they are running; bump it with every TapTap package. */
-const CLIENT_PACKAGE_VERSION='v53.38';
+const CLIENT_PACKAGE_VERSION='v53.40';
 /** Server /api/mobile/gifts/open validates 1..20 gifts per request; larger bulk opens are split into sequential batches. */
 const GIFT_OPEN_BATCH_LIMIT=20;
 
@@ -94,7 +94,7 @@ export class GameApp{
  /** The 回忆变奏关 of the open story room, or null (normal play). */
  private roomVariant:StoryVariant|null=null;
  private tasks:MobileTaskView|null=null;private taskTab:'tasks'|'gifts'='tasks';private taskDetailsOpen=false;private taskWindowArea:Rect={x:0,y:0,w:0,h:0};
- private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
+ private collection:MobileCollectionView|null=null;private collectionTab:'albums'|'packs'|'decorations'='albums';private albumFilter:AlbumFilter='all';private albumId='';private decorationId='';private decorationOwnedOnly=false;private purchase:CollectionPack|null=null;
  private previewPack:CollectionPack|null=null;private previewIndex=-1;private previewGridScroll=0;private previewReadOnly=false;
  private room:(RoomClient&{snapshot:RoomClient['snapshot']&{levelId?:string;requestedPieces?:number;maxPlayers?:number;mobileResult?:{roomId?:string;levelClear?:MobileLevelClear;coins?:number;fragments?:number;energy?:number;doubleClaimed?:boolean;doubleBonus?:{coins:number;fragments:number};ranking?:any;catalog?:any}}})|null=null;private board:PuzzleBoard|null=null;private detachRoom:(()=>void)|null=null;private unsubscribeRoom:(()=>void)|null=null;
  private cursor:CursorClient|null=null;private cursorVisible=false;
@@ -512,7 +512,7 @@ export class GameApp{
   if(room&&/^[a-f0-9]{32}$/.test(room)){await this.enterRoom(room,query.roomInvite||query.code);if(this.pendingInvitation)this.showModal('invite');}
  }
  private pendingInvitation='';
- private defaultListView(route:Route):ListView{return {route,scroll:0,albumListScroll:0,direction:'all',filterCount:0,openOnly:true,activeOnly:false,lobbyUnplayedOnly:false,category:'全部',search:'',source:'free',unplayedOnly:false,packId:null,selected:null,collectionTab:'albums',albumId:'',decorationId:'',decorationOwnedOnly:false,taskTab:'tasks'};}
+ private defaultListView(route:Route):ListView{return {route,scroll:0,albumListScroll:0,direction:'all',filterCount:0,openOnly:true,activeOnly:false,lobbyUnplayedOnly:false,category:'全部',search:'',source:'free',unplayedOnly:false,packId:null,selected:null,collectionTab:'albums',albumFilter:'all',albumId:'',decorationId:'',decorationOwnedOnly:false,taskTab:'tasks'};}
  private ensureListOwner(){
   const owner=this.ownerKey();this.savedRoutes??=new Map();this.routeFrames??=[];this.routeStack??=[];
   if(this.listOwner===undefined){this.listOwner=owner;return;}
@@ -520,13 +520,13 @@ export class GameApp{
   this.restoreListView(this.defaultListView(this.route));this.taskTab='tasks';this.lobbySerial=(this.lobbySerial??0)+1;this.rooms=[];this.lobbyCursor=null;if(this.ready)void this.loadLevels().then(()=>this.checkLevelEntry());
  }
  private captureListView():ListView{const base=this.defaultListView(this.route);for(const key of Object.keys(base) as Array<keyof ListView>){const value=this[key as keyof this];if(value!==undefined)(base as any)[key]=value;}return base;}
- private listViewKey(view=this.captureListView()){switch(view.route){case'lobby':return JSON.stringify(['lobby',view.direction,view.filterCount,view.openOnly,view.activeOnly,view.lobbyUnplayedOnly]);case'gallery':return JSON.stringify(['gallery',view.direction,view.category,view.search,view.source,view.unplayedOnly,view.packId]);case'collection':return JSON.stringify(['collection',view.collectionTab,view.collectionTab==='albums'?view.albumId:view.collectionTab==='decorations'?view.decorationOwnedOnly:'']);case'tasks':return 'tasks:'+view.taskTab;default:return view.route;}}
+ private listViewKey(view=this.captureListView()){switch(view.route){case'lobby':return JSON.stringify(['lobby',view.direction,view.filterCount,view.openOnly,view.activeOnly,view.lobbyUnplayedOnly]);case'gallery':return JSON.stringify(['gallery',view.direction,view.category,view.search,view.source,view.unplayedOnly,view.packId]);case'collection':return JSON.stringify(['collection',view.collectionTab,view.collectionTab==='albums'?[view.albumId,view.albumFilter]:view.collectionTab==='decorations'?view.decorationOwnedOnly:'']);case'tasks':return 'tasks:'+view.taskTab;default:return view.route;}}
  private saveListView(){this.ensureListOwner();const view=this.captureListView();if(view.route!=='room')this.savedRoutes.set(view.route,view);return view;}
  private restoreListView(view:ListView){
   this.route=view.route;this.scroll=view.scroll;this.extent=0;
   if(view.route==='lobby')Object.assign(this,{direction:view.direction,filterCount:view.filterCount,openOnly:view.openOnly,activeOnly:view.activeOnly,lobbyUnplayedOnly:view.lobbyUnplayedOnly});
   if(view.route==='gallery')Object.assign(this,{direction:view.direction,category:view.category,search:view.search,source:view.source,unplayedOnly:view.unplayedOnly,packId:view.packId,selected:view.selected});
-  if(view.route==='collection')Object.assign(this,{collectionTab:view.collectionTab,albumId:view.albumId,albumListScroll:view.albumListScroll,decorationId:view.decorationId,decorationOwnedOnly:view.decorationOwnedOnly});
+  if(view.route==='collection')Object.assign(this,{collectionTab:view.collectionTab,albumFilter:view.albumFilter,albumId:view.albumId,albumListScroll:view.albumListScroll,decorationId:view.decorationId,decorationOwnedOnly:view.decorationOwnedOnly});
   if(view.route==='tasks')this.taskTab=view.taskTab;
  }
  private refreshRoute(){if(this.offline?.active&&!this.ready||this.offlineRoom)return;if(this.route==='chapter')void this.loadLevels();if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);if(!this.completedGalleryIds)void this.loadGallery();if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
@@ -1530,8 +1530,8 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
  private albumDetailOpen=false;private decorationFilter:'all'|'owned'|'craft'|'album'='all';
  private drawCollection(){return drawCollectionPanel.call(this.host);}
  private packFor(data:MobileCollectionView,albumId:string){return data.packs.find(pack=>pack.id===albumId)??null;}
- /** 日常拾光 (the album without a pack) first, then the packs in catalogue order. */
- private orderedAlbums(data:MobileCollectionView){return [...data.albums.filter(album=>!this.packFor(data,album.id)),...data.albums.filter(album=>this.packFor(data,album.id))];}
+ /** Free, active, and ad-unlock albums appear ahead of unowned coin packs. */
+ private orderedAlbums(data:MobileCollectionView){return sortCollectionAlbums(data.albums,id=>this.packFor(data,id));}
  private nextMilestoneText(data:MobileCollectionView,album:CollectionAlbum){
   const next=album.milestones.find(milestone=>!milestone.earned);if(!next)return album.total&&album.collected>=album.total?'已集齐，奖励已发放':'';
   const decoration=next.decorationId?data.decorations.find(item=>item.id===next.decorationId)?.title:'',left=Math.max(0,next.target-album.collected);

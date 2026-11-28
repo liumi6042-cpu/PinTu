@@ -1,8 +1,92 @@
-import type {MobileCollectionView,CollectionDecoration,CollectionAlbum} from '../../h5/mobile-collection-api';
+import type {MobileCollectionView,CollectionDecoration,CollectionAlbum,CollectionPack} from '../../h5/mobile-collection-api';
 import collectionCatalog from '../../lib/mobile-collection-catalog.json';
 import {collectionDecorationRewardHints} from '../collection-copy';
 import {HAIRPIN_ID} from '../retention';
-import {type AppHost,clamp} from './shared';
+import {type AlbumFilter,type AppHost,clamp} from './shared';
+
+export const ALBUM_FILTERS:readonly{id:AlbumFilter;label:string;empty:string}[]=[
+ {id:'all',label:'全部',empty:'暂无可显示的图集'},
+ {id:'unlocked',label:'已解锁',empty:'还没有已解锁的图集'},
+ {id:'ad',label:'看广告',empty:'暂无看广告解锁的图集'},
+ {id:'coin',label:'金币包',empty:'暂无金币图包'},
+ {id:'completed',label:'已集齐',empty:'还没有集齐的图集，先去拼完一本吧'},
+];
+
+export function isAlbumUnlocked(album:CollectionAlbum,pack:CollectionPack|null){
+ return !pack||pack.owned||(pack.unlock==='ad'&&(pack.unlocked??0)>0)||album.collected>0;
+}
+
+export function isAlbumCompleted(album:CollectionAlbum){
+ return album.total>0&&album.collected>=album.total;
+}
+
+export function albumMatchesFilter(album:CollectionAlbum,pack:CollectionPack|null,filter:AlbumFilter){
+ switch(filter){
+  case'unlocked':return isAlbumUnlocked(album,pack);
+  case'ad':return pack?.unlock==='ad';
+  case'coin':return !!pack&&pack.unlock!=='ad';
+  case'completed':return isAlbumCompleted(album);
+  default:return true;
+ }
+}
+
+/** Put free, unlocked, and ad-unlock albums before locked coin packs while preserving catalogue order inside each tier. */
+export function sortCollectionAlbums(albums:readonly CollectionAlbum[],packFor:(albumId:string)=>CollectionPack|null){
+ const rank=(album:CollectionAlbum)=>{
+  const pack=packFor(album.id),done=isAlbumCompleted(album);
+  if(!pack&&!done)return 0;
+  if(done)return 3;
+  if(isAlbumUnlocked(album,pack))return 1;
+  if(pack?.unlock==='ad')return 2;
+  return 4;
+ };
+ return [...albums].sort((a,b)=>rank(a)-rank(b));
+}
+
+function albumCoverHeight(cw:number,compact:boolean){
+ return compact?clamp(Math.round(cw*.42),70,96):clamp(Math.round(cw*.56),84,130);
+}
+
+export function albumCardHeight(cw:number,compact=false){
+ const coverH=albumCoverHeight(cw,compact),narrow=cw<168,btnH=compact||narrow?26:30;
+ return 6+coverH+(compact?7:8)+(compact||narrow?19:21)+(compact||narrow?16:17)+(compact?11:12)+btnH+(compact?6:8);
+}
+
+function drawAlbumFilterChips(this:AppHost,x:number,y:number,w:number,h:number,filter:AlbumFilter,fill:boolean,countText=''){
+ const chips:readonly(readonly[string,boolean,()=>void])[]=ALBUM_FILTERS.map(item=>[
+  item.label,
+  filter===item.id,
+  ()=>this.changeListView(()=>{this.albumFilter=filter===item.id&&item.id!=='all'?'all':item.id;}),
+ ]);
+ const chipW=fill?w:Math.min(w,460),nextY=this.drawChips(x,y,chipW,h,chips,fill);
+ if(!fill&&countText&&w-chipW>=88){
+  const cw=this.stage.measure(countText,12,600);
+  this.stage.text(countText,x+w-cw,y+Math.floor((h-12)/2),12,this.colors.muted,600,w-chipW-8);
+ }
+ return nextY;
+}
+
+function drawAlbumGrid(this:AppHost,opts:{data:MobileCollectionView;albums:CollectionAlbum[];x:number;y:number;w:number;columns:number;gap:number;top:number;bottom:number;selectedId?:string|null;compact?:boolean;filter:AlbumFilter}){
+ const {data,albums,x,y,w,columns,gap,top,bottom,selectedId=null,compact=false,filter}=opts;
+ if(!albums.length){
+  const s=this.stage,h=compact?150:176,msg=ALBUM_FILTERS.find(item=>item.id===filter)?.empty??'暂无可显示的图集';
+  s.panel({x,y,w,h});
+  s.icon('book',{x:x+(w-38)/2,y:y+(compact?16:24),w:38,h:38});
+  s.text(msg,x+(w-Math.min(w-24,s.measure(msg,14,700)))/2,y+(compact?64:74),14,this.colors.muted,700,w-24);
+  if(filter!=='all'){const bw=Math.min(180,w-32);s.button({x:x+(w-bw)/2,y:y+(compact?98:112),w:bw,h:compact?34:38},'查看全部图集',()=>this.changeListView(()=>{this.albumFilter='all';}),{tone:'cream',icon:'book',fontSize:13});}
+  return y+h;
+ }
+ const cw=(w-gap*(columns-1))/columns,cardH=albumCardHeight(cw,compact),rows=Math.ceil(albums.length/columns);
+ for(let row=0;row<rows;row++){
+  const rowY=y+row*(cardH+gap);
+  if(rowY+cardH<top||rowY>bottom)continue;
+  for(let col=0;col<columns;col++){
+   const album=albums[row*columns+col];
+   if(album)this.drawAlbumCard(data,album,{x:x+col*(cw+gap),y:rowY,w:cw},album.id===selectedId,compact);
+  }
+ }
+ return y+rows*(cardH+gap)-gap;
+}
 
 export function drawCollectionPanel(this:AppHost){
   const s=this.stage,data=this.collection,desktop=this.desktop,landscape=this.layout==='phoneLandscape',pad=12,w=s.w-pad*2;let y=this.bodyTop;
@@ -11,12 +95,14 @@ export function drawCollectionPanel(this:AppHost){
    const tabs=[['albums','图集','book'],['decorations','装饰','leaf']] as const,tw=Math.min(180,(w-8)/2);
    tabs.forEach(([id,label,icon],index)=>s.button({x:pad+index*(tw+8),y,w:tw,h:landscape?32:38},label,()=>this.changeListView(()=>{this.collectionTab=id;this.albumDetailOpen=false;}),{tone:tab===id?'berry':'linen',icon,fontSize:15}));
    if(landscape&&tab==='albums'&&this.albumDetailOpen)s.button({x:pad+tw*2+24,y,w:84,h:32},'‹ 图集',()=>{this.albumDetailOpen=false;this.scroll=0;this.albumListScroll=0;this.invalidate();},{fontSize:12});
-   else if(w>tw*2+200&&!(desktop&&tab==='albums'))s.text(tab==='albums'?'拼完一张图就收进图集，集满有奖励':'装饰会在拖动拼块时展示给同桌',pad+tw*2+24,y+12,13,this.colors.muted,600,w-tw*2-30);
-   y+=landscape?40:50;if(!landscape&&w<=tw*2+200&&tab==='albums'){s.text('拼完一张图就收进图集，集满有奖励',pad+2,y-4,12,this.colors.muted,600,w);y+=20;}
+   else if(w>tw*2+200&&!(desktop&&tab==='albums'))s.text(tab==='albums'?'拼完一张图就收进图集，集满有奖励':'装饰会在拖动拼块时展示给同桌',pad+tw*2+24,y+(landscape?9:12),13,this.colors.muted,600,w-tw*2-30);
+   y+=landscape?38:46;
   }
   this.bodyTop=y;if(!data){s.text('正在翻开收藏…',pad+8,y+32,15);this.extent=0;return;}
   if(tab==='decorations'){this.drawDecorations(data);return;}
-  const albums=this.orderedAlbums(data),selected=albums.find(album=>album.id===this.albumId)??albums.find(album=>this.packFor(data,album.id))??albums[0];
+  const allAlbums=this.orderedAlbums(data),filter:AlbumFilter=this.albumFilter??'all';
+  const albums=allAlbums.filter(album=>albumMatchesFilter(album,this.packFor(data,album.id),filter));
+  const selected=albums.find(album=>album.id===this.albumId)??(!desktop&&this.albumDetailOpen?allAlbums.find(album=>album.id===this.albumId):undefined)??albums.find(album=>this.packFor(data,album.id))??albums[0]??null;
   if(landscape){
    if(this.albumDetailOpen&&selected){
     const leftW=w*.34,gap=12,grid={x:pad+leftW+gap,y,w:w-leftW-gap,h:this.bodyBottom-y};
@@ -31,47 +117,78 @@ export function drawCollectionPanel(this:AppHost){
     this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-grid.h));
     s.clip(grid,()=>this.drawAlbumImages(selected,grid.x,y-this.albumListScroll,grid.w,3));
    }else{
-    const columns=w>=900?4:3,gap=12,cw=(w-gap*(columns-1))/columns;let bottom=y-this.scroll;
-    this.scrolled(()=>{for(let row=0;row<Math.ceil(albums.length/columns);row++){
-     let rowBottom=bottom;for(let col=0;col<columns;col++){const album=albums[row*columns+col];if(album)rowBottom=Math.max(rowBottom,this.drawAlbumCard(data,album,{x:pad+col*(cw+gap),y:bottom,w:cw},false,true));}bottom=rowBottom+gap;
-    }},y,this.bodyBottom);this.extent=bottom+this.scroll-y;
+    const countLabel=filter==='all'?'共 '+albums.length+' 本':albums.length+' / '+allAlbums.length+' 本';
+    y=drawAlbumFilterChips.call(this,pad,y,w,28,filter,w<520,countLabel)+8;this.bodyTop=y;
+    const columns=w>=900?4:w>=540?3:2,gap=12;let end=y;
+    this.scrolled(()=>{end=drawAlbumGrid.call(this,{data,albums,x:pad,y:y-this.scroll,w,columns,gap,top:y,bottom:this.bodyBottom,compact:true,filter});},y,this.bodyBottom);
+    this.extent=Math.max(0,end+this.scroll-y+12);
    }return;
   }
   if(desktop){
-   const listW=Math.min(560,w*.5),detail={x:pad+listW+16,y,w:w-listW-16,h:this.bodyBottom-y};
-   let ly=y-this.scroll;this.listColumn={x:this.contentOrigin.x+pad-4,w:listW+8};
-   this.scrolled(()=>{for(const album of albums)ly=this.drawAlbumCard(data,album,{x:pad,y:ly,w:listW},album.id===selected?.id)+12;},y,this.bodyBottom);this.extent=ly+this.scroll-y;
-   if(selected){s.panel(detail);this.albumListArea={x:this.contentOrigin.x+detail.x,y:this.contentOrigin.y+detail.y+8,w:detail.w,h:detail.h-16};let dy=detail.y+16-this.albumListScroll;const inner={x:detail.x+16,w:detail.w-32};
-    s.clip({x:detail.x+4,y:detail.y+6,w:detail.w-8,h:detail.h-12},()=>{dy=this.drawAlbumDetail(data,selected,inner.x,dy,inner.w,3);});this.albumListExtent=dy+this.albumListScroll-detail.y;this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-detail.h+16));}
+   const listW=Math.min(580,Math.max(320,Math.round(w*.54))),detail={x:pad+listW+16,y,w:w-listW-16,h:this.bodyBottom-y};
+   const listTop=drawAlbumFilterChips.call(this,pad,y,listW,30,filter,true)+10;this.bodyTop=listTop;
+   this.listColumn={x:this.contentOrigin.x+pad-4,w:listW+8};
+   const columns=listW>=340?2:1,gap=12;let end=listTop;
+   this.scrolled(()=>{end=drawAlbumGrid.call(this,{data,albums,x:pad,y:listTop-this.scroll,w:listW,columns,gap,top:listTop,bottom:this.bodyBottom,selectedId:selected?.id??null,compact:false,filter});},listTop,this.bodyBottom);
+   this.extent=Math.max(0,end+this.scroll-listTop+12);
+   if(selected){
+    s.panel(detail);this.albumListArea={x:this.contentOrigin.x+detail.x,y:this.contentOrigin.y+detail.y+8,w:detail.w,h:detail.h-16};let dy=detail.y+16-this.albumListScroll;const inner={x:detail.x+16,w:detail.w-32},detailCols=inner.w>=380?3:2;
+    s.clip({x:detail.x+4,y:detail.y+6,w:detail.w-8,h:detail.h-12},()=>{dy=this.drawAlbumDetail(data,selected,inner.x,dy,inner.w,detailCols);});this.albumListExtent=dy+this.albumListScroll-detail.y;this.albumListScroll=clamp(this.albumListScroll,0,Math.max(0,this.albumListExtent-detail.h+16));
+   }else{
+    s.panel(detail);this.albumListArea={x:0,y:0,w:0,h:0};this.albumListExtent=0;this.albumListScroll=0;
+    const hint='换个分类看看，或点击左侧「查看全部图集」';
+    s.icon('book',{x:detail.x+(detail.w-40)/2,y:detail.y+Math.max(48,detail.h*.32),w:40,h:40});
+    s.text(hint,detail.x+(detail.w-Math.min(detail.w-32,s.measure(hint,13,700)))/2,detail.y+Math.max(48,detail.h*.32)+54,13,this.colors.muted,700,detail.w-32);
+   }
    return;
   }
-  let cy=y-this.scroll;
-  this.scrolled(()=>{
-   if(this.albumDetailOpen&&selected){s.button({x:pad,y:cy,w:84,h:34},'‹ 图集',()=>{this.albumDetailOpen=false;this.scroll=0;this.invalidate();},{fontSize:14});cy=this.drawAlbumDetail(data,selected,pad,cy+46,w,2);}
-   else for(const album of albums)cy=this.drawAlbumCard(data,album,{x:pad,y:cy,w},false)+12;
-  },y,this.bodyBottom);this.extent=cy+this.scroll-y+12;
+  if(this.albumDetailOpen&&selected){
+   let cy=y-this.scroll;
+   this.scrolled(()=>{
+    s.button({x:pad,y:cy,w:84,h:34},'‹ 图集',()=>{this.albumDetailOpen=false;this.scroll=0;this.invalidate();},{fontSize:14});
+    cy=this.drawAlbumDetail(data,selected,pad,cy+46,w,w>=600?3:2);
+   },y,this.bodyBottom);
+   this.extent=cy+this.scroll-y+12;
+   return;
+  }
+  const countLabel=filter==='all'?'共 '+albums.length+' 本':albums.length+' / '+allAlbums.length+' 本';
+  y=drawAlbumFilterChips.call(this,pad,y,w,30,filter,w<560,countLabel)+10;this.bodyTop=y;
+  const columns=w>=600?3:2,gap=w>=600?12:10;let end=y;
+  this.scrolled(()=>{end=drawAlbumGrid.call(this,{data,albums,x:pad,y:y-this.scroll,w,columns,gap,top:y,bottom:this.bodyBottom,compact:false,filter});},y,this.bodyBottom);
+  this.extent=Math.max(0,end+this.scroll-y+12);
  }
 
 export function drawAlbumCardPanel(this:AppHost,data:MobileCollectionView,album:CollectionAlbum,r:{x:number;y:number;w:number},selected:boolean,compact=false){
-  const s=this.stage,pack=this.packFor(data,album.id),ink=this.colors.ink;
-  if(compact){const h=164,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');
-   if(pack)s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||''),{x:r.x+5,y:r.y+5,w:r.w-10,h:65},'cover');else s.icon('book',{x:r.x+12,y:r.y+12,w:46,h:46});
-   s.text(album.title,r.x+10,r.y+77,15,ink,800,r.w-20);s.text('已收集 '+album.collected+'/'+album.total,r.x+10,r.y+100,12,this.colors.muted,700,r.w-20);
-   s.meter({x:r.x+10,y:r.y+121,w:r.w-20,h:8},album.collected/Math.max(1,album.total));
-   if(pack&&!pack.owned)s.button({x:r.x+8,y:r.y+133,w:r.w-16,h:26},this.packOfferLabel(pack),()=>this.openPackOffer(pack),{icon:pack.unlock==='ad'?'lock':'coin',fontSize:12,disabled:this.busy});
-   else s.text(this.nextMilestoneText(data,album),r.x+10,r.y+140,11,this.colors.muted,600,r.w-20);
-   s.hit({...card,h:130},()=>this.openAlbum(album.id));return r.y+h;
+  const s=this.stage,c=s.ctx,pack=this.packFor(data,album.id),ink=this.colors.ink,narrow=r.w<168;
+  const coverH=albumCoverHeight(r.w,compact),btnH=compact||narrow?26:30,h=albumCardHeight(r.w,compact);
+  const card={...r,h},art={x:r.x+5,y:r.y+5,w:r.w-10,h:coverH};
+  const ty=art.y+art.h+(compact?7:8),py=ty+(compact||narrow?19:21),my=py+(compact||narrow?16:17),fy=my+(compact?11:12);
+  s.frame(card,selected?'panel-gold':'button-linen-normal');
+  const cover=pack?.coverSrc||pack?.images[0]?.thumbSrc||album.images[0]?.thumbSrc||'';
+  if(cover)s.image(this.client.asset(cover),art,'cover');
+  else{c.fillStyle=this.colors.placeholder;c.fillRect(art.x,art.y,art.w,art.h);s.icon('book',{x:art.x+(art.w-36)/2,y:art.y+(art.h-36)/2,w:36,h:36});}
+  const adPack=pack?.unlock==='ad',completed=isAlbumCompleted(album),locked=!!pack&&!pack.owned&&album.collected===0&&!(adPack&&(pack.unlocked??0)>0);
+  if(!completed&&album.milestones.some(milestone=>!!milestone.decorationId)){
+   const tag='赠装饰',tf=compact||narrow?9:10,tw=Math.min(Math.floor(art.w*.45),Math.ceil(s.measure(tag,tf,800))+10),th=compact||narrow?16:18;
+   c.fillStyle=s.color('#a8722c');c.fillRect(art.x+5,art.y+5,tw,th);
+   s.text(tag,art.x+5+(tw-Math.min(tw-4,s.measure(tag,tf,800)))/2,art.y+5+Math.floor((th-tf)/2)-1,tf,'#fffaf0',800,tw-4);
   }
-  if(!pack){const h=100,card={...r,h};s.frame(card,selected?'panel-gold':'button-linen-normal');s.icon('book',{x:r.x+14,y:r.y+18,w:44,h:40});s.text(album.title,r.x+68,r.y+14,17,ink,800,r.w-170);s.text('每日拼图自动收进来',r.x+68,r.y+38,12,this.colors.muted,600,r.w-170);
-   const count=album.collected+' / '+album.total;s.text(count,r.x+r.w-14-s.measure(count,15,800),r.y+16,15,ink,800);s.meter({x:r.x+68,y:r.y+60,w:r.w-84,h:9},album.collected/Math.max(1,album.total));s.text(this.nextMilestoneText(data,album),r.x+68,r.y+76,12,this.colors.muted,600,r.w-84);s.hit(card,()=>this.openAlbum(album.id));return r.y+h;}
-  const coverH=Math.min(170,r.w*.42),h=coverH+52,card={...r,h},cover={x:r.x+6,y:r.y+6,w:r.w-12,h:coverH},adPack=pack.unlock==='ad',locked=!pack.owned&&album.collected===0&&!(adPack&&(pack.unlocked??0)>0);
-  s.frame(card,selected?'panel-gold':'button-linen-normal');s.image(this.client.asset(pack.coverSrc||pack.images[0]?.thumbSrc||album.images[0]?.thumbSrc||''),cover,'cover');
-  const c=s.ctx,shade=c.createLinearGradient(0,cover.y+coverH*.35,0,cover.y+coverH);shade.addColorStop(0,'#2a142000');shade.addColorStop(1,'#2a1420d9');c.fillStyle=shade;c.fillRect(cover.x,cover.y,cover.w,cover.h);
-  s.text(album.title,cover.x+14,cover.y+coverH-52,20,'#fff8ec',800,cover.w-130);s.text(album.description,cover.x+14,cover.y+coverH-24,12,'#fff3e2',500,cover.w-28);
-  const badge=adPack&&!pack.owned?'已解锁 '+(pack.unlocked??0)+'/'+album.total:locked?'未解锁':album.collected>=album.total?album.collected+' / '+album.total+' ✓':album.collected+' / '+album.total,bw=s.measure(badge,13,800)+18;c.fillStyle=s.color(locked?'#573b40':'#a85567');c.fillRect(cover.x+cover.w-bw-10,cover.y+10,bw,24);s.text(badge,cover.x+cover.w-bw+(-1),cover.y+15,13,'#fffaf0',800);
-  const fy=r.y+coverH+16;s.text(this.nextMilestoneText(data,album),r.x+14,fy+2,13,ink,600,r.w-140);
-  if(!pack.owned){const bw=adPack?124:104;s.button({x:r.x+r.w-bw-12,y:fy-6,w:bw,h:34},this.packOfferLabel(pack),()=>this.openPackOffer(pack),{tone:'berrydark',icon:adPack?'lock':'coin',fontSize:13,disabled:this.busy});s.hit({x:r.x,y:r.y,w:r.w-120,h},()=>this.openAlbum(album.id));}
-  else{s.text('查看 ›',r.x+r.w-60,fy+2,13,this.colors.berry,700);s.hit(card,()=>this.openAlbum(album.id));}
+  const badge=completed?'已集齐 ✓':!pack?'免费':adPack&&!pack.owned?(narrow?'广告 ':'看广告 ')+(pack.unlocked??0)+'/'+album.total:pack.owned?'已解锁':album.collected>0?album.collected+'/'+album.total:'未解锁';
+  const badgeFont=compact||narrow?10:11,bw=Math.min(art.w-10,Math.ceil(s.measure(badge,badgeFont,800))+14),bh=compact||narrow?18:20,bx=art.x+art.w-bw-5,by=art.y+5;
+  c.fillStyle=s.color(completed||!pack||pack.owned?'#597a50':locked?'#573b40':'#a85567');c.fillRect(bx,by,bw,bh);
+  s.text(badge,bx+(bw-Math.min(bw-8,s.measure(badge,badgeFont,800)))/2,by+Math.floor((bh-badgeFont)/2)-1,badgeFont,'#fffaf0',800,bw-6);
+  s.text(album.title,r.x+9,ty,narrow||compact?13:15,ink,800,r.w-18);
+  s.text('已收集 '+album.collected+'/'+album.total,r.x+9,py,narrow||compact?11:12,this.colors.muted,700,r.w-18);
+  s.meter({x:r.x+9,y:my,w:r.w-18,h:compact?7:8},album.collected/Math.max(1,album.total));
+  if(pack&&!pack.owned){
+   s.button({x:r.x+8,y:fy,w:r.w-16,h:btnH},this.packOfferLabel(pack),()=>this.openPackOffer(pack),{tone:adPack?'berrydark':'berry',icon:adPack?'lock':'coin',fontSize:narrow||compact?11:12,disabled:this.busy});
+   s.hit({x:r.x,y:r.y,w:r.w,h:fy-r.y-2},()=>this.openAlbum(album.id));
+  }else{
+   const reward=this.nextMilestoneText(data,album)||(completed?'已集齐全部插画':'点击查看图集'),showView=!compact&&!narrow,viewW=showView?s.measure('查看 ›',12,700)+8:0;
+   s.text(reward,r.x+9,fy+Math.max(3,Math.floor((btnH-11)/2)),11,completed?'#597a50':this.colors.muted,700,r.w-18-viewW);
+   if(showView)s.text('查看 ›',r.x+r.w-9-s.measure('查看 ›',12,700),fy+Math.max(3,Math.floor((btnH-12)/2)),12,this.colors.berry,700);
+   s.hit(card,()=>this.openAlbum(album.id));
+  }
   return r.y+h;
  }
 
