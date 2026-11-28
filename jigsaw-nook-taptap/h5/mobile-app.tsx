@@ -55,11 +55,27 @@ function useLaunchRoom(){
 }
 
 export function MobileLobby(){
- const {profile}=useMobilePlayer();const [filters,setFilters]=useState<Filters>({direction:'all',pieces:0,open:true,active:false}),[filterOpen,setFilterOpen]=useState(false),[notice,setNotice]=useState('');
+ const {profile,refresh}=useMobilePlayer();const [filters,setFilters]=useState<Filters>({direction:'all',pieces:0,open:true,active:false}),[filterOpen,setFilterOpen]=useState(false),[notice,setNotice]=useState(''),[tuanziOpen,setTuanziOpen]=useState(false);
  const lobby=useLobby(filters),creation=useLaunchRoom();const moreRef=useMoreOnScroll(lobby.loadMore,lobby.hasMore&&!lobby.loadingMore&&!lobby.error);
+ function openTuanziV2(){
+  const hostWindow=window as unknown as {__JIGSAW_TUANZI_BRIDGE__?:Record<string,unknown>};
+  const jsonApi=async(path:string,method='GET',body?:unknown)=>{
+   const resp=await apiFetch(path,{method,headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,cache:'no-store'});
+   return await resp.json();
+  };
+  hostWindow.__JIGSAW_TUANZI_BRIDGE__={
+   loadState:()=>jsonApi('/api/mobile/tuanzi-v2/state'),
+   saveState:(state:unknown)=>jsonApi('/api/mobile/tuanzi-v2/sync','POST',{state}),
+   wallet:{read:()=>jsonApi('/api/mobile/tuanzi-v2/state'),apply:async(source:string,delta:number)=>{const d=await jsonApi('/api/mobile/tuanzi-v2/wallet','POST',{source,delta});void refresh().catch(()=>{});return d;}},
+   host:{close:()=>{setTuanziOpen(false);void refresh().catch(()=>{});},openPuzzle:()=>{setTuanziOpen(false);navigate('/zh/gallery');}},
+   reportSummary:()=>{},
+  };
+  setTuanziOpen(true);
+ }
  function quickJoin(){const room=lobby.rooms.find(room=>room.players<8&&room.acceptingNew!==false&&!room.completed);if(room)navigate('/room/'+room.id);else setNotice('暂时没有符合筛选条件的空位，可以创建一间。');}
  return <main className="mobile-app mobile-lobby"><MobileStatus/>
-  <div className="mobile-lobby-heading"><h1><MobileArt kind="piece"/>拼图大厅</h1><PixelButton tone="gold" type="button" className="mobile-daily" disabled={creation.busy||!profile} onClick={()=>void creation.launch({mode:'daily',pieces:108,visibility:'public'})}><MobileArt kind="daily"/>每日拼图 <small>· 108片</small></PixelButton><button type="button" className="mobile-lobby-collection" onClick={()=>navigate('/zh/collection')}><MobileArt kind="book"/><span>收藏</span></button></div>
+  <div className="mobile-lobby-heading"><h1><MobileArt kind="piece"/>拼图大厅</h1><PixelButton tone="gold" type="button" className="mobile-daily" disabled={creation.busy||!profile} onClick={()=>void creation.launch({mode:'daily',pieces:108,visibility:'public'})}><MobileArt kind="daily"/>每日拼图 <small>· 108片</small></PixelButton><button type="button" className="mobile-lobby-collection" onClick={openTuanziV2}><MobileArt kind="book"/><span>团子小窝</span></button><button type="button" className="mobile-lobby-collection" onClick={()=>navigate('/zh/collection')}><MobileArt kind="book"/><span>收藏</span></button></div>
+  {tuanziOpen&&<div style={{position:'fixed',inset:0,zIndex:9999,background:'#1c120c'}}><iframe src="/tuanzi-v2/index.html?embed=1" title="团子去旅行 2.0" allow="autoplay" style={{width:'100%',height:'100%',border:0,display:'block'}}/></div>}
   <div className="mobile-lobby-controls"><div className="mobile-filter-line"><DirectionPicker compact value={filters.direction} onChange={direction=>{setFilters(old=>({...old,direction}));setNotice('');}}/><PixelButton tone="cream" type="button" className={'mobile-filter-button'+(filters.pieces||filters.active||filters.direction==='square'?' is-active':'')} aria-label="筛选房间" onClick={()=>setFilterOpen(true)}><MobileArt kind="filter"/><span>筛选</span></PixelButton></div>
   <div className="mobile-primary-actions"><PixelButton tone="berry" type="button" className="mobile-button mobile-primary" disabled={lobby.loading} onClick={quickJoin}><MobileArt kind="players"/>快速加入</PixelButton><PixelButton tone="cream" type="button" className="mobile-button mobile-secondary" onClick={()=>navigate('/zh/gallery')}><MobileArt kind="create"/>创建房间</PixelButton></div></div>
   {creation.error&&<MobileNotice message={creation.error}/>}{notice&&<p className="mobile-inline-status" role="status">{notice}</p>}

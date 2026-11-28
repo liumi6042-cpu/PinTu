@@ -119,13 +119,37 @@ export function drawLobbyStartupPanel(this:AppHost){
   this.extent=top+h-this.bodyTop+18;
  }
 
+export function drawTuanziLobbyCardPanel(this:AppHost,r:Rect,compact:boolean){
+  const s=this.stage,sum=this.tuanziV2?.summary??{collected:0,total:50,developed:0,unread:0,isAway:false,loaded:false};
+  const ink=this.colors.ink,muted=this.colors.muted,bw=compact?74:86,bh=compact?32:36;
+  s.frame(r,'panel-gold');
+  const iconSize=compact?34:42;
+  s.icon('book',{x:r.x+10,y:r.y+(r.h-iconSize)/2,w:iconSize,h:iconSize});
+  if(sum.unread>0){
+   const dot=String(Math.min(99,sum.unread)),dw=Math.max(16,s.measure(dot,10,700)+8);
+   s.frame({x:r.x+10+iconSize-dw+4,y:r.y+(r.h-iconSize)/2-4,w:dw,h:16},'segment-berry-selected');
+   s.text(dot,r.x+10+iconSize-dw+4+(dw-s.measure(dot,10,700))/2,r.y+(r.h-iconSize)/2-2,10,this.colors.onAccent,700);
+  }
+  const tx=r.x+18+iconSize,tw=Math.max(60,r.w-tx+r.x-bw-14);
+  const title=compact?'团子的小窝 · 华夏行记':'团子的小窝 · 华夏行记 50 城';
+  const sub=sum.unread>0
+   ?`有 ${sum.unread} 封新来信 · 华夏集 ${sum.collected}/${sum.total} 城`
+   :`已集齐 ${sum.collected}/${sum.total} 城 · 24/48/108片明信片`;
+  s.text(title,tx,r.y+(compact?10:13),compact?13:15,ink,800,tw);
+  s.text(sub,tx,r.y+(compact?30:37),compact?11:12,muted,600,tw);
+  s.button({x:r.x+r.w-bw-10,y:r.y+(r.h-bh)/2,w:bw,h:bh},'进小窝',()=>this.openTuanziV2(),{tone:'berry',fontSize:compact?12:13});
+  s.hit(r,()=>this.openTuanziV2());
+}
+
 export function drawLobbyPanel(this:AppHost){
   const s=this.stage,layout=this.layout,gap=layout==='phoneLandscape'?10:14,top=this.bodyTop,bottom=this.bodyBottom,width=Math.min(1400,s.w-24),left=(s.w-width)/2;
+  const showTuanzi=this.tuanziV2?.available===true;
   if(layout==='phonePortrait'){
-   // One scrolling column: hero, last room, actions, then the public rooms.
+   // One scrolling column: hero, Tuanzi nook card, last room, actions, then the public rooms.
    let y=top-this.scroll;const columns=width>=520?3:2;
    this.scrolled(()=>{
     const heroH=Math.min(s.h*.45,this.heroTextHeight(false)+Math.min(width*.52,220)+16);y=this.drawDailyHero({x:left,y,w:width,h:heroH},false)+gap;
+    if(showTuanzi){drawTuanziLobbyCardPanel.call(this,{x:left,y,w:width,h:68},false);y+=68+gap;}
     const last=this.continueRoom;if(last){this.drawContinueRoom(last,{x:left,y,w:width,h:72});y+=72+gap;}
     this.drawLobbyActions({x:left,y,w:width,h:46});y+=46+gap+4;
     y=this.drawRoomSection(left,y,width,columns,top,bottom);
@@ -134,8 +158,9 @@ export function drawLobbyPanel(this:AppHost){
   }
   // Desktop and phone landscape: a fixed left column and a room list that scrolls by itself.
   const landscape=layout==='phoneLandscape',leftW=landscape?Math.min(300,width*.42):Math.min(380,width*.36),rightX=left+leftW+gap+6,rightW=left+width-rightX;
-  let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,rest=(last?continueH+gap:0)+actionH+gap,heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
+  let y=top;const last=this.continueRoom,actionH=landscape?38:46,continueH=landscape?52:76,tuanziH=showTuanzi?(landscape?54:68):0,rest=(tuanziH?tuanziH+gap:0)+(last?continueH+gap:0)+actionH+gap,heroH=Math.max(this.heroTextHeight(landscape)+16,Math.min(landscape?bottom-top-rest:430,bottom-top-rest));
   y=this.drawDailyHero({x:left,y,w:leftW,h:heroH},landscape)+gap;
+  if(showTuanzi){drawTuanziLobbyCardPanel.call(this,{x:left,y,w:leftW,h:tuanziH},landscape);y+=tuanziH+gap;}
   if(last){this.drawContinueRoom(last,{x:left,y,w:leftW,h:continueH});y+=continueH+gap;}
   this.drawLobbyActions({x:left,y,w:leftW,h:actionH});
   const header=this.drawRoomHeader(rightX,top,rightW,landscape),columns=landscape?3:rightW>=900?4:3;

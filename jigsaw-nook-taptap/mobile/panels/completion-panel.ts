@@ -71,6 +71,18 @@ export function drawCompletionBarPanel(this:AppHost,r:Rect){
 
 export function drawCompletionContentPanel(this:AppHost,left:number,cy:number,width:number,landscape=false,panel?:Rect){
   if(this.offlineRoom)return this.offline.drawCompletion(this.stage,{...this.room!.ticket,room:this.room!.snapshot},left,cy,width,landscape,panel,{picture:r=>this.drawCompletionPicture(r),paragraph:(...args)=>this.paragraph(...args),launch:input=>void this.run(()=>this.launchOffline(input)),back:()=>this.exitRoom(),comic:{available:id=>this.hasLevelComic(id),open:id=>this.openLevelComic(id,{fromClear:true})},story:id=>{const story=this.storyCompletionLines(id,this.offline.view?.chapters??[],Math.floor(width/13));return story?[story.progress+(story.reward?' · '+story.reward:''),...(story.teaser?[story.teaser]:[])]:null;},nextButton:(r,label,action)=>this.breathButton(r,label,action)});
+  if(this.postcardRoom){
+   const s=this.stage,room=this.room,snap=room?.snapshot,ink=this.colors.ink,muted=this.colors.muted;
+   const pieces=room?room.state.cols*room.state.rows:108;
+   if(landscape&&panel){const side=Math.min(240,panel.h-90,panel.w*.43);this.drawCompletionPicture({x:panel.x+16,y:panel.y+45,w:side,h:side});left=panel.x+side+32;width=panel.x+panel.w-left-16;cy=panel.y+48;}
+   else{const h=Math.min(width*.62,230);this.drawCompletionPicture({x:left,y:cy,w:width,h});cy+=h+16;}
+   const title=(snap?.title||'华夏明信片')+' · '+pieces+' 片完成！';
+   s.text(title,left,cy,landscape?17:20,ink,800,width);cy+=landscape?28:32;
+   const rewardText=this.postcardRewardCoins>0?`已入账主游戏金币 +${this.postcardRewardCoins}（不消耗体力）`:'《华夏行记》高片数挑战已完成，已保存纪念进度。';
+   cy=this.paragraph(rewardText,left,cy,width,13)+18;
+   s.button({x:left,y:cy,w:width,h:42},'回到团子的小窝',()=>{this.exitRoom();this.openTuanziV2('scrapbook');},{tone:'berry',fontSize:15});cy+=50;
+   s.button({x:left,y:cy,w:width,h:40},'返回大厅',()=>this.exitRoom(),{fontSize:14});return cy+48;
+  }
   const s=this.stage,room=this.room,snap=room?.snapshot as unknown as {title?:string;photo?:{title?:string};puzzle?:{imageId?:string};startedAt?:number|null;completedAt?:number|null;members?:Array<{name:string;code?:string|null;contribution?:number}>;mobileResult?:any}|undefined,result=snap?.mobileResult,ink=this.colors.ink,muted=this.colors.muted,center=(text:string,y:number,size:number,color:string,weight=700)=>s.text(text,left+Math.max(0,(width-s.measure(text,size,weight))/2),y,size,color,weight,width);
   const seats=this.completionSeats(),levelClear=(result?.levelClear??this.levelDestination()??undefined) as import('../../h5/mobile-api').MobileLevelClear|undefined,chapterComplete=levelClear&&(levelClear.chapterComplete||levelClear.nextLevelId===null),levelLandscape=landscape&&!!levelClear;
   if(!landscape&&!this.completionOutsideSeats(left-20,width+40)){this.completionAvatarRects.clear();this.completionSlotRects.clear();}

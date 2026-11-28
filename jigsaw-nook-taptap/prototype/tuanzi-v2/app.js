@@ -14,6 +14,47 @@ import { sound } from './audio.js';
 import { PUZZLE_TIERS, mountWorkbenchPuzzle } from './puzzle.js';
 
 const STORAGE_KEY = 'jigsaw:tuanzi-v2-prototype:v4';
+const urlParams = new URLSearchParams(location.search);
+
+function resolveHostBridge() {
+  try {
+    return window.__JIGSAW_TUANZI_BRIDGE__ || (window.parent && window.parent !== window ? window.parent.__JIGSAW_TUANZI_BRIDGE__ : null) || null;
+  } catch {
+    return null;
+  }
+}
+const hostBridge = resolveHostBridge();
+const isEmbedMode = urlParams.get('embed') === '1' || Boolean(hostBridge);
+if (isEmbedMode) {
+  document.body.classList.add('embed-mode');
+  if (hostBridge?.wallet && !window.jigsawWallet) window.jigsawWallet = hostBridge.wallet;
+  if (hostBridge?.rewardedAd && !window.jigsawRewardedAd) window.jigsawRewardedAd = hostBridge.rewardedAd;
+  if (hostBridge?.host && !window.jigsawHost) window.jigsawHost = hostBridge.host;
+}
+
+let cloudSyncTimer = 0;
+function reportHostSummary(nextState) {
+  if (!hostBridge?.reportSummary || !nextState) return;
+  try {
+    const china = getChinaCollectionStats(nextState);
+    const unread = (nextState.postcards || []).filter(c => !c.read).length + (nextState.letters || []).filter(l => !l.read).length;
+    hostBridge.reportSummary({
+      collected: china.collected,
+      total: china.total,
+      developed: china.developed,
+      unread,
+      isAway: Boolean(nextState.trip),
+      coins: nextState.coins,
+    });
+  } catch {}
+}
+
+function flushCloudStateNow(nextState) {
+  if (!hostBridge?.saveState || !nextState) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = 0;
+  try { void hostBridge.saveState(nextState); } catch {}
+}
 
 function loadState() {
   try {
@@ -26,13 +67,38 @@ function loadState() {
   return createInitialState();
 }
 
-function saveState(state) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+function saveState(nextState) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState)); } catch {}
+  reportHostSummary(nextState);
+  if (hostBridge?.saveState) {
+    clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = setTimeout(() => {
+      cloudSyncTimer = 0;
+      void hostBridge.saveState(nextState).catch(() => {});
+    }, 700);
+  }
 }
 
 let state = loadState();
-let walletMeta = { linked: false, owner: '', linkedMainProfile: false };
+let walletMeta = { linked: Boolean(hostBridge), owner: '', linkedMainProfile: Boolean(hostBridge) };
 let activeScreen = 'nook'; // 'nook' | 'bag' | 'gacha' | 'reunion' | 'mailbox' | 'shop' | 'scrapbook'
+
+async function hydrateFromHostCloud() {
+  if (!hostBridge?.loadState) return;
+  try {
+    const remote = await hostBridge.loadState();
+    if (remote?.state && remote.state.version === 4) {
+      state = remote.state;
+    }
+    if (typeof remote?.coins === 'number') {
+      walletMeta = { linked: true, owner: remote.owner || 'host', linkedMainProfile: true };
+      state = syncWalletCoins(state, remote.coins);
+    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    reportHostSummary(state);
+    renderAll();
+  } catch {}
+}
 
 /** 直接读写主游戏统一金币钱包（host 注入 window.jigsawWallet 或本地 /api/mobile/wallet -> mobile_collection_wallets） */
 async function refreshMainWallet() {
@@ -176,7 +242,7 @@ function setScreen(next) {
 }
 
 /** 统一激励视频桥接：宿主已接 TapTap/微信 tap-rewarded.ts 时直调真广告，原型预览时展示可交互模拟播放器 */
-function watchRewardedAd(placementId, customDesc = null) {
+async function watchRewardedAd(placementId, customDesc = null) {
   const cfg = AD_PLACEMENTS[placementId];
   if (!cfg) return Promise.resolve({ completed: false });
   if (getAdRemaining(state, placementId) <= 0) {
@@ -184,8 +250,13 @@ function watchRewardedAd(placementId, customDesc = null) {
     return Promise.resolve({ completed: false });
   }
   if (window.jigsawRewardedAd?.watch) {
-    return Promise.resolve(window.jigsawRewardedAd.watch(cfg.adUnitId, placementId))
-      .then(outcome => ({ completed: outcome === 'completed' || outcome === true }));
+    const hostOutcome = await Promise.resolve(window.jigsawRewardedAd.watch(cfg.adUnitId, placementId)).catch(() => 'unavailable');
+    if (hostOutcome === 'completed' || hostOutcome === true) return { completed: true };
+    if (hostOutcome === 'closed' || hostOutcome === 'failed') {
+      showToast(hostOutcome === 'closed' ? '提前关闭视频，未发放奖励' : '广告暂时无法播放，请稍后重试');
+      return { completed: false };
+    }
+    // When host returns 'unavailable' in local browser preview, fall through to in-game ad preview modal.
   }
 
   return new Promise((resolve) => {
@@ -1455,6 +1526,12 @@ function renderMailboxBook(el) {
           <span>${unlockedMore ? '挑战 48 片异形拼图' : '全屏 24 片显影 (+30 金币)'}</span>
           <img class="sl" src="./assets/uikit/wax-paw.webp" alt="" />
         </button>
+        ${unlockedMore ? `
+          <div class="pc-main-sync-row">
+            <button class="craft-btn pc-main-sync-btn" id="btn-pc-main-108">主游戏 108 片大图</button>
+            <button class="craft-btn pc-main-sync-btn gold" id="btn-pc-main-300">主游戏 300 片挑战</button>
+          </div>
+        ` : ''}
       </div>
     `;
     bindBookCommon(el);
@@ -1471,6 +1548,17 @@ function renderMailboxBook(el) {
     $('btn-play-pc').addEventListener('click', () => {
       openPuzzleWorkbench(card.uid, unlockedMore ? 48 : 24, 'mailbox');
     });
+    const launchInMain = (pieces) => {
+      flushCloudStateNow(state);
+      if (window.jigsawHost?.openPuzzle) {
+        window.jigsawHost.openPuzzle({ photoId: tpl.id, title: tpl.fullTitle || tpl.title, imageSrc: tpl.src, pieces });
+        return;
+      }
+      sound.fishChime();
+      showToast(`「${tpl.fullTitle || tpl.title}」已同步主游戏画廊，可开 ${pieces} 片拼图桌！`);
+    };
+    $('btn-pc-main-108')?.addEventListener('click', () => launchInMain(108));
+    $('btn-pc-main-300')?.addEventListener('click', () => launchInMain(300));
   } else {
     // 拾光来信（一屏一事，真实折纸回信）
     const letters = state.letters;
@@ -2334,7 +2422,13 @@ $('btn-demo-china-album')?.addEventListener('click', () => {
 });
 
 // 支持 URL ?demo=day30|decorated|china-album|china-partial 和 ?screen=gacha|decor|shop|mailbox|scrapbook|bag|puzzle 直接预览指定页
-const urlParams = new URLSearchParams(location.search);
+$('btn-exit-host')?.addEventListener('click', () => {
+  flushCloudStateNow(state);
+  sound.paperTurn();
+  if (window.jigsawHost?.close) window.jigsawHost.close();
+});
+window.addEventListener('pagehide', () => flushCloudStateNow(state));
+
 if (urlParams.get('demo') === 'china-album' || urlParams.get('demo') === 'china-partial') {
   state = createInitialState();
   const isFull = urlParams.get('demo') === 'china-album';
@@ -2434,7 +2528,12 @@ if (initScreen === 'puzzle') {
 }
 
 renderAll();
-void refreshMainWallet();
+reportHostSummary(state);
+if (hostBridge?.loadState) {
+  void hydrateFromHostCloud();
+} else {
+  void refreshMainWallet();
+}
 window.addEventListener('focus', () => { void refreshMainWallet(); });
 requestAnimationFrame(() => {
   $('room-bg-day30').classList.add('smooth-fade');

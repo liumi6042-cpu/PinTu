@@ -3,6 +3,8 @@ import {GameClient,type PlayerCard} from './client';
 import {Stage} from './ui';
 import {comicFor,reducedComicMotion,type Comic,type ComicPageState} from './story-comic';
 import {OfflineMode,OFFLINE_REQUIRED,type OfflineInput} from './offline-mode';
+import {createPostcardRooms,settlePostcard} from '../lib/postcard-play';
+import {TuanziV2Controller,type TuanziMainPuzzleRequest} from './tuanzi-v2-bridge';
 import {cacheServerLevels,isNetworkFailure,preferOfflineLevelRoom} from '../lib/offline-play';
 import {PuzzleBoard,DRAG_SLOP} from './puzzle-board';
 import {SocialPanel} from './social-panel';
@@ -61,7 +63,32 @@ export class GameApp{
  private startupPending:Promise<void>|null=null;private startupError='';private startupHooks=false;private startupQuery:Record<string,string>|null=null;
  private soloOutboxesFlushed=false;
  private readonly offline:OfflineMode;
+ private readonly postcards:ReturnType<typeof createPostcardRooms>;
+ private readonly tuanziV2:TuanziV2Controller;
+ private postcardRewardCoins=0;
  private get offlineRoom(){return this.offline?.isRoom(this.room?.ticket?.room?.id)??false;}
+ private get postcardRoom(){return this.postcards?.isRoom(this.room?.ticket?.room?.id)??false;}
+ private get localRoom(){return this.offlineRoom||this.postcardRoom;}
+ private openTuanziV2(screen?:string){
+  if(!this.tuanziV2?.available){this.note('团子的小窝当前平台暂未开放');return;}
+  this.tuanziV2.open(screen);
+ }
+ private async openTuanziMainPuzzle(req:TuanziMainPuzzleRequest){
+  if(!req||!req.photoId)return;
+  const pieces=req.pieces>=300?300:req.pieces>=108?108:48;
+  const cols=pieces===300?20:pieces===108?12:8;
+  const rows=pieces===300?15:pieces===108?9:6;
+  const src=this.tuanziV2.resolveAssetUrl(req.imageSrc);
+  const imageId='tuanzi-cn-'+req.photoId;
+  photoMap.set(imageId,{id:imageId,title:req.title||'华夏明信片',src,thumbSrc:src,category:'华夏明信片',width:960,height:640});
+  this.postcardRewardCoins=0;
+  try{
+   const ticket=this.postcards.open({cardId:req.photoId,imageId,title:req.title||'华夏明信片',src,thumbSrc:src,width:960,height:640,cols,rows,pieces});
+   await this.attachTicket(ticket);
+  }catch(error){
+   this.note(errorText(error));
+  }
+ }
  private syncOffline(){if(this.ready)void this.offline?.sync(this.client,levels=>{this.levels=levels;this.levelsOwner=this.ownerKey();this.invalidate();},message=>this.note(message));}
  private enterOffline(){this.offline.active=true;this.initTelemetryOnce(this.client.profile);this.route='chapter';this.scroll=0;this.modal=null;this.invalidate();}
  private async launchOffline(input:OfflineInput){await this.attachTicket(this.offline.createRoom(input));}
@@ -206,6 +233,20 @@ export class GameApp{
  private albumListArea:Rect={x:0,y:0,w:0,h:0};private albumListScroll=0;private albumListExtent=0;
  constructor(readonly platform:Platform,readonly client:GameClient,readonly stage:Stage){
   this.offline=new OfflineMode(platform);for(const photo of Object.values(this.offline.catalog?.photos??{}))photoMap.set(photo.id,photo);
+  this.postcards=createPostcardRooms({storage:platform.storage,now:()=>Date.now(),randomId:()=>platform.randomId(),playerName:client.profile?.name??'我'});
+  this.tuanziV2=new TuanziV2Controller(platform,client,{
+   onChange:()=>this.invalidate(),
+   onOpenMainPuzzle:req=>void this.openTuanziMainPuzzle(req),
+   onNote:msg=>this.note(msg),
+   watchRewardedAd:async()=>{
+    if(!this.supplyAdAvailable)return 'unavailable';
+    const unit=this.rewardedSlot().unit;
+    if(!unit)return 'unavailable';
+    try{
+     return this.telemetry?.adEnabled?await this.telemetry.watchRewardedAd('daily_ad_reward',unit,{reward_kind:'tuanzi_v2'}):await this.platform.watchAd(unit);
+    }catch{return 'failed';}
+   },
+  });
   try{const consent=JSON.parse(platform.storage.get(MOBILE_PRIVACY_CONSENT_KEY)||'null');this.privacyAccepted=consent?.version===MOBILE_PRIVACY_VERSION&&consent?.necessary===true&&consent?.hongKongStorage===true;}catch{}
   try{this.settingsTipSeen=platform.storage.get(settingsTipKey)==='1';}catch{}
   this.shareReward=new TaskShareReward(platform,requestId=>client.post<MobileInviteShareResult>('/api/mobile/invitations/share',{requestId,shared:true}));
@@ -315,12 +356,12 @@ export class GameApp{
  private get modalBlocksInput(){return this.modal!==null&&this.modal!=='tasks'&&this.modal!=='chat'||this.route==='room'&&this.roomGuideStep>0;}
  private get boardInputBlocked(){return this.modalBlocksInput||!!this.completionFx;}
  private modalContains(x:number,y:number){return this.modalBlocksInput||(this.modal==='tasks'&&inside(this.taskWindowArea,x,y))||(this.modal==='chat'&&inside(this.chatWindowArea,x,y));}
- private get energyEnabled(){return !this.offlineRoom&&!(this.offline?.active&&!this.ready)&&!this.formalWeb&&this.client.config.capabilities?.energy!==false;}
+ private get energyEnabled(){return !this.localRoom&&!(this.offline?.active&&!this.ready)&&!this.formalWeb&&this.client.config.capabilities?.energy!==false;}
  /** WeChat builds name no outside group or platform (review copy). */
  private get redeemHint(){return this.platform.config?.id==='wechat'?REDEEM_WECHAT_HINT:REDEEM_GROUP_HINT;}
  private decorationText(item:{id:string;description?:string}){return this.platform.config?.id==='wechat'&&item.id==='cat-paw'?CAT_PAW_WECHAT_TEXT:item.description??'';}
  private get shareAvailable(){return this.client.config.capabilities.shareRewards===true;}
- private get cheersEnabled(){return !this.offlineRoom&&this.client.config.capabilities.cheers!==false;}
+ private get cheersEnabled(){return !this.localRoom&&this.client.config.capabilities.cheers!==false;}
  private rewardText(energy:number,xp:number,coins=0){return [this.energyEnabled&&energy>0?'体力 +'+energy:'',xp>0?'经验 +'+xp:'',coins>0?'金币 +'+coins:''].filter(Boolean).join(' · ')||'暂无可领取奖励';}
  private giftVisible(gift:{energyMax?:number;xp?:number;xpMax?:number;coins?:number;coinsMax?:number}){return this.energyEnabled||(gift.xpMax??gift.xp??0)>0||(gift.coinsMax??gift.coins??0)>0;}
  private setTheme(theme:ThemeId){this.stage.setTheme(theme);this.board?.setTheme(theme);if(this.platform.canvas.style)this.platform.canvas.style.colorScheme=theme==='dark'?'dark':'light';this.platform.storage.set('jigsaw:shared:theme:'+this.platform.config.apiBase,theme);this.invalidate();}
@@ -410,13 +451,13 @@ export class GameApp{
   catch(error){this.clearTelemetryFallback();if(!this.destroyed){if(!this.needsPrivacyChoice&&epoch===this.privacyEpoch)this.initTelemetryOnce(this.client.profile);this.startupError=errorText(error);this.invalidate();}}
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch||this.timers.length)return;
   this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.route==='lobby'&&!this.busy)void this.loadLobby(false,true);if((this.route==='tasks'||this.modal==='tasks')&&!this.busy)void this.loadTasks();if(this.route==='gallery'&&!this.busy)void this.loadGallery();if(this.route==='collection'&&!this.busy)void this.loadCollection();if(this.modal!=='social')void this.social.refresh();if(this.route==='room'&&this.modal!=='chat')void this.loadChat();},9000));
-  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.offlineRoom)return;if(this.modal==='social'||this.modal==='invite'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat'||this.route==='room'&&this.layout==='desktop')void this.loadChat();},3000));
+  this.timers.push(setInterval(()=>{if(this.destroyed||this.hidden||!this.ready||this.localRoom)return;if(this.modal==='social'||this.modal==='invite'||this.route==='friends'&&!this.modal)void this.social.refresh();else if(this.modal==='chat'||this.route==='room'&&this.layout==='desktop')void this.loadChat();},3000));
   this.timers.push(setInterval(()=>this.tickVisibleTime(),1000));
   this.invalidate();
   })().finally(()=>{this.clearTelemetryFallback();if(epoch===this.privacyEpoch){this.startupPending=null;this.loginDialogActive=false;if(!this.destroyed)this.invalidate();}});
   return this.startupPending;
  }
- destroy(){this.destroyed=true;this.clearTelemetryFallback();this.releaseComicBack();this.stopStoryFrame();this.finishOrientationOffer();this.platform.cancelShare?.();this.platform.cancelIdentity?.();this.pendingViews?.invalidate();this.cancelChatPress();this.social.destroy();this.leaveRoom();this.telemetry?.close();this.client.onChange=undefined;for(const timer of this.timers)clearInterval(timer);for(const cleanup of this.cleanups)cleanup();}
+ destroy(){this.destroyed=true;this.tuanziV2?.destroy();this.clearTelemetryFallback();this.releaseComicBack();this.stopStoryFrame();this.finishOrientationOffer();this.platform.cancelShare?.();this.platform.cancelIdentity?.();this.pendingViews?.invalidate();this.cancelChatPress();this.social.destroy();this.leaveRoom();this.telemetry?.close();this.client.onChange=undefined;for(const timer of this.timers)clearInterval(timer);for(const cleanup of this.cleanups)cleanup();}
  private async loadInitialContent(query:Record<string,string>,epoch=this.privacyEpoch){
   if(this.destroyed||this.needsPrivacyChoice||epoch!==this.privacyEpoch)return;
   if(this.offlineRoom)return;
@@ -471,7 +512,7 @@ export class GameApp{
   if(view.route==='collection')Object.assign(this,{collectionTab:view.collectionTab,albumId:view.albumId,albumListScroll:view.albumListScroll,decorationId:view.decorationId,decorationOwnedOnly:view.decorationOwnedOnly});
   if(view.route==='tasks')this.taskTab=view.taskTab;
  }
- private refreshRoute(){if(this.offline?.active&&!this.ready||this.offlineRoom)return;if(this.route==='chapter')void this.loadLevels();if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);if(!this.completedGalleryIds)void this.loadGallery();if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
+ private refreshRoute(){if(this.offline?.active&&!this.ready||this.offlineRoom)return;if(this.route==='chapter')void this.loadLevels();if(this.route==='lobby'){void this.loadLevels();void this.loadLobby(false,!!this.rooms.length);void this.tuanziV2.refreshSummary(this.ownerKey());if(!this.completedGalleryIds)void this.loadGallery();if(!this.historyLoading)void this.loadRoomHistory();}if(this.route==='gallery'){void this.loadGallery();void this.loadCollection();}if(this.route==='tasks')void this.loadTasks();if(this.route==='collection')void this.loadCollection();if(this.route==='friends')void this.social.refresh();}
  private finishNavigation(){if(this.modal==='completion')this.showModal(null);else this.modal=null;this.filterView=null;this.toolsOpen=false;this.message='';if(this.route==='friends')void this.loadRecentPlayers();if(this.route==='lobby'||this.route==='chapter')void this.loadRetention();this.invalidate();this.refreshRoute();}
  private navigate(route:Route,context?:Partial<ListView>){
   if(this.offlineRoom||this.offline?.active&&!this.ready){this.note(OFFLINE_REQUIRED);return;}
@@ -493,7 +534,7 @@ export class GameApp{
  private selectAlbum(id:string){this.changeListView(()=>{this.albumId=id;});}
  private exitRoom(){if(this.offlineRoom&&!this.ready){this.leaveRoom();this.roomReturn=null;this.roomReturnStack=[];this.roomReturnFrames=[];this.routeStack=[];this.routeFrames=[];this.enterOffline();return;}this.ensureListOwner();const level=this.offlineRoom?undefined:this.room?.snapshot.levelId,clear=this.room?.snapshot.mobileResult?.levelClear,complete=clear&&(clear.chapterComplete||clear.nextLevelId===null),nextLevelId=complete?clear?.nextLevelId:null,nextChapter=this.chapterForLevel(nextLevelId),target=this.roomReturn;if(nextLevelId)this.storyChapterId=nextChapter?.id??null;this.leaveRoom();this.roomReturn=null;this.routeStack=target?this.roomReturnStack:[];this.routeFrames=target?this.roomReturnFrames:[];this.roomReturnStack=[];this.roomReturnFrames=[];if(level){// Back to the story page while the played chapter still has unfinished levels, in any chapter.
 const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels.some(item=>item.status!=='cleared'):!!this.beginnerChapter);if(resume&&played)this.storyChapterId=played.id;this.navigate(nextLevelId||resume?'chapter':'lobby');}else if(target){this.restoreListView(target);this.finishNavigation();}else this.navigate('lobby');}
- private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.offlineRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
+ private closeModal(){if(this.modal==='orientation'){this.confirmOrientation();return;}if(this.modal==='welcome'){this.closeWelcome();return;}if(this.modal==='levelComic'){const back=this.comicPage?.returnTo;this.showModal(back&&this.room?'completion':null);return;}if(this.modal==='completion'&&(this.localRoom||this.room?.snapshot.levelId))this.exitRoom();else this.showModal(null);}
  private filterView:ListView|null=null;
  private finishFilters(){const changed=this.filterView&&this.listViewKey(this.filterView)!==this.listViewKey();if(changed){this.scroll=0;if(this.route==='lobby'){const serverChanged=this.filterView!.direction!==this.direction||this.filterView!.filterCount!==this.filterCount||this.filterView!.openOnly!==this.openOnly||this.filterView!.activeOnly!==this.activeOnly;if(serverChanged){this.lobbySerial++;this.rooms=[];this.lobbyCursor=null;void this.loadLobby();}}}this.filterView=null;}
  /** Phones: a drag that starts on a control floating over the table (任务, chat bubble, tools button, landscape top bar)
@@ -779,15 +820,17 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
   this.clearCompletionTransition();
   if(this.destroyed||this.needsPrivacyChoice||this.client.authRequired)return;
   const offline=this.offline?.isRoom(ticket.room.id)??false;
+  const postcard=this.postcards?.isRoom(ticket.room.id)??false;
+  const local=offline||postcard;
   this.social.close();
   const source=this.saveListView();if(source.route!=='room'){this.roomReturn=source;this.roomReturnStack=[...this.routeStack];this.roomReturnFrames=[...this.routeFrames];}
   this.leaveRoom();this.route='room';this.routeStack=[];this.routeFrames=[];this.scroll=0;this.modal=null;this.imageReady=false;this.roomViewPending=false;this.imageError='';this.messages=[];this.chatCursor=0;this.chatSeen=0;this.completedId='';this.chatBubble=null;this.bubbleSeen=-1;this.roomGuideStep=0;this.roomTimings?.clear();this.adminDiagExpanded=false;
-  const realtime=offline?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision,()=>{
+  const realtime=local?null:this.client.roomRealtime?.(ticket,()=>this.room?.snapshot.revision??ticket.room.revision,()=>{
    if(this.room===room)this.note('与 TapTap 的实时连接已断开，改用游戏服务器同步');
   })??null;this.realtime=realtime;
-  const room=new RoomClient(ticket,{solo:offline?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>this.adminDiagnosticsAllowed&&this.adminDiagEnabled,profile:offline?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:offline?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
+  const room=new RoomClient(ticket,{solo:local?{enabled:()=>true,energy:()=>null}:{enabled:()=>this.client.config.capabilities.soloLocalPlay===true,storage:this.platform.storage,energy:()=>{const p=this.client.profile;if(!p)return null;return {enabled:this.client.config.capabilities.energy!==false,energy:p.energy,cap:p.energyCap,cost:p.economy?.contributionCost??1,xp:p.economy?.contributionXp??0,autoSupply:p.autoSupply===true,supplyEnergy:p.supply?.energy??0,free:p.economy?.firstRoomFree===true&&p.newcomer===true&&p.firstRoomId===ticket.room.id};}},fetch:offline?this.offline.server!.fetch:postcard?this.postcards.fetch:this.client.fetchLike,realtime:realtime??undefined,traceTimings:()=>this.adminDiagnosticsAllowed&&this.adminDiagEnabled,profile:local?undefined:data=>{if(this.room===room)this.client.acceptRoomResponse(ticket,data);},refreshProfile:local?undefined:async()=>{if(this.room===room)await this.client.refresh();},randomId:()=>this.platform.randomId(),hidden:()=>this.hidden,now:()=>Date.now(),performanceNow:()=>Date.now(),emit:(name,detail)=>{
    if(name==='room:local-play-error'&&this.room===room)this.platform.loginLog?.add('本地拼图出错，改为联网拼 · '+String((detail as {message?:string})?.message??'').slice(0,80));
-   if(name==='room:rejoin-required'&&this.room===room&&!offline){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
+   if(name==='room:rejoin-required'&&this.room===room&&!local){this.note('正在重新连接房间，拼好的进度会保留');let tries=0;const rejoin=()=>{if(this.room!==room)return;if(this.busy&&++tries<20){setTimeout(rejoin,500);return;}void this.enterRoom(ticket.room.id);};rejoin();}
    if(name==='puzzle:successful-drop'&&this.room===room){this.board?.confirmMobileContribution(detail as MobileContributionReceipt);if(!this.nineGridRoom)this.telemetry?.milestone('new_user','完成首次拼合');}
    if(name==='mobile:profile')this.invalidate();
    if(name==='room:request-timing'&&this.room===room){const timing=detail as RoomRequestTiming;if(timing.action==='drop-start'){for(const key of ['drop','drop-queue','drop-total'])this.nineTimings?.delete(key);}this.nineTimings?.set(timing.action,timing);(this.roomTimings??=new Map()).set(timing.action,{...timing,at:Date.now()});this.invalidate();}
@@ -795,26 +838,26 @@ const played=this.chapterForLevel(level),resume=!complete&&(played?played.levels
    if(name==='mobile:energy-empty'){if(this.energyEnabled){this.note('体力不足，请使用礼包或补给');this.navigate('supplies');}else this.note('当前游戏规则需要重新连接，请返回大厅后再进入房间');}
   }});this.room=room;this.setCompletionPhase('idle');this.completionLive=!room.snapshot.completedAt;
   if(!this.nineGridRoom&&!room.snapshot.completedAt){
-   const levelId=room.snapshot.levelId??undefined,mode=this.roomTelemetryMode(room,offline),pieces=room.snapshot.requestedPieces??(room.snapshot.puzzle.cols*room.snapshot.puzzle.rows);
+   const levelId=room.snapshot.levelId??undefined,mode=this.roomTelemetryMode(room,local),pieces=room.snapshot.requestedPieces??(room.snapshot.puzzle.cols*room.snapshot.puzzle.rows);
    this.telemetry?.startAttempt({levelId:levelId??room.snapshot.puzzle.imageId,levelNo:this.storyLevelNumber(levelId),mode,pieces,randomId:()=>this.platform.randomId()});
    this.telemetry?.milestone('new_user','开始首局拼图');
-   if(!offline&&!levelId)this.telemetry?.milestone('global','体验多人房间');
+   if(!local&&!levelId)this.telemetry?.milestone('global','体验多人房间');
   }
   const board=new PuzzleBoard(this.platform,room.state,this.invalidate);board.trayKey=room.snapshot.id;this.board=board;if(room.snapshot.completedAt)board.completionReveal=1;
   // 回忆变奏关: set before the room attaches, so a wind room's kept pieces are drawn where the player left them.
   this.roomVariant=this.storyRoomVariant(ticket,room);if(this.roomVariant)board.setVariant(boardVariant(this.roomVariant,ticket.room.id));board.setTheme(this.stage.theme);board.soundUrl='assets/audio/mobile-snap.wav';board.chimeUrl='assets/audio/mobile-coin.wav';board.teammateSoundEnabled=this.teammateSoundEnabled===true;{const self=room.snapshot.members.find(member=>member.id===ticket.playerId);if(self)board.selfPlayer={name:self.name,color:self.color};}board.onNotice=message=>this.note(message);board.drawDecoration=(value,rect)=>this.stage.decoration(value,rect);board.selfDecoration=this.client.profile?.collection?.equipped??null;board.viewLocked=this.viewLocked;this.detachRoom=room.attach(board);
-  if(!offline){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(enrichCursorsFromMembers(cursors,room.snapshot.members as readonly CursorMemberMeta[])),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
+  if(!local){const cursor=new CursorClient(ticket.room.id,ticket.token,ticket.playerId,cursors=>board.setCursors(enrichCursorsFromMembers(cursors,room.snapshot.members as readonly CursorMemberMeta[])),()=>room.connected,()=>this.hidden||this.route!=='room'||this.modalBlocksInput,{retainUntilLeave:true,realtime:realtime??undefined,fetch:this.client.fetchLike,randomId:()=>this.platform.randomId(),now:()=>Date.now(),performanceNow:()=>Date.now(),subscribeVisibility:fn=>{const hide=this.platform.onHide(fn),show=this.platform.onShow(()=>fn());return()=>{hide();show();};}});this.cursor=cursor;board.onCursor=point=>cursor.point(point);cursor.start();realtime?.setHidden(this.hidden);realtime?.start();}
   this.cheer=this.cheersEnabled?new CheerClient({roomId:ticket.room.id,token:ticket.token,playerId:ticket.playerId,name:ticket.room.members.find(member=>member.id===ticket.playerId)?.name??this.client.profile?.name??'我',fetch:this.client.fetchLike,realtime,randomId:()=>{const id=this.platform.randomId().replace(/-/g,'').toLowerCase();return /^[a-f0-9]{32}$/.test(id)?id:Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');},onCheer:(cheer,own)=>this.receiveCheer(room,cheer,own)}):null;
   this.cheer?.setActive(this.modal==='completion');
   this.unsubscribeRoom=room.subscribe(()=>{this.syncCompletion(room);this.checkVariantCompany(room);});
   const photo=activeRoomPhoto(ticket.room,photoMap.get(ticket.room.puzzle.imageId));this.roomImage=this.client.asset(ticket.room.customImage?customPhoto(ticket.room.customImage,ticket.room.id).src:photo?.src??'');
   this.beginStoryIntro((ticket.room as typeof ticket.room&{levelId?:string}).levelId);
-  this.invalidate();if(this.nineGridRoom)board.setUnderlay(Date.now()+86400000);else if(!offline)void this.loadAssistance();
+  this.invalidate();if(this.nineGridRoom)board.setUnderlay(Date.now()+86400000);else if(!local)void this.loadAssistance();
   try{if(!this.roomImage)throw Error('这张拼图的图片暂不可用');await board.setImage(this.roomImage);if(this.room!==room||this.board!==board)return;this.imageReady=board.imagePreparation.phase==='ready';this.roomViewPending=this.imageReady;}catch(error){if(this.room!==room||this.board!==board)return;this.imageError=errorText(error);this.note(this.imageError,true);}this.invalidate();
  }
  private syncCompletion(room:RoomClient){
   if(this.room!==room)return;const chapter=this.chapterForLevel(this.room.snapshot.levelId??this.room.snapshot.mobileResult?.levelClear?.levelId);if(chapter)this.syncComicClear(chapter);if(!room.snapshot.completedAt)this.completionLive=true;
-  if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.telemetry?.endAttempt('win');this.telemetry?.milestone('new_user','完成首局拼图');this.telemetry?.milestone('global','完成任意拼图');const clearedLevelId=room.snapshot.levelId??room.snapshot.mobileResult?.levelClear?.levelId;if(clearedLevelId==='ch1-1')this.telemetry?.milestone('global','通关故事1-1');if(chapter?.id==='ch1'&&(room.snapshot.mobileResult?.levelClear?.chapterComplete===true||chapter.levels.every(lv=>lv.status==='cleared'||lv.id===clearedLevelId)))this.telemetry?.milestone('global','通关第一章');if(this.offlineRoom){room.flushSoloNow();}else{void this.client.refresh().then(()=>this.checkLevelMilestone()).catch(()=>{});void this.loadCollection();void this.loadGallery();}if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}}}if(this.offlineRoom&&room.snapshot.completedAt)this.syncOffline();this.invalidate();
+  if(room.snapshot.completedAt&&this.completedId!==room.snapshot.id){this.completedId=room.snapshot.id;if(this.nineGridRoom)this.note('九格已拼好，可以重新摆放继续测试');else{this.telemetry?.endAttempt('win');this.telemetry?.milestone('new_user','完成首局拼图');this.telemetry?.milestone('global','完成任意拼图');const clearedLevelId=room.snapshot.levelId??room.snapshot.mobileResult?.levelClear?.levelId;if(clearedLevelId==='ch1-1')this.telemetry?.milestone('global','通关故事1-1');if(chapter?.id==='ch1'&&(room.snapshot.mobileResult?.levelClear?.chapterComplete===true||chapter.levels.every(lv=>lv.status==='cleared'||lv.id===clearedLevelId)))this.telemetry?.milestone('global','通关第一章');if(this.offlineRoom){room.flushSoloNow();}else if(this.postcardRoom){room.flushSoloNow();const pic=this.postcards.cardOf(room.snapshot.id);if(pic){const bonus=pic.pieces>=300?120:pic.pieces>=108?60:30;void this.client.post<{applied?:number}>('/api/mobile/tuanzi-v2/wallet',{source:'main-postcard:'+pic.cardId+':'+pic.pieces,delta:bonus}).then(res=>{this.postcardRewardCoins=res?.applied??0;settlePostcard(this.platform.storage,pic.cardId);void this.client.refresh().catch(()=>{});this.invalidate();}).catch(()=>{});}}else{void this.client.refresh().then(()=>this.checkLevelMilestone()).catch(()=>{});void this.loadCollection();void this.loadGallery();}if(this.completionLive&&this.imageReady&&this.board)this.beginCompletionTransition();else{if(this.board)this.board.completionReveal=1;this.showModal('completion');}}}if(this.offlineRoom&&room.snapshot.completedAt)this.syncOffline();this.invalidate();
  }
  private clearCompletionTransition(){if(this.completionFxFrame!=null)this.platform.cancelFrame(this.completionFxFrame);this.completionFxFrame=null;this.completionFx=null;this.completionFxRect=null;this.completionCheerQueue=[];this.completionLive=false;this.settleButtonRect=null;}
  private beginCompletionTransition(){

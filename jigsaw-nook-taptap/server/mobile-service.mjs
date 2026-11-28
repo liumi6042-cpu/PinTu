@@ -133,7 +133,8 @@ export function createMobileService(options={}){
  CREATE TABLE IF NOT EXISTS mobile_tool_grants(room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,kind TEXT NOT NULL,expires_at INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(room_id,owner,request_id));
  CREATE TABLE IF NOT EXISTS mobile_settlements(room_id TEXT NOT NULL,owner TEXT NOT NULL,energy INTEGER NOT NULL,contribution INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(room_id,owner));
  CREATE TABLE IF NOT EXISTS mobile_chat(id INTEGER PRIMARY KEY AUTOINCREMENT,room_id TEXT NOT NULL,owner TEXT NOT NULL,request_id TEXT NOT NULL,data TEXT NOT NULL,sent_at INTEGER NOT NULL,UNIQUE(room_id,owner,request_id));
- CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));`);
+ CREATE TABLE IF NOT EXISTS mobile_cursors(room_id TEXT NOT NULL,player_id TEXT NOT NULL,client_id TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(room_id,player_id));
+ CREATE TABLE IF NOT EXISTS mobile_tuanzi_v2_state(owner TEXT PRIMARY KEY,data TEXT NOT NULL,updated_at INTEGER NOT NULL);`);
  const events=createMobileEvents({db});
  // Energy rejection must survive the action's rollback (including savepoints).
  let requestEnergyEmpty=null;
@@ -594,6 +595,7 @@ export function createMobileService(options={}){
   if(retention&&path==='/api/mobile/retention/weekly-claim'&&method==='POST')return replay(p,'weekly-gift-claim',input,now,()=>{
    const granted=retention.claim(p,now);saveProfile(p);return {...retention.view(p.id,now,engine.dailyPuzzleDate(dailyClock(now))),granted,profile:profileView(p,now)};
   });
+  if(path==='/api/mobile/tuanzi-v2'||path.startsWith('/api/mobile/tuanzi-v2/'))return tuanziV2Route(request,p,input,path,now);
   if(path==='/api/mobile/tuanzi'||path.startsWith('/api/mobile/tuanzi/'))return tuanziRoute(request,p,input,path,now);
   if(!web&&path==='/api/mobile/redeem'&&method==='POST'){
    if(!redeem)fail(503,'REDEEM_DISABLED','兑换功能暂未开放');
@@ -799,6 +801,36 @@ export function createMobileService(options={}){
   // contribution; nothing is applied or granted again.
   const dropReceipt={store:roomActionReceipt,restore:stored=>({...snapshotView(room,now,since,p.id),profile:profileView(p,now),...(stored.mobileContribution?{mobileContribution:stored.mobileContribution}:{})})};
   return input.type==='drop'&&requestKey(input.requestId)&&(!request[diagnosticTransport]||room.diagnostic!==true)?replay(p,'room-action:'+room.id,input,now,act,dropReceipt):act();
+ }
+ /** 团子去旅行 2.0: shared main-game coin wallet + cloud state persistence across all 50 China postcards & decor. */
+ function tuanziV2Route(request,p,input,path,now){
+  const method=request.method;
+  if(path==='/api/mobile/tuanzi-v2/state'&&method==='GET'){
+   const row=db.prepare('SELECT data,updated_at FROM mobile_tuanzi_v2_state WHERE owner=?').get(p.id);
+   let state=null;
+   if(row?.data){try{state=JSON.parse(row.data);}catch{state=null;}}
+   return {ok:true,state,updatedAt:row?.updated_at??null,coins:collection.coinsOf(p.id),playerName:p.name,adEligible:adsEnabled,profile:profileView(p,now)};
+  }
+  if(method!=='POST')fail(405,'METHOD_NOT_ALLOWED','请求方式无效');
+  if(path==='/api/mobile/tuanzi-v2/sync'){
+   if(!input||typeof input.state!=='object'||!input.state||Array.isArray(input.state))fail(400,'TUANZI_V2_STATE_INVALID','存档数据无效');
+   const encoded=JSON.stringify(input.state);
+   if(encoded.length>262144)fail(413,'TUANZI_V2_STATE_TOO_LARGE','存档体积过大');
+   db.prepare('INSERT INTO mobile_tuanzi_v2_state(owner,data,updated_at) VALUES(?,?,?) ON CONFLICT(owner) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at').run(p.id,encoded,now);
+   return {ok:true,coins:collection.coinsOf(p.id),updatedAt:now,profile:profileView(p,now)};
+  }
+  if(path==='/api/mobile/tuanzi-v2/wallet'){
+   const rawSource=typeof input?.source==='string'?input.source.trim():'';
+   const delta=Number(input?.delta);
+   if(!rawSource||rawSource.length>200||!/^[a-zA-Z0-9:_./-]+$/.test(rawSource))fail(400,'TUANZI_V2_SOURCE_INVALID','账本来源标识无效');
+   if(!Number.isSafeInteger(delta)||delta===0||Math.abs(delta)>500)fail(400,'TUANZI_V2_DELTA_INVALID','金币变动数值无效');
+   const ledgerKey='tuanzi-v2:'+rawSource;
+   let applied=0;
+   if(delta>0)applied=collection.awardCoins(p.id,ledgerKey,delta,now);
+   else applied=-collection.spendCoins(p.id,ledgerKey,Math.abs(delta),now);
+   return {ok:true,coins:collection.coinsOf(p.id),delta,applied,profile:profileView(p,now)};
+  }
+  fail(404,'NOT_FOUND','接口不存在');
  }
  /** 团子去旅行 endpoints: only when the capability is on, only after the unlock level. */
  function tuanziRoute(request,p,input,path,now){

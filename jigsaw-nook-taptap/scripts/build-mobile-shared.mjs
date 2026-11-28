@@ -95,6 +95,20 @@ for(const [platform,out]of Object.entries(outputs)){
   // Landscape is requested at startup by mobile/entry-web.ts instead.
   const title=platform==='web'?'拼图小窝 · 桌面体验':config.gameName;
   writeFileSync(join(out,'index.html'),'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#fdf6ed"><title>'+title+'</title><style>*{-webkit-tap-highlight-color:transparent}html,body,canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}textarea,input{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fdf6ed}canvas{width:100%;height:100%;display:block;touch-action:none}</style></head><body><canvas id="game" aria-label="'+title+'"></canvas><script src="game.js"></script></body></html>\n');
+  // Bundle 「团子去旅行 2.0」 storybook minigame (6 scenes + 50 China postcards + 24/48p workbench) into TapTap & Desktop Web builds (never WeChat 4 MiB main pkg).
+  const tuanziSrc=join(root,'prototype/tuanzi-v2'),tuanziOut=join(out,'tuanzi-v2');
+  const tuanziRuntimeFiles=['index.html','styles.css','app.js','engine.js','catalog.js','puzzle.js','particles.js','audio.js'];
+  if(existsSync(tuanziSrc)){
+   for(const file of tuanziRuntimeFiles){const from=join(tuanziSrc,file);if(existsSync(from))copy(from,join(tuanziOut,file));}
+   const copyTree=(srcDir,dstDir)=>{
+    for(const item of readdirSync(srcDir,{withFileTypes:true})){
+     const from=join(srcDir,item.name),to=join(dstDir,item.name);
+     if(item.isDirectory())copyTree(from,to);
+     else copy(from,to);
+    }
+   };
+   if(existsSync(join(tuanziSrc,'assets')))copyTree(join(tuanziSrc,'assets'),join(tuanziOut,'assets'));
+  }
  }
  function size(dir,skipArt=false){return readdirSync(dir,{withFileTypes:true}).reduce((n,item)=>n+(skipArt&&item.name==='art'?0:item.isDirectory()?size(join(dir,item.name)):statSync(join(dir,item.name)).size),0);}
  const main=size(out,true),total=size(out);if(platform==='wechat'&&main>4*1024*1024)throw Error('WeChat main package exceeds 4 MiB: '+main);

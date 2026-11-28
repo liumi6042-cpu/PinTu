@@ -7,7 +7,7 @@ import {TapPreviewRealtime} from './tap-preview';
 import type {TapPreviewDescriptor} from '../lib/room-preview';
 import {bundledArtworkPath} from './bundled-artwork';
 
-export type GameCapabilities={energy:boolean;ads:boolean;shareRewards?:boolean;tapMultiplayer?:boolean;albumTarget:'pc'|'mobile-shared';createTickets?:boolean;customNames?:boolean;cheers?:boolean;privacyRequests?:boolean;roomActionRevisionBody?:boolean;soloLocalPlay?:boolean;offlineLevelClears?:boolean;supportedPieces?:number[];social?:{friends?:boolean;privateMessages?:boolean;privateMessageHistory?:boolean;roomInvites?:boolean;reports?:boolean;blocking?:boolean;search?:boolean;presence?:boolean;codeFormat?:'hex12'|'digits9'}};
+export type GameCapabilities={energy:boolean;ads:boolean;shareRewards?:boolean;tapMultiplayer?:boolean;tuanziTravel?:boolean;albumTarget:'pc'|'mobile-shared';createTickets?:boolean;customNames?:boolean;cheers?:boolean;privacyRequests?:boolean;roomActionRevisionBody?:boolean;soloLocalPlay?:boolean;offlineLevelClears?:boolean;supportedPieces?:number[];social?:{friends?:boolean;privateMessages?:boolean;privateMessageHistory?:boolean;roomInvites?:boolean;reports?:boolean;blocking?:boolean;search?:boolean;presence?:boolean;codeFormat?:'hex12'|'digits9'}};
 export type GameConfig={mobileMode?:string|null;adRewardEnabled:boolean;rewardedAdUnitId:string;rewardedAdUnitIdPortrait?:string;rewardedAdUnitIdLandscape?:string;rewardedAdUnitIdWechat?:string;identityMode:'guest-device'|'web-cookie';wechatLoginConfigured:false;capabilities:GameCapabilities;compatUrls?:WebLinks;realtime?:{version:number};[key:string]:unknown};
 export type FetchLikeInit={method?:string;headers?:HeadersInit;body?:BodyInit|null;signal?:AbortSignal|null;cache?:string;timeout?:number};
 export type FetchLikeReply={status:number;ok:boolean;headers:{get(name:string):string|null};json():Promise<any>};
@@ -72,6 +72,7 @@ export class GameClient{
    const unit=web?'':wechat?wechatUnit:String(reply.data.rewardedAdUnitId||portraitUnit||landscapeUnit||this.platform.config.rewardedAdUnitId||'');
    const capabilities:GameCapabilities={energy:this.cookieIdentity?false:reply.data.capabilities?.energy!==false,shareRewards:!web&&!wechat&&reply.data.capabilities?.shareRewards===true,ads:!web&&reply.data.capabilities?.ads!==false&&reply.data.adRewardEnabled===true&&!!unit,albumTarget:this.cookieIdentity||reply.data.capabilities?.albumTarget==='pc'?'pc':'mobile-shared',createTickets:this.cookieIdentity?false:reply.data.capabilities?.createTickets??!web,
     tapMultiplayer:!web&&reply.data.capabilities?.tapMultiplayer===true,
+    tuanziTravel:reply.data.capabilities?.tuanziTravel!==false,
     customNames:this.cookieIdentity?reply.data.capabilities?.customNames!==false:!wechat&&reply.data.capabilities?.customNames===true,
     cheers:this.cookieIdentity?reply.data.capabilities?.cheers===true:reply.data.capabilities?.cheers!==false,
     privacyRequests:!this.cookieIdentity&&reply.data.capabilities?.privacyRequests===true,

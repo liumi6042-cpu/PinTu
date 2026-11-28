@@ -302,6 +302,19 @@ export function createH5Gateway(options){
         if(assistance){await serveHelp(request,response,session,'room/'+assistance[1]);return;}
         await proxy(request,response,session,path+url.search,request.method==='GET'?undefined:await readBody(request,path.startsWith('/api/feedback')?16*1024*1024:MAX_BODY));return;
       }
+      if(url.pathname.startsWith('/tuanzi-v2/')&&request.method==='GET'){
+        const candidates=[resolve(import.meta.dirname,'../outputs/shared-web/tuanzi-v2'),resolve(import.meta.dirname,'../prototype/tuanzi-v2')];
+        const base=candidates.find(dir=>existsSync(dir));
+        if(base){
+          const relative=decodeURIComponent(url.pathname.slice('/tuanzi-v2/'.length))||'index.html';
+          const file=resolve(base,relative);
+          if(file.startsWith(base+sep)&&existsSync(file)&&statSync(file).isFile()){
+            const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.svg':'image/svg+xml','.woff2':'font/woff2'};
+            response.writeHead(200,{'Content-Type':types[extname(file)]||'application/octet-stream','Cache-Control':extname(file)==='.webp'?'public, max-age=3600':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'});
+            response.end(readFileSync(file));return;
+          }
+        }
+      }
       if(options.staticDir&&request.method==='GET'){
         const base=resolve(options.staticDir),relative=decodeURIComponent(url.pathname).replace(/^\//,'')||'index.html',file=resolve(base,relative);
         if(file!==base&&!file.startsWith(base+sep)){json(response,404,{error:'文件不存在'});return;}
