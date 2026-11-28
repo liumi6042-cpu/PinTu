@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { DatabaseSync } from 'node:sqlite';
+import { MOBILE_COLLECTION_CATALOG, createMobileCollection } from '../../server/mobile-collection.mjs';
 import { DAY, HOUR, NPCS, getCalendarInfo, matchSynergy } from './catalog.js';
 import {
   DEFAULT_START_TS,
@@ -17,6 +19,7 @@ import {
   sendOffNow,
   simulateTo,
   spinGacha,
+  syncWalletCoins,
   togglePantrySlot,
 } from './engine.js';
 
@@ -154,4 +157,46 @@ test('brass Garapon gacha spends tickets first, guarantees Gold within pity, and
     assert.equal(cleared.ok, true);
     assert.equal(cleared.state.equippedDecor[won.slot], null);
   }
+});
+
+test('Tuanzi coin earn/spend flows directly through the main game mobile_collection_wallets ledger', () => {
+  const db = new DatabaseSync(':memory:');
+  const photos = [...new Set(MOBILE_COLLECTION_CATALOG.packs.flatMap(p => p.imageIds))]
+    .map(id => ({ id, title: id, src: `/${id}.webp`, thumbSrc: `/${id}-t.webp` }));
+  const collection = createMobileCollection({ db, photos });
+  const owner = 'shared-player-001';
+  const now = DEFAULT_START_TS;
+
+  // 1. Main game puzzle completion credits the shared collection wallet
+  collection.awardCoins(owner, 'completion:room-1', 150, now);
+  assert.equal(collection.coinsOf(owner), 150);
+
+  // 2. Tuanzi syncs directly from the main game wallet (no separate coin balance!)
+  let state = syncWalletCoins(createInitialState(), collection.coinsOf(owner));
+  assert.equal(state.coins, 150);
+
+  // 3. Buying in Tuanzi shop spends directly from main game's mobile_collection_wallets
+  const bought = buyItem(state, 'bento');
+  assert.equal(bought.ok, true);
+  assert.equal(bought.coinDelta, -45);
+  assert.ok(bought.ledgerSource.startsWith('tuanzi:shop:bento:'));
+  assert.equal(collection.spendCoins(owner, bought.ledgerSource, -bought.coinDelta, now + 1000), 45);
+  assert.equal(collection.coinsOf(owner), 105);
+  // Idempotent replay does not double-spend
+  assert.equal(collection.spendCoins(owner, bought.ledgerSource, -bought.coinDelta, now + 2000), 0);
+  assert.equal(collection.coinsOf(owner), 105);
+
+  // 4. Developing a postcard credits directly back into the same main game wallet
+  const dev = completePostcard(bought.state, bought.state.postcards[0].uid);
+  assert.equal(dev.coinDelta, 30);
+  assert.equal(collection.awardCoins(owner, dev.ledgerSource, dev.coinDelta, now + 3000), 30);
+  assert.equal(collection.coinsOf(owner), 135);
+
+  // 5. Spending more than main game wallet balance is rejected cleanly with COINS_INSUFFICIENT
+  assert.throws(
+    () => collection.spendCoins(owner, 'tuanzi:gacha:5:overdraft', 280, now + 4000),
+    err => err.code === 'COINS_INSUFFICIENT' && err.status === 409,
+  );
+  assert.equal(collection.coinsOf(owner), 135);
+  db.close();
 });

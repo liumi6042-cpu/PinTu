@@ -5,7 +5,7 @@ import {
 import {
   buyItem, claimReunionGift, claimSill, clearDust, completePostcard,
   createInitialState, equipDecor, feedSnack, getDerivedView, packBag, replyLetter, sendOffNow,
-  setTreatDish, simulateTo, spinGacha, togglePantrySlot,
+  setTreatDish, simulateTo, spinGacha, syncWalletCoins, togglePantrySlot,
 } from './engine.js';
 import { NookAtmosphere } from './particles.js';
 import { sound } from './audio.js';
@@ -29,7 +29,65 @@ function saveState(state) {
 }
 
 let state = loadState();
+let walletMeta = { linked: false, owner: '', linkedMainProfile: false };
 let activeScreen = 'nook'; // 'nook' | 'bag' | 'gacha' | 'reunion' | 'mailbox' | 'shop' | 'scrapbook'
+
+/** 直接读写主游戏统一金币钱包（host 注入 window.jigsawWallet 或本地 /api/mobile/wallet -> mobile_collection_wallets） */
+async function refreshMainWallet() {
+  try {
+    if (window.jigsawWallet?.read) {
+      const data = await window.jigsawWallet.read();
+      if (typeof data?.coins === 'number') {
+        walletMeta = { linked: true, owner: data.owner || 'host', linkedMainProfile: true };
+        state = syncWalletCoins(state, data.coins);
+        saveState(state);
+        renderAll();
+      }
+      return;
+    }
+    const resp = await fetch('/api/mobile/wallet', { cache: 'no-store' });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data?.ok && typeof data.coins === 'number') {
+      walletMeta = { linked: true, owner: data.owner || '', linkedMainProfile: Boolean(data.linkedMainProfile) };
+      state = syncWalletCoins(state, data.coins);
+      saveState(state);
+      renderAll();
+    }
+  } catch {}
+}
+
+async function pushMainWalletDelta(source, delta) {
+  if (!source || !delta) return;
+  try {
+    if (window.jigsawWallet?.apply) {
+      const data = await window.jigsawWallet.apply(source, delta);
+      if (typeof data?.coins === 'number') {
+        state = syncWalletCoins(state, data.coins);
+        saveState(state);
+        renderAll();
+      }
+      return;
+    }
+    const resp = await fetch('/api/mobile/wallet/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source, delta }),
+    });
+    const data = await resp.json().catch(() => null);
+    if (resp.ok && data?.ok && typeof data.coins === 'number') {
+      walletMeta = { linked: true, owner: data.owner || walletMeta.owner, linkedMainProfile: Boolean(data.linkedMainProfile) };
+      state = syncWalletCoins(state, data.coins);
+      saveState(state);
+      renderAll();
+    } else if (resp.status === 409 && typeof data?.coins === 'number') {
+      state = syncWalletCoins(state, data.coins);
+      saveState(state);
+      renderAll();
+      showToast(data.message || '主游戏金币余额不足');
+    }
+  } catch {}
+}
 let decorMode = false;
 let decorTab = 'desk'; // 'all' | 'desk' | 'shelf' | 'window' | 'outfit'
 let selectedDecorSlot = 'desk'; // null or slot id
@@ -592,6 +650,7 @@ function triggerGachaDraw(count = 1) {
   gachaSpinning = true;
   state = res.state;
   saveState(state);
+  if (res.coinDelta && res.ledgerSource) void pushMainWalletDelta(res.ledgerSource, res.coinDelta);
 
   const stage = $('gacha-machine-stage');
   const trayBall = $('gacha-tray-ball');
@@ -892,9 +951,10 @@ function renderReunionBook(el) {
         const res = claimReunionGift(state);
         sound.celebrate();
         commit(res.state);
+        if (res.coinDelta && res.ledgerSource) void pushMainWalletDelta(res.ledgerSource, res.coinDelta);
         setScreen('nook');
         atmosphere.spawnBurst(195, 580, 'reunion');
-        showCatRibbon(`欢迎回家！收下红绒围巾和 +${res.coins} 金币`, 4200);
+        showCatRibbon(`欢迎回家！收下红绒围巾和 +${res.coins} 主游戏金币`, 4200);
       } else {
         setScreen('nook');
       }
@@ -958,7 +1018,8 @@ function renderMailboxBook(el) {
           playingPuzzleUid = null;
           sound.celebrate();
           commit(res.state);
-          showToast(res.reward ? `明信片显影成功！+${res.reward} 金币、+1 副券` : '明信片重新拼好啦');
+          if (res.coinDelta && res.ledgerSource) void pushMainWalletDelta(res.ledgerSource, res.coinDelta);
+          showToast(res.reward ? `明信片显影成功！+${res.reward} 主游戏金币、+1 副券` : '明信片重新拼好啦');
         },
       });
       $('pz-back').addEventListener('click', () => { playingPuzzleUid = null; renderMailboxBook(el); });
@@ -1176,6 +1237,7 @@ function renderShopBook(el) {
         sound.fishChime();
         showToast(`换好了「${ITEMS[btn.dataset.buy].name}」`);
         commit(res.state);
+        if (res.coinDelta && res.ledgerSource) void pushMainWalletDelta(res.ledgerSource, res.coinDelta);
       } else {
         showToast(res.reason);
       }
@@ -1353,6 +1415,12 @@ function renderDebugDock() {
   $('dbg-weather').textContent = state.weatherOverride ? `手动：${state.weatherOverride}` : `自动：${view.cal.weatherLabel}`;
   $('dbg-plant').textContent = `${view.plantStageLabel} (${Math.round(state.plantGrowth)}%)`;
   $('dbg-decor-cnt').textContent = `${(state.ownedDecor || []).length} / ${Object.keys(DECOR_ITEMS).length} 件`;
+  const wBadge = $('dbg-wallet-state');
+  if (wBadge) {
+    wBadge.textContent = walletMeta.linked
+      ? `已直连主库 · ${state.coins} 金币`
+      : `本地钱包 · ${state.coins} 金币`;
+  }
 
   document.querySelectorAll('[data-weather]').forEach(btn => {
     const val = btn.dataset.weather;
@@ -1546,7 +1614,9 @@ $('btn-mute').addEventListener('click', () => {
 });
 
 $('btn-coins-tip').addEventListener('click', () => {
-  showToast('通用主游戏金币：拼图、完成图鉴里程碑或显影明信片都能获得');
+  showToast(walletMeta.linked
+    ? '已直接关联《拼图小窝》主游戏金币钱包（mobile_collection_wallets），与拼图和图包共用同一笔金币'
+    : '通用主游戏金币：与《拼图小窝》拼图、图鉴、任务共用同一套金币');
 });
 
 // 手势滑动拂去阳光金尘
@@ -1605,12 +1675,13 @@ document.querySelectorAll('[data-skip-days]').forEach(btn => {
   btn.addEventListener('click', () => skipTimeMs(Number(btn.dataset.skipDays) * DAY));
 });
 $('btn-reset-day1').addEventListener('click', () => {
-  state = createInitialState();
+  const liveCoins = state.coins;
+  state = syncWalletCoins(createInitialState(), liveCoins);
   saveState(state);
   animOverride = null;
   $('tuanzi-ribbon').classList.remove('show');
   setScreen('nook');
-  showToast('已回到 Day 1 · 十月十八初秋午后');
+  showToast('已回到 Day 1（保留主游戏共享金币余额）');
 });
 
 document.querySelectorAll('[data-weather]').forEach(btn => {
@@ -1635,14 +1706,15 @@ $('btn-demo-day30').addEventListener('click', () => {
   skipTimeMs(30 * DAY + 6 * HOUR);
 });
 
-$('btn-demo-tickets').addEventListener('click', () => {
+$('btn-demo-tickets').addEventListener('click', async () => {
   state = structuredClone(state);
   state.tickets = (state.tickets || 0) + 5;
-  state.coins = (state.coins || 0) + 300;
+  state.coins = (state.coins || 0) + 72;
   saveState(state);
   sound.fishChime();
   renderAll();
-  showToast('已获赠 +5 旅途副券与 +300 金币，快去摇奖匣试试吧！');
+  await pushMainWalletDelta(`completion:demo-48p-${Date.now()}`, 72);
+  showToast('主游戏拼完 48 片拼图入账 +72 金币，并赠 +5 旅途副券');
 });
 
 $('btn-demo-unlock-decor').addEventListener('click', () => {
@@ -1713,6 +1785,8 @@ if (initScreen === 'decor') {
 }
 
 renderAll();
+void refreshMainWallet();
+window.addEventListener('focus', () => { void refreshMainWallet(); });
 requestAnimationFrame(() => {
   $('room-bg-day30').classList.add('smooth-fade');
   $('tuanzi-actor').classList.add('smooth-actor');

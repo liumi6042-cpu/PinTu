@@ -107,10 +107,17 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   db.prepare('UPDATE mobile_collection_wallets SET coins=coins+?,fragments=fragments+? WHERE owner=?').run(coins,fragments,owner);
   return true;
  }
+ function coinsOf(owner){return wallet(owner).coins;}
  function awardCoins(owner,source,coins,now){
   if(typeof source!=='string'||!source||source.length>512||!Number.isSafeInteger(coins)||coins<0)throw new TypeError('Invalid coin award');
   if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return 0;
   return change(owner,source,coins,0,now)?coins:0;
+ }
+ /** Spend coins from the single shared collection wallet (used by minigame shops/gacha without a separate currency). */
+ function spendCoins(owner,source,coins,now){
+  if(typeof source!=='string'||!source||source.length>512||!Number.isSafeInteger(coins)||coins<=0)throw new TypeError('Invalid coin spend');
+  if(db.prepare('SELECT 1 FROM mobile_collection_ledger WHERE owner=? AND source=?').get(owner,source))return 0;
+  return change(owner,source,-coins,0,now)?coins:0;
  }
  /** Coins and 碎片 under one ledger source (redeem codes); {coins:0,fragments:0} when that source was already paid. */
  function awardWallet(owner,source,{coins=0,fragments=0},now){
@@ -330,6 +337,6 @@ export function createMobileCollection({db,photos,dailyContent=null,readSettings
   const albums=view(owner,now).albums;
   return {completedPuzzles:Number(db.prepare('SELECT COUNT(DISTINCT image_id) n FROM mobile_collection_artworks WHERE owner=?').get(owner).n),ownedPacks:summary(owner,now).ownedPackIds.length,completedAlbums:albums.filter(album=>album.total>0&&album.collected===album.total).length};
  }
- return {view,summary,buy,adUnlockAlbum,adUnlocked,adDailyState,assertAdUnlockAllowed,unlockAdImage,craft,equip,contribution,complete,completion,completedImageIds,assertCompletionDoubleAllowed,claimCompletionDouble,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
+ return {view,summary,coinsOf,buy,adUnlockAlbum,adUnlocked,adDailyState,assertAdUnlockAllowed,unlockAdImage,craft,equip,contribution,complete,completion,completedImageIds,assertCompletionDoubleAllowed,claimCompletionDouble,ownsImage,randomAllowed,freeImageIds,packedImageIds,galleryPhotos,albumImages,albumMilestones,albumOf,equipped,awardTaskCoins,awardCoins,spendCoins,awardWallet,playerStats,grantDecoration,grantCodeDecoration};
 }
 

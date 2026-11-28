@@ -523,18 +523,28 @@ export function setTreatDish(prevState, foodId) {
   return state;
 }
 
-/** 玩家行为：杂货铺用主游戏金币购买 */
+/** 将主游戏共享钱包余额同步到团子视图状态（唯一真源为主游戏 mobile_collection_wallets） */
+export function syncWalletCoins(prevState, mainGameCoins) {
+  const coins = Math.max(0, Math.floor(Number(mainGameCoins) || 0));
+  if (prevState.coins === coins) return prevState;
+  const state = structuredClone(prevState);
+  state.coins = coins;
+  return state;
+}
+
+/** 玩家行为：杂货铺直接使用主游戏共享金币购买 */
 export function buyItem(prevState, itemId) {
   const item = ITEMS[itemId];
-  if (!item || item.price <= 0) return { state: prevState, ok: false, reason: '不可购买' };
-  if (item.permanent && prevState.inventory[itemId] > 0) return { state: prevState, ok: false, reason: '已经拥有这件器物啦' };
-  if (prevState.coins < item.price) return { state: prevState, ok: false, reason: '金币不够啦，拼一张图或显影明信片就能攒到' };
+  if (!item || item.price <= 0) return { state: prevState, ok: false, reason: '不可购买', coinDelta: 0, ledgerSource: null };
+  if (item.permanent && prevState.inventory[itemId] > 0) return { state: prevState, ok: false, reason: '已经拥有这件器物啦', coinDelta: 0, ledgerSource: null };
+  if (prevState.coins < item.price) return { state: prevState, ok: false, reason: '主游戏金币不够啦，拼一张图或显影明信片就能攒到', coinDelta: 0, ledgerSource: null };
   const state = structuredClone(prevState);
   state.coins -= item.price;
   state.inventory[itemId] = (state.inventory[itemId] || 0) + 1;
+  state.walletTxSeq = (state.walletTxSeq || 0) + 1;
   const cal = getCalendarInfo(state.now);
-  state.logs = [`[${cal.cnDate}] 在杂货铺换了「${item.name}」（-${item.price} 金币）。`, ...state.logs].slice(0, 16);
-  return { state, ok: true };
+  state.logs = [`[${cal.cnDate}] 在杂货铺换了「${item.name}」（主游戏钱包 -${item.price} 金币）。`, ...state.logs].slice(0, 16);
+  return { state, ok: true, coinDelta: -item.price, ledgerSource: `tuanzi:shop:${itemId}:${state.now}:${state.walletTxSeq}` };
 }
 
 /** 玩家行为：收下窗台晒好的香酥小鱼干零食（进入零食库，不再是货币） */
@@ -588,7 +598,13 @@ export function completePostcard(prevState, uid) {
     const cal = getCalendarInfo(state.now);
     state.logs = [`[${cal.cnDate}] 显影完成了明信片《${tpl?.title || '旅拍'}》（+30 金币、+1 副券）。`, ...state.logs].slice(0, 16);
   }
-  return { state, reward, ticketReward };
+  return {
+    state,
+    reward,
+    ticketReward,
+    coinDelta: reward,
+    ledgerSource: reward > 0 ? `tuanzi:postcard:${uid}` : null,
+  };
 }
 
 /** 玩家行为：给拾光来信贴上折纸回信 */
@@ -618,7 +634,7 @@ export function replyLetter(prevState, uid, choiceId) {
 /** 玩家行为：拆开重逢手账礼物 */
 export function claimReunionGift(prevState) {
   const state = structuredClone(prevState);
-  if (!state.reunion || state.reunion.claimed) return { state, coins: 0, tickets: 0 };
+  if (!state.reunion || state.reunion.claimed) return { state, coins: 0, tickets: 0, coinDelta: 0, ledgerSource: null };
   state.reunion.seen = true;
   state.reunion.claimed = true;
   const coins = state.reunion.giftCoins || 120;
@@ -629,8 +645,8 @@ export function claimReunionGift(prevState) {
   unlockDecor(state, 'outfit-redscarf', false);
   if (state.equippedDecor) state.equippedDecor.outfit = 'outfit-redscarf';
   const cal = getCalendarInfo(state.now);
-  state.logs = [`[${cal.cnDate}] 拆开重逢礼物：获得冬日红绒围巾、+${coins} 金币与 +${tickets} 张旅途副券。`, ...state.logs].slice(0, 16);
-  return { state, coins, tickets };
+  state.logs = [`[${cal.cnDate}] 拆开重逢礼物：获得冬日红绒围巾、+${coins} 金币（入主游戏钱包）与 +${tickets} 张旅途副券。`, ...state.logs].slice(0, 16);
+  return { state, coins, tickets, coinDelta: coins, ledgerSource: `tuanzi:reunion:${state.reunion.id}` };
 }
 
 /** 玩家行为：实时装扮小窝（原地无痕切换任意摆件或团子穿搭） */
@@ -789,10 +805,21 @@ export function spinGacha(prevState, count = 1, randFn = null) {
     }
   }
 
+  const coinsBefore = prevState.coins;
   const cal = getCalendarInfo(state.now);
   const topNames = results.map(r => r.name).slice(0, 2).join('、');
   state.logs = [`[${cal.cnDate}] 摇动奶奶的黄铜摇奖匣 ${times} 次：获得${topNames}${results.length > 2 ? '等' : ''}。`, ...state.logs].slice(0, 16);
-  return { state, ok: true, costType, costAmount, results };
+  const coinDelta = state.coins - coinsBefore;
+  state.walletTxSeq = (state.walletTxSeq || 0) + 1;
+  return {
+    state,
+    ok: true,
+    costType,
+    costAmount,
+    results,
+    coinDelta,
+    ledgerSource: coinDelta !== 0 ? `tuanzi:gacha:${times}:${state.now}:${state.walletTxSeq}` : null,
+  };
 }
 
 /** 玩家行为：拂去阳光金尘 */
